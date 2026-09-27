@@ -8,27 +8,27 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 ## ❤️ Most loved open-weight models on X (ranked by engagement)
 
-| # | Model | Full name | HF link | Why people love it | Best t/s | VRAM | Engine |
-|---|---|---|---|---|---|---|---|
-| 1 | **Qwen3.8-27B** | Qwen3.8-27B-Instruct | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | The flagship local model. 384K views on release. 262K ctx (1M via YaRN), Apache 2.0. | **120–124 tok/s** (Mac) | 16 GB | TensorFold |
-| 2 | **Qwen3 14B** | Qwen3-14B | [link](https://huggingface.co/Qwen/Qwen3-14B) | 2M HF downloads. The community mid-size favorite — "the little engine that fucks." | ~65 tok/s | 9 GB | Ollama |
-| 3 | **Gemma 4 12B** | gemma-4-12B-it | [link](https://huggingface.co/google/gemma-4-12B-it) | "Best overall personal-agent model." Multimodal + audio, 256K ctx. | **99.7 tok/s** | 9 GB | llama.cpp |
-| 4 | **Qwen3 8B** | Qwen3-8B | [link](https://huggingface.co/Qwen/Qwen3-8B) | The default 8 GB pick. Fast, Apache 2.0. | ~100+ tok/s | 4–8 GB | Ollama |
-| 5 | **Qwen 3.6 27B** | Qwen3.6-27B | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | "Strongest local coding model" (SWE-bench 77.2%). | ~37 tok/s, 60–80 MTP | 18 GB | llama.cpp |
-| 6 | **Bonsai 2** | Ternary-Bonsai-2-27B | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 27B in 5.9 GB (ternary), 98.2% of full-precision. Viral — 4K downloads in 3 days. | ~50 tok/s | 6 GB | llama.cpp |
-| 7 | **Qwen3.8-Flash-Next** | Qwen3.8-Flash-Next | [link](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) | Vitalik runs it locally. 125B/6B MoE, 262K ctx. | **88–92 tok/s** (Mac) | 75 GB | TensorFold |
-| 8 | **DeepSeek-R1 32B** | DeepSeek-R1-Distill-Qwen-32B | [link](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B) | "Strongest local reasoning." MIT. | — | 20 GB | llama.cpp |
-| 9 | **Qwen3.5 35B-A3B** | Qwen3.5-35B-A3B | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | MoE (3B active) — big-model quality at small-model speed. | **~100+ tok/s** | 21 GB | llama.cpp |
-| 10 | **Gemma 4 26B A4B** | gemma-4-26B-A4B | [link](https://huggingface.co/google/gemma-4-26B-A4B) | MoE (4B active). Powers Google's Antigravity SDK agents. | 22.9 tok/s | 16 GB | llama.cpp |
-| 11 | **MiniCPM5-2B** | MiniCPM5-2B | [link](https://huggingface.co/openbmb/MiniCPM5-2B) | Highest Intelligence Index of any <4B open model. Best tiny pick. | — | 2 GB | llama.cpp |
-| 12 | **gpt-oss-20b** | gpt-oss-20b | [link](https://huggingface.co/openai/gpt-oss-20b) | OpenAI's open model. Can't disable thinking → slower. | — | 16 GB | llama.cpp |
-| 13 | **Qwen3 32B** | Qwen3-32B | [link](https://huggingface.co/Qwen/Qwen3-32B) | Strong general-purpose default for 24 GB. | ~32 tok/s | 20 GB | llama.cpp |
-| 14 | **Nemotron Lightning 30B-A3B** | NVIDIA-Nemotron-3.5-Lightning-30B-A3B | [link](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) | Fastest MoE on Mac. | **188–206 tok/s** | 16 GB | TensorFold |
-| 15 | **GLM-5.2** | GLM-5.2 | [link](https://huggingface.co/zai-org/GLM-5.2) | Frontier-scale open reasoning (753B). | **120 tok/s** (6× PRO 6000) | 410 GB | vLLM |
-| 16 | **DeepSeek-V4-Flash** | DeepSeek-V4-Flash | [link](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash) | 284B MoE, cheap frontier-class inference. | **22 tok/s** (32 GB) | 32 GB | FreeToken |
-| 17 | **Kimi K2.5** | Kimi-K2.5 | [link](https://huggingface.co/moonshotai/Kimi-K2.5) | 1T MoE, frontier agentic. | 5–10 tok/s (Mac) | 512 GB | MLX |
-| 18 | **Qwen3.8-Max** | Qwen3.8-2.4T-A95B | [link](https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B) | 2.4T flagship, 1M ctx. | — | 1 TB+ | vLLM |
-| 19 | **Mach-1 Additive** | Mach-1-Additive-35B | [link](https://huggingface.co/SyzygyResearch/Mach-1-Additive-35B) | 35B, 1.7-bit additive math — runs in-browser. | — | 18 GB | llama.cpp |
+| # | Model | Full name | HF link | Why people love it | CUDA t/s | Metal t/s | VRAM | Engine |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **Qwen3.8-27B** | Qwen3.8-27B-Instruct | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | The flagship local model. 384K views on release. 262K ctx (1M via YaRN), Apache 2.0. | **35.5–43.7 tok/s** (RTX 5090 Laptop) | **120–124 tok/s** | 16 GB | TensorFold |
+| 2 | **Qwen3 14B** | Qwen3-14B | [link](https://huggingface.co/Qwen/Qwen3-14B) | 2M HF downloads. The community mid-size favorite — "the little engine that fucks." | ~65 tok/s | — | 9 GB | Ollama |
+| 3 | **Gemma 4 12B** | gemma-4-12B-it | [link](https://huggingface.co/google/gemma-4-12B-it) | "Best overall personal-agent model." Multimodal + audio, 256K ctx. | **99.7 tok/s** (RTX 4090 Laptop) | 49.67 tok/s | 9 GB | llama.cpp |
+| 4 | **Qwen3 8B** | Qwen3-8B | [link](https://huggingface.co/Qwen/Qwen3-8B) | The default 8 GB pick. Fast, Apache 2.0. | ~100+ tok/s | — | 4–8 GB | Ollama |
+| 5 | **Qwen 3.6 27B** | Qwen3.6-27B | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | "Strongest local coding model" (SWE-bench 77.2%). | **~37 tok/s**, 60–80 MTP | ~17 tok/s | 18 GB | llama.cpp |
+| 6 | **Bonsai 2** | Ternary-Bonsai-2-27B | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 27B in 5.9 GB (ternary), 98.2% of full-precision. Viral — 4K downloads in 3 days. | ~50 tok/s | — | 6 GB | llama.cpp |
+| 7 | **Qwen3.8-Flash-Next** | Qwen3.8-Flash-Next | [link](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) | Vitalik runs it locally. 125B/6B MoE, 262K ctx. | **121 tok/s** (c=1, vLLM) | **88–92 tok/s** | 75 GB | TensorFold |
+| 8 | **DeepSeek-R1 32B** | DeepSeek-R1-Distill-Qwen-32B | [link](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B) | "Strongest local reasoning." MIT. | — | — | 20 GB | llama.cpp |
+| 9 | **Qwen3.5 35B-A3B** | Qwen3.5-35B-A3B | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | MoE (3B active) — big-model quality at small-model speed. | **~100+ tok/s** | — | 21 GB | llama.cpp |
+| 10 | **Gemma 4 26B A4B** | gemma-4-26B-A4B | [link](https://huggingface.co/google/gemma-4-26B-A4B) | MoE (4B active). Powers Google's Antigravity SDK agents. | 22.9 tok/s | — | 16 GB | llama.cpp |
+| 11 | **MiniCPM5-2B** | MiniCPM5-2B | [link](https://huggingface.co/openbmb/MiniCPM5-2B) | Highest Intelligence Index of any <4B open model. Best tiny pick. | — | — | 2 GB | llama.cpp |
+| 12 | **gpt-oss-20b** | gpt-oss-20b | [link](https://huggingface.co/openai/gpt-oss-20b) | OpenAI's open model. Can't disable thinking → slower. | — | — | 16 GB | llama.cpp |
+| 13 | **Qwen3 32B** | Qwen3-32B | [link](https://huggingface.co/Qwen/Qwen3-32B) | Strong general-purpose default for 24 GB. | ~32 tok/s | — | 20 GB | llama.cpp |
+| 14 | **Nemotron Lightning 30B-A3B** | NVIDIA-Nemotron-3.5-Lightning-30B-A3B | [link](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) | Fastest MoE on Mac. | — | **188–206 tok/s** | 16 GB | TensorFold |
+| 15 | **GLM-5.2** | GLM-5.2 | [link](https://huggingface.co/zai-org/GLM-5.2) | Frontier-scale open reasoning (753B). | **120 tok/s** (6× PRO 6000) | 15–20 tok/s | 410 GB | vLLM |
+| 16 | **DeepSeek-V4-Flash** | DeepSeek-V4-Flash | [link](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash) | 284B MoE, cheap frontier-class inference. | **22 tok/s** (32 GB) | — | 32 GB | FreeToken |
+| 17 | **Kimi K2.5** | Kimi-K2.5 | [link](https://huggingface.co/moonshotai/Kimi-K2.5) | 1T MoE, frontier agentic. | — | 5–10 tok/s | 512 GB | MLX |
+| 18 | **Qwen3.8-Max** | Qwen3.8-2.4T-A95B | [link](https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B) | 2.4T flagship, 1M ctx. | — | — | 1 TB+ | vLLM |
+| 19 | **Mach-1 Additive** | Mach-1-Additive-35B | [link](https://huggingface.co/SyzygyResearch/Mach-1-Additive-35B) | 35B, 1.7-bit additive math — runs in-browser. | — | — | 18 GB | llama.cpp |
 
 ---
 
