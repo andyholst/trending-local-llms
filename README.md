@@ -2,7 +2,7 @@
 
 A living, detailed list of **open-weight** LLMs that actually make a difference for local deployment — focused on the low end: models people genuinely run and recommend on a gaming laptop with an 8, 16, or 24 GB GPU.
 
-Every figure below is **community-reported on X** (real benchmark posts, not vendor claims), with the hardware it was measured on. Models are ranked by **X popularity** (views, likes, comments, HF downloads) — the most-discussed first.
+Every figure below is **community-reported on X** (real benchmark posts, not vendor claims), with the hardware it was measured on. Models are ranked by **X popularity** (views, likes, comments, HF downloads). Data spans **June–September 2026** so you can see how speeds evolved.
 
 **Your reference machine:** RTX 4090 Laptop GPU (16 GB VRAM).
 
@@ -63,6 +63,7 @@ Every figure below is **community-reported on X** (real benchmark posts, not ven
 | **Gemma 4 12B** | 12B | Gemma | ~9 GB | **99.7 tok/s** (RTX 4090 Laptop) | llama.cpp / Ollama |
 | **Bonsai 2** (Qwen3.8-27B ternary) | 27B | Apache 2.0 | ~6 GB | ~50 tok/s fresh | llama.cpp |
 | **Qwen3.8-27B** (Mirai 2.4-bit) | 27B | Apache 2.0 | ~15 GB | **85 tok/s** code, 57 prose, 128K ctx (Q8 KV + MTP) | llama.cpp (Mirai port) |
+| **qwen2.5-coder:14b** | 14B | Apache 2.0 | ~8.4 GB | — | Ollama (time-shared) |
 
 ### 24 GB VRAM (RTX 4090 desktop, RTX 3090, RX 7900 XTX)
 
@@ -75,18 +76,27 @@ Every figure below is **community-reported on X** (real benchmark posts, not ven
 | **Qwen3 32B** | 32B | Apache 2.0 | ~20 GB | ~32 tok/s (est) | llama.cpp / Ollama / vLLM |
 | **Gemma 4 26B A4B** (MoE) | 26B | Gemma | ~16 GB | **22.9 tok/s** (IQ2_M, RTX 3080 10 GB) | llama.cpp / Ollama / LiteRT |
 
+### 48 GB+ / multi-GPU (beyond the laptop, for context)
+
+| Model | Params | License | RAM | Measured t/s (X) | Engine |
+|---|---|---|---|---|---|
+| **Qwen3.8-27B** (Q8_0) | 27B | Apache 2.0 | 2×24 GB | 150K ctx, MTP n=2 (2× RTX 3090 @300 W) | llama.cpp |
+| **Qwen3-235B-A22B** (MoE) | 235B | Apache 2.0 | 2×128 GB | **17 tok/s** (b=1), 36 (b=4) (2× DGX Spark) | vLLM / SGLang |
+| **MiniMax-M3** (MoE) | 428B | MiniMax | 2×128 GB | **13.7 tok/s** prose, 15 code, 20 peak (EAGLE3) | vLLM / SGLang |
+| **Nemotron-3-Super 120B** | 120B | NVIDIA | ~58 GB (Q3) | — | llama.cpp / vLLM |
+
 ---
 
 ## 🟨 CPU-only (no GPU)
 
-| Model | Params | License | RAM | Notes | Engine |
+| Model | Params | License | RAM | Expected t/s | Engine |
 |---|---|---|---|---|---|
-| **MiniCPM5-2B** | 2.6B | Apache 2.0 | ~4 GB | Best tiny CPU model | llama.cpp (CPU) / Ollama |
-| **Qwen3 8B** | 8B | Apache 2.0 | ~8 GB | Usable but slow on CPU | llama.cpp (CPU) / Ollama |
-| **Gemma 4 12B** | 12B | Gemma | ~12 GB | Slow on CPU; fine for batch/offline | llama.cpp (CPU) |
-| **Qwen3 14B** | 14B | Apache 2.0 | ~14 GB | Only for high-RAM machines | llama.cpp (CPU) |
+| **MiniCPM5-2B** | 2.6B | Apache 2.0 | ~4 GB | 15–30 tok/s | llama.cpp (CPU) / Ollama |
+| **Qwen3 8B** | 8B | Apache 2.0 | ~8 GB | 5–15 tok/s | llama.cpp (CPU) / Ollama |
+| **Gemma 4 12B** | 12B | Gemma | ~12 GB | 3–8 tok/s | llama.cpp (CPU) |
+| **Qwen3 14B** | 14B | Apache 2.0 | ~14 GB | 2–5 tok/s | llama.cpp (CPU) |
 
-> CPU inference is memory-bandwidth bound — expect 5–15 tok/s for 8B-class, less for bigger. Use Q4 quant and a fast CPU build.
+> CPU inference is **memory-bandwidth bound** — expect 5–15 tok/s for 8B-class, less for bigger. Use Q4 quant and a fast CPU build (AVX-512 / AMX). Fine for batch/offline, not interactive.
 
 ---
 
@@ -95,6 +105,7 @@ Every figure below is **community-reported on X** (real benchmark posts, not ven
 | Model | Params | License | RAM | Measured t/s (X) | Engine |
 |---|---|---|---|---|---|
 | **Qwen3.8-27B** | 27B | Apache 2.0 | ~16 GB | **120–124 tok/s** (MLX 4-bit, TensorFold, Mac mini M6) | MLX / TensorFold |
+| **Qwen3.8-27B** | 27B | Apache 2.0 | ~16 GB | **87.9 tok/s** median, 971.8 tok/s prefill (M5 Max, mlx.fast) | MLX |
 | **Nemotron Lightning 30B-A3B** | 30B | NVIDIA | ~16 GB | **188–206 tok/s** (MLX 4-bit, TensorFold) | MLX / TensorFold |
 | **Qwen3.8-Flash-Next** | 125B/6B | Apache 2.0 | ~75 GB (1-bit) | **88–92 tok/s** (MLX 4-bit, TensorFold) | MLX / TensorFold |
 | **Gemma 4 12B** | 12B | Gemma | ~12 GB | **49.67 tok/s** (M1 Ultra VM) | MLX / llama.cpp (Metal) |
@@ -102,6 +113,36 @@ Every figure below is **community-reported on X** (real benchmark posts, not ven
 | **MiniCPM5-2B** | 2.6B | Apache 2.0 | ~4 GB | — | MLX / llama.cpp (Metal) |
 
 > On Apple Silicon, **MLX** is the fastest engine (Apple's native framework). Speculative decoding (TensorFold/DFlash) gives the biggest speedups because Macs are memory-bandwidth bound.
+
+---
+
+## 📈 Speed evolution over several months (the aggregation)
+
+How the same model got faster as inference engines improved — all community-measured on X:
+
+### Qwen3.8-27B on Apple Silicon (Metal)
+
+| Date | Engine | Hardware | Decode t/s | Prefill t/s |
+|---|---|---|---|---|
+| Jun 2026 | MLX (baseline) | M5 Max | ~26 | — |
+| Aug 2026 | mlx.fast (speculative) | M5 Max | **87.9** (median) | ~971.8 |
+| Sep 2026 | TensorFold (MLX 4-bit) | Mac mini M6 | **120–124** | — |
+
+> **3.3x in 7 days** (Aug), then another jump with TensorFold. Dense models on Mac went from "slow" to "usable" in one quarter — driven by custom MTP heads + speculative decoding, not new hardware.
+
+### Apple Silicon generation gap (prompt processing)
+
+| Chip | Prompt t/s |
+|---|---|
+| M4 | 210 |
+| M6 | **742** (253% faster) |
+
+### CUDA / multi-GPU (frontier-scale, for context)
+
+| Model | Setup | t/s |
+|---|---|---|
+| Qwen3-235B-A22B | 2× DGX Spark (256 GB) | 17 (b=1) / 36 (b=4) |
+| MiniMax-M3 | 2× DGX Spark | 13.7 prose / 15 code / 20 peak |
 
 ---
 
