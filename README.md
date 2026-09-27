@@ -1,33 +1,54 @@
 # Trending Local LLMs
 
-A curated, living list of open-weight large language models that actually make a difference for local deployment and self-hosting. The goal is to track models worth running yourself — not every release, just the ones that move the needle on quality, efficiency, or licensing.
+A curated, living list of **open-weight** LLMs that actually make a difference for local deployment — focused on the low end: models you can run effectively on a gaming laptop with an 8, 16, or 24 GB GPU.
 
-## Why this list exists
+The reference machine is an **RTX 4090 Laptop GPU (16 GB VRAM)** — the sweet spot for "run it on a gaming laptop." Speeds are marked **measured** (real benchmark runs) vs **estimated** (bandwidth-based projections). Always check the model card before trusting a number.
 
-Open-weight models are the only way to run LLMs fully on your own hardware, keep your data private, and avoid per-token API costs. This repo tracks the models that are genuinely worth watching: strong benchmarks, permissive licenses, and practical local deployment.
+## The low-end tier: 8 / 16 / 24 GB
 
-## The list
+### 8 GB VRAM — small cards, laptops, iGPU
 
-| Model | Provider | License | Params (total / active) | Why it matters |
-|---|---|---|---|---|
-| **DeepSeek-V4-Pro** | DeepSeek | MIT | 1.6T / 49B | Frontier-level coding and reasoning; fully open weights, unrestricted fine-tuning |
-| **DeepSeek-V4-Flash** | DeepSeek | MIT | 284B / 13B | Cheapest frontier-class inference; efficient MoE |
-| **DeepSeek-R1** | DeepSeek | MIT | 671B / 37B | The reasoning model that kicked off the open-R1 wave |
-| **GLM-5.2** | Zhipu AI | MIT | 753B / 40B | Best-in-class reasoning (GPQA Diamond 91.2%); 1M context |
-| **Kimi K2.6 / K2.7 Code** | Moonshot | Modified MIT | 1T / 32B | Strong agentic computer-use and long-running coding agents |
-| **MiniMax M3** | MiniMax | MiniMax Community | 428B / 23B | Top-tier real-world bug fixing (SWE-bench 80.5%) |
-| **Hunyuan Hy3** | Tencent | Apache 2.0 | 295B / 21B | Strong all-rounder under a clean Apache license |
-| **Step-3.7-Flash** | Stepfun | Apache 2.0 | 198B / 11B | Low-cost algorithmic tasks; Apache 2.0 |
-| **Qwen3.6-27B** | Qwen | Apache 2.0 | 27B / 27B | Best practical model for 24GB systems; coding + tool calling |
-| **Nemotron 3 Super / Ultra** | NVIDIA | OpenMDW-1.1 | 550B / 55B | Open weights, datasets, and training recipes; auditable agents |
-| **Gemma 4** | Google | Gemma / Apache 2.0 | 12B / 31B | Best single-GPU and laptop/edge deployment |
-| **Mistral Small 4** | Mistral | Apache 2.0 | 119B / 6B | Enterprise multilingual, multimodal, document workflows |
-| **LLaMA 4** | Meta | Llama License | — | The reference open-weight family; huge ecosystem |
+| Model | Params | License | VRAM (Q4) | Speed | Notes |
+|---|---|---|---|---|---|
+| **Qwen3 8B** | 8B | Apache 2.0 | ~4–8 GB | ~117 tok/s (est, 24 GB card) | The default 8 GB pick; strong general use |
+| **Gemma 4 E2B** | 2B | Gemma | ~2 GB | — | Best tiny model; runs on iGPU/edge |
+| **Phi-4-mini** | 3.8B | MIT | ~3 GB | — | Best CPU-only / low-RAM option |
+| **Gemma 3 4B** | 4B | Gemma | ~3 GB | — | Solid entry point for 8 GB laptops |
+
+### 16 GB VRAM — RTX 4090 Laptop, RTX 4080, RTX 3090 (your tier)
+
+| Model | Params | License | VRAM | Speed | Notes |
+|---|---|---|---|---|---|
+| **Gemma 4 12B it** | 12B | Gemma | 8.6 GB @32k | **99.7 tok/s** (measured, RTX 4090 Laptop) | Best tested all-rounder for 16 GB |
+| **Qwen3 14B** | 14B | Apache 2.0 | ~8–9 GB | ~65 tok/s (est) | Sweet spot for coding & analysis |
+| **DeepSeek-R1-Distill-14B** | 14B | MIT | ~9–10 GB | — | Reasoning-focused; strong math |
+| **Qwen3.5 35B-A3B** (MoE) | 35B | Apache 2.0 | ~16 GB (Q4) | — | Best quality that still fits 16 GB; use Q4_K_XL |
+| **Qwen3.8-27B** | 27B | Apache 2.0 | 18.2 GB @32k | — | Fits 16 GB only at reduced context |
+
+### 24 GB VRAM — RTX 4090 desktop, RTX 3090, RX 7900 XTX
+
+| Model | Params | License | VRAM | Speed | Notes |
+|---|---|---|---|---|---|
+| **Gemma 4 26B-A4B** (MoE) | 26B | Gemma | ~16 GB | ~85 tok/s (est) | Best balance on 24 GB; vision + tools |
+| **LFM2 24B-A2B** (MoE) | 24B | — | ~16 GB | ~118 tok/s (est) | Fastest MoE in this class |
+| **GPT-OSS 20B** | 20B | — | ~16 GB | ~87 tok/s (est) | Strong open alternative |
+| **Qwen3.8 27B** | 27B | Apache 2.0 | ~18 GB | ~37 tok/s (est) | Frontier-adjacent quality |
+| **Qwen3 32B** | 32B | Apache 2.0 | ~17 GB (INT4) | ~32 tok/s (est) | Strong general-purpose default |
+| **Gemma 4 31B** | 31B | Gemma | ~24 GB | — | Frontier-adjacent (AIME 89.2%, GPQA 84.3%) |
+| **Mistral Small 4** | 119B/6B | Apache 2.0 | ~24 GB | — | Enterprise multilingual, multimodal |
+
+## Picks by goal
+
+- **Best all-rounder on a 16 GB gaming laptop:** Gemma 4 12B it (~100 tok/s measured)
+- **Best coding on 16 GB:** Qwen3 14B
+- **Best quality that still fits 16 GB:** Qwen3.5 35B-A3B (MoE, Q4)
+- **Best on 24 GB:** Gemma 4 26B-A4B
+- **Best tiny / CPU-only:** Phi-4-mini, Gemma 4 E2B
 
 ## How to contribute
 
 - Open a PR adding a model that genuinely changes the local-LLM landscape.
-- Include: provider, license, parameter count, and one line on why it matters.
+- Include: provider, license, params, VRAM, and a **measured** t/s figure with the hardware it was run on (label estimates as such).
 - Keep it to models with **open weights** and a **permissive or practical license** — no API-only models.
 
 ## License
