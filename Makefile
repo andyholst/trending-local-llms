@@ -27,9 +27,10 @@ HERMES_MODEL := deepseek/deepseek-v4-flash-0731
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # Raise the per-reply output cap. The deepseek model was truncating its reply
 # mid-search (hit the default max_tokens), dropping the incomplete action and
-# failing `make refresh` at `_search-general`. Give it headroom to finish a
-# multi-query Firecrawl search and write its payload.
-HERMES_MAX_TOKENS := 8000
+# failing `make refresh`. At 8000 the heavier Metal/General searches still
+# truncated mid-payload; 16000 gives headroom (the model card supports far
+# higher). Keep as a single variable so CI and local runs agree.
+HERMES_MAX_TOKENS := 16000
 
 ## ---------------------------------------------------------------------------
 ## Build the image (do this once; CI does it in its own cached step)
