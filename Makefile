@@ -137,6 +137,23 @@ _requirements:
 ## Public targets — EVERYTHING runs inside the Docker container
 ## ---------------------------------------------------------------------------
 
+# Soft-validation refresh: gather + merge are HARD (a broken merge must abort),
+# but validation/testing failures are recorded and reported, NOT fatal. This
+# lets the CI "Commit + open PR" step always land the merged data as a PR so
+# qa-validate can flag issues and fix-bot can repair them on the PR branch.
+# If validation were fatal here, a data-quality problem would abort refresh
+# before any PR is opened and nobody could ever review or fix it.
+.PHONY: _refresh
+_refresh:
+	@echo "== _setup =="; make _setup || exit 1
+	@echo "== _search =="; make _search || exit 1
+	@echo "== _merge =="; make _merge || exit 1
+	@echo "== _validate (soft) =="; make _validate || echo "[refresh] _validate reported issues (see above); opening PR for review"
+	@echo "== _validate-search (soft) =="; make _validate-search || echo "[refresh] _validate-search reported issues (see above)"
+	@echo "== _validate-mapped (soft) =="; make _validate-mapped || echo "[refresh] _validate-mapped reported issues (see above)"
+	@echo "== _test (soft) =="; make _test || echo "[refresh] _test reported failures (see above)"
+	@echo "== refresh complete (data landed; validation findings reported above) =="
+
 .PHONY: setup
 setup:
 	$(DOCKER_RUN) make _setup
@@ -207,7 +224,7 @@ requirements:
 
 .PHONY: refresh
 refresh:
-	$(DOCKER_RUN) sh -c "make _setup && make _search && make _merge && make _validate && make _validate-search && make _validate-mapped && make _test"
+	$(DOCKER_RUN) make _refresh
 
 .PHONY: all
 all: refresh
