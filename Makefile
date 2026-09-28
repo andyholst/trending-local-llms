@@ -25,6 +25,11 @@ DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 
 HERMES_MODEL := deepseek/deepseek-v4-flash-0731
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
+# Raise the per-reply output cap. The deepseek model was truncating its reply
+# mid-search (hit the default max_tokens), dropping the incomplete action and
+# failing `make refresh` at `_search-general`. Give it headroom to finish a
+# multi-query Firecrawl search and write its payload.
+HERMES_MAX_TOKENS := 8000
 
 ## ---------------------------------------------------------------------------
 ## Build the image (do this once; CI does it in its own cached step)
@@ -52,6 +57,7 @@ _setup:
 	hermes config set model.aliases.nous-deepseek.provider custom
 	hermes config set model.aliases.nous-deepseek.base_url $(NOUS_BASE)
 	hermes config set model.aliases.nous-deepseek.key_env NOUS_API_KEY
+	hermes config set model.aliases.nous-deepseek.max_tokens $(HERMES_MAX_TOKENS)
 
 .PHONY: _search-nvidia
 _search-nvidia:
