@@ -234,7 +234,7 @@ def render_readme(store: dict, today: datetime) -> str:
     for i, m in enumerate(models, 1):
         cu, me = eng_cells(m)
         rows.append(
-            f"| {i} | **{m['name']}** | {m['full_name']} | [link](https://huggingface.co/{m['hf']}) "
+            f"| {i} | **{m['name']}** | {m.get('full_name', m.get('name',''))} | [link](https://huggingface.co/{m['hf']}) "
             f"| {m.get('why','')} | {cu} | {me} | {m.get('vram_tier','—')} | {fmt_engines(m)} |"
         )
     most_loved = "\n".join(rows)
@@ -421,8 +421,8 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
                 )
                 updated += 1
             else:
-                by_id[mid] = m
-                store["models"].append(m)
+                by_id[mid] = normalize_model(m, store)
+                store["models"].append(by_id[mid])
                 added += 1
     return added, updated
 
@@ -472,6 +472,52 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
         else:
             out.append(inc)
     return out
+
+
+_REQ_ENGINE_FIELDS = ("engine", "tps", "date")
+
+
+def _slug(name: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
+    return s or "unknown"
+
+
+def normalize_model(m: dict, store: dict) -> dict:
+    """Fill contract-required fields on a model taken from a raw search snapshot,
+    using only data already present (never invents t/s figures). Mirror of
+    scripts/self_correct_raw.py but applied AT INGEST so a raw snapshot missing
+    derived fields (e.g. full_name, license, vram_min, backends) cannot crash
+    render_readme or produce a schema-non-conforming store."""
+    m = dict(m)
+    m.setdefault("id", _slug(m.get("name", "")))
+    m.setdefault("full_name", m.get("name", ""))
+    m.setdefault("license", "Unknown")
+    m.setdefault("params", "unknown")
+    m.setdefault("type", m.get("type") or "LLM")
+    m.setdefault("vram_tier", m.get("vram_min", ""))
+    tiers = [x for x in [m.get("vram_tier"), m.get("vram_min")] if x]
+    vm = re.search(r"(\d+)\s*GB", (tiers[0] if tiers else "") or "")
+    m.setdefault("vram_min", m["vram_tier"])
+    if vm and not m.get("vram_min"):
+        m["vram_min"] = f"{vm.group(1)}GB"
+    engs = [e for e in m.get("engines", []) if e.get("engine")]
+    backends = []
+    for e in engs:
+        b = store.get("engines", {}).get(e.get("engine"), {}).get("backend", "")
+        for cand in ("CUDA", "Metal", "CPU"):
+            if cand in b and cand not in backends:
+                backends.append(cand)
+    m.setdefault("backends", backends or ["CUDA"])
+    m.setdefault("supported_engines", [e.get("engine") for e in engs if e.get("engine")])
+    m.setdefault("why", m.get("why") or (m.get("full_name", m.get("name", "")) + " — see source posts."))
+    m.setdefault("formats", [{"name": m.get("name", ""), "hf": m.get("hf", "")}])
+    eng = m.setdefault("engagement", {})
+    for k in ("likes", "comments", "views", "last_7d_likes"):
+        eng.setdefault(k, 0)
+    # scrub incomplete engine rows (missing tps or engine identity) so schema passes
+    m["engines"] = [e for e in engs if all(e.get(f) is not None for f in _REQ_ENGINE_FIELDS)]
+    return m
+
 
 
 def main() -> int:
