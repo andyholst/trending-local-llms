@@ -189,12 +189,45 @@ def test_render_newest_tps_first():
     check("sort_models orders engines newest-date-first", dates == sorted(dates, reverse=True))
 
 
+def test_ingest_normalizes_missing_derived_fields():
+    """A raw snapshot whose new model omits derived-but-contract-required fields
+    (full_name, license, params, vram_min, backends, supported_engines, formats,
+    engagement) MUST be normalized at ingest — it must not crash render_readme
+    with KeyError and must produce a schema-conforming store. Regression for the
+    refresh-bot '_merge' KeyError:'full_name' failure."""
+    s = base_store()
+    raw = raw_snapshot("nvidia", [{
+        # intentionally missing full_name / license / params / vram_min /
+        # backends / supported_engines / formats / engagement
+        "id": "brand-new", "name": "BrandNew", "type": "LLM",
+        "hf": "org/brand-new", "vram_tier": "12GB",
+        "engines": [{"engine": "llama.cpp", "tps": "80", "hardware": "RTX 4090",
+                     "date": "2026-09-28", "source_post": "https://lightbrd.com/5"}],
+    }])
+    run(s, [raw])
+    nm = next(x for x in s["models"] if x["id"] == "brand-new")
+    check("ingest fills full_name <- name", nm.get("full_name") == "BrandNew")
+    check("ingest fills license <- 'Unknown'", nm.get("license") == "Unknown")
+    check("ingest fills params <- 'unknown'", nm.get("params") == "unknown")
+    check("ingest derives vram_min from vram_tier", nm.get("vram_min") == "12GB")
+    check("ingest derives backends from engine", nm.get("backends") == ["CUDA"])
+    check("ingest fills supported_engines", nm.get("supported_engines") == ["llama.cpp"])
+    check("ingest provides formats", isinstance(nm.get("formats"), list) and nm["formats"])
+    check("ingest defaults engagement counters",
+          nm.get("engagement", {}).get("last_7d_likes") == 0)
+    # must not crash and must render BrandNew's full_name
+    readme = UT.render_readme(s, datetime(2026, 9, 28, tzinfo=timezone.utc))
+    check("render does not crash on normalized model", "BrandNew" in readme)
+
+
+
 def main() -> int:
     print("integration: raw snapshot -> models.json -> README")
     test_ingest_maps_and_adds_per_engine()
     test_ingest_updates_existing_engine_ts()
     test_ingest_different_date_is_new_row()
     test_ingest_new_model_no_removal()
+    test_ingest_normalizes_missing_derived_fields()
     test_render_shows_per_engine_ts()
     test_render_newest_tps_first()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
