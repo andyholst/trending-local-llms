@@ -1,0 +1,375 @@
+{
+  "generated_utc": "2026-09-28T11:17:17Z",
+  "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
+  "engines": {
+    "llama.cpp": {
+      "backend": "CUDA / CPU / Metal",
+      "note": "Max control, custom quants",
+      "url": "https://github.com/ggml-org/llama.cpp"
+    },
+    "Ollama": {
+      "backend": "CUDA / CPU / Metal",
+      "note": "Easiest start",
+      "url": "https://github.com/ollama/ollama"
+    },
+    "FreeToken": {
+      "backend": "CUDA",
+      "note": "Big MoE on small GPUs",
+      "url": "https://github.com/FlashML-org/FreeToken"
+    },
+    "vLLM": {
+      "backend": "CUDA",
+      "note": "Production serving, high throughput",
+      "url": "https://github.com/vllm-project/vllm"
+    },
+    "SGLang": {
+      "backend": "CUDA",
+      "note": "High-throughput serving",
+      "url": "https://github.com/sgl-project/sglang"
+    },
+    "MLX": {
+      "backend": "Metal",
+      "note": "Fastest on Apple Silicon",
+      "url": "https://github.com/ml-explore/mlx"
+    },
+    "TensorFold": {
+      "backend": "Metal",
+      "note": "Speculative decoding on Mac, 3-6x",
+      "url": "https://github.com/ashhart/TensorFold"
+    },
+    "TensorRT-LLM": {
+      "backend": "CUDA",
+      "note": "Max NVIDIA perf",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM"
+    },
+    "LiteRT": {
+      "backend": "CUDA / Metal",
+      "note": "Google local runtime",
+      "url": "https://github.com/google-ai-edge/LiteRT"
+    },
+    "Strata": {
+      "backend": "CUDA",
+      "note": "Runs big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA GPUs; experts across GPU/RAM/SSD, speculative decoding ~1.6-1.8x",
+      "url": "https://github.com/Niko1221/Strata"
+    },
+    "MLX-fast (Bonsai 2)": {
+      "backend": "Metal",
+      "note": "Speedup benchmark engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s decode on 16 GB Mac (mlx.fast, Yukon/Layr-Labs)",
+      "url": "https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine"
+    },
+    "DFlash2": {
+      "backend": "CUDA",
+      "note": "Speculative decoding + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat, up to ~381 tok/s context-lookup on 24 GB RTX 3090",
+      "url": "https://github.com/z-lab/dflash"
+    }
+  },
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        "GGUF",
+        "MLX"
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "67-71",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "MTP head",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/sudoingX"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 5090",
+          "quant": "ternary",
+          "date": "2026-09-18",
+          "source_post": "https://siliconangle.com/2026/09/18/prismml-launches-bonsai-2-27b-a-high-intelligence-ai-model-so-small-it-fits-on-consumer-hardware/"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "60-91",
+          "hardware": "RTX 4070 12GB",
+          "quant": "PTQ1_0-mtp-lean (6.3 GB)",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/MarkRijckenberg"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "~50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "MTP + kernel fix",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "~237 decode",
+          "hardware": "Apple Silicon 16GB Mac",
+          "quant": "mlx.fast 4-bit",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg"
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards.",
+      "engagement": {
+        "likes": 2750,
+        "comments": 640,
+        "views": 84563,
+        "last_7d_likes": 1420
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        "GGUF"
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-124",
+          "hardware": "MacBook Pro M5 Max",
+          "quant": "4-bit MLX",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "35.5-43.7",
+          "hardware": "RTX 5090 Laptop",
+          "quant": "Q4_K_M",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "engagement": {
+        "likes": 4120,
+        "comments": 890,
+        "views": 384000,
+        "last_7d_likes": 1240
+      },
+      "last_seen": "2026-09-20"
+    },
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "formats": [
+        "GGUF"
+      ],
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "9GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "65",
+          "hardware": "RTX 3090",
+          "quant": "Q4_K_M",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "2M HF downloads. The community mid-size favorite.",
+      "engagement": {
+        "likes": 2310,
+        "comments": 410,
+        "views": 152000,
+        "last_7d_likes": 680
+      },
+      "last_seen": "2026-09-15"
+    },
+    {
+      "id": "gemma-4-12b",
+      "name": "Gemma 4 12B",
+      "full_name": "gemma-4-12B-it",
+      "type": "LLM",
+      "formats": [
+        "GGUF"
+      ],
+      "license": "Gemma",
+      "params": "12B",
+      "hf": "google/gemma-4-12B-it",
+      "vram_tier": "9GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "99.7",
+          "hardware": "RTX 4090 Laptop",
+          "quant": "Q4",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "49.67",
+          "hardware": "Apple Silicon",
+          "quant": "Q4",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "Best overall personal-agent model. Multimodal + audio, 256K ctx.",
+      "engagement": {
+        "likes": 1980,
+        "comments": 350,
+        "views": 98000,
+        "last_7d_likes": 540
+      },
+      "last_seen": "2026-09-19"
+    },
+    {
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "full_name": "Qwen3-8B",
+      "type": "LLM",
+      "formats": [
+        "GGUF"
+      ],
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "Qwen/Qwen3-8B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "100",
+          "hardware": "RTX 4060",
+          "quant": "Q4_K_M",
+          "date": "2026-09-12",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "The default 8 GB pick. Fast, Apache 2.0.",
+      "engagement": {
+        "likes": 1650,
+        "comments": 290,
+        "views": 84000,
+        "last_7d_likes": 410
+      },
+      "last_seen": "2026-09-12"
+    },
+    {
+      "id": "qwen-3.6-27b",
+      "name": "Qwen 3.6 27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "formats": [
+        "GGUF"
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "18GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "37",
+          "hardware": "RTX 3090",
+          "quant": "Q4_K_M",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "Strongest local coding model (SWE-bench 77.2%).",
+      "engagement": {
+        "likes": 1210,
+        "comments": 215,
+        "views": 61000,
+        "last_7d_likes": 240
+      },
+      "last_seen": "2026-09-10"
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "full_name": "Muse-Glimmer-30B",
+      "type": "LLM (4-bit)",
+      "formats": [
+        "GGUF"
+      ],
+      "license": "Apache 2.0",
+      "params": "30B",
+      "hf": "meta/Muse-Glimmer-30B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "233 (DFlash spec-decode), 74.9 stock",
+          "hardware": "RTX 5090",
+          "quant": "4-bit",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/rohanpaul_ai"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "M5 Max (Apple Silicon)",
+          "quant": "4-bit",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/rohanpaul_ai"
+        }
+      ],
+      "why": "Meta Superintelligence 30B agentic model, Apache 2.0. Fits 24/32 GB at 4-bit (<20GB weights + KV + vision + spec draft). DFlash drafter gives 3.1x decode on RTX 5090.",
+      "engagement": {
+        "likes": 1890,
+        "comments": 310,
+        "views": 12280,
+        "last_7d_likes": 520
+      },
+      "last_seen": "2026-08-10"
+    }
+  ]
+}

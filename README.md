@@ -1,244 +1,91 @@
 # Trending Local LLMs
 
-A living, detailed list of **open-weight** LLMs that actually make a difference for local deployment. Every figure is **community-reported on X** (real benchmark posts, not vendor claims), with the hardware it was measured on. Data spans **June–September 2026**.
+A living, detailed list of **open-weight** LLMs that actually make a difference for local deployment. Every figure is **community-reported on X** (real benchmark posts, not vendor claims), with the hardware and engine it was measured on. This README is **automatically regenerated** from `data/models.json` — see [AGENTS.md](AGENTS.md) and `skills/gather-data.md`.
 
-**Ranked by what people actually love on X** (likes, comments, views, HF downloads) — not by benchmark scores. Within each tier, models are sorted by **highest t/s**, with the **one specific engine** that runs them best and the **VRAM required**.
+**Ranked by 7-day X engagement** (likes/comments/views), retained through a 30-day window. Within a rank, models sort by **highest t/s** with the **one engine** that produced it. t/s is always shown **per engine**.
+
+> Last generated: 2026-09-28 13:08 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
-## ❤️ Most loved open-weight models on X (ranked by engagement)
+## ❤️ Most loved open-weight models on X (ranked by 7-day engagement)
 
-| # | Model | Full name | HF link | Why people love it | CUDA t/s | Metal t/s | VRAM | Engine |
+| # | Model | Full name | HF link | Why people love it | CUDA t/s (engine) | Metal t/s (engine) | VRAM | Engines + t/s |
 |---|---|---|---|---|---|---|---|---|
-| 1 | **Qwen3.8-27B** | Qwen3.8-27B-Instruct | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | The flagship local model. 384K views on release. 262K ctx (1M via YaRN), Apache 2.0. | **35.5–43.7 tok/s** (RTX 5090 Laptop) | **120–124 tok/s** | 16 GB | TensorFold |
-| 2 | **Qwen3 14B** | Qwen3-14B | [link](https://huggingface.co/Qwen/Qwen3-14B) | 2M HF downloads. The community mid-size favorite — "the little engine that fucks." | ~65 tok/s | — | 9 GB | Ollama |
-| 3 | **Gemma 4 12B** | gemma-4-12B-it | [link](https://huggingface.co/google/gemma-4-12B-it) | "Best overall personal-agent model." Multimodal + audio, 256K ctx. | **99.7 tok/s** (RTX 4090 Laptop) | 49.67 tok/s | 9 GB | llama.cpp |
-| 4 | **Qwen3 8B** | Qwen3-8B | [link](https://huggingface.co/Qwen/Qwen3-8B) | The default 8 GB pick. Fast, Apache 2.0. | ~100+ tok/s | — | 4–8 GB | Ollama |
-| 5 | **Qwen 3.6 27B** | Qwen3.6-27B | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | "Strongest local coding model" (SWE-bench 77.2%). | **~37 tok/s**, 60–80 MTP | ~17 tok/s | 18 GB | llama.cpp |
-| 6 | **Bonsai 2** | Ternary-Bonsai-2-27B | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 27B in 5.9 GB (ternary), 98.2% of full-precision. Viral — 4K downloads in 3 days. | ~50 tok/s | — | 6 GB | llama.cpp |
-| 7 | **Qwen3.8-Flash-Next** | Qwen3.8-Flash-Next | [link](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) | Vitalik runs it locally. 125B/6B MoE, 262K ctx. | **121 tok/s** (c=1, vLLM) | **88–92 tok/s** | 75 GB | TensorFold |
-| 8 | **DeepSeek-R1 32B** | DeepSeek-R1-Distill-Qwen-32B | [link](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B) | "Strongest local reasoning." MIT. | — | — | 20 GB | llama.cpp |
-| 9 | **Qwen3.5 35B-A3B** | Qwen3.5-35B-A3B | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | MoE (3B active) — big-model quality at small-model speed. | **~100+ tok/s** | — | 21 GB | llama.cpp |
-| 10 | **Gemma 4 26B A4B** | gemma-4-26B-A4B | [link](https://huggingface.co/google/gemma-4-26B-A4B) | MoE (4B active). Powers Google's Antigravity SDK agents. | 22.9 tok/s | — | 16 GB | llama.cpp |
-| 11 | **MiniCPM5-2B** | MiniCPM5-2B | [link](https://huggingface.co/openbmb/MiniCPM5-2B) | Highest Intelligence Index of any <4B open model. Best tiny pick. | — | — | 2 GB | llama.cpp |
-| 12 | **gpt-oss-20b** | gpt-oss-20b | [link](https://huggingface.co/openai/gpt-oss-20b) | OpenAI's open model. Can't disable thinking → slower. | — | — | 16 GB | llama.cpp |
-| 13 | **Qwen3 32B** | Qwen3-32B | [link](https://huggingface.co/Qwen/Qwen3-32B) | Strong general-purpose default for 24 GB. | ~32 tok/s | — | 20 GB | llama.cpp |
-| 14 | **Nemotron Lightning 30B-A3B** | NVIDIA-Nemotron-3.5-Lightning-30B-A3B | [link](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) | Fastest MoE on Mac. | — | **188–206 tok/s** | 16 GB | TensorFold |
-| 15 | **GLM-5.2** | GLM-5.2 | [link](https://huggingface.co/zai-org/GLM-5.2) | Frontier-scale open reasoning (753B). | **120 tok/s** (6× PRO 6000) | 15–20 tok/s | 410 GB | vLLM |
-| 16 | **DeepSeek-V4-Flash** | DeepSeek-V4-Flash | [link](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash) | 284B MoE, cheap frontier-class inference. | **22 tok/s** (32 GB) | — | 32 GB | FreeToken |
-| 17 | **Kimi K2.5** | Kimi-K2.5 | [link](https://huggingface.co/moonshotai/Kimi-K2.5) | 1T MoE, frontier agentic. | — | 5–10 tok/s | 512 GB | MLX |
-| 18 | **Qwen3.8-Max** | Qwen3.8-2.4T-A95B | [link](https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B) | 2.4T flagship, 1M ctx. | — | — | 1 TB+ | vLLM |
-| 19 | **Mach-1 Additive** | Mach-1-Additive-35B | [link](https://huggingface.co/SyzygyResearch/Mach-1-Additive-35B) | 35B, 1.7-bit additive math — runs in-browser. | — | — | 18 GB | llama.cpp |
+| 1 | **Bonsai 2 27B** | Ternary-Bonsai-2-27B | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards. | 67-71 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 5060 Ti 16GB, MTP head)<br>60-91 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 4070 12GB, PTQ1_0-mtp-lean (6.3 GB))<br>~50 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 3060 12GB, MTP + kernel fix)<br>143 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 5090, ternary) | ~237 decode ([MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine), Apple Silicon 16GB Mac, mlx.fast 4-bit) | 12GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 67-71 (2026-09-27); [llama.cpp](https://github.com/ggml-org/llama.cpp) 60-91 (2026-09-26); [llama.cpp](https://github.com/ggml-org/llama.cpp) ~50 (2026-09-26); [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) ~237 decode (2026-09-26); [llama.cpp](https://github.com/ggml-org/llama.cpp) 143 (2026-09-18) |
+| 2 | **Qwen3.8-27B** | Qwen3.8-27B-Instruct | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | Flagship local model. 384K views on release. 262K ctx (1M via YaRN). | 35.5-43.7 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 5090 Laptop, Q4_K_M) | 120-124 ([TensorFold](https://github.com/ashhart/TensorFold), MacBook Pro M5 Max, 4-bit MLX) | 16GB | [TensorFold](https://github.com/ashhart/TensorFold) 120-124 (2026-09-20); [llama.cpp](https://github.com/ggml-org/llama.cpp) 35.5-43.7 (2026-09-18) |
+| 3 | **Qwen3 14B** | Qwen3-14B | [link](https://huggingface.co/Qwen/Qwen3-14B) | 2M HF downloads. The community mid-size favorite. | 65 ([Ollama](https://github.com/ollama/ollama), RTX 3090, Q4_K_M) | — | 9GB | [Ollama](https://github.com/ollama/ollama) 65 (2026-09-15) |
+| 4 | **Gemma 4 12B** | gemma-4-12B-it | [link](https://huggingface.co/google/gemma-4-12B-it) | Best overall personal-agent model. Multimodal + audio, 256K ctx. | 99.7 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 4090 Laptop, Q4) | 49.67 ([llama.cpp](https://github.com/ggml-org/llama.cpp), Apple Silicon, Q4) | 9GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 99.7 (2026-09-19); [llama.cpp](https://github.com/ggml-org/llama.cpp) 49.67 (2026-09-19) |
+| 5 | **Qwen3 8B** | Qwen3-8B | [link](https://huggingface.co/Qwen/Qwen3-8B) | The default 8 GB pick. Fast, Apache 2.0. | 100 ([Ollama](https://github.com/ollama/ollama), RTX 4060, Q4_K_M) | — | 8GB | [Ollama](https://github.com/ollama/ollama) 100 (2026-09-12) |
+| 6 | **Qwen 3.6 27B** | Qwen3.6-27B | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | Strongest local coding model (SWE-bench 77.2%). | 37 ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 3090, Q4_K_M) | — | 18GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 37 (2026-09-10) |
+| 7 | **Muse Glimmer 30B** | Muse-Glimmer-30B | [link](https://huggingface.co/meta/Muse-Glimmer-30B) | Meta Superintelligence 30B agentic model, Apache 2.0. Fits 24/32 GB at 4-bit (<20GB weights + KV + vision + spec draft). DFlash drafter gives 3.1x decode on RTX 5090. | 233 (DFlash spec-decode), 74.9 stock ([llama.cpp](https://github.com/ggml-org/llama.cpp), RTX 5090, 4-bit) | 50 ([llama.cpp](https://github.com/ggml-org/llama.cpp), M5 Max (Apple Silicon), 4-bit) | 24GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 233 (DFlash spec-decode), 74.9 stock (2026-08-10); [llama.cpp](https://github.com/ggml-org/llama.cpp) 50 (2026-08-10) |
 
 ---
 
-# 🟦 CUDA — NVIDIA GPUs
+# 🟦 CUDA — NVIDIA GPUs (8–48 GB)
 
-## 6 GB VRAM
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Gemma 4 12B** (TurboQuant) | 12B | Gemma | [link](https://huggingface.co/google/gemma-4-12B-it) | ~6 GB | **30 tok/s** (RTX 4060 8 GB) | llama.cpp (TurboQuant) |
-| **MiniCPM5-2B** | 2.6B | Apache 2.0 | [link](https://huggingface.co/openbmb/MiniCPM5-2B) | ~2 GB | — | llama.cpp |
-
-## 8 GB VRAM
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen3 8B** | 8B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-8B) | ~4–8 GB | ~100+ tok/s | Ollama |
-| **Qwen 3.6 35B-A3B** (MoE) | 35B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | ~8 GB | **39.3 tok/s** (FreeToken) | FreeToken |
-| **Gemma 4 12B** (IQ4_XS) | 12B | Gemma | [link](https://huggingface.co/google/gemma-4-12B-it) | ~8 GB | **57.5 tok/s** (RTX 3080 10 GB) | llama.cpp |
-| **MiniCPM5-2B** | 2.6B | Apache 2.0 | [link](https://huggingface.co/openbmb/MiniCPM5-2B) | ~2 GB | — | llama.cpp |
-
-## 12 GB VRAM
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Bonsai 2** (Qwen3.8-27B ternary) | 27B | Apache 2.0 | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | ~6 GB | **~50 tok/s** (RTX 3060 12 GB) | llama.cpp |
-| **Qwen3.8-27B** (Mirai 2.4-bit) | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | ~12 GB | **~40 tok/s** decode, ~1,000 prefill | llama.cpp (Mirai) |
-| **Qwen3 14B** | 14B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-14B) | ~9 GB | — | Ollama |
-
-## 16 GB VRAM
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Gemma 4 12B** | 12B | Gemma | [link](https://huggingface.co/google/gemma-4-12B-it) | ~9 GB | **99.7 tok/s** (RTX 4090 Laptop) | llama.cpp |
-| **Qwen3.8-27B** (Mirai 2.4-bit) | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | ~15 GB | **85 tok/s** code, 57 prose | llama.cpp (Mirai) |
-| **Qwen3 14B** | 14B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-14B) | ~9 GB | ~65 tok/s (est) | Ollama |
-| **Bonsai 2** (Qwen3.8-27B ternary) | 27B | Apache 2.0 | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | ~6 GB | ~50 tok/s | llama.cpp |
-
-## 24 GB VRAM
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen 3.6 35B-A3B** (MoE) | 35B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | ~21 GB | **~100+ tok/s** (RTX 3090) | llama.cpp |
-| **Qwen3.8-27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | ~16 GB | **35.5–43.7 tok/s** decode, 1,150–1,190 prefill (RTX 5090 Laptop) | llama.cpp |
-| **Qwen 3.6 27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | ~18 GB | **~37 tok/s**, 60–80 MTP | llama.cpp |
-| **Qwen3 32B** | 32B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-32B) | ~20 GB | ~32 tok/s (est) | llama.cpp |
-| **DeepSeek-R1 32B** | 32B | MIT | [link](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B) | ~20 GB | — | llama.cpp |
-| **Gemma 4 26B A4B** (MoE) | 26B | Gemma | [link](https://huggingface.co/google/gemma-4-26B-A4B) | ~16 GB | **22.9 tok/s** (IQ2_M) | llama.cpp |
-
-## 32 GB VRAM (RTX 5090, Arc Pro B70)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen 3.6 35B-A3B** (MoE) | 35B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | ~21 GB | **54.7 tok/s** (Arc Pro B70) | vLLM |
-| **DeepSeek-V4-Flash** | 284B | MIT | [link](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash) | ~32 GB | **22 tok/s** | FreeToken |
-| **Qwen 3.6 27B** (Q8) | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | ~24 GB | — | vLLM |
-
-## 48 GB VRAM (RTX 6000 Ada, 2× RTX 3090)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Nemotron-3-Super 120B** (Q3) | 120B | NVIDIA | [link](https://huggingface.co/collections/nvidia/nvidia-nemotron-v3) | ~58 GB | — | llama.cpp |
-
-## 64 GB VRAM (4× RX 9070 XT — tinybox)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **70B-class** (Q4) | 70B | varies | — | ~40 GB | — | tinygrad |
-
-## 96 GB VRAM (RTX PRO 6000 Blackwell)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **GLM-5.2** | 753B | MIT | [link](https://huggingface.co/zai-org/GLM-5.2) | ~96 GB | **14.9 tok/s** | FreeToken |
-| **Nemotron-3-Super 120B** (Q4) | 120B | NVIDIA | [link](https://huggingface.co/collections/nvidia/nvidia-nemotron-v3) | ~70 GB | — | llama.cpp |
-
-## 128 GB VRAM (2× RTX PRO 6000)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen3-235B-A22B** (MoE) | 235B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-235B-A22B) | ~128 GB | — | vLLM |
-
-## 256 GB VRAM (2× DGX Spark)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen3-235B-A22B** (MoE) | 235B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-235B-A22B) | ~128 GB | **17 tok/s** (b=1), 36 (b=4) | vLLM |
-| **MiniMax-M3** (MoE) | 428B | MiniMax | [link](https://huggingface.co/MiniMaxAI/MiniMax-M3) | ~189 GB | **13.7 tok/s** prose, 15 code, 20 peak | vLLM |
-
-## 384 GB VRAM (4× RTX PRO 6000)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen3.5-397B-A17B** (MoE) | 397B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.5-397B-A17B) | ~384 GB | **152 tok/s** (MTP5) | vLLM |
-| **MiniMax-M2.5** (MoE) | 456B | MiniMax | [link](https://huggingface.co/MiniMaxAI/MiniMax-M2.5) | ~384 GB | **85–89 tok/s** | vLLM |
-
-## 512 GB VRAM (4× DGX Spark)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **GLM-5.2** | 753B | MIT | [link](https://huggingface.co/zai-org/GLM-5.2) | ~410 GB | **22–24 tok/s**, ~28 agentic | vLLM |
-
-## 576 GB VRAM (6× RTX PRO 6000)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **GLM-5.2** | 753B | MIT | [link](https://huggingface.co/zai-org/GLM-5.2) | ~410 GB | **120 tok/s** | vLLM |
+| Model | Params | License | HF | VRAM | t/s per engine |
+|---|---|---|---|---|---|
+| **Muse Glimmer 30B** | 30B | Apache 2.0 | [link](https://huggingface.co/meta/Muse-Glimmer-30B) | 24GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 233 (DFlash spec-decode), 74.9 stock (2026-08-10) |
+| **Bonsai 2 27B** | 27B | Apache 2.0 | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 12GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 67-71 (2026-09-27); [llama.cpp](https://github.com/ggml-org/llama.cpp) 60-91 (2026-09-26); [llama.cpp](https://github.com/ggml-org/llama.cpp) ~50 (2026-09-26); [llama.cpp](https://github.com/ggml-org/llama.cpp) 143 (2026-09-18) |
+| **Qwen3 8B** | 8B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-8B) | 8GB | [Ollama](https://github.com/ollama/ollama) 100 (2026-09-12) |
+| **Gemma 4 12B** | 12B | Gemma | [link](https://huggingface.co/google/gemma-4-12B-it) | 9GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 99.7 (2026-09-19) |
+| **Qwen3 14B** | 14B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-14B) | 9GB | [Ollama](https://github.com/ollama/ollama) 65 (2026-09-15) |
+| **Qwen3.8-27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | 16GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 35.5-43.7 (2026-09-18) |
+| **Qwen 3.6 27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | 18GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 37 (2026-09-10) |
 
 ---
 
 # 🟨 CPU — no GPU
 
-| Model | Params | License | HF | RAM | Expected t/s | Engine |
-|---|---|---|---|---|---|---|
-| **MiniCPM5-2B** | 2.6B | Apache 2.0 | [link](https://huggingface.co/openbmb/MiniCPM5-2B) | ~4 GB | 15–30 tok/s | llama.cpp (CPU) |
-| **Qwen3 8B** | 8B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-8B) | ~8 GB | 5–15 tok/s | llama.cpp (CPU) |
-| **Gemma 4 12B** | 12B | Gemma | [link](https://huggingface.co/google/gemma-4-12B-it) | ~12 GB | 3–8 tok/s | llama.cpp (CPU) |
-| **Qwen3 14B** | 14B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-14B) | ~14 GB | 2–5 tok/s | llama.cpp (CPU) |
+| Model | Params | License | HF | VRAM | t/s per engine |
+|---|---|---|---|---|---|
+_No models measured on this backend yet._
 
-> CPU inference is **memory-bandwidth bound**. Use Q4 quant + a fast CPU build (AVX-512/AMX). Fine for batch/offline, not interactive.
+> CPU inference is **memory-bandwidth bound**. Use Q4 quant + a fast CPU build (AVX-512/AMX).
 
 ---
 
 # 🟩 Metal — Apple Silicon (unified memory)
 
-## 48 GB (Mac Mini M4 Pro)
+| Model | Params | License | HF | VRAM | t/s per engine |
+|---|---|---|---|---|---|
+| **Bonsai 2 27B** | 27B | Apache 2.0 | [link](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 12GB | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) ~237 decode (2026-09-26) |
+| **Qwen3.8-27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | 16GB | [TensorFold](https://github.com/ashhart/TensorFold) 120-124 (2026-09-20) |
+| **Muse Glimmer 30B** | 30B | Apache 2.0 | [link](https://huggingface.co/meta/Muse-Glimmer-30B) | 24GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 50 (2026-08-10) |
+| **Gemma 4 12B** | 12B | Gemma | [link](https://huggingface.co/google/gemma-4-12B-it) | 9GB | [llama.cpp](https://github.com/ggml-org/llama.cpp) 49.67 (2026-09-19) |
 
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen 3.6 35B-A3B** (MoE) | 35B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | ~21 GB | — | MLX |
-| **Qwen 3.6 27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | ~18 GB | **~17 tok/s**, ~32 MTP | MLX |
-
-## 64 GB (Mac Mini M4 Pro)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen 3.6 35B-A3B** (MoE) | 35B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.5-35B-A3B) | ~21 GB | — | MLX |
-
-## 96 GB (Mac Studio M3 Ultra)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen 3.6 27B** (Q8) | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.6-27B) | ~24 GB | — | MLX |
-| **70B-class** (Q4) | 70B | varies | — | ~40 GB | — | MLX |
-
-## 128 GB (MacBook Pro M5 Max)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Nemotron Lightning 30B-A3B** | 30B | NVIDIA | [link](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) | ~16 GB | **188–206 tok/s** | TensorFold |
-| **Qwen3.8-27B** | 27B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-27B) | ~16 GB | **120–124 tok/s** | TensorFold |
-| **Qwen3.8-Flash-Next** | 125B/6B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) | ~75 GB | **88–92 tok/s** | TensorFold |
-| **70B-class** (Q4) | 70B | varies | — | ~40 GB | ~14 tok/s, ~27 MTP | MLX |
-| **Qwen3-235B-A22B** (MoE) | 235B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-235B-A22B) | ~128 GB | — | MLX |
-
-## 256 GB (Mac Studio M3 Ultra)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **Qwen3-235B-A22B** (MoE) | 235B | Apache 2.0 | [link](https://huggingface.co/Qwen/Qwen3-235B-A22B) | ~128 GB | — | MLX |
-| **GLM-5.2** (Q2) | 753B | MIT | [link](https://huggingface.co/zai-org/GLM-5.2) | ~256 GB | 15–20 tok/s (est) | MLX |
-
-## 512 GB (Mac Studio M3 Ultra)
-
-| Model | Params | License | HF | VRAM | t/s | Engine |
-|---|---|---|---|---|---|---|
-| **GLM-5.2** (Q3/Q4) | 753B | MIT | [link](https://huggingface.co/zai-org/GLM-5.2) | ~410 GB | — | MLX |
-| **Kimi K2.5** | 1T | Modified MIT | [link](https://huggingface.co/moonshotai/Kimi-K2.5) | ~512 GB | 5–10 tok/s | MLX |
-
-> On Apple Silicon, **MLX** is the fastest engine; **TensorFold** adds speculative decoding (3–6x on memory-bound Macs). Prefill is the weak spot — use prefix caching.
-
----
-
-## 📈 Speed evolution over several months
-
-**Qwen3.8-27B on Apple Silicon** — same model, faster engines:
-
-| Date | Engine | Hardware | Decode t/s |
-|---|---|---|---|
-| Jun 2026 | MLX (baseline) | M5 Max | ~26 |
-| Aug 2026 | mlx.fast (speculative) | M5 Max | **87.9** |
-| Sep 2026 | TensorFold (MLX 4-bit) | Mac mini M6 | **120–124** |
-
-> **3.3x in 7 days** (Aug), then another jump with TensorFold — driven by custom MTP heads + speculative decoding, not new hardware.
+> On Apple Silicon, **MLX** is the fastest engine; **TensorFold** adds speculative decoding (3–6x on memory-bound Macs); **MLX-fast Bonsai 2** (Layr-Labs/mlxfast-bonsai2-27b-engine) pushes Ternary Bonsai 2 27B to ~237 tok/s on a 16 GB Mac.
 
 ---
 
 ## ⚙️ Inference engine / server guide
 
-| Engine | Backend | Best for | Notes |
+| Engine | Backend | Best for | Repo |
 |---|---|---|---|
-| **Ollama** | CUDA / CPU / Metal | Easiest start | One command to pull + run a GGUF. |
-| **llama.cpp** | CUDA / CPU / Metal | Max control, custom quants | Use for Bonsai 2 / Mirai 2.4-bit (custom kernels). |
-| **FreeToken** | CUDA | MoE on small GPUs | UC Berkeley. 2–4x faster than Ollama; runs big MoE on 8 GB. |
-| **vLLM** | CUDA | Production serving, high throughput | Best for concurrent requests / big MoE. |
-| **SGLang** | CUDA | High-throughput serving | vLLM alternative; strong batching. |
-| **MLX** | Metal | Fastest on Apple Silicon | Apple's native framework. |
-| **TensorFold** | Metal | Speculative decoding on Mac | 3–6x speedup on memory-bound Macs. |
-| **TensorRT-LLM** | CUDA | Max NVIDIA perf | Most setup; best raw speed. |
-| **LiteRT** | CUDA / Metal | Google's local runtime | For Gemma 4 + Antigravity SDK agents. |
+| **llama.cpp** | CUDA / CPU / Metal | Max control, custom quants | [repo](https://github.com/ggml-org/llama.cpp) |
+| **Ollama** | CUDA / CPU / Metal | Easiest start | [repo](https://github.com/ollama/ollama) |
+| **FreeToken** | CUDA | Big MoE on small GPUs | [repo](https://github.com/FlashML-org/FreeToken) |
+| **vLLM** | CUDA | Production serving, high throughput | [repo](https://github.com/vllm-project/vllm) |
+| **SGLang** | CUDA | High-throughput serving | [repo](https://github.com/sgl-project/sglang) |
+| **MLX** | Metal | Fastest on Apple Silicon | [repo](https://github.com/ml-explore/mlx) |
+| **TensorFold** | Metal | Speculative decoding on Mac, 3-6x | [repo](https://github.com/ashhart/TensorFold) |
+| **TensorRT-LLM** | CUDA | Max NVIDIA perf | [repo](https://github.com/NVIDIA/TensorRT-LLM) |
+| **LiteRT** | CUDA / Metal | Google local runtime | [repo](https://github.com/google-ai-edge/LiteRT) |
+| **Strata** | CUDA | Runs big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA GPUs; experts across GPU/RAM/SSD, speculative decoding ~1.6-1.8x | [repo](https://github.com/Niko1221/Strata) |
+| **MLX-fast (Bonsai 2)** | Metal | Speedup benchmark engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s decode on 16 GB Mac (mlx.fast, Yukon/Layr-Labs) | [repo](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) |
+| **DFlash2** | CUDA | Speculative decoding + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat, up to ~381 tok/s context-lookup on 24 GB RTX 3090 | [repo](https://github.com/z-lab/dflash) |
 
-**Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold (Mac) · llama.cpp CPU (tiny/edge).
+**Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp CPU (tiny/edge).
 
 ---
 
 ## How to contribute
 
-- Open a PR adding a model that genuinely changes the local-LLM landscape.
-- Include: full model name, HF link, license, params, RAM, a **measured** t/s figure with the hardware + quant it was run on, and the **one** engine.
-- Prefer numbers from real X benchmark posts over vendor claims.
+- Update `data/models.json` (add/refresh a model row with real X-sourced engagement and per-engine t/s), then run `python3 scripts/update_trending.py` to regenerate the README.
+- Include: full model name, HF link, license, params, type, VRAM tier, a **measured** t/s + **engine + hardware + quant**, and the source X post.
+- Prefer numbers from real X benchmark posts over vendor claims. Data is **community-reported on X** — directional, not lab-grade; mark projections `(est)`.
+- All changes go through a **feature branch + PR**; automation never pushes to/merges `master` directly.
 
 ## License
 

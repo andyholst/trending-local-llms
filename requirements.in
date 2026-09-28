@@ -1,0 +1,4 @@
+# Source requirements (hand-edited). Generate requirements.txt via:
+#   make requirements
+# (uses pip-compile from pip-tools to pin the full transitive tree)
+jsonschema>=4.0,<5
