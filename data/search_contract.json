@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/andyholst/trending-local-llms/data/search_contract.json",
+  "title": "trending-local-llms search/raw data contract",
+  "description": "JSON Schema that each Firecrawl search snapshot in data/raw/<backend>-<UTC>.json must conform to. The four Hermes `make search-*` prompts write these. Each raw snapshot holds ONE backend's captured models; they aggregate into models.json (validated against model_contract.json). Enforced by scripts/validate.py (check_search_contract).",
+  "type": "object",
+  "required": ["backend", "generated_utc", "models"],
+  "properties": {
+    "backend": { "type": "string", "enum": ["nvidia", "metal", "cpu", "general"] },
+    "generated_utc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+    "models": {
+      "type": "array",
+      "description": "Models captured by this backend search. MUST carry the same core fields as the aggregated models.json contract so aggregation never produces a broken model.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "name", "full_name", "type", "license", "params", "hf",
+          "vram_tier", "vram_min", "backends", "engines", "last_seen"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.\\-]*$" },
+          "name": { "type": "string" },
+          "full_name": { "type": "string" },
+          "type": { "type": "string" },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "hf"],
+              "properties": { "name": { "type": "string" }, "hf": { "type": "string" } },
+              "additionalProperties": false
+            }
+          },
+          "license": { "type": "string" },
+          "params": { "type": "string" },
+          "hf": { "type": "string" },
+          "vram_tier": { "type": "string" },
+          "vram_min": { "type": "string", "description": "Least required VRAM (community-reported / from X or HF quant size)." },
+          "backends": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "enum": ["CUDA", "Metal", "CPU"] }
+          },
+          "engines": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["engine", "tps", "date", "source_post"],
+              "properties": {
+                "engine": { "type": "string" },
+                "tps": { "type": "string" },
+                "hardware": { "type": "string" },
+                "quant": { "type": "string" },
+                "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+                "source_post": { "type": "string", "format": "uri" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "why": { "type": "string" },
+          "engagement": {
+            "type": "object",
+            "properties": {
+              "likes": { "type": "integer", "minimum": 0 },
+              "comments": { "type": "integer", "minimum": 0 },
+              "views": { "type": "integer", "minimum": 0 },
+              "last_7d_likes": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "last_seen": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

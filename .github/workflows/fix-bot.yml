@@ -1,0 +1,97 @@
+name: fix-bot
+
+# FIX-BOT pipeline — triggered when the PR CI (qa-validate) is RED. Fully
+# container-agnostic: builds the self-contained Docker image (Python deps +
+# Hermes CLI, cached) and runs `make fix` (Hermes) + validate + test inside it.
+# Pushes the correction to the same PR branch so CI re-runs green. Up to 3
+# rounds, then leaves the PR for manual review. Never auto-merges.
+#
+# Local equivalent:
+#   make docker-build && NOUS_API_KEY=... FIRECRAWL_API_KEY=... make fix
+
+on:
+  workflow_run:
+    workflows: ["qa-validate"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    env:
+      NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+    steps:
+      - name: Resolve PR from failed run
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+          echo "Failed run head branch: $HEAD_BRANCH"
+          PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --json number -q '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$PR_NUM" ]; then
+            echo "No open PR for branch $HEAD_BRANCH — nothing to fix."
+            echo "has_pr=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "PR #$PR_NUM for branch $HEAD_BRANCH"
+            echo "has_pr=true" >> "$GITHUB_OUTPUT"
+            echo "pr_num=$PR_NUM" >> "$GITHUB_OUTPUT"
+            echo "branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout PR branch
+        if: steps.pr.outputs.has_pr == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.branch }}
+
+      - name: Set up Docker Buildx
+        if: steps.pr.outputs.has_pr == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        if: steps.pr.outputs.has_pr == 'true'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build image (cached)
+        if: steps.pr.outputs.has_pr == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: trending-local-llms:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+
+      - name: Hermes fix — correct the CI failure (up to 3 rounds, in container)
+        if: steps.pr.outputs.has_pr == 'true'
+        run: |
+          for round in 1 2 3; do
+            echo "--- fix round $round ---"
+            # Each public make target runs inside the container:
+            # fix = self-correct raw snapshots -> Hermes fixes logic -> merge;
+            # then validate the mapped result (search contract + mapping + data
+            # + schema) and run the tests.
+            make fix
+            make validate-search
+            make validate-mapped
+            make test
+            git add README.md data/models.json data/snapshots data/raw
+            git commit -m "fix: address CI validation failure (round $round)" || echo "no changes to commit"
+            git push origin "${{ steps.pr.outputs.branch }}" || echo "push failed (may be nothing to push)"
+            # Give the re-triggered qa-validate a moment; loop continues if still red
+            sleep 30
+          done
+          echo "Exhausted fix rounds; leaving PR for manual review."

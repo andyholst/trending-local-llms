@@ -1,5 +1,17 @@
 # How to gather the data for this repo
 
+> **As of the `ci/x-trending-pipeline` work (issue #1), the README is generated**
+> from `data/models.json` by `scripts/update_trending.py`. The refresh is run by
+> the **GitHub Actions pipelines** invoking a **Hermes agent session**
+> (deepseek-v4-flash-0731 via the Nous portal, token from the repo secret
+> `NOUS_PORTAL_API_TOKEN`) that loads this skill + AGENTS.md and searches
+> lightbrd.com via the Firecrawl scrape API (`FIRECRAWL_API_KEY`). Each of the
+> four searches writes its own timestamped raw snapshot; they aggregate into
+> `models.json`. You should **add models to the JSON store**, not hand-edit the
+> tables, then run the script to regenerate. See `AGENTS.md` for the full
+> operating contract (7-day trending, 30-day retention, t/s per engine,
+> 8-48 GB scope, feature-branch PRs only).
+
 This repo tracks open-weight LLMs people actually run and like, based on **community-reported data from X posts**. Here's the exact workflow used to build and update the README.
 
 ## 1. Reach X content (the key trick)
@@ -17,18 +29,57 @@ https://lightbrd.com/search?f=tweets&q=QUERY
 - Nitter instances (nitter.net, xcancel.com, nitter.poast.org, nitter.privacydev.net) are mostly down or blocked — don't rely on them.
 - lightbrd results are truncated; the full text is saved to a cache file (the footer gives the path). Read it with `read_file` to get the omitted middle.
 
-## 2. Search queries that work
+## 2. Search queries that work — grouped by backend
 
+Run one search group per backend, over a **last-30-day** window, and rank results
+by **highest interactions first** (likes/loves + comments), then by t/s. Capture
+the engine and the specific model each post tested. All queries below are
+verified against the lightbrd.com mirror.
+
+### Backend A — NVIDIA / CUDA (8–48 GB scope)
 | Goal | Query |
 |---|---|
-| General speed | `"tokens per second" local llm` |
-| Open-weight benchmarks | `open weight llm benchmark gpu` |
-| Specific model | `qwen3.8-27b local speed tokens` |
-| Specific model | `gemma 4 12b tokens per second` |
-| Apple Silicon | `mlx apple silicon tokens per second benchmark` |
-| High VRAM | `48GB 64GB 96GB VRAM llm benchmark` |
-| Unified memory | `128GB 256GB unified memory llm benchmark` |
-| Model families | `llama 4 open weights release`, `deepseek open weights local`, `glm kimi nemotron open weight local` |
+| Broad RTX t/s | `rtx tokens per second llm` |
+| RTX 3090 Qwen spec-decode | `rtx 3090 tokens per second qwen` |
+| RTX 5090 low-end | `rtx 5090 32gb tokens per second` |
+| RTX 4090 | `rtx 4090 tokens per second llm` |
+| Cross-card 27B | `rtx 3090 vs 5090 27b tokens` |
+| FreeToken (big MoE on small GPU) | `freetoken gpu llm tokens per second` |
+| Bonsai 2 ternary | `bonsai 2 ternary 27b tokens` |
+| DFlash2 spec decode | `qwen3.8-27b dflash speculative tokens` |
+| General | `open weight llm benchmark gpu` |
+
+### Backend B — Apple / Metal
+| Goal | Query |
+|---|---|
+| Broad MLX t/s | `mlx tokens per second` |
+| MLX + models | `mlx apple silicon tokens per second model` |
+| M4/M-series MLX | `mac m4 mlx local llm tokens per second` |
+| MLX-fast Bonsai 2 | `mlxfast bonsai tokens per second` |
+| TensorFold / DFlash on MLX | `tensorfold dflash mlx qwen tokens per second` |
+
+### Backend C — CPU (sparse on X)
+| Goal | Query |
+|---|---|
+| No-GPU CPU runs | `llm tokens per second no gpu cpu` |
+| llama.cpp CPU only | `llama.cpp cpu only tokens per second` |
+| Local LLM on GPU (CPU offload) | `local llm tokens per second gpu` |
+
+### General — cross-backend t/s trend
+| Goal | Query |
+|---|---|
+| Broad t/s | `"tokens per second" llm` |
+| Benchmark t/s | `tokens per second benchmark llm` |
+| Local LLM t/s | `local llm tokens per second gpu` |
+| Open-weight roundups | `open weight llm benchmark gpu` |
+
+> **Probing notes (tested Sep 28 2026):** plain engine-name-only queries (e.g.
+> `free%20token engine moE small gpu`) return **nothing** — FreeToken's raw
+> name isn't indexed as a search term. Prefer **model + token/VRAM** queries;
+> treat engine names as optional signals. CPU-only LLM benchmarking is genuinely
+> sparse on X — most "CPU" signal lives in offload-capable engines (FreeToken,
+> llama.cpp cpu) that appear under the CUDA/engine queries. The pipeline's CPU
+> table will be thinner by nature; don't pad it with fabricated numbers.
 
 ## 3. Extract per model
 
@@ -39,7 +90,11 @@ For each model, capture:
 - **HF link** (verify — see step 5)
 - **VRAM / RAM** required
 - **Measured t/s** + the **hardware** it was measured on
-- **Inference engine** (the one that runs it best)
+- **Inference engine** (the one that runs it best) — **with its repo URL**
+  (e.g. `https://github.com/ggml-org/llama.cpp`). Store the engine `url` in
+  `data/models.json` under `engines[<name>].url` so every generated table and
+  the engine guide render a working link. A model row must have its HF link;
+  an engine measurement must have its repo link. No bare names.
 
 ## 4. Rank by engagement, not benchmarks
 
@@ -87,8 +142,11 @@ Known gotchas:
 | **Ollama** | CUDA / CPU / Metal | Easiest start |
 | **llama.cpp** | CUDA / CPU / Metal | Max control, custom quants (Bonsai 2, Mirai 2.4-bit) |
 | **FreeToken** | CUDA | 2-4x faster than Ollama; big MoE on small GPUs |
-| **vLLM / SGLang** | CUDA | Production serving, big MoE |
+| **vLLM / SGLang** | CUDA | Production serving, big MoE; + DFlash2 speculative decode |
+| **DFlash2** | CUDA | Spec decode + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat on 24 GB 3090 |
+| **Strata** | CUDA | Big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA; experts across GPU/RAM/SSD, ~1.6-1.8x (Niko1221/Strata) |
 | **MLX** | Metal | Fastest on Apple Silicon |
 | **TensorFold** | Metal | Speculative decoding on Mac, 3-6x |
+| **MLX-fast (Bonsai 2)** | Metal | Speedup engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s on 16 GB Mac (Layr-Labs/mlxfast-bonsai2-27b-engine) |
 | **TensorRT-LLM** | CUDA | Max NVIDIA perf |
 | **LiteRT** | CUDA / Metal | Google's local runtime (Gemma 4 + Antigravity) |
