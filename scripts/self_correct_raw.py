@@ -89,6 +89,20 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
         data.pop(k, None)
     if extra_top:
         notes.append(f"{path.name}: pruned unexpected top-level keys {extra_top}")
+    # search_contract requires a top-level 'backend'. A search that dropped it
+    # (e.g. the CPU prompt wrote only models + generated_utc) must be repaired
+    # here, not left to fail check_search_contract. Derive it from the snapshot
+    # filename prefix (<backend>-<UTC>.json) when present, else from the models'
+    # backends field, else default to 'general'.
+    if not data.get("backend"):
+        stem = path.stem
+        prefix = stem.split("-")[0].lower()
+        if prefix in ("nvidia", "metal", "cpu", "general"):
+            data["backend"] = prefix
+        else:
+            backs = {b.lower() for m in data.get("models", []) for b in m.get("backends", [])}
+            data["backend"] = "metal" if "metal" in backs else ("cpu" if "cpu" in backs else "general")
+        notes.append(f"{path.name}: backend <- '{data['backend']}' (derived from filename/models)")
     for m in data.get("models", []):
         if not m.get("id"):
             m["id"] = slug(m.get("name", "unknown"))

@@ -144,15 +144,84 @@ def gather_x(store: dict) -> dict:
     return per_backend
 
 
+# Search window vs trending window. The four Hermes search prompts fetch a
+# last-3-day window (fast daily cadence); the TRENDING band aggregates distinct
+# posts over the last 7 days so a model stays Trending on a rolling week of
+# engagement, not a single day. Post entries older than RETENTION_DAYS are
+# pruned from engagement.seen_posts (the model row itself is never removed).
+SEARCH_WINDOW_DAYS = 3
+TRENDING_WINDOW_DAYS = 7
+RETENTION_DAYS = 30
+
+
+def _post_date(post: dict) -> str:
+    return post.get("date", "") or ""
+
+
+def dedupe_posts(posts: list[dict]) -> list[dict]:
+    """Collapse engagement.seen_posts to one entry per source_post URL.
+
+    The same X post is re-scanned across overlapping 3-day search windows, so
+    without this a single post would inflate last_7d_likes on every run. Keep
+    the entry with the latest date for each URL (a re-seen post may carry a
+    fresher date)."""
+    by_url: dict[str, dict] = {}
+    for p in posts:
+        url = p.get("url", "")
+        if not url:
+            continue
+        cur = by_url.get(url)
+        if cur is None or _post_date(p) > _post_date(cur):
+            by_url[url] = p
+    return list(by_url.values())
+
+
+def prune_posts(posts: list[dict], today: datetime) -> list[dict]:
+    """Drop engagement.seen_posts older than RETENTION_DAYS. The model row is
+    never removed — only its stale post history is pruned (AGENTS retention)."""
+    out = []
+    for p in posts:
+        try:
+            d = datetime.strptime(_post_date(p), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except Exception:  # noqa: BLE001
+            continue  # unparseable date -> drop the stale/unknown post entry
+        if (today - d).days <= RETENTION_DAYS:
+            out.append(p)
+    return out
+
+
+def recompute_7d_engagement(m: dict, today: datetime) -> None:
+    """Recompute last_7d_likes from engagement.seen_posts: the count of DISTINCT
+    posts dated within the last TRENDING_WINDOW_DAYS. This makes 'ranked by
+    7-day engagement' literally true and prevents double-counting the same post
+    across overlapping search windows. Falls back to the stored counter when a
+    model has no seen_posts (legacy rows)."""
+    eng = m.setdefault("engagement", {})
+    posts = dedupe_posts(eng.get("seen_posts", []))
+    posts = prune_posts(posts, today)
+    eng["seen_posts"] = posts
+    cutoff = (today - timedelta(days=TRENDING_WINDOW_DAYS)).strftime("%Y-%m-%d")
+    if posts:
+        # post-granularity signal present -> last_7d_likes is the distinct-post count
+        eng["last_7d_likes"] = sum(1 for p in posts if _post_date(p) >= cutoff)
+    # else: legacy row with no seen_posts yet -> PRESERVE the stored counter
+    # (a plain re-sort/merge must never zero out real engagement data).
+    # keep last_seen in sync with the newest post (or today if none)
+    dates = [d for d in (_post_date(p) for p in posts) if d]
+    if dates:
+        m["last_seen"] = max(dates)
+
+
 def merge_engagements(store: dict, seen: list[str]) -> tuple[int, int]:
     """Increment last_7d_likes on matched models; return (matched, unknown)."""
     matched = 0
     tokens = [s.lower() for s in seen]
+    today = now_utc()
     for m in store["models"]:
         key = (m["name"] + " " + m.get("full_name", "")).lower()
         if any(t in key for t in tokens):
             m["engagement"]["last_7d_likes"] = m["engagement"].get("last_7d_likes", 0) + 1
-            m["last_seen"] = now_utc().strftime("%Y-%m-%d")
+            m["last_seen"] = today.strftime("%Y-%m-%d")
             matched += 1
     unknown = sum(1 for s in tokens if s not in set(m["name"].lower() for m in store["models"]))
     return matched, unknown
@@ -166,6 +235,8 @@ def sort_models(models: list[dict], today: datetime) -> list[dict]:
     t/s is always the first/surface figure."""
     for m in models:
         m["engines"] = sorted(m.get("engines", []), key=lambda e: e.get("date", ""), reverse=True)
+        # recompute the 7-day engagement from distinct posts (dedup + prune)
+        recompute_7d_engagement(m, today)
 
     def parse(d):
         try:
@@ -248,7 +319,7 @@ def render_readme(store: dict, today: datetime) -> str:
         "Ollama": None, "llama.cpp": None, "vLLM": "CUDA", "SGLang": "CUDA",
         "FreeToken": "CUDA", "TensorRT-LLM": "CUDA", "DFlash2": "CUDA",
         "Strata": "CUDA", "MLX": "Metal", "TensorFold": "Metal",
-        "MLX-fast (Bonsai 2)": "Metal", "LiteRT": None,
+        "MLX-fast (Bonsai 2)": "Metal", "LiteRT": None, "WebLLM": None,
     }
     def eng_backend(m, e):
         if any(k in e.get("hardware", "").lower() for k in ("apple", "mac")):
@@ -395,6 +466,22 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
     return path
 
 
+def _collect_seen_posts(m: dict) -> list[dict]:
+    """Derive engagement.seen_posts from a model's engine measurements: one
+    entry per distinct source_post URL, dated by the measurement date. This is
+    the post-granularity signal that powers the 7-day trending aggregation."""
+    posts: dict[str, dict] = {}
+    for e in m.get("engines", []):
+        url = e.get("source_post", "")
+        if not url:
+            continue
+        cur = posts.get(url)
+        date = e.get("date", "")
+        if cur is None or date > cur.get("date", ""):
+            posts[url] = {"url": url, "date": date}
+    return list(posts.values())
+
+
 def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
     """Merge all data/raw/*.json into the store. Each raw file holds one
     backend's captured findings (models). New models are added, existing ones
@@ -418,7 +505,12 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
                 existing = by_id[mid]
                 existing["engines"] = merge_engines(existing.get("engines", []), m.get("engines", []))
                 existing["last_seen"] = now_utc().strftime("%Y-%m-%d")
-                existing["engagement"]["last_7d_likes"] = max(
+                # merge post-granularity engagement, deduped by source_post URL
+                eng = existing.setdefault("engagement", {})
+                eng["seen_posts"] = dedupe_posts(
+                    eng.get("seen_posts", []) + _collect_seen_posts(m)
+                )
+                eng["last_7d_likes"] = max(
                     existing["engagement"].get("last_7d_likes", 0),
                     m.get("engagement", {}).get("last_7d_likes", 0),
                 )
@@ -517,6 +609,8 @@ def normalize_model(m: dict, store: dict) -> dict:
     eng = m.setdefault("engagement", {})
     for k in ("likes", "comments", "views", "last_7d_likes"):
         eng.setdefault(k, 0)
+    # seed post-granularity engagement from the raw model's engine source_posts
+    eng.setdefault("seen_posts", _collect_seen_posts(m))
     # scrub incomplete engine rows (missing tps or engine identity) so schema passes
     m["engines"] = [e for e in engs if all(e.get(f) is not None for f in _REQ_ENGINE_FIELDS)]
     return m
