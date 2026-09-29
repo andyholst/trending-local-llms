@@ -94,9 +94,10 @@ _correct-raw:
 	python3 scripts/self_correct_raw.py
 
 # Weekly Hermes update. Runs only on Sunday (or UPDATE_HERMES=1 forced). The
-# Dockerfile bakes this via `make update-hermes`, and the CI build job only
-# rebuilds the image on Sunday — so Hermes is updated at most once per week.
-# The search/aggregate jobs use the prebuilt image as-is (no per-run update).
+# Dockerfile bakes this via `make _update-hermes` (the host recipe), and the
+# CI build job only rebuilds the image on Sunday — so Hermes is updated at
+# most once per week. The search/aggregate jobs use the prebuilt image as-is
+# (no per-run update).
 .PHONY: _update-hermes
 _update-hermes:
 	@if [ "$$(scripts/hermes_update_needed.sh)" = "1" ]; then \

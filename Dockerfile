@@ -39,11 +39,13 @@ RUN bash /tmp/hermes-install.sh \
 # Then the rest of the repo (invalidates only when source changes)
 COPY . .
 
-# Bake a real Hermes update into the image. `make update-hermes` runs the
-# weekly update only on Sunday (scripts/hermes_update_needed.sh) — the image
-# is (re)built only on Sunday, so this keeps Hermes fresh exactly weekly
-# without re-downloading it on every daily run.
-RUN export PATH="/root/.local/bin:$PATH" && make update-hermes
+# Bake a real Hermes update into the image. `make _update-hermes` (the HOST
+# recipe, not the docker wrapper `update-hermes` — there is no docker inside
+# the image build) runs the weekly update only on Sunday
+# (scripts/hermes_update_needed.sh) — the image is (re)built only on Sunday,
+# so this keeps Hermes fresh exactly weekly without re-downloading it on
+# every daily run.
+RUN export PATH="/root/.local/bin:$PATH" && make _update-hermes
 
 # Make hermes available on PATH for every RUN/CMD
 ENV PATH="/root/.local/bin:$PATH"
