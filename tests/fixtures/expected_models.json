@@ -1,0 +1,105 @@
+{
+  "engines": {
+    "llama.cpp": {
+      "backend": "CUDA",
+      "note": "x",
+      "url": "https://github.com/ggml-org/llama.cpp"
+    }
+  },
+  "models": [
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-14B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "9GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060",
+          "quant": "Q4",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/1"
+        }
+      ],
+      "why": "w",
+      "engagement": {
+        "likes": 1,
+        "comments": 0,
+        "views": 1,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/1",
+            "date": "2026-09-28"
+          }
+        ]
+      },
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "brand-new",
+      "name": "BrandNew",
+      "type": "LLM",
+      "hf": "org/brand-new",
+      "vram_tier": "12GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80",
+          "hardware": "RTX 4090",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/2",
+          "quant": "Q4"
+        }
+      ],
+      "full_name": "BrandNew",
+      "license": "Unknown",
+      "params": "unknown",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "BrandNew — see source posts.",
+      "formats": [
+        {
+          "name": "BrandNew",
+          "hf": "org/brand-new"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/2",
+            "date": "2026-09-28"
+          }
+        ]
+      },
+      "last_seen": "2026-09-28"
+    }
+  ]
+}

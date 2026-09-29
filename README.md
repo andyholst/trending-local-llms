@@ -4,7 +4,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 **Ranked by 7-day X engagement** (likes/comments/views), retained through a 30-day window. Within a rank, models sort by **highest t/s** with the **one engine** that produced it. t/s is always shown **per engine**.
 
-> Last generated: 2026-09-28 13:08 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-09-29 18:55 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
@@ -75,6 +75,7 @@ _No models measured on this backend yet._
 | **Strata** | CUDA | Runs big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA GPUs; experts across GPU/RAM/SSD, speculative decoding ~1.6-1.8x | [repo](https://github.com/Niko1221/Strata) |
 | **MLX-fast (Bonsai 2)** | Metal | Speedup benchmark engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s decode on 16 GB Mac (mlx.fast, Yukon/Layr-Labs) | [repo](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) |
 | **DFlash2** | CUDA | Speculative decoding + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat, up to ~381 tok/s context-lookup on 24 GB RTX 3090 | [repo](https://github.com/z-lab/dflash) |
+| **WebLLM** | CUDA / Metal | In-browser LLM inference accelerated with WebGPU (MLC-LLM). | [repo](https://github.com/mlc-ai/web-llm) |
 
 **Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp CPU (tiny/edge).
 
