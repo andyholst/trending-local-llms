@@ -1,0 +1,138 @@
+{
+  "backend": "general",
+  "models": [
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6 35B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8 GB GPU (MoE, ~3B active/token)",
+          "quant": "4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "35B MoE (3B active/token) that FreeToken serves on an 8 GB GPU at 39.3 tok/s by routing experts between GPU cache and system RAM.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+            "date": "2026-09-27"
+          }
+        ]
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "license": "DeepSeek (preview; license unverified)",
+      "params": "284B (13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32 GB GPU (MoE, 6 of 256 experts/token)",
+          "quant": "FP8/FP4 mixed",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "DeepSeek-V4 Flash (284B/13B active, 1M context) run locally on a 32 GB GPU at 22 tok/s via FreeToken's expert-routing.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+            "date": "2026-09-27"
+          }
+        ]
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "meta-llama/Llama-3.1-8B-Instruct"
+        }
+      ],
+      "license": "Llama 3.1 (Meta Community License)",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "M3 Max (in-browser WebGPU, ~71% of native)",
+          "quant": "MLC-compiled",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/OSSphere/status/2104934233366241296"
+        }
+      ],
+      "why": "Runs fully in the browser (WebGPU/WebLLM) at 41.1 tok/s on an M3 Max — no server, no API key, ~71% of native speed.",
+      "engagement": {
+        "likes": 1,
+        "comments": 3,
+        "views": 114,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/OSSphere/status/2104934233366241296",
+            "date": "2026-09-29"
+          }
+        ]
+      },
+      "last_seen": "2026-09-29"
+    }
+  ],
+  "generated_utc": "2026-09-29T19:59:02Z"
+}

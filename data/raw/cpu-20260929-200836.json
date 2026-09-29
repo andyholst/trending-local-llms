@@ -1,0 +1,120 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "needle-3",
+      "name": "Needle 3",
+      "full_name": "Needle 3 (foundation tool-calling model for tiny devices)",
+      "type": "LLM (tiny device, edge)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Cactus-Compute/needle3"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "~29-121M (8-29MB cact)",
+      "hf": "Cactus-Compute/needle3",
+      "vram_tier": "<1GB",
+      "vram_min": "<1GB",
+      "backends": [
+        "CPU"
+      ],
+      "why": "On-device tool-calling/extraction/embedding; runs in ~78MB RAM; llama.cpp CPU i5-13600KF.",
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "hardware": "Intel i5-13600KF (CPU-only, 8 threads)",
+          "quant": "Q4-style GGUF",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Customds/status/2104223936066326635",
+          "tps": "~273-514 (1-4 threads)"
+        }
+      ],
+      "engagement": {
+        "likes": 3,
+        "comments": 3,
+        "views": 312,
+        "last_7d_likes": 1
+      }
+    },
+    {
+      "id": "qwen2.5-0.5b",
+      "name": "Qwen2.5 0.5B",
+      "full_name": "Qwen2.5-0.5B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen2.5-0.5B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "0.5B",
+      "hf": "Qwen/Qwen2.5-0.5B",
+      "vram_tier": "1GB",
+      "vram_min": "1GB",
+      "backends": [
+        "CPU"
+      ],
+      "why": "Tiny general-purpose classifier/router; fast on CPU.",
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "hardware": "Intel i5-13600KF (CPU-only, 8 threads)",
+          "quant": "Q4-style GGUF",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Customds/status/2104223936066326635",
+          "tps": "~74-76"
+        }
+      ],
+      "engagement": {
+        "likes": 3,
+        "comments": 3,
+        "views": 312,
+        "last_7d_likes": 1
+      }
+    },
+    {
+      "id": "ling-3.0-tiny",
+      "name": "Ling 3.0 Tiny",
+      "full_name": "Ling-3.0-tiny (7.9B total / 1.3B active MoE)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "inclusionAI/Ling-3.0-tiny"
+        }
+      ],
+      "license": "MIT",
+      "params": "7.9B (1.3B active)",
+      "hf": "inclusionAI/Ling-3.0-tiny",
+      "vram_tier": "4GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CPU"
+      ],
+      "why": "Capable CPU coding/reasoning worker via llama.cpp; 1.3B active params keep it fast on desktop CPU.",
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "hardware": "Intel i5-13600KF (CPU-only, 8 threads)",
+          "quant": "Q4-style GGUF",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Customds/status/2104223936066326635",
+          "tps": "~38-41"
+        }
+      ],
+      "engagement": {
+        "likes": 3,
+        "comments": 3,
+        "views": 312,
+        "last_7d_likes": 1
+      }
+    }
+  ],
+  "generated_utc": "2026-09-29T20:08:36Z"
+}
