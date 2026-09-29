@@ -51,8 +51,7 @@ docker-build:
 .PHONY: _setup
 _setup:
 	@if command -v hermes >/dev/null 2>&1; then \
-		echo "== hermes present; updating =="; \
-		hermes update 2>/dev/null || echo "(update skipped; using existing)"; \
+		echo "== hermes present; using image build (no per-run update) =="; \
 	else \
 		echo "== installing hermes =="; \
 		curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash; \
@@ -93,6 +92,19 @@ _search:
 .PHONY: _correct-raw
 _correct-raw:
 	python3 scripts/self_correct_raw.py
+
+# Weekly Hermes update. Runs only on Sunday (or UPDATE_HERMES=1 forced). The
+# Dockerfile bakes this via `make update-hermes`, and the CI build job only
+# rebuilds the image on Sunday — so Hermes is updated at most once per week.
+# The search/aggregate jobs use the prebuilt image as-is (no per-run update).
+.PHONY: _update-hermes
+_update-hermes:
+	@if [ "$$(scripts/hermes_update_needed.sh)" = "1" ]; then \
+		echo "== weekly hermes update (Sunday or UPDATE_HERMES=1) =="; \
+		hermes update || echo "(update failed; using existing)"; \
+	else \
+		echo "== no hermes update needed (not Sunday, UPDATE_HERMES unset) =="; \
+	fi
 
 .PHONY: _fix
 _fix:
@@ -161,6 +173,10 @@ _refresh:
 	@echo "== _validate-mapped (soft) =="; make _validate-mapped || echo "[refresh] _validate-mapped reported issues (see above)"
 	@echo "== _test (soft) =="; make _test || echo "[refresh] _test reported failures (see above)"
 	@echo "== refresh complete (data landed; validation findings reported above) =="
+
+.PHONY: update-hermes
+update-hermes:
+	$(DOCKER_RUN) make _update-hermes
 
 .PHONY: setup
 setup:

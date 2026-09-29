@@ -1,12 +1,12 @@
 name: refresh-bot
 
 # BOT pipeline — scheduled data refresh. Fully container-agnostic: builds the
-# self-contained Docker image (Python deps + Hermes CLI, cached) and runs the
-# four Hermes searches as SEPARATE PARALLEL jobs (each writes its own
-# data/raw/<backend>-<UTC>.json), then a final job aggregates them (merge ->
-# validate -> test) and opens a PR only when there is new data. Never
-# auto-merges. The PR is validated by qa-validate.yml; if red, fix-bot.yml
-# re-runs Hermes to correct it.
+# self-contained Docker image (Python deps + Hermes CLI) ONCE, pushes it to
+# GHCR, and the four Hermes searches run as SEPARATE PARALLEL jobs that PULL
+# the prebuilt image (each writes its own data/raw/<backend>-<UTC>.json), then
+# a final job aggregates them (merge -> validate -> test) and opens a PR only
+# when there is new data. Never auto-merges. The PR is validated by
+# qa-validate.yml; if red, fix-bot.yml re-runs Hermes to correct it.
 #
 # Local equivalent:
 #   make docker-build && NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh
@@ -20,18 +20,50 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}:latest
 
 jobs:
-  # Build the image once, cache it, and share it with the search jobs via the
-  # docker layer cache. Each search job rebuilds from cache (fast).
+  # Build the image ONCE and push it to GHCR. The search + aggregate jobs PULL
+  # this prebuilt image instead of rebuilding — so the Hermes install
+  # (ADD install.sh + RUN) runs exactly once per run, not 6x.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      built: ${{ steps.decide.outputs.built }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Decide whether to rebuild: only when the image does NOT exist yet, or
+      # when it is SUNDAY (weekly cadence — the Dockerfile bakes a real Hermes
+      # update via `make update-hermes` on that rebuild). Any other day reuses
+      # the existing GHCR image, so the Hermes install/update runs at most once
+      # per week instead of on every run.
+      - name: Decide whether to rebuild image
+        id: decide
+        run: |
+          DOW=$(date +%u)
+          if docker manifest inspect "${{ env.IMAGE }}" >/dev/null 2>&1; then
+            EXISTS=1; else EXISTS=0; fi
+          echo "DOW=$DOW exists=$EXISTS"
+          if [ "$DOW" = "7" ] || [ "$EXISTS" = "0" ]; then
+            echo "built=yes"
+            echo "built=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "built=no"
+            echo "built=no" >> "$GITHUB_OUTPUT"
+          fi
       - name: Cache Docker layers
         uses: actions/cache@v4
         with:
@@ -39,17 +71,22 @@ jobs:
           key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
           restore-keys: |
             docker-${{ runner.os }}-
-      - name: Build image (cached)
+      - name: Build + push image (only if missing or Sunday)
+        if: steps.decide.outputs.built == 'yes'
         uses: docker/build-push-action@v6
         with:
           context: .
-          load: true
-          tags: trending-local-llms:latest
+          push: true
+          tags: ${{ env.IMAGE }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+      - name: Image already current — skip rebuild
+        if: steps.decide.outputs.built != 'yes'
+        run: |
+          echo "GHCR image exists and today is not Sunday; reusing existing image."
 
-  # Four independent searches, run in parallel. Each writes its own raw
-  # snapshot to data/raw/<backend>-<UTC>.json and uploads it as an artifact.
+  # Four independent searches, run in parallel. Each PULLS the prebuilt image
+  # (no rebuild), writes its own raw snapshot, and uploads it as an artifact.
   search:
     needs: build
     runs-on: ubuntu-latest
@@ -74,25 +111,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
-
-      - name: Build image (cached)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: trending-local-llms:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+      - name: Pull prebuilt image
+        run: |
+          docker pull ${{ env.IMAGE }}
+          docker tag ${{ env.IMAGE }} trending-local-llms:latest
 
       - name: Hermes search (${{ matrix.backend }})
         run: |
@@ -118,25 +140,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
-
-      - name: Build image (cached)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: trending-local-llms:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+      - name: Pull prebuilt image
+        run: |
+          docker pull ${{ env.IMAGE }}
+          docker tag ${{ env.IMAGE }} trending-local-llms:latest
 
       - name: Download raw snapshots
         uses: actions/download-artifact@v4
