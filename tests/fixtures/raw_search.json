@@ -1,0 +1,41 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-09-29T10:00:00Z",
+  "models": [
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "type": "LLM",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "9GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060",
+          "quant": "Q4",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/1"
+        }
+      ]
+    },
+    {
+      "id": "brand-new",
+      "name": "BrandNew",
+      "type": "LLM",
+      "hf": "org/brand-new",
+      "vram_tier": "12GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80",
+          "hardware": "RTX 4090",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/2",
+          "quant": "Q4"
+        }
+      ]
+    }
+  ]
+}
