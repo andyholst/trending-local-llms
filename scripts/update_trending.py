@@ -204,8 +204,12 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     if posts:
         # post-granularity signal present -> last_7d_likes is the distinct-post count
         eng["last_7d_likes"] = sum(1 for p in posts if _post_date(p) >= cutoff)
-    # else: legacy row with no seen_posts yet -> PRESERVE the stored counter
-    # (a plain re-sort/merge must never zero out real engagement data).
+    else:
+        # No post-granularity signal (legacy row or no recent posts) -> the
+        # stored counter is a stale cumulative number, not a 7-day count. Reset
+        # to 0 so the trending rank reflects REAL recent engagement, never a
+        # legacy monotonic counter that would dominate the list forever.
+        eng["last_7d_likes"] = 0
     # keep last_seen in sync with the newest post (or today if none)
     dates = [d for d in (_post_date(p) for p in posts) if d]
     if dates:
@@ -552,18 +556,42 @@ def resolve_model_mapping(raw_model: dict, store: dict) -> dict:
     return res
 
 
+def _gpu_size(hardware: str) -> str:
+    """Normalize a hardware string to a canonical GPU identity so the same
+    measurement reported with slightly different wording collapses. Priority:
+    (1) a specific NVIDIA card model (RTX 4090, RTX 5090, ...) — the strongest
+    signal; (2) a VRAM size ('<N>GB'); (3) a platform (Apple/Mac, CPU). Two rows
+    with the same engine + t/s + this identity are the same measurement.
+    Returns '' when nothing recognizable (kept as-is, distinct)."""
+    hw = (hardware or "").lower()
+    m = re.search(r"rtx\s*(\d{3,4})\s*(ti)?", hw)
+    if m:
+        return f"rtx{m.group(1)}{m.group(2) or ''}"
+    m = re.search(r"(\d+)\s*gb", hw)
+    if m:
+        return f"{m.group(1)}gb"
+    if any(k in hw for k in ("apple", "mac", "m1", "m2", "m3", "m4", "m5", "m6", "mlx")):
+        return "apple"
+    if any(k in hw for k in ("cpu", "intel", "amd", "no gpu", "raspberry")):
+        return "cpu"
+    return ""
+
+
 def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
-    """Merge incoming engine measurements into current. Key is the full identity
-    (engine, date, hardware, quant) so two measurements on the same date but on
-    different hardware are BOTH kept (a real multi-hardware result), while a true
-    replacement of the same (engine, date, hardware, quant) just overwrites.
-    Never drops a current entry."""
+    """Merge incoming engine measurements into current. Two rows are the SAME
+    measurement (and collapse to one, keeping the newest date) when they share
+    engine + t/s + GPU size — the same model+engine+GPU+VRAM reported by two
+    different X posts. Different GPU size or different t/s is a legit distinct
+    measurement and is KEPT. Never drops a current entry."""
     out = list(current)
     for inc in incoming:
-        key = (inc.get("engine"), inc.get("date"), inc.get("hardware"), inc.get("quant"))
-        idx = next((i for i, e in enumerate(out) if (e.get("engine"), e.get("date"), e.get("hardware"), e.get("quant")) == key), None)
+        key = (inc.get("engine"), inc.get("tps"), _gpu_size(inc.get("hardware", "")))
+        idx = next((i for i, e in enumerate(out)
+                    if (e.get("engine"), e.get("tps"), _gpu_size(e.get("hardware", ""))) == key), None)
         if idx is not None:
-            out[idx] = inc
+            # same measurement re-reported -> keep the NEWER date's row
+            if (inc.get("date") or "") >= (out[idx].get("date") or ""):
+                out[idx] = inc
         else:
             out.append(inc)
     return out
@@ -596,6 +624,9 @@ def normalize_model(m: dict, store: dict) -> dict:
     if vm and not m.get("vram_min"):
         m["vram_min"] = f"{vm.group(1)}GB"
     engs = [e for e in m.get("engines", []) if e.get("engine")]
+    # dedup the raw model's own engine rows (same engine+tps+GPU size reported
+    # by two posts in ONE snapshot) so a brand-new model never carries duplicates
+    engs = merge_engines([], engs)
     backends = []
     for e in engs:
         b = store.get("engines", {}).get(e.get("engine"), {}).get("backend", "")

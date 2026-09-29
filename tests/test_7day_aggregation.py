@@ -194,31 +194,31 @@ def test_correct_raw_fills_missing_backend():
 
 
 def test_merge_engines_dedup_same_gpu_vram():
-    """Same model + same engine + same GPU card + same VRAM (same date+quant)
-    must collapse to ONE engine row — the same measurement re-ingested on an
-    overlapping window is never duplicated. Different hardware is a legit
-    distinct measurement and is KEPT."""
-    current = [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
-                "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"}]
-    # same engine+date+hardware+quant re-ingested -> overwrite, not duplicate
-    incoming_same = [{"engine": "llama.cpp", "tps": "52", "hardware": "RTX 4090",
-                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"}]
+    """Same model + same engine + same t/s + same GPU card/VRAM must collapse to
+    ONE engine row — the same measurement reported by two different X posts
+    (with slightly different hardware wording) is never duplicated. Different
+    GPU card or different t/s is a legit distinct measurement and is KEPT."""
+    # the PR #16 duplicate: same engine+tps+GPU size, different hardware wording
+    current = [{"engine": "FreeToken", "tps": "39.3", "hardware": "RTX 8GB GPU",
+                "quant": "4-bit", "date": "2026-09-29", "source_post": "https://lightbrd.com/konig0000/status/1"}]
+    incoming_same = [{"engine": "FreeToken", "tps": "39.3", "hardware": "8 GB GPU (MoE, ~3B active/token)",
+                      "quant": "4-bit", "date": "2026-09-27", "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2"}]
     out = UT.merge_engines(current, incoming_same)
-    check("merge_engines: same GPU+VRAM+date+quant collapses to one row",
+    check("merge_engines: same engine+tps+GPU size collapses to one row",
           len(out) == 1, f"len={len(out)}")
-    check("merge_engines: re-ingested same row overwrites t/s (50->52)",
-          out[0]["tps"] == "52", out[0]["tps"])
+    check("merge_engines: keeps the NEWER date's row (2026-09-29)",
+          out[0]["date"] == "2026-09-29", out[0]["date"])
     # different GPU card -> legit distinct measurement, KEPT
-    incoming_diff_gpu = [{"engine": "llama.cpp", "tps": "80", "hardware": "RTX 5090",
-                          "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"}]
+    incoming_diff_gpu = [{"engine": "FreeToken", "tps": "39.3", "hardware": "RTX 5090",
+                          "quant": "4-bit", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"}]
     out2 = UT.merge_engines(out, incoming_diff_gpu)
     check("merge_engines: different GPU card is a distinct row (kept)",
           len(out2) == 2, f"len={len(out2)}")
-    # different date -> newer measurement, KEPT alongside
-    incoming_new_date = [{"engine": "llama.cpp", "tps": "90", "hardware": "RTX 4090",
-                          "quant": "Q4", "date": "2026-09-29", "source_post": "https://lightbrd.com/c"}]
-    out3 = UT.merge_engines(out2, incoming_new_date)
-    check("merge_engines: different date is a distinct row (kept)",
+    # different t/s on the same GPU -> legit distinct measurement, KEPT
+    incoming_diff_tps = [{"engine": "FreeToken", "tps": "45", "hardware": "RTX 8GB GPU",
+                          "quant": "4-bit", "date": "2026-09-28", "source_post": "https://lightbrd.com/c"}]
+    out3 = UT.merge_engines(out2, incoming_diff_tps)
+    check("merge_engines: different t/s on same GPU is a distinct row (kept)",
           len(out3) == 3, f"len={len(out3)}")
 
 
@@ -317,17 +317,18 @@ def test_recompute_7d_boundary():
     UT.recompute_7d_engagement(m, today())
     check("recompute: exactly-7d post counted, 8d not", m["engagement"]["last_7d_likes"] == 1,
           str(m["engagement"]["last_7d_likes"]))
-    # legacy: no seen_posts -> preserve stored counter, don't zero
+    # legacy: no seen_posts -> reset stale cumulative counter to 0 (a legacy
+    # monotonic counter is NOT a 7-day count and must not dominate the rank)
     legacy = {"id": "m2", "name": "M2", "engagement": {"last_7d_likes": 1420}}
     UT.recompute_7d_engagement(legacy, today())
-    check("recompute: legacy row preserves stored counter (no zeroing)",
-          legacy["engagement"]["last_7d_likes"] == 1420, str(legacy["engagement"]["last_7d_likes"]))
+    check("recompute: legacy row resets stale counter to 0 (no rank pollution)",
+          legacy["engagement"]["last_7d_likes"] == 0, str(legacy["engagement"]["last_7d_likes"]))
 
 
 def test_ingest_same_model_engine_gpu_not_duplicated():
-    """End-to-end: two raw snapshots carrying the SAME model + engine + GPU card
-    + VRAM must produce ONE engine row in the store (no duplicate), while a
-    different GPU card adds a second row."""
+    """End-to-end: two raw snapshots carrying the SAME model + engine + t/s +
+    GPU card/VRAM (different hardware wording) must produce ONE engine row in
+    the store (no duplicate), while a different GPU card adds a second row."""
     store = {
         "engines": {"llama.cpp": {"backend": "CUDA", "note": "x", "url": "https://github.com/ggml-org/llama.cpp"}},
         "models": [{
@@ -341,20 +342,22 @@ def test_ingest_same_model_engine_gpu_not_duplicated():
             "last_seen": "2026-09-28",
         }],
     }
-    def raw(hw, tps, post):
+    def raw(hw, tps, post, date="2026-09-28"):
         return {"backend": "nvidia", "generated_utc": "2026-09-28T10:00:00Z", "models": [{
             "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
             "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
             "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA"],
             "engines": [{"engine": "llama.cpp", "tps": tps, "hardware": hw,
-                         "quant": "Q4", "date": "2026-09-28", "source_post": post}],
-            "last_seen": "2026-09-28",
+                         "quant": "Q4", "date": date, "source_post": post}],
+            "last_seen": date,
         }]}
     with tempfile.TemporaryDirectory() as td:
         rdir = Path(td)
+        # same model+engine+tps+GPU size, different hardware wording + different post
         (rdir / "nvidia-1.json").write_text(json.dumps(raw("RTX 4090", "50", "https://lightbrd.com/a")))
-        (rdir / "nvidia-2.json").write_text(json.dumps(raw("RTX 4090", "52", "https://lightbrd.com/a")))  # same GPU+VRAM
-        (rdir / "nvidia-3.json").write_text(json.dumps(raw("RTX 5090", "80", "https://lightbrd.com/b")))  # diff GPU
+        (rdir / "nvidia-2.json").write_text(json.dumps(raw("RTX 4090 24GB", "50", "https://lightbrd.com/a2")))
+        # different GPU card -> distinct row
+        (rdir / "nvidia-3.json").write_text(json.dumps(raw("RTX 5090", "80", "https://lightbrd.com/b")))
         saved = UT.RAW_DIR
         UT.RAW_DIR = rdir
         try:
@@ -363,10 +366,10 @@ def test_ingest_same_model_engine_gpu_not_duplicated():
             UT.RAW_DIR = saved
     m = next(x for x in store["models"] if x["id"] == "qwen3-14b")
     gpu_rows = [(e["hardware"], e["tps"]) for e in m["engines"]]
-    check("ingest: same model+engine+GPU+VRAM -> ONE row (no duplicate)",
+    check("ingest: same model+engine+tps+GPU size -> ONE row (no duplicate)",
           len(m["engines"]) == 2, json.dumps(gpu_rows))
-    check("ingest: same GPU row overwritten (50->52), diff GPU kept",
-          ("RTX 4090", "52") in gpu_rows and ("RTX 5090", "80") in gpu_rows, json.dumps(gpu_rows))
+    check("ingest: same GPU row kept once, diff GPU kept",
+          ("RTX 4090 24GB", "50") in gpu_rows and ("RTX 5090", "80") in gpu_rows, json.dumps(gpu_rows))
 
 
 def main() -> int:

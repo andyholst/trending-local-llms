@@ -1,0 +1,68 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-09-29T10:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6 35B",
+      "full_name": "Qwen3.6-35B",
+      "type": "MoE",
+      "license": "Apache 2.0",
+      "params": "35B",
+      "hf": "Qwen/Qwen3.6-35B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": ["CUDA"],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 8GB GPU",
+          "quant": "4-bit",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8 GB GPU (MoE, ~3B active/token)",
+          "quant": "4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "MoE",
+      "license": "MIT",
+      "params": "1T",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": ["CUDA"],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "RTX 32GB GPU",
+          "quant": "FP4/FP8",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32 GB GPU (MoE, 6 of 256 experts/token)",
+          "quant": "FP8/FP4 mixed",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

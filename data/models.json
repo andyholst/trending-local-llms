@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-09-29T18:55:45Z",
+  "generated_utc": "2026-09-29T21:14:21Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -140,7 +140,7 @@
         "likes": 2750,
         "comments": 640,
         "views": 84563,
-        "last_7d_likes": 1420,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
       "last_seen": "2026-09-27",
@@ -193,7 +193,7 @@
         "likes": 4120,
         "comments": 890,
         "views": 384000,
-        "last_7d_likes": 1241,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
       "last_seen": "2026-09-20",
@@ -204,20 +204,20 @@
       "vram_min": "12GB"
     },
     {
-      "id": "qwen3-14b",
-      "name": "Qwen3 14B",
-      "full_name": "Qwen3-14B",
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "full_name": "Qwen3-8B",
       "type": "LLM",
       "formats": [
         {
           "name": "GGUF",
-          "hf": "Qwen/Qwen3-14B"
+          "hf": "Qwen/Qwen3-8B"
         }
       ],
       "license": "Apache 2.0",
-      "params": "14B",
-      "hf": "Qwen/Qwen3-14B",
-      "vram_tier": "9GB",
+      "params": "8B",
+      "hf": "Qwen/Qwen3-8B",
+      "vram_tier": "8GB",
       "backends": [
         "CUDA",
         "CPU",
@@ -226,26 +226,26 @@
       "engines": [
         {
           "engine": "Ollama",
-          "tps": "65",
-          "hardware": "RTX 3090",
+          "tps": "100",
+          "hardware": "RTX 4060",
           "quant": "Q4_K_M",
-          "date": "2026-09-15",
+          "date": "2026-09-12",
           "source_post": "https://lightbrd.com/"
         }
       ],
-      "why": "2M HF downloads. The community mid-size favorite.",
+      "why": "The default 8 GB pick. Fast, Apache 2.0.",
       "engagement": {
-        "likes": 2310,
-        "comments": 410,
-        "views": 152000,
-        "last_7d_likes": 681,
+        "likes": 1650,
+        "comments": 290,
+        "views": 84000,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
-      "last_seen": "2026-09-15",
+      "last_seen": "2026-09-12",
       "supported_engines": [
         "Ollama"
       ],
-      "vram_min": "8GB"
+      "vram_min": "4GB"
     },
     {
       "id": "gemma-4-12b",
@@ -290,7 +290,7 @@
         "likes": 1980,
         "comments": 350,
         "views": 98000,
-        "last_7d_likes": 540,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
       "last_seen": "2026-09-19",
@@ -300,20 +300,20 @@
       "vram_min": "6GB"
     },
     {
-      "id": "qwen3-8b",
-      "name": "Qwen3 8B",
-      "full_name": "Qwen3-8B",
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
       "type": "LLM",
       "formats": [
         {
           "name": "GGUF",
-          "hf": "Qwen/Qwen3-8B"
+          "hf": "Qwen/Qwen3-14B"
         }
       ],
       "license": "Apache 2.0",
-      "params": "8B",
-      "hf": "Qwen/Qwen3-8B",
-      "vram_tier": "8GB",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "9GB",
       "backends": [
         "CUDA",
         "CPU",
@@ -322,26 +322,26 @@
       "engines": [
         {
           "engine": "Ollama",
-          "tps": "100",
-          "hardware": "RTX 4060",
+          "tps": "65",
+          "hardware": "RTX 3090",
           "quant": "Q4_K_M",
-          "date": "2026-09-12",
+          "date": "2026-09-15",
           "source_post": "https://lightbrd.com/"
         }
       ],
-      "why": "The default 8 GB pick. Fast, Apache 2.0.",
+      "why": "2M HF downloads. The community mid-size favorite.",
       "engagement": {
-        "likes": 1650,
-        "comments": 290,
-        "views": 84000,
-        "last_7d_likes": 411,
+        "likes": 2310,
+        "comments": 410,
+        "views": 152000,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
-      "last_seen": "2026-09-12",
+      "last_seen": "2026-09-15",
       "supported_engines": [
         "Ollama"
       ],
-      "vram_min": "4GB"
+      "vram_min": "8GB"
     },
     {
       "id": "qwen-3.6-27b",
@@ -377,7 +377,7 @@
         "likes": 1210,
         "comments": 215,
         "views": 61000,
-        "last_7d_likes": 240,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
       "last_seen": "2026-09-10",
@@ -428,7 +428,7 @@
         "likes": 1890,
         "comments": 310,
         "views": 12280,
-        "last_7d_likes": 520,
+        "last_7d_likes": 0,
         "seen_posts": []
       },
       "last_seen": "2026-08-10",

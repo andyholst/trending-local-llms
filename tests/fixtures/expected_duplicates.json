@@ -1,0 +1,113 @@
+{
+  "engines": {
+    "FreeToken": {
+      "backend": "CUDA",
+      "note": "x",
+      "url": "https://github.com/FlashML-org/FreeToken"
+    }
+  },
+  "models": [
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6 35B",
+      "full_name": "Qwen3.6-35B",
+      "type": "MoE",
+      "license": "Apache 2.0",
+      "params": "35B",
+      "hf": "Qwen/Qwen3.6-35B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 8GB GPU",
+          "quant": "4-bit",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+        }
+      ],
+      "last_seen": "2026-09-29",
+      "supported_engines": [
+        "FreeToken"
+      ],
+      "why": "Qwen3.6-35B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.6 35B",
+          "hf": "Qwen/Qwen3.6-35B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 2,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/konig0000/status/2104268737839063181",
+            "date": "2026-09-29"
+          },
+          {
+            "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+            "date": "2026-09-27"
+          }
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "MoE",
+      "license": "MIT",
+      "params": "1T",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "RTX 32GB GPU",
+          "quant": "FP4/FP8",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+        }
+      ],
+      "last_seen": "2026-09-29",
+      "supported_engines": [
+        "FreeToken"
+      ],
+      "why": "DeepSeek-V4-Flash — see source posts.",
+      "formats": [
+        {
+          "name": "DeepSeek V4 Flash",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 2,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/konig0000/status/2104268737839063181",
+            "date": "2026-09-29"
+          },
+          {
+            "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+            "date": "2026-09-27"
+          }
+        ]
+      }
+    }
+  ]
+}
