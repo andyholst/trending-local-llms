@@ -105,22 +105,24 @@ def test_ingest_maps_and_adds_per_engine():
 
 
 def test_ingest_updates_existing_engine_ts():
-    """A newer measurement for the SAME engine+hardware+quant+date overwrites the
-    t/s (merge key is full identity). A different date is a NEW row (kept, and
-    newest-date-first surfaces it)."""
+    """A newer measurement for the SAME engine + t/s + GPU size (different
+    hardware wording) collapses to one row (keeps the newer date). A different
+    t/s on the same GPU is a distinct measurement and is KEPT."""
     s = base_store()
     raw = raw_snapshot("nvidia", [{
         "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
         "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
         "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA"],
-        "engines": [{"engine": "llama.cpp", "tps": "78", "hardware": "RTX 3060",
+        "engines": [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 3060 12GB",
                      "quant": "Q4", "date": "2026-09-20", "source_post": "https://lightbrd.com/u"}],
         "last_seen": "2026-09-28",
     }])
     run(s, [raw])
     m = next(x for x in s["models"] if x["id"] == "qwen3-14b")
     llama = [e for e in m["engines"] if e["engine"] == "llama.cpp"]
-    check("ingest overwrites same-identity t/s (50 -> 78)", len(llama) == 1 and llama[0]["tps"] == "78")
+    # base_store has llama.cpp tps=50 RTX 3060; raw has same tps=50 RTX 3060 12GB
+    # -> same engine+tps+GPU size -> collapse to one row
+    check("ingest collapses same engine+tps+GPU size (no dup)", len(llama) == 1)
 
 
 def test_ingest_different_date_is_new_row():

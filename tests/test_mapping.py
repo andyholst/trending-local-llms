@@ -92,11 +92,20 @@ def test_merge_keeps_same_date_diff_hardware():
 
 
 def test_merge_overwrites_truly_identical():
+    """Same engine + same t/s + same GPU size (different hardware wording) is the
+    SAME measurement -> collapses to one row (keeps the newer date). Different
+    t/s on the same GPU is a distinct measurement and is KEPT."""
     cur = [{"engine": "llama.cpp", "tps": "60", "hardware": "RTX 4070", "quant": "Q4", "date": "2026-09-26"}]
-    new = [{"engine": "llama.cpp", "tps": "61", "hardware": "RTX 4070", "quant": "Q4", "date": "2026-09-26"}]
+    # same engine+tps+GPU size, different hardware wording -> collapse
+    new = [{"engine": "llama.cpp", "tps": "60", "hardware": "RTX 4070 12GB", "quant": "Q4", "date": "2026-09-27"}]
     out = merge_engines(cur, new)
-    check("truly identical row overwritten (updated t/s, no dup)",
-          len(out) == 1 and out[0]["tps"] == "61")
+    check("truly identical row collapses (same engine+tps+GPU, no dup)",
+          len(out) == 1 and out[0]["date"] == "2026-09-27")
+    # different t/s on the same GPU -> distinct measurement, KEPT
+    diff = [{"engine": "llama.cpp", "tps": "61", "hardware": "RTX 4070", "quant": "Q4", "date": "2026-09-26"}]
+    out2 = merge_engines(out, diff)
+    check("different t/s on same GPU is a distinct row (kept)",
+          len(out2) == 2)
 
 
 def test_merge_preserves_current():

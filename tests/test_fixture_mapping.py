@@ -36,6 +36,8 @@ import update_trending as UT  # noqa: E402
 FIXTURES = ROOT / "tests" / "fixtures"
 RAW_FIXTURE = FIXTURES / "raw_search.json"
 EXPECTED_FIXTURE = FIXTURES / "expected_models.json"
+RAW_DUP_FIXTURE = FIXTURES / "raw_duplicates.json"
+EXPECTED_DUP_FIXTURE = FIXTURES / "expected_duplicates.json"
 CONTRACT = ROOT / "data" / "model_contract.json"
 
 _PASS = 0
@@ -152,12 +154,42 @@ def test_store_validates_against_contract():
     check("ingested store validates against model_contract.json", valid, detail if not valid else "")
 
 
+def test_no_duplicate_engine_rows_from_duplicate_posts():
+    """The PR #16 regression: the same model+engine+t/s+GPU size reported by two
+    different X posts (with slightly different hardware wording) must collapse
+    to ONE engine row. Loads raw_duplicates.json (2 models, each with 2
+    duplicate FreeToken rows) and asserts the ingested store EXACTLY matches
+    expected_duplicates.json (each model has 1 engine row, no duplicates)."""
+    raw = json.loads(RAW_DUP_FIXTURE.read_text())
+    store = {
+        "engines": {"FreeToken": {"backend": "CUDA", "note": "x", "url": "https://github.com/FlashML-org/FreeToken"}},
+        "models": [],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        rdir = Path(td)
+        (rdir / "nvidia-1.json").write_text(json.dumps(raw))
+        saved = UT.RAW_DIR
+        UT.RAW_DIR = rdir
+        try:
+            UT.ingest_raw_snapshots(store)
+        finally:
+            UT.RAW_DIR = saved
+    UT.sort_models(store["models"], datetime(2026, 9, 29, tzinfo=timezone.utc))
+    expected = json.loads(EXPECTED_DUP_FIXTURE.read_text())
+    check("no-dup: ingest output matches expected_duplicates.json", store == expected,
+          "store != expected (duplicates not collapsed)")
+    for m in store["models"]:
+        check(f"no-dup: {m['id']} has exactly 1 engine row (no duplicate)",
+              len(m["engines"]) == 1, f"got {len(m['engines'])} rows")
+
+
 def main() -> int:
     print("fixture-driven raw -> models.json mapping (mandatory + optional fields)")
     test_output_matches_expected_fixture()
     test_mandatory_fields_present()
     test_optional_fields_filled()
     test_store_validates_against_contract()
+    test_no_duplicate_engine_rows_from_duplicate_posts()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
