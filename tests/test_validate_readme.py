@@ -285,6 +285,28 @@ def test_most_loved_table_clean_shape():
         check("most-loved: row column count matches header", ln.count("|") == hdr_cols, ln[:60])
 
 
+def test_engine_guide_engine_name_is_link():
+    """REGRESSION: the inference engine guide must link the ENGINE NAME to its
+    repo/main site — not a separate 'Repo' column. A future renderer change that
+    reintroduces a bare engine name or a 'Repo' column fails here."""
+    s = store()
+    readme = UT.render_readme(s, datetime(2026, 9, 28, tzinfo=timezone.utc))
+    lines = readme.split("\n")
+    start = next(i for i, ln in enumerate(lines) if "Inference engine" in ln)
+    hdr = next(ln for ln in lines[start:] if ln.startswith("| Engine"))
+    check("engine-guide: no separate 'Repo' column", "Repo" not in hdr, hdr)
+    # every engine row must have the engine name as a markdown link
+    for ln in lines[start:]:
+        if not ln.strip():
+            continue
+        if not ln.startswith("|"):
+            break
+        if "Engine" in ln or "---" in ln:
+            continue
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        check("engine-guide: engine name is a link", cells[0].startswith("["), cells[0])
+
+
 def main() -> int:
     print("validate-readme + raw-mapping: direct unit tests")
     test_backend_sort_pass()
@@ -300,6 +322,7 @@ def main() -> int:
     test_raw_mapping_new_model()
     test_raw_mapping_id_collision__maps_by_id()
     test_most_loved_table_clean_shape()
+    test_engine_guide_engine_name_is_link()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

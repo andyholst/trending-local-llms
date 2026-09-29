@@ -364,7 +364,7 @@ def render_readme(store: dict, today: datetime) -> str:
     def backend_table(title, emoji, rows_):
         rows_ = sorted(rows_, key=lambda r: -r[2])
         lines = [f"# {emoji} {title}", "", "| Model | Params | License | HF | VRAM | t/s per engine |",
-                 "|---|---|---|---|---|---|"]
+                 "|---|---|---|---|---|"]
         if not rows_:
             lines.append("_No models measured on this backend yet._")
         for m, desc, _peak in rows_:
@@ -379,7 +379,7 @@ def render_readme(store: dict, today: datetime) -> str:
     cpu_md = backend_table("CPU — no GPU", "🟨", backend_rows["CPU"])
 
     engine_guide = "\n".join(
-        f"| **{k}** | {v['backend']} | {v['note']} | [repo]({v.get('url','')}) |"
+        f"| [{k}]({v.get('url','')}) | {v['backend']} | {v['note']} |"
         for k, v in store["engines"].items()
     )
 
@@ -398,7 +398,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 ## ❤️ Most loved open-weight models on X (ranked by 7-day engagement)
 
 | Model | Full name | HF link | Why people love it | CUDA t/s (engine) | Metal t/s (engine) | VRAM |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|
 {most_loved}
 
 ---
@@ -421,8 +421,8 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 ## ⚙️ Inference engine / server guide
 
-| Engine | Backend | Best for | Repo |
-|---|---|---|---|
+| Engine | Backend | Best for |
+|---|---|---|
 {engine_guide}
 
 **Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp CPU (tiny/edge).
