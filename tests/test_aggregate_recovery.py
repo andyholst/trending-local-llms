@@ -147,9 +147,63 @@ def test_backend_sort_still_catches_unsorted_tps():
     check("check_backend_sort still catches a real unsorted table", len(errs) == 1, json.dumps(errs))
 
 
+def test_correct_raw_fixes_extra_fields_and_missing_last_seen():
+    """Reproduce the exact aggregate failure (run #36575326343): a raw snapshot
+    with extra top-level keys (method, note, search_group, window) AND a model
+    missing last_seen. After `make correct-raw` (self_correct_raw) the snapshot
+    must (a) have no extra top-level keys and (b) have last_seen filled — so the
+    subsequent _validate passes. This is the ordering fix: correct-raw runs
+    BEFORE validate in the aggregate job."""
+    import self_correct_raw as scr
+
+    store = {"engines": {"llama.cpp": {"backend": "CUDA"}}}
+    schema = json.loads((ROOT / "data" / "search_contract.json").read_text())
+
+    raw = {
+            "backend": "metal",
+            "generated_utc": "2026-09-29T13:40:22Z",
+            "method": "firecrawl-scrape",
+            "note": "captured",
+            "search_group": "metal",
+            "window": "last-3-day",
+            "models": [{
+                "id": "mimo-v2.6-pro", "name": "Mimo 2.6 Pro", "full_name": "Mimo-2.6-Pro",
+                "type": "LLM", "license": "Apache 2.0", "params": "27B", "hf": "org/mimo",
+                "vram_tier": "16GB", "vram_min": "12GB", "backends": ["Metal"],
+                # NOTE: no last_seen — the exact field the aggregate flagged missing
+                "engines": [{"engine": "llama.cpp", "tps": "120", "date": "2026-09-29",
+                             "source_post": "https://lightbrd.com/m"}],
+            }],
+        }
+    with tempfile.TemporaryDirectory() as td:
+        rdir = Path(td)
+        f = rdir / "metal-20260929-134022.json"
+        f.write_text(json.dumps(raw))
+        saved = scr.RAW_DIR
+        scr.RAW_DIR = rdir
+        try:
+            scr.correct_snapshot(f, store)
+        finally:
+            scr.RAW_DIR = saved
+        out = json.loads(f.read_text())
+        extra = sorted(set(out.keys()) - {"backend", "generated_utc", "models"})
+        check("correct-raw prunes method/note/search_group/window",
+              extra == [], json.dumps(extra))
+        m = out["models"][0]
+        check("correct-raw fills missing last_seen", bool(m.get("last_seen")), m.get("last_seen"))
+        import jsonschema
+        try:
+            jsonschema.validate(out, schema)
+            valid = True
+        except Exception:  # noqa: BLE001
+            valid = False
+        check("corrected snapshot validates against search_contract.json", valid)
+
+
 def main() -> int:
     print("refresh aggregation recovery (search contract extras + backend sort)")
     test_self_correct_prunes_extra_top_level_keys()
+    test_correct_raw_fixes_extra_fields_and_missing_last_seen()
     test_backend_sort_uses_tps_column_not_params()
     test_backend_sort_still_catches_unsorted_tps()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

@@ -156,6 +156,48 @@ this `AGENTS.md` and the `gather-data` skill, then:
   so the CI re-runs green (up to 3 rounds), then leaves the PR for manual
   review. Never auto-merges.
 
+Contract evolution for fix-bot: when validation fails because the search
+agent now emits a **new key/value that the data genuinely needs** (a new
+engine, backend, format, engagement field, or top-level metadata that is
+real and would be lost by pruning), fix-bot SHOULD update the contract
+(`data/search_contract.json` and/or `data/model_contract.json`) to declare it,
+**and update the corresponding tests in the same change** (rule 6b — the
+contract shape lives in the per-file helpers, so a format change is a
+one-place edit that ripples to all assertions). Only add a key when it is
+real, traceable data — never to paper over a malformed snapshot. If a new key
+is noise (a one-off artifact of a bad prompt), PRUNE it via
+`self_correct_raw` instead of widening the contract. Distinguish the two: a
+key that recurs across multiple backends/runs and carries real value → widen
+the contract + tests; a stray/empty/malformed key → prune. Manual review is
+still required before either lands.
+
+**Contract versioning — additive vs breaking changes.** The contract is
+versioned so OLD data can always be validated against the OLD contract and
+NEW data against the NEW contract:
+
+- **Additive change (backward-compatible):** adding a NEW key, a new enum
+  value, or widening a constraint does NOT break existing data. Update the
+  SAME contract file in place (`data/search_contract.json` /
+  `data/model_contract.json`) and the tests in the same change. Old snapshots
+  still validate (they simply lack the new optional key). No version bump.
+
+- **Breaking change (backward-incompatible):** removing or renaming an
+  existing key, changing a key's type, or removing an enum value makes OLD
+  data fail the NEW contract. Do NOT edit the existing file in place. Instead
+  create a NEW versioned contract — `data/search_contract.v2.json` /
+  `data/model_contract.v2.json` (and so on for v3, v4, …) — that declares the
+  new shape, and keep the old file untouched so old snapshots still validate
+  against it. Update the validator (`scripts/validate.py`) and the tests to
+  pick the right contract per data set: old raw snapshots / old models.json
+  validate against the old contract, new ones against the new. The
+  `generated_utc` timestamp (or a `contract_version` field) is what routes a
+  snapshot to the correct contract version.
+
+Rule of thumb: if every existing record still conforms after the change, it
+is additive → edit in place. If any existing record would now fail, it is
+breaking → new `*.vN.json` contract + validator/test routing. Never silently
+re-validate old data against a changed contract.
+
 Flow: bot refreshes + opens PR → PR CI validates → if red, fix-bot corrects with
 Hermes → CI re-runs → green → human merges.
 
