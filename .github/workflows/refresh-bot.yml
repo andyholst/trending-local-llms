@@ -1,11 +1,12 @@
 name: refresh-bot
 
 # BOT pipeline — scheduled data refresh. Fully container-agnostic: builds the
-# self-contained Docker image (Python deps + Hermes CLI, cached) and runs ALL
-# make commands inside it — setup, the four Hermes searches, merge, validate,
-# test. The runner's Python/pip/Hermes are never used. Opens a PR ONLY when
-# there is new data. Never auto-merges. The PR is validated by qa-validate.yml;
-# if red, fix-bot.yml re-runs Hermes to correct it.
+# self-contained Docker image (Python deps + Hermes CLI, cached) and runs the
+# four Hermes searches as SEPARATE PARALLEL jobs (each writes its own
+# data/raw/<backend>-<UTC>.json), then a final job aggregates them (merge ->
+# validate -> test) and opens a PR only when there is new data. Never
+# auto-merges. The PR is validated by qa-validate.yml; if red, fix-bot.yml
+# re-runs Hermes to correct it.
 #
 # Local equivalent:
 #   make docker-build && NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh
@@ -21,9 +22,42 @@ permissions:
   pull-requests: write
 
 jobs:
-  refresh:
+  # Build the image once, cache it, and share it with the search jobs via the
+  # docker layer cache. Each search job rebuilds from cache (fast).
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+      - name: Build image (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: trending-local-llms:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+
+  # Four independent searches, run in parallel. Each writes its own raw
+  # snapshot to data/raw/<backend>-<UTC>.json and uploads it as an artifact.
+  search:
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [nvidia, metal, cpu, general]
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
@@ -60,9 +94,64 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
-      - name: Hermes refresh (setup + 4 searches + merge + validate + test, in container)
+      - name: Hermes search (${{ matrix.backend }})
         run: |
-          make refresh
+          make search-${{ matrix.backend }}
+
+      - name: Upload raw snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-${{ matrix.backend }}
+          path: data/raw/*.json
+          if-no-files-found: error
+
+  # Aggregate: download all four raw snapshots, merge into models.json + README,
+  # validate + test, then open a PR if there is new data.
+  aggregate:
+    needs: search
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build image (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: trending-local-llms:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+
+      - name: Download raw snapshots
+        uses: actions/download-artifact@v4
+        with:
+          path: data/raw
+          pattern: raw-*
+          merge-multiple: true
+
+      - name: Merge + validate + test (in container)
+        run: |
+          make merge
+          make validate
+          make validate-search
+          make validate-mapped
+          make test
           echo "QA passed: no models removed, fields+links present, backend tables sorted by t/s, JSON<->README sync, search contract, mapping, all models in README."
 
       - name: Commit + open PR if changed

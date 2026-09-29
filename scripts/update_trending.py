@@ -24,13 +24,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data" / "models.json"
-README = ROOT / "README.md"
-SCRAPE_DIR = ROOT / "data" / "scrape"
-SNAPSHOT_DIR = ROOT / "data" / "snapshots"
-RAW_DIR = ROOT / "data" / "raw"
+# Allow tests to run the make targets against a small fixture in a temp dir
+# instead of the real data/ tree. When set, all data paths resolve under it.
+_DATA_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
+DATA = _DATA_DIR / "models.json"
+README = Path(os.environ.get("TRENDING_README", str(ROOT / "README.md")))
+SCRAPE_DIR = _DATA_DIR / "scrape"
+SNAPSHOT_DIR = _DATA_DIR / "snapshots"
+RAW_DIR = _DATA_DIR / "raw"
 
-# Four search groups (last-30-day window), refined by live probing (Sep 28
+# Four search groups (last-3-day window), refined by live probing (Sep 28
 # 2026) for maximum matches per backend. NVIDIA/CUDA and Apple/Metal carry most
 # of the signal; CPU is sparse on X (offload-capable engines like FreeToken and
 # llama.cpp-cpu surface under the CUDA/engine queries). A general group catches
