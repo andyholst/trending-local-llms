@@ -193,6 +193,182 @@ def test_correct_raw_fills_missing_backend():
         check("corrected snapshot validates against search_contract.json", valid)
 
 
+def test_merge_engines_dedup_same_gpu_vram():
+    """Same model + same engine + same GPU card + same VRAM (same date+quant)
+    must collapse to ONE engine row — the same measurement re-ingested on an
+    overlapping window is never duplicated. Different hardware is a legit
+    distinct measurement and is KEPT."""
+    current = [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
+                "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"}]
+    # same engine+date+hardware+quant re-ingested -> overwrite, not duplicate
+    incoming_same = [{"engine": "llama.cpp", "tps": "52", "hardware": "RTX 4090",
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"}]
+    out = UT.merge_engines(current, incoming_same)
+    check("merge_engines: same GPU+VRAM+date+quant collapses to one row",
+          len(out) == 1, f"len={len(out)}")
+    check("merge_engines: re-ingested same row overwrites t/s (50->52)",
+          out[0]["tps"] == "52", out[0]["tps"])
+    # different GPU card -> legit distinct measurement, KEPT
+    incoming_diff_gpu = [{"engine": "llama.cpp", "tps": "80", "hardware": "RTX 5090",
+                          "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"}]
+    out2 = UT.merge_engines(out, incoming_diff_gpu)
+    check("merge_engines: different GPU card is a distinct row (kept)",
+          len(out2) == 2, f"len={len(out2)}")
+    # different date -> newer measurement, KEPT alongside
+    incoming_new_date = [{"engine": "llama.cpp", "tps": "90", "hardware": "RTX 4090",
+                          "quant": "Q4", "date": "2026-09-29", "source_post": "https://lightbrd.com/c"}]
+    out3 = UT.merge_engines(out2, incoming_new_date)
+    check("merge_engines: different date is a distinct row (kept)",
+          len(out3) == 3, f"len={len(out3)}")
+
+
+def test_validate_catches_duplicate_engine_same_gpu_vram():
+    """NEGATIVE: the validator must flag a store where the same model has the
+    same engine on the same GPU card + VRAM (identical engine/date/hardware/
+    tps/quant) twice — the exact 'mentioned twice for a specific GPU + VRAM'
+    case the user wants prevented."""
+    import validate as V
+    V.FAILURES.clear()
+    store = {"engines": {"llama.cpp": {"backend": "CUDA", "note": "x", "url": "https://github.com/ggml-org/llama.cpp"}},
+             "models": [{
+                 "id": "m1", "name": "M1", "full_name": "M1", "type": "LLM",
+                 "formats": [{"name": "GGUF", "hf": "org/m1"}], "license": "Apache 2.0",
+                 "params": "14B", "hf": "org/m1", "vram_tier": "12GB", "vram_min": "8GB",
+                 "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
+                 "engines": [
+                     {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"},
+                     {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"},
+                 ],
+                 "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
+                 "last_seen": "2026-09-28",
+             }]}
+    V.check_no_duplicate_engines(store)
+    errs = [f for f in V.FAILURES if "duplicate identical engine row" in f]
+    check("validate: catches same model+engine+GPU+VRAM mentioned twice",
+          len(errs) == 1, json.dumps(errs))
+
+
+def test_validate_allows_same_engine_different_gpu():
+    """HAPPY: the same model+engine on DIFFERENT GPU cards (or different t/s)
+    is a legitimate multi-hardware result and must NOT be flagged as a
+    duplicate."""
+    import validate as V
+    V.FAILURES.clear()
+    store = {"engines": {"llama.cpp": {"backend": "CUDA", "note": "x", "url": "https://github.com/ggml-org/llama.cpp"}},
+             "models": [{
+                 "id": "m1", "name": "M1", "full_name": "M1", "type": "LLM",
+                 "formats": [{"name": "GGUF", "hf": "org/m1"}], "license": "Apache 2.0",
+                 "params": "14B", "hf": "org/m1", "vram_tier": "12GB", "vram_min": "8GB",
+                 "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
+                 "engines": [
+                     {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"},
+                     {"engine": "llama.cpp", "tps": "80", "hardware": "RTX 5090",
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"},
+                 ],
+                 "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
+                 "last_seen": "2026-09-28",
+             }]}
+    V.check_no_duplicate_engines(store)
+    errs = [f for f in V.FAILURES if "duplicate identical engine row" in f]
+    check("validate: different GPU cards are NOT duplicates (kept)",
+          len(errs) == 0, json.dumps(errs))
+
+
+def test_dedupe_posts_edge_cases():
+    """Edge cases for dedupe_posts: empty list, entries missing url, and the
+    same url with a missing date must not crash and must not double-count."""
+    check("dedupe: empty list -> empty", UT.dedupe_posts([]) == [])
+    mixed = [
+        {"url": "https://lightbrd.com/a", "date": "2026-09-28"},
+        {"url": "", "date": "2026-09-28"},          # no url -> dropped
+        {"url": "https://lightbrd.com/a", "date": ""},  # same url, no date
+        {"url": "https://lightbrd.com/b", "date": "2026-09-28"},
+    ]
+    out = UT.dedupe_posts(mixed)
+    urls = sorted(p["url"] for p in out)
+    check("dedupe: drops url-less entries, dedupes same url", urls == ["https://lightbrd.com/a", "https://lightbrd.com/b"],
+          json.dumps(urls))
+
+
+def test_prune_posts_boundary_30_days():
+    """Boundary: a post exactly 30 days old is KEPT (retention), 31 days is
+    pruned. Malformed dates are dropped without crashing."""
+    m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": [
+        {"url": "https://lightbrd.com/30", "date": "2026-08-30"},  # exactly 30d
+        {"url": "https://lightbrd.com/31", "date": "2026-08-29"},  # 31d -> prune
+        {"url": "https://lightbrd.com/bad", "date": "not-a-date"},  # malformed -> drop
+    ]}}
+    UT.recompute_7d_engagement(m, today())
+    urls = [p["url"] for p in m["engagement"]["seen_posts"]]
+    check("prune: exactly-30d kept, 31d pruned, malformed dropped",
+          urls == ["https://lightbrd.com/30"], json.dumps(urls))
+
+
+def test_recompute_7d_boundary():
+    """Boundary: a post exactly 7 days old IS counted in last_7d_likes; 8 days
+    is not. Empty seen_posts preserves the stored counter (legacy)."""
+    m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": [
+        {"url": "https://lightbrd.com/7", "date": "2026-09-22"},  # exactly 7d
+        {"url": "https://lightbrd.com/8", "date": "2026-09-21"},  # 8d -> out
+    ]}}
+    UT.recompute_7d_engagement(m, today())
+    check("recompute: exactly-7d post counted, 8d not", m["engagement"]["last_7d_likes"] == 1,
+          str(m["engagement"]["last_7d_likes"]))
+    # legacy: no seen_posts -> preserve stored counter, don't zero
+    legacy = {"id": "m2", "name": "M2", "engagement": {"last_7d_likes": 1420}}
+    UT.recompute_7d_engagement(legacy, today())
+    check("recompute: legacy row preserves stored counter (no zeroing)",
+          legacy["engagement"]["last_7d_likes"] == 1420, str(legacy["engagement"]["last_7d_likes"]))
+
+
+def test_ingest_same_model_engine_gpu_not_duplicated():
+    """End-to-end: two raw snapshots carrying the SAME model + engine + GPU card
+    + VRAM must produce ONE engine row in the store (no duplicate), while a
+    different GPU card adds a second row."""
+    store = {
+        "engines": {"llama.cpp": {"backend": "CUDA", "note": "x", "url": "https://github.com/ggml-org/llama.cpp"}},
+        "models": [{
+            "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
+            "formats": [{"name": "GGUF", "hf": "Qwen/Qwen3-14B"}], "license": "Apache 2.0",
+            "params": "14B", "hf": "Qwen/Qwen3-14B", "vram_tier": "9GB", "vram_min": "8GB",
+            "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
+            "engines": [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
+                         "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"}],
+            "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
+            "last_seen": "2026-09-28",
+        }],
+    }
+    def raw(hw, tps, post):
+        return {"backend": "nvidia", "generated_utc": "2026-09-28T10:00:00Z", "models": [{
+            "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
+            "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
+            "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA"],
+            "engines": [{"engine": "llama.cpp", "tps": tps, "hardware": hw,
+                         "quant": "Q4", "date": "2026-09-28", "source_post": post}],
+            "last_seen": "2026-09-28",
+        }]}
+    with tempfile.TemporaryDirectory() as td:
+        rdir = Path(td)
+        (rdir / "nvidia-1.json").write_text(json.dumps(raw("RTX 4090", "50", "https://lightbrd.com/a")))
+        (rdir / "nvidia-2.json").write_text(json.dumps(raw("RTX 4090", "52", "https://lightbrd.com/a")))  # same GPU+VRAM
+        (rdir / "nvidia-3.json").write_text(json.dumps(raw("RTX 5090", "80", "https://lightbrd.com/b")))  # diff GPU
+        saved = UT.RAW_DIR
+        UT.RAW_DIR = rdir
+        try:
+            UT.ingest_raw_snapshots(store)
+        finally:
+            UT.RAW_DIR = saved
+    m = next(x for x in store["models"] if x["id"] == "qwen3-14b")
+    gpu_rows = [(e["hardware"], e["tps"]) for e in m["engines"]]
+    check("ingest: same model+engine+GPU+VRAM -> ONE row (no duplicate)",
+          len(m["engines"]) == 2, json.dumps(gpu_rows))
+    check("ingest: same GPU row overwritten (50->52), diff GPU kept",
+          ("RTX 4090", "52") in gpu_rows and ("RTX 5090", "80") in gpu_rows, json.dumps(gpu_rows))
+
+
 def main() -> int:
     print("7-day post-granularity engagement aggregation")
     test_dedupe_posts_collapses_same_url()
@@ -201,6 +377,13 @@ def main() -> int:
     test_prune_posts_retains_30d_removes_older()
     test_ingest_seeds_and_dedupes_seen_posts()
     test_correct_raw_fills_missing_backend()
+    test_merge_engines_dedup_same_gpu_vram()
+    test_validate_catches_duplicate_engine_same_gpu_vram()
+    test_validate_allows_same_engine_different_gpu()
+    test_dedupe_posts_edge_cases()
+    test_prune_posts_boundary_30_days()
+    test_recompute_7d_boundary()
+    test_ingest_same_model_engine_gpu_not_duplicated()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
