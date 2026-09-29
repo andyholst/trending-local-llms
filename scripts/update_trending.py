@@ -305,15 +305,12 @@ def render_readme(store: dict, today: datetime) -> str:
                 cuda.append(cell)
         return "<br>".join(cuda) or "—", "<br>".join(metal) or "—"
 
-    def fmt_engines(m):
-        return "; ".join(f"{elink(e)} {e['tps']}" + (" (" + e.get("date", "") + ")" if e.get("date") else "") for e in m["engines"])
-
     rows = []
-    for i, m in enumerate(models, 1):
+    for m in models:
         cu, me = eng_cells(m)
         rows.append(
-            f"| {i} | **{m['name']}** | {m.get('full_name', m.get('name',''))} | [link](https://huggingface.co/{m['hf']}) "
-            f"| {m.get('why','')} | {cu} | {me} | {m.get('vram_tier','—')} | {fmt_engines(m)} |"
+            f"| **{m['name']}** | {m.get('full_name', m.get('name',''))} | [link](https://huggingface.co/{m['hf']}) "
+            f"| {m.get('why','')} | {cu} | {me} | {m.get('vram_tier','—')} |"
         )
     most_loved = "\n".join(rows)
 
@@ -400,8 +397,8 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 ## ❤️ Most loved open-weight models on X (ranked by 7-day engagement)
 
-| # | Model | Full name | HF link | Why people love it | CUDA t/s (engine) | Metal t/s (engine) | VRAM | Engines + t/s |
-|---|---|---|---|---|---|---|---|---|
+| Model | Full name | HF link | Why people love it | CUDA t/s (engine) | Metal t/s (engine) | VRAM |
+|---|---|---|---|---|---|---|
 {most_loved}
 
 ---

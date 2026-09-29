@@ -256,6 +256,35 @@ def test_raw_mapping_id_collision__maps_by_id():
     check("raw-mapping: id match maps by id (no spurious collision)", len(fails) == 0)
 
 
+def test_most_loved_table_clean_shape():
+    """REGRESSION: the 'most loved' table must NOT carry a '#' rank column or a
+    redundant 'Engines + t/s' column. Rank is implied by row order (first row =
+    highest engagement); the CUDA/Metal columns already carry t/s + engine link +
+    hardware. A future renderer change that reintroduces either column fails
+    here."""
+    s = store()
+    readme = UT.render_readme(s, datetime(2026, 9, 28, tzinfo=timezone.utc))
+    # the most-loved table header (first table after the 'Most loved' heading)
+    lines = readme.split("\n")
+    start = next(i for i, ln in enumerate(lines) if "Most loved" in ln)
+    hdr = next(ln for ln in lines[start:] if ln.startswith("| Model"))
+    check("most-loved: no '#' rank column", not hdr.startswith("| #"), hdr)
+    check("most-loved: no 'Engines + t/s' column", "Engines + t/s" not in hdr, hdr)
+    check("most-loved: has CUDA + Metal t/s columns", "CUDA t/s" in hdr and "Metal t/s" in hdr, hdr)
+    # every data row in the most-loved table must have the same column count as
+    # the header. Stop at the first non-table line (end of the table block) so
+    # we don't bleed into the engine-guide table below.
+    hdr_cols = hdr.count("|")
+    for ln in lines[start + 1:]:
+        if not ln.strip():
+            continue
+        if not ln.startswith("|"):
+            break  # end of the most-loved table block
+        if "Model" in ln or "---" in ln:
+            continue
+        check("most-loved: row column count matches header", ln.count("|") == hdr_cols, ln[:60])
+
+
 def main() -> int:
     print("validate-readme + raw-mapping: direct unit tests")
     test_backend_sort_pass()
@@ -270,6 +299,7 @@ def main() -> int:
     test_raw_mapping_maps_existing()
     test_raw_mapping_new_model()
     test_raw_mapping_id_collision__maps_by_id()
+    test_most_loved_table_clean_shape()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
