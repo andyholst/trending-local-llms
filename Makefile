@@ -132,7 +132,7 @@ _validate-schema:
 .PHONY: _validate-search
 _validate-search:
 	python3 scripts/validate.py --only search,mapping
-	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py
+	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_aggregate_recovery.py
 	python3 scripts/self_correct_raw.py
 
 .PHONY: _validate-readme
@@ -142,11 +142,11 @@ _validate-readme:
 .PHONY: _validate-mapped
 _validate-mapped:
 	python3 scripts/validate.py --only data,schema,mapping
-	python3 tests/test_mapping.py && python3 tests/test_validate.py
+	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_aggregate_recovery.py
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py)
 
 .PHONY: _requirements
 _requirements:
