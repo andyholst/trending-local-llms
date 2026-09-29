@@ -1,0 +1,234 @@
+{
+  "backend": "general",
+  "generated_utc": "2026-09-29T17:50:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE offload (experts on RAM pass)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "Top MoE model in the General group's highest-engagement post this week (Daily Dose of Data Science roundup of UC Berkeley's open-sourced FreeToken). 39.3 t/s on an 8GB GPU with experts offloaded to system RAM (activates ~3B of its 35B per token). Apache 2.0.",
+      "engagement": {
+        "likes": 400,
+        "comments": 60,
+        "views": 18000,
+        "last_7d_likes": 400
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GenAI",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "license": "MIT (DeepSeek)",
+      "params": "284B (13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "FP4+FP8 / MoE offload (6 of 256 experts active)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "284B MoE (13B active, 6 experts of 256 per layer) served at 22 t/s on a 32GB GPU via FreeToken's bandwidth-split expert offload. Same UC Berkeley FreeToken roundup post. 1M-token context, FP4+FP8 mixed.",
+      "engagement": {
+        "likes": 400,
+        "comments": 60,
+        "views": 18000,
+        "last_7d_likes": 400
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GenAI",
+          "hf": "zai-org/GLM-5.2"
+        }
+      ],
+      "license": "GLM (Z.ai)",
+      "params": "753B",
+      "hf": "zai-org/GLM-5.2",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "96GB GPU",
+          "quant": "MoE offload",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "Z.ai flagship 753B MoE at 14.9 t/s on a 96GB GPU via FreeToken — the largest model in this week's General roundup (96GB is above the headline 8-48GB VRAM scope, kept as it's a real, high-engagement real-world figure). Directed at long-horizon tasks. (est VRAM)",
+      "engagement": {
+        "likes": 400,
+        "comments": 60,
+        "views": 18000,
+        "last_7d_likes": 400
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "qwen2.5-7b-instruct",
+      "name": "Qwen2.5-7B-Instruct",
+      "full_name": "Qwen2.5-7B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GenAI",
+          "hf": "Qwen/Qwen2.5-7B-Instruct"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "7B",
+      "hf": "Qwen/Qwen2.5-7B-Instruct",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "~38 (1 user); peak ~215 output t/s across 16 parallel",
+          "hardware": "Kaggle T4 16GB (free GPU)",
+          "quant": "4-bit AWQ",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/omkarchebale/status/2104708091866718466"
+        }
+      ],
+      "why": "Qwen2.5-7B-Instruct (4-bit AWQ) on vLLM running free on a Kaggle T4: ~38 t/s single user, first token 0.8s, up to ~215 output t/s across 16 parallel requests (server-side, no network). Real measured numbers from a 'free GPU' serving writeup.",
+      "engagement": {
+        "likes": 6,
+        "comments": 5,
+        "views": 20000,
+        "last_7d_likes": 6
+      },
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama-3.1-8B-Instruct",
+      "full_name": "Llama-3.1-8B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "WebLLM/MLC",
+          "hf": "mlc-ai/Llama-3.1-8B-Instruct-q4f32_1-MLC"
+        }
+      ],
+      "license": "Llama 3.1 (Meta)",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B-Instruct",
+      "vram_tier": "16GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "Apple M3 Max (in-browser, WebGPU)",
+          "quant": "q4f32_1 (browser WebGPU)",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296"
+        }
+      ],
+      "why": "8B model running fully in-browser via WebLLM (MLC-LLM/TVM, WebGPU) at 41.1 t/s on an M3 Max — ~71% of native. No server, no API key. New engine worth tracking for edge/local inference. 19,200 GitHub stars.",
+      "engagement": {
+        "likes": 1,
+        "comments": 3,
+        "views": 90,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "phi-3.5-mini",
+      "name": "Phi-3.5-mini",
+      "full_name": "Phi-3.5-mini-instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "WebLLM/MLC",
+          "hf": "microsoft/Phi-3.5-mini-instruct"
+        }
+      ],
+      "license": "MIT (Microsoft)",
+      "params": "3.8B",
+      "hf": "microsoft/Phi-3.5-mini-instruct",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "71.1",
+          "hardware": "Apple M3 Max (in-browser, WebGPU)",
+          "quant": "browser WebGPU",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296"
+        }
+      ],
+      "why": "Small model running in-browser via WebLLM at 71.1 t/s on an M3 Max (~80% of native). Quick edge-inference pick from the same WebLLM (MLC-LLM) roundup post.",
+      "engagement": {
+        "likes": 1,
+        "comments": 3,
+        "views": 90,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

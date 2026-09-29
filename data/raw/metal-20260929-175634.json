@@ -1,0 +1,131 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-09-29T17:56:28Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "61.9 code / 30.8 chat (6.1x / 3.0x w/ DFlash2 draft)",
+          "hardware": "Mac mini M6",
+          "quant": "MLX 4-bit + DFlash2 draft",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "40.0 prose / 41.5 code",
+          "hardware": "MacBook Pro M3 Max 96GB",
+          "quant": "mlx-community 4-bit + z-lab DFlash2 8-bit drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326"
+        }
+      ],
+      "why": "Flagship local model. On Apple Silicon this week it hit 61.9 tok/s code (6.1x) on a Mac mini M6 via TensorFold + DFlash2-draft, MLX 4-bit; same model/drafter drives the whole TensorFold/mlx-serve/oMLX engine board.",
+      "engagement": {
+        "likes": 2,
+        "comments": 9,
+        "views": 648,
+        "last_7d_likes": 2
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "nemotron-lightning-30b-a3b",
+      "name": "Nemotron Lightning 30B-A3B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "MoE",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "30B-A3B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+        }
+      ],
+      "why": "NVIDIA's compact 30B-A3B Lightning MoE using its native MTP head; on TensorFold MLX 4-bit it is the fastest Metal measurement this window at 188-206 tok/s on Apple Silicon.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "MoE (vision)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "~177B-A18B (8.7B active via MLX mixed)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "88-92",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+        }
+      ],
+      "why": "Qwen's mid-tier multimodal MoE. On TensorFold MLX 4-bit it hits 88-92 tok/s on Apple Silicon, and ~80 tok/s decode at 64K context via oMLX MTP on M5 Ultra.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-27"
+    }
+  ]
+}
