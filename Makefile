@@ -67,26 +67,28 @@ _setup:
 
 .PHONY: _search-nvidia
 _search-nvidia:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with NVIDIA keywords ONLY (rtx tokens per second llm, rtx 3090/4090/5090 tokens per second, bonsai 2 ternary, freetoken gpu, dflash speculative), one query at a time, last-30-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/nvidia-<UTC>.json using:  python3 scripts/update_trending.py --write-raw nvidia < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with NVIDIA keywords ONLY (rtx tokens per second llm, rtx 3090/4090/5090 tokens per second, bonsai 2 ternary, freetoken gpu, dflash speculative), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/nvidia-<UTC>.json using:  python3 scripts/update_trending.py --write-raw nvidia < payload.json. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --yolo
 
 .PHONY: _search-metal
 _search-metal:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with Apple/Metal keywords ONLY (mlx tokens per second, mlx apple silicon, mac m4 mlx local llm, mlxfast bonsai, tensorfold dflash mlx), one query at a time, last-30-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/metal-<UTC>.json using:  python3 scripts/update_trending.py --write-raw metal < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with Apple/Metal keywords ONLY (mlx tokens per second, mlx apple silicon, mac m4 mlx local llm, mlxfast bonsai, tensorfold dflash mlx), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/metal-<UTC>.json using:  python3 scripts/update_trending.py --write-raw metal < payload.json. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --yolo
 
 .PHONY: _search-cpu
 _search-cpu:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with CPU/embedded/edge keywords ONLY (llm tokens per second no gpu cpu, llama.cpp cpu only, raspberry pi llm tokens per second, local llm cpu), one query at a time, last-30-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/cpu-<UTC>.json using:  python3 scripts/update_trending.py --write-raw cpu < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with CPU/embedded/edge keywords ONLY (llm tokens per second no gpu cpu, llama.cpp cpu only, raspberry pi llm tokens per second, local llm cpu), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/cpu-<UTC>.json using:  python3 scripts/update_trending.py --write-raw cpu < payload.json. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --yolo
 
 .PHONY: _search-general
 _search-general:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with GENERAL t/s keywords (tokens per second llm, tokens per second benchmark llm, local llm tokens per second gpu, open weight llm benchmark gpu), one query at a time, last-30-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/general-<UTC>.json using:  python3 scripts/update_trending.py --write-raw general < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FIRECRAWL_API_KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with GENERAL t/s keywords (tokens per second llm, tokens per second benchmark llm, local llm tokens per second gpu, open weight llm benchmark gpu), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write the captured models to data/raw/general-<UTC>.json using:  python3 scripts/update_trending.py --write-raw general < payload.json. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --yolo
 
 .PHONY: _search
-_search: _search-nvidia _search-metal _search-cpu _search-general
+_search:
+	@echo "== running 4 searches in parallel (each writes its own data/raw/<backend>-<UTC>.json) =="
+	@make -j4 _search-nvidia _search-metal _search-cpu _search-general
 
 .PHONY: _correct-raw
 _correct-raw:
@@ -131,7 +133,7 @@ _validate-mapped:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py)
 
 .PHONY: _requirements
 _requirements:
@@ -152,7 +154,7 @@ _requirements:
 .PHONY: _refresh
 _refresh:
 	@echo "== _setup =="; make _setup || exit 1
-	@echo "== _search =="; make _search || exit 1
+	@echo "== _search (parallel, soft) =="; make _search || echo "[refresh] one or more searches failed; aggregating the successful ones"
 	@echo "== _merge =="; make _merge || exit 1
 	@echo "== _validate (soft) =="; make _validate || echo "[refresh] _validate reported issues (see above); opening PR for review"
 	@echo "== _validate-search (soft) =="; make _validate-search || echo "[refresh] _validate-search reported issues (see above)"

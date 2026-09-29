@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -28,12 +29,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))  # import update_trending helpers
-DATA = ROOT / "data" / "models.json"
-SNAPSHOT_DIR = ROOT / "data" / "snapshots"
-README = ROOT / "README.md"
-CONTRACT = ROOT / "data" / "model_contract.json"
-SEARCH_CONTRACT = ROOT / "data" / "search_contract.json"
-RAW_DIR = ROOT / "data" / "raw"
+# Allow tests to run the make targets against a small fixture in a temp dir.
+_DATA_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
+DATA = _DATA_DIR / "models.json"
+SNAPSHOT_DIR = _DATA_DIR / "snapshots"
+README = Path(os.environ.get("TRENDING_README", str(ROOT / "README.md")))
+CONTRACT = _DATA_DIR / "model_contract.json"
+SEARCH_CONTRACT = _DATA_DIR / "search_contract.json"
+RAW_DIR = _DATA_DIR / "raw"
 
 # Text file extensions that must end with a newline
 TEXT_EXTS = (".json", ".md", ".yml", ".yaml", ".py", ".toml", ".sh", ".txt", ".cfg")

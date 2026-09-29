@@ -126,7 +126,7 @@ this `AGENTS.md` and the `gather-data` skill, then:
 
 1. Runs the **four search groups** against **lightbrd.com only**, fetched via
    the Firecrawl scrape API (`FIRECRAWL_API_KEY`) — NVIDIA/CUDA, Metal/MLX, CPU,
-   and a General t/s-trend group (see `skills/gather-data.md`), last-30-day
+   and a General t/s-trend group (see `skills/gather-data.md`), last-3-day
    window. **One search at a time** to keep context small: run a query, capture
    its results, then move to the next — never hold all results in context at
    once. Each search writes its own timestamped raw snapshot to

@@ -28,12 +28,14 @@ Run:  python3 scripts/self_correct_raw.py
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_DIR = ROOT / "data" / "raw"
+# Allow tests to run against a small fixture in a temp dir.
+RAW_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data"))) / "raw"
 
 REQUIRED_MODEL = ["id", "name", "full_name", "type", "license", "params", "hf",
                   "vram_tier", "vram_min", "backends", "engines", "last_seen"]
