@@ -78,6 +78,17 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
     data = json.loads(path.read_text())
     notes = []
     ts_date = data.get("generated_utc", "")[:10]
+
+    # search_contract.json has additionalProperties:false at the top level, so
+    # prune any extra keys the Hermes agent wrote (note, window, queries_used,
+    # engines metadata, etc.) that are not declared. Without this the snapshot
+    # fails check_search_contract and the aggregate job dies.
+    _ALLOWED_TOP = {"backend", "generated_utc", "models"}
+    extra_top = sorted(set(data.keys()) - _ALLOWED_TOP)
+    for k in extra_top:
+        data.pop(k, None)
+    if extra_top:
+        notes.append(f"{path.name}: pruned unexpected top-level keys {extra_top}")
     for m in data.get("models", []):
         if not m.get("id"):
             m["id"] = slug(m.get("name", "unknown"))

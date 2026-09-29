@@ -299,7 +299,13 @@ def check_backend_sort(store: dict) -> None:
                 break  # end of the table block
             if "Model" in ln or "---" in ln:
                 continue
-            nums = [float(x) for x in re.findall(r"(\d+\.?\d*)", ln)]
+            # Each backend row is:
+            #   | **Model** | Params | License | HF | VRAM | t/s per engine |
+            # Only the LAST cell holds t/s figures. Parsing the whole row wrongly
+            # picks up Params ("125B"->125) and VRAM ("12GB"->12) as t/s, so a
+            # correctly-sorted table looked unsorted. Extract just the t/s cell.
+            cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+            nums = [float(x) for x in re.findall(r"(\d+\.?\d*)", cells[-1 if cells else 0])]
             if nums:
                 rows.append(max(n for n in nums if n < 1000))
         if rows != sorted(rows, reverse=True):
