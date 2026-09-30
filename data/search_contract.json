@@ -144,6 +144,21 @@
                   "type": "integer",
                   "minimum": 0,
                   "description": "Comments on the source X post backing this measurement."
+                },
+                "reshares": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Reshares/reposts of the source X post backing this measurement (strongest engagement signal)."
+                },
+                "views": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Views of the source X post (reach; log-scaled in the engagement weight)."
+                },
+                "interactions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Total interactions on the source X post (likes+comments+reshares+views or the platform's reported total)."
                 }
               },
               "additionalProperties": false
