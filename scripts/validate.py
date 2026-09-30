@@ -490,13 +490,17 @@ def _link_ok(url: str, timeout: float = 8.0, strict: bool = True) -> bool:
     2xx — used for public model / inference-server links (Hugging Face, engine
     repos) that must genuinely resolve. strict=False also accepts indeterminate
     (403/429/5xx) — used for source_post (X mirror bot-blocks) and README links.
-    HEAD first, GET fallback."""
+    HEAD first, GET fallback. When HF_TOKEN is set (repo secret), Hugging Face
+    requests are authenticated with it, so batch link-checking isn't held to the
+    anonymous rate limit."""
     if not url or not url.startswith(("http://", "https://")):
         return False
+    headers = {"User-Agent": "trending-local-llms-linkcheck/1.0"}
+    if url.startswith("https://huggingface.co/") and os.environ.get("HF_TOKEN"):
+        headers["Authorization"] = "Bearer " + os.environ["HF_TOKEN"]
     for method in ("HEAD", "GET"):
         try:
-            req = urllib.request.Request(url, method=method,
-                                         headers={"User-Agent": "trending-local-llms-linkcheck/1.0"})
+            req = urllib.request.Request(url, method=method, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 if 200 <= resp.status < 300:
                     return True
