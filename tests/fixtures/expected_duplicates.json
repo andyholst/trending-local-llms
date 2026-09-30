@@ -27,7 +27,9 @@
           "hardware": "RTX 8GB GPU",
           "quant": "4-bit",
           "date": "2026-09-29",
-          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181",
+          "likes": 0,
+          "comments": 0
         }
       ],
       "last_seen": "2026-09-29",
@@ -78,7 +80,9 @@
           "hardware": "RTX 32GB GPU",
           "quant": "FP4/FP8",
           "date": "2026-09-29",
-          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181",
+          "likes": 0,
+          "comments": 0
         }
       ],
       "last_seen": "2026-09-29",
