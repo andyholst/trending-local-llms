@@ -14,16 +14,22 @@ on:
     workflows: ["qa-validate"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "PR head branch to fix (overrides the failed run's branch)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write  # lets the fix-bot dispatch workflows (self/refresh) autonomously
 
 jobs:
   fix:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
@@ -33,7 +39,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+          if [ -n "${{ inputs.branch }}" ]; then
+            HEAD_BRANCH="${{ inputs.branch }}"
+          else
+            HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+          fi
           echo "Failed run head branch: $HEAD_BRANCH"
           PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --json number -q '.[0].number' 2>/dev/null || echo "")
           if [ -z "$PR_NUM" ]; then
