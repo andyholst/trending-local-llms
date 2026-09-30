@@ -42,7 +42,7 @@ NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # 384K output). Input context is also raised to the model's 1M-token ceiling
 # (model card: 1M input / 384K output) so a long AGENTS.md + skill + mirrors
 # page is never squeezed. One variable each so CI + local runs agree.
-HERMES_MAX_TOKENS    := 16000
+HERMES_MAX_TOKENS    := 384000
 HERMES_CONTEXT_WINDOW := 1048576
 
 
