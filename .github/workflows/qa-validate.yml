@@ -51,7 +51,7 @@ jobs:
           restore-keys: |
             docker-${{ runner.os }}-
 
-      - name: Build image (cached)
+      - name: Build base image (cached)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -59,6 +59,15 @@ jobs:
           tags: trending-local-llms:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+
+      # The base GHCR image only rebuilds on Sunday; test-only libs added
+      # mid-week (markdown-it-py, tabulate for README-table validation) are not
+      # in it. Build the dedicated TEST image which layers the current
+      # requirements-test.txt on the base, so validate/test run with the libs
+      # the repo actually pins (never the stale non-Sunday base).
+      - name: Build test image (base + current test requirements)
+        run: |
+          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
 
       - name: Validate data store + README (full deterministic suite, in container)
         run: |

@@ -23,6 +23,16 @@ IMAGE := trending-local-llms:latest
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY $(IMAGE)
 
+# The TEST image layers the CURRENT requirements-test.txt on top of the base
+# image at build time, so unit/QA tests (which need markdown-it-py + tabulate
+# to validate the README tables) never depend on the base image's Sunday-only
+# rebuild. `make test` / `make validate` run inside THIS image in CI.
+TEST_IMAGE := trending-local-llms-test:latest
+TEST_REQUIREMENTS := requirements-test.txt
+TEST_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY $(TEST_IMAGE)
+
+
 HERMES_MODEL := deepseek/deepseek-v4-flash-0731
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # Raise the per-reply output cap. The deepseek model was truncating its reply
@@ -42,6 +52,10 @@ HERMES_CONTEXT_WINDOW := 1048576
 
 .PHONY: docker-build
 docker-build:
+.PHONY: docker-test-build
+docker-test-build:
+	docker build -f Dockerfile.test -t $(TEST_IMAGE) .
+
 	docker build -t $(IMAGE) .
 
 ## ---------------------------------------------------------------------------
@@ -148,11 +162,28 @@ _validate-mapped:
 _test:
 	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py)
 
+
+.PHONY: _requirements-test
+_requirements-test:
+	python3 -m piptools compile --quiet --output-file $(TEST_REQUIREMENTS) requirements-test.in
+
 .PHONY: _requirements
 _requirements:
 	pip install --quiet pip-tools
 	pip-compile --quiet --output-file requirements.txt requirements.in
 	@echo "== regenerated requirements.txt from requirements.in =="
+
+# Regenerate EVERY requirements-*.txt from its *.in (base + any test pairs)
+# with ONE command. Iterates all requirements*.in in the repo root.
+.PHONY: _generate-requirements
+_generate-requirements:
+	pip install --quiet pip-tools
+	@for f in requirements*.in; do \
+		out=$${f%.in}.txt; \
+		echo "== pip-compile $$f -> $$out =="; \
+		pip-compile --quiet --output-file $$out $$f; \
+	done
+	@echo "== regenerated all requirements*.txt from requirements*.in =="
 
 ## ---------------------------------------------------------------------------
 ## Public targets — EVERYTHING runs inside the Docker container
@@ -217,35 +248,39 @@ merge:
 
 .PHONY: validate
 validate:
-	$(DOCKER_RUN) make _validate
+	$(TEST_RUN) make _validate
 
 .PHONY: validate-data
 validate-data:
-	$(DOCKER_RUN) make _validate-data
+	$(TEST_RUN) make _validate-data
 
 .PHONY: validate-schema
 validate-schema:
-	$(DOCKER_RUN) make _validate-schema
+	$(TEST_RUN) make _validate-schema
 
 .PHONY: validate-search
 validate-search:
-	$(DOCKER_RUN) make _validate-search
+	$(TEST_RUN) make _validate-search
 
 .PHONY: validate-readme
 validate-readme:
-	$(DOCKER_RUN) make _validate-readme
+	$(TEST_RUN) make _validate-readme
 
 .PHONY: validate-mapped
 validate-mapped:
-	$(DOCKER_RUN) make _validate-mapped
+	$(TEST_RUN) make _validate-mapped
 
 .PHONY: test
 test:
-	$(DOCKER_RUN) make _test
+	$(TEST_RUN) make _test
 
-.PHONY: requirements
+.PHONY: requirements generate-requirements
 requirements:
 	$(DOCKER_RUN) make _requirements
+
+# docker wrapper -> _generate-requirements (handles all *.in files via pip-compile)
+generate-requirements:
+	$(DOCKER_RUN) make _generate-requirements
 
 .PHONY: refresh
 refresh:
