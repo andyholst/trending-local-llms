@@ -245,7 +245,7 @@ def test_validate_catches_duplicate_engine_same_gpu_vram():
                  "last_seen": "2026-09-28",
              }]}
     V.check_no_duplicate_engines(store)
-    errs = [f for f in V.FAILURES if "duplicate identical engine row" in f]
+    errs = [f for f in V.FAILURES if "duplicate engine row" in f]
     check("validate: catches same model+engine+GPU+VRAM mentioned twice",
           len(errs) == 1, json.dumps(errs))
 
@@ -272,7 +272,7 @@ def test_validate_allows_same_engine_different_gpu():
                  "last_seen": "2026-09-28",
              }]}
     V.check_no_duplicate_engines(store)
-    errs = [f for f in V.FAILURES if "duplicate identical engine row" in f]
+    errs = [f for f in V.FAILURES if "duplicate engine row" in f]
     check("validate: different GPU cards are NOT duplicates (kept)",
           len(errs) == 0, json.dumps(errs))
 
