@@ -61,7 +61,7 @@ def build_fixture(tmp: Path) -> dict:
         "params": "14B", "hf": "Qwen/Qwen3-14B", "vram_tier": "9GB", "vram_min": "8GB",
         "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
         "engines": [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 3060",
-                     "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/1"}],
+                             "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/"}],
         "why": "w", "engagement": {"likes": 5, "comments": 1, "views": 10, "last_7d_likes": 2},
         "last_seen": "2026-09-28",
     }
@@ -81,7 +81,7 @@ def build_fixture(tmp: Path) -> dict:
                 "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
                 "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA" if backend == "nvidia" else "Metal"],
                 "engines": [{"engine": eng, "tps": tps, "hardware": "RTX 3060" if backend == "nvidia" else "M4 Max",
-                             "date": "2026-09-28", "source_post": f"https://lightbrd.com/{backend}"}],
+                             "date": "2026-09-28", "source_post": "https://lightbrd.com/"}],
                 "last_seen": "2026-09-28",
             }],
         }

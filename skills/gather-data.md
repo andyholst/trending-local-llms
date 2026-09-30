@@ -150,3 +150,24 @@ Known gotchas:
 | **MLX-fast (Bonsai 2)** | Metal | Speedup engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s on 16 GB Mac (Layr-Labs/mlxfast-bonsai2-27b-engine) |
 | **TensorRT-LLM** | CUDA | Max NVIDIA perf |
 | **LiteRT** | CUDA / Metal | Google's local runtime (Gemma 4 + Antigravity) |
+
+
+## 3. Link repair (fix-bot) — search for a correct link, never invent one
+
+When CI validation (`scripts/validate.py check_links_resolve`) reports a dead or
+wrong link, the fix-bot (Hermes) must SEARCH for the correct link and verify it
+resolves before writing it. CI itself never calls the LLM — it only reports.
+
+- **Model / format Hugging Face link** (`model-hf`, `format-hf`, `raw-hf`): find
+  the canonical repo id with the Hugging Face CLI / `huggingface_hub` — e.g.
+  `hf search models <name>` or the HF API `https://huggingface.co/api/models?search=<name>`.
+  Confirm `https://huggingface.co/<id>` returns 200 before writing it.
+- **Engine / inference-server link** (`engine-registry`, `source_post`): do a
+  regular Firecrawl web search (`FIRECRAWL_API_KEY`) for the engine's canonical
+  repo URL and confirm it resolves. Known-good engine repos live in
+  `KNOWN_ENGINE_URLS` in `scripts/validate.py`.
+- Only write a link you have actually verified resolves. If you cannot find a
+  verified replacement, leave the link and report it in the PR body for manual
+  review. Never invent a URL.
+- Update `data/models.json` (and the raw snapshot if the wrong link came from
+  `data/raw/*.json`), then regenerate `README.md` via `scripts/update_trending.py`.

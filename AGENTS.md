@@ -103,8 +103,17 @@ The README is **generated**, not hand-maintained:
   previous snapshot, (2) every model has name/full_name/HF link/license/params/
   VRAM + at least one engine measurement with engine name + t/s + repo link,
   (3) each README backend table is sorted by highest t/s descending, (4) every
-  model in the store appears in the README. This is a **validation** action, not
-  a data-gathering bot.
+  model in the store appears in the README, (5) every README **markdown table is
+  well-formed** (parsed with `markdown-it-py`: separator column count == header,
+  every data row == header, no empty cells), (6) **every link resolves** — from
+  `data/models.json` (engine registry, model HF, per-format HF, source_post),
+  `data/raw/*.json` search snapshots, and `README.md`, HEAD/GET-checked; a
+  404/410 or connection error fails CI (403/429/5xx are indeterminate), and a
+  known-good engine repo URL that was wrong is auto-corrected in the store.
+  `check_readme_tables_wellformed` + `check_links_resolve` are registered in the
+  `make validate` stages so a malformed table or a dead/wrong link in any new
+  raw snapshot, the store, or the README fails CI. This is a **validation**
+  action, not a data-gathering bot.
 - **Never hand-edit the generated tables.** Fix the template or the data store
   instead, then regenerate. The "How to contribute" section points contributors
   at the store, not direct table edits.
@@ -153,8 +162,31 @@ this `AGENTS.md` and the `gather-data` skill, then:
 - **`fix-bot.yml`** — the **fix** pipeline. Triggered when `qa-validate` is
   **red** (failure). Re-runs the Hermes CLI to inspect what the validation
   rejected, fix the data/logic, and push the correction to the same PR branch
-  so the CI re-runs green (up to 3 rounds), then leaves the PR for manual
+  so the CI re-runs green (up to 5 rounds), then leaves the PR for manual
   review. Never auto-merges.
+
+**Link-repair behavior for fix-bot (when CI reports a dead/wrong link).** The
+CI link validator (`scripts/validate.py` `check_links_present` +
+`check_links_resolve`) only **reports** which link failed — it never calls the
+LLM. The fix-bot is the one that repairs. For each failing link it MUST search
+for the correct one and verify it resolves before writing:
+
+- **Model / format Hugging Face link** (`model-hf`, `format-hf`, `raw-hf`):
+  find the canonical repo id via the Hugging Face CLI / `huggingface_hub`
+  (e.g. `hf search models <name>` or the HF API
+  `https://huggingface.co/api/models?search=<name>`), then confirm
+  `https://huggingface.co/<id>` returns 200.
+- **Engine / inference-server link** (`engine-registry`, `source_post`): do a
+  regular Firecrawl web search (`FIRECRAWL_API_KEY`) for the engine's canonical
+  repo URL and confirm it resolves. Known-good engine repos are in
+  `KNOWN_ENGINE_URLS` in `scripts/validate.py`.
+- Only write a link the fix-bot has actually verified resolves. If it cannot
+  find a verified replacement, it leaves the link and reports it in the PR body
+  for manual review — it never invents a URL.
+- It updates `data/models.json` (and the raw snapshot if the wrong link came
+  from `data/raw/*.json`), then regenerates `README.md` via
+  `scripts/update_trending.py`. See `skills/gather-data.md` §3 for the exact
+  search technique.
 
 Contract evolution for fix-bot: when validation fails because the search
 agent now emits a **new key/value that the data genuinely needs** (a new
