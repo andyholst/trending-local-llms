@@ -1,0 +1,196 @@
+{
+  "backend": "general",
+  "generated_utc": "2026-09-30T01:20:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "unsloth/Qwen3.8-Flash-Next-GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "52-60 output / 1250 prompt",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "MoE offload",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665"
+        }
+      ],
+      "why": "Alibaba open-weight Qwen4-arch preview MoE (125B total, 6B active, +51B n-gram). Runs on 8GB+ GPUs via Strata engine; 52-60 tok/s output on RX 7900 XTX.",
+      "engagement": {
+        "likes": 32,
+        "comments": 34,
+        "views": 12952,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen2.5-7b",
+      "name": "Qwen2.5 7B",
+      "full_name": "Qwen2.5-7B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen2.5-7B-Instruct"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "7B",
+      "hf": "Qwen/Qwen2.5-7B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "~38",
+          "hardware": "Kaggle T4 16GB",
+          "quant": "4-bit AWQ",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/omkarchebale/status/2104708091866718466"
+        }
+      ],
+      "why": "Served a 7B LLM on a free Kaggle T4 GPU with vLLM; ~38 tok/s single user, ~215 tok/s peak across 16 parallel requests.",
+      "engagement": {
+        "likes": 6,
+        "comments": 5,
+        "views": 257,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6 35B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "unsloth/Qwen3.6-35B-A3B-GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE offload",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "UC Berkeley FreeToken runs Qwen3.6-35B MoE on an 8GB GPU at 39.3 tok/s (2-4x faster than Ollama).",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash (284B MoE)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "license": "DeepSeek",
+      "params": "284B (13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "FP4/FP8 mixed",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "DeepSeek-V4-Flash 284B MoE (13B active) runs on a 32GB GPU at 22 tok/s via FreeToken.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "meta-llama/Llama-3.1-8B"
+        }
+      ],
+      "license": "Llama 3.1 Community",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "M3 Max (Apple Silicon)",
+          "quant": "WebGPU",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296"
+        }
+      ],
+      "why": "Llama-3.1-8B runs at 41.1 tok/s in-browser via WebLLM on an M3 Max (~71% of native speed).",
+      "engagement": {
+        "likes": 12,
+        "comments": 17,
+        "views": 115701,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

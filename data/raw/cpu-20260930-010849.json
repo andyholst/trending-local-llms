@@ -1,0 +1,123 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-09-30T01:10:00Z",
+  "models": [
+    {
+      "id": "gemma-3-4b",
+      "name": "Gemma 3 4B",
+      "full_name": "Gemma 3 4B Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "google/gemma-3-4b-it"
+        }
+      ],
+      "license": "Gemma Terms of Use",
+      "params": "4B",
+      "hf": "google/gemma-3-4b-it",
+      "vram_tier": "6GB",
+      "vram_min": "2.5GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "a few tokens/s (est)",
+          "hardware": "Android phone CPU (arm64, KleidiAI), 6GB RAM",
+          "quant": "Q4_K_M",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568"
+        }
+      ],
+      "why": "Default offline model in Vitanom, a llama.cpp-based Android app that runs fully offline (no INTERNET permission, mmap weights from flash).",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": []
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-30B-A3B-Instruct"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "30B (3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B-Instruct",
+      "vram_tier": "12GB",
+      "vram_min": "11.8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "a few tokens/s (est)",
+          "hardware": "Android phone CPU (arm64, KleidiAI), 12GB RAM",
+          "quant": "UD-Q2_K_XL",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568"
+        }
+      ],
+      "why": "MoE model (128 experts/layer, 8 active) that streams cold experts from flash on a phone CPU in the Vitanom offline app.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": []
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LiteRT",
+          "hf": "google/gemma-4-e2b"
+        }
+      ],
+      "license": "Gemma Terms of Use",
+      "params": "2B",
+      "hf": "google/gemma-4-e2b",
+      "vram_tier": "4GB",
+      "vram_min": "1.4GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "99 prefill / 9 decode",
+          "hardware": "Raspberry Pi 5 CPU (1432 MB peak)",
+          "quant": "int8 (est)",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728"
+        }
+      ],
+      "why": "Google's on-device Gemma for tight RAM and speech; runs on a Pi 5 via LiteRT with ~9 tok/s decode.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": []
+      },
+      "last_seen": "2026-09-05"
+    }
+  ]
+}

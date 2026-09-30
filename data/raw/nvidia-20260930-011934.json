@@ -1,0 +1,93 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "~50 fresh, ~22 avg (MTP + kernel fix)",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary 5.95GB",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104754435209715795"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "GeForce RTX 5090",
+          "quant": "ternary 5.9GB",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/dl_weekly/status/2104315296597037478"
+        }
+      ],
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6-35B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3 (paper, W2 coding-agent decode)",
+          "hardware": "RTX 4060 Laptop 8GB",
+          "quant": "NVFP4",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash (284B)",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "284B (13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22 (single GPU, 6-of-256 experts/layer)",
+          "hardware": "RTX 5090 32GB",
+          "quant": "FP4+FP8 mixed",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "last_seen": "2026-09-27"
+    }
+  ],
+  "generated_utc": "2026-09-30T01:19:34Z"
+}

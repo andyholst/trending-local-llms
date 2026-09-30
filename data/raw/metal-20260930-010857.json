@@ -1,0 +1,222 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "61.9 code / 30.8 chat (6.1x / 3.0x spec-decode)",
+          "hardware": "Mac mini M6 32GB",
+          "quant": "MLX 4-bit + DFlash2 draft",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "120-124",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "40.0 prose / 41.5 code",
+          "hardware": "M3 Max 96GB",
+          "quant": "mlx-community 4-bit + z-lab DFlash2 8-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326"
+        },
+        {
+          "engine": "MLX",
+          "tps": "46.8 prose / 56.1 code",
+          "hardware": "M4 Max",
+          "quant": "MTP head split (mlx-community)",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/danyathemagpie/status/2086967945092092390"
+        }
+      ],
+      "why": "Flagship local model. TensorFold spec-decode on Apple Silicon: 120-124 tok/s MLX 4-bit, up to 6.1x code gain on Mac mini M6.",
+      "engagement": {
+        "likes": 34,
+        "comments": 30,
+        "views": 50320,
+        "last_7d_likes": 3
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "nemotron-lightning",
+      "name": "Nemotron Lightning",
+      "full_name": "Nemotron Lightning",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "nvidia/Nemotron-Lightning"
+        }
+      ],
+      "license": "NVIDIA Open Model License",
+      "params": "unknown",
+      "hf": "nvidia/Nemotron-Lightning",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+        }
+      ],
+      "why": "TensorFold MLX 4-bit hits 188-206 tok/s on Apple Silicon.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "unknown",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "88-92",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+        }
+      ],
+      "why": "TensorFold MLX 4-bit hits 88-92 tok/s on Apple Silicon.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "ravenx-conjecture-qwen3-8b-mlx",
+      "name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "full_name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "RavenX/RavenX-Conjecture-Qwen3-8B-MLX"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "RavenX/RavenX-Conjecture-Qwen3-8B-MLX",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "42",
+          "hardware": "M3",
+          "quant": "MLX",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/jolyneshibasol/status/2104852085426827615"
+        }
+      ],
+      "why": "42 tok/s on M3, coherent on multi-step tool calls; fast local routing model.",
+      "engagement": {
+        "likes": 37,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "ornith-1.5",
+      "name": "Ornith 1.5",
+      "full_name": "Ornith 1.5",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "aosama/ornith-1.5-mlx"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "unknown",
+      "hf": "aosama/ornith-1.5-mlx",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "50+ (2K t/s prefill)",
+          "hardware": "MacBook Pro M5 48GB",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/AhmedHamdy29189/status/2104775267113980109"
+        }
+      ],
+      "why": "50+ TPS and ~2K t/s prompt processing on MacBook Pro M5 48GB (Astronomical CLI).",
+      "engagement": {
+        "likes": 2,
+        "comments": 39,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    }
+  ],
+  "generated_utc": "2026-09-30T01:08:57Z"
+}
