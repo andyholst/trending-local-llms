@@ -70,21 +70,57 @@ def check_no_duplicates(store: dict) -> None:
         print(f"  OK: no duplicate models ({len(ids)} unique)")
 
 
+def _normalize_tps(tps) -> str:
+    """Normalize a t/s string for duplicate detection: strip estimate markers
+    ((est)/(estimated)) and whitespace, lowercase. So '39.3' and '39.3 (est)'
+    are detected as the SAME measurement, while genuine ranges ('67-71') and
+    comments ('233 (DFlash spec-decode)') stay distinct."""
+    return (tps or "").strip().lower().replace("(est)", "").replace("(estimated)", "").strip()
+
+
 def check_no_duplicate_engines(store: dict) -> None:
-    """Within each model, no TRULY identical engine row — same
-    (engine, date, hardware, tps, quant). Different hardware or t/s on the same
-    date is a legitimate distinct measurement, NOT a duplicate."""
+    """Within each model, no duplicate engine row. Two rows are duplicates when
+    they share (engine, date, hardware, normalized-tps, quant) — where the tps
+    is normalized (est markers + whitespace stripped), so '39.3' and '39.3 (est)'
+    count as the same measurement. Different hardware, t/s range, or date is a
+    legitimate distinct measurement, NOT a duplicate."""
     bad = 0
     for m in store["models"]:
         seen = {}
         for e in m.get("engines", []):
-            key = (e.get("engine"), e.get("date"), e.get("hardware"), e.get("tps"), e.get("quant"))
+            key = (e.get("engine"), e.get("date"), e.get("hardware"),
+                   _normalize_tps(e.get("tps")), e.get("quant"))
             if key in seen:
                 bad += 1
-                fail(f"{m.get('id','?')}: duplicate identical engine row ({e.get('engine')}, {e.get('date')}, {e.get('hardware')}, {e.get('tps')})")
+                fail(f"{m.get('id','?')}: duplicate engine row ({e.get('engine')}, {e.get('date')}, {e.get('hardware')}, {e.get('tps')})")
             seen[key] = True
     if not bad:
-        print(f"  OK: no identical duplicate engine rows in any model")
+        print(f"  OK: no duplicate engine rows in any model")
+
+
+# A t/s value must START with a numeric token (optionally an estimate tilde, an
+# int/float, and a range). Leading comments or pure text are invalid. Examples
+# that pass: 39.3, ~50, 67-71, 99.7, 233 (DFlash spec-decode). Examples that
+# FAIL: 'a few (est)', '~fast', '(est) 50'. Ranges/estimates/comments-after-the-
+# number are preserved because they still begin with a number.
+_TPS_START = re.compile(r"^~?\s?\d+(?:\.\d+)?")
+
+
+def check_tps_shape(store: dict) -> None:
+    """Every engine t/s must START with a numeric token (optional '~', an
+    int/float, possibly a range). Rejects a search that wrote a non-numeric
+    placeholder like 'a few (est)', a leading comment, or a bare label — t/s is
+    a measurement. Ranges ('67-71') and estimates ('~50') still pass because
+    they begin with a digit."""
+    bad = 0
+    for m in store["models"]:
+        for e in m.get("engines", []):
+            t = e.get("tps", "")
+            if t and not _TPS_START.match(t.strip()):
+                bad += 1
+                fail(f"{m.get('id','?')}: engine '{e.get('engine')}' tps does not start with a number: {t!r}")
+    if not bad:
+        print("  OK: all engine tps start with a numeric token")
 
 
 def check_latest_tps(store: dict) -> None:
@@ -668,6 +704,7 @@ def main() -> int:
     add("no-removal guarantee", "removal", lambda: check_no_removal(store, snap_dir))
     add("no duplicate models", "data", lambda: check_no_duplicates(store))
     add("no duplicate engines", "data", lambda: check_no_duplicate_engines(store))
+    add("tps starts with a numeric token", "data", lambda: check_tps_shape(store))
     add("latest t/s surfaced", "data", lambda: check_latest_tps(store))
     add("supported engines", "data", lambda: check_supported_engines(store))
     add("model fields + links", "schema", lambda: check_model_fields(store))

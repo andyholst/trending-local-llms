@@ -102,6 +102,53 @@ def test_no_duplicate_engines():
         {"engine": "llama.cpp", "tps": "~50", "hardware": "RTX 3060", "date": "2026-09-26", "source_post": "https://lightbrd.com/z"})
     V.check_no_duplicate_engines(s)
     check("engines: same-date-different-hardware is NOT a dup", len(V.FAILURES) == 0)
+    # '39.3' vs '39.3 (est)' on same engine+date IS a duplicate (normalized tps)
+    reset()
+    s = good_store()
+    s["models"][0]["engines"] = [
+        {"engine": "llama.cpp", "tps": "39.3", "hardware": "RTX 4090", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"},
+        {"engine": "llama.cpp", "tps": "39.3 (est)", "hardware": "RTX 4090", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"},
+    ]
+    V.check_no_duplicate_engines(s)
+    check("engines: '39.3' vs '39.3 (est)' is a dup (normalized)", len(V.FAILURES) == 1, str(V.FAILURES))
+
+
+def test_tps_shape():
+    """check_tps_shape must ACCEPT t/s that start with a numeric token (int,
+    float, estimate tilde, range, or comment-after-the-number) and REJECT any
+    that start with text/other characters — including duplicate rows whose tps
+    is malformed."""
+    def tps(v):
+        reset()
+        s = good_store()
+        s["models"][0]["engines"] = [{"engine": "llama.cpp", "tps": v, "date": "2026-09-28",
+                                      "source_post": "https://lightbrd.com/x"}]
+        V.check_tps_shape(s)
+        return len(V.FAILURES)
+
+    # GOOD — starts with a number
+    good = ["39.3", "~50", "67-71", "99.7", "120-124", "22", "35.5-43.7",
+            "143", "233 (DFlash spec-decode), 74.9 stock", "~237 decode",
+            "~38 (1 user); ~215 peak (16 parallel)"]
+    for v in good:
+        check(f"tps GOOD starts-numeric: {v!r}", tps(v) == 0, str(V.FAILURES))
+
+    # BAD — does not start with a number (text / leading comment / label)
+    bad = ["a few (est)", "(est) 50", "~fast", "fast", "slow-ish", "N/A",
+           "varies", "unknown"]
+    for v in bad:
+        check(f"tps BAD rejects non-numeric start: {v!r}", tps(v) == 1, str(V.FAILURES))
+
+    # DUPLICATE with malformed text is caught (both fail tps-shape)
+    reset()
+    s = good_store()
+    s["models"][0]["engines"] = [
+        {"engine": "llama.cpp", "tps": "a few (est)", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"},
+        {"engine": "llama.cpp", "tps": "~fast", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"},
+    ]
+    V.check_tps_shape(s)
+    check("tps: duplicate malformed-text rows both rejected (2 fails)",
+          len(V.FAILURES) == 2, str(V.FAILURES))
 
 
 def test_latest_tps_order():
@@ -264,6 +311,7 @@ def main() -> int:
     print("validator: direct unit tests")
     test_no_duplicates()
     test_no_duplicate_engines()
+    test_tps_shape()
     test_latest_tps_order()
     test_supported_engines()
     test_model_fields()

@@ -19,6 +19,10 @@ on:
         description: "PR head branch to fix (overrides the failed run's branch)"
         required: false
         default: ""
+      pr_number:
+        description: "PR number to fix (direct lookup, bypasses branch search)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -40,18 +44,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -n "${{ inputs.branch }}" ]; then
-            HEAD_BRANCH="${{ inputs.branch }}"
+          # Manual dispatch can name the PR directly (pr_number) or its branch.
+          # pr_number is the robust path: the ephemeral GITHUB_TOKEN in a
+          # workflow_run/manual-dispatch context can fail to LIST a bot-authored
+          # PR by head branch, but gh pr view by NUMBER resolves reliably.
+          if [ -n "${{ inputs.pr_number }}" ]; then
+            PR_NUM="${{ inputs.pr_number }}"
+            HEAD_BRANCH=$(gh pr view "$PR_NUM" --json headRefName -q .headRefName 2>/dev/null || echo "")
+            echo "Manual dispatch: fixing PR #$PR_NUM on branch $HEAD_BRANCH"
           else
-            HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+            if [ -n "${{ inputs.branch }}" ]; then
+              HEAD_BRANCH="${{ inputs.branch }}"
+            else
+              HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+            fi
+            echo "Resolving PR for head branch: $HEAD_BRANCH"
+            # Try by number-of-list first; fall back to a broader API search.
+            PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --json number -q '.[0].number' 2>/dev/null || echo "")
+            if [ -z "$PR_NUM" ]; then
+              PR_NUM=$(gh api "repos/${{ github.repository }}/pulls?state=open&head=${{ github.repository_owner }}:$HEAD_BRANCH" -q '.[0].number // ""' 2>/dev/null || echo "")
+            fi
+            echo "PR #$PR_NUM for branch $HEAD_BRANCH"
           fi
-          echo "Failed run head branch: $HEAD_BRANCH"
-          PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --json number -q '.[0].number' 2>/dev/null || echo "")
-          if [ -z "$PR_NUM" ]; then
-            echo "No open PR for branch $HEAD_BRANCH — nothing to fix."
+          if [ -z "$PR_NUM" ] || [ -z "$HEAD_BRANCH" ]; then
+            echo "Could not resolve an open PR — nothing to fix."
             echo "has_pr=false" >> "$GITHUB_OUTPUT"
           else
-            echo "PR #$PR_NUM for branch $HEAD_BRANCH"
             echo "has_pr=true" >> "$GITHUB_OUTPUT"
             echo "pr_num=$PR_NUM" >> "$GITHUB_OUTPUT"
             echo "branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
