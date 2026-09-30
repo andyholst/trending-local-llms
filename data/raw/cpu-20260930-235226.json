@@ -1,0 +1,178 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B Instruct (MoE, 3B active)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "30B (3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-30B-A3B"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "why": "MoE that a phone CPU can stream from flash: 128 experts/8 active, ~3B of work per token. BigMoeOnEdge ran it at 5.2 t/s offline on a 12 GB phone with no GPU/NPU; also the default second model in the llama.cpp Vitanom offline Android app.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5.2",
+          "hardware": "12 GB phone CPU (flash-streamed, no GPU/NPU)",
+          "quant": "Q4 / UD-Q2_K_XL",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1492,
+          "interactions": 1521
+        }
+      ],
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "full_name": "OpenAI gpt-oss-120b (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "120B (5x phone RAM)",
+      "hf": "openai/gpt-oss-120b",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "openai/gpt-oss-120b"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "why": "BigMoeOnEdge streams only the experts each token needs straight from flash on plain CPU: 60 GB model, 2.2 t/s on a 12 GB phone that is 5x smaller than the weights. 14x faster than mmap (0.09 t/s), byte-identical output.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.2",
+          "hardware": "12 GB phone CPU (4 cores, flash-streamed, no GPU/NPU)",
+          "quant": "streamed (60 GB on disk)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1492,
+          "interactions": 1521
+        }
+      ],
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Google Gemma 4 E2B",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "formats": [
+        {
+          "name": "Gemma",
+          "hf": "google/gemma-4-E2B"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "why": "Google's official edge path: LiteRT + Gemma 4 E2B on a Raspberry Pi 5 — 99 t/s prefill and 9 t/s decode at only 1432 MB peak, fully on-device (voice demo ~300 words/min).",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9 (decode; 99 prefill)",
+          "hardware": "Raspberry Pi 5 CPU (VideoCore VII GPU split for vision/audio)",
+          "quant": "on-device (1432 MB peak)",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 527,
+          "interactions": 530
+        }
+      ],
+      "engagement": {
+        "likes": 1,
+        "comments": 2,
+        "views": 527,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-05"
+    },
+    {
+      "id": "deepseek-r1-distill-qwen-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "why": "Fully offline LLM on a $35 2019 Raspberry Pi 4B (2 GB) under Ollama at ~4 t/s for ~5 W — the canonical tiny-edge/CPU deployment.",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B (2 GB LPDDR4)",
+          "quant": "Q4",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-06-25"
+    }
+  ],
+  "generated_utc": "2026-09-30T23:52:26Z"
+}
