@@ -24,6 +24,8 @@ import json
 import os
 import re
 import sys
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -438,6 +440,207 @@ def check_readme_tables_wellformed(store: dict) -> None:
         print(f"  OK: all {len(tables)} README tables well-formed (columns + cells filled)")
 
 
+# Known-good engine repo URLs. When a link check finds a wrong/dead engine URL,
+# the fix-bot (or this validator's auto-fix) can correct it to the canonical repo.
+KNOWN_ENGINE_URLS = {
+    "llama.cpp": "https://github.com/ggml-org/llama.cpp",
+    "Ollama": "https://github.com/ollama/ollama",
+    "vLLM": "https://github.com/vllm-project/vllm",
+    "SGLang": "https://github.com/sgl-project/sglang",
+    "FreeToken": "https://github.com/FlashML-org/FreeToken",
+    "TensorRT-LLM": "https://github.com/NVIDIA/TensorRT-LLM",
+    "MLX": "https://github.com/ml-explore/mlx",
+    "TensorFold": "https://github.com/ashhart/TensorFold",
+    "MLX-fast (Bonsai 2)": "https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine",
+    "LiteRT": "https://github.com/google-ai-edge/LiteRT",
+    "Strata": "https://github.com/Niko1221/Strata",
+    "DFlash2": "https://github.com/z-lab/dflash",
+    "WebLLM": "https://github.com/mlc-ai/web-llm",
+}
+
+
+# Known-good Hugging Face repo ids. When a model's HF link 404s and we know the
+# canonical repo, the validator auto-corrects the store's hf field (so the
+# fix-bot has a concrete repair). Unknown models are reported for manual review.
+KNOWN_HF_IDS = {
+    "bonsai-2-27b": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+    "qwen3.8-27b": "Qwen/Qwen3.8-27B",
+    "qwen3-8b": "Qwen/Qwen3-8B",
+    "gemma-4-12b": "google/gemma-4-12B-it",
+    "qwen3-14b": "Qwen/Qwen3-14B",
+    "qwen-3.6-27b": "Qwen/Qwen3.6-27B",
+    "muse-glimmer-30b": "meta-models/Muse-Glimmer-30B",
+}
+
+
+def _lookup_hf_id(model_id: str) -> str | None:
+    """Return the canonical HF repo id for a model id, or None if unknown."""
+    return KNOWN_HF_IDS.get(model_id)
+
+
+# Statuses that mean "the link is fine but we can't verify right now" — rate
+# limits (429), bot-blocks (403), and server errors (5xx). Used ONLY for
+# source_post (X posts via the lightbrd.com mirror, which bot-blocks) and README
+# links. HF / engine / inference links are STRICT 2xx.
+_INDETERMINATE = {403, 429, 500, 502, 503, 504}
+
+
+def _link_ok(url: str, timeout: float = 8.0, strict: bool = True) -> bool:
+    """Return True if the URL is reachable. strict=True (default) requires HTTP
+    2xx — used for public model / inference-server links (Hugging Face, engine
+    repos) that must genuinely resolve. strict=False also accepts indeterminate
+    (403/429/5xx) — used for source_post (X mirror bot-blocks) and README links.
+    HEAD first, GET fallback."""
+    if not url or not url.startswith(("http://", "https://")):
+        return False
+    for method in ("HEAD", "GET"):
+        try:
+            req = urllib.request.Request(url, method=method,
+                                         headers={"User-Agent": "trending-local-llms-linkcheck/1.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                if 200 <= resp.status < 300:
+                    return True
+                if not strict and resp.status in _INDETERMINATE:
+                    return True
+        except urllib.error.HTTPError as e:
+            if 200 <= e.code < 300:
+                return True
+            if not strict and e.code in _INDETERMINATE:
+                return True
+        except Exception:  # noqa: BLE001 — connection error / timeout / DNS
+            continue
+    return False
+
+
+def _extract_links(store: dict) -> list[tuple[str, str, str]]:
+    """Collect (kind, owner, url) for every link in models.json + README + raw
+    snapshots. kind is engine-registry|model-hf|format-hf|source_post|readme|raw."""
+    out: list[tuple[str, str, str]] = []
+    for k, v in store.get("engines", {}).items():
+        if v.get("url"):
+            out.append(("engine-registry", k, v["url"]))
+    for m in store.get("models", []):
+        mid = m.get("id", "?")
+        if m.get("hf"):
+            out.append(("model-hf", mid, "https://huggingface.co/" + m["hf"]))
+        for f in m.get("formats", []):
+            if f.get("hf"):
+                out.append(("format-hf", mid, "https://huggingface.co/" + f["hf"]))
+        for e in m.get("engines", []):
+            if e.get("source_post"):
+                out.append(("source_post", mid, e["source_post"]))
+    if README.exists():
+        for u in re.findall(r"https?://[^\s)\]>]+", README.read_text()):
+            out.append(("readme", "README.md", u.rstrip(".,;:")))
+    if RAW_DIR.exists():
+        for rp in sorted(RAW_DIR.glob("*.json")):
+            try:
+                data = json.loads(rp.read_text())
+            except Exception:  # noqa: BLE001
+                continue
+            for m in data.get("models", []):
+                mid = m.get("id", "?")
+                if m.get("hf"):
+                    out.append(("raw-hf", f"{rp.name}/{mid}", "https://huggingface.co/" + m["hf"]))
+                for e in m.get("engines", []):
+                    if e.get("source_post"):
+                        out.append(("raw-source_post", f"{rp.name}/{mid}", e["source_post"]))
+    return out
+
+
+def check_links_present(store: dict) -> None:
+    """Every model must carry an HF link and every engine measurement an
+    inference-server source_post link — in models.json AND in every raw search
+    snapshot. A MISSING link (not just a dead one) fails here, so a search that
+    drops hf/source_post is caught before it aggregates into models.json."""
+    bad = 0
+    for m in store.get("models", []):
+        mid = m.get("id", "?")
+        if not m.get("hf"):
+            bad += 1
+            fail(f"link-present: model '{mid}' missing HF link (hf)")
+        for e in m.get("engines", []):
+            if not e.get("source_post"):
+                bad += 1
+                fail(f"link-present: model '{mid}' engine '{e.get('engine')}' missing source_post link")
+    if RAW_DIR.exists():
+        for rp in sorted(RAW_DIR.glob("*.json")):
+            try:
+                data = json.loads(rp.read_text())
+            except Exception:  # noqa: BLE001
+                continue
+            for m in data.get("models", []):
+                mid = m.get("id", "?")
+                if not m.get("hf"):
+                    bad += 1
+                    fail(f"link-present: {rp.name}/{mid} missing HF link (hf)")
+                for e in m.get("engines", []):
+                    if not e.get("source_post"):
+                        bad += 1
+                        fail(f"link-present: {rp.name}/{mid} engine '{e.get('engine')}' missing source_post link")
+    if not bad:
+        print(f"  OK: all models + raw snapshots carry HF + source_post links")
+
+
+def check_links_resolve(store: dict) -> None:
+    """Verify every link in models.json, README.md, and data/raw/*.json resolves
+    (HTTP 2xx/3xx). A dead or wrong link fails CI. Known-good engine repo URLs
+    and HF repo ids are auto-corrected in the store (so the fix-bot has a
+    concrete repair); unknown dead links are reported for manual review."""
+    links = _extract_links(store)
+    if not links:
+        print("  (no links to check)")
+        return
+    bad = 0
+    fixed = 0
+    # HF + engine/inference links must be STRICT 2xx (public model links that
+    # must genuinely resolve). source_post (X mirror bot-blocks) and README links
+    # are lenient (indeterminate 403/429/5xx is not a dead link).
+    _STRICT_KINDS = {"model-hf", "format-hf", "raw-hf", "engine-registry"}
+    for kind, owner, url in links:
+        # QA: a known owner must point at its canonical link. A wrong-but-
+        # resolving link (e.g. the fix-bot wrote a different model's HF id that
+        # happens to return 200) is a FAILURE, not silently accepted — this is
+        # how we verify a fixed link actually matches the model / inference
+        # server, not just that it resolves.
+        canonical = None
+        canonical_id = None
+        if kind == "engine-registry" and owner in KNOWN_ENGINE_URLS:
+            canonical = KNOWN_ENGINE_URLS[owner]
+        elif kind in ("model-hf", "format-hf"):
+            canonical_id = _lookup_hf_id(owner)
+            if canonical_id:
+                canonical = "https://huggingface.co/" + canonical_id
+        if canonical and url != canonical:
+            if _link_ok(canonical, strict=(kind in _STRICT_KINDS)):
+                # correct the store to the canonical link
+                if kind == "engine-registry":
+                    store["engines"][owner]["url"] = canonical
+                else:
+                    for m in store.get("models", []):
+                        if m.get("id") == owner:
+                            if kind == "model-hf":
+                                m["hf"] = canonical_id
+                            else:
+                                for f in m.get("formats", []):
+                                    if f.get("hf") and "https://huggingface.co/" + f["hf"] == url:
+                                        f["hf"] = canonical_id
+                fixed += 1
+                print(f"  FIXED: {owner} {kind} {url} -> {canonical}")
+                continue
+            bad += 1
+            fail(f"link: [{kind}] {owner}: {url} does not match known-good {canonical}")
+            continue
+        if _link_ok(url, strict=(kind in _STRICT_KINDS)):
+            continue
+        bad += 1
+        fail(f"link: [{kind}] {owner}: {url} does not resolve")
+    if fixed:
+        print(f"  auto-fixed {fixed} link(s) to known-good repos")
+    if not bad:
+        print(f"  OK: all {len(links)} links resolve ({fixed} auto-fixed)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--snapshot-dir", default=str(SNAPSHOT_DIR))
@@ -470,6 +673,8 @@ def main() -> int:
     add("newline terminators", "data", lambda: check_newline_terminators())
     add("backend sort by t/s", "readme", lambda: check_backend_sort(store))
     add("README tables well-formed", "readme", lambda: check_readme_tables_wellformed(store))
+    add("links present (HF + source_post in models + raw)", "links", lambda: check_links_present(store))
+    add("links resolve (models.json + README + raw)", "links", lambda: check_links_resolve(store))
     add("README completeness", "readme", lambda: check_readme_has_all_models(store))
     add("JSON <-> README sync", "readme", lambda: check_readme_sync(store))
     add("README regenerated by make merge", "readme", lambda: check_readme_generated(store))

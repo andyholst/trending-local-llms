@@ -22,7 +22,7 @@ permissions:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
@@ -75,10 +75,10 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
-      - name: Hermes fix — correct the CI failure (up to 3 rounds, in container)
+      - name: Hermes fix — correct the CI failure (up to 5 rounds, in container)
         if: steps.pr.outputs.has_pr == 'true'
         run: |
-          for round in 1 2 3; do
+          for round in 1 2 3 4 5; do
             echo "--- fix round $round ---"
             # Each public make target runs inside the container:
             # fix = self-correct raw snapshots -> Hermes fixes logic -> merge;

@@ -123,9 +123,10 @@ _update-hermes:
 
 .PHONY: _fix
 _fix:
-	hermes -z "The CI validation for the trending-local-llms PR failed. Load AGENTS.md for the acceptance criteria and fix the data so validation passes. The validation (scripts/validate.py) requires ALL of: (1) no model removed vs the previous snapshot; (2) every model has name/full_name/HF link/license/params/VRAM tier + at least one engine measurement with engine name + t/s + repo link; (3) each backend table (CUDA, Metal, CPU) sorted by highest t/s descending; (4) README in sync with data/models.json - every model and engine measurement in the JSON must appear in the README and the 'Last generated' timestamp must match (both must change together); (5) every model in the store appears in the README; (6) raw search snapshots must conform to data/search_contract.json. Inspect data/models.json, data/raw/*.json and README.md, fix what is rejected, regenerate README.md via scripts/update_trending.py. Do not remove any existing model. Do not push or merge. CONTRACT EVOLUTION: if validation fails because a raw snapshot now carries a new key/value that is REAL, recurring data (a new engine/backend/format/engagement field/top-level metadata) which would otherwise be lost, update data/search_contract.json and/or data/model_contract.json to declare it AND update the corresponding tests in the same change (per AGENTS.md rule 6b - the helpers in the test files carry the contract shape). Only widen the contract for real, traceable data; if the new key is a stray/empty/malformed one-off artifact, PRUNE it via self_correct_raw instead of widening the contract. Never invent a key to pass validation. CONTRACT VERSIONING: an ADDITIVE change (new key / new enum value / widened constraint that existing records still satisfy) edits the SAME contract file in place. A BREAKING change (removing/renaming a key, changing a type, removing an enum value that makes OLD data fail) must NOT edit the existing file — create a NEW versioned contract data/search_contract.v2.json or data/model_contract... [truncated]
+	hermes -z "The CI validation for the trending-local-llms PR failed. Load AGENTS.md for the acceptance criteria and fix the data so validation passes. The validation (scripts/validate.py) requires ALL of: (1) no model removed vs the previous snapshot; (2) every model has name/full_name/HF link/license/params/VRAM tier + at least one engine measurement with engine name + t/s + repo link; (3) each backend table (CUDA, Metal, CPU) sorted by highest t/s descending; (4) README in sync with data/models.json - every model and engine measurement in the JSON must appear in the README and the Last generated timestamp must match (both must change together); (5) every model in the store appears in the README; (6) raw search snapshots must conform to data/search_contract.json. Inspect data/models.json, data/raw/*.json and README.md, fix what is rejected, regenerate README.md via scripts/update_trending.py. Do not remove any existing model. Do not push or merge. CONTRACT EVOLUTION: if validation fails because a raw snapshot now carries a new key/value that is REAL, recurring data (a new engine/backend/format/engagement field/top-level metadata) which would otherwise be lost, update data/search_contract.json and/or data/model_contract.json to declare it AND update the corresponding tests in the same change (per AGENTS.md rule 6b - the helpers in the test files carry the contract shape). Only widen the contract for real, traceable data; if the new key is a stray/empty/malformed one-off artifact, PRUNE it via self_correct_raw instead of widening the contract. Never invent a key to pass validation. CONTRACT VERSIONING: an ADDITIVE change (new key / new enum value / widened constraint that existing records still satisfy) edits the SAME contract file in place. A BREAKING change (removing/renaming a key, changing a type, removing an enum value that makes OLD data fail) must NOT edit the existing file - create a NEW versioned contract data/search_contract.v2.json or data/model_contract.v2.json (and so on for v3, v4, ...) that declares the new shape, and keep the old file untouched so old snapshots still validate against it. Update the validator (scripts/validate.py) and the tests to pick the right contract per data set: old raw snapshots / old models.json validate against the old contract, new ones against the new. The generated_utc timestamp (or a contract_version field) is what routes a snapshot to the correct contract version. LINK REPAIR (when validation reports a dead/wrong link): the CI link validator (scripts/validate.py check_links_resolve) only reports which link failed - it does NOT call the LLM. YOU are the fixer. For each failing link, SEARCH for the correct one and validate it before writing: (a) for a model/format Hugging Face link, use the Hugging Face CLI / huggingface_hub (e.g. hf search models <name> or the HF API) to find the canonical repo id, then confirm https://huggingface.co/<id> resolves; (b) for an engine/inference-server link, do a regular Firecrawl web search (FIRECRAWL_API_KEY) for the engines canonical repo URL and confirm it resolves. Only write a corrected link you have actually verified resolves. If you cannot find a verified replacement, leave the link and report it in the PR body for manual review - never invent a URL. Update data/models.json (and the raw snapshot if the wrong link came from data/raw/*.json), then regenerate README.md."
 		-m nous-deepseek --yolo
 	python3 scripts/update_trending.py  # merge corrected raw -> models.json
+	python3 scripts/validate.py --only links  # fail-fast: confirm the fix actually resolved the links
 
 .PHONY: _merge
 _merge:
@@ -146,21 +147,26 @@ _validate-schema:
 .PHONY: _validate-search
 _validate-search:
 	python3 scripts/validate.py --only search,mapping
-	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py
+	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py
 	python3 scripts/self_correct_raw.py
 
 .PHONY: _validate-readme
 _validate-readme:
 	python3 scripts/validate.py --only readme
 
+.PHONY: _validate-links
+_validate-links:
+	python3 scripts/validate.py --only links
+	python3 tests/test_validate_links.py
+
 .PHONY: _validate-mapped
 _validate-mapped:
 	python3 scripts/validate.py --only data,schema,mapping
-	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py
+	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py)
 
 
 .PHONY: _requirements-test
@@ -265,6 +271,10 @@ validate-search:
 .PHONY: validate-readme
 validate-readme:
 	$(TEST_RUN) make _validate-readme
+
+.PHONY: validate-links
+validate-links:
+	$(TEST_RUN) make _validate-links
 
 .PHONY: validate-mapped
 validate-mapped:
