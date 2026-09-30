@@ -125,12 +125,19 @@ jobs:
         with:
           name: raw-${{ matrix.backend }}
           path: data/raw/*.json
-          if-no-files-found: error
+          # A search that finds no new data (or can't reach the source) is
+          # tolerated, not a hard failure — the refresh is resilient by design
+          # (AGENTS.md: preserve last-known data, never blank the store).
+          if-no-files-found: warn
 
   # Aggregate: download all four raw snapshots, merge into models.json + README,
   # validate + test, then open a PR if there is new data.
   aggregate:
     needs: search
+    # Run even if one or more search jobs failed (a backend that found no data
+    # or couldn't reach the source must not abort the whole refresh). Merge
+    # whatever searches DID produce data and still open a PR.
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -146,6 +153,7 @@ jobs:
           docker tag ${{ env.IMAGE }} trending-local-llms:latest
 
       - name: Download raw snapshots
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           path: data/raw
