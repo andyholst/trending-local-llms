@@ -31,6 +31,7 @@ permissions:
 env:
   NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
   FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
 jobs:
   validate:

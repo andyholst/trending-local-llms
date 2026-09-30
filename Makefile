@@ -21,7 +21,7 @@ SHELL := /bin/bash
 
 IMAGE := trending-local-llms:latest
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY $(IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN $(IMAGE)
 
 # The TEST image layers the CURRENT requirements-test.txt on top of the base
 # image at build time, so unit/QA tests (which need markdown-it-py + tabulate
@@ -30,7 +30,7 @@ DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 TEST_IMAGE := trending-local-llms-test:latest
 TEST_REQUIREMENTS := requirements-test.txt
 TEST_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY $(TEST_IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN $(TEST_IMAGE)
 
 
 HERMES_MODEL := deepseek/deepseek-v4-flash-0731
