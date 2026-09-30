@@ -1,0 +1,120 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-09-30T20:18:50Z",
+  "models": [
+    {
+      "id": "webllm-llama-3-1-8b",
+      "name": "WebLLM (Llama-3.1-8B)",
+      "full_name": "web-llm (MLC-AI) — in-browser",
+      "type": "LLM / edge engine",
+      "formats": [
+        {
+          "name": "MLC",
+          "hf": "mlc-ai/Llama-3.1-8B-Instruct-q4f16_1-MLC"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "mlc-ai/Llama-3.1-8B-Instruct-q4f16_1-MLC",
+      "vram_tier": "edge/browser (device GPU)",
+      "vram_min": "256MB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "Apple M3 Max (WebGPU, in-browser)",
+          "quant": "q4",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296"
+        }
+      ],
+      "why": "WebLLM runs Llama-3.1-8B at 41.1 tok/s inside a browser tab (WebGPU), ~71% of native speed — the GPU in the user's own laptop does the inference, no server.",
+      "engagement": {
+        "likes": 1,
+        "comments": 5,
+        "views": 189,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "gemma-3-4b",
+      "name": "Gemma 3 4B",
+      "full_name": "gemma-3-4b-it",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "google/gemma-3-4b-it"
+        }
+      ],
+      "license": "Gemma",
+      "params": "4B",
+      "hf": "google/gemma-3-4b-it",
+      "vram_tier": "phone (2.5GB)",
+      "vram_min": "2.5GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "a few (est)",
+          "hardware": "Android phone CPU (arm64 KleidiAI)",
+          "quant": "Q4_K_M",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568"
+        }
+      ],
+      "why": "Vitanom: single Android process around llama.cpp, off-grid local knowledge app. Gemma 3 4B Q4_K_M (~2.5 GB) fits a 6 GB phone, no GPU backend, no INTERNET permission.",
+      "engagement": {
+        "likes": 6,
+        "comments": 8,
+        "views": 33,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-30B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "30B (3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "12GB phone RAM",
+      "vram_min": "11.8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "a few (est)",
+          "hardware": "12GB Android phone CPU, MoE streamed from flash",
+          "quant": "UD-Q2_K_XL",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568"
+        }
+      ],
+      "why": "Vitanom loads Qwen3-30B-A3B (11.8 GB) on a 12 GB phone: MoE leaves cold experts on flash, re-reads only active ones per token on CPU — a few tok/s but no server.",
+      "engagement": {
+        "likes": 6,
+        "comments": 8,
+        "views": 33,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

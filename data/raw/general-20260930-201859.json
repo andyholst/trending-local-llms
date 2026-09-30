@@ -1,0 +1,166 @@
+{
+  "backend": "general",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE)",
+      "type": "LLM",
+      "license": "Apache-2.0",
+      "params": "125B (6B active) MoE",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "8GB+",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "52-60 output / 1250 prompt",
+          "hardware": "RX 7900 XTX (AMD, 8GB+)",
+          "quant": "",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665"
+        }
+      ],
+      "why": "Qwen4-arch open-weight MoE (125B/6B active) benchmarked running locally at sustained 52-60 output t/s on an 8GB+ AMD GPU via the Strata engine; 1250 prompt-token/s.",
+      "engagement": {
+        "likes": 494,
+        "comments": 41,
+        "views": 35751,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen2.5-7b-instruct",
+      "name": "Qwen2.5-7B-Instruct",
+      "full_name": "Qwen2.5-7B-Instruct",
+      "type": "LLM",
+      "license": "Apache-2.0",
+      "params": "7B",
+      "hf": "Qwen/Qwen2.5-7B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "5.5GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "~38 (1 user); ~215 peak (16 parallel)",
+          "hardware": "Kaggle T4 (16GB) free GPU",
+          "quant": "4-bit AWQ",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/omkarchebale/status/2104708091866718466"
+        }
+      ],
+      "why": "Served a 7B chat model on a free Kaggle T4 via vLLM with a coding agent; ~38 output t/s single-user, ~25 t/s at 4 users, ~215 t/s peak across 16 parallel requests.",
+      "engagement": {
+        "likes": 279,
+        "comments": 6,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6-35B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache-2.0",
+      "params": "35B (3B active) MoE",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "UC Berkeley open-sourced FreeToken (2-4x faster local inference than Ollama) serving big MoEs on small GPUs; Qwen3.6-35B at 39.3 t/s on an 8GB GPU.",
+      "engagement": {
+        "likes": 87,
+        "comments": 11,
+        "views": 8050,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "284B (13B active) MoE",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "FreeToken serves DeepSeek-V4-Flash 284B MoE (picks 6 of 256 experts per layer, ~13B active) at 22 t/s on a 32GB GPU.",
+      "engagement": {
+        "likes": 87,
+        "comments": 11,
+        "views": 8050,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2 753B",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "753B MoE",
+      "hf": "zai-org/GLM-5.2",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "96GB GPU",
+          "quant": "",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "FreeToken runs GLM-5.2 753B MoE at 14.9 t/s on a 96GB GPU — frontier open MoE made runnable on single-GPU hardware.",
+      "engagement": {
+        "likes": 87,
+        "comments": 11,
+        "views": 8050,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    }
+  ],
+  "generated_utc": "2026-09-30T20:18:59Z"
+}
