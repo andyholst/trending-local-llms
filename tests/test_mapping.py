@@ -101,11 +101,16 @@ def test_merge_overwrites_truly_identical():
     out = merge_engines(cur, new)
     check("truly identical row collapses (same engine+tps+GPU, no dup)",
           len(out) == 1 and out[0]["date"] == "2026-09-27")
-    # different t/s on the same GPU -> distinct measurement, KEPT
-    diff = [{"engine": "llama.cpp", "tps": "61", "hardware": "RTX 4070", "quant": "Q4", "date": "2026-09-26"}]
-    out2 = merge_engines(out, diff)
-    check("different t/s on same GPU is a distinct row (kept)",
-          len(out2) == 2)
+    # near-identical t/s (60 vs 61) is "similar" -> collapses (keep-higher=61)
+    near = [{"engine": "llama.cpp", "tps": "61", "hardware": "RTX 4070", "quant": "Q4", "date": "2026-09-26"}]
+    out2 = merge_engines(out, near)
+    check("near-identical t/s (60 vs 61) collapses to one (keep-higher)",
+          len(out2) == 1, f"len={len(out2)}")
+    # genuinely different t/s (60 vs 90) on the same GPU -> distinct, KEPT
+    far = [{"engine": "llama.cpp", "tps": "90", "hardware": "RTX 4070", "quant": "Q4", "date": "2026-09-26"}]
+    out3 = merge_engines(out, far)
+    check("genuinely different t/s (60 vs 90) stays a distinct row",
+          len(out3) == 2, f"len={len(out3)}")
 
 
 def test_merge_preserves_current():

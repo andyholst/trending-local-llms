@@ -372,6 +372,163 @@ def test_ingest_same_model_engine_gpu_not_duplicated():
           ("RTX 4090 24GB", "50") in gpu_rows and ("RTX 5090", "80") in gpu_rows, json.dumps(gpu_rows))
 
 
+def test_merge_engines_interaction_weighted():
+    """The three engagement rules:
+    1. Higher engagement -> that measurement's t/s matters more.
+    2. Concordant reports -> engagement-weighted average is set.
+    3. Only UPDATE to a higher t/s, never lower the stored value.
+    Plus: est-duplicate rows (39.3 vs 39.3 (est)) collapse to one."""
+    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/x", date="2026-09-28"):
+        return {"engine": "FreeToken", "tps": tps, "hardware": hw, "date": date,
+                "source_post": post, "likes": likes, "comments": 0}
+
+    # rule 3: incoming concordant but LOWER -> keep the stored (higher) value
+    cur = [eng("50", 30)]
+    inc_lower = [eng("45 (est)", 200)]  # lower core, higher engagement
+    out = UT.merge_engines(cur, inc_lower)
+    check("interaction: lower re-report keeps the stored higher t/s",
+          len(out) == 1 and _core(out[0]["tps"]) == 50.0, json.dumps(out))
+
+    # rule 3b: incoming concordant-but-HIGHER -> update to the higher value
+    # (50 -> 55 is within tolerance, so it collapses and the representative is
+    # raised toward 55 via the engagement-weighted mean)
+    out2 = UT.merge_engines(cur, [eng("55", 200)])
+    check("interaction: higher concordant re-report updates the t/s up",
+          len(out2) == 1 and _core(out2[0]["tps"]) > 50.0, json.dumps(out2))
+    # non-concordant much-higher (50 vs 60, 20% apart) stays distinct — a
+    # genuinely different measurement, surfaced by the t/s-descending README.
+    out2b = UT.merge_engines(cur, [eng("60", 5)])
+    check("interaction: non-concordant higher t/s stays a distinct row",
+          len(out2b) == 2, json.dumps(out2b))
+
+    # rules 1+2+3: concordant 39.3(100 likes) + 41(50 likes). Engagement-weighted
+    # mean is ~39.87, but 'keep higher' -> final = max(reported, mean) = 41.
+    out3 = UT.merge_engines([], [eng("39.3", 100), eng("41", 50)])
+    check("interaction: concordant reports collapse, keep-higher wins (41)",
+          len(out3) == 1 and _core(out3[0]["tps"]) == 41.0, json.dumps(out3))
+    # high-engagement report with a LOWER value pulls the consensus below the
+    # higher-engagement low value when it dominates the weight
+    out3b = UT.merge_engines([], [eng("39.3", 1000), eng("41", 1)])
+    # weighted mean ~39.32 (~39.3), keep-higher still caps at reported 41 -> but
+    # the 39.3 report is far higher engagement; final = max(41, ~39.3) = 41.
+    check("interaction: keep-higher caps the weighted mean at the reported max",
+          len(out3b) == 1 and _core(out3b[0]["tps"]) == 41.0, json.dumps(out3b))
+
+    # est-duplicate collapse: 39.3 vs 39.3 (est) are one row
+    out4 = UT.merge_engines([], [eng("39.3", 10), eng("39.3 (est)", 10)])
+    check("interaction: est-duplicate collapses to one row",
+          len(out4) == 1 and _core(out4[0]["tps"]) == 39.3, json.dumps(out4))
+
+    # non-concordant (45 vs 39.3) stays distinct
+    out5 = UT.merge_engines([], [eng("39.3", 10), eng("45", 10)])
+    check("interaction: non-concordant different t/s stays distinct",
+          len(out5) == 2, json.dumps(out5))
+
+
+def _core(tps):
+    import re
+    nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", str(tps or ""))]
+    return max(nums) if nums else 0.0
+
+
+def test_merge_engines_edge_cases():
+    """Edge cases for the interaction-weighted merge: empty groups, ranges,
+    different engines/GPUs, missing engagement, extreme engagement, zero/empty
+    tps, and many-concordant collapse."""
+    def eng(tps, likes=0, comments=0, hw="RTX 8GB GPU", post="https://lightbrd.com/x",
+            date="2026-09-28", engine="FreeToken"):
+        return {"engine": engine, "tps": tps, "hardware": hw, "date": date,
+                "source_post": post, "likes": likes, "comments": comments}
+
+    # 1. empty inputs
+    check("edge: empty current + empty incoming -> []",
+          UT.merge_engines([], []) == [], "expected []")
+    # 2. single measurement unchanged (core kept, likes defaulted)
+    e = UT.merge_engines([], [eng("99.7", likes=5)])[0]
+    check("edge: single measurement is kept as-is", _core(e["tps"]) == 99.7 and e.get("likes") == 5, json.dumps(e))
+    # 3. no engagement on any -> weight 1 each, collapse to set (max-rep)
+    e = UT.merge_engines([], [eng("39.3"), eng("39.3 (est)")])[0]
+    check("edge: no-engagement concordant collapse to one", len(UT.merge_engines([], [eng("39.3"), eng("39.3 (est)")])) == 1 and _core(e["tps"]) == 39.3, json.dumps(e))
+    # 4. range vs similar single (67-71 core=71 vs 70) concordant
+    e = UT.merge_engines([], [eng("67-71", likes=10), eng("70", likes=10)])[0]
+    check("edge: range 67-71 and 70 are concordant (collapse, keep-higher=71)",
+          _core(e["tps"]) == 71.0, json.dumps(e))
+    # 5. far-apart ranges stay distinct
+    out = UT.merge_engines([], [eng("67-71", likes=10), eng("120-124", likes=10)])
+    check("edge: far-apart ranges 67-71 / 120-124 stay distinct",
+          len(out) == 2, json.dumps(out))
+    # 6. different engines always distinct
+    out = UT.merge_engines([], [eng("50", engine="Ollama"), eng("52", engine="vLLM")])
+    check("edge: different engines stay distinct", len(out) == 2, json.dumps(out))
+    # 7. different GPU size always distinct
+    out = UT.merge_engines([], [eng("50", hw="RTX 8GB GPU"), eng("52", hw="RTX 5090")])
+    check("edge: different GPU sizes stay distinct", len(out) == 2, json.dumps(out))
+    # 8. zero tps / empty tps -> core 0, no crash, kept
+    e = UT.merge_engines([], [eng("", likes=1), eng("", likes=1)])
+    check("edge: empty tps does not crash and collapses", len(e) == 1, json.dumps(e))
+    # 9. extreme engagement: 40(1 like) + 42(10000 likes) weighted mean ~40.0002
+    #    keep-higher caps at 42 -> representative is 42
+    e = UT.merge_engines([], [eng("40", likes=1), eng("42", likes=10000)])[0]
+    check("edge: extreme-engagement report drives the representative (42)",
+          _core(e["tps"]) == 42.0, json.dumps(e))
+    # 10. many concordant collapse to ONE row (keep-higher). Values 100..103 span
+    #     3%, all within the 12% tolerance, so they form a single group -> 103.
+    many = [eng(str(100 + i), likes=1) for i in range(4)]
+    e = UT.merge_engines([], many)
+    check("edge: many concordant reports collapse to one (keep-higher=103)",
+          len(e) == 1 and _core(e[0]["tps"]) == 103.0, json.dumps(e))
+    # 10b. a wide spread (30% steps, each pair beyond tolerance) stays distinct
+    wide = [eng(str(100 + i * 30), likes=1) for i in range(4)]  # 100,130,160,190
+    check("edge: wide-spread reports stay multiple distinct rows",
+          len(UT.merge_engines([], wide)) == 4, json.dumps(UT.merge_engines([], wide)))
+    # 11. merge never drops an existing row that is far apart (distinct preserved)
+    cur = [eng("100", likes=5)]
+    inc = [eng("100 (est)", likes=5)]  # concordant -> collapse to 100
+    e = UT.merge_engines(cur, inc)
+    check("edge: concordant current+incoming collapse, existing not duplicated",
+          len(e) == 1 and _core(e[0]["tps"]) == 100.0, json.dumps(e))
+    # 12. only likes, comments absent -> still weights by likes
+    e = UT.merge_engines([], [{"engine": "F", "tps": "40", "hardware": "8GB", "date": "2026-09-28", "likes": 10},
+                              {"engine": "F", "tps": "42", "hardware": "8GB", "date": "2026-09-28", "likes": 100}])[0]
+    check("edge: weights by likes even when comments absent (keep-higher=42)",
+          _core(e["tps"]) == 42.0, json.dumps(e))
+
+
+def test_merge_engines_tps_matrix():
+    """Data-driven matrix: every (tps_a, tps_b) pair -> expected collapse (1 row)
+    or distinct (2 rows) under the concordance rule. Covers identical, est,
+    near, decimal-near, range-vs-single, range-vs-range, far, far-range,
+    tilde-vs-int, comment-vs-plain, and different-engine/GPU."""
+    def eng(tps, hw="RTX 8GB GPU", engine="FreeToken"):
+        return {"engine": engine, "tps": tps, "hardware": hw, "date": "2026-09-28",
+                "source_post": "https://lightbrd.com/x", "likes": 1, "comments": 0}
+    # (a, b, expected_collapse)
+    matrix = [
+        ("50", "50", True),                       # identical
+        ("39.3", "39.3 (est)", True),             # est marker
+        ("50", "55", True),                       # near (10%)
+        ("39.3", "39.5", True),                   # decimal near
+        ("67-71", "70", True),                    # range vs single (71 vs 70)
+        ("67-71", "70-72", True),                 # range vs range near
+        ("~50", "50", True),                      # tilde vs int
+        ("233 (DFlash spec-decode), 74.9 stock", "233", True),  # comment vs plain
+        ("39.3", "45", False),                    # far (14.5%)
+        ("67-71", "120-124", False),              # far ranges
+        ("50", "90", False),                      # far
+        ("100", "140", False),                    # far (40%)
+    ]
+    for a, b, collapse in matrix:
+        out = UT.merge_engines([], [eng(a), eng(b)])
+        got = len(out) == 1
+        check(f"merge-matrix: {a!r} vs {b!r} -> {'collapse' if collapse else 'distinct'}",
+              got == collapse, json.dumps(out))
+    # different engine / different GPU always distinct
+    out = UT.merge_engines([], [eng("50", engine="Ollama"), eng("50", engine="vLLM")])
+    check("merge-matrix: same tps different engine -> distinct", len(out) == 2, json.dumps(out))
+    out = UT.merge_engines([], [eng("50", hw="RTX 8GB GPU"), eng("50", hw="RTX 5090")])
+    check("merge-matrix: same tps different GPU -> distinct", len(out) == 2, json.dumps(out))
+
+
 def main() -> int:
     print("7-day post-granularity engagement aggregation")
     test_dedupe_posts_collapses_same_url()
@@ -383,6 +540,9 @@ def main() -> int:
     test_merge_engines_dedup_same_gpu_vram()
     test_validate_catches_duplicate_engine_same_gpu_vram()
     test_validate_allows_same_engine_different_gpu()
+    test_merge_engines_interaction_weighted()
+    test_merge_engines_edge_cases()
+    test_merge_engines_tps_matrix()
     test_dedupe_posts_edge_cases()
     test_prune_posts_boundary_30_days()
     test_recompute_7d_boundary()

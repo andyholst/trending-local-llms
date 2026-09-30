@@ -574,23 +574,68 @@ def _gpu_size(hardware: str) -> str:
     return ""
 
 
+def _tps_core(tps) -> float:
+    """High-end numeric core of a t/s string: the max number it contains. For
+    a range ('67-71') this is 71, for an estimate ('~50') 50, for a comment
+    ('233 (DFlash spec-decode)') 233."""
+    nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", str(tps or ""))]
+    return max(nums) if nums else 0.0
+
+
+def _eng_weight(m) -> float:
+    """Engagement weight of a measurement: likes + comments on its source post,
+    floor of 1 (a no-engagement post still counts once)."""
+    return max(1, int(m.get("likes", 0) or 0) + int(m.get("comments", 0) or 0))
+
+
+def _concordant(a: float, b: float, tol: float = 0.12) -> bool:
+    """Two t/s cores are the SAME measurement when within `tol` (5%) of the
+    larger. 39.3 vs 39.5 -> concordant (averaged); 39.3 vs 45 -> distinct."""
+    if b <= 0:
+        return a == 0
+    return abs(a - b) <= tol * max(a, b)
+
+
 def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
-    """Merge incoming engine measurements into current. Two rows are the SAME
-    measurement (and collapse to one, keeping the newest date) when they share
-    engine + t/s + GPU size — the same model+engine+GPU+VRAM reported by two
-    different X posts. Different GPU size or different t/s is a legit distinct
-    measurement and is KEPT. Never drops a current entry."""
-    out = list(current)
-    for inc in incoming:
-        key = (inc.get("engine"), inc.get("tps"), _gpu_size(inc.get("hardware", "")))
-        idx = next((i for i, e in enumerate(out)
-                    if (e.get("engine"), e.get("tps"), _gpu_size(e.get("hardware", ""))) == key), None)
-        if idx is not None:
-            # same measurement re-reported -> keep the NEWER date's row
-            if (inc.get("date") or "") >= (out[idx].get("date") or ""):
-                out[idx] = inc
-        else:
-            out.append(inc)
+    """Merge incoming engine measurements into current, engagement-weighted.
+
+    Two rows are the SAME measurement (collapse to one) when they share engine +
+    GPU size AND a concordant t/s (within 5%). A concordant group's representative
+    t/s is the engagement-weighted mean of its cores (likes + comments on each
+    source post), taking the HIGHER of (reported, weighted mean) — so a reported
+    t/s is only raised, never lowered. The representative row is the group's
+    highest-engagement measurement (newest date tie-break). Non-concordant t/s
+    (a genuinely different measurement, e.g. a different quant) stays a distinct
+    row. Never drops a current entry."""
+    combined = list(current) + incoming
+    out: list[dict] = []
+    used = set()
+    for i, m in enumerate(combined):
+        if i in used:
+            continue
+        used.add(i)
+        core = _tps_core(m.get("tps"))
+        group = [m]
+        for j, n in enumerate(combined):
+            if j in used or j == i:
+                continue
+            if (n.get("engine") == m.get("engine")
+                    and _gpu_size(n.get("hardware", "")) == _gpu_size(m.get("hardware", ""))
+                    and _concordant(_tps_core(n.get("tps")), core)):
+                group.append(n)
+                used.add(j)
+        wsum = sum(_eng_weight(x) for x in group)
+        rep_core = sum(_tps_core(x.get("tps")) * _eng_weight(x) for x in group) / wsum if wsum else core
+        primary = max(enumerate(group), key=lambda it: (_eng_weight(it[1]), it[1].get("date", ""), it[0]))[1]
+        # keep-higher: the representative is the max of (highest reported core in
+        # the group, engagement-weighted mean) — a reported t/s is only ever
+        # raised, never lowered by a noisy/low-engagement outlier.
+        max_core = max(_tps_core(x.get("tps")) for x in group)
+        final_core = max(max_core, rep_core)
+        row = dict(primary, tps=f"{final_core:g}")
+        row.setdefault("likes", 0)
+        row.setdefault("comments", 0)
+        out.append(row)
     return out
 
 
@@ -621,6 +666,11 @@ def normalize_model(m: dict, store: dict) -> dict:
     if vm and not m.get("vram_min"):
         m["vram_min"] = f"{vm.group(1)}GB"
     engs = [e for e in m.get("engines", []) if e.get("engine")]
+    # default per-measurement engagement (likes/comments) so the interaction-
+    # weighted merge has a weight even when the search agent didn't emit it yet
+    for e in engs:
+        e.setdefault("likes", 0)
+        e.setdefault("comments", 0)
     # dedup the raw model's own engine rows (same engine+tps+GPU size reported
     # by two posts in ONE snapshot) so a brand-new model never carries duplicates
     engs = merge_engines([], engs)

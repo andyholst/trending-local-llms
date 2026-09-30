@@ -307,11 +307,41 @@ def test_newline_terminators():
             V.ROOT, V.TEXT_EXTS, V.TEXT_NAMES = saved_root, saved_ext, saved_names
 
 
+def test_tps_shape_matrix():
+    """Data-driven matrix: every tps string form -> expected accept/reject by
+    check_tps_shape. Covers ints, decimals, tilde estimates, ranges, est markers,
+    comments-after-number, whitespace, empty, and every leading-text/bad form."""
+    # (tps, expected_accept). Empty is skipped (no tps -> not a failure).
+    matrix = [
+        ("50", True), ("39.3", True), ("99.7", True),
+        ("~50", True), ("~237.5", True),
+        ("67-71", True), ("35.5-43.7", True), ("120-124", True),
+        ("39.3 (est)", True), ("39.3(est)", True),
+        ("233 (DFlash spec-decode), 74.9 stock", True),
+        ("~38 (1 user); ~215 peak (16 parallel)", True),
+        ("~ 50", True), ("  50", True), ("50  ", True),
+        ("", True),  # empty -> skipped, not a failure
+        ("a few (est)", False), ("(est) 50", False), ("~fast", False),
+        ("fast", False), ("slow-ish", False), ("N/A", False),
+        ("varies", False), ("unknown", False), (", 50", False), ("-50", False),
+    ]
+    for tps, expect in matrix:
+        reset()
+        s = good_store()
+        s["models"][0]["engines"] = [{"engine": "llama.cpp", "tps": tps,
+                                      "date": "2026-09-28", "source_post": "https://lightbrd.com/x"}]
+        V.check_tps_shape(s)
+        got = len(V.FAILURES) == 0
+        check(f"tps-matrix: {tps!r} -> {'accept' if expect else 'reject'}",
+              got == expect, str(V.FAILURES))
+
+
 def main() -> int:
     print("validator: direct unit tests")
     test_no_duplicates()
     test_no_duplicate_engines()
     test_tps_shape()
+    test_tps_shape_matrix()
     test_latest_tps_order()
     test_supported_engines()
     test_model_fields()
