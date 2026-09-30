@@ -1,0 +1,222 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-09-30T18:54:05Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-189",
+          "hardware": "M5 Max",
+          "quant": "MLX 4-bit + DFlash2 drafter",
+          "date": "2026-09-30",
+          "source_post": "https://x.com/stretchcloud/status/2105337375941357786"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "40.0 prose / 41.5 code",
+          "hardware": "M3 Max 96GB",
+          "quant": "mlx-community 4-bit + z-lab DFlash2 8-bit",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/redp314/status/2104265073946464326"
+        }
+      ],
+      "why": "Flagship local model. TensorFold speculative decoding on Apple Silicon takes Qwen3.8-27B to 120-189 tok/s (M5 Max, MLX 4-bit + DFlash2). Qwen3.8-Flash-Next (88-92) and Nemotron Lightning (188-206) ship on the same engine.",
+      "engagement": {
+        "likes": 4120,
+        "comments": 890,
+        "views": 384000,
+        "last_7d_likes": 3
+      },
+      "last_seen": "2026-09-30"
+    },
+    {
+      "id": "nemotron-3.5-lightning",
+      "name": "Nemotron 3.5 Lightning",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+        }
+      ],
+      "license": "NVIDIA Open Model",
+      "params": "30B-A3B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "32GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "M5 Max",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-30",
+          "source_post": "https://x.com/stretchcloud/status/2105337375941357786"
+        }
+      ],
+      "why": "NVIDIA's fast active-parameter MoE (30B-A3B) hits 188-206 tok/s on Apple Silicon M5 Max via TensorFold MLX 4-bit — among the fastest open-weight LLMs measured on a Mac.",
+      "engagement": {
+        "likes": 55,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-30"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B-A3B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "64GB",
+      "vram_min": "48GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "88-92",
+          "hardware": "M5 Max",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/Oluwaphilemon1/status/2104031077647995117"
+        }
+      ],
+      "why": "Big MoE (125B-A3B) that TensorFold serves at 88-92 tok/s on M5 Max MLX 4-bit on Apple Silicon.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-mlx-2bit"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "~237.4 decode",
+          "hardware": "Apple Silicon 16GB Mac",
+          "quant": "mlx.fast speed-challenge run",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/bountyAIhunter/status/2104269858800054389"
+        },
+        {
+          "engine": "MLX",
+          "tps": "~47",
+          "hardware": "M5 Max",
+          "quant": "2-bit MLX (5.9GB)",
+          "date": "2026-09-26",
+          "source_post": "https://x.com/builderleader/status/2103888429490536936"
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B. ~237.4 tok/s decode via mlx.fast on a 16GB Mac; ~47 tok/s stock MLX on M5 Max. 2.99M downloads in a week.",
+      "engagement": {
+        "likes": 2750,
+        "comments": 640,
+        "views": 84563,
+        "last_7d_likes": 2
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "ravenx-qwen3-8b-mlx",
+      "name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "full_name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "42",
+          "hardware": "M3",
+          "quant": "MLX",
+          "date": "2026-09-29",
+          "source_post": "https://x.com/jolyneshibasol/status/2104852085426827615"
+        }
+      ],
+      "why": "RavenX-Conjecture Qwen3-8B tuned to run at 42 tok/s coherently on M3 MLX, a solid fast local routing/tool-call model before handing off to larger models.",
+      "engagement": {
+        "likes": 39,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

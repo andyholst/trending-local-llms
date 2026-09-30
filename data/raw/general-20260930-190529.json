@@ -1,0 +1,158 @@
+{
+  "backend": "general",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "UC Berkeley open-source FreeToken serves this 35B MoE (~3B active) on an 8GB GPU at 39.3 tok/s by dynamically routing experts across GPU + system RAM. Daily Dose of Data Science, Sep 27 2026.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "qwen2.5-7b-instruct",
+      "name": "Qwen2.5-7B-Instruct",
+      "full_name": "Qwen2.5-7B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen2.5-7B-Instruct",
+          "hf": "Qwen/Qwen2.5-7B-Instruct"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "7B",
+      "hf": "Qwen/Qwen2.5-7B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "~38",
+          "hardware": "Kaggle T4 16GB (free)",
+          "quant": "4-bit AWQ",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/omkarchebale/status/2104708091866718466"
+        }
+      ],
+      "why": "Qwen2.5-7B-Instruct 4-bit AWQ served on vLLM on a free Kaggle T4 (16GB): ~38 tok/s single user, ~25 tok/s at 4 users, ~215 tok/s peak across 16 parallel requests. Omkar Chebale, Sep 28 2026.",
+      "engagement": {
+        "likes": 273,
+        "comments": 6,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "DeepSeek-V4-Flash",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "license": "MIT",
+      "params": "284B (13B active, 6/256 experts)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "FreeToken runs this 284B MoE (13B active, 6-of-256 experts/token) on a 32GB GPU at 22 tok/s by splitting expert misses between GPU and CPU. Daily Dose of Data Science, Sep 27 2026.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GLM-5.2",
+          "hf": "zai-org/GLM-5.2"
+        }
+      ],
+      "license": "Zhipu AI GLM license",
+      "params": "753B",
+      "hf": "zai-org/GLM-5.2",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "96GB GPU",
+          "quant": "",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+        }
+      ],
+      "why": "FreeToken moves this 753B MoE runnable on a single 96GB datacenter GPU at 14.9 tok/s (cross GPU+RAM expert routing). Daily Dose of Data Science, Sep 27 2026. Measured figure from a real X post, datacenter-class GPU.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    }
+  ],
+  "generated_utc": "2026-09-30T19:05:29Z"
+}

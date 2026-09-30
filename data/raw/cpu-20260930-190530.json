@@ -1,0 +1,187 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3 30B A3B",
+      "full_name": "Qwen3-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B-A3B",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5.2",
+          "hardware": "12 GB phone, plain CPU (experts streamed from flash, no GPU/NPU)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+        }
+      ],
+      "why": "Edge MoE streamed from flash: a 30B model runs on a 12 GB phone CPU at 5.2 tok/s via BigMoeOnEdge (stock llama.cpp).",
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gemma-4-26b",
+      "name": "Gemma 4 26B",
+      "full_name": "Gemma-4-26B-A4B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "26B-A4B",
+      "hf": "google/gemma-4-26B-A4B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.1",
+          "hardware": "12 GB phone, plain CPU (experts streamed from flash, no GPU/NPU)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+        }
+      ],
+      "why": "Edge MoE: Gemma-4-26B-A4B runs on a 12 GB phone CPU at 4.1 tok/s via BigMoeOnEdge.",
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT-OSS 120B",
+      "full_name": "gpt-oss-120b",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "120B-A4B",
+      "hf": "openai/gpt-oss-120b",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.2",
+          "hardware": "12 GB phone, plain CPU, 4 cores (60 GB model streamed from flash)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+        }
+      ],
+      "why": "Edge MoE: gpt-oss-120b (60 GB) runs on a 12 GB phone CPU at 2.2 tok/s, ~14x faster than mmap (0.09 tok/s), byte-identical output.",
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma-4-E2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "4GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "99 prefill / 9 decode",
+          "hardware": "Raspberry Pi 5, CPU (1432 MB peak)",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728"
+        }
+      ],
+      "why": "Google's on-device LiteRT path: Gemma 4 E2B hits 99 tok/s prefill / 9 tok/s decode on a Raspberry Pi 5 for edge AI (Reachy Mini voice demo).",
+      "engagement": {
+        "likes": 1,
+        "comments": 2,
+        "views": 527
+      },
+      "last_seen": "2026-09-05"
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Meta-Llama-3.1-8B-Instruct",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "5GB",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "in-browser WebGPU (M3 Max), WebAssembly for CPU-side",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296"
+        }
+      ],
+      "why": "In-browser edge inference: WebLLM runs Llama-3.1-8B at 41.1 tok/s (about 71% of native speed) with no server and no API key.",
+      "engagement": {
+        "likes": 1,
+        "comments": 5,
+        "views": 189
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "4GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B 2GB (CPU, ~5W)",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921"
+        }
+      ],
+      "why": "Tiny offline edge stack: deepseek-r1 1.5B runs at 4 tok/s on a $35 Raspberry Pi 4B 2GB, fully offline at 5W.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 1354
+      },
+      "last_seen": "2026-06-25"
+    }
+  ],
+  "generated_utc": "2026-09-30T19:05:30Z"
+}

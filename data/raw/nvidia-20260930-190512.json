@@ -1,0 +1,228 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6 35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+        }
+      ],
+      "why": "FreeToken serves this 35B MoE on an 8GB GPU at ~39 tok/s (2-4x faster than Ollama), per UC Berkeley FreeToken open-sourcing posts.",
+      "engagement": {
+        "likes": 3,
+        "comments": 1,
+        "views": 199,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4-Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "license": "DeepSeek",
+      "params": "284B (A4B)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "2.8-3.4 (Overspill, ~85GB setup)",
+          "hardware": "RTX 3060 12GB + 64GB RAM",
+          "quant": "FP8",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/brokevibecoder/status/2104642499688227095"
+        }
+      ],
+      "why": "FreeToken runs 284B DeepSeek-V4-Flash on a 32GB GPU at ~22 tok/s; Overspill streams experts VRAM->RAM->NVMe so an 85GB setup runs on a 12GB RTX 3060.",
+      "engagement": {
+        "likes": 3,
+        "comments": 1,
+        "views": 199,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8 Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "51.0 decode / 3637 prefill (NVFP4-RadixArk)",
+          "hardware": "RTX 5090 + 128GB RAM",
+          "quant": "NVFP4",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Lize_san_suki/status/2101732179147686255"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "37.7 decode / 1310 prefill (NVFP4)",
+          "hardware": "RTX PRO 4000 Blackwell 24GB + 1TB RAM",
+          "quant": "NVFP4",
+          "date": "2026-09-21",
+          "source_post": "https://lightbrd.com/Tono_Ken3/status/2101868347164115055"
+        }
+      ],
+      "why": "FreeToken serves Qwen3.8-Flash-Next NVFP4 fast on NVIDIA Blackwell; ~51 tok/s decode on RTX 5090, ~37.7 tok/s on a 24GB RTX PRO 4000 at 262K context.",
+      "engagement": {
+        "likes": 3,
+        "comments": 3,
+        "views": 4938,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-21"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "42.8 (98k ctx)",
+          "hardware": "RTX 3060 Ti 8GB",
+          "quant": "ternary + MTP head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/sudoingX/status/2104723329865089176"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50 (MTP)",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary + MTP head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/sudoingX/status/2104723329865089176"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "67 (MTP, 262k ctx)",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "ternary + MTP head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/sudoingX/status/2104723329865089176"
+        }
+      ],
+      "why": "Prebuilt per-card bundles (MTP head grafted on) put 27B ternary Bonsai 2 on gamer cards: 3060 Ti 42.8 tok/s @8GB, 5060 Ti 67 tok/s @16GB.",
+      "engagement": {
+        "likes": 3,
+        "comments": 0,
+        "views": 219,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "~133 chat; ~381 context-lookup (16-token verify)",
+          "hardware": "RTX 3090 24GB ~250W",
+          "quant": "quantized KV/heads/acts",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101461617871393182"
+        }
+      ],
+      "why": "DFlash2 speculative + context-lookup drafting on optimized vLLM hits ~381 tok/s on document-reproduction (vs ~133 tok/s chat) on a single RTX 3090.",
+      "engagement": {
+        "likes": 6,
+        "comments": 4,
+        "views": 3042,
+        "last_7d_likes": 1
+      },
+      "last_seen": "2026-09-20"
+    }
+  ],
+  "generated_utc": "2026-09-30T19:05:12Z"
+}
