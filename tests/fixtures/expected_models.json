@@ -38,7 +38,10 @@
           "date": "2026-09-28",
           "source_post": "https://lightbrd.com/1",
           "likes": 0,
-          "comments": 0
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         }
       ],
       "why": "w",
@@ -71,7 +74,10 @@
           "source_post": "https://lightbrd.com/2",
           "quant": "Q4",
           "likes": 0,
-          "comments": 0
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         }
       ],
       "full_name": "BrandNew",

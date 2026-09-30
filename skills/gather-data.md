@@ -171,3 +171,32 @@ resolves before writing it. CI itself never calls the LLM — it only reports.
   review. Never invent a URL.
 - Update `data/models.json` (and the raw snapshot if the wrong link came from
   `data/raw/*.json`), then regenerate `README.md` via `scripts/update_trending.py`.
+
+
+## 4. Engagement-weighted t/s (aggregation) — the search agent MUST record per-post engagement
+
+The aggregator (`scripts/update_trending.py` `merge_engines`) weights each engine
+measurement's t/s by the **engagement on its source X post**. For this to work,
+the search agent MUST record, on **every engine measurement**, the source post's
+numeric engagement:
+
+- `likes`, `comments`, `reshares`, `views`, `interactions` (all integers >= 0).
+
+The composite weight is `likes + 2*comments + 3*reshares + log10(views+1)` —
+reshares are the strongest signal (active endorsement + reach), comments next,
+likes passive, views log-scaled so a viral-but-unverified post can't dominate.
+
+How it behaves (all covered by unit tests):
+- **Concordant t/s** (within 12%) collapse to one row whose representative is the
+  engagement-weighted mean of the concordant cores.
+- **keep-higher**: the representative is `max(highest reported t/s, weighted mean)`
+  — a reported t/s is only ever RAISED, never lowered by a noisy low-engagement
+  outlier.
+- **Higher t/s than the one already in models.json is UPDATED** (not duplicated);
+  a brand-new model is CREATED with the engagement-weighted t/s.
+- Genuinely different t/s (beyond tolerance), different GPU, or different engine
+  stays a distinct row.
+
+If a measurement lacks engagement, it is defaulted to 0 (weight 1) — but the
+agent should always try to capture the real numbers, because without them the
+weighting is inert.

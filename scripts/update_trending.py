@@ -583,9 +583,17 @@ def _tps_core(tps) -> float:
 
 
 def _eng_weight(m) -> float:
-    """Engagement weight of a measurement: likes + comments on its source post,
-    floor of 1 (a no-engagement post still counts once)."""
-    return max(1, int(m.get("likes", 0) or 0) + int(m.get("comments", 0) or 0))
+    """Engagement weight of a measurement — the composite X signal on its source
+    post: likes + 2*comments + 3*reshares + log10(views+1). Reshares are the
+    strongest (active endorsement + reach), comments next, likes passive, views
+    log-scaled so a viral-but-unverified post can't dominate. Floor of 1 (a
+    no-engagement post still counts once)."""
+    import math
+    likes = int(m.get("likes", 0) or 0)
+    comments = int(m.get("comments", 0) or 0)
+    reshares = int(m.get("reshares", 0) or 0)
+    views = int(m.get("views", 0) or 0)
+    return max(1.0, likes + 2 * comments + 3 * reshares + math.log10(views + 1))
 
 
 def _concordant(a: float, b: float, tol: float = 0.12) -> bool:
@@ -633,8 +641,8 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
         max_core = max(_tps_core(x.get("tps")) for x in group)
         final_core = max(max_core, rep_core)
         row = dict(primary, tps=f"{final_core:g}")
-        row.setdefault("likes", 0)
-        row.setdefault("comments", 0)
+        for k in ("likes", "comments", "reshares", "views", "interactions"):
+            row.setdefault(k, 0)
         out.append(row)
     return out
 
@@ -669,8 +677,8 @@ def normalize_model(m: dict, store: dict) -> dict:
     # default per-measurement engagement (likes/comments) so the interaction-
     # weighted merge has a weight even when the search agent didn't emit it yet
     for e in engs:
-        e.setdefault("likes", 0)
-        e.setdefault("comments", 0)
+        for k in ("likes", "comments", "reshares", "views", "interactions"):
+            e.setdefault(k, 0)
     # dedup the raw model's own engine rows (same engine+tps+GPU size reported
     # by two posts in ONE snapshot) so a brand-new model never carries duplicates
     engs = merge_engines([], engs)

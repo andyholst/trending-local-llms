@@ -529,6 +529,195 @@ def test_merge_engines_tps_matrix():
     check("merge-matrix: same tps different GPU -> distinct", len(out) == 2, json.dumps(out))
 
 
+def test_eng_weight_composite():
+    """_eng_weight uses the composite X signal: likes + 2*comments + 3*reshares
+    + log10(views+1), floor 1. Reshares dominate, views are log-scaled, missing
+    signals fall back gracefully."""
+    def w(**kw):
+        m = {"likes": 0, "comments": 0, "reshares": 0, "views": 0}
+        m.update(kw)
+        return UT._eng_weight(m)
+    check("weight: no engagement -> floor 1", w() == 1.0)
+    check("weight: likes only", w(likes=10) == 10.0)
+    check("weight: comments 2x", w(comments=5) == 10.0)
+    check("weight: reshares 3x", w(reshares=5) == 15.0)
+    check("weight: reshare-dominant over likes", w(likes=100, reshares=10) == 100 + 30)
+    check("weight: views log-scaled (1000 views -> log10(1001)~3.0)", abs(w(views=1000) - 3.0004) < 0.01)
+    check("weight: viral views don't dominate (1e6 views -> ~6.0)", abs(w(views=10**6) - 6.0) < 0.01)
+    check("weight: combined", w(likes=10, comments=2, reshares=1, views=99) == 10 + 4 + 3 + 2)
+
+
+def test_ingest_maps_engagement_end_to_end():
+    """REAL data-flow test: a raw snapshot whose engine measurements carry
+    likes/comments/reshares/views must flow through ingest_raw_snapshots into
+    models.json with the engagement preserved AND the t/s engagement-weighted
+    (concordant collapse + keep-higher). This proves the search agent's
+    per-post engagement is truly mapped, not just unit-tested in isolation."""
+    import tempfile as _t
+    raw = {
+        "backend": "nvidia", "generated_utc": "2026-09-28T10:00:00Z",
+        "models": [{
+            "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
+            "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
+            "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA"],
+            "engines": [
+                # same engine+GPU, concordant t/s, different engagement
+                {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090", "date": "2026-09-28",
+                 "source_post": "https://lightbrd.com/a", "likes": 30, "comments": 5, "reshares": 2, "views": 1000},
+                {"engine": "llama.cpp", "tps": "52 (est)", "hardware": "RTX 4090", "date": "2026-09-28",
+                 "source_post": "https://lightbrd.com/b", "likes": 200, "comments": 40, "reshares": 20, "views": 50000},
+            ],
+            "last_seen": "2026-09-28",
+        }],
+    }
+    store = {"engines": {"llama.cpp": {"backend": "CUDA", "note": "x", "url": "https://github.com/ggml-org/llama.cpp"}}, "models": []}
+    with _t.TemporaryDirectory() as td:
+        rdir = Path(td); (rdir / "nvidia-1.json").write_text(json.dumps(raw))
+        saved = UT.RAW_DIR; UT.RAW_DIR = rdir
+        try: UT.ingest_raw_snapshots(store)
+        finally: UT.RAW_DIR = saved
+    m = store["models"][0]
+    # the two concordant measurements collapse to ONE row
+    check("e2e: concordant measurements collapse to one engine row",
+          len(m["engines"]) == 1, json.dumps(m["engines"]))
+    e = m["engines"][0]
+    # keep-higher: representative = max(52, weighted mean) -> 52
+    check("e2e: keep-higher representative t/s (52)",
+          _core(e["tps"]) == 52.0, e["tps"])
+    # the representative row carries the HIGHEST-engagement measurement's signals
+    check("e2e: representative carries the high-engagement measurement's likes",
+          e.get("likes") == 200, json.dumps(e))
+    check("e2e: representative carries reshares",
+          e.get("reshares") == 20, json.dumps(e))
+    check("e2e: representative carries views",
+          e.get("views") == 50000, json.dumps(e))
+    # the source_post of the high-engagement measurement is kept
+    check("e2e: source_post of the high-engagement measurement kept",
+          e.get("source_post") == "https://lightbrd.com/b", e.get("source_post"))
+
+
+def test_ingest_updates_existing_model_to_higher_tps():
+    """The user's core rule: a NEW report with HIGHER t/s (and real engagement)
+    for an EXISTING model in models.json must UPDATE that model's engine row to
+    the higher value — not duplicate it, not keep the stale lower one. And a
+    brand-new model is CREATED with the engagement-weighted t/s."""
+    import tempfile as _t
+    # existing model in the store: llama.cpp at 50
+    store = {
+        "engines": {"llama.cpp": {"backend": "CUDA", "note": "x", "url": "https://github.com/ggml-org/llama.cpp"}},
+        "models": [{
+            "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
+            "formats": [{"name": "GGUF", "hf": "Qwen/Qwen3-14B"}], "license": "Apache 2.0",
+            "params": "14B", "hf": "Qwen/Qwen3-14B", "vram_tier": "9GB", "vram_min": "8GB",
+            "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
+            "engines": [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090", "date": "2026-09-20",
+                         "source_post": "https://lightbrd.com/old"}],
+            "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
+            "last_seen": "2026-09-20",
+        }],
+    }
+    # new raw snapshot: same model+engine, HIGHER tps (55) with high engagement
+    raw = {
+        "backend": "nvidia", "generated_utc": "2026-09-28T10:00:00Z",
+        "models": [{
+            "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
+            "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
+            "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA"],
+            "engines": [{"engine": "llama.cpp", "tps": "55", "hardware": "RTX 4090", "date": "2026-09-28",
+                         "source_post": "https://lightbrd.com/new", "likes": 500, "comments": 100, "reshares": 50}],
+            "last_seen": "2026-09-28",
+        }],
+    }
+    with _t.TemporaryDirectory() as td:
+        rdir = Path(td); (rdir / "nvidia-1.json").write_text(json.dumps(raw))
+        saved = UT.RAW_DIR; UT.RAW_DIR = rdir
+        try: UT.ingest_raw_snapshots(store)
+        finally: UT.RAW_DIR = saved
+    m = store["models"][0]
+    # the existing model is UPDATED, not duplicated: still one llama.cpp row
+    check("update: existing model keeps ONE engine row (not duplicated)",
+          len(m["engines"]) == 1, json.dumps(m["engines"]))
+    e = m["engines"][0]
+    # t/s raised to the higher report (55), not the stale 50
+    check("update: existing model's t/s raised to the higher report (55)",
+          _core(e["tps"]) == 55.0, e["tps"])
+    # the new high-engagement measurement's signals are carried
+    check("update: representative carries the new report's engagement",
+          e.get("likes") == 500 and e.get("reshares") == 50, json.dumps(e))
+    check("update: source_post updated to the new report",
+          e.get("source_post") == "https://lightbrd.com/new", e.get("source_post"))
+
+
+def test_merge_engines_engagement_tps_permutations():
+    """DATA-DRIVEN permutation matrix of engagement x tps: every combination of
+    (low/high engagement) x (lower/same/higher tps) -> expected (rows, core).
+    Each row: (tps_a, likes_a, tps_b, likes_b, expected_rows, expected_core or
+    None for 'distinct'). keep-higher wins over the weighted mean."""
+    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/x"):
+        return {"engine": "FreeToken", "tps": tps, "hardware": hw, "date": "2026-09-28",
+                "source_post": post, "likes": likes, "comments": 0}
+    # (a_tps, a_likes, b_tps, b_likes, expected_rows, expected_core)
+    matrix = [
+        # higher vs higher (both high eng) -> collapse, higher tps
+        ("50", 1000, "55", 900, 1, 55.0),
+        # low vs higher (low-eng lower tps vs high-eng higher) -> higher tps
+        ("50", 1, "55", 1000, 1, 55.0),
+        # low vs same -> collapse to that tps
+        ("50", 1, "50", 1000, 1, 50.0),
+        # lower vs low (both low eng) -> keep higher
+        ("40", 1, "45", 1, 1, 45.0),
+        # high-eng lower vs low-eng higher -> keep-higher caps at 55
+        ("50", 10000, "55", 1, 1, 55.0),
+        # low-eng lower vs high-eng higher -> higher + higher eng = 55
+        ("50", 1, "55", 10000, 1, 55.0),
+        # far-apart tps -> distinct regardless of engagement
+        ("50", 10000, "90", 1, 2, None),
+    ]
+    for a_tps, a_l, b_tps, b_l, rows, core in matrix:
+        out = UT.merge_engines([], [eng(a_tps, a_l), eng(b_tps, b_l)])
+        ok_rows = len(out) == rows
+        ok_core = (core is None) or (len(out) == 1 and _core(out[0]["tps"]) == core)
+        check(f"perm-matrix: {a_tps}@{a_l} vs {b_tps}@{b_l} -> {rows} row(s) core={core}",
+              ok_rows and ok_core, json.dumps(out))
+
+
+def test_eng_weight_signal_ordering():
+    """DATA-DRIVEN: verify the formula weights each signal correctly AND that
+    they're ordered against each other — reshares (3x) > comments (2x) > likes
+    (1x) > views (log10). Each case asserts an ordering or equivalence."""
+    def w(**kw):
+        m = {"likes": 0, "comments": 0, "reshares": 0, "views": 0}
+        m.update(kw)
+        return UT._eng_weight(m)
+
+    checks = [
+        ("1 like = 1", w(likes=1) == 1.0),
+        ("1 comment = 2x a like", w(comments=1) == 2.0),
+        ("1 reshare = 3x a like", w(reshares=1) == 3.0),
+        # ordering: reshare > comment > like
+        ("reshare outweighs comment", w(reshares=1) > w(comments=1)),
+        ("comment outweighs like", w(comments=1) > w(likes=1)),
+        # reshare > equal likes
+        ("1 reshare (3) > 2 likes (2)", w(reshares=1) > w(likes=2)),
+        ("1 comment (2) == 2 likes", w(comments=1) == w(likes=2)),
+        ("3 comments (6) > 5 likes (5)", w(comments=3) > w(likes=5)),
+        ("2 reshares (6) == 3 comments (6)", w(reshares=2) == w(comments=3)),
+        # additive
+        ("likes+comments add", w(likes=1, comments=1) == 3.0),
+        ("comments+reshares add", w(comments=1, reshares=1) == 5.0),
+        # views are LOG-scaled: reach, not endorsement. A million views (6) is
+        # still modest — equivalent to ~6 likes, and dwarfed by the same count
+        # of true endorsements.
+        ("1e6 views ~6 likes (not 1e6)", abs(w(views=10**6) - w(likes=6)) < 0.01),
+        ("views grow as log, not linear: 1e9 views << 1e9 likes", w(views=10**9) < w(likes=10**9)),
+        ("1e9 views (~9) < 1e4 likes", w(views=10**9) < w(likes=10**4)),
+        ("1e6 views contribute ~6, far below 10 likes", w(views=10**6) < w(likes=10)),
+    ]
+    for name, cond in checks:
+        check(f"weight-ordering: {name}", cond, "")
+
+
+
 def main() -> int:
     print("7-day post-granularity engagement aggregation")
     test_dedupe_posts_collapses_same_url()
@@ -543,6 +732,11 @@ def main() -> int:
     test_merge_engines_interaction_weighted()
     test_merge_engines_edge_cases()
     test_merge_engines_tps_matrix()
+    test_eng_weight_composite()
+    test_ingest_maps_engagement_end_to_end()
+    test_ingest_updates_existing_model_to_higher_tps()
+    test_merge_engines_engagement_tps_permutations()
+    test_eng_weight_signal_ordering()
     test_dedupe_posts_edge_cases()
     test_prune_posts_boundary_30_days()
     test_recompute_7d_boundary()
