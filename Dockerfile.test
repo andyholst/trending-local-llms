@@ -1,0 +1,25 @@
+# trending-local-llms — TEST image (layered on the base image).
+#
+# The base image (ghcr.io/.../trending-local-llms:latest) only rebuilds on
+# Sunday. TEST-only libs that land mid-week in requirements-test.in (e.g.
+# markdown-it-py, tabulate — the README-table validator) are NOT in the
+# non-Sunday base. So this TEST image layers the CURRENT requirements-test.txt
+# on whatever base is present and installs it at build time — `make test` /
+# `make validate` always run with the modules requirements-test.in declares,
+# regardless of the base image's Sunday rebuild cadence.
+#
+# Build:    make docker-test-build
+# Run QA:   docker run --rm -v "$$PWD":/workspace -w /workspace \
+#             trending-local-llms-test:latest make validate
+FROM ghcr.io/andyholst/trending-local-llms:latest
+
+# Layer the current TEST requirements (markdown-it-py, tabulate, mdurl) on the
+# base. Copied before the pip install so a requirements-test change only busts
+# this one layer, never the Hermes/base layers below.
+COPY requirements-test.txt /tmp/requirements-test.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-test.txt \
+	&& rm -f /tmp/requirements-test.txt
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+WORKDIR /workspace
+CMD ["make", "validate"]

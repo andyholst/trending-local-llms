@@ -307,6 +307,47 @@ def test_engine_guide_engine_name_is_link():
         check("engine-guide: engine name is a link", cells[0].startswith("["), cells[0])
 
 
+def test_readme_tables_wellformed():
+    """HAPPY: a well-formed README (as generated) PASSES the markdown-it table
+    validator. NEGATIVE: a broken separator column count FAILS it."""
+    import tempfile
+    s = store()
+    readme = UT.render_readme(s, datetime(2026, 9, 28, tzinfo=timezone.utc))
+    tmp = tempfile.mkdtemp()
+
+    # happy: render -> every table well-formed
+    happy = Path(tmp) / "README.md"
+    happy.write_text(readme)
+    saved = V.README
+    V.README = happy
+    try:
+        reset()
+        V.check_readme_tables_wellformed(s)
+        errs = [m for m in V.FAILURES if "readme-tables" in m]
+        check("readme-tables: generated README is well-formed",
+              len(errs) == 0, json.dumps(errs))
+    finally:
+        V.README = saved
+
+    # negative: drop one dash-group from the most-loved separator
+    broken = readme.replace(
+        "|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|",
+        1)
+    bp = Path(tmp) / "README-broken.md"
+    bp.write_text(broken)
+    saved2 = V.README
+    V.README = bp
+    try:
+        reset()
+        V.check_readme_tables_wellformed(s)
+        errs = [m for m in V.FAILURES if "readme-tables" in m]
+        check("readme-tables: broken separator column count is CATCHED",
+              any("separator has" in e for e in errs), json.dumps(errs))
+    finally:
+        V.README = saved2
+
+
 def main() -> int:
     print("validate-readme + raw-mapping: direct unit tests")
     test_backend_sort_pass()
@@ -323,6 +364,7 @@ def main() -> int:
     test_raw_mapping_id_collision__maps_by_id()
     test_most_loved_table_clean_shape()
     test_engine_guide_engine_name_is_link()
+    test_readme_tables_wellformed()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

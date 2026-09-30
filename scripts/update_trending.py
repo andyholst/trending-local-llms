@@ -364,7 +364,7 @@ def render_readme(store: dict, today: datetime) -> str:
     def backend_table(title, emoji, rows_):
         rows_ = sorted(rows_, key=lambda r: -r[2])
         lines = [f"# {emoji} {title}", "", "| Model | Params | License | HF | VRAM | t/s per engine |",
-                 "|---|---|---|---|---|"]
+                 "|---|---|---|---|---|---|"]
         if not rows_:
             lines.append("_No models measured on this backend yet._")
         for m, desc, _peak in rows_:
@@ -398,7 +398,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 ## ❤️ Most loved open-weight models on X (ranked by 7-day engagement)
 
 | Model | Full name | HF link | Why people love it | CUDA t/s (engine) | Metal t/s (engine) | VRAM |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 {most_loved}
 
 ---
