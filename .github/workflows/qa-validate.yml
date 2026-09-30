@@ -43,22 +43,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
-
-      - name: Build base image (cached)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: trending-local-llms:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+      # Pull the prebuilt base image from GHCR (pushed by refresh-bot) instead
+      # of rebuilding it — the Hermes install + Python deps are baked in and
+      # only rebuilt on Sunday. The image is public, so no login is needed.
+      - name: Pull base image from GHCR
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:latest
+          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
 
       # The base GHCR image only rebuilds on Sunday; test-only libs added
       # mid-week (markdown-it-py, tabulate for README-table validation) are not

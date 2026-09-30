@@ -94,6 +94,15 @@ The README is **generated**, not hand-maintained:
   (the full pipeline = setup + search + merge + validate + test, in one
   container). Run after `make docker-build` with
   `NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh`.
+- **Base image is built ONCE and pulled, never rebuilt per-run.** The base
+  image (`ghcr.io/andyholst/trending-local-llms:latest` — Python deps + Hermes
+  CLI baked in) is **built and pushed to GHCR only by `refresh-bot.yml`**, and
+  only when it does not exist yet or it is **Sunday** (weekly Hermes update).
+  Every other pipeline that uses the base image — `qa-validate.yml` (PR CI) and
+  `fix-bot.yml` — **pulls** it from GHCR and **only builds the TEST image**
+  (`Dockerfile.test`, base + current `requirements-test.txt`) on each run. They
+  must never rebuild the base image locally. The GHCR image is public, so no
+  login is needed to pull it.
 - **Snapshots:** every refresh writes a timestamped snapshot to
   `data/snapshots/trending-<UTC>.json` (full store). This is the history that
   proves no model was ever removed and lets the README be rebuilt from any

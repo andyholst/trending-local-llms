@@ -56,24 +56,22 @@ jobs:
         if: steps.pr.outputs.has_pr == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
+      # Pull the prebuilt base image from GHCR (pushed by refresh-bot) instead
+      # of rebuilding it — the Hermes install + Python deps are baked in and
+      # only rebuilt on Sunday. The image is public, so no login is needed.
+      - name: Pull base image from GHCR
         if: steps.pr.outputs.has_pr == 'true'
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:latest
+          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
 
-      - name: Build image (cached)
+      # Build the TEST image (base + current test requirements) so the
+      # validate-search / validate-mapped / test rounds run with the libs the
+      # repo pins (markdown-it-py, tabulate), not the stale non-Sunday base.
+      - name: Build test image (base + current test requirements)
         if: steps.pr.outputs.has_pr == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: trending-local-llms:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+        run: |
+          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
 
       - name: Hermes fix — correct the CI failure (up to 5 rounds, in container)
         if: steps.pr.outputs.has_pr == 'true'
