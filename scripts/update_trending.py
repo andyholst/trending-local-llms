@@ -511,6 +511,7 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
                     existing["engagement"].get("last_7d_likes", 0),
                     m.get("engagement", {}).get("last_7d_likes", 0),
                 )
+                existing["engagement"] = prune_engagement(eng, mid)
                 updated += 1
             else:
                 by_id[mid] = normalize_model(m, store)
@@ -638,6 +639,45 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
 
 _REQ_ENGINE_FIELDS = ("engine", "tps", "date")
 
+# Model-level engagement keys the STORE contract allows. Read from
+# data/model_contract.json (single source of truth) so ingest can never drift
+# from validation. The search contract leaves model-level engagement OPEN, but
+# the store contract is CLOSED (additionalProperties:false) — so any extra key
+# the search agent writes there must be pruned at ingest, or every refresh PR
+# goes red on a schema error no LLM fixer should have to repair.
+_MODEL_CONTRACT = ROOT / "data" / "model_contract.json"
+_FALLBACK_ENGAGEMENT_KEYS = frozenset(
+    {"likes", "comments", "views", "reshares", "interactions", "last_7d_likes", "seen_posts"})
+
+
+def _engagement_keys() -> frozenset:
+    try:
+        c = json.loads(_MODEL_CONTRACT.read_text())
+        props = c["properties"]["models"]["items"]["properties"]["engagement"]["properties"]
+        return frozenset(props)
+    except Exception:  # noqa: BLE001 — contract missing/malformed: use the known set
+        return _FALLBACK_ENGAGEMENT_KEYS
+
+
+def prune_engagement(eng: dict, model_id: str = "?") -> dict:
+    """Drop model-level engagement keys the store contract does not declare.
+    Integer counters are coerced to non-negative ints (an agent writing "12" or
+    a float must not fail the schema either). Prints what was pruned."""
+    allowed = _engagement_keys()
+    out = {}
+    for k, v in eng.items():
+        if k not in allowed:
+            print(f"[ingest] {model_id}: pruned undeclared engagement key {k!r}")
+            continue
+        if k != "seen_posts":
+            try:
+                v = max(0, int(float(v)))
+            except (TypeError, ValueError):
+                print(f"[ingest] {model_id}: engagement {k}={v!r} not numeric -> 0")
+                v = 0
+        out[k] = v
+    return out
+
 def _slug(name: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
     return s or "unknown"
@@ -686,6 +726,7 @@ def normalize_model(m: dict, store: dict) -> dict:
     # proper dates) with any agent-written seen_posts, normalizing bare URL
     # strings so malformed data never persists into the store
     eng["seen_posts"] = dedupe_posts(_collect_seen_posts(m) + eng.get("seen_posts", []))
+    m["engagement"] = prune_engagement(eng, m.get("id", "?"))
     # scrub incomplete engine rows (missing tps or engine identity) so schema passes
     m["engines"] = [e for e in engs if all(e.get(f) is not None for f in _REQ_ENGINE_FIELDS)]
     return m

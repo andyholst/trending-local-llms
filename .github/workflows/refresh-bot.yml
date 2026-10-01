@@ -6,7 +6,13 @@ name: refresh-bot
 # the prebuilt image (each writes its own data/raw/<backend>-<UTC>.json), then
 # a final job aggregates them (merge -> validate -> test) and opens a PR only
 # when there is new data. Never auto-merges. The PR is validated by
-# qa-validate.yml; if red, fix-bot.yml re-runs Hermes to correct it.
+# qa-validate.yml; if its deterministic `validate` job is red, qa-validate
+# dispatches fix-bot.yml, which repairs the branch and re-triggers CI.
+#
+# The PR is created with the owner-scoped PAT (FIXBOT_DISPATCH_TOKEN), NOT the
+# default GITHUB_TOKEN: a PR authored by github-actions[bot] holds every
+# pull_request run for manual approval, and pushes/PRs made with GITHUB_TOKEN
+# do not trigger workflows at all. With the PAT, qa-validate starts on its own.
 #
 # Local equivalent:
 #   make docker-build && NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh
@@ -120,6 +126,12 @@ jobs:
         run: |
           make _search-smoke BACKEND=${{ matrix.backend }}
 
+      # One real Hermes call through the search alias before the 20-minute
+      # search: a dead key / broken alias / provider mis-route fails here in
+      # seconds instead of after the search burned its budget.
+      - name: Hermes routing smoke
+        run: make hermes-smoke
+
       - name: Hermes search (${{ matrix.backend }})
         run: |
           make search-${{ matrix.backend }}
@@ -149,8 +161,12 @@ jobs:
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
+      # PAT checkout: the branch push below is then made as the owner, so the
+      # PR's qa-validate run starts without an approval click.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
       - name: Pull prebuilt image
         run: |
@@ -188,7 +204,9 @@ jobs:
       - name: Commit + open PR if changed
         id: pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          # Owner PAT — see the header: a GITHUB_TOKEN-authored PR is held for
+          # approval and never auto-starts qa-validate.
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
         run: |
           if git diff --quiet -- README.md data/models.json data/snapshots data/raw; then
             echo "No data changes — no PR opened."
@@ -198,6 +216,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git checkout -b "$BRANCH"
+            sudo chown -R "$(id -u):$(id -g)" .
             git add README.md data/models.json data/snapshots data/raw
             git commit -m "chore: Hermes refresh of trending LLM data (3 separate searches)
 
@@ -215,30 +234,3 @@ jobs:
             echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
             echo "pr_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           fi
-
-      # Auto-dispatch fix-bot to validate + repair the refresh PR. The ref-bot
-      # opens a PR branch containing freshly-gathered data; qa-validate runs on
-      # it. If qa-validate is RED, fix-bot must repair the branch. Relying on
-      # fix-bot's `workflow_run` auto-trigger is fragile: for a bot-authored PR
-      # that trigger is silently suppressed by GitHub's approval gate, leaving
-      # fix-bot with nothing to latch onto. The reliable path is a
-      # workflow_dispatch, which the ref-bot can issue itself (it holds
-      # `actions: write` + GH_TOKEN) — dispatched PR runs are NOT gated the way
-      # workflow_run auto-triggers are. fix-bot caps itself at 5 rounds.
-      - name: Dispatch fix-bot to validate + repair the refresh PR
-        id: dispatch-fixbot
-        if: steps.pr.outputs.pr_opened == 'true'
-        env:
-          # The default GITHUB_TOKEN cannot create a workflow_dispatch for another
-          # workflow (HTTP 403 "not accessible by integration"), and a bot-authored
-          # PR run is held for human approval. Use an owner-scoped PAT (scopes:
-          # workflow + actions:write) set as the FIXBOT_DISPATCH_TOKEN secret: it
-          # can dispatch fix-bot AND is not gated, so the refresh -> validate ->
-          # fix loop runs to green with zero human clicks. fix-bot caps at 5 rounds.
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
-        run: |
-          PR_NUM="${{ steps.pr.outputs.pr_number }}"
-          BRANCH="${{ steps.pr.outputs.pr_branch }}"
-          echo "Dispatching fix-bot for PR #$PR_NUM on $BRANCH"
-          gh workflow run fix-bot.yml -f pr_number="$PR_NUM" -f branch="$BRANCH" \
-            --repo "${{ github.repository }}"

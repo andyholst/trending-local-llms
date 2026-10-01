@@ -8,5 +8,7 @@ markdown-it-py==4.2.0
     # via -r requirements-test.in
 mdurl==0.1.2
     # via markdown-it-py
+pyyaml==6.0.3
+    # via -r requirements-test.in
 tabulate==0.10.0
     # via -r requirements-test.in
