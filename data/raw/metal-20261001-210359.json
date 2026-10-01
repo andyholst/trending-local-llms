@@ -1,0 +1,97 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-01T21:05:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "MacBook Pro M4 Max",
+          "quant": "4-bit MLX, DFlash drafter",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "MacBook Pro M4 Max",
+          "quant": "4-bit MLX, DFlash drafter",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "MacBook Pro M4 Max",
+          "quant": "4-bit MLX, DFlash drafter",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6",
+          "quant": "4-bit MLX, DFlash2 drafter, code gen",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 3,
+          "views": 376,
+          "interactions": 382
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "30.8",
+          "hardware": "Mac mini M6",
+          "quant": "4-bit MLX, DFlash2 drafter, chat",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 3,
+          "views": 376,
+          "interactions": 382
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN). TensorFold + DFlash2 speculative decoding on Apple Silicon reaches ~154 tok/s on M4 Max and ~62 tok/s code gen on Mac mini M6.",
+      "engagement": {
+        "likes": 4,
+        "comments": 0,
+        "views": 376,
+        "last_7d_likes": 2
+      },
+      "last_seen": "2026-10-01"
+    }
+  ]
+}
