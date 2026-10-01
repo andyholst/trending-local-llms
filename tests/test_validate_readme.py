@@ -348,11 +348,68 @@ def test_readme_tables_wellformed():
         V.README = saved2
 
 
+def _cuda_table_with_dates(cells):
+    """Build a CUDA table whose t/s cells carry the real format:
+    'engine tps (YYYY-MM-DD); engine tps (date)'. Metal+CPU are empty."""
+    rows = ["# Trending Local LLMs", "", "# 🟦 CUDA — NVIDIA GPUs", "",
+            "| Model | t/s |", "|---|---|"]
+    for c in cells:
+        rows.append(f"| **X** | {c} |")
+    rows += ["", "# 🟩 Metal — Apple Silicon", "", "| Model | t/s |", "|---|---|",
+             "_No models measured on this backend yet._", "",
+             "# 🟨 CPU — no GPU", "", "| Model | t/s |", "|---|---|",
+             "_No models measured on this backend yet._"]
+    return "\n".join(rows)
+
+
+def test_backend_sort_counts_1000plus_and_strips_dates():
+    """REGRESSION: a t/s >= 1000 (e.g. spec-decode 1250) must be counted (was
+    dropped by a '<1000' filter), and the embedded '(YYYY-MM-DD)' date must not
+    let the YEAR (2026) be read as t/s. 1250-first, 380-second must PASS as
+    sorted. This guards the CUDA-table 'unsorted' false positive that blocked
+    refresh PRs."""
+    reset()
+    s = store()
+    r = _set_readme(_cuda_table_with_dates([
+        "DFlash2 1250 (2026-09-28)",
+        "llama.cpp 380 (2026-09-27)",
+    ]))
+    try:
+        V.check_backend_sort(s)
+        check("backend-sort: 1250 counted + dates stripped -> sorted passes",
+              len(V.FAILURES) == 0, json.dumps(V.FAILURES))
+    finally:
+        _restore_readme()
+
+
+def test_backend_sort_dates_not_counted_as_tps():
+    """REGRESSION: the YEAR in an embedded date must not be read as t/s. Table
+    is in TRUE descending tps order (60, then 50) but with the years INVERTED
+    (2025 on the high-tps row, 2026 on the low-tps row). If the year leaked, the
+    parse would read [2025, 2026] (unsorted) and the correctly-sorted table
+    would FALSE-fail. With date-stripping it reads [60, 50] and passes."""
+    reset()
+    s = store()
+    r = _set_readme(_cuda_table_with_dates([
+        "llama.cpp 60 (2025-12-01)",
+        "llama.cpp 50 (2026-09-28)",
+    ]))
+    try:
+        V.check_backend_sort(s)
+        check("backend-sort: date year inverted does NOT leak as t/s -> passes",
+              len(V.FAILURES) == 0, json.dumps(V.FAILURES))
+    finally:
+        _restore_readme()
+
+
 def main() -> int:
     print("validate-readme + raw-mapping: direct unit tests")
     test_backend_sort_pass()
     test_backend_sort_fail()
     test_backend_sort_missing_table()
+
+    test_backend_sort_counts_1000plus_and_strips_dates()
+    test_backend_sort_dates_not_counted_as_tps()
     test_readme_has_all_models()
     test_readme_sync_pass()
     test_readme_sync_missing_model()

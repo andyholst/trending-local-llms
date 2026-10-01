@@ -128,14 +128,15 @@ def test_tps_shape():
 
     # GOOD — starts with a number
     good = ["39.3", "~50", "67-71", "99.7", "120-124", "22", "35.5-43.7",
-            "143", "233 (DFlash spec-decode), 74.9 stock", "~237 decode",
-            "~38 (1 user); ~215 peak (16 parallel)"]
+            "143", "39.3 (est)", "~237", "52", "~ 50"]
     for v in good:
         check(f"tps GOOD starts-numeric: {v!r}", tps(v) == 0, str(V.FAILURES))
 
     # BAD — does not start with a number (text / leading comment / label)
     bad = ["a few (est)", "(est) 50", "~fast", "fast", "slow-ish", "N/A",
-           "varies", "unknown"]
+           "varies", "unknown", "233 (DFlash spec-decode), 74.9 stock",
+           "~237 decode", "~38 (1 user); ~215 peak (16 parallel)",
+           "44 (spec-decode 3.6x; 12 stock)", "52-60 output / 1250 prompt"]
     for v in bad:
         check(f"tps BAD rejects non-numeric start: {v!r}", tps(v) == 1, str(V.FAILURES))
 
@@ -317,13 +318,16 @@ def test_tps_shape_matrix():
         ("~50", True), ("~237.5", True),
         ("67-71", True), ("35.5-43.7", True), ("120-124", True),
         ("39.3 (est)", True), ("39.3(est)", True),
-        ("233 (DFlash spec-decode), 74.9 stock", True),
-        ("~38 (1 user); ~215 peak (16 parallel)", True),
+        ("39.3 (est)", True), ("39.3(est)", True),
         ("~ 50", True), ("  50", True), ("50  ", True),
         ("", True),  # empty -> skipped, not a failure
         ("a few (est)", False), ("(est) 50", False), ("~fast", False),
         ("fast", False), ("slow-ish", False), ("N/A", False),
         ("varies", False), ("unknown", False), (", 50", False), ("-50", False),
+        ("233 (DFlash spec-decode), 74.9 stock", False),
+        ("~38 (1 user); ~215 peak (16 parallel)", False),
+        ("~237 decode", False), ("44 (spec-decode 3.6x; 12 stock)", False),
+        ("52-60 output / 1250 prompt", False),
     ]
     for tps, expect in matrix:
         reset()
@@ -336,12 +340,47 @@ def test_tps_shape_matrix():
               got == expect, str(V.FAILURES))
 
 
+def test_tps_embedded_text_permutations():
+    """DATA-DRIVEN: every way a t/s string can embed text must be REJECTED by
+    check_tps_shape. Covers number+text, tilde+text, range+text, leading text,
+    leading comment, prose-after-number, multi-token prose, parentheses prose."""
+    reject = [
+        # number then text/comment
+        "50 xyz", "50 fast", "50 (note)", "50 runs", "50 per second",
+        # tilde + text
+        "~fast", "~50 decode", "~ slow", "~aprox", "~ 237 decode",
+        # range + text
+        "50-60 combined", "67-71 tokens", "35.5-43.7 per sec",
+        # leading text / leading comment
+        "a few (est)", "~(est) 50", "(est) 50", "fast 50", "about 50",
+        # prose after / multi-token prose
+        "233 (DFlash spec-decode), 74.9 stock", "~38 (1 user); ~215 peak (16 parallel)",
+        "44 (spec-decode 3.6x; 12 stock)", "52-60 output / 1250 prompt",
+        "~237 decode", "50 tokens per second (est)",
+    ]
+    # acceptable (clean numeric, no embedded text)
+    accept = ["50", "39.3", "~50", "~ 50", "67-71", "35.5-43.7", "99.7",
+              "120-124", "39.3 (est)", "39.3(est)", "~237", "52", "143"]
+    def run(v):
+        reset()
+        s = good_store()
+        s["models"][0]["engines"] = [{"engine": "llama.cpp", "tps": v,
+                                      "date": "2026-09-28", "source_post": "https://lightbrd.com/x"}]
+        V.check_tps_shape(s)
+        return len(V.FAILURES) == 0
+    for v in reject:
+        check(f"tps-embed: REJECT {v!r}", run(v) is False, str(V.FAILURES))
+    for v in accept:
+        check(f"tps-embed: ACCEPT {v!r}", run(v) is True, str(V.FAILURES))
+
+
 def main() -> int:
     print("validator: direct unit tests")
     test_no_duplicates()
     test_no_duplicate_engines()
     test_tps_shape()
     test_tps_shape_matrix()
+    test_tps_embedded_text_permutations()
     test_latest_tps_order()
     test_supported_engines()
     test_model_fields()
