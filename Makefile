@@ -37,7 +37,7 @@ HERMES_MODEL := deepseek/deepseek-v4-flash-0731
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # Raise the per-reply output cap. The deepseek model was truncating its reply
 # mid-search (hit the default max_tokens), dropping the incomplete action and
-# failing `make refresh`. At 8000 the heavier Metal/General searches still
+# failing `make refresh`. At 8000 the heavier Metal search still
 # truncated mid-payload; 16000 gives headroom (the model card supports up to
 # 384K output). Input context is also raised to the model's 1M-token ceiling
 # (model card: 1M input / 384K output) so a long AGENTS.md + skill + mirrors
@@ -93,15 +93,14 @@ _search-cpu:
 	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with CPU/embedded/edge keywords ONLY (llm tokens per second no gpu cpu, llama.cpp cpu only, raspberry pi llm tokens per second, local llm cpu), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Write the captured models to data/raw/cpu-<UTC>.json using:  python3 scripts/update_trending.py --write-raw cpu < payload.json. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --yolo
 
-.PHONY: _search-general
-_search-general:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with GENERAL t/s keywords (tokens per second llm, tokens per second benchmark llm, local llm tokens per second gpu, open weight llm benchmark gpu), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Write the captured models to data/raw/general-<UTC>.json using:  python3 scripts/update_trending.py --write-raw general < payload.json. Never remove a model. Do not merge or push." \
-		-m nous-deepseek --yolo
-
 .PHONY: _search
 _search:
-	@echo "== running 4 searches in parallel (each writes its own data/raw/<backend>-<UTC>.json) =="
-	@make -j4 _search-nvidia _search-metal _search-cpu _search-general
+	@echo "== running 3 searches in parallel (each writes its own data/raw/<backend>-<UTC>.json) =="
+	@make -j4 _search-nvidia _search-metal _search-cpu
+
+.PHONY: _search-smoke
+_search-smoke:
+	python3 scripts/smoke_search.py --budget 3 $(if $(BACKEND),--backend $(BACKEND),)
 
 .PHONY: _correct-raw
 _correct-raw:
@@ -132,9 +131,17 @@ _fix:
 _merge:
 	python3 scripts/update_trending.py
 
+.PHONY: _merge-fetch
+_merge-fetch:
+	python3 scripts/update_trending.py --fetch
+
 .PHONY: _validate
 _validate:
 	python3 scripts/validate.py
+
+.PHONY: _validate-fetch
+_validate-fetch:
+	python3 scripts/update_trending.py --fetch --require-hits --dry-run
 
 .PHONY: _validate-data
 _validate-data:
@@ -166,7 +173,7 @@ _validate-mapped:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_hermes_prompts.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_hermes_prompts.py)
 
 
 .PHONY: _requirements-test
@@ -232,13 +239,13 @@ search-metal:
 search-cpu:
 	$(DOCKER_RUN) sh -c "make _setup && make _search-cpu"
 
-.PHONY: search-general
-search-general:
-	$(DOCKER_RUN) sh -c "make _setup && make _search-general"
-
 .PHONY: search
 search:
 	$(DOCKER_RUN) sh -c "make _setup && make _search"
+
+.PHONY: search-smoke
+search-smoke:
+	$(DOCKER_RUN) make _search-smoke
 
 .PHONY: correct-raw
 correct-raw:
@@ -252,9 +259,17 @@ fix:
 merge:
 	$(DOCKER_RUN) make _merge
 
+.PHONY: merge-fetch
+merge-fetch:
+	$(DOCKER_RUN) sh -c "make _merge-fetch"
+
 .PHONY: validate
 validate:
 	$(TEST_RUN) make _validate
+
+.PHONY: validate-fetch
+validate-fetch:
+	$(TEST_RUN) make _validate-fetch
 
 .PHONY: validate-data
 validate-data:

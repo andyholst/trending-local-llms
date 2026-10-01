@@ -33,11 +33,11 @@ SCRAPE_DIR = _DATA_DIR / "scrape"
 SNAPSHOT_DIR = _DATA_DIR / "snapshots"
 RAW_DIR = _DATA_DIR / "raw"
 
-# Four search groups (last-3-day window), refined by live probing (Sep 28
+# Three backend search groups (last-3-day window), refined by live probing (Sep 28
 # 2026) for maximum matches per backend. NVIDIA/CUDA and Apple/Metal carry most
 # of the signal; CPU is sparse on X (offload-capable engines like FreeToken and
-# llama.cpp-cpu surface under the CUDA/engine queries). A general group catches
-# cross-backend t/s trend posts.
+# llama.cpp-cpu surface under the CUDA/engine queries). The General catch-all
+# group was removed; the Hermes refresh drives the live search.
 SEARCH_GROUPS = {
     "CUDA": [
         "rtx tokens per second llm",
@@ -63,20 +63,12 @@ SEARCH_GROUPS = {
         "llama.cpp cpu only tokens per second",
         "local llm tokens per second gpu",
     ],
-    "General": [
-        '"tokens per second" llm',
-        "tokens per second benchmark llm",
-        "local llm tokens per second gpu",
-        "open weight llm benchmark gpu",
-    ],
 }
 USER_AGENT = "trending-local-llms-bot/1.0 (research-index)"
 STRICT = os.environ.get("STRICT") == "1"
 
-
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
-
 
 def fetch_lightbrd(query: str) -> str:
     """Fetch one lightbrd search page. Raises on failure; caller decides.
@@ -144,7 +136,7 @@ def gather_x(store: dict) -> dict:
     return per_backend
 
 
-# Search window vs trending window. The four Hermes search prompts fetch a
+# Search window vs trending window. The three Hermes search prompts fetch a
 # last-3-day window (fast daily cadence); the TRENDING band aggregates distinct
 # posts over the last 7 days so a model stays Trending on a rolling week of
 # engagement, not a single day. Post entries older than RETENTION_DAYS are
@@ -153,10 +145,8 @@ SEARCH_WINDOW_DAYS = 3
 TRENDING_WINDOW_DAYS = 7
 RETENTION_DAYS = 30
 
-
 def _post_date(post: dict) -> str:
     return post.get("date", "") or ""
-
 
 def dedupe_posts(posts: list[dict]) -> list[dict]:
     """Collapse engagement.seen_posts to one entry per source_post URL.
@@ -175,7 +165,6 @@ def dedupe_posts(posts: list[dict]) -> list[dict]:
             by_url[url] = p
     return list(by_url.values())
 
-
 def prune_posts(posts: list[dict], today: datetime) -> list[dict]:
     """Drop engagement.seen_posts older than RETENTION_DAYS. The model row is
     never removed — only its stale post history is pruned (AGENTS retention)."""
@@ -188,7 +177,6 @@ def prune_posts(posts: list[dict], today: datetime) -> list[dict]:
         if (today - d).days <= RETENTION_DAYS:
             out.append(p)
     return out
-
 
 def recompute_7d_engagement(m: dict, today: datetime) -> None:
     """Recompute last_7d_likes from engagement.seen_posts: the count of DISTINCT
@@ -215,7 +203,6 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     if dates:
         m["last_seen"] = max(dates)
 
-
 def merge_engagements(store: dict, seen: list[str]) -> tuple[int, int]:
     """Increment last_7d_likes on matched models; return (matched, unknown)."""
     matched = 0
@@ -229,7 +216,6 @@ def merge_engagements(store: dict, seen: list[str]) -> tuple[int, int]:
             matched += 1
     unknown = sum(1 for s in tokens if s not in set(m["name"].lower() for m in store["models"]))
     return matched, unknown
-
 
 def sort_models(models: list[dict], today: datetime) -> list[dict]:
     """Trending (<=7d) -> recent (<=30d) -> stale (>30d).
@@ -274,7 +260,6 @@ def sort_models(models: list[dict], today: datetime) -> list[dict]:
             m["name"].lower(),
         ),
     )
-
 
 def render_readme(store: dict, today: datetime) -> str:
     """Regenerate README.md from the store + static sections."""
@@ -441,7 +426,6 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 Apache License 2.0. See [LICENSE](LICENSE).
 """
 
-
 def write_snapshot(store: dict) -> Path:
     """Write a timestamped snapshot of the store to data/snapshots/.
     Keeps a full history so the README can be rebuilt from any point and so
@@ -452,10 +436,9 @@ def write_snapshot(store: dict) -> Path:
     path.write_text(json.dumps(store, indent=2, ensure_ascii=False) + "\n")
     return path
 
-
 def write_raw_snapshot(backend: str, payload: dict) -> Path:
     """Write one backend's raw search findings to data/raw/<backend>-<UTC>.json.
-    Each of the four search prompts (NVIDIA, Metal, CPU, General) writes its own
+    Each of the three Hermes search prompts (NVIDIA, Metal, CPU) writes its own
     timestamped file here; never overwrite another backend's file."""
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     ts = now_utc().strftime("%Y%m%d-%H%M%S")
@@ -465,7 +448,6 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
     payload.setdefault("generated_utc", now_utc().strftime("%Y-%m-%dT%H:%M:%SZ"))
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return path
-
 
 def _collect_seen_posts(m: dict) -> list[dict]:
     """Derive engagement.seen_posts from a model's engine measurements: one
@@ -481,7 +463,6 @@ def _collect_seen_posts(m: dict) -> list[dict]:
         if cur is None or date > cur.get("date", ""):
             posts[url] = {"url": url, "date": date}
     return list(posts.values())
-
 
 def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
     """Merge all data/raw/*.json into the store. Each raw file holds one
@@ -522,7 +503,6 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
                 added += 1
     return added, updated
 
-
 def resolve_model_mapping(raw_model: dict, store: dict) -> dict:
     """Resolve a raw search model to the position it maps to in data/models.json.
     Priority across the WHOLE store: exact id first, then exact name, then exact
@@ -552,7 +532,6 @@ def resolve_model_mapping(raw_model: dict, store: dict) -> dict:
             break
     return res
 
-
 def _gpu_size(hardware: str) -> str:
     """Normalize a hardware string to a canonical GPU identity so the same
     measurement reported with slightly different wording collapses. Priority:
@@ -573,14 +552,12 @@ def _gpu_size(hardware: str) -> str:
         return "cpu"
     return ""
 
-
 def _tps_core(tps) -> float:
     """High-end numeric core of a t/s string: the max number it contains. For
     a range ('67-71') this is 71, for an estimate ('~50') 50, for a comment
     ('233 (DFlash spec-decode)') 233."""
     nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", str(tps or ""))]
     return max(nums) if nums else 0.0
-
 
 def _eng_weight(m) -> float:
     """Engagement weight of a measurement — the composite X signal on its source
@@ -595,14 +572,12 @@ def _eng_weight(m) -> float:
     views = int(m.get("views", 0) or 0)
     return max(1.0, likes + 2 * comments + 3 * reshares + math.log10(views + 1))
 
-
 def _concordant(a: float, b: float, tol: float = 0.12) -> bool:
     """Two t/s cores are the SAME measurement when within `tol` (5%) of the
     larger. 39.3 vs 39.5 -> concordant (averaged); 39.3 vs 45 -> distinct."""
     if b <= 0:
         return a == 0
     return abs(a - b) <= tol * max(a, b)
-
 
 def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
     """Merge incoming engine measurements into current, engagement-weighted.
@@ -646,14 +621,11 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
         out.append(row)
     return out
 
-
 _REQ_ENGINE_FIELDS = ("engine", "tps", "date")
-
 
 def _slug(name: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
     return s or "unknown"
-
 
 def normalize_model(m: dict, store: dict) -> dict:
     """Fill contract-required fields on a model taken from a raw search snapshot,
@@ -701,14 +673,14 @@ def normalize_model(m: dict, store: dict) -> dict:
     m["engines"] = [e for e in engs if all(e.get(f) is not None for f in _REQ_ENGINE_FIELDS)]
     return m
 
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true", help="regenerate + print, do not write")
     ap.add_argument("--fetch", action="store_true",
                     help="fetch lightbrd.com search results directly (default: re-sort/re-render "
                          "from the store only; the Hermes CLI does the live fetch via web_extract)")
+    ap.add_argument("--require-hits", action="store_true",
+                    help="with --fetch, exit non-zero if the search returns 0 model hits")
     ap.add_argument("--write-raw", metavar="BACKEND",
                     help="write a per-backend raw snapshot to data/raw/<backend>-<UTC>.json "
                          "(payload read from stdin JSON) and exit")
@@ -731,11 +703,16 @@ def main() -> int:
         per_backend = gather_x(store)
         all_seen = [t for grp in per_backend.values() for t in grp]
         print(f"[info] X model-hits this run: {len(all_seen)} across {list(per_backend.keys())}")
+        if args.require_hits and not all_seen:
+            print("[error] Firecrawl->lightbrd search returned 0 model hits", file=sys.stderr)
+            return 1
         if all_seen:
             matched, unknown = merge_engagements(store, all_seen)
             print(f"[info] matched {matched} known models, {unknown} unknown tokens (ignored unless curated)")
+        if args.dry_run:
+            return 0
 
-    # Merge any per-backend raw snapshots left by the four Hermes search prompts.
+    # Merge any per-backend raw snapshots left by the Hermes search prompts.
     added, updated = ingest_raw_snapshots(store)
     if added or updated:
         print(f"[info] ingested raw snapshots: {added} added, {updated} updated")
@@ -753,7 +730,6 @@ def main() -> int:
     snap = write_snapshot(store)
     print("[ok] wrote data/models.json, README.md, snapshot " + snap.name)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

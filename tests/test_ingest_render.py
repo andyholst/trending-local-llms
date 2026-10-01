@@ -223,11 +223,11 @@ def test_ingest_normalizes_missing_derived_fields():
 
 
 
-def test_aggregate_four_backend_searches():
-    """The CI runs the 4 searches as separate parallel jobs, each writing its own
-    data/raw/<backend>-<UTC>.json; the aggregate job then merges ALL of them into
-    models.json + README. Verify that ingesting 4 separate backend snapshots
-    (nvidia/metal/cpu/general) lands every model in the store and README, and
+def test_aggregate_three_backend_searches():
+    """The CI runs the 3 backend searches (nvidia/metal/cpu) as separate parallel
+    jobs, each writing its own data/raw/<backend>-<UTC>.json; the aggregate job
+    then merges ALL of them into models.json + README. Verify that ingesting
+    the three backend snapshots lands every model in the store and README, and
     that a model measured on multiple backends appears under each."""
     s = base_store()
     raws = [
@@ -255,26 +255,18 @@ def test_aggregate_four_backend_searches():
                          "date": "2026-09-28", "source_post": "https://lightbrd.com/cpu"}],
             "last_seen": "2026-09-28",
         }]),
-        raw_snapshot("general", [{
-            "id": "kimi-k3", "name": "Kimi K3", "full_name": "Kimi-K3", "type": "MoE",
-            "license": "Modified MIT", "params": "1T", "hf": "moonshotai/kimi-k3",
-            "vram_tier": "512GB", "vram_min": "256GB", "backends": ["CUDA"],
-            "engines": [{"engine": "vLLM", "tps": "120", "hardware": "RTX 5090",
-                         "date": "2026-09-28", "source_post": "https://lightbrd.com/gen"}],
-            "last_seen": "2026-09-28",
-        }]),
     ]
     run(s, raws)
     ids = [m["id"] for m in s["models"]]
-    check("aggregate: all 4 backend snapshots merged into store",
-          "qwen3-14b" in ids and "tiny-cpu" in ids and "kimi-k3" in ids)
+    check("aggregate: all 3 backend snapshots merged into store",
+          "qwen3-14b" in ids and "tiny-cpu" in ids)
     qwen = next(x for x in s["models"] if x["id"] == "qwen3-14b")
     engs = [e["engine"] for e in qwen["engines"]]
     check("aggregate: multi-backend model keeps both engines (llama.cpp + MLX)",
           "llama.cpp" in engs and "MLX" in engs)
     readme = UT.render_readme(s, datetime(2026, 9, 28, tzinfo=timezone.utc))
     check("aggregate: README shows all merged models",
-          "TinyCPU" in readme and "Kimi K3" in readme and "Qwen3 14B" in readme)
+          "TinyCPU" in readme and "Qwen3 14B" in readme)
     check("aggregate: README has CUDA + Metal + CPU backend tables",
           "# 🟦 CUDA" in readme and "# 🟩 Metal" in readme and "# 🟨 CPU" in readme)
 
@@ -286,7 +278,7 @@ def main() -> int:
     test_ingest_different_date_is_new_row()
     test_ingest_new_model_no_removal()
     test_ingest_normalizes_missing_derived_fields()
-    test_aggregate_four_backend_searches()
+    test_aggregate_three_backend_searches()
     test_render_shows_per_engine_ts()
     test_render_newest_tps_first()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

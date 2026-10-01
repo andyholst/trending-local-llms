@@ -85,9 +85,9 @@ The README is **generated**, not hand-maintained:
   bind-mounted at `/workspace`, so all data writes back to the host). Internal
   `_`-prefixed recipes hold the host commands; the public names are docker
   wrappers. Targets: `make docker-build` (build the image once),
-  `make setup`, `make search-nvidia|search-metal|search-cpu|search-general`
-  (the four separate searches, each writing its own
-  `data/raw/<backend>-<UTC>.json`), `make search` (all four), `make merge`
+  `make setup`, `make search-nvidia|search-metal|search-cpu`
+  (the three separate searches, each writing its own
+  `data/raw/<backend>-<UTC>.json`), `make search` (all three), `make merge`
   (ingest raw → models.json + README + snapshot), `make validate` (QA),
   `make validate-search|validate-mapped|validate-readme` (stages), `make test`
   (unit tests), `make fix` (correct a red CI with Hermes), and `make refresh`
@@ -142,9 +142,9 @@ The refresh is driven by the **GitHub Actions pipelines** (`refresh-bot.yml`,
 Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
 this `AGENTS.md` and the `gather-data` skill, then:
 
-1. Runs the **four search groups** against **lightbrd.com only**, fetched via
-   the Firecrawl scrape API (`FIRECRAWL_API_KEY`) — NVIDIA/CUDA, Metal/MLX, CPU,
-   and a General t/s-trend group (see `skills/gather-data.md`), last-3-day
+1. Runs the **three search groups** against **lightbrd.com only**, fetched via
+   the Firecrawl scrape API (`FIRECRAWL_API_KEY`) — NVIDIA/CUDA, Metal/MLX, and
+   CPU (see `skills/gather-data.md`), last-3-day
    window. **One search at a time** to keep context small: run a query, capture
    its results, then move to the next — never hold all results in context at
    once. Each search writes its own timestamped raw snapshot to
@@ -161,7 +161,7 @@ this `AGENTS.md` and the `gather-data` skill, then:
 ## 6b. Three pipelines (refresh → validate → fix)
 
 - **`refresh-bot.yml`** — the **bot** pipeline. Scheduled (daily) + manual
-  dispatch. Runs the full Hermes refresh (four search groups, one at a time) →
+  dispatch. Runs the full Hermes refresh (three search groups, one at a time) →
   updates `data/models.json` + `README.md` + snapshot, and **opens a PR only
   when there is new data**. Never auto-merges.
 - **`qa-validate.yml`** — the **PR CI** pipeline. Runs whenever a PR is created
