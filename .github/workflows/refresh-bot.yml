@@ -207,8 +207,32 @@ jobs:
             regenerated. No existing model removed. Manual review required -
             not auto-merged. Ref: #1"
             git push origin "$BRANCH"
-            gh pr create --base master --head "$BRANCH" \
+            PR_URL=$(gh pr create --base master --head "$BRANCH" \
               --title "chore: Hermes refresh of trending LLM data" \
-              --body "Hermes CLI refresh (deepseek-v4-flash-0731 via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Manual review required. Closes #1"
+              --body "Hermes CLI refresh (deepseek-v4-flash-0731 via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Manual review required. Closes #1" 2>/dev/null)
+            PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$' | head -1 || echo "")
             echo "pr_opened=true" >> "$GITHUB_OUTPUT"
+            echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
+            echo "pr_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           fi
+
+      # Auto-dispatch fix-bot to validate + repair the refresh PR. The ref-bot
+      # opens a PR branch containing freshly-gathered data; qa-validate runs on
+      # it. If qa-validate is RED, fix-bot must repair the branch. Relying on
+      # fix-bot's `workflow_run` auto-trigger is fragile: for a bot-authored PR
+      # that trigger is silently suppressed by GitHub's approval gate, leaving
+      # fix-bot with nothing to latch onto. The reliable path is a
+      # workflow_dispatch, which the ref-bot can issue itself (it holds
+      # `actions: write` + GH_TOKEN) — dispatched PR runs are NOT gated the way
+      # workflow_run auto-triggers are. fix-bot caps itself at 5 rounds.
+      - name: Dispatch fix-bot to validate + repair the refresh PR
+        id: dispatch-fixbot
+        if: steps.pr.outputs.pr_opened == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUM="${{ steps.pr.outputs.pr_number }}"
+          BRANCH="${{ steps.pr.outputs.pr_branch }}"
+          echo "Dispatching fix-bot for PR #$PR_NUM on $BRANCH"
+          gh workflow run fix-bot.yml -f pr_number="$PR_NUM" -f branch="$BRANCH" \
+            --repo "${{ github.repository }}"
