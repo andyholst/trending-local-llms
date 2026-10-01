@@ -145,18 +145,31 @@ SEARCH_WINDOW_DAYS = 3
 TRENDING_WINDOW_DAYS = 7
 RETENTION_DAYS = 30
 
-def _post_date(post: dict) -> str:
-    return post.get("date", "") or ""
+def _as_post(p) -> dict:
+    """Coerce a seen_posts entry to a dict. The search agent occasionally writes
+    a bare URL string instead of {'url', 'date'}; normalize it so downstream
+    code (dedupe/prune/recompute) never crashes on a str. Dicts pass through."""
+    if isinstance(p, dict):
+        return p
+    if isinstance(p, str):
+        return {"url": p, "date": ""}
+    return {"url": "", "date": ""}
 
-def dedupe_posts(posts: list[dict]) -> list[dict]:
+
+def _post_date(post) -> str:
+    return _as_post(post).get("date", "") or ""
+
+
+def dedupe_posts(posts: list) -> list[dict]:
     """Collapse engagement.seen_posts to one entry per source_post URL.
 
     The same X post is re-scanned across overlapping 3-day search windows, so
     without this a single post would inflate last_7d_likes on every run. Keep
     the entry with the latest date for each URL (a re-seen post may carry a
-    fresher date)."""
+    fresher date). Tolerates bare-string entries (coerced to {'url', 'date'})."""
     by_url: dict[str, dict] = {}
     for p in posts:
+        p = _as_post(p)
         url = p.get("url", "")
         if not url:
             continue
@@ -165,11 +178,13 @@ def dedupe_posts(posts: list[dict]) -> list[dict]:
             by_url[url] = p
     return list(by_url.values())
 
-def prune_posts(posts: list[dict], today: datetime) -> list[dict]:
+
+def prune_posts(posts: list, today: datetime) -> list[dict]:
     """Drop engagement.seen_posts older than RETENTION_DAYS. The model row is
     never removed — only its stale post history is pruned (AGENTS retention)."""
     out = []
     for p in posts:
+        p = _as_post(p)
         try:
             d = datetime.strptime(_post_date(p), "%Y-%m-%d").replace(tzinfo=timezone.utc)
         except Exception:  # noqa: BLE001
@@ -667,8 +682,10 @@ def normalize_model(m: dict, store: dict) -> dict:
     eng = m.setdefault("engagement", {})
     for k in ("likes", "comments", "views", "last_7d_likes"):
         eng.setdefault(k, 0)
-    # seed post-granularity engagement from the raw model's engine source_posts
-    eng.setdefault("seen_posts", _collect_seen_posts(m))
+    # seed post-granularity engagement: merge engine-derived posts (which carry
+    # proper dates) with any agent-written seen_posts, normalizing bare URL
+    # strings so malformed data never persists into the store
+    eng["seen_posts"] = dedupe_posts(_collect_seen_posts(m) + eng.get("seen_posts", []))
     # scrub incomplete engine rows (missing tps or engine identity) so schema passes
     m["engines"] = [e for e in engs if all(e.get(f) is not None for f in _REQ_ENGINE_FIELDS)]
     return m

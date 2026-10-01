@@ -718,6 +718,79 @@ def test_eng_weight_signal_ordering():
 
 
 
+def test_dedupe_posts_tolerates_bare_string_entries():
+    """REGRESSION: the CPU search agent wrote engagement.seen_posts as a bare
+    URL string (not a {'url','date'} dict), which crashed dedupe_posts with
+    'str' object has no attribute 'get' and aborted the whole refresh aggregate.
+    dedupe_posts must coerce bare strings to dicts instead of crashing, and
+    prune/recompute must not choke on them either."""
+    # exact shape from the failing cpu-20261001-170219.json artifact
+    posts = ["https://lightbrd.com/ossphere_dev/status/2104934233366241296"]
+    out = UT.dedupe_posts(posts)
+    check("dedupe: bare-string entry coerced to dict, not crash",
+          len(out) == 1 and isinstance(out[0], dict) and out[0]["url"] == posts[0],
+          json.dumps(out))
+    # mixed: a dict + a bare string for the same URL -> one entry
+    mixed = [
+        {"url": "https://lightbrd.com/a", "date": "2026-09-28"},
+        "https://lightbrd.com/a",
+        "https://lightbrd.com/b",
+    ]
+    out2 = UT.dedupe_posts(mixed)
+    urls = sorted(p["url"] for p in out2)
+    check("dedupe: dict + bare string for same url collapse to one",
+          urls == ["https://lightbrd.com/a", "https://lightbrd.com/b"], json.dumps(urls))
+    # prune_posts must not crash on a bare string (no date -> dropped, not crash)
+    pruned = UT.prune_posts(["https://lightbrd.com/x"], today())
+    check("prune: bare-string entry dropped without crash", pruned == [], json.dumps(pruned))
+    # recompute_7d_engagement on a model whose seen_posts is a bare string
+    m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": ["https://lightbrd.com/a"]}}
+    UT.recompute_7d_engagement(m, today())
+    check("recompute: bare-string seen_posts does not crash, resets to 0",
+          m["engagement"]["last_7d_likes"] == 0, str(m["engagement"]["last_7d_likes"]))
+
+
+def test_ingest_normalizes_bare_string_seen_posts():
+    """REGRESSION: a raw snapshot whose model carries engagement.seen_posts as a
+    bare URL string must be normalized at ingest (merged with engine-derived
+    posts, deduped) so the malformed shape never persists into the store."""
+    raw = {
+        "backend": "cpu", "generated_utc": "2026-09-29T10:00:00Z",
+        "models": [{
+            "id": "webllm-llama-3.1-8b-inbrowser", "name": "Llama-3.1-8B (WebLLM)",
+            "full_name": "Meta-Llama-3.1-8B-Instruct", "type": "LLM (edge)",
+            "license": "Llama 3.1", "params": "8B", "hf": "meta-llama/Llama-3.1-8B-Instruct",
+            "vram_tier": "8GB", "vram_min": "8GB", "backends": ["CPU"],
+            "engines": [{"engine": "WebLLM", "tps": "41.1", "hardware": "M3 Max",
+                         "date": "2026-09-29",
+                         "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296"}],
+            "engagement": {"likes": 0, "comments": 1, "reshares": 5, "views": 223,
+                           "last_7d_likes": 0,
+                           "seen_posts": ["https://lightbrd.com/ossphere_dev/status/2104934233366241296"]},
+            "last_seen": "2026-09-29",
+        }],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        rawdir = Path(td) / "raw"; rawdir.mkdir()
+        (rawdir / "cpu-20260929-100000.json").write_text(json.dumps(raw))
+        store = {"generated_utc": "2026-09-29T10:00:00Z", "engines": {}, "models": []}
+        # point UT at the temp dir
+        old_raw = UT.RAW_DIR
+        UT.RAW_DIR = rawdir
+        try:
+            added, updated = UT.ingest_raw_snapshots(store)
+        finally:
+            UT.RAW_DIR = old_raw
+        check("ingest: bare-string seen_posts model added", added == 1, str(added))
+        m = store["models"][0]
+        sp = m["engagement"]["seen_posts"]
+        check("ingest: seen_posts normalized to dicts (no bare strings)",
+              all(isinstance(p, dict) for p in sp), json.dumps(sp))
+        check("ingest: engine-derived post preserved with date",
+              any(p.get("url") == "https://lightbrd.com/ossphere_dev/status/2104934233366241296"
+                  and p.get("date") == "2026-09-29" for p in sp), json.dumps(sp))
+
+
 def main() -> int:
     print("7-day post-granularity engagement aggregation")
     test_dedupe_posts_collapses_same_url()
@@ -738,6 +811,8 @@ def main() -> int:
     test_merge_engines_engagement_tps_permutations()
     test_eng_weight_signal_ordering()
     test_dedupe_posts_edge_cases()
+    test_dedupe_posts_tolerates_bare_string_entries()
+    test_ingest_normalizes_bare_string_seen_posts()
     test_prune_posts_boundary_30_days()
     test_recompute_7d_boundary()
     test_ingest_same_model_engine_gpu_not_duplicated()
