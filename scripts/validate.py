@@ -98,6 +98,48 @@ def check_no_duplicate_engines(store: dict) -> None:
         print(f"  OK: no duplicate engine rows in any model")
 
 
+def _hermes_prompt_ok(line: str) -> tuple[bool, str]:
+    """Validate a make-recipe `hermes -z "..."` line: the prompt body between the
+    -z double-quotes must contain only BACKSLASH-escaped quotes (the JSON `\\"`),
+    never an unescaped `"` — an unescaped quote closes the -z string early and
+    turns the rest of the prompt into stray args (hermes errors out). This is a
+    dry-run guard: validate the prompt shell string BEFORE the hermes LLM call."""
+    import re as _re
+    line = line.lstrip()
+    m = _re.match(r'hermes\s+[^"]*?"(.*)"\s*\\?\s*$', line, _re.DOTALL)
+    if not m:
+        return False, "no hermes -z \"...\" form"
+    body = m.group(1)
+    for i, ch in enumerate(body):
+        if ch == '"' and not (i > 0 and body[i - 1] == "\\"):
+            return False, f"unescaped quote in prompt body at offset {i}"
+    return True, ""
+
+
+def check_hermes_prompts() -> None:
+    """Validate every `hermes -z "..."` prompt in the Makefile (the 4 search +
+    fix-bot prompts). A prompt whose -z body has an unescaped quote breaks the
+    shell command (hermes errors: '... is not a hermes command') and silently
+    kills every search. Dry-run the prompt strings before they reach the LLM."""
+    import re as _re
+    makefile = ROOT / "Makefile"
+    if not makefile.exists():
+        fail("hermes-prompts: Makefile missing")
+        return
+    bad = 0
+    prompts = 0
+    for line in makefile.read_text().splitlines():
+        if not _re.match(r"\t?hermes -z", line):
+            continue
+        prompts += 1
+        ok, why = _hermes_prompt_ok(line)
+        if not ok:
+            bad += 1
+            fail(f"hermes-prompts: bad prompt: {why}: {line.strip()[:60]}...")
+    if not bad:
+        print(f"  OK: all {prompts} hermes -z prompts are valid shell strings (dry-run)")
+
+
 # A t/s value must be a CLEAN number: optional estimate tilde, a number, an
 # optional range, and an optional "(est)" suffix — NOTHING ELSE. Any embedded
 # text (comments, "decode", "DFlash spec-decode") is INVALID: t/s is a numeric
@@ -712,6 +754,7 @@ def main() -> int:
     add("no duplicate models", "data", lambda: check_no_duplicates(store))
     add("no duplicate engines", "data", lambda: check_no_duplicate_engines(store))
     add("tps starts with a numeric token", "data", lambda: check_tps_shape(store))
+    add("hermes prompts are valid shell (dry-run)", "data", lambda: check_hermes_prompts())
     add("latest t/s surfaced", "data", lambda: check_latest_tps(store))
     add("supported engines", "data", lambda: check_supported_engines(store))
     add("model fields + links", "schema", lambda: check_model_fields(store))
