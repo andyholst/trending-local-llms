@@ -348,7 +348,7 @@ actually happened.
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
-| `make search-smoke` (live, 3 s/query) | lightbrd mirror / Firecrawl key down, per backend |
+| `make search-smoke` (live, 3 s/attempt, 1 retry on timeout/429/5xx) | lightbrd mirror / Firecrawl key down, per backend. An uncached scrape can miss 3 s once (Firecrawl finishes and caches it server-side), so a transient miss gets ONE more 3 s attempt; auth errors (401/403) never retry. Retry policy unit-tested in `tests/test_smoke_search.py` |
 | `make hermes-smoke` (live) | dead Nous key, broken alias, Hermes routing to another provider |
 | `make validate-fetch` (live) | the search returning 0 model hits |
 
