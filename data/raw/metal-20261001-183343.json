@@ -1,0 +1,168 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-01T03:10:00Z",
+  "models": [
+    {
+      "id": "nemotron-3.5-lightning-30b",
+      "name": "Nemotron 3.5 Lightning",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX 4-bit",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+        }
+      ],
+      "license": "Custom (NVIDIA OpenMDW 1.1)",
+      "params": "30B (A3B MoE)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "M5 Max",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 1,
+          "comments": 0,
+          "views": 102
+        }
+      ],
+      "why": "New NVIDIA Nemotron-3.5 Lightning 30B-A3B running through TensorFold's speculative decoding drafter on Apple Silicon; 188-206 tok/s on M5 Max MLX 4-bit.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0
+      },
+      "last_seen": "2026-09-30"
+    },
+    {
+      "id": "qwen3.8-27b-tensorfold",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX 4-bit",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-189",
+          "hardware": "M5 Max",
+          "quant": "MLX 4-bit + DFlash2 drafter",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 1,
+          "comments": 0,
+          "views": 102
+        }
+      ],
+      "why": "Qwen3.8-27B with TensorFold DFlash2 speculative drafter on Apple Silicon, 120-189 tok/s M5 Max MLX 4-bit.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0
+      },
+      "last_seen": "2026-09-30"
+    },
+    {
+      "id": "ravenx-conjecture-qwen3-8b-mlx",
+      "name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "full_name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "42",
+          "hardware": "M3",
+          "quant": "MLX",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/jolyneshibasol/status/2104852085426827615",
+          "likes": 39,
+          "comments": 0,
+          "views": 0
+        }
+      ],
+      "why": "RavenX-Conjecture-Qwen3-8B-MLX runs 42 tok/s on M3 via MLX while staying coherent on multi-step tool calls.",
+      "engagement": {
+        "likes": 39,
+        "comments": 0,
+        "views": 0
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "ornith-1.5-mlx",
+      "name": "Ornith 1.5 MLX",
+      "full_name": "Ornith-1.5-35B-A3B-MLX",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX 4-bit",
+          "hf": "ornith-ai/Ornith-1.5-35B-A3B-MLX"
+        }
+      ],
+      "license": "MLX License",
+      "params": "35B (A3B MoE)",
+      "hf": "ornith-ai/Ornith-1.5-35B-A3B-MLX",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "50+",
+          "hardware": "MacBook Pro M5 48GB",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/AhmedHamdy29189/status/2104775267113980109",
+          "likes": 2,
+          "comments": 0,
+          "views": 47
+        }
+      ],
+      "why": "Ornith 1.5 35B-A3B MLX 4-bit 50+ TPS on MacBook Pro M5 48GB, local Apple Silicon inference.",
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "views": 47
+      },
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

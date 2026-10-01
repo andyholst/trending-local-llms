@@ -1,0 +1,139 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-01T18:40:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 5090",
+          "quant": "ternary 1.71-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/dl_weekly/status/2104315296597037478",
+          "likes": 376,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 376
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "124.8",
+          "hardware": "RTX PRO 6000 Blackwell",
+          "quant": "ternary 1.71-bit",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2103560860773830972",
+          "likes": 47,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 47
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. Community llama.cpp decode on consumer RTX (RTX 5090 143 t/s, RTX PRO 6000 124.8 t/s).",
+      "engagement": {
+        "last_7d_likes": 2
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6-35B",
+      "full_name": "Qwen3.6-35B-A3B (MoE, 3B active)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "safetensors",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE expert offload (FP16 weights, ~3B active)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "Qwen3.6 open-weight MoE variant; activates ~3B of 35B per token, so FreeToken serves it on an 8 GB consumer GPU at 39.3 t/s (2-4x Ollama).",
+      "engagement": {
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "license": "Unknown",
+      "params": "Unknown",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "17GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2",
+          "hardware": "RTX A4500 (ada) 17GB + 128GB DDR5",
+          "quant": "MXFP4 engram, mobi-ssd MoE-stream offload",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 235,
+          "interactions": 240
+        }
+      ],
+      "why": "Community llama.cpp MoE-stream run of DeepSeek-V4.1-Flash on a 17 GB RTX A4500 with NVMe offload (2 t/s generation) — big-MoE-on-small-GPU proof of concept.",
+      "engagement": {
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-24"
+    }
+  ]
+}
