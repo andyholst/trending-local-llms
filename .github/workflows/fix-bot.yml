@@ -48,10 +48,20 @@ jobs:
           # pr_number is the robust path: the ephemeral GITHUB_TOKEN in a
           # workflow_run/manual-dispatch context can fail to LIST a bot-authored
           # PR by head branch, but gh pr view by NUMBER resolves reliably.
-          if [ -n "${{ inputs.pr_number }}" ]; then
-            PR_NUM="${{ inputs.pr_number }}"
+          # Even so, gh pr view can return an empty headRefName when the
+          # ephemeral token cannot follow the bot-authored PR — so fall back to
+          # the pulls API by number before giving up.
+          resolve_by_number() {
+            PR_NUM="$1"
             HEAD_BRANCH=$(gh pr view "$PR_NUM" --json headRefName -q .headRefName 2>/dev/null || echo "")
-            echo "Manual dispatch: fixing PR #$PR_NUM on branch $HEAD_BRANCH"
+            if [ -z "$HEAD_BRANCH" ]; then
+              HEAD_BRANCH=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUM" --jq '.head.ref // ""' 2>/dev/null || echo "")
+            fi
+            echo "PR #$PR_NUM -> head branch: $HEAD_BRANCH"
+          }
+          if [ -n "${{ inputs.pr_number }}" ]; then
+            resolve_by_number "${{ inputs.pr_number }}"
+            echo "Manual dispatch: fixing PR #${{ inputs.pr_number }} on branch $HEAD_BRANCH"
           else
             if [ -n "${{ inputs.branch }}" ]; then
               HEAD_BRANCH="${{ inputs.branch }}"
