@@ -1,0 +1,49 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-01T14:33:00Z",
+  "models": [
+    {
+      "id": "vitanom-edge",
+      "name": "Vitanom (llama.cpp CPU)",
+      "full_name": "Vitanom — offline Android llama.cpp CPU knowledge app",
+      "type": "LLM",
+      "license": "Open source (llama.cpp runtime)",
+      "params": "4B/30B-A3B",
+      "hf": "google/gemma-3-4b-it",
+      "vram_tier": "2.5GB RAM (Gemma 3 4B Q4_K_M) / 11.8GB (Qwen3-30B-A3B)",
+      "vram_min": "2.5GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "",
+          "hardware": "Android ARM64 CPU (no GPU, KleidiAI, mmap-from-flash)",
+          "quant": "Gemma 3 4B Q4_K_M / Qwen3-30B-A3B UD-Q2_K_XL",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "In-window (Sep 29) CPU-only edge deployment: llama.cpp on Android, no GPU backend, KleidiAI CPU path, mmap from flash. Runs Gemma 3 4B and Qwen3-30B-A3B offline. Post reports only qualitative speed ('a few tokens per second'); no clean numeric t/s figure was provided, so no t/s is fabricated.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/nrlartt/status/2104892734003642568",
+            "date": "2026-09-29"
+          }
+        ]
+      },
+      "last_seen": "2026-09-29"
+    }
+  ]
+}

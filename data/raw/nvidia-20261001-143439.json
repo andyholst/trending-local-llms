@@ -1,0 +1,304 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (Dense)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "https://huggingface.co/Qwen/Qwen3.8-27B",
+      "vram_tier": "24 GB",
+      "vram_min": "~24 GB (Q4_K_M); ~11.8 GB (GSQ-RCO IQ3_S 3.5bpw)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB (~250W)",
+          "quant": "DFlash2 spec-decode + context lookup, 16-token verify blocks, quantized KV/heads/activations",
+          "date": "2026-09-19",
+          "source_post": "https://x.com/Oluwaphilemon1/status/2101461151439601841",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 12,
+          "views": 2266,
+          "interactions": 2281
+        },
+        {
+          "engine": "SGLang",
+          "tps": "219.8",
+          "hardware": "2x RTX 3090 24GB",
+          "quant": "AutoRound INT4, FP8 KV cache, dual-superfast config, 262K ctx, code decode",
+          "date": "2026-09-12",
+          "source_post": "https://x.com/Oluwaphilemon1/status/2098601495406969060",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 11,
+          "views": 13378,
+          "interactions": 13393
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "118",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "4-bit, DFlash2 draft, 131K ctx decode",
+          "date": "2026-09-13",
+          "source_post": "https://x.com/Brjen/status/2098982803970855050",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 5,
+          "views": 354,
+          "interactions": 360
+        }
+      ],
+      "why": "DFlash2 + context-lookup speculative decoding turns a dense 27B into a practical local agent/coding model on 24GB consumer GPUs; 381 tok/s is the reproduction/extraction mode, ~133 tok/s normal chat (same 3090).",
+      "engagement": {
+        "likes": 3,
+        "comments": 2,
+        "views": 2266,
+        "last_7d_likes": 3
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (PrismML)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12 GB",
+      "vram_min": "6 GB (ternary PTQ1_0)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 5090",
+          "quant": "ternary PTQ1_0, ~5.9 GB",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/dl_weekly/status/2104315296597037478",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 375,
+          "interactions": 375
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 PTQ1_0 + MTP head + gaming-GPU kernel fix",
+          "date": "2026-09-29",
+          "source_post": "https://x.com/Oluwaphilemon1/status/2104754435209715795",
+          "likes": 7,
+          "comments": 6,
+          "reshares": 42,
+          "views": 7636,
+          "interactions": 7691
+        }
+      ],
+      "why": "PrismML ternary-compresses Qwen3.8-27B to ~6 GB so a full 27B runs on 12GB gaming GPUs; community MTP + kernel fix roughly doubles decode on RTX 3060.",
+      "engagement": {
+        "likes": 7,
+        "comments": 6,
+        "views": 7636,
+        "last_7d_likes": 7
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8 GB",
+      "vram_min": "8 GB (FreeToken; ~70 GB BF16 / ~18 GB 4-bit otherwise)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU (MoE experts split GPU/RAM)",
+          "quant": "MoE expert offload, GPU+CPU bandwidth-split",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/konig0000/status/2104268737839063181",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 201,
+          "interactions": 204
+        }
+      ],
+      "why": "UC Berkeley FreeToken serves a 35B MoE on an 8GB GPU (2-4x faster than Ollama) by splitting expert misses between GPU and CPU.",
+      "engagement": {
+        "likes": 3,
+        "comments": 0,
+        "views": 201,
+        "last_7d_likes": 3
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B (MoE)",
+      "type": "LLM",
+      "license": "DeepSeek license",
+      "params": "284B (13B active)",
+      "hf": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32 GB",
+      "vram_min": "32 GB (FreeToken)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU (MoE experts split GPU/RAM)",
+          "quant": "MoE 6-of-256 experts/layer active, hybrid offload",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/konig0000/status/2104268737839063181",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 201,
+          "interactions": 204
+        }
+      ],
+      "why": "284B MoE served on a 32GB consumer GPU via FreeToken's GPU+CPU bandwidth-split inference.",
+      "engagement": {
+        "likes": 3,
+        "comments": 0,
+        "views": 201,
+        "last_7d_likes": 3
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "glm-5-2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2 753B (MoE)",
+      "type": "LLM",
+      "license": "Z.ai license",
+      "params": "753B",
+      "hf": "https://huggingface.co/zai-org/GLM-5.2",
+      "vram_tier": "96 GB",
+      "vram_min": "96 GB (FreeToken)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "96GB GPU (MoE experts split GPU/RAM)",
+          "quant": "MoE expert offload, hybrid GPU+CPU execution",
+          "date": "2026-09-27",
+          "source_post": "https://x.com/konig0000/status/2104268737839063181",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 201,
+          "interactions": 204
+        }
+      ],
+      "why": "753B frontier MoE run locally on a 96GB GPU with FreeToken's bandwidth-aware expert offload.",
+      "engagement": {
+        "likes": 3,
+        "comments": 0,
+        "views": 201,
+        "last_7d_likes": 3
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "128 GB",
+      "vram_min": "2x DGX Spark (128 GB unified); ~16GB VRAM + 64GB RAM mixed",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "45",
+          "hardware": "2x NVIDIA DGX Spark, tensor-parallel over one cable",
+          "quant": "official FP8, MTP, 256K context",
+          "date": "2026-09-17",
+          "source_post": "https://x.com/Oluwaphilemon1/status/2100498960645308573",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 3,
+          "views": 760,
+          "interactions": 765
+        }
+      ],
+      "why": "125B MoE run across dual DGX Sparks with MTP sustained ~45 tok/s for long autonomous agent/coding sessions; also runs EXL3 2.50bpw on a single 3090.",
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "views": 760,
+        "last_7d_likes": 2
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "full_name": "Muse Glimmer 30B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "30B",
+      "hf": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+      "vram_tier": "24 GB",
+      "vram_min": "<20 GB (4-bit)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "233",
+          "hardware": "RTX 5090",
+          "quant": "4-bit + DFlash spec-decode drafter (3.1x over 74.9 baseline)",
+          "date": "2026-08-10",
+          "source_post": "https://x.com/rohanpaul_ai/status/2086769766937837777",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "Meta's 30B agentic model fits in 24GB at 4-bit; DFlash drafter lifts RTX 5090 decode to 233 tok/s.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-10-01"
+    }
+  ],
+  "generated_utc": "2026-10-01T14:34:39Z"
+}
