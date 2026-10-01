@@ -1,0 +1,94 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-01T14:30:00Z",
+  "models": [
+    {
+      "id": "gemma-4-e2b-edge",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B (edge / Raspberry Pi 5)",
+      "type": "LLM",
+      "license": "Apache-2.0",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B-it",
+      "formats": [
+        {
+          "name": "LiteRT-LM",
+          "hf": "litert-community/gemma-4-E2B-it-litert-lm"
+        },
+        {
+          "name": "GGUF",
+          "hf": "unsloth/gemma-4-E2B-it-GGUF"
+        }
+      ],
+      "vram_tier": "edge",
+      "vram_min": "1.4GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 CPU, 1432 MB peak (LiteRT-LM)",
+          "quant": "Intel / LiteRT-LM full; prefill 99 tok/s, decode 9 tok/s",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 527
+        }
+      ],
+      "why": "Gemma 4 E2B runs fully on a Raspberry Pi 5 CPU via LiteRT-LM at ~99 tok/s prefill and ~9 tok/s decode in only 1432 MB — a real edge/embedded, no-GPU deployment (Google dev blog via Shakthi).",
+      "engagement": {
+        "likes": 2,
+        "comments": 1,
+        "views": 527,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-05"
+    },
+    {
+      "id": "deepseek-r1-1.5b-cpu",
+      "name": "DeepSeek-R1 1.5B",
+      "full_name": "DeepSeek-R1-1.5B (distill)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "bartowski/DeepSeek-R1-Distill-Qwen-1.5B-GGUF"
+        }
+      ],
+      "vram_tier": "edge",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B 2GB LPDDR4, offline (CPU-only)",
+          "quant": "community GGUF",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 25,
+          "comments": 9,
+          "reshares": 0,
+          "views": 691225
+        }
+      ],
+      "why": "A $35 Raspberry Pi 4B (2GB) from 2019 boots Ollama and serves DeepSeek-R1-1.5B offline at ~4 tok/s, no internet and ~5W under load — a pure CPU/embedded inference stack.",
+      "engagement": {
+        "likes": 25,
+        "comments": 9,
+        "views": 691225,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-06-25"
+    }
+  ]
+}

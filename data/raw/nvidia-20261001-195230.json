@@ -1,0 +1,117 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-01T19:52:30Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6 35B A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (3B active, MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 4060 laptop 8GB",
+          "quant": "NVFP4 MoE on 8GB",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/EchoGit42/status/2097969259175383482",
+          "likes": 13488,
+          "comments": 510,
+          "reshares": 91,
+          "views": 154321
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "39.3",
+          "hardware": "RTX 4060 8GB",
+          "quant": "NVFP4 35B-A3B",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 45,
+          "comments": 905,
+          "reshares": 431,
+          "views": 251678
+        }
+      ],
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "ternary-bonsai-27b",
+      "name": "Ternary Bonsai 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B MoE",
+      "hf": "PrismML/Ternary-Bonsai-2-27B",
+      "vram_tier": "12GB",
+      "vram_min": "18GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "237.4",
+          "hardware": "RTX 3060 12GB + 5GB system",
+          "quant": "ternary 27B MoE",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2103464635363362081",
+          "likes": 226,
+          "comments": 588,
+          "reshares": 498,
+          "views": 550813
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 4060 8GB",
+          "quant": "ternary 5.9GB",
+          "date": "2026-09-28",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104200350361215263",
+          "likes": 618,
+          "comments": 701,
+          "reshares": 1340,
+          "views": 250000
+        }
+      ],
+      "last_seen": "2026-09-28"
+    },
+    {
+      "id": "dflash2-spec-decode",
+      "name": "DFlash2 spec decode",
+      "full_name": "DFlash2 speculative decoding (llama.cpp)",
+      "type": "engine",
+      "license": "MIT",
+      "params": "n/a (draft engine)",
+      "hf": "z-lab/dflash",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "spec decode 27B",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/TomiSaguy/status/2100153617396335551",
+          "likes": 820,
+          "comments": 21,
+          "reshares": 101,
+          "views": 28679
+        }
+      ],
+      "last_seen": "2026-09-10"
+    }
+  ]
+}

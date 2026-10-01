@@ -1,0 +1,112 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-01T19:48:17Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (dense)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-124",
+          "hardware": "Apple Silicon (M-series)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 20,
+          "views": 3739,
+          "interactions": 3766
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "40.0-41.5",
+          "hardware": "MacBook Pro M3 Max 96GB",
+          "quant": "MLX 4-bit + DFlash2 8-bit drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 2,
+          "comments": 9,
+          "reshares": 0,
+          "views": 683,
+          "interactions": 694
+        }
+      ],
+      "why": "Dense 27B running fast on Apple Silicon via TensorFold's speculative decode (MLX 4-bit).",
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Lightning 30B-A3B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM",
+      "license": "NVIDIA Open Model License",
+      "params": "30B-A3B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "Apple Silicon (M-series)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 20,
+          "views": 3739,
+          "interactions": 3766
+        }
+      ],
+      "why": "NVIDIA's 30B-A3B MoE hitting 188-206 tok/s on Apple Silicon via TensorFold MLX spec-decode.",
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B-A3B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "88-92",
+          "hardware": "Apple Silicon (M-series)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 20,
+          "views": 3739,
+          "interactions": 3766
+        }
+      ],
+      "why": "Large Qwen3.8 MoE at 88-92 tok/s on Apple Silicon via TensorFold MLX speculative decode.",
+      "last_seen": "2026-10-01"
+    }
+  ]
+}
