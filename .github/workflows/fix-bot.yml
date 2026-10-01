@@ -1,134 +1,152 @@
 name: fix-bot
 
-# FIX-BOT pipeline — triggered when the PR CI (qa-validate) is RED. Fully
-# container-agnostic: builds the self-contained Docker image (Python deps +
-# Hermes CLI, cached) and runs `make fix` (Hermes) + validate + test inside it.
-# Pushes the correction to the same PR branch so CI re-runs green. Up to 3
-# rounds, then leaves the PR for manual review. Never auto-merges.
+# FIX-BOT pipeline — repairs a RED refresh PR, then leaves it for human review.
 #
-# Local equivalent:
-#   make docker-build && NOUS_API_KEY=... FIRECRAWL_API_KEY=... make fix
+# Triggered ONLY by workflow_dispatch from qa-validate's `dispatch-fixbot` job,
+# which fires when the deterministic `validate` job fails on a refresh PR
+# (ci/trending-refresh-*). There is deliberately NO `workflow_run` trigger:
+# it would double-fire alongside the explicit dispatch, and for bot-authored
+# PRs it was silently suppressed. qa-validate passes pr_number + branch.
+#
+# Flow (scripts/fix_loop.sh — unit-tested in tests/test_fix_loop.py):
+#   check (validate, validate-search, validate-mapped, test) -> green? stop
+#   red  -> write qa-report.txt -> `make fix` (Hermes reads the report) -> re-check
+#   at most FIX_ROUNDS Hermes attempts.
+# Push ONLY when the loop ends green. Still red -> comment the report on the PR,
+# push nothing, leave for manual review. Never touches master; never merges.
+#
+# The checkout + push use the owner-scoped PAT (FIXBOT_DISPATCH_TOKEN) so the
+# push re-triggers qa-validate on the PR — a push made with the default
+# GITHUB_TOKEN does NOT start new workflow runs, so CI would never re-check.
+#
+# Local equivalent (repo checked out on the PR branch):
+#   make docker-test-build && NOUS_API_KEY=... FIRECRAWL_API_KEY=... scripts/fix_loop.sh
 
 on:
-  workflow_run:
-    workflows: ["qa-validate"]
-    types: [completed]
   workflow_dispatch:
     inputs:
-      branch:
-        description: "PR head branch to fix (overrides the failed run's branch)"
+      pr_number:
+        description: "PR number to fix"
         required: false
         default: ""
-      pr_number:
-        description: "PR number to fix (direct lookup, bypasses branch search)"
+      branch:
+        description: "PR head branch (used when pr_number is empty)"
         required: false
         default: ""
 
 permissions:
   contents: write
   pull-requests: write
-  actions: write  # lets the fix-bot dispatch workflows (self/refresh) autonomously
+
+# One fix-bot at a time per PR; a second dispatch queues instead of racing.
+concurrency:
+  group: fix-bot-${{ inputs.pr_number || inputs.branch }}
+  cancel-in-progress: false
 
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}
+    timeout-minutes: 120
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      FIX_ROUNDS: "3"
     steps:
-      - name: Resolve PR from failed run
+      - name: Resolve PR
         id: pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          IN_PR: ${{ inputs.pr_number }}
+          IN_BRANCH: ${{ inputs.branch }}
         run: |
-          # Manual dispatch can name the PR directly (pr_number) or its branch.
-          # pr_number is the robust path: the ephemeral GITHUB_TOKEN in a
-          # workflow_run/manual-dispatch context can fail to LIST a bot-authored
-          # PR by head branch, but gh pr view by NUMBER resolves reliably.
-          # Even so, gh pr view can return an empty headRefName when the
-          # ephemeral token cannot follow the bot-authored PR — so fall back to
-          # the pulls API by number before giving up.
-          resolve_by_number() {
-            PR_NUM="$1"
-            HEAD_BRANCH=$(gh pr view "$PR_NUM" --json headRefName -q .headRefName 2>/dev/null || echo "")
-            if [ -z "$HEAD_BRANCH" ]; then
-              HEAD_BRANCH=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUM" --jq '.head.ref // ""' 2>/dev/null || echo "")
-            fi
-            echo "PR #$PR_NUM -> head branch: $HEAD_BRANCH"
-          }
-          if [ -n "${{ inputs.pr_number }}" ]; then
-            resolve_by_number "${{ inputs.pr_number }}"
-            echo "Manual dispatch: fixing PR #${{ inputs.pr_number }} on branch $HEAD_BRANCH"
-          else
-            if [ -n "${{ inputs.branch }}" ]; then
-              HEAD_BRANCH="${{ inputs.branch }}"
-            else
-              HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
-            fi
-            echo "Resolving PR for head branch: $HEAD_BRANCH"
-            # Try by number-of-list first; fall back to a broader API search.
-            PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --json number -q '.[0].number' 2>/dev/null || echo "")
-            if [ -z "$PR_NUM" ]; then
-              PR_NUM=$(gh api "repos/${{ github.repository }}/pulls?state=open&head=${{ github.repository_owner }}:$HEAD_BRANCH" -q '.[0].number // ""' 2>/dev/null || echo "")
-            fi
-            echo "PR #$PR_NUM for branch $HEAD_BRANCH"
+          PR_NUM="$IN_PR"
+          HEAD_BRANCH=""
+          if [ -n "$PR_NUM" ]; then
+            HEAD_BRANCH=$(gh api "repos/$REPO/pulls/$PR_NUM" --jq 'select(.state=="open") | .head.ref' 2>/dev/null || echo "")
+          elif [ -n "$IN_BRANCH" ]; then
+            PR_NUM=$(gh api "repos/$REPO/pulls?state=open&head=${REPO%%/*}:$IN_BRANCH" --jq '.[0].number // ""' 2>/dev/null || echo "")
+            [ -n "$PR_NUM" ] && HEAD_BRANCH="$IN_BRANCH"
           fi
-          if [ -z "$PR_NUM" ] || [ -z "$HEAD_BRANCH" ]; then
-            echo "Could not resolve an open PR — nothing to fix."
-            echo "has_pr=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_pr=true" >> "$GITHUB_OUTPUT"
-            echo "pr_num=$PR_NUM" >> "$GITHUB_OUTPUT"
-            echo "branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
-          fi
+          echo "PR #$PR_NUM -> branch '$HEAD_BRANCH'"
+          case "$HEAD_BRANCH" in
+            ""|master|main)
+              echo "No open PR on a feature branch resolved — nothing to fix (never touches master)."
+              echo "has_pr=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+          esac
+          echo "has_pr=true" >> "$GITHUB_OUTPUT"
+          echo "pr_num=$PR_NUM" >> "$GITHUB_OUTPUT"
+          echo "branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout PR branch
+      - name: Checkout PR branch (PAT, so the push re-triggers qa-validate)
         if: steps.pr.outputs.has_pr == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.pr.outputs.branch }}
+          token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
-      - name: Set up Docker Buildx
-        if: steps.pr.outputs.has_pr == 'true'
-        uses: docker/setup-buildx-action@v3
-
-      # Pull the prebuilt base image from GHCR (pushed by refresh-bot) instead
-      # of rebuilding it — the Hermes install + Python deps are baked in and
-      # only rebuilt on Sunday. The image is public, so no login is needed.
-      - name: Pull base image from GHCR
+      # Pull the prebuilt base (never rebuild it here) + build the TEST image
+      # (base + current requirements-test.txt).
+      - name: Pull base image from GHCR + build test image
         if: steps.pr.outputs.has_pr == 'true'
         run: |
           docker pull ghcr.io/${{ github.repository }}:latest
           docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-
-      # Build the TEST image (base + current test requirements) so the
-      # validate-search / validate-mapped / test rounds run with the libs the
-      # repo pins (markdown-it-py, tabulate), not the stale non-Sunday base.
-      - name: Build test image (base + current test requirements)
-        if: steps.pr.outputs.has_pr == 'true'
-        run: |
           docker build -f Dockerfile.test -t trending-local-llms-test:latest .
 
-      - name: Hermes fix — correct the CI failure (up to 5 rounds, in container)
+      # Fail in seconds, not after a 20-minute fix: one real Hermes call through
+      # the exact alias `make fix` uses, with every key the container gets.
+      - name: Hermes routing smoke
+        if: steps.pr.outputs.has_pr == 'true'
+        run: make hermes-smoke
+
+      - name: Fix loop (check -> hermes fix with report -> re-check)
+        id: loop
         if: steps.pr.outputs.has_pr == 'true'
         run: |
-          for round in 1 2 3 4 5; do
-            echo "--- fix round $round ---"
-            # Each public make target runs inside the container:
-            # fix = self-correct raw snapshots -> Hermes fixes logic -> merge;
-            # then validate the mapped result (search contract + mapping + data
-            # + schema) and run the tests.
-            make fix
-            make validate-search
-            make validate-mapped
-            make test
-            git add README.md data/models.json data/snapshots data/raw
-            git commit -m "fix: address CI validation failure (round $round)" || echo "no changes to commit"
-            git push origin "${{ steps.pr.outputs.branch }}" || echo "push failed (may be nothing to push)"
-            # Give the re-triggered qa-validate a moment; loop continues if still red
-            sleep 30
-          done
-          echo "Exhausted fix rounds; leaving PR for manual review."
+          set +e
+          scripts/fix_loop.sh
+          rc=$?
+          if [ "$rc" = "0" ]; then echo "green=true" >> "$GITHUB_OUTPUT"; else echo "green=false" >> "$GITHUB_OUTPUT"; fi
+          exit 0
+
+      - name: Commit + push the fix (only when green)
+        if: steps.pr.outputs.has_pr == 'true' && steps.loop.outputs.green == 'true'
+        env:
+          BRANCH: ${{ steps.pr.outputs.branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The container writes files as root; make them committable.
+          sudo chown -R "$(id -u):$(id -g)" .
+          git add -A -- . ':!qa-report.txt'
+          if git diff --cached --quiet; then
+            echo "Checks green with no changes (the CI failure was transient). Nothing to push."
+            exit 0
+          fi
+          git commit -m "fix-bot: repair CI validation failures on $BRANCH"
+          git push origin "HEAD:$BRANCH"
+
+      - name: Report result on the PR
+        if: always() && steps.pr.outputs.has_pr == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          PR_NUM: ${{ steps.pr.outputs.pr_num }}
+          GREEN: ${{ steps.loop.outputs.green }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            if [ "$GREEN" = "true" ]; then
+              echo "fix-bot: local checks are **green** after the repair loop; any fix was pushed and qa-validate re-runs. Manual review is still required before merge."
+            else
+              echo "fix-bot: still **red** after up to $FIX_ROUNDS Hermes fix round(s) (or the run failed before the loop). Nothing pushed — manual review needed."
+              echo
+              echo '```'
+              grep -E "FAIL|FAILED|Error|Traceback" qa-report.txt 2>/dev/null | grep -v "FAILED 0" | head -40
+              echo '```'
+            fi
+            echo
+            echo "Run: $RUN_URL"
+          } > comment.md
+          gh pr comment "$PR_NUM" --body-file comment.md

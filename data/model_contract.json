@@ -258,6 +258,16 @@
                   },
                   "additionalProperties": false
                 }
+              },
+              "reshares": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total reshares/reposts across the model's source X posts (additive; optional)."
+              },
+              "interactions": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Total interactions across the model's source X posts as reported by the platform (additive; optional)."
               }
             },
             "additionalProperties": false

@@ -1,0 +1,217 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-01T22:38:39Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 context-lookup 15/16 accept + prefix cache",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/antisadh/status/2072245886659236309",
+          "likes": 27,
+          "comments": 9,
+          "reshares": 4,
+          "views": 2694,
+          "interactions": 2734
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "134",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode",
+          "date": "2026-08-22",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2090971775714939097",
+          "likes": 37,
+          "comments": 5,
+          "reshares": 2,
+          "views": 29855,
+          "interactions": 29899
+        }
+      ],
+      "why": "DFlash2 + context lookup on a 3090: 381 t/s when the answer is already in context; 134 t/s normal chat.",
+      "engagement": {
+        "likes": 27,
+        "comments": 9,
+        "reshares": 4,
+        "views": 2694
+      },
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Q2_0 ternary PTQ1_0 + MTP",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104754435209715795",
+          "likes": 42,
+          "comments": 7,
+          "reshares": 6,
+          "views": 7649,
+          "interactions": 7704
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 5090 32GB",
+          "quant": "tern 27B MoE",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/MarkRijckenberg/status/2103920092199444741",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 26,
+          "views": 28,
+          "interactions": 56
+        }
+      ],
+      "why": "Ternary Bonsai2 27B on a 3060 12GB ~50 t/s; on a 5090 32GB ~143 t/s.",
+      "engagement": {
+        "likes": 42,
+        "comments": 7,
+        "reshares": 6,
+        "views": 7649
+      },
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash",
+      "type": "LLM (MoE)",
+      "license": "DeepSeek License",
+      "params": "~300B",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "48GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22",
+          "hardware": "RTX 5090 32GB + 64GB RAM",
+          "quant": "Q2_0 ~80GB MoE offload",
+          "date": "2026-08-25",
+          "source_post": "https://lightbrd.com/BBacktesting/status/2092324865273364761",
+          "likes": 265,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 269
+        }
+      ],
+      "why": "~80GB DeepSeek V4 Flash MoE on a 5090 32GB + 64GB RAM at 22 t/s once warm.",
+      "engagement": {
+        "likes": 265,
+        "comments": 2,
+        "reshares": 2,
+        "views": 0
+      },
+      "last_seen": "2026-08-25"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6-35B",
+      "full_name": "Qwen3.6-35B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B",
+      "hf": "Qwen/Qwen3.6-35B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE on small GPU",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2087928032904523980",
+          "likes": 87,
+          "comments": 11,
+          "reshares": 7,
+          "views": 8158,
+          "interactions": 8263
+        }
+      ],
+      "why": "FreeToken runs Qwen3.6-35B on an 8GB GPU at 39.3 t/s.",
+      "engagement": {
+        "likes": 87,
+        "comments": 11,
+        "reshares": 7,
+        "views": 8158
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "full_name": "Muse-Glimmer-30B",
+      "type": "LLM (4-bit)",
+      "license": "Apache 2.0",
+      "params": "30B",
+      "hf": "meta-models/Muse-Glimmer-30B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "233",
+          "hardware": "RTX 5090 32GB",
+          "quant": "4-bit + DFlash drafter",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/alexandr_wang/status/2086756152034066792",
+          "likes": 80,
+          "comments": 24,
+          "reshares": 12,
+          "views": 12282,
+          "interactions": 12398
+        }
+      ],
+      "why": "Muse Glimmer 30B on a 5090: 233 t/s decode with DFlash drafter (3.1x).",
+      "engagement": {
+        "likes": 80,
+        "comments": 24,
+        "reshares": 12,
+        "views": 12282
+      },
+      "last_seen": "2026-08-10"
+    }
+  ]
+}

@@ -102,13 +102,19 @@ def _hermes_prompt_ok(line: str) -> tuple[bool, str]:
     """Validate a make-recipe `hermes -z "..."` line: the prompt body between the
     -z double-quotes must contain only BACKSLASH-escaped quotes (the JSON `\\"`),
     never an unescaped `"` — an unescaped quote closes the -z string early and
-    turns the rest of the prompt into stray args (hermes errors out). This is a
-    dry-run guard: validate the prompt shell string BEFORE the hermes LLM call."""
+    turns the rest of the prompt into stray args (hermes errors out). The line
+    must also END with a `\\` continuation: without it make runs the next recipe
+    line (`-m <alias> --yolo`) as a SEPARATE command, so hermes starts with no
+    model alias and auto-picks whatever provider key is in the env (HF_TOKEN ->
+    Hugging Face 403). This is a dry-run guard: validate the prompt shell string
+    BEFORE the hermes LLM call."""
     import re as _re
     line = line.lstrip()
     m = _re.match(r'hermes\s+[^"]*?"(.*)"\s*\\?\s*$', line, _re.DOTALL)
     if not m:
         return False, "no hermes -z \"...\" form"
+    if not line.rstrip().endswith("\\"):
+        return False, "missing trailing \\ continuation (the -m <alias> line would run as a separate command)"
     body = m.group(1)
     for i, ch in enumerate(body):
         if ch == '"' and not (i > 0 and body[i - 1] == "\\"):

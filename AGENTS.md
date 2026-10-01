@@ -54,6 +54,15 @@ retains 30 days of history.
    on the changed field; never leave a test suite that only matches the old
    contract. CI runs `make test` on every pipeline, so a contract change without
    a test update goes red and must not be merged.
+6c. **The pipeline is code too — test it, not just the data.** Every failure
+   that reached CI so far was in the orchestration layer (a Makefile recipe, a
+   reasoning budget, a token scope, an approval gate, a shell loop), which data
+   tests cannot see. Any change to the `Makefile` hermes recipes, the
+   `.github/workflows/*.yml` wiring, `scripts/fix_loop.sh` or the live smoke
+   targets MUST keep (or extend) the guards in §8 green in the same change. A
+   regression fixed without a test that FAILS on the old code is not fixed.
+   Verify a new guard by running it against the old file (`git show
+   origin/master:<file>`) and confirming it goes red.
 
 ## 3. Data source & collection
 
@@ -92,8 +101,26 @@ The README is **generated**, not hand-maintained:
   `make validate-search|validate-mapped|validate-readme` (stages), `make test`
   (unit tests), `make fix` (correct a red CI with Hermes), and `make refresh`
   (the full pipeline = setup + search + merge + validate + test, in one
-  container). Run after `make docker-build` with
-  `NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh`.
+  container). Live smoke targets (real network, bounded, skip cleanly without
+  keys): `make search-smoke [BACKEND=nvidia|metal|cpu]` (the exact Firecrawl →
+  lightbrd scrape of every search query, **3 s cap per query**),
+  `make hermes-smoke` (one real Hermes call through the `nous-deepseek` alias
+  with every key the pipeline passes, incl. `HF_TOKEN`), and
+  `make pipeline-smoke` (both). `make docker-test-build` builds the test image
+  (needs the base from `make docker-build` or a GHCR pull). Run after
+  `make docker-build` with `NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh`.
+- **Hermes invocation (every `hermes -z` recipe).** One logical shell command:
+  the `-z "..."` line MUST end with ` \` so `-m nous-deepseek --reasoning
+  $(HERMES_REASONING) --yolo` stays on the same command. Without it make runs
+  the model flags as a separate command and Hermes starts with NO alias — it
+  then auto-routes to whatever provider key is in the env (`HF_TOKEN` →
+  Hugging Face → HTTP 403), which silently broke every fix-bot run. Every call
+  passes an explicit `--reasoning` level: `HERMES_REASONING := low` for the
+  mechanical searches, `HERMES_FIX_REASONING := medium` for fix-bot. Raising
+  `max_tokens` does NOT fix "No visible answer was produced … reasoning
+  consumed the entire budget" — the model just reasons longer; lowering the
+  reasoning level does. Prose inside a prompt uses single quotes; only the
+  JSON body uses `\"`.
 - **Base image is built ONCE and pulled, never rebuilt per-run.** The base
   image (`ghcr.io/andyholst/trending-local-llms:latest` — Python deps + Hermes
   CLI baked in) is **built and pushed to GHCR only by `refresh-bot.yml`**, and
@@ -123,6 +150,14 @@ The README is **generated**, not hand-maintained:
   `make validate` stages so a malformed table or a dead/wrong link in any new
   raw snapshot, the store, or the README fails CI. This is a **validation**
   action, not a data-gathering bot.
+- **Ingest is contract-driven.** `normalize_model` / `ingest_raw_snapshots`
+  prune a model's top-level `engagement` to exactly the keys declared in
+  `data/model_contract.json` (read at runtime — no second list to drift) and
+  coerce counters to non-negative ints. The search contract leaves that object
+  open, the store contract closes it; without the prune, one extra key the
+  search agent writes (it was `reshares`, on every model) turns every refresh
+  PR red on a schema error. Real recurring keys are declared in BOTH contracts
+  (additive); stray keys are dropped and logged as `[ingest] … pruned`.
 - **Never hand-edit the generated tables.** Fix the template or the data store
   instead, then regenerate. The "How to contribute" section points contributors
   at the store, not direct table edits.
@@ -156,23 +191,53 @@ this `AGENTS.md` and the `gather-data` skill, then:
 3. Applies the 7-day trending / 30-day retention sort and regenerates
    `README.md` via `scripts/update_trending.py`; writes a timestamped snapshot.
 4. Commits on a **feature branch** and opens a **PR** to `master` for manual
-   review. It never pushes to or merges `master` itself.
+   review, using the owner-scoped PAT (`FIXBOT_DISPATCH_TOKEN`) for the push
+   and `gh pr create` — never the default `GITHUB_TOKEN` (see §6b). It never
+   pushes to or merges `master` itself.
 
 ## 6b. Three pipelines (refresh → validate → fix)
 
 - **`refresh-bot.yml`** — the **bot** pipeline. Scheduled (daily) + manual
-  dispatch. Runs the full Hermes refresh (three search groups, one at a time) →
-  updates `data/models.json` + `README.md` + snapshot, and **opens a PR only
-  when there is new data**. Never auto-merges.
-- **`qa-validate.yml`** — the **PR CI** pipeline. Runs whenever a PR is created
-  or updated (or on push/dispatch). It **validates the data content** on the PR
-  (`scripts/validate.py`: no-removal, fields+links, backend sort by t/s, all
-  models in README). It does not refresh data or commit.
-- **`fix-bot.yml`** — the **fix** pipeline. Triggered when `qa-validate` is
-  **red** (failure). Re-runs the Hermes CLI to inspect what the validation
-  rejected, fix the data/logic, and push the correction to the same PR branch
-  so the CI re-runs green (up to 5 rounds), then leaves the PR for manual
-  review. Never auto-merges.
+  dispatch (owner only). Per backend (nvidia / metal / cpu, parallel matrix):
+  3 s reachability smoke → Hermes routing smoke → Hermes search. Then
+  `aggregate` (runs even if a leg failed): merge → soft validate → **opens a PR
+  only when there is new data**, authored by the owner PAT so qa-validate
+  starts without an approval click. It does NOT dispatch fix-bot — that is
+  qa-validate's job, after it has validated. Never auto-merges.
+- **`qa-validate.yml`** — the **PR CI** pipeline. Runs on every PR (including
+  workflow-only PRs — the wiring is under test), push to master, or dispatch.
+  Three jobs:
+  - `validate` — deterministic: `make validate`, `validate-search`,
+    `validate-mapped`, `test`. This is the only job fix-bot is asked to repair.
+  - `live-smoke` — real network, bounded: `make search-smoke BACKEND=<b>` for
+    nvidia, metal, cpu (3 s cap per query), `make hermes-smoke`, and
+    `make validate-fetch` (real search, `--require-hits`). An outage here is
+    infra, not data, so it never dispatches fix-bot.
+  - `dispatch-fixbot` — only when `validate` failed on a same-repo
+    `ci/trending-refresh-*` PR: dispatches fix-bot with `pr_number` + `branch`
+    using the owner PAT, unless the PR already has 2 `fix-bot:` commits (a fix
+    that didn't stick → manual review, no loop).
+- **`fix-bot.yml`** — the **fix** pipeline. `workflow_dispatch` ONLY (no
+  `workflow_run`: it double-fired with the dispatch and was suppressed for bot
+  PRs). One run per PR (`concurrency`). Resolves the PR (refuses
+  `master`/`main`), checks out the branch with the PAT, runs `make
+  hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks →
+  green? stop → else write `qa-report.txt` and `make fix` (the `_fix` prompt
+  reads that report first) → re-check, at most `FIX_ROUNDS` (3) Hermes
+  attempts. It commits (`fix-bot: …`, git identity set) and pushes with the
+  PAT **only when the loop ends green** — the PAT push re-triggers
+  qa-validate. Still red → nothing is pushed and the failing lines are
+  commented on the PR. Either way a human reviews and merges.
+
+**Tokens.** `FIXBOT_DISPATCH_TOKEN` is a fine-grained PAT scoped to this repo
+only: Actions R/W, Contents R/W, Pull requests R/W. It is used for (1) the
+refresh PR push + creation, (2) qa-validate's fix-bot dispatch, (3) fix-bot's
+checkout, push and PR comment. The default `GITHUB_TOKEN` cannot do any of
+these usefully: a PR it creates is authored by `github-actions[bot]` and every
+`pull_request` run on it waits for approval; a push it makes starts no
+workflows; and it gets `HTTP 403 Resource not accessible by integration` when
+dispatching another workflow (no run is created, so there is nothing to
+approve).
 
 **Link-repair behavior for fix-bot (when CI reports a dead/wrong link).** The
 CI link validator (`scripts/validate.py` `check_links_present` +
@@ -239,8 +304,16 @@ is additive → edit in place. If any existing record would now fail, it is
 breaking → new `*.vN.json` contract + validator/test routing. Never silently
 re-validate old data against a changed contract.
 
-Flow: bot refreshes + opens PR → PR CI validates → if red, fix-bot corrects with
-Hermes → CI re-runs → green → human merges.
+Flow: bot refreshes + opens PR (PAT) → qa-validate (`validate` + `live-smoke`)
+→ if `validate` is red, qa-validate dispatches fix-bot → fix-bot loops until
+green (≤3 Hermes rounds) and pushes (PAT) → qa-validate re-runs → green → human
+merges. Red after the loop → PR comment, manual review. Max 2 fix-bot pushes
+per PR.
+
+**Fix the class, not the PR.** If the same validation failure shows up on
+consecutive refresh PRs (same field, same kind of wrong link, same missing
+engine), it is a defect in the search prompt, the contract, or the ingest
+code. Fix it there, with a test, instead of letting fix-bot patch every PR.
 
 Rules for the refresh run:
 - **Only lightbrd.com** is used for X signal — no other X source.
@@ -259,3 +332,25 @@ Rules for the refresh run:
 - Mark estimates as `(est)`. Note hardware on every figure.
 - Attribute each model to its real creator/community source; do not republish
   one person's private curation as your own.
+
+## 8. Regression guards (what each test catches)
+
+Run `make test` (all deterministic guards) and, with keys, `make
+pipeline-smoke validate-fetch` (live). Each guard exists because the failure
+actually happened.
+
+| Guard | Catches |
+|---|---|
+| `tests/test_hermes_prompts.py` — prompt shell strings | an unescaped `"` in a `-z` prompt closing the string early (every search dies) |
+| `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |
+| `tests/test_hermes_prompts.py` — `--reasoning` on every call | a search burning its whole output budget on reasoning and writing no snapshot |
+| `tests/test_engagement_contract.py` | raw → ingest → store failing `model_contract.json` (the real PR #50 snapshot with model-level `reshares` is the fixture); stray keys not pruned; ingest and contract key lists drifting |
+| `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report |
+| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master |
+| `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
+| `make search-smoke` (live, 3 s/query) | lightbrd mirror / Firecrawl key down, per backend |
+| `make hermes-smoke` (live) | dead Nous key, broken alias, Hermes routing to another provider |
+| `make validate-fetch` (live) | the search returning 0 model hits |
+
+When you add a stage or fix a pipeline bug, add its row here and its test in
+the same change (rule 6c).

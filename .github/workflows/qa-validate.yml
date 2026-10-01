@@ -1,28 +1,38 @@
 name: qa-validate
 
-# CI pipeline — VALIDATION ONLY. Does NOT refresh data, does NOT run Hermes
-# searches, does NOT merge, does NOT create PRs. It builds the self-contained
-# Docker image (Python deps + Hermes CLI, cached) once, then calls the public
-# `make` targets — which run inside that container:
-#   make validate && make validate-search && make validate-mapped && make test
-# If this is RED, fix-bot.yml re-runs Hermes to correct the data and pushes so
-# this re-runs green.
+# PR CI — VALIDATION. Never refreshes data, never merges, never commits.
+#
+#   validate        deterministic: data store, README, contracts, mapping, unit
+#                   tests (incl. Makefile recipe, workflow wiring and fix-loop
+#                   control-flow tests). This is what fix-bot can repair.
+#   live-smoke      REAL network, bounded: the exact Firecrawl->lightbrd scrape
+#                   for every nvidia / metal / cpu search query (3s cap each),
+#                   one real Hermes call through the search alias, and a real
+#                   --require-hits search. Catches a dead key, a broken alias, a
+#                   provider mis-route or an unreachable mirror on the PR,
+#                   instead of 20 minutes into the next refresh. An outage here
+#                   is infra, not data, so it never dispatches fix-bot.
+#   dispatch-fixbot when `validate` is RED on a refresh PR (ci/trending-refresh-*),
+#                   dispatch fix-bot with the owner PAT, capped at 2 fix-bot
+#                   commits per PR so a fix that doesn't stick can't loop.
+#
+# Workflow-only PRs (.github/**) are validated too: the workflow wiring is
+# itself under test (tests/test_workflows.py).
 #
 # Local equivalent:
-#   make docker-build && make validate && make test
+#   make docker-build docker-test-build && make validate validate-search validate-mapped test
+#   NOUS_API_KEY=... FIRECRAWL_API_KEY=... make pipeline-smoke validate-fetch
 
 on:
   pull_request:
     paths:
       - "**"
       - "!LICENSE"
-      - "!.github/**"
   push:
     branches: [master]
     paths:
       - "**"
       - "!LICENSE"
-      - "!.github/**"
   workflow_dispatch:
 
 permissions:
@@ -41,36 +51,74 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Pull the prebuilt base image from GHCR (pushed by refresh-bot) instead
-      # of rebuilding it — the Hermes install + Python deps are baked in and
-      # only rebuilt on Sunday. The image is public, so no login is needed.
-      - name: Pull base image from GHCR
+      # Pull the prebuilt base image from GHCR (built only by refresh-bot) and
+      # build ONLY the test image (base + current requirements-test.txt), so
+      # test-only libs added mid-week are present without a base rebuild.
+      - name: Pull base image from GHCR + build test image
         run: |
           docker pull ghcr.io/${{ github.repository }}:latest
           docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-
-      # The base GHCR image only rebuilds on Sunday; test-only libs added
-      # mid-week (markdown-it-py, tabulate for README-table validation) are not
-      # in it. Build the dedicated TEST image which layers the current
-      # requirements-test.txt on the base, so validate/test run with the libs
-      # the repo actually pins (never the stale non-Sunday base).
-      - name: Build test image (base + current test requirements)
-        run: |
           docker build -f Dockerfile.test -t trending-local-llms-test:latest .
 
-      - name: Validate data store + README (full deterministic suite, in container)
+      - name: Validate data store + README + contracts (deterministic, in container)
         run: |
           make validate
           make validate-search
           make validate-mapped
-          # Real Firecrawl->lightbrd search run --dry-run --require-hits: proves
-          # the Search actually returns data. HARD gate: fails if 0 model hits.
-          make validate-fetch
-          echo "QA passed: no models removed, fields+links present, backend tables sorted by t/s, JSON<->README sync, search contract, mapping, all models in README."
 
       - name: Run unit tests (in container)
+        run: make test
+
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pull base image from GHCR + build test image
         run: |
-          make test
+          docker pull ghcr.io/${{ github.repository }}:latest
+          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
+          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
+
+      - name: Search reachability — nvidia (HTTP 200 within 3s per query)
+        run: make search-smoke BACKEND=nvidia
+      - name: Search reachability — metal (HTTP 200 within 3s per query)
+        run: make search-smoke BACKEND=metal
+      - name: Search reachability — cpu (HTTP 200 within 3s per query)
+        run: make search-smoke BACKEND=cpu
+
+      - name: Hermes routing smoke (real call through the search alias)
+        run: make hermes-smoke
+
+      - name: Search returns data (real Firecrawl->lightbrd, --require-hits)
+        run: make validate-fetch
+
+  dispatch-fixbot:
+    needs: validate
+    if: >-
+      failure() &&
+      github.event_name == 'pull_request' &&
+      startsWith(github.head_ref, 'ci/trending-refresh-') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch fix-bot (owner PAT; capped at 2 fix-bot commits per PR)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.head_ref }}
+          MAX_FIXBOT_COMMITS: "2"
+        run: |
+          N=$(gh api "repos/$REPO/pulls/$PR_NUM/commits?per_page=100" \
+                --jq '[.[] | select(.commit.message | startswith("fix-bot:"))] | length')
+          echo "fix-bot commits already on PR #$PR_NUM: $N (cap $MAX_FIXBOT_COMMITS)"
+          if [ "$N" -ge "$MAX_FIXBOT_COMMITS" ]; then
+            echo "fix-bot already pushed $N fix(es) that did not turn CI green — leaving PR for manual review."
+            exit 0
+          fi
+          gh workflow run fix-bot.yml --repo "$REPO" -f pr_number="$PR_NUM" -f branch="$BRANCH"
+          echo "Dispatched fix-bot for PR #$PR_NUM ($BRANCH)"
