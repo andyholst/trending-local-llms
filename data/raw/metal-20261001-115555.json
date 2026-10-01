@@ -1,0 +1,178 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-01T12:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-189",
+          "hardware": "M5 Max (Metal)",
+          "quant": "4-bit MLX + DFlash2 draft",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "30.8-61.9",
+          "hardware": "Mac mini M6 (Metal)",
+          "quant": "4-bit MLX + DFlash2 drafting",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "Flagship local model. TensorFold + DFlash2 spec-decode on Apple Silicon: 120-189 t/s (M5 Max), code 61.9 / chat 30.8 t/s on Mac mini M6.",
+      "last_seen": "2026-09-30"
+    },
+    {
+      "id": "nemotron-3.5-lightning",
+      "name": "Nemotron 3.5 Lightning",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "NVIDIA Open Model (other)",
+      "params": "30B-A3B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4",
+      "vram_tier": "128GB",
+      "vram_min": "48GB (est)",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "M5 Max (Metal)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "NVIDIA MoE served on Apple Silicon via TensorFold MLX; 188-206 t/s on M5 Max. 759K HF downloads.",
+      "last_seen": "2026-09-30"
+    },
+    {
+      "id": "ornith-1.5",
+      "name": "Ornith 1.5",
+      "full_name": "Ornith-1.5",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B-GGUF",
+      "vram_tier": "48GB",
+      "vram_min": "16GB (est)",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "50+",
+          "hardware": "MacBook Pro M5 48GB (Metal)",
+          "quant": "4-bit",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/AhmedHamdy29189/status/2104775267113980109",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 47,
+          "interactions": 49
+        }
+      ],
+      "why": "核 Ornith 1.5 serves ~50+ t/s decode with ~2K t/s prefill on M5 48GB via MLX 4-bit (Astronomical CLI). 5M+ HF downloads.",
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "ravenx-conjecture-qwen3-8b-mlx",
+      "name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "full_name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX",
+      "vram_tier": "16GB",
+      "vram_min": "8GB (est)",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "42",
+          "hardware": "M3 (Metal)",
+          "quant": "MLX (est)",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/jolyneshibasol/status/2104852085426827615",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 39,
+          "interactions": 39
+        }
+      ],
+      "why": "RavenX-Conjecture Qwen3-8B MLX: 42 t/s on M3 while staying coherent on multi-step tool calls (fast local routing).",
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen-3.6-35b-a3b",
+      "name": "Qwen 3.6 35B A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "48GB",
+      "vram_min": "24GB (est)",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "57",
+          "hardware": "M4 Pro 48GB (Metal)",
+          "quant": "4-bit, 64K, no spec decode",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/superdoccimo/status/2105608897050427622",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 299,
+          "interactions": 301
+        }
+      ],
+      "why": "Swift/Qwen MoE auto-tuned by Magnitude (kernel-per-device). M4 Pro 48GB decode 30->57 t/s (+92%) vs base, ~28% less agent memory.",
+      "last_seen": "2026-10-01"
+    }
+  ]
+}

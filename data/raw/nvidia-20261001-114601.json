@@ -1,0 +1,126 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-01T00:00:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "42.8",
+          "hardware": "RTX 3060 Ti 8GB",
+          "quant": "MTP head, 98k ctx",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/sudoingX/status/2104723329865089176",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 246,
+          "interactions": 250
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "MTP head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/sudoingX/status/2104723329865089176",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 246,
+          "interactions": 250
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "67",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "MTP head, 262k ctx, vision",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/sudoingX/status/2104723329865089176",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 246,
+          "interactions": 250
+        }
+      ],
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE expert offload",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/kumard_3/status/2104882430364815555",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 51,
+          "interactions": 54
+        }
+      ],
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "44",
+          "hardware": "DGX Spark 128GB",
+          "quant": "DFlash2 draft head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 302,
+          "interactions": 308
+        }
+      ],
+      "last_seen": "2026-09-29"
+    }
+  ]
+}
