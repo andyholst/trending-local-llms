@@ -98,29 +98,30 @@ def check_no_duplicate_engines(store: dict) -> None:
         print(f"  OK: no duplicate engine rows in any model")
 
 
-# A t/s value must START with a numeric token (optionally an estimate tilde, an
-# int/float, and a range). Leading comments or pure text are invalid. Examples
-# that pass: 39.3, ~50, 67-71, 99.7, 233 (DFlash spec-decode). Examples that
-# FAIL: 'a few (est)', '~fast', '(est) 50'. Ranges/estimates/comments-after-the-
-# number are preserved because they still begin with a number.
-_TPS_START = re.compile(r"^~?\s?\d+(?:\.\d+)?")
+# A t/s value must be a CLEAN number: optional estimate tilde, a number, an
+# optional range, and an optional "(est)" suffix — NOTHING ELSE. Any embedded
+# text (comments, "decode", "DFlash spec-decode") is INVALID: t/s is a numeric
+# measurement, and the descriptive context belongs in quant/hardware/note, not
+# in the tps string. Valid: 39.3, ~50, 67-71, 35.5-43.7, 99.7, 22 (est). Invalid:
+# '233 (DFlash spec-decode), 74.9 stock', '~237 decode', '~38 (1 user)',
+# 'a few (est)', '52-60 output / 1250 prompt'.
+_TPS_CLEAN = re.compile(r"^~?\s?\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?(?:\s*\(est\))?$")
 
 
 def check_tps_shape(store: dict) -> None:
-    """Every engine t/s must START with a numeric token (optional '~', an
-    int/float, possibly a range). Rejects a search that wrote a non-numeric
-    placeholder like 'a few (est)', a leading comment, or a bare label — t/s is
-    a measurement. Ranges ('67-71') and estimates ('~50') still pass because
-    they begin with a digit."""
+    """Every engine t/s must be a CLEAN numeric value (optional '~', int/float,
+    optional range, optional '(est)' suffix) with NO embedded text. Rejects a
+    search that wrote a numeric placeholder mixed with prose or comments —
+    t/s is a measurement, context belongs in quant/hardware/note."""
     bad = 0
     for m in store["models"]:
         for e in m.get("engines", []):
             t = e.get("tps", "")
-            if t and not _TPS_START.match(t.strip()):
+            if t and not _TPS_CLEAN.match(t.strip()):
                 bad += 1
-                fail(f"{m.get('id','?')}: engine '{e.get('engine')}' tps does not start with a number: {t!r}")
+                fail(f"{m.get('id','?')}: engine '{e.get('engine')}' tps is not a clean number: {t!r}")
     if not bad:
-        print("  OK: all engine tps start with a numeric token")
+        print("  OK: all engine tps are clean numeric values")
 
 
 def check_latest_tps(store: dict) -> None:
@@ -343,9 +344,15 @@ def check_backend_sort(store: dict) -> None:
             # picks up Params ("125B"->125) and VRAM ("12GB"->12) as t/s, so a
             # correctly-sorted table looked unsorted. Extract just the t/s cell.
             cells = [c.strip() for c in ln.strip().strip("|").split("|")]
-            nums = [float(x) for x in re.findall(r"(\d+\.?\d*)", cells[-1 if cells else 0])]
+            cell = cells[-1] if cells else ""
+            # The last cell is "engine tps (YYYY-MM-DD); engine tps (date); ...".
+            # Strip the embedded dates FIRST so the YEAR (2026) is not counted as
+            # t/s, then take the max tps WITHOUT any <1000 bound — a legitimate
+            # 1000+ t/s (e.g. spec-decode 1250) must count.
+            no_dates = re.sub(r"\(\d{4}-\d{2}-\d{2}\)", "", cell)
+            nums = [float(x) for x in re.findall(r"(\d+\.?\d*)", no_dates)]
             if nums:
-                rows.append(max(n for n in nums if n < 1000))
+                rows.append(max(nums))
         if rows != sorted(rows, reverse=True):
             fail(f"{backend} README table not sorted by t/s descending: {rows}")
         else:
