@@ -53,14 +53,14 @@ def test_dedupe_posts_collapses_same_url():
     collapse to ONE entry (keep the latest date). This is the anti-double-count
     guarantee."""
     posts = [
-        {"url": "https://lightbrd.com/a", "date": "2026-09-27"},
-        {"url": "https://lightbrd.com/a", "date": "2026-09-28"},  # re-seen, fresher
-        {"url": "https://lightbrd.com/b", "date": "2026-09-28"},
+        {"url": "https://lightbrd.com/u/status/9000", "date": "2026-09-27"},
+        {"url": "https://lightbrd.com/u/status/9000", "date": "2026-09-28"},  # re-seen, fresher
+        {"url": "https://lightbrd.com/u/status/9001", "date": "2026-09-28"},
     ]
     out = UT.dedupe_posts(posts)
     urls = sorted(p["url"] for p in out)
     check("dedupe collapses same URL to one entry", len(out) == 2, json.dumps(urls))
-    a = next(p for p in out if p["url"] == "https://lightbrd.com/a")
+    a = next(p for p in out if p["url"] == "https://lightbrd.com/u/status/9000")
     check("dedupe keeps the latest date for a re-seen URL", a["date"] == "2026-09-28", a["date"])
 
 
@@ -69,9 +69,9 @@ def test_recompute_7d_counts_distinct_posts_in_window():
     A post from 8 days ago is NOT counted; a post from today IS."""
     m = {
         "id": "m1", "name": "M1", "engagement": {"seen_posts": [
-            {"url": "https://lightbrd.com/1", "date": "2026-09-29"},  # today
-            {"url": "https://lightbrd.com/2", "date": "2026-09-25"},  # 4d ago
-            {"url": "https://lightbrd.com/3", "date": "2026-09-20"},  # 9d ago -> out
+            {"url": "https://lightbrd.com/u/status/9017", "date": "2026-09-29"},  # today
+            {"url": "https://lightbrd.com/u/status/9016", "date": "2026-09-25"},  # 4d ago
+            {"url": "https://lightbrd.com/u/status/9015", "date": "2026-09-20"},  # 9d ago -> out
         ]},
     }
     UT.recompute_7d_engagement(m, today())
@@ -85,9 +85,9 @@ def test_recompute_dedupes_before_counting():
     last_7d_likes (dedup happens inside recompute)."""
     m = {
         "id": "m1", "name": "M1", "engagement": {"seen_posts": [
-            {"url": "https://lightbrd.com/x", "date": "2026-09-28"},
-            {"url": "https://lightbrd.com/x", "date": "2026-09-29"},  # dup, fresher
-            {"url": "https://lightbrd.com/y", "date": "2026-09-28"},
+            {"url": "https://lightbrd.com/u/status/9002", "date": "2026-09-28"},
+            {"url": "https://lightbrd.com/u/status/9002", "date": "2026-09-29"},  # dup, fresher
+            {"url": "https://lightbrd.com/u/status/9007", "date": "2026-09-28"},
         ]},
     }
     UT.recompute_7d_engagement(m, today())
@@ -100,13 +100,13 @@ def test_prune_posts_retains_30d_removes_older():
     untouched. A 31-day-old post is dropped, a 29-day-old one is kept."""
     m = {
         "id": "m1", "name": "M1", "engagement": {"seen_posts": [
-            {"url": "https://lightbrd.com/old", "date": "2026-08-29"},  # 31d ago
-            {"url": "https://lightbrd.com/keep", "date": "2026-08-31"},  # 29d ago
+            {"url": "https://lightbrd.com/u/status/9003", "date": "2026-08-29"},  # 31d ago
+            {"url": "https://lightbrd.com/u/status/9005", "date": "2026-08-31"},  # 29d ago
         ]},
     }
     UT.recompute_7d_engagement(m, today())
     urls = [p["url"] for p in m["engagement"]["seen_posts"]]
-    check("prune drops >30d post, keeps <=30d", urls == ["https://lightbrd.com/keep"], json.dumps(urls))
+    check("prune drops >30d post, keeps <=30d", urls == ["https://lightbrd.com/u/status/9005"], json.dumps(urls))
     check("model row never removed by pruning", m["id"] == "m1")
 
 
@@ -122,7 +122,7 @@ def test_ingest_seeds_and_dedupes_seen_posts():
             "params": "14B", "hf": "Qwen/Qwen3-14B", "vram_tier": "9GB", "vram_min": "8GB",
             "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
             "engines": [{"engine": "llama.cpp", "tps": "50", "date": "2026-09-27",
-                         "source_post": "https://lightbrd.com/a"}],
+                         "source_post": "https://lightbrd.com/u/status/9000"}],
             "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
             "last_seen": "2026-09-27",
         }],
@@ -137,9 +137,9 @@ def test_ingest_seeds_and_dedupes_seen_posts():
         }]}
     with tempfile.TemporaryDirectory() as td:
         rdir = Path(td)
-        (rdir / "nvidia-1.json").write_text(json.dumps(raw("https://lightbrd.com/a", "2026-09-27")))
-        (rdir / "nvidia-2.json").write_text(json.dumps(raw("https://lightbrd.com/a", "2026-09-28")))  # same post
-        (rdir / "nvidia-3.json").write_text(json.dumps(raw("https://lightbrd.com/b", "2026-09-28")))  # new post
+        (rdir / "nvidia-1.json").write_text(json.dumps(raw("https://lightbrd.com/u/status/9000", "2026-09-27")))
+        (rdir / "nvidia-2.json").write_text(json.dumps(raw("https://lightbrd.com/u/status/9000", "2026-09-28")))  # same post
+        (rdir / "nvidia-3.json").write_text(json.dumps(raw("https://lightbrd.com/u/status/9001", "2026-09-28")))  # new post
         saved = UT.RAW_DIR
         UT.RAW_DIR = rdir
         try:
@@ -149,7 +149,7 @@ def test_ingest_seeds_and_dedupes_seen_posts():
     m = next(x for x in store["models"] if x["id"] == "qwen3-14b")
     urls = sorted(p["url"] for p in m["engagement"]["seen_posts"])
     check("ingest dedupes same post across snapshots (2 distinct)", len(urls) == 2, json.dumps(urls))
-    check("ingest keeps both distinct posts", urls == ["https://lightbrd.com/a", "https://lightbrd.com/b"],
+    check("ingest keeps both distinct posts", urls == ["https://lightbrd.com/u/status/9000", "https://lightbrd.com/u/status/9001"],
           json.dumps(urls))
 
 
@@ -167,7 +167,7 @@ def test_correct_raw_fills_missing_backend():
             "license": "MIT", "params": "1B", "hf": "org/tiny-cpu",
             "vram_tier": "0GB", "vram_min": "0GB", "backends": ["CPU"],
             "engines": [{"engine": "llama.cpp", "tps": "12", "date": "2026-09-29",
-                         "source_post": "https://lightbrd.com/cpu"}],
+                         "source_post": "https://lightbrd.com/u/status/9008"}],
             "last_seen": "2026-09-29",
         }],
     }
@@ -210,13 +210,13 @@ def test_merge_engines_dedup_same_gpu_vram():
           out[0]["date"] == "2026-09-29", out[0]["date"])
     # different GPU card -> legit distinct measurement, KEPT
     incoming_diff_gpu = [{"engine": "FreeToken", "tps": "39.3", "hardware": "RTX 5090",
-                          "quant": "4-bit", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"}]
+                          "quant": "4-bit", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9001"}]
     out2 = UT.merge_engines(out, incoming_diff_gpu)
     check("merge_engines: different GPU card is a distinct row (kept)",
           len(out2) == 2, f"len={len(out2)}")
     # different t/s on the same GPU -> legit distinct measurement, KEPT
     incoming_diff_tps = [{"engine": "FreeToken", "tps": "45", "hardware": "RTX 8GB GPU",
-                          "quant": "4-bit", "date": "2026-09-28", "source_post": "https://lightbrd.com/c"}]
+                          "quant": "4-bit", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9009"}]
     out3 = UT.merge_engines(out2, incoming_diff_tps)
     check("merge_engines: different t/s on same GPU is a distinct row (kept)",
           len(out3) == 3, f"len={len(out3)}")
@@ -237,9 +237,9 @@ def test_validate_catches_duplicate_engine_same_gpu_vram():
                  "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
                  "engines": [
                      {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
-                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"},
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9000"},
                      {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
-                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"},
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9001"},
                  ],
                  "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
                  "last_seen": "2026-09-28",
@@ -264,9 +264,9 @@ def test_validate_allows_same_engine_different_gpu():
                  "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
                  "engines": [
                      {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
-                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"},
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9000"},
                      {"engine": "llama.cpp", "tps": "80", "hardware": "RTX 5090",
-                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/b"},
+                      "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9001"},
                  ],
                  "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
                  "last_seen": "2026-09-28",
@@ -282,14 +282,14 @@ def test_dedupe_posts_edge_cases():
     same url with a missing date must not crash and must not double-count."""
     check("dedupe: empty list -> empty", UT.dedupe_posts([]) == [])
     mixed = [
-        {"url": "https://lightbrd.com/a", "date": "2026-09-28"},
+        {"url": "https://lightbrd.com/u/status/9000", "date": "2026-09-28"},
         {"url": "", "date": "2026-09-28"},          # no url -> dropped
-        {"url": "https://lightbrd.com/a", "date": ""},  # same url, no date
-        {"url": "https://lightbrd.com/b", "date": "2026-09-28"},
+        {"url": "https://lightbrd.com/u/status/9000", "date": ""},  # same url, no date
+        {"url": "https://lightbrd.com/u/status/9001", "date": "2026-09-28"},
     ]
     out = UT.dedupe_posts(mixed)
     urls = sorted(p["url"] for p in out)
-    check("dedupe: drops url-less entries, dedupes same url", urls == ["https://lightbrd.com/a", "https://lightbrd.com/b"],
+    check("dedupe: drops url-less entries, dedupes same url", urls == ["https://lightbrd.com/u/status/9000", "https://lightbrd.com/u/status/9001"],
           json.dumps(urls))
 
 
@@ -297,22 +297,22 @@ def test_prune_posts_boundary_30_days():
     """Boundary: a post exactly 30 days old is KEPT (retention), 31 days is
     pruned. Malformed dates are dropped without crashing."""
     m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": [
-        {"url": "https://lightbrd.com/30", "date": "2026-08-30"},  # exactly 30d
-        {"url": "https://lightbrd.com/31", "date": "2026-08-29"},  # 31d -> prune
-        {"url": "https://lightbrd.com/bad", "date": "not-a-date"},  # malformed -> drop
+        {"url": "https://lightbrd.com/u/status/9006", "date": "2026-08-30"},  # exactly 30d
+        {"url": "https://lightbrd.com/u/status/9014", "date": "2026-08-29"},  # 31d -> prune
+        {"url": "https://lightbrd.com/u/status/9010", "date": "not-a-date"},  # malformed -> drop
     ]}}
     UT.recompute_7d_engagement(m, today())
     urls = [p["url"] for p in m["engagement"]["seen_posts"]]
     check("prune: exactly-30d kept, 31d pruned, malformed dropped",
-          urls == ["https://lightbrd.com/30"], json.dumps(urls))
+          urls == ["https://lightbrd.com/u/status/9006"], json.dumps(urls))
 
 
 def test_recompute_7d_boundary():
     """Boundary: a post exactly 7 days old IS counted in last_7d_likes; 8 days
     is not. Empty seen_posts preserves the stored counter (legacy)."""
     m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": [
-        {"url": "https://lightbrd.com/7", "date": "2026-09-22"},  # exactly 7d
-        {"url": "https://lightbrd.com/8", "date": "2026-09-21"},  # 8d -> out
+        {"url": "https://lightbrd.com/u/status/9013", "date": "2026-09-22"},  # exactly 7d
+        {"url": "https://lightbrd.com/u/status/9012", "date": "2026-09-21"},  # 8d -> out
     ]}}
     UT.recompute_7d_engagement(m, today())
     check("recompute: exactly-7d post counted, 8d not", m["engagement"]["last_7d_likes"] == 1,
@@ -337,7 +337,7 @@ def test_ingest_same_model_engine_gpu_not_duplicated():
             "params": "14B", "hf": "Qwen/Qwen3-14B", "vram_tier": "9GB", "vram_min": "8GB",
             "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
             "engines": [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090",
-                         "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/a"}],
+                         "quant": "Q4", "date": "2026-09-28", "source_post": "https://lightbrd.com/u/status/9000"}],
             "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
             "last_seen": "2026-09-28",
         }],
@@ -354,10 +354,10 @@ def test_ingest_same_model_engine_gpu_not_duplicated():
     with tempfile.TemporaryDirectory() as td:
         rdir = Path(td)
         # same model+engine+tps+GPU size, different hardware wording + different post
-        (rdir / "nvidia-1.json").write_text(json.dumps(raw("RTX 4090", "50", "https://lightbrd.com/a")))
-        (rdir / "nvidia-2.json").write_text(json.dumps(raw("RTX 4090 24GB", "50", "https://lightbrd.com/a2")))
+        (rdir / "nvidia-1.json").write_text(json.dumps(raw("RTX 4090", "50", "https://lightbrd.com/u/status/9000")))
+        (rdir / "nvidia-2.json").write_text(json.dumps(raw("RTX 4090 24GB", "50", "https://lightbrd.com/u/status/9011")))
         # different GPU card -> distinct row
-        (rdir / "nvidia-3.json").write_text(json.dumps(raw("RTX 5090", "80", "https://lightbrd.com/b")))
+        (rdir / "nvidia-3.json").write_text(json.dumps(raw("RTX 5090", "80", "https://lightbrd.com/u/status/9001")))
         saved = UT.RAW_DIR
         UT.RAW_DIR = rdir
         try:
@@ -378,7 +378,7 @@ def test_merge_engines_interaction_weighted():
     2. Concordant reports -> engagement-weighted average is set.
     3. Only UPDATE to a higher t/s, never lower the stored value.
     Plus: est-duplicate rows (39.3 vs 39.3 (est)) collapse to one."""
-    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/x", date="2026-09-28"):
+    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/u/status/9002", date="2026-09-28"):
         return {"engine": "FreeToken", "tps": tps, "hardware": hw, "date": date,
                 "source_post": post, "likes": likes, "comments": 0}
 
@@ -435,7 +435,7 @@ def test_merge_engines_edge_cases():
     """Edge cases for the interaction-weighted merge: empty groups, ranges,
     different engines/GPUs, missing engagement, extreme engagement, zero/empty
     tps, and many-concordant collapse."""
-    def eng(tps, likes=0, comments=0, hw="RTX 8GB GPU", post="https://lightbrd.com/x",
+    def eng(tps, likes=0, comments=0, hw="RTX 8GB GPU", post="https://lightbrd.com/u/status/9002",
             date="2026-09-28", engine="FreeToken"):
         return {"engine": engine, "tps": tps, "hardware": hw, "date": date,
                 "source_post": post, "likes": likes, "comments": comments}
@@ -501,7 +501,7 @@ def test_merge_engines_tps_matrix():
     tilde-vs-int, comment-vs-plain, and different-engine/GPU."""
     def eng(tps, hw="RTX 8GB GPU", engine="FreeToken"):
         return {"engine": engine, "tps": tps, "hardware": hw, "date": "2026-09-28",
-                "source_post": "https://lightbrd.com/x", "likes": 1, "comments": 0}
+                "source_post": "https://lightbrd.com/u/status/9002", "likes": 1, "comments": 0}
     # (a, b, expected_collapse)
     matrix = [
         ("50", "50", True),                       # identical
@@ -563,9 +563,9 @@ def test_ingest_maps_engagement_end_to_end():
             "engines": [
                 # same engine+GPU, concordant t/s, different engagement
                 {"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090", "date": "2026-09-28",
-                 "source_post": "https://lightbrd.com/a", "likes": 30, "comments": 5, "reshares": 2, "views": 1000},
+                 "source_post": "https://lightbrd.com/u/status/9000", "likes": 30, "comments": 5, "reshares": 2, "views": 1000},
                 {"engine": "llama.cpp", "tps": "52 (est)", "hardware": "RTX 4090", "date": "2026-09-28",
-                 "source_post": "https://lightbrd.com/b", "likes": 200, "comments": 40, "reshares": 20, "views": 50000},
+                 "source_post": "https://lightbrd.com/u/status/9001", "likes": 200, "comments": 40, "reshares": 20, "views": 50000},
             ],
             "last_seen": "2026-09-28",
         }],
@@ -593,7 +593,7 @@ def test_ingest_maps_engagement_end_to_end():
           e.get("views") == 50000, json.dumps(e))
     # the source_post of the high-engagement measurement is kept
     check("e2e: source_post of the high-engagement measurement kept",
-          e.get("source_post") == "https://lightbrd.com/b", e.get("source_post"))
+          e.get("source_post") == "https://lightbrd.com/u/status/9001", e.get("source_post"))
 
 
 def test_ingest_updates_existing_model_to_higher_tps():
@@ -611,7 +611,7 @@ def test_ingest_updates_existing_model_to_higher_tps():
             "params": "14B", "hf": "Qwen/Qwen3-14B", "vram_tier": "9GB", "vram_min": "8GB",
             "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
             "engines": [{"engine": "llama.cpp", "tps": "50", "hardware": "RTX 4090", "date": "2026-09-20",
-                         "source_post": "https://lightbrd.com/old"}],
+                         "source_post": "https://lightbrd.com/u/status/9003"}],
             "why": "w", "engagement": {"likes": 1, "comments": 0, "views": 1, "last_7d_likes": 1},
             "last_seen": "2026-09-20",
         }],
@@ -624,7 +624,7 @@ def test_ingest_updates_existing_model_to_higher_tps():
             "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
             "vram_tier": "9GB", "vram_min": "8GB", "backends": ["CUDA"],
             "engines": [{"engine": "llama.cpp", "tps": "55", "hardware": "RTX 4090", "date": "2026-09-28",
-                         "source_post": "https://lightbrd.com/new", "likes": 500, "comments": 100, "reshares": 50}],
+                         "source_post": "https://lightbrd.com/u/status/9004", "likes": 500, "comments": 100, "reshares": 50}],
             "last_seen": "2026-09-28",
         }],
     }
@@ -645,7 +645,7 @@ def test_ingest_updates_existing_model_to_higher_tps():
     check("update: representative carries the new report's engagement",
           e.get("likes") == 500 and e.get("reshares") == 50, json.dumps(e))
     check("update: source_post updated to the new report",
-          e.get("source_post") == "https://lightbrd.com/new", e.get("source_post"))
+          e.get("source_post") == "https://lightbrd.com/u/status/9004", e.get("source_post"))
 
 
 def test_merge_engines_engagement_tps_permutations():
@@ -653,7 +653,7 @@ def test_merge_engines_engagement_tps_permutations():
     (low/high engagement) x (lower/same/higher tps) -> expected (rows, core).
     Each row: (tps_a, likes_a, tps_b, likes_b, expected_rows, expected_core or
     None for 'distinct'). keep-higher wins over the weighted mean."""
-    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/x"):
+    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/u/status/9002"):
         return {"engine": "FreeToken", "tps": tps, "hardware": hw, "date": "2026-09-28",
                 "source_post": post, "likes": likes, "comments": 0}
     # (a_tps, a_likes, b_tps, b_likes, expected_rows, expected_core)
@@ -732,19 +732,19 @@ def test_dedupe_posts_tolerates_bare_string_entries():
           json.dumps(out))
     # mixed: a dict + a bare string for the same URL -> one entry
     mixed = [
-        {"url": "https://lightbrd.com/a", "date": "2026-09-28"},
-        "https://lightbrd.com/a",
-        "https://lightbrd.com/b",
+        {"url": "https://lightbrd.com/u/status/9000", "date": "2026-09-28"},
+        "https://lightbrd.com/u/status/9000",
+        "https://lightbrd.com/u/status/9001",
     ]
     out2 = UT.dedupe_posts(mixed)
     urls = sorted(p["url"] for p in out2)
     check("dedupe: dict + bare string for same url collapse to one",
-          urls == ["https://lightbrd.com/a", "https://lightbrd.com/b"], json.dumps(urls))
+          urls == ["https://lightbrd.com/u/status/9000", "https://lightbrd.com/u/status/9001"], json.dumps(urls))
     # prune_posts must not crash on a bare string (no date -> dropped, not crash)
-    pruned = UT.prune_posts(["https://lightbrd.com/x"], today())
+    pruned = UT.prune_posts(["https://lightbrd.com/u/status/9002"], today())
     check("prune: bare-string entry dropped without crash", pruned == [], json.dumps(pruned))
     # recompute_7d_engagement on a model whose seen_posts is a bare string
-    m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": ["https://lightbrd.com/a"]}}
+    m = {"id": "m1", "name": "M1", "engagement": {"seen_posts": ["https://lightbrd.com/u/status/9000"]}}
     UT.recompute_7d_engagement(m, today())
     check("recompute: bare-string seen_posts does not crash, resets to 0",
           m["engagement"]["last_7d_likes"] == 0, str(m["engagement"]["last_7d_likes"]))

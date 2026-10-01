@@ -160,23 +160,49 @@ def _post_date(post) -> str:
     return _as_post(post).get("date", "") or ""
 
 
+_POST_URL = re.compile(r"/status(?:es)?/\d+")
+
+# Per-post engagement fields carried on seen_posts entries (and measurements).
+_POST_SIGNALS = ("likes", "comments", "reshares", "views")
+
+
+def _is_post_url(url: str) -> bool:
+    """True for a URL that identifies ONE X post (…/status/<id>). The search
+    agent often records a placeholder instead (https://lightbrd.com/ or a
+    profile page) — those identify nothing and must not be deduped by URL."""
+    return bool(_POST_URL.search(url or ""))
+
+
+def _post_key(p: dict) -> str:
+    """Identity of a seen post. A real post URL is its own identity (the same
+    post re-scanned across overlapping windows collapses). A placeholder URL
+    is keyed by url+date+engine+tps so distinct measurements that share
+    'https://lightbrd.com/' are not collapsed into one fake post."""
+    url = p.get("url", "")
+    if _is_post_url(url):
+        return url
+    return f"{url}#{p.get('date', '')}#{p.get('engine', '')}#{p.get('tps', '')}"
+
+
 def dedupe_posts(posts: list) -> list[dict]:
-    """Collapse engagement.seen_posts to one entry per source_post URL.
+    """Collapse engagement.seen_posts to one entry per distinct post.
 
     The same X post is re-scanned across overlapping 3-day search windows, so
-    without this a single post would inflate last_7d_likes on every run. Keep
-    the entry with the latest date for each URL (a re-seen post may carry a
-    fresher date). Tolerates bare-string entries (coerced to {'url', 'date'})."""
-    by_url: dict[str, dict] = {}
+    without this a single post would inflate the 7-day score on every run.
+    Keep the entry with the latest date per post (a re-seen post may carry a
+    fresher date); on a date tie keep the one with more engagement. Tolerates
+    bare-string entries (coerced to {'url', 'date'})."""
+    by_key: dict[str, dict] = {}
     for p in posts:
         p = _as_post(p)
-        url = p.get("url", "")
-        if not url:
+        if not p.get("url", ""):
             continue
-        cur = by_url.get(url)
-        if cur is None or _post_date(p) > _post_date(cur):
-            by_url[url] = p
-    return list(by_url.values())
+        k = _post_key(p)
+        cur = by_key.get(k)
+        if (cur is None or _post_date(p) > _post_date(cur)
+                or (_post_date(p) == _post_date(cur) and _eng_weight(p) > _eng_weight(cur))):
+            by_key[k] = p
+    return list(by_key.values())
 
 
 def prune_posts(posts: list, today: datetime) -> list[dict]:
@@ -194,25 +220,27 @@ def prune_posts(posts: list, today: datetime) -> list[dict]:
     return out
 
 def recompute_7d_engagement(m: dict, today: datetime) -> None:
-    """Recompute last_7d_likes from engagement.seen_posts: the count of DISTINCT
-    posts dated within the last TRENDING_WINDOW_DAYS. This makes 'ranked by
-    7-day engagement' literally true and prevents double-counting the same post
-    across overlapping search windows. Falls back to the stored counter when a
-    model has no seen_posts (legacy rows)."""
+    """Recompute the 7-day engagement from post-granularity data.
+
+    seen_posts = stored posts UNION the posts behind the model's own engine
+    measurements (so rows that existed before post tracking rank too), deduped
+    by post identity and pruned to RETENTION_DAYS. Then, over the posts dated
+    within TRENDING_WINDOW_DAYS:
+      posts_7d      = number of distinct posts
+      score_7d      = sum of _eng_weight(post) — likes + 2*comments +
+                      3*reshares + log10(views+1), min 1 per post
+      last_7d_likes = posts_7d (kept for back-compat)
+    A row with no posts gets zeros — a legacy cumulative counter must never
+    dominate the trending rank."""
     eng = m.setdefault("engagement", {})
-    posts = dedupe_posts(eng.get("seen_posts", []))
+    posts = dedupe_posts(list(eng.get("seen_posts", [])) + _collect_seen_posts(m))
     posts = prune_posts(posts, today)
     eng["seen_posts"] = posts
     cutoff = (today - timedelta(days=TRENDING_WINDOW_DAYS)).strftime("%Y-%m-%d")
-    if posts:
-        # post-granularity signal present -> last_7d_likes is the distinct-post count
-        eng["last_7d_likes"] = sum(1 for p in posts if _post_date(p) >= cutoff)
-    else:
-        # No post-granularity signal (legacy row or no recent posts) -> the
-        # stored counter is a stale cumulative number, not a 7-day count. Reset
-        # to 0 so the trending rank reflects REAL recent engagement, never a
-        # legacy monotonic counter that would dominate the list forever.
-        eng["last_7d_likes"] = 0
+    recent = [p for p in posts if _post_date(p) >= cutoff]
+    eng["posts_7d"] = len(recent)
+    eng["score_7d"] = round(sum(_eng_weight(p) for p in recent), 1)
+    eng["last_7d_likes"] = len(recent)
     # keep last_seen in sync with the newest post (or today if none)
     dates = [d for d in (_post_date(p) for p in posts) if d]
     if dates:
@@ -243,144 +271,219 @@ def sort_models(models: list[dict], today: datetime) -> list[dict]:
         # recompute the 7-day engagement from distinct posts (dedup + prune)
         recompute_7d_engagement(m, today)
 
-    def parse(d):
-        try:
-            return datetime.strptime(d, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        except Exception:
-            return today
-
-    def band(m):
-        last = parse(m.get("last_seen", ""))
-        delta = (today - last).days if last else 0
-        if delta <= 7:
-            return 0
-        if delta <= 30:
-            return 1
-        return 2
-
-    def peak_tps(m):
-        vals = []
-        for e in m.get("engines", []):
-            mnum = re.search(r"(\d+\.?\d*)", str(e.get("tps", "")))
-            if mnum:
-                vals.append(float(mnum.group(1)))
-        return max(vals) if vals else 0.0
-
     return sorted(
         models,
         key=lambda m: (
-            band(m),
-            -m["engagement"].get("last_7d_likes", 0),
+            model_band(m, today),
+            -m["engagement"].get("score_7d", 0),
+            -m["engagement"].get("posts_7d", 0),
             -peak_tps(m),
             m["name"].lower(),
         ),
     )
 
+
+BANDS = ("trending", "recent", "stale")
+
+
+def model_band(m: dict, today: datetime) -> int:
+    """0 = trending (last_seen within TRENDING_WINDOW_DAYS), 1 = recent (within
+    RETENTION_DAYS), 2 = stale. A missing/unparseable date counts as trending
+    (conservative: never demote a row into stale on bad data)."""
+    try:
+        last = datetime.strptime(m.get("last_seen", ""), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except Exception:  # noqa: BLE001
+        return 0
+    delta = (today - last).days
+    if delta <= TRENDING_WINDOW_DAYS:
+        return 0
+    if delta <= RETENTION_DAYS:
+        return 1
+    return 2
+
+
+def peak_tps(m: dict) -> float:
+    """Highest t/s core across a model's measurements (max of a range)."""
+    return max((_tps_core(e.get("tps")) for e in m.get("engines", [])), default=0.0)
+
+
+# Engine -> backend for single-backend engines. Multi-backend engines (None)
+# are decided from the hardware/quant text. ONE classifier for every table.
+ENGINE_BACKEND = {
+    "Ollama": None, "llama.cpp": None, "vLLM": "CUDA", "SGLang": "CUDA",
+    "FreeToken": "CUDA", "TensorRT-LLM": "CUDA", "DFlash2": "CUDA",
+    "Strata": "CUDA", "MLX": "Metal", "TensorFold": "Metal",
+    "MLX-fast (Bonsai 2)": "Metal", "LiteRT": None, "WebLLM": None,
+}
+_METAL_HW = ("apple", "mac", "m1 ", "m2 ", "m3 ", "m4 ", "m5 ", "m6 ", "m1)", "m2)", "m3)", "m4)", "m5)", "m6)", "mlx")
+_CPU_HW = ("cpu", "intel", "amd ryzen", "ryzen", "epyc", "xeon", "threadripper", "no gpu", "raspberry", "arm64", "snapdragon")
+_CUDA_HW = ("rtx", "nvidia", "cuda", "geforce", "tesla", "a100", "h100", "l40", "aic")
+BACKENDS = ("CUDA", "Metal", "CPU")
+
+
+def measurement_backend(e: dict) -> str:
+    """Which backend table a measurement belongs to: CUDA, Metal or CPU.
+    Priority: explicit Apple/CPU hardware -> single-backend engine -> GPU/Apple
+    keywords in hardware+quant -> CUDA (default until evidence says otherwise)."""
+    hw = (" " + (e.get("hardware") or "") + " ").lower()
+    if "apple" in hw or "mac" in hw:
+        return "Metal"
+    if any(k in hw for k in _CPU_HW) and not any(k in hw for k in _CUDA_HW):
+        return "CPU"
+    b = ENGINE_BACKEND.get(e.get("engine", ""))
+    if b:
+        return b
+    text = hw + " " + (e.get("quant") or "").lower() + " "
+    if any(k in text for k in _CUDA_HW):
+        return "CUDA"
+    if any(k in text for k in _METAL_HW):
+        return "Metal"
+    return "CUDA"
+
+
+def best_measurement(es: list[dict]) -> dict | None:
+    """Highest t/s core; newest date breaks a tie."""
+    if not es:
+        return None
+    return max(es, key=lambda e: (_tps_core(e.get("tps")), e.get("date", "")))
+
+BACKEND_LABEL = {
+    "CUDA": ("🟦", "CUDA — NVIDIA GPUs (8–48 GB)"),
+    "Metal": ("🟩", "Metal — Apple Silicon (unified memory)"),
+    "CPU": ("🟨", "CPU — no GPU"),
+}
+BAND_LABEL = ("🔥 trending", "🕑 recent", "💤 stale")
+
+
+def _fmt_num(x: float) -> str:
+    return f"{x:g}"
+
+
+def _cell(text) -> str:
+    """Make free text safe inside a markdown table cell."""
+    return str(text or "").replace("|", "\\|").replace("\n", " ").strip()
+
+
 def render_readme(store: dict, today: datetime) -> str:
-    """Regenerate README.md from the store + static sections."""
+    """Regenerate README.md from the store + static sections.
+
+    Layout (every section is derived from the same measurement_backend() and
+    best_measurement() so the tables can never disagree):
+      1. Most loved — one row per model in rank order (band -> 7-day score ->
+         posts -> peak t/s): status, 7-day buzz, BEST t/s per backend
+         (CUDA / Metal / CPU) with engine + hardware + quant, VRAM, why.
+      2. Engine matrix — which inference engine runs which model, best t/s per
+         backend on that engine. Only engines with a measurement are columns.
+      3. Backend tables — numeric Peak t/s column + every measurement
+         (engine · t/s · hardware · quant · date), best first.
+      4. Engine guide — with the number of models measured on each engine.
+    """
     models = sort_models(list(store["models"]), today)
-    today_s = today.strftime("%Y-%m-%d")
+    registry = store.get("engines", {})
 
-    def elink(e):
-        url = store["engines"].get(e["engine"], {}).get("url")
-        return f"[{e['engine']}]({url})" if url else e["engine"]
+    def elink(name: str) -> str:
+        url = registry.get(name, {}).get("url")
+        return f"[{name}]({url})" if url else name
 
-    def eng_cells(m):
-        if not m.get("engines"):
-            return "—", "—"
-        # newest first
-        es = sorted(m["engines"], key=lambda e: e.get("date", ""), reverse=True)
-        cuda = []
-        metal = []
-        for e in es:
-            cell = f"{e['tps']} ({elink(e)}"
-            if e.get("hardware"):
-                cell += f", {e['hardware']}"
-            if e.get("quant"):
-                cell += f", {e['quant']}"
-            cell += ")"
-            if e["engine"] in ("MLX", "TensorFold", "MLX-fast (Bonsai 2)") or "Apple" in e.get("hardware", "") or "Mac" in e.get("hardware", ""):
-                metal.append(cell)
-            else:
-                cuda.append(cell)
-        return "<br>".join(cuda) or "—", "<br>".join(metal) or "—"
+    def hf_url(m: dict) -> str:
+        return f"https://huggingface.co/{m.get('hf', '')}"
 
-    rows = []
-    for m in models:
-        cu, me = eng_cells(m)
-        rows.append(
-            f"| **{m['name']}** | {m.get('full_name', m.get('name',''))} | [link](https://huggingface.co/{m['hf']}) "
-            f"| {m.get('why','')} | {cu} | {me} | {m.get('vram_tier','—')} |"
-        )
-    most_loved = "\n".join(rows)
+    def detail(e: dict) -> str:
+        bits = [_cell(x) for x in (e.get("hardware"), e.get("quant")) if x]
+        return " · ".join(bits)
 
-    # Which backend a given engine measurement belongs to (equal first-class
-    # categories: NVIDIA/CUDA, Apple/Metal, CPU). Override on hardware/engine name.
-    ENGINE_BACKEND = {
-        "Ollama": None, "llama.cpp": None, "vLLM": "CUDA", "SGLang": "CUDA",
-        "FreeToken": "CUDA", "TensorRT-LLM": "CUDA", "DFlash2": "CUDA",
-        "Strata": "CUDA", "MLX": "Metal", "TensorFold": "Metal",
-        "MLX-fast (Bonsai 2)": "Metal", "LiteRT": None, "WebLLM": None,
-    }
-    def eng_backend(m, e):
-        if any(k in e.get("hardware", "").lower() for k in ("apple", "mac")):
-            return "Metal"
-        if any(k in e.get("hardware", "").lower() for k in ("cpu", "intel", "amd ryzen", "no gpu")):
-            return "CPU"
-        b = ENGINE_BACKEND.get(e["engine"])
-        if b:
-            return b
-        # Ollama/llama.cpp/LiteRT are multi-backend: decide from hardware text
-        hw = (e.get("hardware", "") + " " + e.get("quant", "")).lower()
-        if any(k in hw for k in ("rtx", "nvidia", "cuda", "geforce", "tesla", "aic")):
-            return "CUDA"
-        if any(k in hw for k in ("apple", "mac", "m1", "m2", "m3", "m4", "m5", "m6", "mlx")):
-            return "Metal"
-        return "CUDA"  # default NVIDIA until evidence says otherwise
-
-# Group every model's measurements by backend for the equal backend tables.
-    backend_rows = {"CUDA": [], "Metal": [], "CPU": []}
-    for m in models:
-        seen_backends = set()
+    def by_backend(m: dict) -> dict[str, list[dict]]:
+        out: dict[str, list[dict]] = {b: [] for b in BACKENDS}
         for e in m.get("engines", []):
-            be = eng_backend(m, e)
-            seen_backends.add(be)
-        for be in seen_backends:
-            es = [e for e in m["engines"] if eng_backend(m, e) == be]
-            es_sorted = sorted(es, key=lambda e: e.get("date", ""), reverse=True)
-            parts = []
-            peak = 0.0
-            for e in es_sorted:
-                s = f"{elink(e)} {e['tps']}"
-                if e.get("date"):
-                    s += f" ({e.get('date')})"
-                parts.append(s)
-                nums = [float(x) for x in re.findall(r"(\d+\.?\d*)", str(e.get("tps", "")))]
-                if nums:
-                    peak = max(peak, max(nums))
-            desc = "; ".join(parts)
-            backend_rows[be].append((m, desc, peak))
+            out[measurement_backend(e)].append(e)
+        return out
 
-    def backend_table(title, emoji, rows_):
-        rows_ = sorted(rows_, key=lambda r: -r[2])
-        lines = [f"# {emoji} {title}", "", "| Model | Params | License | HF | VRAM | t/s per engine |",
+    # ---- 1. most loved -------------------------------------------------------
+    def best_cell(es: list[dict]) -> str:
+        b = best_measurement(es)
+        if b is None:
+            return "—"
+        cell = f"**{b['tps']}** t/s<br>{elink(b['engine'])}"
+        if detail(b):
+            cell += f" · {detail(b)}"
+        if len(es) > 1:
+            cell += f"<br><sub>+{len(es) - 1} more</sub>"
+        return cell
+
+    loved = []
+    for m in models:
+        eng = m.get("engagement", {})
+        sub = " · ".join(_cell(x) for x in (m.get("full_name"), m.get("params"), m.get("license")) if x)
+        model_cell = f"[**{m['name']}**]({hf_url(m)})" + (f"<br><sub>{sub}</sub>" if sub else "")
+        status = BAND_LABEL[model_band(m, today)] + (f"<br><sub>last seen {m['last_seen']}</sub>" if m.get("last_seen") else "")
+        posts = eng.get("posts_7d", 0)
+        buzz = f"{_fmt_num(eng.get('score_7d', 0))}<br><sub>{posts} post{'s' if posts != 1 else ''}</sub>"
+        bb = by_backend(m)
+        loved.append(
+            f"| {model_cell} | {status} | {buzz} | {best_cell(bb['CUDA'])} | {best_cell(bb['Metal'])} "
+            f"| {best_cell(bb['CPU'])} | {_cell(m.get('vram_tier')) or '—'} | {_cell(m.get('why')) or '—'} |"
+        )
+    most_loved = "\n".join(loved)
+
+    # ---- 2. engine matrix ----------------------------------------------------
+    measured: dict[str, set] = {}
+    for m in models:
+        for e in m.get("engines", []):
+            measured.setdefault(e.get("engine", ""), set()).add(m["id"])
+    engines_cols = sorted((k for k in measured if k), key=lambda k: (-len(measured[k]), k.lower()))
+    matrix_lines = ["| Model | " + " | ".join(elink(k) for k in engines_cols) + " |",
+                    "|---|" + "---|" * len(engines_cols)]
+    for m in models:
+        cells = []
+        for k in engines_cols:
+            parts = []
+            for b in BACKENDS:
+                best = best_measurement([e for e in m.get("engines", [])
+                                         if e.get("engine") == k and measurement_backend(e) == b])
+                if best:
+                    parts.append(f"{BACKEND_LABEL[b][0]} {best['tps']}")
+            cells.append("<br>".join(parts) or "—")
+        matrix_lines.append(f"| **{m['name']}** | " + " | ".join(cells) + " |")
+    engine_matrix = "\n".join(matrix_lines) if engines_cols else "_No engine measurements yet._"
+
+    # ---- 3. backend tables ---------------------------------------------------
+    def backend_table(b: str) -> str:
+        emoji, title = BACKEND_LABEL[b]
+        rows = []
+        for m in models:
+            es = by_backend(m)[b]
+            if not es:
+                continue
+            es = sorted(es, key=lambda e: (_tps_core(e.get("tps")), e.get("date", "")), reverse=True)
+            meas = []
+            for e in es:
+                t = f"{elink(e['engine'])} **{e['tps']}**"
+                if detail(e):
+                    t += f" · {detail(e)}"
+                if e.get("date"):
+                    t += f" · {e['date']}"
+                meas.append(t)
+            peak = max(_tps_core(e.get("tps")) for e in es)
+            rows.append((peak, m, "<br>".join(meas)))
+        rows.sort(key=lambda r: -r[0])
+        lines = [f"# {emoji} {title}", "",
+                 "| Model | Params | License | VRAM | Peak t/s | Measurements (engine · t/s · hardware · quant · date) |",
                  "|---|---|---|---|---|---|"]
-        if not rows_:
+        if not rows:
             lines.append("_No models measured on this backend yet._")
-        for m, desc, _peak in rows_:
+        for peak, m, meas in rows:
             lines.append(
-                f"| **{m['name']}** | {m.get('params','—')} | {m.get('license','—')} "
-                f"| [link](https://huggingface.co/{m['hf']}) | {m.get('vram_tier','—')} | {desc} |"
+                f"| [**{m['name']}**]({hf_url(m)}) | {m.get('params') or '—'} | {m.get('license') or '—'} "
+                f"| {m.get('vram_tier') or '—'} | {_fmt_num(peak)} | {meas} |"
             )
         return "\n".join(lines)
 
-    cuda_md = backend_table("CUDA — NVIDIA GPUs (8–48 GB)", "🟦", backend_rows["CUDA"])
-    metal_md = backend_table("Metal — Apple Silicon (unified memory)", "🟩", backend_rows["Metal"])
-    cpu_md = backend_table("CPU — no GPU", "🟨", backend_rows["CPU"])
+    cuda_md, metal_md, cpu_md = (backend_table(b) for b in BACKENDS)
 
+    # ---- 4. engine guide -----------------------------------------------------
     engine_guide = "\n".join(
-        f"| [{k}]({v.get('url','')}) | {v['backend']} | {v['note']} |"
-        for k, v in store["engines"].items()
+        f"| [{k}]({v.get('url', '')}) | {v.get('backend', '—')} | {len(measured.get(k, ()))} | {v.get('note', '—')} |"
+        for k, v in registry.items()
     )
 
     now_s = now_utc().strftime("%Y-%m-%d %H:%M UTC")
@@ -389,7 +492,7 @@ def render_readme(store: dict, today: datetime) -> str:
 
 A living, detailed list of **open-weight** LLMs that actually make a difference for local deployment. Every figure is **community-reported on X** (real benchmark posts, not vendor claims), with the hardware and engine it was measured on. This README is **automatically regenerated** from `data/models.json` — see [AGENTS.md](AGENTS.md) and `skills/gather-data.md`.
 
-**Ranked by 7-day X engagement** (likes/comments/views), retained through a 30-day window. Within a rank, models sort by **highest t/s** with the **one engine** that produced it. t/s is always shown **per engine**.
+**How the ranking works.** Models are grouped 🔥 **trending** (seen in the last {TRENDING_WINDOW_DAYS} days) → 🕑 **recent** (last {RETENTION_DAYS} days) → 💤 **stale** (older, kept with their last measurement date). Within a group they rank by **7-day buzz**: for every distinct X post in the last {TRENDING_WINDOW_DAYS} days, likes + 2×comments + 3×reshares + log10(views+1) (at least 1 per post); ties go to the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
 > Last generated: {now_s}. Source: lightbrd.com mirror (X posts).
 
@@ -397,9 +500,19 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 ## ❤️ Most loved open-weight models on X (ranked by 7-day engagement)
 
-| Model | Full name | HF link | Why people love it | CUDA t/s (engine) | Metal t/s (engine) | VRAM |
-|---|---|---|---|---|---|---|
+Best measured t/s per backend; the full list of measurements is in the backend tables below.
+
+| Model | Status | 7-day buzz | CUDA t/s (best) | Metal t/s (best) | CPU t/s (best) | VRAM | Why people love it |
+|---|---|---|---|---|---|---|---|
 {most_loved}
+
+---
+
+## 🧭 Which inference engine runs what
+
+Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU). Only engines with at least one measurement are shown.
+
+{engine_matrix}
 
 ---
 
@@ -421,8 +534,8 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 ## ⚙️ Inference engine / server guide
 
-| Engine | Backend | Best for |
-|---|---|---|
+| Engine | Backend | Models measured | Best for |
+|---|---|---|---|
 {engine_guide}
 
 **Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp CPU (tiny/edge).
@@ -432,7 +545,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 ## How to contribute
 
 - Update `data/models.json` (add/refresh a model row with real X-sourced engagement and per-engine t/s), then run `python3 scripts/update_trending.py` to regenerate the README.
-- Include: full model name, HF link, license, params, type, VRAM tier, a **measured** t/s + **engine + hardware + quant**, and the source X post.
+- Include: full model name, HF link, license, params, type, VRAM tier, a **measured** t/s + **engine + hardware + quant**, and the source X post (a `…/status/<id>` URL, so engagement is counted once per post).
 - Prefer numbers from real X benchmark posts over vendor claims. Data is **community-reported on X** — directional, not lab-grade; mark projections `(est)`.
 - All changes go through a **feature branch + PR**; automation never pushes to/merges `master` directly.
 
@@ -468,16 +581,19 @@ def _collect_seen_posts(m: dict) -> list[dict]:
     """Derive engagement.seen_posts from a model's engine measurements: one
     entry per distinct source_post URL, dated by the measurement date. This is
     the post-granularity signal that powers the 7-day trending aggregation."""
-    posts: dict[str, dict] = {}
+    out = []
     for e in m.get("engines", []):
         url = e.get("source_post", "")
-        if not url:
+        if not url or not e.get("date"):
             continue
-        cur = posts.get(url)
-        date = e.get("date", "")
-        if cur is None or date > cur.get("date", ""):
-            posts[url] = {"url": url, "date": date}
-    return list(posts.values())
+        p = {"url": url, "date": e["date"], "engine": e.get("engine", ""), "tps": str(e.get("tps", ""))}
+        for k in _POST_SIGNALS:
+            try:
+                p[k] = max(0, int(float(e.get(k) or 0)))
+            except (TypeError, ValueError):
+                p[k] = 0
+        out.append(p)
+    return dedupe_posts(out)
 
 def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
     """Merge all data/raw/*.json into the store. Each raw file holds one
@@ -647,31 +763,38 @@ _REQ_ENGINE_FIELDS = ("engine", "tps", "date")
 # goes red on a schema error no LLM fixer should have to repair.
 _MODEL_CONTRACT = ROOT / "data" / "model_contract.json"
 _FALLBACK_ENGAGEMENT_KEYS = frozenset(
-    {"likes", "comments", "views", "reshares", "interactions", "last_7d_likes", "seen_posts"})
+    {"likes", "comments", "views", "reshares", "interactions", "last_7d_likes", "posts_7d",
+     "score_7d", "seen_posts"})
+
+
+def _engagement_props() -> dict:
+    try:
+        c = json.loads(_MODEL_CONTRACT.read_text())
+        return c["properties"]["models"]["items"]["properties"]["engagement"]["properties"]
+    except Exception:  # noqa: BLE001 — contract missing/malformed: use the known set
+        return {k: {"type": "integer"} for k in _FALLBACK_ENGAGEMENT_KEYS if k != "seen_posts"} | {
+            "seen_posts": {"type": "array"}, "score_7d": {"type": "number"}}
 
 
 def _engagement_keys() -> frozenset:
-    try:
-        c = json.loads(_MODEL_CONTRACT.read_text())
-        props = c["properties"]["models"]["items"]["properties"]["engagement"]["properties"]
-        return frozenset(props)
-    except Exception:  # noqa: BLE001 — contract missing/malformed: use the known set
-        return _FALLBACK_ENGAGEMENT_KEYS
+    return frozenset(_engagement_props())
 
 
 def prune_engagement(eng: dict, model_id: str = "?") -> dict:
     """Drop model-level engagement keys the store contract does not declare.
     Integer counters are coerced to non-negative ints (an agent writing "12" or
     a float must not fail the schema either). Prints what was pruned."""
-    allowed = _engagement_keys()
+    props = _engagement_props()
     out = {}
     for k, v in eng.items():
-        if k not in allowed:
+        if k not in props:
             print(f"[ingest] {model_id}: pruned undeclared engagement key {k!r}")
             continue
-        if k != "seen_posts":
+        typ = props[k].get("type")
+        if typ in ("integer", "number"):
             try:
-                v = max(0, int(float(v)))
+                f = max(0.0, float(v))
+                v = int(f) if typ == "integer" else round(f, 1)
             except (TypeError, ValueError):
                 print(f"[ingest] {model_id}: engagement {k}={v!r} not numeric -> 0")
                 v = 0
@@ -775,8 +898,11 @@ def main() -> int:
     if added or updated:
         print(f"[info] ingested raw snapshots: {added} added, {updated} updated")
 
+    # One instant for sorting, the stored timestamp and the render, so the
+    # validator can re-render the README "as of generated_utc" byte-for-byte.
+    today = today.replace(microsecond=0)
+    store["generated_utc"] = today.strftime("%Y-%m-%dT%H:%M:%SZ")
     store["models"] = sort_models(store["models"], today)
-    store["generated_utc"] = now_utc().strftime("%Y-%m-%dT%H:%M:%SZ")
     readme = render_readme(store, today)
 
     if args.dry_run:
