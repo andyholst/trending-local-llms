@@ -1,0 +1,49 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-01T23:34:54Z",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B (edge)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LiteRT",
+          "hf": "google/gemma-4-E2B"
+        }
+      ],
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (arm64 CPU)",
+          "quant": "LiteRT on-device; 1432 MB peak; 99 t/s prefill",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 528,
+          "comments": 2,
+          "reshares": 1,
+          "views": 0
+        }
+      ],
+      "why": "Google's edge Gemma 4 E2B hitting 9 t/s decode (99 t/s prefill) on a Raspberry Pi 5 via LiteRT at only 1432 MB peak RAM — pure on-device CPU inference with no cloud.",
+      "engagement": {
+        "likes": 528,
+        "comments": 2,
+        "reshares": 1,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-09-05"
+    }
+  ]
+}

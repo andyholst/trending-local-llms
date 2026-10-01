@@ -1,0 +1,195 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-01T23:30:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (dense)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 spec-decode + lookup-augmented drafting (long-context reproduction task)",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101461617871393182",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 12,
+          "views": 2275,
+          "interactions": 2291
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "118",
+          "hardware": "RTX 3090 24GB",
+          "quant": "4-bit",
+          "date": "2026-09-13",
+          "source_post": "https://lightbrd.com/Brjen/status/2098982803970855050",
+          "likes": 1,
+          "comments": 5,
+          "reshares": 0,
+          "views": 354,
+          "interactions": 360
+        }
+      ],
+      "last_seen": "2026-09-19"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary, ~6GB, MTP head + kernel fix",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104754435209715795",
+          "likes": 7,
+          "comments": 6,
+          "reshares": 42,
+          "views": 7649,
+          "interactions": 7704
+        }
+      ],
+      "last_seen": "2026-09-29"
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "62-93",
+          "hardware": "RTX 5070 12GB",
+          "quant": "IQ2_XS, MTP draft",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 164,
+          "interactions": 166
+        }
+      ],
+      "last_seen": "2026-10-01"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B-A3B (MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE, 3B active / 35B",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 201,
+          "interactions": 204
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE, 3B active / 35B",
+          "date": "2026-08-22",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2091150763418620133",
+          "likes": 79,
+          "comments": 503,
+          "reshares": 2982,
+          "views": 344371,
+          "interactions": 347935
+        }
+      ],
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B (MoE)",
+      "type": "LLM",
+      "license": "DeepSeek License",
+      "params": "284B (MoE, 13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "MoE, 13B active / 284B",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 201,
+          "interactions": 204
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "MoE, 13B active / 284B",
+          "date": "2026-08-22",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2091150763418620133",
+          "likes": 79,
+          "comments": 503,
+          "reshares": 2982,
+          "views": 344371,
+          "interactions": 347935
+        }
+      ],
+      "last_seen": "2026-09-27"
+    }
+  ]
+}
