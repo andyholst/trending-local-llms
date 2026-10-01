@@ -66,6 +66,9 @@ jobs:
           make validate
           make validate-search
           make validate-mapped
+          # Real Firecrawl->lightbrd search run --dry-run --require-hits: proves
+          # the Search actually returns data. HARD gate: fails if 0 model hits.
+          make validate-fetch
           echo "QA passed: no models removed, fields+links present, backend tables sorted by t/s, JSON<->README sync, search contract, mapping, all models in README."
 
       - name: Run unit tests (in container)

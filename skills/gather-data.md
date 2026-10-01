@@ -6,7 +6,8 @@
 > (deepseek-v4-flash-0731 via the Nous portal, token from the repo secret
 > `NOUS_PORTAL_API_TOKEN`) that loads this skill + AGENTS.md and searches
 > lightbrd.com via the Firecrawl scrape API (`FIRECRAWL_API_KEY`). Each of the
-> four searches writes its own timestamped raw snapshot; they aggregate into
+> three searches for the backend groups (NVIDIA, Metal, CPU) each write their
+> own timestamped raw snapshot; they aggregate into
 > `models.json`. You should **add models to the JSON store**, not hand-edit the
 > tables, then run the script to regenerate. See `AGENTS.md` for the full
 > operating contract (7-day trending, 30-day retention, t/s per engine,
@@ -65,21 +66,16 @@ verified against the lightbrd.com mirror.
 | llama.cpp CPU only | `llama.cpp cpu only tokens per second` |
 | Local LLM on GPU (CPU offload) | `local llm tokens per second gpu` |
 
-### General — cross-backend t/s trend
-| Goal | Query |
-|---|---|
-| Broad t/s | `"tokens per second" llm` |
-| Benchmark t/s | `tokens per second benchmark llm` |
-| Local LLM t/s | `local llm tokens per second gpu` |
-| Open-weight roundups | `open weight llm benchmark gpu` |
-
 > **Probing notes (tested Sep 28 2026):** plain engine-name-only queries (e.g.
 > `free%20token engine moE small gpu`) return **nothing** — FreeToken's raw
 > name isn't indexed as a search term. Prefer **model + token/VRAM** queries;
 > treat engine names as optional signals. CPU-only LLM benchmarking is genuinely
 > sparse on X — most "CPU" signal lives in offload-capable engines (FreeToken,
 > llama.cpp cpu) that appear under the CUDA/engine queries. The pipeline's CPU
-> table will be thinner by nature; don't pad it with fabricated numbers.
+> table will be thinner by nature; don't pad it with fabricated numbers. There
+> is NO separate "general" search — the three backend searches (CUDA/Metal/CPU)
+> already capture every model; an unfiltered general query produced a payload
+> too large for the model's output cap and was removed.
 
 ## 3. Extract per model
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/andyholst/trending-local-llms/data/search_contract.json",
   "title": "trending-local-llms search/raw data contract",
-  "description": "JSON Schema that each Firecrawl search snapshot in data/raw/<backend>-<UTC>.json must conform to. The four Hermes `make search-*` prompts write these. Each raw snapshot holds ONE backend's captured models; they aggregate into models.json (validated against model_contract.json). Enforced by scripts/validate.py (check_search_contract).",
+  "description": "JSON Schema that each Firecrawl search snapshot in data/raw/<backend>-<UTC>.json must conform to. The three Hermes `make search-*` prompts write these. Each raw snapshot holds ONE backend's captured models; they aggregate into models.json (validated against model_contract.json). Enforced by scripts/validate.py (check_search_contract).",
   "type": "object",
   "required": [
     "backend",
