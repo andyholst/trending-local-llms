@@ -116,7 +116,8 @@ def test_rank_follows_engagement_not_post_count():
     v = next(m for m in s["models"] if m["id"] == "viral")["engagement"]
     q = next(m for m in s["models"] if m["id"] == "quiet")["engagement"]
     check("rank: quiet score = 3 (1 per post)", q["score_7d"] == 3.0 and q["posts_7d"] == 3, q)
-    check("rank: viral score counts likes/comments/reshares/views", v["score_7d"] > 600, v)
+    check("rank: viral buzz adds engagement on top of its 3 posts, log-dampened",
+          v["posts_7d"] < v["buzz_7d"] < v["posts_7d"] + 10, v)
     check("rank: viral's two measurements from ONE post count once (+2 others)", v["posts_7d"] == 3, v)
     check("rank: last_7d_likes == posts_7d (back-compat)", v["last_7d_likes"] == v["posts_7d"], v)
 

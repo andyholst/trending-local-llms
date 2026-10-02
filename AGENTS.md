@@ -176,22 +176,31 @@ The README is **generated**, not hand-maintained:
    t/s and supported engines still shown, clearly marked with the measurement
    date so a reader knows it is not current.
 
-**How engagement is computed** (`recompute_7d_engagement`, run on every sort):
+**How the trend is computed** (`recompute_7d_engagement`, run on every sort):
 
-- `engagement.seen_posts` = stored posts ∪ the posts behind the model's own
-  engine measurements (each carries likes / comments / reshares / views), so
-  rows that existed before post tracking rank too.
-- **Post identity:** a real post URL (`…/status/<id>`) is its own identity —
-  the same post re-scanned across overlapping 3-day windows counts once. A
-  placeholder (`https://lightbrd.com/`, a profile page) identifies nothing, so
-  it is keyed by url + date + engine + t/s and never collapses distinct
-  measurements. Search agents should record the `…/status/<id>` URL.
-- Over the posts dated within the last 7 days: `posts_7d` = count,
-  `score_7d` = Σ (likes + 2·comments + 3·reshares + log10(views+1)), min 1 per
-  post, `last_7d_likes` = `posts_7d` (back-compat). Posts older than 30 days
-  are pruned; the model row never is.
-- **Order:** band (trending → recent → stale) → `score_7d` → `posts_7d` →
-  peak t/s (`_tps_core`: the max of a range, `35.5-43.7` → 43.7) → name.
+- **Posts.** `engagement.seen_posts` keeps every real post (`…/status/<id>`)
+  ever seen; placeholder posts (`https://lightbrd.com/`, profile pages, non-X
+  links) are DERIVED — rebuilt from the model's current measurements on every
+  sort, keyed url + date + engine + hardware + quant. Never key on `tps`:
+  `merge_engines` rewrites it (`60-91` → `91`) and that used to mint a
+  duplicate post on every refresh (Bonsai showed 9 posts for 5). A real post
+  re-scanned across overlapping 3-day windows counts once. Posts older than 30
+  days are pruned; the model row never is.
+- **Buzz** (`buzz_7d`, alias `score_7d`) = Σ over posts in the last 7 days of
+  `1 + 0.5·log2(1 + likes + 2·comments + 3·reshares) + 0.25·log10(1 + views)`.
+  Breadth first: every post counts ≥ 1 and unknown counts read as 0 (never a
+  penalty), so a post with ≤ 10 interactions is worth < 4 posts, while a
+  5,000-like post (~8) can still lead. Never make this linear again — one
+  lightly-engaged post outranked nine posts that way.
+- **Speed** (`speed_bonus`) = `log2(1 + t/s ÷ 10)` of the model's fastest
+  **in-scope** measurement, only while it has posts in the window. In scope =
+  consumer/workstation hardware: GPUs with ≤ 48 GB total VRAM (explicit
+  `NN GB`, a known-card table incl. laptop variants, `Nx` multiplied), every
+  Apple Silicon and CPU measurement. Datacenter parts (H100/H200/A100/B200/
+  GB200/MI300…) or > 48 GB never earn speed. 10 t/s → +1, 70 → +3, 150 → +4.
+- **`trend_score` = buzz + speed.** Order: band (trending → recent → stale) →
+  `trend_score` → `posts_7d` → peak t/s (`_tps_core`, max of a range) → name.
+  `posts_7d` = distinct posts in 7 days (`last_7d_likes` mirrors it).
 - The README is rendered **as of `generated_utc`** (not the wall clock), so the
   validator's re-render is byte-stable days after merge.
 
@@ -205,8 +214,9 @@ keywords; CUDA only as the last resort) and
 can disagree about where a figure belongs.
 
 1. **❤️ Most loved** — one row per model in rank order: model (HF link, full
-   name · params · license), status (🔥 / 🕑 / 💤 + last seen), 7-day buzz
-   (score + posts), the **best** t/s for each of CUDA / Metal / CPU with engine
+   name · params · license), status (🔥 / 🕑 / 💤 + last seen), **Trend**
+   (`trend_score`, with `buzz · N posts · speed +X (t/s, hardware)` beneath),
+   the **best** t/s for each of CUDA / Metal / CPU with engine
    link · hardware · quant (`+N more` when there are others), VRAM, why. No
    `#` rank column — rank is row order.
 2. **🧭 Which inference engine runs what** — models × engines that have at
@@ -399,6 +409,8 @@ actually happened.
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |
 | `tests/test_post_signal.py` | a registry-only engine (e.g. Mac-only) with blank hardware landing in the CUDA table; renderer and validator classifying differently; search prompts not asking for the `…/status/<id>` URL + per-post counts; the coverage report failing CI |
+| `tests/test_trend_score.py` | one lightly-engaged post outranking many posts (real refresh-#58 fixture: Qwen3.8 1 post vs Bonsai); a viral post no longer able to lead; speed ignored or earned by datacenter / > 48 GB parts; VRAM parsing; duplicate placeholder posts after a `tps` rewrite; real posts lost; README Trend cell; validator not catching a reordered table or a wrong score |
+| `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |
 | `make search-smoke` (live, 3 s/attempt, 1 retry on timeout/429/5xx) | lightbrd mirror / Firecrawl key down, per backend. An uncached scrape can miss 3 s once (Firecrawl finishes and caches it server-side), so a transient miss gets ONE more 3 s attempt; auth errors (401/403) never retry. Retry policy unit-tested in `tests/test_smoke_search.py` |

@@ -176,12 +176,35 @@ def _is_post_url(url: str) -> bool:
 def _post_key(p: dict) -> str:
     """Identity of a seen post. A real post URL is its own identity (the same
     post re-scanned across overlapping windows collapses). A placeholder URL
-    is keyed by url+date+engine+tps so distinct measurements that share
-    'https://lightbrd.com/' are not collapsed into one fake post."""
+    is keyed by url+date+engine+hardware+quant so distinct measurements that
+    share 'https://lightbrd.com/' are not collapsed into one fake post. NEVER
+    key on tps: merge_engines rewrites it ('60-91' -> '91'), which used to mint
+    a duplicate 'post' on every re-sort (quant/hardware are never rewritten)."""
     url = p.get("url", "")
     if _is_post_url(url):
         return url
-    return f"{url}#{p.get('date', '')}#{p.get('engine', '')}#{p.get('tps', '')}"
+    norm = lambda k: (p.get(k) or "").strip().lower()  # noqa: E731
+    return f"{url}#{p.get('date', '')}#{p.get('engine', '')}#{norm('hardware')}#{norm('quant')}"
+
+
+def post_buzz(p: dict) -> float:
+    """Trend contribution of ONE distinct post: breadth first, engagement
+    log-dampened.
+        1 + 0.5*log2(1 + likes + 2*comments + 3*reshares) + 0.25*log10(1 + views)
+    Every post counts at least 1, so breadth dominates: a post with <= 10
+    interactions is worth < 4 posts (2 likes + 4 comments + 310 views ~ 2.4),
+    while a genuinely viral post still stands out (5,000 likes + 10k views ~
+    8.2, i.e. about 8 ordinary posts). Unknown counts read as 0 — the base 1,
+    never a penalty."""
+    import math
+
+    def n(k):
+        try:
+            return max(0.0, float(p.get(k) or 0))
+        except (TypeError, ValueError):
+            return 0.0
+    inter = n("likes") + 2 * n("comments") + 3 * n("reshares")
+    return 1.0 + 0.5 * math.log2(1.0 + inter) + 0.25 * math.log10(1.0 + n("views"))
 
 
 def dedupe_posts(posts: list) -> list[dict]:
@@ -233,16 +256,29 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     A row with no posts gets zeros — a legacy cumulative counter must never
     dominate the trending rank."""
     eng = m.setdefault("engagement", {})
-    posts = dedupe_posts(list(eng.get("seen_posts", [])) + _collect_seen_posts(m))
+    # Real posts (…/status/<id>) persist in seen_posts. Placeholder posts are
+    # DERIVED state: rebuilt from the current measurements on every sort, so a
+    # merge that rewrites a measurement can never leave a stale duplicate.
+    stored_real = [p for p in (_as_post(x) for x in eng.get("seen_posts", [])) if _is_post_url(p.get("url", ""))]
+    posts = dedupe_posts(stored_real + _collect_seen_posts(m))
     posts = prune_posts(posts, today)
     eng["seen_posts"] = posts
     cutoff = (today - timedelta(days=TRENDING_WINDOW_DAYS)).strftime("%Y-%m-%d")
     recent = [p for p in posts if _post_date(p) >= cutoff]
+    buzz = round(sum(post_buzz(p) for p in recent), 1)
+    best = best_in_scope(m) if recent else None
+    speed = speed_bonus(_tps_core(best.get("tps"))) if best else 0.0
     eng["posts_7d"] = len(recent)
-    eng["score_7d"] = round(sum(_eng_weight(p) for p in recent), 1)
+    eng["buzz_7d"] = buzz
+    eng["score_7d"] = buzz  # back-compat alias of buzz_7d
+    eng["speed_bonus"] = speed
+    eng["trend_score"] = round(buzz + speed, 1)
     eng["last_7d_likes"] = len(recent)
-    # keep last_seen in sync with the newest post (or today if none)
-    dates = [d for d in (_post_date(p) for p in posts) if d]
+    # last_seen = the newest DATA date (measurement or post), never the time
+    # the merge ran: re-ingesting an old raw snapshot used to stamp today and
+    # promote a June measurement to 'trending'.
+    dates = [d for d in [_post_date(p) for p in posts] + [e.get("date", "") for e in m.get("engines", [])]
+             if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d or "")]
     if dates:
         m["last_seen"] = max(dates)
 
@@ -275,7 +311,7 @@ def sort_models(models: list[dict], today: datetime) -> list[dict]:
         models,
         key=lambda m: (
             model_band(m, today),
-            -m["engagement"].get("score_7d", 0),
+            -m["engagement"].get("trend_score", 0),
             -m["engagement"].get("posts_7d", 0),
             -peak_tps(m),
             m["name"].lower(),
@@ -352,6 +388,68 @@ def measurement_backend(e: dict, registry: dict | None = None) -> str:
     return "CUDA"
 
 
+# ---- speed component of the trend score ------------------------------------
+# The index is about consumer / workstation hardware (AGENTS rule 6: 8-48 GB
+# GPUs, plus Apple and CPU as first-class backends). Only measurements on that
+# hardware earn the speed bonus; a datacenter figure never does.
+MAX_SCOPE_VRAM_GB = 48
+_DATACENTER_HW = ("h100", "h200", "h800", "a100", "a800", "b100", "b200", "gb200", "gb300",
+                  "mi250", "mi300", "mi325", "mi355", "tpu", "gaudi")
+# Known consumer cards -> VRAM (GB). Laptop variants listed first (more specific).
+_CARD_VRAM = (
+    ("5090 laptop", 24), ("4090 laptop", 16), ("5080 laptop", 16), ("4080 laptop", 12),
+    ("5090", 32), ("5080", 16), ("5070 ti", 16), ("5070", 12), ("5060 ti", 16), ("5060", 8),
+    ("4090", 24), ("4080", 16), ("4070 ti super", 16), ("4070 ti", 12), ("4070", 12),
+    ("4060 ti", 16), ("4060", 8), ("3090", 24), ("3080 ti", 12), ("3080", 10),
+    ("3070", 8), ("3060 ti", 8), ("3060", 12), ("a6000", 48), ("l40", 48),
+)
+
+
+def hardware_vram_gb(hw: str) -> float | None:
+    """Total GPU memory the hardware string implies, or None if unknown.
+    An explicit 'NN GB' wins; otherwise a known card. 'Nx' multiplies
+    ('2x RTX 3090' -> 48)."""
+    h = (hw or "").lower()
+    mult = 1
+    mm = re.search(r"(\d+)\s*x\s*(?=[a-z])", h)
+    if mm:
+        mult = int(mm.group(1))
+    m = re.search(r"(\d+(?:\.\d+)?)\s*gb", h)
+    if m:
+        return float(m.group(1)) * mult
+    for card, gb in _CARD_VRAM:
+        if card in h:
+            return float(gb * mult)
+    return None
+
+
+def in_scope(e: dict) -> bool:
+    """True when a measurement ran on consumer/workstation hardware: not a
+    datacenter part and not more than MAX_SCOPE_VRAM_GB of GPU memory. Apple
+    and CPU measurements are in scope (first-class backends); unified-memory
+    Macs are judged by platform, not by their RAM size."""
+    h = (e.get("hardware") or "").lower()
+    if any(k in h for k in _DATACENTER_HW):
+        return False
+    if "apple" in h or "mac" in h or measurement_backend(e) in ("Metal", "CPU"):
+        return True
+    vram = hardware_vram_gb(h)
+    return vram is None or vram <= MAX_SCOPE_VRAM_GB
+
+
+def best_in_scope(m: dict) -> dict | None:
+    """Fastest measurement on in-scope hardware (the figure the speed bonus uses)."""
+    return best_measurement([e for e in m.get("engines", []) if in_scope(e)])
+
+
+def speed_bonus(tps: float) -> float:
+    """log2(1 + tps/10): 10 t/s -> +1, 70 -> +3, 150 -> +4, 630 -> +6. Rewards
+    fast models on the hardware that matters, log-scaled so one spec-decode
+    outlier can't swamp the engagement signal."""
+    import math
+    return round(math.log2(1.0 + max(0.0, tps) / 10.0), 1)
+
+
 def best_measurement(es: list[dict]) -> dict | None:
     """Highest t/s core; newest date breaks a tie."""
     if not es:
@@ -373,6 +471,20 @@ def _fmt_num(x: float) -> str:
 def _cell(text) -> str:
     """Make free text safe inside a markdown table cell."""
     return str(text or "").replace("|", "\\|").replace("\n", " ").strip()
+
+
+def trend_cell(m: dict) -> str:
+    """Most-loved 'Trend' cell: the score, then how it was built."""
+    eng = m.get("engagement", {})
+    posts = eng.get("posts_7d", 0)
+    if not posts:
+        return "**0**<br><sub>no posts in 7 days</sub>"
+    sub = f"buzz {_fmt_num(eng.get('buzz_7d', 0))} · {posts} post{'s' if posts != 1 else ''}"
+    best = best_in_scope(m)
+    if best and eng.get("speed_bonus", 0):
+        hw = f", {_cell(best.get('hardware'))}" if best.get("hardware") else ""
+        sub += f" · speed +{_fmt_num(eng['speed_bonus'])} ({best['tps']} t/s{hw})"
+    return f"**{_fmt_num(eng.get('trend_score', 0))}**<br><sub>{sub}</sub>"
 
 
 def render_readme(store: dict, today: datetime) -> str:
@@ -427,8 +539,7 @@ def render_readme(store: dict, today: datetime) -> str:
         sub = " · ".join(_cell(x) for x in (m.get("full_name"), m.get("params"), m.get("license")) if x)
         model_cell = f"[**{m['name']}**]({hf_url(m)})" + (f"<br><sub>{sub}</sub>" if sub else "")
         status = BAND_LABEL[model_band(m, today)] + (f"<br><sub>last seen {m['last_seen']}</sub>" if m.get("last_seen") else "")
-        posts = eng.get("posts_7d", 0)
-        buzz = f"{_fmt_num(eng.get('score_7d', 0))}<br><sub>{posts} post{'s' if posts != 1 else ''}</sub>"
+        buzz = trend_cell(m)
         bb = by_backend(m)
         loved.append(
             f"| {model_cell} | {status} | {buzz} | {best_cell(bb['CUDA'])} | {best_cell(bb['Metal'])} "
@@ -503,17 +614,21 @@ def render_readme(store: dict, today: datetime) -> str:
 
 A living, detailed list of **open-weight** LLMs that actually make a difference for local deployment. Every figure is **community-reported on X** (real benchmark posts, not vendor claims), with the hardware and engine it was measured on. This README is **automatically regenerated** from `data/models.json` — see [AGENTS.md](AGENTS.md) and `skills/gather-data.md`.
 
-**How the ranking works.** Models are grouped 🔥 **trending** (seen in the last {TRENDING_WINDOW_DAYS} days) → 🕑 **recent** (last {RETENTION_DAYS} days) → 💤 **stale** (older, kept with their last measurement date). Within a group they rank by **7-day buzz**: for every distinct X post in the last {TRENDING_WINDOW_DAYS} days, likes + 2×comments + 3×reshares + log10(views+1) (at least 1 per post); ties go to the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
+**How the ranking works.** Models are grouped 🔥 **trending** (seen in the last {TRENDING_WINDOW_DAYS} days) → 🕑 **recent** (last {RETENTION_DAYS} days) → 💤 **stale** (older, kept with their last measurement date). Within a group they rank by **Trend = buzz + speed**:
+- **buzz** — for every distinct X post in the last {TRENDING_WINDOW_DAYS} days: 1 + 0.5×log2(1 + likes + 2×comments + 3×reshares) + 0.25×log10(1 + views). Every post counts, so a model many people are posting about beats one post with a few interactions; engagement adds on top with diminishing returns.
+- **speed** — log2(1 + t/s ÷ 10) for the model's fastest measurement on consumer hardware (GPUs up to {MAX_SCOPE_VRAM_GB} GB, Apple Silicon, CPU; datacenter parts never count), only while it is trending: 10 t/s → +1, 70 → +3, 150 → +4.
+
+Ties go to more posts, then the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
 > Last generated: {now_s}. Source: lightbrd.com mirror (X posts).
 
 ---
 
-## ❤️ Most loved open-weight models on X (ranked by 7-day engagement)
+## ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)
 
 Best measured t/s per backend; the full list of measurements is in the backend tables below.
 
-| Model | Status | 7-day buzz | CUDA t/s (best) | Metal t/s (best) | CPU t/s (best) | VRAM | Why people love it |
+| Model | Status | Trend | CUDA t/s (best) | Metal t/s (best) | CPU t/s (best) | VRAM | Why people love it |
 |---|---|---|---|---|---|---|---|
 {most_loved}
 
@@ -597,7 +712,8 @@ def _collect_seen_posts(m: dict) -> list[dict]:
         url = e.get("source_post", "")
         if not url or not e.get("date"):
             continue
-        p = {"url": url, "date": e["date"], "engine": e.get("engine", ""), "tps": str(e.get("tps", ""))}
+        p = {"url": url, "date": e["date"], "engine": e.get("engine", ""), "tps": str(e.get("tps", "")),
+             "hardware": e.get("hardware", "") or "", "quant": e.get("quant", "") or ""}
         for k in _POST_SIGNALS:
             try:
                 p[k] = max(0, int(float(e.get(k) or 0)))
@@ -775,7 +891,7 @@ _REQ_ENGINE_FIELDS = ("engine", "tps", "date")
 _MODEL_CONTRACT = ROOT / "data" / "model_contract.json"
 _FALLBACK_ENGAGEMENT_KEYS = frozenset(
     {"likes", "comments", "views", "reshares", "interactions", "last_7d_likes", "posts_7d",
-     "score_7d", "seen_posts"})
+     "score_7d", "buzz_7d", "speed_bonus", "trend_score", "seen_posts"})
 
 
 def _engagement_props() -> dict:
@@ -784,7 +900,7 @@ def _engagement_props() -> dict:
         return c["properties"]["models"]["items"]["properties"]["engagement"]["properties"]
     except Exception:  # noqa: BLE001 — contract missing/malformed: use the known set
         return {k: {"type": "integer"} for k in _FALLBACK_ENGAGEMENT_KEYS if k != "seen_posts"} | {
-            "seen_posts": {"type": "array"}, "score_7d": {"type": "number"}}
+            "seen_posts": {"type": "array"}} | {k: {"type": "number"} for k in ("score_7d", "buzz_7d", "speed_bonus", "trend_score")}
 
 
 def _engagement_keys() -> frozenset:

@@ -1,0 +1,553 @@
+{
+  "generated_utc": "2026-10-02T00:24:35Z",
+  "engines": {
+    "llama.cpp": {
+      "backend": "CUDA / CPU / Metal",
+      "note": "Max control, custom quants",
+      "url": "https://github.com/ggml-org/llama.cpp"
+    },
+    "Ollama": {
+      "backend": "CUDA / CPU / Metal",
+      "note": "Easiest start",
+      "url": "https://github.com/ollama/ollama"
+    },
+    "FreeToken": {
+      "backend": "CUDA",
+      "note": "Big MoE on small GPUs",
+      "url": "https://github.com/FlashML-org/FreeToken"
+    },
+    "vLLM": {
+      "backend": "CUDA",
+      "note": "Production serving, high throughput",
+      "url": "https://github.com/vllm-project/vllm"
+    },
+    "SGLang": {
+      "backend": "CUDA",
+      "note": "High-throughput serving",
+      "url": "https://github.com/sgl-project/sglang"
+    },
+    "MLX": {
+      "backend": "Metal",
+      "note": "Fastest on Apple Silicon",
+      "url": "https://github.com/ml-explore/mlx"
+    },
+    "TensorFold": {
+      "backend": "Metal",
+      "note": "Speculative decoding on Mac, 3-6x",
+      "url": "https://github.com/ashhart/TensorFold"
+    },
+    "TensorRT-LLM": {
+      "backend": "CUDA",
+      "note": "Max NVIDIA perf",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM"
+    },
+    "LiteRT": {
+      "backend": "CUDA / Metal",
+      "note": "Google local runtime",
+      "url": "https://github.com/google-ai-edge/LiteRT"
+    },
+    "Strata": {
+      "backend": "CUDA",
+      "note": "Runs big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA GPUs; experts across GPU/RAM/SSD, speculative decoding ~1.6-1.8x",
+      "url": "https://github.com/Niko1221/Strata"
+    },
+    "MLX-fast (Bonsai 2)": {
+      "backend": "Metal",
+      "note": "Speedup benchmark engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s decode on 16 GB Mac (mlx.fast, Yukon/Layr-Labs)",
+      "url": "https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine"
+    },
+    "DFlash2": {
+      "backend": "CUDA",
+      "note": "Speculative decoding + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat, up to ~381 tok/s context-lookup on 24 GB RTX 3090",
+      "url": "https://github.com/z-lab/dflash"
+    },
+    "WebLLM": {
+      "backend": "CUDA / Metal",
+      "note": "In-browser LLM inference accelerated with WebGPU (MLC-LLM).",
+      "url": "https://github.com/mlc-ai/web-llm"
+    }
+  },
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "44",
+          "hardware": "DGX Spark",
+          "quant": "DFlash2 spec-decode draft head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 310,
+          "interactions": 0
+        },
+        {
+          "engine": "SGLang",
+          "tps": "12",
+          "hardware": "DGX Spark",
+          "quant": "no spec-decode",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 310,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "124",
+          "hardware": "MacBook Pro M5 Max",
+          "quant": "4-bit MLX",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RTX 5090 Laptop",
+          "quant": "Q4_K_M",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "engagement": {
+        "likes": 4120,
+        "comments": 890,
+        "views": 384000,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-20",
+            "engine": "TensorFold",
+            "tps": "120-124",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-18",
+            "engine": "llama.cpp",
+            "tps": "35.5-43.7",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
+            "date": "2026-09-29",
+            "engine": "SGLang",
+            "tps": "44",
+            "likes": 2,
+            "comments": 4,
+            "reshares": 0,
+            "views": 310
+          },
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-20",
+            "engine": "TensorFold",
+            "tps": "124",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-18",
+            "engine": "llama.cpp",
+            "tps": "43.7",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 1,
+        "score_7d": 12.5
+      },
+      "last_seen": "2026-09-29",
+      "supported_engines": [
+        "TensorFold",
+        "llama.cpp"
+      ],
+      "vram_min": "12GB"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "71",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "ternary, author conditions",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/ivyxon_jp/status/2105625789761011752",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 133,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "54.1",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "ternary, Japanese text",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/ivyxon_jp/status/2105625789761011752",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 133,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "91",
+          "hardware": "RTX 4070 12GB",
+          "quant": "PTQ1_0-mtp-lean (6.3 GB)",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/MarkRijckenberg",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "MTP + kernel fix",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237",
+          "hardware": "Apple Silicon 16GB Mac",
+          "quant": "mlx.fast 4-bit",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 5090",
+          "quant": "ternary",
+          "date": "2026-09-18",
+          "source_post": "https://siliconangle.com/2026/09/18/prismml-launches-bonsai-2-27b-a-high-intelligence-ai-model-so-small-it-fits-on-consumer-hardware/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards.",
+      "engagement": {
+        "likes": 2750,
+        "comments": 640,
+        "views": 84563,
+        "last_7d_likes": 9,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/sudoingX",
+            "date": "2026-09-27",
+            "engine": "llama.cpp",
+            "tps": "67-71",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/MarkRijckenberg",
+            "date": "2026-09-26",
+            "engine": "llama.cpp",
+            "tps": "60-91",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1",
+            "date": "2026-09-26",
+            "engine": "llama.cpp",
+            "tps": "~50",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/pratikg",
+            "date": "2026-09-26",
+            "engine": "MLX-fast (Bonsai 2)",
+            "tps": "~237",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://siliconangle.com/2026/09/18/prismml-launches-bonsai-2-27b-a-high-intelligence-ai-model-so-small-it-fits-on-consumer-hardware/",
+            "date": "2026-09-18",
+            "engine": "llama.cpp",
+            "tps": "143",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/sudoingX/status/2105701032420687988",
+            "date": "2026-10-01",
+            "engine": "llama.cpp",
+            "tps": "67",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/ivyxon_jp/status/2105625789761011752",
+            "date": "2026-10-01",
+            "engine": "llama.cpp",
+            "tps": "65.3",
+            "likes": 1,
+            "comments": 0,
+            "reshares": 0,
+            "views": 133
+          },
+          {
+            "url": "https://lightbrd.com/MarkRijckenberg",
+            "date": "2026-09-26",
+            "engine": "llama.cpp",
+            "tps": "91",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1",
+            "date": "2026-09-26",
+            "engine": "llama.cpp",
+            "tps": "50",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/pratikg",
+            "date": "2026-09-26",
+            "engine": "MLX-fast (Bonsai 2)",
+            "tps": "237",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 9,
+        "score_7d": 11.1
+      },
+      "last_seen": "2026-10-01",
+      "supported_engines": [
+        "llama.cpp",
+        "MLX-fast (Bonsai 2)"
+      ],
+      "vram_min": "8GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "93",
+          "hardware": "RTX 5070 12GB",
+          "quant": "MoE, experts across GPU/RAM/SSD",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 188,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "Strata"
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+            "date": "2026-10-01",
+            "engine": "Strata",
+            "tps": "93",
+            "likes": 2,
+            "comments": 0,
+            "reshares": 0,
+            "views": 188
+          }
+        ],
+        "posts_7d": 1,
+        "score_7d": 4.3
+      }
+    },
+    {
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "full_name": "Qwen3-8B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-8B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "Qwen/Qwen3-8B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "100",
+          "hardware": "RTX 4060",
+          "quant": "Q4_K_M",
+          "date": "2026-09-12",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "The default 8 GB pick. Fast, Apache 2.0.",
+      "engagement": {
+        "likes": 1650,
+        "comments": 290,
+        "views": 84000,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-12",
+            "engine": "Ollama",
+            "tps": "100",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 0,
+        "score_7d": 0
+      },
+      "last_seen": "2026-09-12",
+      "supported_engines": [
+        "Ollama"
+      ],
+      "vram_min": "4GB"
+    }
+  ]
+}

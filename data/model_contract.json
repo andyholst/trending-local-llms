@@ -282,6 +282,14 @@
                       "type": "integer",
                       "minimum": 0,
                       "description": "views on this post (optional)."
+                    },
+                    "hardware": {
+                      "type": "string",
+                      "description": "Hardware of the measurement this post reported (optional; part of a placeholder post's identity)."
+                    },
+                    "quant": {
+                      "type": "string",
+                      "description": "Quant of the measurement this post reported (optional; part of a placeholder post's identity)."
                     }
                   },
                   "additionalProperties": false
@@ -305,7 +313,22 @@
               "score_7d": {
                 "type": "number",
                 "minimum": 0,
-                "description": "7-day buzz: sum over posts_7d of likes + 2*comments + 3*reshares + log10(views+1), min 1 per post (computed by sort_models)."
+                "description": "Back-compat alias of buzz_7d."
+              },
+              "buzz_7d": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Breadth-first 7-day buzz: sum over posts_7d of 1 + 0.5*log2(1 + likes + 2*comments + 3*reshares) + 0.25*log10(1 + views) (computed by sort_models)."
+              },
+              "speed_bonus": {
+                "type": "number",
+                "minimum": 0,
+                "description": "log2(1 + t/s / 10) of the fastest in-scope (consumer, <=48 GB / Apple / CPU) measurement; 0 when no posts in 7 days (computed by sort_models)."
+              },
+              "trend_score": {
+                "type": "number",
+                "minimum": 0,
+                "description": "buzz_7d + speed_bonus — the within-band rank key (computed by sort_models)."
               }
             },
             "additionalProperties": false

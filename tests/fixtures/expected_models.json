@@ -56,6 +56,8 @@
             "date": "2026-09-28",
             "engine": "llama.cpp",
             "tps": "50",
+            "hardware": "RTX 3060",
+            "quant": "Q4",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -63,7 +65,10 @@
           }
         ],
         "posts_7d": 1,
-        "score_7d": 1.0
+        "buzz_7d": 1.0,
+        "score_7d": 1.0,
+        "speed_bonus": 2.6,
+        "trend_score": 3.6
       },
       "last_seen": "2026-09-28"
     },
@@ -116,6 +121,8 @@
             "date": "2026-09-28",
             "engine": "llama.cpp",
             "tps": "80",
+            "hardware": "RTX 4090",
+            "quant": "Q4",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -123,7 +130,10 @@
           }
         ],
         "posts_7d": 1,
-        "score_7d": 1.0
+        "buzz_7d": 1.0,
+        "score_7d": 1.0,
+        "speed_bonus": 3.2,
+        "trend_score": 4.2
       },
       "last_seen": "2026-09-28"
     }
