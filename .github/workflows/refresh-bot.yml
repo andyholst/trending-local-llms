@@ -40,28 +40,37 @@ env:
 jobs:
   # Gate EVERY job: a scheduled run passes; a manual dispatch (or a re-run)
   # passes only when both the actor and the triggering actor are the repo
-  # owner. Previously only the search job checked, and `aggregate`
+  # owner or a collaborator with write/maintain/admin. Previously only the search job checked, and `aggregate`
   # (if: always()) still ran — with secrets and the owner PAT — on a refusal.
   guard:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Owner-only trigger guard
+      - name: Owner / collaborator trigger guard
         env:
           EVENT: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
           TRIGGER: ${{ github.triggering_actor }}
           OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "$EVENT" = "schedule" ]; then
             echo "Scheduled run - allowed."
             exit 0
           fi
-          if [ "$ACTOR" != "$OWNER" ] || [ "$TRIGGER" != "$OWNER" ]; then
-            echo "Refused: only the repository owner ($OWNER) may run refresh-bot (actor=$ACTOR, triggering_actor=$TRIGGER)."
-            exit 1
-          fi
-          echo "Owner confirmed: $ACTOR"
+          # Owner, or a collaborator with write/maintain/admin, for BOTH the
+          # actor and the triggering actor (covers re-runs). Anything else -
+          # including an API error - is refused.
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
 
   # Build the image ONCE and push it to GHCR. The search + aggregate jobs PULL
   # this prebuilt image instead of rebuilding — so the Hermes install

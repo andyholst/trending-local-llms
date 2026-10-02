@@ -172,20 +172,50 @@ def _deps(jobs: dict, name: str) -> set:
 
 
 def _guard_ok(run: str) -> bool:
-    return ("github.repository_owner" in run or "$OWNER" in run) and "TRIGGER" in run and "ACTOR" in run
+    return ("$OWNER" in run and "$TRIGGER" in run and "$ACTOR" in run
+            and "collaborators/$u/permission" in run and "admin|maintain|write)" in run)
+
+
+def _guard_step(wf_name: str, job: str) -> dict:
+    jobs = load(wf_name)["jobs"]
+    return next(st for st in steps(jobs[job]) if "guard" in st.get("name", "").lower())
+
+
+def _run_guard(step: dict, event: str, actor: str, trigger: str, perms: dict) -> tuple[int, str]:
+    """Execute the REAL guard script from the workflow YAML with a stub `gh`
+    that answers the collaborator-permission API from `perms` (404 -> exit 1)."""
+    import os
+    import subprocess
+    import tempfile
+    td = Path(tempfile.mkdtemp())
+    table = "\n".join(f"{u}={p}" for u, p in perms.items())
+    (td / "perms").write_text(table + "\n")
+    gh = td / "gh"
+    gh.write_text(f"""#!/usr/bin/env bash
+u=$(echo "$2" | sed -E 's#.*/collaborators/([^/]+)/permission#\\1#')
+p=$(grep -E "^$u=" "{td}/perms" | cut -d= -f2)
+[ -z "$p" ] && {{ echo '{{"message":"Not Found"}}' >&2; exit 1; }}
+echo "$p"
+""")
+    gh.chmod(0o755)
+    env = dict(os.environ, PATH=f"{td}:{os.environ['PATH']}", EVENT=event, ACTOR=actor, TRIGGER=trigger,
+               OWNER="andyholst", REPO="andyholst/trending-local-llms", GH_TOKEN="x")
+    p = subprocess.run(["bash", "-e", "-c", step["run"]], env=env, capture_output=True, text=True, timeout=30)
+    return p.returncode, p.stdout
 
 
 def test_owner_guards():
-    """#67: every refresh-bot job is gated by an owner check that also covers
-    re-runs (triggering_actor); aggregate can't run on a refused guard; fix-bot
-    checks the owner before any step that touches a secret."""
+    """#67: every refresh-bot job is gated by a guard that allows ONLY the
+    owner or a collaborator with write/maintain/admin (for the actor AND the
+    triggering actor, so re-runs are covered); aggregate can't run on a
+    refused guard; fix-bot checks before any step that touches a secret."""
     wf = load("refresh-bot.yml")
     jobs = wf["jobs"]
     g = jobs.get("guard", {})
     gstep = (steps(g) or [{}])[0]
     genv = gstep.get("env", {})
     check("access: refresh-bot has a 'guard' job", bool(g), list(jobs))
-    check("access: guard compares actor AND triggering_actor to the owner",
+    check("access: guard checks actor AND triggering_actor: owner or write+ collaborator",
           "github.actor" in str(genv.get("ACTOR")) and "github.triggering_actor" in str(genv.get("TRIGGER"))
           and "repository_owner" in str(genv.get("OWNER")) and _guard_ok(gstep.get("run", "")), genv)
     check("access: guard lets the daily schedule through", '"schedule"' in gstep.get("run", ""))
@@ -204,11 +234,35 @@ def test_owner_guards():
 
     fb = load("fix-bot.yml")["jobs"]["fix"]
     first = (steps(fb) or [{}])[0]
-    check("access: fix-bot's FIRST step is the owner guard", "owner" in first.get("name", "").lower(), first.get("name"))
-    check("access: fix-bot guard checks actor AND triggering_actor",
+    check("access: fix-bot's FIRST step is the trigger guard", "guard" in first.get("name", "").lower(), first.get("name"))
+    check("access: fix-bot guard checks actor AND triggering_actor: owner or write+ collaborator",
           "github.triggering_actor" in str(first.get("env", {}).get("TRIGGER")) and _guard_ok(first.get("run", "")))
     secret_steps = [i for i, st in enumerate(steps(fb)) if "secrets." in str(st)]
     check("access: no fix-bot step uses a secret before the guard", min(secret_steps or [99]) > 0, secret_steps)
+
+
+def test_guard_behaviour():
+    """Run the real guard scripts (refresh-bot + fix-bot) for every kind of caller."""
+    perms = {"alice": "write", "bob": "maintain", "carol": "admin", "eve": "read", "mallory": "triage"}
+    cases = [
+        ("schedule", "github-actions[bot]", "github-actions[bot]", 0, "scheduled run"),
+        ("workflow_dispatch", "andyholst", "andyholst", 0, "owner dispatch"),
+        ("workflow_dispatch", "alice", "alice", 0, "write collaborator"),
+        ("workflow_dispatch", "bob", "bob", 0, "maintain collaborator"),
+        ("workflow_dispatch", "carol", "andyholst", 0, "admin collaborator re-run of owner run"),
+        ("workflow_dispatch", "eve", "eve", 1, "read-only collaborator"),
+        ("workflow_dispatch", "mallory", "mallory", 1, "triage collaborator"),
+        ("workflow_dispatch", "stranger", "stranger", 1, "non-collaborator (API 404)"),
+        ("workflow_dispatch", "andyholst", "stranger", 1, "stranger re-running an owner run"),
+    ]
+    for wf_name, job in (("refresh-bot.yml", "guard"), ("fix-bot.yml", "fix")):
+        step = _guard_step(wf_name, job)
+        for event, actor, trigger, want, label in cases:
+            if wf_name == "fix-bot.yml" and event == "schedule":
+                continue  # fix-bot has no schedule trigger
+            rc, out = _run_guard(step, event, actor, trigger, perms)
+            verdict = "allowed" if want == 0 else "refused"
+            check(f"guard {wf_name}: {label} -> {verdict}", (rc == 0) == (want == 0), f"rc={rc} {out.strip()[-120:]}")
 
 
 def test_nothing_pushes_master():
@@ -226,6 +280,7 @@ def main() -> int:
     test_qa_validate()
     test_fix_bot()
     test_owner_guards()
+    test_guard_behaviour()
     test_nothing_pushes_master()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

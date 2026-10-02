@@ -53,20 +53,35 @@ jobs:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       FIX_ROUNDS: "3"
     steps:
-      # Before anything touches a secret: only the repository owner may run
-      # fix-bot (it spends the Nous key and pushes with the owner PAT).
-      # qa-validate dispatches it with the owner PAT, so its actor IS the owner.
-      - name: Owner-only trigger guard
+      # Before anything touches a secret: only the owner or a collaborator
+      # with write access may run fix-bot (it spends the Nous key and pushes
+      # with the owner PAT). qa-validate dispatches it with the owner PAT, so
+      # its actor IS the owner.
+      - name: Owner / collaborator trigger guard
         env:
+          EVENT: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
           TRIGGER: ${{ github.triggering_actor }}
           OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$ACTOR" != "$OWNER" ] || [ "$TRIGGER" != "$OWNER" ]; then
-            echo "Refused: only the repository owner ($OWNER) may run fix-bot (actor=$ACTOR, triggering_actor=$TRIGGER)."
-            exit 1
+          if [ "$EVENT" = "schedule" ]; then
+            echo "Scheduled run - allowed."
+            exit 0
           fi
-          echo "Owner confirmed: $ACTOR"
+          # Owner, or a collaborator with write/maintain/admin, for BOTH the
+          # actor and the triggering actor (covers re-runs). Anything else -
+          # including an API error - is refused.
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
 
       - name: Resolve PR
         id: pr
