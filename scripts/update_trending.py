@@ -321,16 +321,27 @@ _CUDA_HW = ("rtx", "nvidia", "cuda", "geforce", "tesla", "a100", "h100", "l40", 
 BACKENDS = ("CUDA", "Metal", "CPU")
 
 
-def measurement_backend(e: dict) -> str:
+def registry_backend(engine: str, registry: dict | None) -> str | None:
+    """The single backend the engine registry declares for `engine`
+    ('Metal', 'CUDA' or 'CPU'), or None when it lists several / is unknown."""
+    raw = ((registry or {}).get(engine) or {}).get("backend", "")
+    parts = [x.strip() for x in re.split(r"[/,|+]", raw) if x.strip()]
+    return parts[0] if len(parts) == 1 and parts[0] in BACKENDS else None
+
+
+def measurement_backend(e: dict, registry: dict | None = None) -> str:
     """Which backend table a measurement belongs to: CUDA, Metal or CPU.
-    Priority: explicit Apple/CPU hardware -> single-backend engine -> GPU/Apple
-    keywords in hardware+quant -> CUDA (default until evidence says otherwise)."""
+    Priority: explicit Apple/CPU hardware -> the engine registry when it names
+    ONE backend -> the built-in single-backend map -> GPU/Apple keywords in
+    hardware+quant -> CUDA (default until evidence says otherwise). Pass the
+    store's `engines` registry so a new registry-only engine (e.g. a Mac-only
+    server) never falls through to the CUDA default."""
     hw = (" " + (e.get("hardware") or "") + " ").lower()
     if "apple" in hw or "mac" in hw:
         return "Metal"
     if any(k in hw for k in _CPU_HW) and not any(k in hw for k in _CUDA_HW):
         return "CPU"
-    b = ENGINE_BACKEND.get(e.get("engine", ""))
+    b = registry_backend(e.get("engine", ""), registry) or ENGINE_BACKEND.get(e.get("engine", ""))
     if b:
         return b
     text = hw + " " + (e.get("quant") or "").lower() + " "
@@ -395,7 +406,7 @@ def render_readme(store: dict, today: datetime) -> str:
     def by_backend(m: dict) -> dict[str, list[dict]]:
         out: dict[str, list[dict]] = {b: [] for b in BACKENDS}
         for e in m.get("engines", []):
-            out[measurement_backend(e)].append(e)
+            out[measurement_backend(e, registry)].append(e)
         return out
 
     # ---- 1. most loved -------------------------------------------------------
@@ -439,7 +450,7 @@ def render_readme(store: dict, today: datetime) -> str:
             parts = []
             for b in BACKENDS:
                 best = best_measurement([e for e in m.get("engines", [])
-                                         if e.get("engine") == k and measurement_backend(e) == b])
+                                         if e.get("engine") == k and measurement_backend(e, registry) == b])
                 if best:
                     parts.append(f"{BACKEND_LABEL[b][0]} {best['tps']}")
             cells.append("<br>".join(parts) or "—")
