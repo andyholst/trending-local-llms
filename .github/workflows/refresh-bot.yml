@@ -173,6 +173,13 @@ jobs:
         run: |
           make search-${{ matrix.backend }}
 
+      # Report NOW (not first at PR CI) any engine this leg found that isn't
+      # registered, and what ingest will decide: registered (real engine with
+      # a verified GitHub repo) / not-engine (harness, app, benchmark) /
+      # unknown / no-repo. Report only — never fails the leg.
+      - name: Engine check (report only)
+        run: make engine-check
+
       - name: Upload raw snapshot
         uses: actions/upload-artifact@v4
         with:
@@ -219,6 +226,9 @@ jobs:
           path: data/raw
           pattern: raw-*
           merge-multiple: true
+
+      - name: Engine check across all legs (report only)
+        run: make engine-check
 
       - name: Merge + validate + test (in container)
         run: |

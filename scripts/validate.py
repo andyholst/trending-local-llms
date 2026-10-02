@@ -186,6 +186,31 @@ def check_latest_tps(store: dict) -> None:
         print(f"  OK: all models ordered newest t/s date first (latest trending t/s surfaced)")
 
 
+def check_engine_kind(store: dict) -> None:
+    """Only INFERENCE ENGINES belong in the registry. Fails an entry whose url
+    or name is a known non-engine (scripts/engine_registry.NON_ENGINE_REPOS /
+    NON_ENGINE_NAMES — e.g. deepseek-ai/deepseek-harness, an agent harness that
+    fix-bot registered as a CPU engine on refresh PR #72), and an auto-registered
+    entry (auto: true) whose note doesn't cite where it came from."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import engine_registry as er
+    finally:
+        sys.path.pop(0)
+    bad = 0
+    for name, v in store.get("engines", {}).items():
+        slug = er.repo_slug(v.get("url", ""))
+        if slug in er.NON_ENGINE_REPOS or re.sub(r"[^a-z0-9]", "", name.lower()) in er.NON_ENGINE_NAMES:
+            bad += 1
+            fail(f"engine-kind: '{name}' ({v.get('url')}) is not an inference engine (harness/app/benchmark) — "
+                 f"do not register it; record the runtime the post actually used")
+        if v.get("auto") and "Auto-registered" not in (v.get("note") or ""):
+            bad += 1
+            fail(f"engine-kind: auto-registered '{name}' must cite its source in the note")
+    if not bad:
+        print(f"  OK: all {len(store.get('engines', {}))} registered engines are inference engines")
+
+
 def check_engine_aliases(store: dict) -> None:
     """A model's engine_aliases ({posted name: registry name}) must point at a
     registered engine with a known-good repo URL, and NO measurement or
@@ -994,6 +1019,7 @@ def main() -> int:
     add("latest t/s surfaced", "data", lambda: check_latest_tps(store))
     add("supported engines", "data", lambda: check_supported_engines(store))
     add("engine aliases (model-specific forks)", "data", lambda: check_engine_aliases(store))
+    add("registry holds only inference engines", "data", lambda: check_engine_kind(store))
     add("model fields + links", "schema", lambda: check_model_fields(store))
     add("schema conformance (model_contract.json)", "schema", lambda: check_schema(store))
     add("search/raw contract (search_contract.json)", "search", lambda: check_search_contract())

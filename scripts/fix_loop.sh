@@ -22,23 +22,36 @@ set -uo pipefail
 ROUNDS="${FIX_ROUNDS:-3}"
 REPORT="${QA_REPORT:-qa-report.txt}"
 MAKE="${MAKE:-make}"
-CHECKS=(validate validate-search validate-mapped test)
+# Fast -> slow; stop at the FIRST red check (its output is what Hermes needs).
+# The full unit suite (make test, ~minutes) only runs once everything else is
+# green — it used to run before every Hermes round.
+CHECKS=(validate-search validate-mapped validate)
 
 run_checks() {
 	: >"$REPORT"
-	local rc=0 t
-	for t in "${CHECKS[@]}"; do
+	local t
+	for t in "${CHECKS[@]}" test; do
 		echo "=== make $t ===" >>"$REPORT"
 		if ! "$MAKE" "$t" >>"$REPORT" 2>&1; then
-			rc=1
 			echo "=== make $t: FAILED ===" >>"$REPORT"
+			return 1
 		fi
 	done
-	return "$rc"
+	return 0
 }
 
+# Real failures only: validator 'FAIL:' lines from the checks, the unit-test
+# 'FAIL <name>' lines and suite totals — NOT the 'FAIL: m1 ...' lines negative
+# tests print from their fixtures inside the 'make test' section.
 summary() {
-	grep -E "FAIL|FAILED|Error|Traceback" "$REPORT" | grep -v "FAILED 0" | head -40 || true
+	awk '
+		/^=== make test ===/ { in_test = 1; next }
+		/^=== make / { in_test = 0 }
+		in_test && /^  FAIL [^:]/ { print; next }
+		in_test && /PASSED [0-9]+ \| FAILED [1-9]/ { print; next }
+		in_test && /Traceback|Error:/ { print; next }
+		!in_test && /FAIL|FAILED ===|Error|Traceback/ && !/FAILED 0/ { print }
+	' "$REPORT" | head -40 || true
 }
 
 for ((round = 1; round <= ROUNDS; round++)); do

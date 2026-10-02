@@ -159,6 +159,11 @@
                   "type": "integer",
                   "minimum": 0,
                   "description": "Total interactions on the source X post (likes+comments+reshares+views or the platform's reported total)."
+                },
+                "engine_repo": {
+                  "type": "string",
+                  "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/?$",
+                  "description": "Optional. GitHub repo of the engine when it is NOT in the engines registry yet (from the post). Ingest auto-registers it only if the repo is classified as an inference engine; harnesses, agent frameworks, apps and benchmarks are never registered. Stripped before the store."
                 }
               },
               "additionalProperties": false
