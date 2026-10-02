@@ -166,10 +166,70 @@ def test_fix_bot():
           "git config user.name" in push.get("run", "") and "git config user.email" in push.get("run", ""), "")
     check("fix: commit message prefix matches qa-validate's cap counter",
           'git commit -m "fix-bot:' in push.get("run", ""), "")
-    check("fix: qa-report.txt is never committed", ":!qa-report.txt" in push.get("run", ""), "")
+    check("fix: push step has an id (the report reads its outcome)", push.get("id") == "push", push.get("id"))
     rep = step(job, "report result")
     check("fix: result always reported on the PR",
           "always()" in str(rep.get("if", "")) and "gh pr comment" in rep.get("run", ""), "")
+    check("fix: report reads the push outcome (never claims 'pushed' after a failed push)",
+          "steps.push.outcome" in str(rep.get("env", {})) and "PUSH_OUTCOME" in rep.get("run", ""), rep.get("env"))
+    check("fix: qa-report.txt uploaded as an artifact",
+          any("upload-artifact" in str(s.get("uses", "")) and "qa-report" in str(s.get("with", {}))
+              for s in steps(job)), "")
+
+
+def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
+    """Execute the REAL fix-bot commit+push script in a temp clone whose
+    .gitignore is the repo's, with qa-report.txt + comment.md present (the loop
+    leaves them behind). Returns (rc, output, files in the pushed commit)."""
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    push = step(load("fix-bot.yml")["jobs"]["fix"], "commit + push")
+    td = Path(tempfile.mkdtemp())
+    try:
+        g = lambda *a, cwd=None: subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True)  # noqa: E731
+        g("init", "-q", "--bare", str(td / "remote.git"))
+        g("clone", "-q", str(td / "remote.git"), str(td / "wc"))
+        wc = td / "wc"
+        shutil.copy(ROOT / ".gitignore", wc / ".gitignore")
+        (wc / "data.json").write_text("{}\n")
+        g("add", "-A", cwd=wc)
+        g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base", cwd=wc)
+        g("push", "-q", "origin", "HEAD:refs/heads/ci/x", cwd=wc)
+        before = g("rev-parse", "HEAD", cwd=wc).stdout.strip()
+        (wc / "qa-report.txt").write_text("=== make validate ===\n")
+        (wc / "comment.md").write_text("c\n")
+        if changed:
+            (wc / "data.json").write_text('{"fixed": true}\n')
+        bin_ = td / "bin"
+        bin_.mkdir()
+        (bin_ / "sudo").write_text('#!/bin/sh\nexec "$@"\n')
+        (bin_ / "sudo").chmod(0o755)
+        env = dict(os.environ, PATH=f"{bin_}:{os.environ['PATH']}", BRANCH="ci/x",
+                   GITHUB_OUTPUT=str(td / "out"), HOME=str(td))
+        p = subprocess.run(["bash", "-e", "-c", push["run"]], cwd=wc, env=env, capture_output=True, text=True)
+        after = g("rev-parse", "refs/heads/ci/x", cwd=td / "remote.git").stdout.strip()
+        files = (g("show", "--name-only", "--format=", after, cwd=td / "remote.git").stdout.split()
+                 if after != before else [])
+        gh_out = (td / "out").read_text() if (td / "out").exists() else ""
+        return p.returncode, p.stdout + p.stderr + gh_out, files
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_fix_bot_push_behaviour():
+    """PR #80: the loop went green, then `git add -A -- . ':!qa-report.txt'`
+    exited 1 ('paths are ignored by one of your .gitignore files') under
+    bash -e, so the fix was never pushed — and the comment still said green."""
+    rc, out, files = _run_push_step(changed=True)
+    check("fix-push: a green fix is committed and pushed (exit 0)", rc == 0, out[-300:])
+    check("fix-push: the pushed commit carries the fix", files == ["data.json"], files)
+    check("fix-push: qa-report.txt / comment.md never committed",
+          "qa-report.txt" not in files and "comment.md" not in files, files)
+    check("fix-push: reports pushed=yes", "pushed=yes" in out, out[-200:])
+    rc, out, files = _run_push_step(changed=False)
+    check("fix-push: green with no changes -> exit 0, nothing pushed", rc == 0 and files == [], (rc, files, out[-200:]))
 
 
 def _deps(jobs: dict, name: str) -> set:
@@ -292,6 +352,7 @@ def main() -> int:
     test_refresh_bot()
     test_qa_validate()
     test_fix_bot()
+    test_fix_bot_push_behaviour()
     test_owner_guards()
     test_guard_behaviour()
     test_nothing_pushes_master()

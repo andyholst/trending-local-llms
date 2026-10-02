@@ -138,7 +138,10 @@ The README is **generated**, not hand-maintained:
   answer was produced … reasoning consumed the entire budget"), while
   `--reasoning none` sends `enabled: false` → 0 reasoning tokens. So the
   searches run `HERMES_REASONING := none` (they are mechanical) and fix-bot
-  `HERMES_FIX_REASONING := low`. The search prompts write each query's models
+  `HERMES_FIX_REASONING := low`. `low` still burnt the whole cap in 2 of 3
+  fix rounds on PR #80, so `scripts/fix_loop.sh` retries the SAME round once
+  with `HERMES_FIX_REASONING=none` when Hermes reports that signature (the
+  docker `fix` wrapper forwards the variable into the container). The search prompts write each query's models
   right after that query (`--write-raw <backend>`, one small file per call;
   same-second writes get `-2`, `-3`) — never one big end-of-run payload.
   `make model-caps` (live, in `live-smoke` and before every refresh search)
@@ -183,12 +186,16 @@ The README is **generated**, not hand-maintained:
   Ollama, …). Harnesses, agent frameworks, plugins, chat apps/UIs and
   benchmarks are NOT engines and must never be in the registry. The search
   prompts say so and ask, for an engine not registered yet, for
-  `engine_repo` = its `https://github.com/<owner>/<repo>` from the post (never
-  invented). At ingest `scripts/engine_registry.py` fetches the repo
+  `engine_repo` = its `https://github.com/<owner>/<repo>` from the post, or —
+  when the post links no repo — from ONE Firecrawl web search whose repo name
+  matches the engine and resolves (never invented). At ingest `scripts/engine_registry.py` fetches the repo
   metadata, `classify_repo` decides engine / not-engine / unknown from the
   description, topics and name — STRONG not-engine signals (harness, agent
-  framework, plugin, chat/web UI, app, leaderboard, eval/benchmark suite,
-  dataset) always win; a bare 'benchmark' only counts when there is no engine
+  framework, plugin, leaderboard, eval/benchmark suite, dataset) always win;
+  APP signals (chat/web UI, frontend, desktop/mobile app) win unless the repo
+  description calls itself an inference server/engine/runtime (mlx-serve: 'LLM
+  inference server … Swift frontend macOS app' was refused on PR #80); a bare
+  'benchmark' only counts when there is no engine
   signal ('MLX inference speedup benchmark engine' is an engine) — and only an
   **engine** is registered (also refused: a name the registry pattern forbids,
   and conflicting `engine_repo` values for one engine): backend from its measurements, `auto: true`, note
@@ -353,12 +360,18 @@ this `AGENTS.md` and the `gather-data` skill, then:
   PRs). One run per PR (`concurrency`). Resolves the PR (refuses
   `master`/`main`), checks out the branch with the PAT, runs `make
   hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks →
-  green? stop → else write `qa-report.txt` and `make fix` (the `_fix` prompt
-  reads that report first) → re-check, at most `FIX_ROUNDS` (3) Hermes
-  attempts. It commits (`fix-bot: …`, git identity set) and pushes with the
-  PAT **only when the loop ends green** — the PAT push re-triggers
-  qa-validate. Still red → nothing is pushed and the failing lines are
-  commented on the PR. Either way a human reviews and merges.
+  green? stop → else write `qa-report.txt` (ONLY the failing check's output +
+  the list of checks that passed) and `make fix` (the `_fix` prompt reads that
+  report first) → re-check, at most `FIX_ROUNDS` (3) Hermes attempts. It
+  commits (`fix-bot: …`, git identity set) and pushes with the PAT **only when
+  the loop ends green** — the PAT push re-triggers qa-validate. The commit
+  step stages with a plain `git add -A`: `qa-report.txt` / `comment.md` are
+  gitignored, and naming an ignored path in the pathspec (`':!qa-report.txt'`)
+  makes git exit 1 — every green fix was lost that way until PR #80. Still red
+  → nothing is pushed and the failing lines are commented on the PR; the PR
+  comment reads the push step's outcome, so a failed push is never reported
+  as 'pushed'. `qa-report.txt` is uploaded as a run artifact. Either way a
+  human reviews and merges.
 
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
@@ -510,6 +523,9 @@ actually happened.
 | `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master; refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
+| `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
+| `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
+| `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |

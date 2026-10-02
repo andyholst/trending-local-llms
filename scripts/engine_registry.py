@@ -46,11 +46,20 @@ NON_ENGINE_NAMES = {
 }
 
 # STRONG not-engine signals always win: these repos are never inference
-# engines even when they mention one ("chat UI that supports llama.cpp").
+# engines even when they mention one ("agent framework on top of vLLM").
 _NOT_ENGINE = re.compile(
-    r"\b(harness|agent(?:ic)? framework|agents? sdk|agent platform|plugins?|plug-ins?|chat ?ui|web ?ui|"
-    r"frontend|front-end|desktop app|mobile app|chat app|chatbot app|benchmark(?:ing)? suite|benchmarks for|"
+    r"\b(harness|agent(?:ic)? framework|agents? sdk|agent platform|plugins?|plug-ins?|"
+    r"benchmark(?:ing)? suite|benchmarks for|"
     r"leaderboard|eval(?:uation)? (?:framework|harness|suite)|prompt library|awesome list|dataset)\b", re.I)
+# APP not-engine signals: a chat/web UI or app is not an engine ("desktop app
+# chat UI, supports llama.cpp") — UNLESS the repo explicitly calls itself an
+# inference server/engine/runtime. mlx-serve ("Native LLM inference server for
+# Apple Silicon ... Zig backend, Swift frontend macOS app") ships a GUI next to
+# its server and was refused on 'frontend' (refresh PR #80).
+_APP_NOT_ENGINE = re.compile(
+    r"\b(chat ?ui|web ?ui|frontend|front-end|desktop app|mobile app|chat app|chatbot app)\b", re.I)
+_SELF_ENGINE = re.compile(
+    r"\b(?:llm |model )?inference (?:engine|server|runtime)\b|\b(?:llm )?serving engine\b", re.I)
 # WEAK not-engine signal: a bare 'benchmark' only counts when there is no
 # engine signal — 'MLX inference speedup benchmark engine' (MLX-fast Bonsai 2,
 # a registered engine) is an engine.
@@ -83,6 +92,12 @@ def classify_repo(meta: dict | None, name: str = "") -> tuple[str, str]:
     neg = _NOT_ENGINE.search(text)
     if neg:
         return "not-engine", f"repo describes a {neg.group(0).lower()!r}, not an inference engine"
+    app = _APP_NOT_ENGINE.search(text)
+    if app:
+        own = _SELF_ENGINE.search(meta.get("description") or "")
+        if not own:
+            return "not-engine", f"repo describes a {app.group(0).lower()!r}, not an inference engine"
+        return "engine", f"repo calls itself an {own.group(0).lower()!r} (its {app.group(0).lower()!r} is a bundled app)"
     pos = _ENGINE.search(text)
     if pos:
         return "engine", f"repo describes {pos.group(0).lower()!r}"

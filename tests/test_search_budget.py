@@ -60,6 +60,11 @@ def test_makefile_budget_settings():
     check("make: searches run with reasoning OFF (none)", mkvar("HERMES_REASONING") == "none", mkvar("HERMES_REASONING"))
     check("make: fix-bot reasoning low (not medium/high)", mkvar("HERMES_FIX_REASONING") == "low",
           mkvar("HERMES_FIX_REASONING"))
+    fix_recipe = next((l for l in (ROOT / "Makefile").read_text().splitlines()
+                       if "make _fix" in l and "DOCKER_RUN" in l), "")
+    check("make: the docker 'fix' wrapper forwards HERMES_FIX_REASONING into the container "
+          "(fix_loop.sh retries with none when 'low' burns the budget)",
+          "make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING)" in fix_recipe, fix_recipe)
     mt = int(mkvar("HERMES_MAX_TOKENS") or 0)
     check("make: HERMES_MAX_TOKENS within the 65,536 provider cap", 0 < mt <= 65536, mt)
     check("make: model is the 0731 SKU the cap was measured for", mkvar("HERMES_MODEL") == MODEL, mkvar("HERMES_MODEL"))

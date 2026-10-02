@@ -141,7 +141,17 @@ jobs:
           if [ "$rc" = "0" ]; then echo "green=true" >> "$GITHUB_OUTPUT"; else echo "green=false" >> "$GITHUB_OUTPUT"; fi
           exit 0
 
+      - name: Upload the QA report (what the loop saw)
+        if: always() && steps.pr.outputs.has_pr == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-report
+          path: qa-report.txt
+          if-no-files-found: ignore
+
       - name: Commit + push the fix (only when green)
+        id: push
         if: steps.pr.outputs.has_pr == 'true' && steps.loop.outputs.green == 'true'
         env:
           BRANCH: ${{ steps.pr.outputs.branch }}
@@ -150,13 +160,20 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # The container writes files as root; make them committable.
           sudo chown -R "$(id -u):$(id -g)" .
-          git add -A -- . ':!qa-report.txt'
+          # qa-report.txt / comment.md are in .gitignore, so a plain `add -A`
+          # skips them. Never name an ignored path in the pathspec (not even as
+          # ':!qa-report.txt'): git then exits 1 under bash -e and the green fix
+          # is never pushed — that is how every fix-bot push was lost.
+          git add -A
+          git reset -q -- qa-report.txt comment.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Checks green with no changes (the CI failure was transient). Nothing to push."
+            echo "pushed=none" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "fix-bot: repair CI validation failures on $BRANCH"
           git push origin "HEAD:$BRANCH"
+          echo "pushed=yes" >> "$GITHUB_OUTPUT"
 
       - name: Report result on the PR
         if: always() && steps.pr.outputs.has_pr == 'true'
@@ -164,11 +181,17 @@ jobs:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           PR_NUM: ${{ steps.pr.outputs.pr_num }}
           GREEN: ${{ steps.loop.outputs.green }}
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
-            if [ "$GREEN" = "true" ]; then
-              echo "fix-bot: local checks are **green** after the repair loop; any fix was pushed and qa-validate re-runs. Manual review is still required before merge."
+            if [ "$GREEN" = "true" ] && [ "$PUSH_OUTCOME" != "success" ]; then
+              echo "fix-bot: local checks went **green**, but committing/pushing the fix **failed** — nothing reached the PR. See the run log; manual review needed."
+            elif [ "$GREEN" = "true" ] && [ "$PUSHED" = "yes" ]; then
+              echo "fix-bot: local checks are **green** after the repair loop; the fix was pushed and qa-validate re-runs. Manual review is still required before merge."
+            elif [ "$GREEN" = "true" ]; then
+              echo "fix-bot: checks are **green** with no changes (the CI failure was transient); nothing pushed. Re-run qa-validate. Manual review is still required before merge."
             else
               echo "fix-bot: still **red** after up to $FIX_ROUNDS Hermes fix round(s) (or the run failed before the loop). Nothing pushed — manual review needed."
               echo
