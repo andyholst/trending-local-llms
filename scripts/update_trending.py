@@ -767,6 +767,16 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
         except Exception as e:  # noqa: BLE001
             print(f"[warn] skipping raw {path.name}: {e}")
             continue
+        # New engines: auto-register a real inference engine from the
+        # measurement's engine_repo (GitHub, classified), never a harness/app;
+        # strips engine_repo so the store contract never sees it.
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            import engine_registry as _er
+        finally:
+            sys.path.pop(0)
+        for d in _er.register_new_engines(store, data.get("models", [])):
+            print(f"[ingest] engine {d['engine']!r}: {d['decision']} — {d['reason']}")
         for m in data.get("models", []):
             mid = m.get("id")
             if not mid:

@@ -45,6 +45,10 @@
           "url": {
             "type": "string",
             "format": "uri"
+          },
+          "auto": {
+            "type": "boolean",
+            "description": "True when the engine was auto-registered at ingest from a measurement's engine_repo (classified as an inference engine); the note cites the source post."
           }
         },
         "additionalProperties": false

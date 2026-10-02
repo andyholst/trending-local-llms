@@ -85,6 +85,12 @@ def test_refresh_bot():
           0 <= idx("make hermes-smoke") < idx("make search-"), order)
     check("refresh: model-caps check runs before the search",
           0 <= idx("make model-caps") < idx("make search-"), order)
+    check("refresh: engine-check reports unregistered engines right AFTER each search (#73)",
+          0 <= idx("make search-") < idx("make engine-check"), order)
+    agg_order = [s.get("run", "").strip() for s in steps(agg) if s.get("run")]
+    ec = next((i for i, r in enumerate(agg_order) if "make engine-check" in r), -1)
+    mg = next((i for i, r in enumerate(agg_order) if "make merge-fetch" in r), -1)
+    check("refresh: aggregate runs engine-check before the merge (#73)", 0 <= ec < mg, agg_order)
     checkout = step(agg, "checkout")
     check("refresh: aggregate checkout uses the owner PAT (push as owner)",
           PAT in str(checkout.get("with", {}).get("token", "")), checkout)

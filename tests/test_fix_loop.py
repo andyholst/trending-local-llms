@@ -56,12 +56,17 @@ case "$1" in
   validate)
     if [ "$red" -gt 0 ]; then echo "  FAIL: qwen3.8-27b: engine 'oMLX' has no repo url"; exit 1; fi
     echo "QA PASSED"; exit 0 ;;
+  test)
+    # negative tests print validator FAIL lines from their fixtures - noise
+    echo "  FAIL: m1: duplicate model ids in models.json: ['m1']"
+    if [ "${TEST_RED:-0}" = "1" ]; then echo "  FAIL readme-render: trend cell"; echo "PASSED 9 | FAILED 1"; exit 1; fi
+    echo "PASSED 10 | FAILED 0"; exit 0 ;;
   *) echo "PASSED 1 | FAILED 0"; exit 0 ;;
 esac
 """
 
 
-def run(red: int, rounds: int = 3, fix_exit: int = 0):
+def run(red: int, rounds: int = 3, fix_exit: int = 0, test_red: int = 0):
     td = Path(tempfile.mkdtemp())
     rec = td / "make"
     rec.write_text(RECORDER)
@@ -69,7 +74,7 @@ def run(red: int, rounds: int = 3, fix_exit: int = 0):
     (td / "red").write_text(str(red))
     (td / "calls.log").write_text("")
     env = dict(os.environ, MAKE=str(rec), FIX_ROUNDS=str(rounds),
-               QA_REPORT=str(td / "qa-report.txt"), FIX_EXIT=str(fix_exit))
+               QA_REPORT=str(td / "qa-report.txt"), FIX_EXIT=str(fix_exit), TEST_RED=str(test_red))
     p = subprocess.run(["bash", str(LOOP)], env=env, capture_output=True, text=True, timeout=60)
     calls = (td / "calls.log").read_text().split()
     report = (td / "qa-report.txt").read_text() if (td / "qa-report.txt").exists() else ""
@@ -81,7 +86,8 @@ def test_green_on_entry():
     rc, calls, _, _ = run(red=0)
     check("green: exit 0", rc == 0, rc)
     check("green: no hermes fix call", "fix" not in calls, calls)
-    check("green: all 4 checks ran", calls == ["validate", "validate-search", "validate-mapped", "test"], calls)
+    check("green: checks fast -> slow, unit suite last",
+          calls == ["validate-search", "validate-mapped", "validate", "test"], calls)
 
 
 def test_fixed_in_round_one():
@@ -106,6 +112,30 @@ def test_fix_crash_does_not_abort_loop():
     check("crash: a non-zero make fix does not abort the loop", rc == 0 and calls.count("validate") == 2, calls)
 
 
+def test_stops_at_first_red_and_skips_unit_suite():
+    rc, calls, report, out = run(red=99, rounds=1)
+    check("speed: 'make test' never runs while a validate check is red", "test" not in calls, calls)
+    check("speed: nothing after the first red check in a round",
+          calls[:3] == ["validate-search", "validate-mapped", "validate"] and calls[3] == "fix", calls)
+
+
+def test_unit_suite_failure_is_red():
+    rc, calls, report, out = run(red=0, rounds=1, test_red=1)
+    check("suite: validates green but a unit test red -> loop is red", rc == 1, out[-200:])
+    check("suite: the unit-test failure reaches the summary", "FAIL readme-render: trend cell" in out, out[-300:])
+
+
+def test_summary_drops_fixture_noise():
+    rc, calls, report, out = run(red=0, rounds=1, test_red=1)
+    summary = out.split("still RED", 1)[-1]
+    check("summary: negative-test fixture lines ('FAIL: m1 ...') are not reported",
+          "FAIL: m1" not in summary, summary[-300:])
+    check("summary: the failing suite total is reported", "PASSED 9 | FAILED 1" in summary, summary[-300:])
+    rc, calls, report, out = run(red=99, rounds=1)
+    check("summary: real validator failures are reported",
+          "engine 'oMLX' has no repo url" in out.split("still RED", 1)[-1], out[-300:])
+
+
 def test_round_cap_respected():
     rc, calls, _, _ = run(red=99, rounds=1)
     check("cap: FIX_ROUNDS=1 -> one fix call", calls.count("fix") == 1 and rc == 1, calls)
@@ -121,6 +151,9 @@ def main() -> int:
     test_red_forever_gives_up()
     test_fix_crash_does_not_abort_loop()
     test_round_cap_respected()
+    test_stops_at_first_red_and_skips_unit_suite()
+    test_unit_suite_failure_is_red()
+    test_summary_drops_fixture_noise()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

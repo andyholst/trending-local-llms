@@ -171,6 +171,26 @@ The README is **generated**, not hand-maintained:
   `make validate` stages so a malformed table or a dead/wrong link in any new
   raw snapshot, the store, or the README fails CI. This is a **validation**
   action, not a data-gathering bot.
+- **New engines are registered at ingest, not by fix-bot.** An engine is an
+  inference runtime or server that loads the weights (llama.cpp, MLX, vLLM,
+  Ollama, …). Harnesses, agent frameworks, plugins, chat apps/UIs and
+  benchmarks are NOT engines and must never be in the registry. The search
+  prompts say so and ask, for an engine not registered yet, for
+  `engine_repo` = its `https://github.com/<owner>/<repo>` from the post (never
+  invented). At ingest `scripts/engine_registry.py` fetches the repo
+  metadata, `classify_repo` decides engine / not-engine / unknown from the
+  description, topics and name (a not-engine signal always wins), and only an
+  **engine** is registered: backend from its measurements, `auto: true`, note
+  "Auto-registered from <source_post> — <description>". not-engine, unknown,
+  unreachable and missing repos are never registered — validation keeps
+  failing for a human / fix-bot. `engine_repo` is stripped before the store.
+  `make engine-check` reports every unregistered engine in the raw snapshots
+  and the decision ingest will make; it runs right after each refresh search
+  and in the aggregate, so a new engine shows in the refresh run, not first at
+  PR CI. `check_engine_kind` fails a registry entry that is a known non-engine
+  (`NON_ENGINE_REPOS` / `NON_ENGINE_NAMES` in `scripts/engine_registry.py` —
+  add one whenever a harness slips through, e.g. `deepseek-ai/deepseek-harness`
+  from refresh PR #72) or an `auto` entry without a cited source.
 - **Model-specific engine forks (`engine_aliases`).** When a model only runs
   on a fork of an engine, register the fork as its own engine (name + repo URL
   + backend + note) and declare on the model
@@ -461,7 +481,9 @@ actually happened.
 | `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |
 | `tests/test_hermes_prompts.py` — `--reasoning` on every call | a search burning its whole output budget on reasoning and writing no snapshot |
 | `tests/test_engagement_contract.py` | raw → ingest → store failing `model_contract.json` (the real PR #50 snapshot with model-level `reshares` is the fixture); stray keys not pruned; ingest and contract key lists drifting |
-| `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report |
+| `tests/test_engine_registry.py` | a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting |
+| `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
+| `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
