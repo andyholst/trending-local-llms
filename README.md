@@ -4,7 +4,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 **How the ranking works.** Models are grouped 🔥 **trending** (seen in the last 7 days) → 🕑 **recent** (last 30 days) → 💤 **stale** (older, kept with their last measurement date). Within a group they rank by **7-day buzz**: for every distinct X post in the last 7 days, likes + 2×comments + 3×reshares + log10(views+1) (at least 1 per post); ties go to the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
-> Last generated: 2026-10-02 00:24 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-10-02 00:37 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
@@ -17,13 +17,13 @@ Best measured t/s per backend; the full list of measurements is in the backend t
 | [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B)<br><sub>Qwen3.8-27B-Instruct · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-09-29</sub> | 12.5<br><sub>1 post</sub> | **44** t/s<br>[SGLang](https://github.com/sgl-project/sglang) · DGX Spark · DFlash2 spec-decode draft head<br><sub>+2 more</sub> | **124** t/s<br>[TensorFold](https://github.com/ashhart/TensorFold) · MacBook Pro M5 Max · 4-bit MLX | — | 16GB | Flagship local model. 384K views on release. 262K ctx (1M via YaRN). |
 | [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)<br><sub>Ternary-Bonsai-2-27B · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-01</sub> | 11.1<br><sub>9 posts</sub> | **143** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · RTX 5090 · ternary<br><sub>+4 more</sub> | **237** t/s<br>[MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) · Apple Silicon 16GB Mac · mlx.fast 4-bit | — | 12GB | PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards. |
 | [**Qwen3.8-Flash-Next 125B**](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)<br><sub>Qwen3.8-Flash-Next-125B · 125B (MoE) · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-01</sub> | 4.3<br><sub>1 post</sub> | **93** t/s<br>[Strata](https://github.com/Niko1221/Strata) · RTX 5070 12GB · MoE, experts across GPU/RAM/SSD | — | — | 12GB | Qwen3.8-Flash-Next-125B — see source posts. |
+| [**DeepSeek R1 1.5B**](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)<br><sub>DeepSeek-R1-Distill-Qwen-1.5B · 1.5B · MIT</sub> | 🔥 trending<br><sub>last seen 2026-10-02</sub> | 0<br><sub>0 posts</sub> | — | — | **4** t/s<br>[Ollama](https://github.com/ollama/ollama) · Raspberry Pi 4B 2GB (CPU) · quantized | 2GB | DeepSeek R1 1.5B served fully offline by Ollama on a 7-year-old Raspberry Pi 4B at 4 tok/s under 5 W, no network or API needed. |
 | [**Qwen3 8B**](https://huggingface.co/Qwen/Qwen3-8B)<br><sub>Qwen3-8B · 8B · Apache 2.0</sub> | 🕑 recent<br><sub>last seen 2026-09-12</sub> | 0<br><sub>0 posts</sub> | **100** t/s<br>[Ollama](https://github.com/ollama/ollama) · RTX 4060 · Q4_K_M | — | — | 8GB | The default 8 GB pick. Fast, Apache 2.0. |
 | [**Gemma 4 12B**](https://huggingface.co/google/gemma-4-12B-it)<br><sub>gemma-4-12B-it · 12B · Gemma</sub> | 🕑 recent<br><sub>last seen 2026-09-19</sub> | 0<br><sub>0 posts</sub> | **99.7** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · RTX 4090 Laptop · Q4 | **49.67** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · Apple Silicon · Q4 | — | 9GB | Best overall personal-agent model. Multimodal + audio, 256K ctx. |
 | [**Qwen3 14B**](https://huggingface.co/Qwen/Qwen3-14B)<br><sub>Qwen3-14B · 14B · Apache 2.0</sub> | 🕑 recent<br><sub>last seen 2026-09-15</sub> | 0<br><sub>0 posts</sub> | **65** t/s<br>[Ollama](https://github.com/ollama/ollama) · RTX 3090 · Q4_K_M | — | — | 9GB | 2M HF downloads. The community mid-size favorite. |
 | [**Qwen 3.6 27B**](https://huggingface.co/Qwen/Qwen3.6-27B)<br><sub>Qwen3.6-27B · 27B · Apache 2.0</sub> | 🕑 recent<br><sub>last seen 2026-09-10</sub> | 0<br><sub>0 posts</sub> | **37** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · RTX 3090 · Q4_K_M | — | — | 18GB | Strongest local coding model (SWE-bench 77.2%). |
 | [**Gemma 4 E2B**](https://huggingface.co/google/gemma-4-E2B)<br><sub>gemma-4-E2B · 2B · Gemma</sub> | 🕑 recent<br><sub>last seen 2026-09-05</sub> | 0<br><sub>0 posts</sub> | — | — | **9** t/s<br>[LiteRT](https://github.com/google-ai-edge/LiteRT) · Raspberry Pi 5 (CPU) · 1432 MB peak RAM | 2GB | Google's compact Gemma 4 edge model runs on-device via LiteRT on a Raspberry Pi 5: 99 tok/s prefill and 9 tok/s decode at 1432 MB peak RAM, fully offline. |
 | [**Muse Glimmer 30B**](https://huggingface.co/meta-models/Muse-Glimmer-30B)<br><sub>Muse-Glimmer-30B · 30B · Apache 2.0</sub> | 💤 stale<br><sub>last seen 2026-08-10</sub> | 0<br><sub>0 posts</sub> | **233** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · RTX 5090 · 4-bit | **50** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · M5 Max (Apple Silicon) · 4-bit | — | 24GB | Meta Superintelligence 30B agentic model, Apache 2.0. Fits 24/32 GB at 4-bit (<20GB weights + KV + vision + spec draft). DFlash drafter gives 3.1x decode on RTX 5090. |
-| [**DeepSeek R1 1.5B**](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)<br><sub>DeepSeek-R1-Distill-Qwen-1.5B · 1.5B · MIT</sub> | 💤 stale<br><sub>last seen 2026-06-25</sub> | 0<br><sub>0 posts</sub> | — | — | **4** t/s<br>[Ollama](https://github.com/ollama/ollama) · Raspberry Pi 4B 2GB (CPU) · quantized | 2GB | DeepSeek R1 1.5B served fully offline by Ollama on a 7-year-old Raspberry Pi 4B at 4 tok/s under 5 W, no network or API needed. |
 
 ---
 
@@ -36,13 +36,13 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU)
 | **Qwen3.8-27B** | 🟦 43.7 | — | — | — | 🟦 44 | — | 🟩 124 |
 | **Bonsai 2 27B** | 🟦 143 | — | — | 🟩 237 | — | — | — |
 | **Qwen3.8-Flash-Next 125B** | — | — | — | — | — | 🟦 93 | — |
+| **DeepSeek R1 1.5B** | — | 🟨 4 | — | — | — | — | — |
 | **Qwen3 8B** | — | 🟦 100 | — | — | — | — | — |
 | **Gemma 4 12B** | 🟦 99.7<br>🟩 49.67 | — | — | — | — | — | — |
 | **Qwen3 14B** | — | 🟦 65 | — | — | — | — | — |
 | **Qwen 3.6 27B** | 🟦 37 | — | — | — | — | — | — |
 | **Gemma 4 E2B** | — | — | 🟨 9 | — | — | — | — |
 | **Muse Glimmer 30B** | 🟦 233<br>🟩 50 | — | — | — | — | — | — |
-| **DeepSeek R1 1.5B** | — | 🟨 4 | — | — | — | — | — |
 
 ---
 
