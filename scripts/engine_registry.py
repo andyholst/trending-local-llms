@@ -45,10 +45,16 @@ NON_ENGINE_NAMES = {
     "deepseekharness",
 }
 
+# STRONG not-engine signals always win: these repos are never inference
+# engines even when they mention one ("chat UI that supports llama.cpp").
 _NOT_ENGINE = re.compile(
-    r"\b(harness|agent(?:ic)? framework|agents? sdk|agent platform|plugin|plug-in|chat ?ui|web ?ui|"
-    r"frontend|front-end|desktop app|mobile app|chat app|chatbot app|benchmark(?:ing)? suite|benchmark|leaderboard|"
-    r"eval(?:uation)? (?:framework|harness|suite)|prompt(?:s| library)|awesome list|dataset)\b", re.I)
+    r"\b(harness|agent(?:ic)? framework|agents? sdk|agent platform|plugins?|plug-ins?|chat ?ui|web ?ui|"
+    r"frontend|front-end|desktop app|mobile app|chat app|chatbot app|benchmark(?:ing)? suite|benchmarks for|"
+    r"leaderboard|eval(?:uation)? (?:framework|harness|suite)|prompt library|awesome list|dataset)\b", re.I)
+# WEAK not-engine signal: a bare 'benchmark' only counts when there is no
+# engine signal — 'MLX inference speedup benchmark engine' (MLX-fast Bonsai 2,
+# a registered engine) is an engine.
+_WEAK_NOT_ENGINE = re.compile(r"\bbenchmark(?:s|ing)?\b", re.I)
 _ENGINE = re.compile(
     r"\b(inference (?:engine|server|runtime|framework|library)|llm (?:inference|serving|runtime|engine)|"
     r"serving (?:engine|framework|system)|model serving|runtime for (?:llms?|language models)|"
@@ -58,7 +64,7 @@ _ENGINE = re.compile(
 
 def repo_slug(url: str) -> str | None:
     """'https://github.com/Owner/Repo(.git)(/...)' -> 'owner/repo' (lowercase); else None."""
-    m = re.match(r"^https?://(?:www\.)?github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?(?:/.*)?$",
+    m = re.match(r"^https?://(?:www\.)?github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?(?:[/?#].*)?$",
                  (url or "").strip())
     return f"{m.group(1)}/{m.group(2)}".lower() if m else None
 
@@ -79,14 +85,32 @@ def classify_repo(meta: dict | None, name: str = "") -> tuple[str, str]:
     pos = _ENGINE.search(text)
     if pos:
         return "engine", f"repo describes {pos.group(0).lower()!r}"
+    weak = _WEAK_NOT_ENGINE.search(text)
+    if weak:
+        return "not-engine", f"repo describes a {weak.group(0).lower()!r} and no inference engine"
     return "unknown", "no inference-engine signal in description/topics"
 
 
+# Registry key pattern — single source: data/model_contract.json propertyNames.
+def _registry_name_pattern() -> re.Pattern:
+    try:
+        c = json.loads((ROOT / "data" / "model_contract.json").read_text())
+        return re.compile(c["properties"]["engines"]["propertyNames"]["pattern"])
+    except Exception:  # noqa: BLE001
+        return re.compile(r"^[A-Za-z0-9 ._()-]+$")
+
+
 def fetch_repo_meta(url: str) -> dict | None:
-    """GitHub repo metadata for a github.com URL, or None (not GitHub / 404 / error)."""
+    """GitHub repo metadata for a github.com URL, or None (not GitHub / 404 /
+    error). Offline mode: ENGINE_REGISTRY_META_FILE points at a JSON
+    {"repos": {"owner/repo": meta}} cache (tests and dry runs)."""
     slug = repo_slug(url)
     if not slug:
         return None
+    cache = os.environ.get("ENGINE_REGISTRY_META_FILE")
+    if cache:
+        repos = {k.lower(): v for k, v in json.loads(Path(cache).read_text()).get("repos", {}).items()}
+        return repos.get(slug)
     req = urllib.request.Request(f"https://api.github.com/repos/{slug}",
                                  headers={"Accept": "application/vnd.github+json",
                                           "User-Agent": "trending-local-llms-engine-registry"})
@@ -131,11 +155,21 @@ def register_new_engines(store: dict, models: list[dict], fetch=fetch_repo_meta)
             if name and name not in reg:
                 by_engine.setdefault(name, []).append((m, e))
     out = []
+    name_ok = _registry_name_pattern()
     for name, rows in by_engine.items():
         repos = [e.get("engine_repo") for _, e in rows if e.get("engine_repo")]
         repo = repos[0] if repos else ""
         meas = [e for _, e in rows]
         post = next((e.get("source_post") for e in meas if e.get("source_post")), "")
+        slugs = sorted({repo_slug(r) or r for r in repos})
+        if not name_ok.match(name):
+            out.append({"engine": name, "repo": repo, "decision": "invalid-name",
+                        "reason": f"engine name does not match the registry pattern {name_ok.pattern}"})
+            continue
+        if len(slugs) > 1:
+            out.append({"engine": name, "repo": ", ".join(slugs), "decision": "conflict",
+                        "reason": "measurements give different engine_repo values"})
+            continue
         if not repo:
             out.append({"engine": name, "repo": "", "decision": "no-repo",
                         "reason": "search did not record engine_repo"})

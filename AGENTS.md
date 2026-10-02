@@ -179,8 +179,12 @@ The README is **generated**, not hand-maintained:
   `engine_repo` = its `https://github.com/<owner>/<repo>` from the post (never
   invented). At ingest `scripts/engine_registry.py` fetches the repo
   metadata, `classify_repo` decides engine / not-engine / unknown from the
-  description, topics and name (a not-engine signal always wins), and only an
-  **engine** is registered: backend from its measurements, `auto: true`, note
+  description, topics and name — STRONG not-engine signals (harness, agent
+  framework, plugin, chat/web UI, app, leaderboard, eval/benchmark suite,
+  dataset) always win; a bare 'benchmark' only counts when there is no engine
+  signal ('MLX inference speedup benchmark engine' is an engine) — and only an
+  **engine** is registered (also refused: a name the registry pattern forbids,
+  and conflicting `engine_repo` values for one engine): backend from its measurements, `auto: true`, note
   "Auto-registered from <source_post> — <description>". not-engine, unknown,
   unreachable and missing repos are never registered — validation keeps
   failing for a human / fix-bot. `engine_repo` is stripped before the store.
@@ -481,7 +485,7 @@ actually happened.
 | `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |
 | `tests/test_hermes_prompts.py` — `--reasoning` on every call | a search burning its whole output budget on reasoning and writing no snapshot |
 | `tests/test_engagement_contract.py` | raw → ingest → store failing `model_contract.json` (the real PR #50 snapshot with model-level `reshares` is the fixture); stray keys not pruned; ingest and contract key lists drifting |
-| `tests/test_engine_registry.py` | a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting |
+| `tests/test_engine_registry.py` (offline: `tests/fixtures/github_meta.json` = real GitHub metadata of every registered engine; `ENGINE_REGISTRY_META_FILE` switches `fetch_repo_meta` to it) | the classifier refusing ANY registered engine (it refused MLX-fast); a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting |
 | `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master |
