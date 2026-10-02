@@ -100,6 +100,10 @@ def test_refresh_bot():
     check("refresh: does NOT dispatch fix-bot itself (qa-validate does, after validating)",
           "gh workflow run" not in run_text(agg), "")
     check("refresh: aggregate runs even if a search leg failed", "always()" in str(agg.get("if", "")), agg.get("if"))
+    crons = [c.get("cron", "") for c in (wf["on"].get("schedule") or [])]
+    check("refresh: two daily schedule slots (GitHub delays/drops scheduled runs)", len(crons) >= 2, crons)
+    check("refresh: a backup slot off the top of the hour (minute != 0)",
+          any(c.split()[0] not in ("0", "00", "*") for c in crons if c), crons)
 
 
 def test_qa_validate():
