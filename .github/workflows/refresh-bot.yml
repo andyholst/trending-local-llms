@@ -28,14 +28,46 @@ permissions:
   pull-requests: write
   packages: write
 
+# One refresh at a time: a scheduled run and a manual run queue instead of
+# racing to open competing PRs over the same generated files.
+concurrency:
+  group: refresh-bot
+  cancel-in-progress: false
+
 env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
 
 jobs:
+  # Gate EVERY job: a scheduled run passes; a manual dispatch (or a re-run)
+  # passes only when both the actor and the triggering actor are the repo
+  # owner. Previously only the search job checked, and `aggregate`
+  # (if: always()) still ran — with secrets and the owner PAT — on a refusal.
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Owner-only trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            echo "Scheduled run - allowed."
+            exit 0
+          fi
+          if [ "$ACTOR" != "$OWNER" ] || [ "$TRIGGER" != "$OWNER" ]; then
+            echo "Refused: only the repository owner ($OWNER) may run refresh-bot (actor=$ACTOR, triggering_actor=$TRIGGER)."
+            exit 1
+          fi
+          echo "Owner confirmed: $ACTOR"
+
   # Build the image ONCE and push it to GHCR. The search + aggregate jobs PULL
   # this prebuilt image instead of rebuilding — so the Hermes install
   # (ADD install.sh + RUN) runs exactly once per run, not 6x.
   build:
+    needs: guard
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
@@ -105,15 +137,6 @@ jobs:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
     steps:
-      - name: Owner-only trigger guard
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          if [ "${{ github.actor }}" != "${{ github.repository_owner }}" ]; then
-            echo "Only the repository owner may trigger refresh-bot manually."
-            exit 1
-          fi
-          echo "Owner confirmed: ${{ github.actor }}"
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -154,11 +177,13 @@ jobs:
   # Aggregate: download all four raw snapshots, merge into models.json + README,
   # validate + test, then open a PR if there is new data.
   aggregate:
-    needs: search
+    needs: [guard, build, search]
     # Run even if one or more search jobs failed (a backend that found no data
     # or couldn't reach the source must not abort the whole refresh). Merge
     # whatever searches DID produce data and still open a PR.
-    if: always()
+    # Tolerate a failed search leg (merge what the other legs found), but
+    # NEVER run on a refused guard or a failed build.
+    if: always() && needs.guard.result == 'success' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
