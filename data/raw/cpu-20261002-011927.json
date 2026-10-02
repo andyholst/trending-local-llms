@@ -1,0 +1,120 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5.2",
+          "hardware": "12GB phone (CPU, no GPU/NPU)",
+          "quant": "MoE experts streamed from flash; 14x faster than mmap (0.09 tok/s)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1492,
+          "interactions": 1521
+        }
+      ],
+      "why": "BigMoeOnEdge runs a 60GB-class MoE on a 12GB phone entirely on CPU+flash streaming: Qwen3-30B-A3B at 5.2 tok/s, no GPU/NPU, byte-identical to in-RAM inference (stock llama.cpp).",
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492,
+        "reshares": 16,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B",
+      "full_name": "gemma-4-26B-A4B-it",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "26B (MoE, 4B active)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.1",
+          "hardware": "12GB phone (CPU, no GPU/NPU)",
+          "quant": "MoE experts streamed from flash",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1492,
+          "interactions": 1521
+        }
+      ],
+      "why": "BigMoeOnEdge streams Gemma-4-26B-A4B experts from flash on a 12GB phone CPU at 4.1 tok/s — no GPU/NPU, byte-identical output to the full in-RAM model.",
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492,
+        "reshares": 16,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "full_name": "gpt-oss-120b",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "120B (6B active)",
+      "hf": "openai/gpt-oss-120b",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.2",
+          "hardware": "12GB phone (CPU, no GPU/NPU)",
+          "quant": "MoE experts streamed from flash; 14x faster than mmap (0.09 tok/s)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1492,
+          "interactions": 1521
+        }
+      ],
+      "why": "BigMoeOnEdge streamed gpt-oss-120b (60GB on disk) from flash on a 12GB phone at 2.2 tok/s on plain CPU — no GPU/NPU, 4 cores, byte-identical output to the full in-RAM run.",
+      "engagement": {
+        "likes": 3,
+        "comments": 10,
+        "views": 1492,
+        "reshares": 16,
+        "last_7d_likes": 0
+      },
+      "last_seen": "2026-08-13"
+    }
+  ],
+  "generated_utc": "2026-10-02T01:19:27Z"
+}
