@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-02T01:56:47Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary 5.95GB, MTP head + kernel fix",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104754435209715795",
+          "likes": 7,
+          "comments": 6,
+          "reshares": 42,
+          "views": 7652
+        }
+      ],
+      "why": "Ternary-compressed Qwen3.8-27B to ~6GB weights running a multi-file game build on a 5-year-old RTX 3060 12GB; MTP head + kernel fix nearly doubled decode from ~26 to ~50 tok/s."
+    }
+  ]
+}
