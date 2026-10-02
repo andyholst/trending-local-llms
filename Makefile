@@ -42,15 +42,21 @@ NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # 384K output). Input context is also raised to the model's 1M-token ceiling
 # (model card: 1M input / 384K output) so a long AGENTS.md + skill + mirrors
 # page is never squeezed. One variable each so CI + local runs agree.
-HERMES_MAX_TOKENS    := 384000
+# The REAL output cap of deepseek/deepseek-v4-flash-0731 on the Nous endpoint
+# is 65,536 tokens (/v1/models -> top_provider.max_completion_tokens). A larger
+# value is accepted SILENTLY and clamped, which is how 384000 hid the real cap.
+# `make model-caps` checks this live against the catalog.
+HERMES_MAX_TOKENS    := 65536
 HERMES_CONTEXT_WINDOW := 1048576
-# Reasoning effort per hermes call. Raising max_tokens alone does NOT stop a
-# search from failing with 'No visible answer was produced ... its reasoning
-# consumed the entire budget each time' -- the model just reasons longer. The
-# searches are mechanical (scrape -> extract -> write JSON), so cap reasoning
-# low; the fix-bot gets medium since it has to diagnose a failure report.
-HERMES_REASONING     := low
-HERMES_FIX_REASONING := medium
+# Reasoning per hermes call. This SKU thinks by default and only understands a
+# generic `reasoning` switch: effort 'low' STILL produces reasoning tokens, and
+# a long multi-query search burned the whole 65,536-token budget on them
+# ('No visible answer was produced ... reasoning consumed the entire budget').
+# 'none' sends reasoning.enabled=false -> 0 reasoning tokens (measured). The
+# searches are mechanical (scrape -> extract -> write JSON), so thinking OFF;
+# the fix-bot diagnoses a failure report, so it keeps a little (low).
+HERMES_REASONING     := none
+HERMES_FIX_REASONING := low
 
 
 ## ---------------------------------------------------------------------------
@@ -88,17 +94,17 @@ _setup:
 
 .PHONY: _search-nvidia
 _search-nvidia:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with NVIDIA keywords ONLY (rtx tokens per second llm, rtx 3090/4090/5090 tokens per second, bonsai 2 ternary, freetoken gpu, dflash speculative), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Set source_post to the exact post URL https://lightbrd.com/<user>/status/<id> - never the bare mirror URL or a profile page - and copy that post's likes, comments, reshares and views as integers onto the same measurement. If the post runs a fork or custom build of an engine (for example the PrismML llama.cpp fork that Ternary Bonsai 2 requires), record the engine exactly as that fork is named in the engines registry of data/models.json. Write the captured models to data/raw/nvidia-<UTC>.json using:  python3 scripts/update_trending.py --write-raw nvidia < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with NVIDIA keywords ONLY (rtx tokens per second llm, rtx 3090/4090/5090 tokens per second, bonsai 2 ternary, freetoken gpu, dflash speculative), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Set source_post to the exact post URL https://lightbrd.com/<user>/status/<id> - never the bare mirror URL or a profile page - and copy that post's likes, comments, reshares and views as integers onto the same measurement. If the post runs a fork or custom build of an engine (for example the PrismML llama.cpp fork that Ternary Bonsai 2 requires), record the engine exactly as that fork is named in the engines registry of data/models.json. After EACH query, immediately write only that query's captured models: python3 scripts/update_trending.py --write-raw nvidia < payload.json (each call writes its own data/raw/nvidia-<UTC>.json) - never collect all queries into one big payload, a reply has a 65536-token cap. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --reasoning $(HERMES_REASONING) --yolo
 
 .PHONY: _search-metal
 _search-metal:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with Apple/Metal keywords ONLY (mlx tokens per second, mlx apple silicon, mac m4 mlx local llm, mlxfast bonsai, tensorfold dflash mlx), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Set source_post to the exact post URL https://lightbrd.com/<user>/status/<id> - never the bare mirror URL or a profile page - and copy that post's likes, comments, reshares and views as integers onto the same measurement. If the post runs a fork or custom build of an engine (for example the PrismML llama.cpp fork that Ternary Bonsai 2 requires), record the engine exactly as that fork is named in the engines registry of data/models.json. Write the captured models to data/raw/metal-<UTC>.json using:  python3 scripts/update_trending.py --write-raw metal < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with Apple/Metal keywords ONLY (mlx tokens per second, mlx apple silicon, mac m4 mlx local llm, mlxfast bonsai, tensorfold dflash mlx), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Set source_post to the exact post URL https://lightbrd.com/<user>/status/<id> - never the bare mirror URL or a profile page - and copy that post's likes, comments, reshares and views as integers onto the same measurement. If the post runs a fork or custom build of an engine (for example the PrismML llama.cpp fork that Ternary Bonsai 2 requires), record the engine exactly as that fork is named in the engines registry of data/models.json. After EACH query, immediately write only that query's captured models: python3 scripts/update_trending.py --write-raw metal < payload.json (each call writes its own data/raw/metal-<UTC>.json) - never collect all queries into one big payload, a reply has a 65536-token cap. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --reasoning $(HERMES_REASONING) --yolo
 
 .PHONY: _search-cpu
 _search-cpu:
-	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with CPU/embedded/edge keywords ONLY (llm tokens per second no gpu cpu, llama.cpp cpu only, raspberry pi llm tokens per second, local llm cpu), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Set source_post to the exact post URL https://lightbrd.com/<user>/status/<id> - never the bare mirror URL or a profile page - and copy that post's likes, comments, reshares and views as integers onto the same measurement. If the post runs a fork or custom build of an engine (for example the PrismML llama.cpp fork that Ternary Bonsai 2 requires), record the engine exactly as that fork is named in the engines registry of data/models.json. Write the captured models to data/raw/cpu-<UTC>.json using:  python3 scripts/update_trending.py --write-raw cpu < payload.json. Never remove a model. Do not merge or push." \
+	hermes -z "Load AGENTS.md for rules. Fetch X trending posts from lightbrd.com using the Firecrawl scrape API: POST https://api.firecrawl.dev/v1/scrape with header 'Authorization: Bearer \$${FI...KEY}' and body {\"url\":\"https://lightbrd.com/search?f=tweets&q=<urlencoded>\",\"formats\":[\"markdown\"]}. Search with CPU/embedded/edge keywords ONLY (llm tokens per second no gpu cpu, llama.cpp cpu only, raspberry pi llm tokens per second, local llm cpu), one query at a time, last-3-day. Rank by interactions then t/s; record engine + model. Write tps as a CLEAN number with NO embedded text/comments (move context like 'DFlash spec-decode' into quant/hardware); record each post's likes/comments/reshares/views on the engine measurement. Set source_post to the exact post URL https://lightbrd.com/<user>/status/<id> - never the bare mirror URL or a profile page - and copy that post's likes, comments, reshares and views as integers onto the same measurement. If the post runs a fork or custom build of an engine (for example the PrismML llama.cpp fork that Ternary Bonsai 2 requires), record the engine exactly as that fork is named in the engines registry of data/models.json. After EACH query, immediately write only that query's captured models: python3 scripts/update_trending.py --write-raw cpu < payload.json (each call writes its own data/raw/cpu-<UTC>.json) - never collect all queries into one big payload, a reply has a 65536-token cap. Never remove a model. Do not merge or push." \
 		-m nous-deepseek --reasoning $(HERMES_REASONING) --yolo
 
 .PHONY: _search
@@ -116,15 +122,15 @@ _search-smoke:
 # routing to another provider (the HF 403 that killed every fix-bot run) in
 # seconds instead of after a 20-minute search. Skips when NOUS_API_KEY is unset.
 HERMES_SMOKE_TIMEOUT := 90
+# Live model-catalog guard: HERMES_MODEL exists on the endpoint, HERMES_MAX_TOKENS
+# fits its real max_completion_tokens, and it accepts `reasoning`. Skips w/o key.
+.PHONY: _model-caps
+_model-caps:
+	python3 scripts/model_caps_check.py --base $(NOUS_BASE) --model $(HERMES_MODEL) --max-tokens $(HERMES_MAX_TOKENS)
+
 .PHONY: _hermes-smoke
 _hermes-smoke:
-	@if [ -z "$$NOUS_API_KEY" ]; then echo "[hermes-smoke] SKIP: NOUS_API_KEY not set"; exit 0; fi; \
-	out=$$(timeout $(HERMES_SMOKE_TIMEOUT) hermes -z "Reply with exactly the word PONG and nothing else." \
-		-m nous-deepseek --reasoning none 2>&1); rc=$$?; \
-	echo "$$out" | tail -5; \
-	if [ $$rc -ne 0 ] || ! echo "$$out" | grep -q PONG; then \
-		echo "[hermes-smoke] FAIL rc=$$rc: alias nous-deepseek did not answer PONG"; exit 1; fi; \
-	echo "[hermes-smoke] OK: nous-deepseek answered via the configured alias"
+	HERMES_SMOKE_TIMEOUT=$(HERMES_SMOKE_TIMEOUT) bash scripts/hermes_smoke.sh
 
 .PHONY: _correct-raw
 _correct-raw:
@@ -197,7 +203,7 @@ _validate-mapped:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py)
 
 
 .PHONY: _requirements-test
@@ -271,6 +277,10 @@ search:
 search-smoke:
 	$(DOCKER_RUN) make _search-smoke $(if $(BACKEND),BACKEND=$(BACKEND),)
 
+.PHONY: model-caps
+model-caps:
+	$(DOCKER_RUN) make _model-caps
+
 .PHONY: hermes-smoke
 hermes-smoke:
 	$(DOCKER_RUN) sh -c "make _setup >/dev/null && make _hermes-smoke"
@@ -278,7 +288,7 @@ hermes-smoke:
 # Live pipeline smoke: real Firecrawl->lightbrd scrape for every nvidia/metal/
 # cpu query (3s cap each) + a real Hermes call through the search alias.
 .PHONY: pipeline-smoke
-pipeline-smoke: search-smoke hermes-smoke
+pipeline-smoke: search-smoke model-caps hermes-smoke
 
 .PHONY: correct-raw
 correct-raw:

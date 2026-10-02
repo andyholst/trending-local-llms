@@ -89,6 +89,9 @@ jobs:
       - name: Search reachability — cpu (HTTP 200 within 3s per query)
         run: make search-smoke BACKEND=cpu
 
+      - name: Model caps (model served, max_tokens fits, accepts reasoning)
+        run: make model-caps
+
       - name: Hermes routing smoke (real call through the search alias)
         run: make hermes-smoke
 
