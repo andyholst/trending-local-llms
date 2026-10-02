@@ -296,6 +296,29 @@ def merge_engagements(store: dict, seen: list[str]) -> tuple[int, int]:
     unknown = sum(1 for s in tokens if s not in set(m["name"].lower() for m in store["models"]))
     return matched, unknown
 
+def apply_engine_aliases(m: dict, engines: list[dict] | None = None) -> list[dict]:
+    """Rename engines per the model's `engine_aliases` ({posted name: registry
+    name}). Bonsai 2's ternary GGUFs only run on the PrismML llama.cpp fork, so
+    a post that says 'llama.cpp' must be stored and linked as
+    'llama.cpp (PrismML fork)'. Applied to `engines` (default: the model's own)
+    and to supported_engines; idempotent. Returns the (renamed) engine list."""
+    aliases = m.get("engine_aliases") or {}
+    es = m.get("engines", []) if engines is None else engines
+    if not aliases:
+        return es
+    for e in es:
+        if e.get("engine") in aliases:
+            e["engine"] = aliases[e["engine"]]
+    if engines is None and m.get("supported_engines"):
+        seen, out = set(), []
+        for name in (aliases.get(x, x) for x in m["supported_engines"]):
+            if name not in seen:
+                seen.add(name)
+                out.append(name)
+        m["supported_engines"] = out
+    return es
+
+
 def sort_models(models: list[dict], today: datetime) -> list[dict]:
     """Trending (<=7d) -> recent (<=30d) -> stale (>30d).
     Within a band, sort by last_7d_likes desc, then t/s (numeric) desc.
@@ -303,6 +326,7 @@ def sort_models(models: list[dict], today: datetime) -> list[dict]:
     Also sorts each model's engines newest-date-first so the latest trending
     t/s is always the first/surface figure."""
     for m in models:
+        apply_engine_aliases(m)
         m["engines"] = sorted(m.get("engines", []), key=lambda e: e.get("date", ""), reverse=True)
         # recompute the 7-day engagement from distinct posts (dedup + prune)
         recompute_7d_engagement(m, today)
@@ -743,7 +767,12 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
             if mid in by_id:
                 # update existing: merge engines (replace t/s on same engine+date), keep rest
                 existing = by_id[mid]
-                existing["engines"] = merge_engines(existing.get("engines", []), m.get("engines", []))
+                # alias the incoming rows FIRST, so a raw 'llama.cpp' figure merges
+                # with the stored fork rows instead of becoming a duplicate
+                apply_engine_aliases(existing)
+                incoming = apply_engine_aliases(existing, [dict(e) for e in m.get("engines", [])])
+                existing["engines"] = merge_engines(existing.get("engines", []), incoming)
+                apply_engine_aliases(existing)
                 existing["last_seen"] = now_utc().strftime("%Y-%m-%d")
                 # merge post-granularity engagement, deduped by source_post URL
                 eng = existing.setdefault("engagement", {})

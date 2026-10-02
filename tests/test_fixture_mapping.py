@@ -123,7 +123,12 @@ def test_optional_fields_filled():
     contract = json.loads(CONTRACT.read_text())
     items = contract["properties"]["models"]["items"]
     required = items["required"]
-    optional = [k for k in items["properties"] if k not in required]
+    # Sparse per-model overrides: absence is meaningful ("no override"), so
+    # ingest must NOT fill them. engine_aliases maps a posted engine name to a
+    # registered fork only for models that need one (e.g. Bonsai 2 -> PrismML
+    # llama.cpp fork); every other model has none.
+    sparse = {"engine_aliases"}
+    optional = [k for k in items["properties"] if k not in required and k not in sparse]
     store = run_ingest(base_store())
     for m in store["models"]:
         for field in optional:

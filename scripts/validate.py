@@ -186,6 +186,31 @@ def check_latest_tps(store: dict) -> None:
         print(f"  OK: all models ordered newest t/s date first (latest trending t/s surfaced)")
 
 
+def check_engine_aliases(store: dict) -> None:
+    """A model's engine_aliases ({posted name: registry name}) must point at a
+    registered engine with a known-good repo URL, and NO measurement or
+    supported engine on that model may still carry the aliased-away name —
+    otherwise the README links the stock engine for a model that needs a fork
+    (Bonsai 2 'llama.cpp' figures linked to ggml-org/llama.cpp, which rejects
+    its PTQ1_0/PQ2_0 files)."""
+    reg = store.get("engines", {})
+    bad = 0
+    for m in store.get("models", []):
+        for src, dst in (m.get("engine_aliases") or {}).items():
+            if dst not in reg or not reg[dst].get("url"):
+                bad += 1
+                fail(f"{m.get('id','?')}: engine alias '{src}' -> '{dst}' is not a registered engine with a url")
+            elif KNOWN_ENGINE_URLS.get(dst) and reg[dst]["url"] != KNOWN_ENGINE_URLS[dst]:
+                bad += 1
+                fail(f"{m.get('id','?')}: alias target '{dst}' url {reg[dst]['url']} != known-good {KNOWN_ENGINE_URLS[dst]}")
+            left = [e.get("tps") for e in m.get("engines", []) if e.get("engine") == src]
+            if left or src in (m.get("supported_engines") or []):
+                bad += 1
+                fail(f"{m.get('id','?')}: engine '{src}' should be '{dst}' (engine_aliases) but still appears: {left}")
+    if not bad:
+        print("  OK: engine aliases resolve to registered forks; no aliased-away engine left")
+
+
 def check_supported_engines(store: dict) -> None:
     """Every model lists the engines it is supported by (supported_engines),
     and each engine in that list has a measurement in the engines array."""
@@ -729,6 +754,7 @@ KNOWN_ENGINE_URLS = {
     "Strata": "https://github.com/Niko1221/Strata",
     "DFlash2": "https://github.com/z-lab/dflash",
     "WebLLM": "https://github.com/mlc-ai/web-llm",
+    "llama.cpp (PrismML fork)": "https://github.com/PrismML-Eng/llama.cpp",
 }
 
 
@@ -945,6 +971,7 @@ def main() -> int:
     add("hermes prompts are valid shell (dry-run)", "data", lambda: check_hermes_prompts())
     add("latest t/s surfaced", "data", lambda: check_latest_tps(store))
     add("supported engines", "data", lambda: check_supported_engines(store))
+    add("engine aliases (model-specific forks)", "data", lambda: check_engine_aliases(store))
     add("model fields + links", "schema", lambda: check_model_fields(store))
     add("schema conformance (model_contract.json)", "schema", lambda: check_schema(store))
     add("search/raw contract (search_contract.json)", "search", lambda: check_search_contract())

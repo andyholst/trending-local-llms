@@ -8,7 +8,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 Ties go to more posts, then the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
-> Last generated: 2026-10-02 00:46 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-10-02 00:57 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
@@ -18,7 +18,7 @@ Best measured t/s per backend; the full list of measurements is in the backend t
 
 | Model | Status | Trend | CUDA t/s (best) | Metal t/s (best) | CPU t/s (best) | VRAM | Why people love it |
 |---|---|---|---|---|---|---|---|
-| [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)<br><sub>Ternary-Bonsai-2-27B · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-01</sub> | **10.6**<br><sub>buzz 6 · 5 posts · speed +4.6 (237 t/s, Apple Silicon 16GB Mac)</sub> | **143** t/s<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) · RTX 5090 · ternary<br><sub>+4 more</sub> | **237** t/s<br>[MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) · Apple Silicon 16GB Mac · mlx.fast 4-bit | — | 12GB | PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards. |
+| [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)<br><sub>Ternary-Bonsai-2-27B · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-01</sub> | **10.6**<br><sub>buzz 6 · 5 posts · speed +4.6 (237 t/s, Apple Silicon 16GB Mac)</sub> | **143** t/s<br>[llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) · RTX 5090 · ternary<br><sub>+4 more</sub> | **237** t/s<br>[MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) · Apple Silicon 16GB Mac · mlx.fast 4-bit | — | 12GB | PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards. |
 | [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B)<br><sub>Qwen3.8-27B-Instruct · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-09-29</sub> | **7.1**<br><sub>buzz 3.4 · 1 post · speed +3.7 (124 t/s, MacBook Pro M5 Max)</sub> | **44** t/s<br>[SGLang](https://github.com/sgl-project/sglang) · DGX Spark · DFlash2 spec-decode draft head<br><sub>+2 more</sub> | **124** t/s<br>[TensorFold](https://github.com/ashhart/TensorFold) · MacBook Pro M5 Max · 4-bit MLX | — | 16GB | Flagship local model. 384K views on release. 262K ctx (1M via YaRN). |
 | [**Qwen3.8-Flash-Next 125B**](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)<br><sub>Qwen3.8-Flash-Next-125B · 125B (MoE) · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-01</sub> | **5.8**<br><sub>buzz 2.4 · 1 post · speed +3.4 (93 t/s, RTX 5070 12GB)</sub> | **93** t/s<br>[Strata](https://github.com/Niko1221/Strata) · RTX 5070 12GB · MoE, experts across GPU/RAM/SSD | — | — | 12GB | Qwen3.8-Flash-Next-125B — see source posts. |
 | [**Qwen3 8B**](https://huggingface.co/Qwen/Qwen3-8B)<br><sub>Qwen3-8B · 8B · Apache 2.0</sub> | 🕑 recent<br><sub>last seen 2026-09-12</sub> | **0**<br><sub>no posts in 7 days</sub> | **100** t/s<br>[Ollama](https://github.com/ollama/ollama) · RTX 4060 · Q4_K_M | — | — | 8GB | The default 8 GB pick. Fast, Apache 2.0. |
@@ -35,18 +35,18 @@ Best measured t/s per backend; the full list of measurements is in the backend t
 
 Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU). Only engines with at least one measurement are shown.
 
-| Model | [llama.cpp](https://github.com/ggml-org/llama.cpp) | [Ollama](https://github.com/ollama/ollama) | [LiteRT](https://github.com/google-ai-edge/LiteRT) | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | [SGLang](https://github.com/sgl-project/sglang) | [Strata](https://github.com/Niko1221/Strata) | [TensorFold](https://github.com/ashhart/TensorFold) |
-|---|---|---|---|---|---|---|---|
-| **Bonsai 2 27B** | 🟦 143 | — | — | 🟩 237 | — | — | — |
-| **Qwen3.8-27B** | 🟦 43.7 | — | — | — | 🟦 44 | — | 🟩 124 |
-| **Qwen3.8-Flash-Next 125B** | — | — | — | — | — | 🟦 93 | — |
-| **Qwen3 8B** | — | 🟦 100 | — | — | — | — | — |
-| **Gemma 4 12B** | 🟦 99.7<br>🟩 49.67 | — | — | — | — | — | — |
-| **Qwen3 14B** | — | 🟦 65 | — | — | — | — | — |
-| **Qwen 3.6 27B** | 🟦 37 | — | — | — | — | — | — |
-| **Gemma 4 E2B** | — | — | 🟨 9 | — | — | — | — |
-| **Muse Glimmer 30B** | 🟦 233<br>🟩 50 | — | — | — | — | — | — |
-| **DeepSeek R1 1.5B** | — | 🟨 4 | — | — | — | — | — |
+| Model | [llama.cpp](https://github.com/ggml-org/llama.cpp) | [Ollama](https://github.com/ollama/ollama) | [LiteRT](https://github.com/google-ai-edge/LiteRT) | [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | [SGLang](https://github.com/sgl-project/sglang) | [Strata](https://github.com/Niko1221/Strata) | [TensorFold](https://github.com/ashhart/TensorFold) |
+|---|---|---|---|---|---|---|---|---|
+| **Bonsai 2 27B** | — | — | — | 🟦 143 | 🟩 237 | — | — | — |
+| **Qwen3.8-27B** | 🟦 43.7 | — | — | — | — | 🟦 44 | — | 🟩 124 |
+| **Qwen3.8-Flash-Next 125B** | — | — | — | — | — | — | 🟦 93 | — |
+| **Qwen3 8B** | — | 🟦 100 | — | — | — | — | — | — |
+| **Gemma 4 12B** | 🟦 99.7<br>🟩 49.67 | — | — | — | — | — | — | — |
+| **Qwen3 14B** | — | 🟦 65 | — | — | — | — | — | — |
+| **Qwen 3.6 27B** | 🟦 37 | — | — | — | — | — | — | — |
+| **Gemma 4 E2B** | — | — | 🟨 9 | — | — | — | — | — |
+| **Muse Glimmer 30B** | 🟦 233<br>🟩 50 | — | — | — | — | — | — | — |
+| **DeepSeek R1 1.5B** | — | 🟨 4 | — | — | — | — | — | — |
 
 ---
 
@@ -55,7 +55,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU)
 | Model | Params | License | VRAM | Peak t/s | Measurements (engine · t/s · hardware · quant · date) |
 |---|---|---|---|---|---|
 | [**Muse Glimmer 30B**](https://huggingface.co/meta-models/Muse-Glimmer-30B) | 30B | Apache 2.0 | 24GB | 233 | [llama.cpp](https://github.com/ggml-org/llama.cpp) **233** · RTX 5090 · 4-bit · 2026-08-10 |
-| [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 27B | Apache 2.0 | 12GB | 143 | [llama.cpp](https://github.com/ggml-org/llama.cpp) **143** · RTX 5090 · ternary · 2026-09-18<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) **91** · RTX 4070 12GB · PTQ1_0-mtp-lean (6.3 GB) · 2026-09-26<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) **71** · RTX 5060 Ti 16GB · ternary, author conditions · 2026-10-01<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) **54.1** · RTX 5060 Ti 16GB · ternary, Japanese text · 2026-10-01<br>[llama.cpp](https://github.com/ggml-org/llama.cpp) **50** · RTX 3060 12GB · MTP + kernel fix · 2026-09-26 |
+| [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 27B | Apache 2.0 | 12GB | 143 | [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) **143** · RTX 5090 · ternary · 2026-09-18<br>[llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) **91** · RTX 4070 12GB · PTQ1_0-mtp-lean (6.3 GB) · 2026-09-26<br>[llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) **71** · RTX 5060 Ti 16GB · ternary, author conditions · 2026-10-01<br>[llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) **54.1** · RTX 5060 Ti 16GB · ternary, Japanese text · 2026-10-01<br>[llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) **50** · RTX 3060 12GB · MTP + kernel fix · 2026-09-26 |
 | [**Qwen3 8B**](https://huggingface.co/Qwen/Qwen3-8B) | 8B | Apache 2.0 | 8GB | 100 | [Ollama](https://github.com/ollama/ollama) **100** · RTX 4060 · Q4_K_M · 2026-09-12 |
 | [**Gemma 4 12B**](https://huggingface.co/google/gemma-4-12B-it) | 12B | Gemma | 9GB | 99.7 | [llama.cpp](https://github.com/ggml-org/llama.cpp) **99.7** · RTX 4090 Laptop · Q4 · 2026-09-19 |
 | [**Qwen3.8-Flash-Next 125B**](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) | 125B (MoE) | Apache 2.0 | 12GB | 93 | [Strata](https://github.com/Niko1221/Strata) **93** · RTX 5070 12GB · MoE, experts across GPU/RAM/SSD · 2026-10-01 |
@@ -93,7 +93,8 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU)
 
 | Engine | Backend | Models measured | Best for |
 |---|---|---|---|
-| [llama.cpp](https://github.com/ggml-org/llama.cpp) | CUDA / CPU / Metal | 5 | Max control, custom quants |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) | CUDA / CPU / Metal | 4 | Max control, custom quants |
+| [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | CUDA / CPU / Metal | 1 | PrismML's llama.cpp fork (prism branch) — required for Ternary Bonsai 2 PTQ1_0/PQ2_0 (stock llama.cpp rejects them) |
 | [Ollama](https://github.com/ollama/ollama) | CUDA / CPU / Metal | 3 | Easiest start |
 | [FreeToken](https://github.com/FlashML-org/FreeToken) | CUDA | 0 | Big MoE on small GPUs |
 | [vLLM](https://github.com/vllm-project/vllm) | CUDA | 0 | Production serving, high throughput |
