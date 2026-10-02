@@ -1,0 +1,49 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "quillan-ronin",
+      "name": "Quillan-Ronin",
+      "full_name": "Quillan-Ronin v5.4.0-oni",
+      "type": "LLM (edge)",
+      "formats": [
+        {
+          "name": "Quillan-Ronin",
+          "hf": "CrashOverrideX/Quillan-Ronin"
+        }
+      ],
+      "license": "apache-2.0",
+      "params": "4.57B",
+      "hf": "CrashOverrideX/Quillan-Ronin",
+      "vram_tier": "4GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "quillan.cpp",
+          "tps": "43",
+          "hardware": "PC (CPU)",
+          "quant": "BitNet 1.58-bit, 23-43 tok/s",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/Crashoverride_X/status/2103053753637118459",
+          "likes": 6,
+          "comments": 2,
+          "reshares": 30,
+          "views": 21185,
+          "interactions": 21223
+        }
+      ],
+      "why": "Quillan-Ronin is a BitNet 1.58-bit ternary H-NMoE built for consumer hardware (i5-7000 / GTX 1050 Ti class, CPU). Its custom quillan.cpp CPU inference engine lifts tokens/s from 14-16 to 23-43 on a PC.",
+      "engagement": {
+        "likes": 6,
+        "comments": 2,
+        "reshares": 30,
+        "views": 21185
+      },
+      "last_seen": "2026-09-24"
+    }
+  ],
+  "generated_utc": "2026-10-02T02:20:47Z"
+}

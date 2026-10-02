@@ -1,0 +1,125 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-02T02:20:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-09-30",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-189",
+          "hardware": "M5 Max",
+          "quant": "4-bit MLX, DFlash2 drafter",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 212
+        }
+      ]
+    },
+    {
+      "id": "nemotron-3.5-lightning-30b",
+      "name": "Nemotron 3.5 Lightning 30B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "OpenMDW 1.1",
+      "params": "30B (3B active)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-09-30",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188-206",
+          "hardware": "M5 Max",
+          "quant": "4-bit MLX",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 212
+        }
+      ]
+    },
+    {
+      "id": "ravenx-conjecture-qwen3-8b-mlx",
+      "name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "full_name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "42",
+          "hardware": "M3",
+          "quant": "MLX",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/jolyneshibasol/status/2104852085426827615",
+          "likes": 39,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "ornith-1.5-35b",
+      "name": "Ornith 1.5 35B",
+      "full_name": "Ornith-1.5-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "ornith-ai/Ornith-1.5-35B-A3B-MLX",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "50",
+          "hardware": "MacBook Pro M5 48GB",
+          "quant": "4-bit MLX",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/AhmedHamdy29189/status/2104775267113980109",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 47
+        }
+      ]
+    }
+  ]
+}

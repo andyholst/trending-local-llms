@@ -1,0 +1,49 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "glm-5.3",
+      "name": "GLM-5.3",
+      "full_name": "GLM-5.3-NVFP4 (abliterated)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "penclaw-GLM-5.3-abliterated",
+          "hf": "audnai/penclaw-GLM-5.3-abliterated"
+        }
+      ],
+      "license": "Unknown",
+      "params": "753B",
+      "hf": "audnai/penclaw-GLM-5.3-abliterated",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "DeepSeekHarness",
+          "tps": "18",
+          "hardware": "CPU hybrid inference",
+          "quant": "NVFP4, 256K context, KV precache (170 t/s prefill)",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/Tono_Ken3/status/2105802439719038989",
+          "likes": 2,
+          "comments": 18,
+          "reshares": 0,
+          "views": 1612,
+          "interactions": 1632
+        }
+      ],
+      "why": "GLM-5.3-NVFP4 (abliterated 'Warlock') runs on CPU hybrid inference via DeepSeekHarness at 18 t/s decode with 170 t/s prefill, using a KV precache strategy so an 11K-token head processes in seconds.",
+      "engagement": {
+        "likes": 2,
+        "comments": 18,
+        "reshares": 0,
+        "views": 1612
+      },
+      "last_seen": "2026-10-01"
+    }
+  ],
+  "generated_utc": "2026-10-02T02:21:38Z"
+}
