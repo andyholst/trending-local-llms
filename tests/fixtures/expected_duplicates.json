@@ -57,6 +57,8 @@
             "date": "2026-09-29",
             "engine": "FreeToken",
             "tps": "39.3",
+            "hardware": "RTX 8GB GPU",
+            "quant": "4-bit",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -67,6 +69,8 @@
             "date": "2026-09-27",
             "engine": "FreeToken",
             "tps": "39.3",
+            "hardware": "8 GB GPU (MoE, ~3B active/token)",
+            "quant": "4-bit",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -74,7 +78,10 @@
           }
         ],
         "posts_7d": 2,
-        "score_7d": 2.0
+        "buzz_7d": 2.0,
+        "score_7d": 2.0,
+        "speed_bonus": 2.3,
+        "trend_score": 4.3
       }
     },
     {
@@ -127,6 +134,8 @@
             "date": "2026-09-29",
             "engine": "FreeToken",
             "tps": "22",
+            "hardware": "RTX 32GB GPU",
+            "quant": "FP4/FP8",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -137,6 +146,8 @@
             "date": "2026-09-27",
             "engine": "FreeToken",
             "tps": "22",
+            "hardware": "32 GB GPU (MoE, 6 of 256 experts/token)",
+            "quant": "FP8/FP4 mixed",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -144,7 +155,10 @@
           }
         ],
         "posts_7d": 2,
-        "score_7d": 2.0
+        "buzz_7d": 2.0,
+        "score_7d": 2.0,
+        "speed_bonus": 1.7,
+        "trend_score": 3.7
       }
     }
   ]
