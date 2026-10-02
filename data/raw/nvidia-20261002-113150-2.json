@@ -1,0 +1,51 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-02T11:31:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + lookup-augmented drafting, optimized vLLM, prefix caching, quantized KV cache; ~133 t/s real chat, ~138 t/s DFlash2+lookup, up to 381 t/s longer-verification + context lookup",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105848435672764747",
+          "likes": 88,
+          "comments": 5,
+          "reshares": 9,
+          "views": 7082,
+          "interactions": 0
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "engagement": {
+        "likes": 88,
+        "comments": 5,
+        "reshares": 9,
+        "views": 7082
+      }
+    }
+  ]
+}

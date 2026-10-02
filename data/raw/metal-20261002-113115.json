@@ -1,0 +1,49 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-02T11:31:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "44.6",
+          "hardware": "M3 Max 96GB (Apple Silicon)",
+          "quant": "MLX 4-bit, z-lab DFlash2 8-bit drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 699,
+          "comments": 2,
+          "reshares": 9,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "41.5",
+          "hardware": "M3 Max 96GB (Apple Silicon)",
+          "quant": "MLX 4-bit, z-lab DFlash2 8-bit drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 699,
+          "comments": 2,
+          "reshares": 9,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}
