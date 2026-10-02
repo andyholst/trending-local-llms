@@ -105,11 +105,40 @@ def scrape(keyword: str, api_key: str, budget: float):
         signal.alarm(0)
 
 
+# Transient outcomes worth ONE more bounded attempt: a client-side timeout
+# (status 0 — an uncached Firecrawl scrape keeps running server-side and is
+# usually cached a moment later), rate limiting, and 5xx. Auth/4xx failures
+# (401/402/403/404) are real and are never retried.
+RETRYABLE = {0, 408, 429, 500, 502, 503, 504}
+
+
+def probe(keyword: str, api_key: str, budget: float, retries: int = 1,
+          retry_wait: float = 2.0, scrape_fn=None, sleep_fn=time.sleep):
+    """Scrape one query, retrying a transient failure up to `retries` times.
+    EVERY attempt is still capped at `budget` seconds. Returns
+    (label, status, success, elapsed_of_last_attempt, attempts)."""
+    scrape_fn = scrape_fn or scrape
+    attempts = 0
+    while True:
+        attempts += 1
+        status, ok, elapsed = scrape_fn(keyword, api_key, budget)
+        if status == 200 and ok:
+            return "OK", status, ok, elapsed, attempts
+        if attempts > retries or status not in RETRYABLE:
+            return ("TIMEOUT" if status == 0 else "FAIL"), status, ok, elapsed, attempts
+        sleep_fn(retry_wait)
+
+
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--budget", type=int, default=90,
                     help="max seconds per backend query (default 90)")
     ap.add_argument("--backend", choices=list(BACKEND_KEYWORDS), help="test one backend only")
+    ap.add_argument("--retries", type=int, default=1,
+                    help="extra bounded attempts for a timed-out/429/5xx query (default 1; "
+                         "each attempt still capped at --budget)")
+    ap.add_argument("--retry-wait", type=float, default=2.0,
+                    help="seconds to wait before a retry (default 2)")
     ap.add_argument("--url-only", action="store_true",
                     help="print the exact lightbrd URLs (no network) and exit")
     ap.add_argument("--key", default=os.environ.get("FIRECRAWL_API_KEY", ""),
@@ -133,14 +162,15 @@ def main() -> int:
     fails = 0
     for b in backends:
         for k in BACKEND_KEYWORDS[b]:
-            status, ok, elapsed = scrape(k, args.key, args.budget)
-            label = "OK" if (status == 200 and ok) else ("TIMEOUT" if status == 0 else "FAIL")
-            print(f"[{b}] {label} http={status} success={ok} {elapsed:.1f}s  {lightbrd_url(k)}")
+            label, status, ok, elapsed, attempts = probe(
+                k, args.key, args.budget, args.retries, args.retry_wait)
+            tries = f" (attempt {attempts})" if attempts > 1 else ""
+            print(f"[{b}] {label} http={status} success={ok} {elapsed:.1f}s{tries}  {lightbrd_url(k)}")
             if label != "OK":
                 fails += 1
     if fails:
-        print(f"\n[smoke] {fails} request(s) did NOT return HTTP 200. "
-              f"Budget {args.budget}s may be too low (Firecrawl scrape needs ~10-60s).")
+        print(f"\n[smoke] {fails} request(s) did NOT return HTTP 200 within {args.budget}s "
+              f"after {args.retries + 1} attempt(s).")
         return 2
     print(f"\n[smoke] all backends returned HTTP 200 within {args.budget}s")
     return 0

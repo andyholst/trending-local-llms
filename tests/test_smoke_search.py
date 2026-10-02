@@ -88,6 +88,46 @@ def main() -> int:
             check(f"url: {backend}/{k!r} encodes to exact lightbrd URL",
                   url == expect, f"got {url}")
 
+    # Retry policy (offline, scripted scrape results). The 3s cap per attempt
+    # stays; a cache-miss timeout gets ONE more bounded attempt. Live CI flaked
+    # on exactly this: a different uncached query timed out on each run while
+    # the re-run of the same query answered in ~0.5s.
+    print("smoke_search: bounded retry policy")
+    probe = S["probe"]
+
+    def scripted(results):
+        seq = list(results)
+        calls = []
+        def fn(keyword, key, budget):
+            calls.append(budget)
+            return seq.pop(0)
+        return fn, calls
+
+    fn, calls = scripted([(0, None, 3.0), (200, True, 0.5)])
+    r = probe("q", "k", 3, retries=1, scrape_fn=fn, sleep_fn=lambda s: None)
+    check("retry: timeout then 200 -> OK on attempt 2", r[0] == "OK" and r[4] == 2, str(r))
+    check("retry: every attempt keeps the 3s budget", calls == [3, 3], str(calls))
+
+    fn, calls = scripted([(0, None, 3.0), (0, None, 3.0)])
+    r = probe("q", "k", 3, retries=1, scrape_fn=fn, sleep_fn=lambda s: None)
+    check("retry: timeout twice -> TIMEOUT after 2 attempts (no more)", r[0] == "TIMEOUT" and r[4] == 2, str(r))
+
+    fn, calls = scripted([(401, False, 0.2)])
+    r = probe("q", "k", 3, retries=1, scrape_fn=fn, sleep_fn=lambda s: None)
+    check("retry: 401 is real (bad key) -> FAIL, never retried", r[0] == "FAIL" and r[4] == 1, str(r))
+
+    fn, calls = scripted([(429, False, 0.1), (200, True, 0.4)])
+    r = probe("q", "k", 3, retries=1, scrape_fn=fn, sleep_fn=lambda s: None)
+    check("retry: 429 rate limit retried once", r[0] == "OK" and r[4] == 2, str(r))
+
+    fn, calls = scripted([(0, None, 3.0)])
+    r = probe("q", "k", 3, retries=0, scrape_fn=fn, sleep_fn=lambda s: None)
+    check("retry: --retries 0 keeps the old single-attempt behaviour", r[0] == "TIMEOUT" and r[4] == 1, str(r))
+
+    fn, calls = scripted([(200, True, 0.5)])
+    r = probe("q", "k", 3, retries=1, scrape_fn=fn, sleep_fn=lambda s: None)
+    check("retry: first-try OK makes exactly one request", r[0] == "OK" and len(calls) == 1, str(r))
+
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 0 if _FAIL == 0 else 1
 
