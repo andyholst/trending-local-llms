@@ -53,6 +53,21 @@ jobs:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       FIX_ROUNDS: "3"
     steps:
+      # Before anything touches a secret: only the repository owner may run
+      # fix-bot (it spends the Nous key and pushes with the owner PAT).
+      # qa-validate dispatches it with the owner PAT, so its actor IS the owner.
+      - name: Owner-only trigger guard
+        env:
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ "$ACTOR" != "$OWNER" ] || [ "$TRIGGER" != "$OWNER" ]; then
+            echo "Refused: only the repository owner ($OWNER) may run fix-bot (actor=$ACTOR, triggering_actor=$TRIGGER)."
+            exit 1
+          fi
+          echo "Owner confirmed: $ACTOR"
+
       - name: Resolve PR
         id: pr
         env:

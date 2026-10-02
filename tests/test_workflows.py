@@ -159,6 +159,58 @@ def test_fix_bot():
           "always()" in str(rep.get("if", "")) and "gh pr comment" in rep.get("run", ""), "")
 
 
+def _deps(jobs: dict, name: str) -> set:
+    """All jobs `name` depends on, transitively."""
+    out, todo = set(), [name]
+    while todo:
+        n = jobs[todo.pop()].get("needs", [])
+        for d in ([n] if isinstance(n, str) else n):
+            if d not in out:
+                out.add(d)
+                todo.append(d)
+    return out
+
+
+def _guard_ok(run: str) -> bool:
+    return ("github.repository_owner" in run or "$OWNER" in run) and "TRIGGER" in run and "ACTOR" in run
+
+
+def test_owner_guards():
+    """#67: every refresh-bot job is gated by an owner check that also covers
+    re-runs (triggering_actor); aggregate can't run on a refused guard; fix-bot
+    checks the owner before any step that touches a secret."""
+    wf = load("refresh-bot.yml")
+    jobs = wf["jobs"]
+    g = jobs.get("guard", {})
+    gstep = (steps(g) or [{}])[0]
+    genv = gstep.get("env", {})
+    check("access: refresh-bot has a 'guard' job", bool(g), list(jobs))
+    check("access: guard compares actor AND triggering_actor to the owner",
+          "github.actor" in str(genv.get("ACTOR")) and "github.triggering_actor" in str(genv.get("TRIGGER"))
+          and "repository_owner" in str(genv.get("OWNER")) and _guard_ok(gstep.get("run", "")), genv)
+    check("access: guard lets the daily schedule through", '"schedule"' in gstep.get("run", ""))
+    check("access: guard uses env, not inline ${{ }} in the script (no injection)",
+          "${{" not in gstep.get("run", ""))
+    for name in jobs:
+        if name != "guard":
+            check(f"access: refresh-bot job '{name}' depends on guard", "guard" in _deps(jobs, name), _deps(jobs, name))
+    cond = str(jobs["aggregate"].get("if", ""))
+    check("access: aggregate requires guard success (not bare always())",
+          "needs.guard.result == 'success'" in cond, cond)
+    check("access: aggregate requires build success", "needs.build.result == 'success'" in cond, cond)
+    conc = wf.get("concurrency", {})
+    check("concurrency: refresh-bot runs queue (group set, no cancel)",
+          bool(conc.get("group")) and conc.get("cancel-in-progress") is False, conc)
+
+    fb = load("fix-bot.yml")["jobs"]["fix"]
+    first = (steps(fb) or [{}])[0]
+    check("access: fix-bot's FIRST step is the owner guard", "owner" in first.get("name", "").lower(), first.get("name"))
+    check("access: fix-bot guard checks actor AND triggering_actor",
+          "github.triggering_actor" in str(first.get("env", {}).get("TRIGGER")) and _guard_ok(first.get("run", "")))
+    secret_steps = [i for i, st in enumerate(steps(fb)) if "secrets." in str(st)]
+    check("access: no fix-bot step uses a secret before the guard", min(secret_steps or [99]) > 0, secret_steps)
+
+
 def test_nothing_pushes_master():
     for f in sorted(WF.glob("*.yml")):
         t = f.read_text()
@@ -173,6 +225,7 @@ def main() -> int:
     test_refresh_bot()
     test_qa_validate()
     test_fix_bot()
+    test_owner_guards()
     test_nothing_pushes_master()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

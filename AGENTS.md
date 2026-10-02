@@ -315,6 +315,23 @@ this `AGENTS.md` and the `gather-data` skill, then:
   qa-validate. Still red → nothing is pushed and the failing lines are
   commented on the PR. Either way a human reviews and merges.
 
+**Who can run what.** `workflow_dispatch` already requires write access, but
+the workflows enforce owner-only themselves so adding a collaborator never
+hands out the secrets or the owner PAT:
+- refresh-bot: a first `guard` job — the daily `schedule` passes; a dispatch
+  or re-run passes only when BOTH `github.actor` and
+  `github.triggering_actor` are the repository owner. `build` needs `guard`,
+  `search` needs `build`, and `aggregate` runs only if
+  `needs.guard.result == 'success' && needs.build.result == 'success'` (it
+  still tolerates a failed search leg — never write a bare `if: always()`
+  there again: it ran with secrets on a refused guard). `concurrency: group
+  refresh-bot, cancel-in-progress: false` queues overlapping runs.
+- fix-bot: the same owner check is its FIRST step, before any secret is
+  read. qa-validate dispatches it with the owner PAT, so the loop still works.
+- qa-validate on fork PRs runs with no secrets and a read-only token, and
+  `dispatch-fixbot` is restricted to same-repo `ci/trending-refresh-*` branches.
+Guard scripts read actor names from `env:`, never inline `${{ }}` (injection).
+
 **Tokens.** `FIXBOT_DISPATCH_TOKEN` is a fine-grained PAT scoped to this repo
 only: Actions R/W, Contents R/W, Pull requests R/W. It is used for (1) the
 refresh PR push + creation, (2) qa-validate's fix-bot dispatch, (3) fix-bot's
@@ -433,6 +450,7 @@ actually happened.
 | `tests/test_engagement_contract.py` | raw → ingest → store failing `model_contract.json` (the real PR #50 snapshot with model-level `reshares` is the fixture); stray keys not pruned; ingest and contract key lists drifting |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master |
+| `tests/test_workflows.py` — owner guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its owner check; no refresh `concurrency` |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |
 | `tests/test_post_signal.py` | a registry-only engine (e.g. Mac-only) with blank hardware landing in the CUDA table; renderer and validator classifying differently; search prompts not asking for the `…/status/<id>` URL + per-post counts; the coverage report failing CI |
