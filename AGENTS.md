@@ -156,6 +156,18 @@ The README is **generated**, not hand-maintained:
   `make validate` stages so a malformed table or a dead/wrong link in any new
   raw snapshot, the store, or the README fails CI. This is a **validation**
   action, not a data-gathering bot.
+- **Model-specific engine forks (`engine_aliases`).** When a model only runs
+  on a fork of an engine, register the fork as its own engine (name + repo URL
+  + backend + note) and declare on the model
+  `"engine_aliases": {"<posted name>": "<fork registry name>"}`. Example:
+  Ternary Bonsai 2's `PTQ1_0`/`PQ2_0` GGUFs are rejected by stock llama.cpp,
+  so Bonsai 2 27B maps `llama.cpp` → `llama.cpp (PrismML fork)`
+  (https://github.com/PrismML-Eng/llama.cpp). The alias is applied on ingest —
+  to the stored AND the incoming rows before `merge_engines`, or the two sides
+  don't match and figures duplicate — and on every sort, so the search agent
+  can keep writing what the post says. Add the fork URL to
+  `KNOWN_ENGINE_URLS`; `check_engine_aliases` fails a leftover un-aliased
+  measurement, an unregistered target, or a wrong fork URL.
 - **Ingest is contract-driven.** `normalize_model` / `ingest_raw_snapshots`
   prune a model's top-level `engagement` to exactly the keys declared in
   `data/model_contract.json` (read at runtime — no second list to drift) and
@@ -410,6 +422,8 @@ actually happened.
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |
 | `tests/test_post_signal.py` | a registry-only engine (e.g. Mac-only) with blank hardware landing in the CUDA table; renderer and validator classifying differently; search prompts not asking for the `…/status/<id>` URL + per-post counts; the coverage report failing CI |
 | `tests/test_trend_score.py` | one lightly-engaged post outranking many posts (real refresh-#58 fixture: Qwen3.8 1 post vs Bonsai); a viral post no longer able to lead; speed ignored or earned by datacenter / > 48 GB parts; VRAM parsing; duplicate placeholder posts after a `tps` rewrite; real posts lost; README Trend cell; validator not catching a reordered table or a wrong score |
+| `tests/test_engine_aliases.py` | a model that needs a fork (Bonsai 2 → PrismML llama.cpp) linked to the stock engine; aliases not applied on sort or ingest; stored + raw rows duplicating when only one side is aliased; aliases leaking to other models; search prompts not mentioning forks |
+| `check_engine_aliases` (validate, data stage) | a measurement still on the aliased-away engine name; an alias target missing from the registry or with the wrong repo URL |
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |
