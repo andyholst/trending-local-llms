@@ -19,8 +19,13 @@ name: refresh-bot
 
 on:
   schedule:
-    # Daily 06:00 UTC.
+    # Daily 06:00 UTC, plus a backup slot at an odd time. GitHub delays (and
+    # under load DROPS) scheduled runs, worst at the top of the hour: the
+    # 06:00 run kept starting ~6 h late or not at all. 17:43 UTC is off the
+    # :00 rush and far enough from 06:00 to cover a dropped morning run.
+    # `concurrency` below queues the two if they ever overlap.
     - cron: "0 6 * * *"
+    - cron: "43 17 * * *"
   workflow_dispatch:
 
 permissions:
