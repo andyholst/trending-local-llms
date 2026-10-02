@@ -1,0 +1,178 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-02T11:40:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "41.5",
+          "hardware": "M3 Max 96GB (Apple Silicon)",
+          "quant": "MLX 4-bit, z-lab DFlash2 8-bit drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 699,
+          "comments": 2,
+          "reshares": 9,
+          "views": 0
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "44.6",
+          "hardware": "M3 Max 96GB (Apple Silicon)",
+          "quant": "MLX 4-bit, z-lab DFlash2 8-bit drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 699,
+          "comments": 2,
+          "reshares": 9,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6 (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafting",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 310,
+          "comments": 31,
+          "reshares": 33,
+          "views": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "131.5",
+          "hardware": "M5 Max 128GB (Apple Silicon)",
+          "quant": "oQ4e, DFlash2 drafter, batch=4",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/jundotkim/status/2103223289179230321",
+          "likes": 202,
+          "comments": 17,
+          "reshares": 16,
+          "views": 10919,
+          "engine_repo": "https://github.com/jundot/omlx"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "136.9",
+          "hardware": "M5 Max 128GB (Apple Silicon)",
+          "quant": "oQ4e, Lightning MTP, batch=4",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/jundotkim/status/2103223289179230321",
+          "likes": 202,
+          "comments": 17,
+          "reshares": 16,
+          "views": 10919,
+          "engine_repo": "https://github.com/jundot/omlx"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafter",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105854793990169068",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafter",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105854793990169068",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "99",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafter",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105854793990169068",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "229",
+          "hardware": "M5 Ultra 256GB (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafter",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/unigilby/status/2104225824631046331",
+          "likes": 137,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "124",
+          "hardware": "Apple Silicon (MLX 4-bit)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "92",
+          "hardware": "Apple Silicon (MLX 4-bit)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

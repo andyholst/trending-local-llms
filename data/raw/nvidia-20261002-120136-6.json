@@ -1,0 +1,37 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-02T11:45:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "80",
+          "hardware": "RTX 5090 + 128GB DDR4-3200",
+          "quant": "Strata, MoE experts across GPU/RAM; ~3,000 t/s prefill, ~80 t/s decode",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105849239439843345",
+          "likes": 6,
+          "comments": 3,
+          "reshares": 3,
+          "views": 1362,
+          "interactions": 0
+        }
+      ]
+    }
+  ]
+}

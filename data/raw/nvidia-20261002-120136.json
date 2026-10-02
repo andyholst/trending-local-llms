@@ -1,0 +1,69 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-02T11:45:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + lookup-augmented drafting, optimized vLLM, prefix caching, quantized KV cache; ~133 t/s real chat, up to 381 t/s longer-verification + context lookup",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105848435672764747",
+          "likes": 88,
+          "comments": 5,
+          "reshares": 9,
+          "views": 7082,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "93",
+          "hardware": "RTX 5070 12GB",
+          "quant": "MoE, experts across GPU/RAM/SSD",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 188,
+          "interactions": 0
+        }
+      ]
+    }
+  ]
+}

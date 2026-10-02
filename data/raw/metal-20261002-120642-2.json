@@ -1,0 +1,64 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-02T11:41:00Z",
+  "models": [
+    {
+      "id": "ornith-1.5",
+      "name": "Ornith 1.5",
+      "full_name": "Ornith 1.5",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "vram_tier": "48GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "50",
+          "hardware": "MacBook Pro M5 48GB (Apple Silicon)",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/AhmedHamdy29189/status/2104775267113980109",
+          "likes": 49,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "ravenx-conjecture-qwen3-8b-mlx",
+      "name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "full_name": "RavenX-Conjecture-Qwen3-8B-MLX",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "42",
+          "hardware": "M3 (Apple Silicon)",
+          "quant": "MLX",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/jolyneshibasol/status/2104852085426827615",
+          "likes": 39,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}
