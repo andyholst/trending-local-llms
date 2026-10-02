@@ -379,24 +379,37 @@ def check_backend_sort(store: dict) -> None:
             fail(f"README missing {backend} backend table")
             continue
         rows = []
+        peak_col = None
         for ln in lines[start + 1:]:
             if not ln.strip():
                 continue  # skip blank lines between heading and table
             if not ln.startswith("|"):
                 break  # end of the table block
-            if "Model" in ln or "---" in ln:
+            if "---" in ln:
                 continue
-            # Each backend row is:
-            #   | **Model** | Params | License | HF | VRAM | t/s per engine |
-            # Only the LAST cell holds t/s figures. Parsing the whole row wrongly
-            # picks up Params ("125B"->125) and VRAM ("12GB"->12) as t/s, so a
-            # correctly-sorted table looked unsorted. Extract just the t/s cell.
-            cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+            cells = [c.strip() for c in _split_row(ln)]
+            if cells and cells[0] == "Model":
+                # Current layout has a dedicated numeric 'Peak t/s' column: read
+                # it BY HEADER NAME, so hardware text in the measurements cell
+                # ('RTX 5090') can never be read as t/s.
+                peak_col = cells.index("Peak t/s") if "Peak t/s" in cells else None
+                continue
+            if peak_col is not None and peak_col < len(cells):
+                nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", cells[peak_col])]
+                if nums:
+                    rows.append(max(nums))
+                continue
+            # Legacy layout: only the LAST cell holds t/s figures. Parsing the
+            # whole row picks up Params ("125B"->125) and VRAM ("12GB"->12).
             cell = cells[-1] if cells else ""
             # The last cell is "engine tps (YYYY-MM-DD); engine tps (date); ...".
             # Strip the embedded dates FIRST so the YEAR (2026) is not counted as
             # t/s, then take the max tps WITHOUT any <1000 bound — a legitimate
             # 1000+ t/s (e.g. spec-decode 1250) must count.
+            # Drop markdown link TARGETS first: an engine repo URL carries
+            # digits (github.com/Niko1221/Strata -> 1221 read as t/s, which
+            # flagged a correctly-sorted refresh PR as unsorted).
+            cell = re.sub(r"\]\([^)]*\)", "]", cell)
             no_dates = re.sub(r"\(\d{4}-\d{2}-\d{2}\)", "", cell)
             nums = [float(x) for x in re.findall(r"(\d+\.?\d*)", no_dates)]
             if nums:
@@ -405,6 +418,80 @@ def check_backend_sort(store: dict) -> None:
             fail(f"{backend} README table not sorted by t/s descending: {rows}")
         else:
             print(f"  OK: {backend} README table sorted by t/s desc ({len(rows)} rows)")
+
+
+def _split_row(line: str) -> list[str]:
+    """Split a markdown table row on unescaped pipes."""
+    return re.split(r"(?<!\\)\|", line.strip().strip("|"))
+
+
+def _readme_sections(text: str) -> dict[str, list[str]]:
+    """Map each top-level backend heading / the most-loved heading to the table
+    rows that follow it."""
+    sections: dict[str, list[str]] = {}
+    cur = None
+    for ln in text.split("\n"):
+        if ln.startswith("# 🟦"):
+            cur = "CUDA"
+        elif ln.startswith("# 🟩"):
+            cur = "Metal"
+        elif ln.startswith("# 🟨"):
+            cur = "CPU"
+        elif ln.startswith("## ❤️"):
+            cur = "loved"
+        elif ln.startswith("#"):
+            cur = None
+        elif cur and ln.startswith("|") and "---" not in ln:
+            sections.setdefault(cur, []).append(ln)
+    return sections
+
+
+def check_readme_measurements(store: dict) -> None:
+    """Every engine measurement appears in ITS OWN backend table (the one
+    update_trending.measurement_backend assigns), in its model's row, with its
+    engine name and its exact t/s in bold — and the most-loved row shows the
+    true best t/s for each backend. A substring check ('50' anywhere in the
+    README) let a measurement rendered in the wrong table, or dropped, pass."""
+    if not README.exists():
+        fail("README.md missing")
+        return
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import update_trending as ut
+    finally:
+        sys.path.pop(0)
+    sec = _readme_sections(README.read_text())
+    bad = 0
+
+    def row_for(rows: list[str], name: str) -> str:
+        return next((r for r in rows if f"**{name}**" in _split_row(r)[0]), "")
+
+    for m in store["models"]:
+        for e in m.get("engines", []):
+            b = ut.measurement_backend(e)
+            row = row_for(sec.get(b, []), m["name"])
+            if not row:
+                bad += 1
+                fail(f"readme-measurements: {m['name']} has a {b} measurement but no row in the {b} table")
+                continue
+            if f"**{e.get('tps')}**" not in row or e.get("engine", "") not in row:
+                bad += 1
+                fail(f"readme-measurements: {m['name']} {e.get('engine')} {e.get('tps')} t/s missing from its {b} row")
+        loved = row_for(sec.get("loved", []), m["name"])
+        if not loved:
+            bad += 1
+            fail(f"readme-measurements: {m['name']} missing from the most-loved table")
+            continue
+        cells = _split_row(loved)
+        for idx, b in ((3, "CUDA"), (4, "Metal"), (5, "CPU")):
+            best = ut.best_measurement([e for e in m.get("engines", []) if ut.measurement_backend(e) == b])
+            cell = cells[idx].strip() if idx < len(cells) else ""
+            want = f"**{best['tps']}**" if best else "—"
+            if not cell.startswith(want):
+                bad += 1
+                fail(f"readme-measurements: most-loved {b} cell for {m['name']} should start with {want!r}, got {cell[:40]!r}")
+    if not bad:
+        print("  OK: every measurement is in its own backend row; most-loved shows the best per backend")
 
 
 def check_readme_has_all_models(store: dict) -> None:
@@ -458,7 +545,17 @@ def check_readme_generated(store: dict) -> None:
     try:
         sys.path.insert(0, str(ROOT / "scripts"))
         import update_trending as ut
-        expected = ut.render_readme(store, datetime.now(timezone.utc))
+        # Render as of the store's own generation time: status bands and the
+        # 7-day score are date-relative, so re-rendering with the wall clock
+        # would flag a correct README as stale a few days after it merged.
+        as_of = datetime.now(timezone.utc)
+        gen = store.get("generated_utc", "")
+        if gen:
+            try:
+                as_of = datetime.strptime(gen, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            except ValueError:
+                pass
+        expected = ut.render_readme(json.loads(json.dumps(store)), as_of)
         sys.path.pop(0)
     except Exception as e:  # noqa: BLE001
         fail(f"readme-generated: could not render from store: {e}")
@@ -506,14 +603,15 @@ def check_readme_tables_wellformed(store: dict) -> None:
         if lines[i].startswith("|"):
             hdr = lines[i]
             sep = lines[i + 1] if i + 1 < len(lines) else ""
-            hdr_cols = hdr.count("|") - 1
-            sep_cols = sep.count("|") - 1 if sep.startswith("|") else 0
+            # split on UNESCAPED pipes only: GFM renders '\|' as a literal pipe
+            hdr_cols = len(_split_row(hdr))
+            sep_cols = len(_split_row(sep)) if sep.startswith("|") else 0
             if sep_cols != hdr_cols:
                 bad += 1
                 fail(f"readme-tables: separator has {sep_cols} cols, header has {hdr_cols}: {hdr[:60]}")
             j = i + 2
             while j < len(lines) and lines[j].startswith("|"):
-                cells = [c.strip() for c in lines[j].strip().strip("|").split("|")]
+                cells = [c.strip() for c in _split_row(lines[j])]
                 if len(cells) != hdr_cols:
                     bad += 1
                     fail(f"readme-tables: row has {len(cells)} cells, header has {hdr_cols}: {lines[j][:60]}")
@@ -521,7 +619,8 @@ def check_readme_tables_wellformed(store: dict) -> None:
                     for ci, cell in enumerate(cells):
                         if not cell:
                             bad += 1
-                            col = hdr.split("|")[ci + 1].strip() if ci + 1 < len(hdr.split("|")) else str(ci)
+                            hcells = _split_row(hdr)
+                            col = hcells[ci].strip() if ci < len(hcells) else str(ci)
                             fail(f"readme-tables: empty cell in column '{col}': {lines[j][:60]}")
                 j += 1
             i = j
@@ -774,6 +873,7 @@ def main() -> int:
     add("links resolve (models.json + README + raw)", "links", lambda: check_links_resolve(store))
     add("README completeness", "readme", lambda: check_readme_has_all_models(store))
     add("JSON <-> README sync", "readme", lambda: check_readme_sync(store))
+    add("measurements in their backend rows", "readme", lambda: check_readme_measurements(store))
     add("README regenerated by make merge", "readme", lambda: check_readme_generated(store))
 
     for label, fn in checks:

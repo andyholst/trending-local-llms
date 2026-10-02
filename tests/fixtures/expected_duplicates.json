@@ -54,13 +54,27 @@
         "seen_posts": [
           {
             "url": "https://lightbrd.com/konig0000/status/2104268737839063181",
-            "date": "2026-09-29"
+            "date": "2026-09-29",
+            "engine": "FreeToken",
+            "tps": "39.3",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           },
           {
             "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
-            "date": "2026-09-27"
+            "date": "2026-09-27",
+            "engine": "FreeToken",
+            "tps": "39.3",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           }
-        ]
+        ],
+        "posts_7d": 2,
+        "score_7d": 2.0
       }
     },
     {
@@ -110,13 +124,27 @@
         "seen_posts": [
           {
             "url": "https://lightbrd.com/konig0000/status/2104268737839063181",
-            "date": "2026-09-29"
+            "date": "2026-09-29",
+            "engine": "FreeToken",
+            "tps": "22",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           },
           {
             "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
-            "date": "2026-09-27"
+            "date": "2026-09-27",
+            "engine": "FreeToken",
+            "tps": "22",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           }
-        ]
+        ],
+        "posts_7d": 2,
+        "score_7d": 2.0
       }
     }
   ]

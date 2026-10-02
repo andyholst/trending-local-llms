@@ -53,9 +53,17 @@
         "seen_posts": [
           {
             "url": "https://lightbrd.com/1",
-            "date": "2026-09-28"
+            "date": "2026-09-28",
+            "engine": "llama.cpp",
+            "tps": "50",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           }
-        ]
+        ],
+        "posts_7d": 1,
+        "score_7d": 1.0
       },
       "last_seen": "2026-09-28"
     },
@@ -105,9 +113,17 @@
         "seen_posts": [
           {
             "url": "https://lightbrd.com/2",
-            "date": "2026-09-28"
+            "date": "2026-09-28",
+            "engine": "llama.cpp",
+            "tps": "80",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           }
-        ]
+        ],
+        "posts_7d": 1,
+        "score_7d": 1.0
       },
       "last_seen": "2026-09-28"
     }

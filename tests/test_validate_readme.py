@@ -402,6 +402,55 @@ def test_backend_sort_dates_not_counted_as_tps():
         _restore_readme()
 
 
+def test_backend_sort_ignores_digits_in_link_urls():
+    """REGRESSION (PR #53): the Strata repo URL github.com/Niko1221/Strata put
+    '1221' into the legacy t/s cell, so a correctly-sorted CUDA table (99.7 then
+    93) was flagged unsorted and fix-bot was dispatched to 'repair' valid data."""
+    reset()
+    s = store()
+    r = _set_readme(_cuda_table_with_dates([
+        "[llama.cpp](https://github.com/ggml-org/llama.cpp) 99.7 (2026-09-19)",
+        "[Strata](https://github.com/Niko1221/Strata) 93 (2026-10-01)",
+    ]))
+    try:
+        V.check_backend_sort(s)
+        check("backend-sort: digits inside link URLs are not t/s -> sorted passes",
+              len(V.FAILURES) == 0, json.dumps(V.FAILURES))
+    finally:
+        _restore_readme()
+
+
+def test_backend_sort_reads_peak_column_by_header():
+    """Current layout: the sort key is the numeric 'Peak t/s' column, read by
+    header name — hardware text ('RTX 5090') in the measurements cell must not
+    count. Correct order passes; a swapped order fails."""
+    def table(rows):
+        out = ["# 🟦 CUDA — NVIDIA GPUs", "",
+               "| Model | Params | License | VRAM | Peak t/s | Measurements (engine · t/s · hardware · quant · date) |",
+               "|---|---|---|---|---|---|"]
+        out += [f"| **{n}** | 27B | MIT | 16GB | {p} | [Strata](https://github.com/Niko1221/Strata) **{p}** · RTX 5090 · Q4 · 2026-10-01 |"
+                for n, p in rows]
+        out += ["", "# 🟩 Metal", "", "| Model | Peak t/s |", "|---|---|", "",
+                "# 🟨 CPU", "", "| Model | Peak t/s |", "|---|---|"]
+        return "\n".join(out)
+    reset()
+    s = store()
+    _set_readme(table([("A", 120), ("B", 93)]))
+    try:
+        V.check_backend_sort(s)
+        check("backend-sort: Peak column sorted -> passes (RTX 5090 / 1221 ignored)",
+              len(V.FAILURES) == 0, json.dumps(V.FAILURES))
+    finally:
+        _restore_readme()
+    reset()
+    _set_readme(table([("A", 93), ("B", 120)]))
+    try:
+        V.check_backend_sort(s)
+        check("backend-sort: Peak column out of order -> FAIL", len(V.FAILURES) == 1, json.dumps(V.FAILURES))
+    finally:
+        _restore_readme()
+
+
 def main() -> int:
     print("validate-readme + raw-mapping: direct unit tests")
     test_backend_sort_pass()
@@ -410,6 +459,8 @@ def main() -> int:
 
     test_backend_sort_counts_1000plus_and_strips_dates()
     test_backend_sort_dates_not_counted_as_tps()
+    test_backend_sort_ignores_digits_in_link_urls()
+    test_backend_sort_reads_peak_column_by_header()
     test_readme_has_all_models()
     test_readme_sync_pass()
     test_readme_sync_missing_model()

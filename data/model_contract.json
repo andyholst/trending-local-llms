@@ -239,7 +239,7 @@
               },
               "seen_posts": {
                 "type": "array",
-                "description": "Post-granularity engagement: one entry per DISTINCT source X post (deduped by url). last_7d_likes is the count of these dated within the last 7 days.",
+                "description": "Post-granularity engagement: one entry per DISTINCT source X post (deduped by …/status/<id> URL; placeholder URLs are keyed by url+date+engine+tps). posts_7d / score_7d / last_7d_likes are computed from the entries dated within the last 7 days.",
                 "items": {
                   "type": "object",
                   "required": [
@@ -254,6 +254,34 @@
                     "date": {
                       "type": "string",
                       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "engine": {
+                      "type": "string",
+                      "description": "Engine of the measurement this post reported (optional)."
+                    },
+                    "tps": {
+                      "type": "string",
+                      "description": "t/s of the measurement this post reported (optional)."
+                    },
+                    "likes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "likes on this post (optional)."
+                    },
+                    "comments": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "comments on this post (optional)."
+                    },
+                    "reshares": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "reshares on this post (optional)."
+                    },
+                    "views": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "views on this post (optional)."
                     }
                   },
                   "additionalProperties": false
@@ -268,6 +296,16 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Total interactions across the model's source X posts as reported by the platform (additive; optional)."
+              },
+              "posts_7d": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Distinct source posts dated within the last 7 days (computed by sort_models)."
+              },
+              "score_7d": {
+                "type": "number",
+                "minimum": 0,
+                "description": "7-day buzz: sum over posts_7d of likes + 2*comments + 3*reshares + log10(views+1), min 1 per post (computed by sort_models)."
               }
             },
             "additionalProperties": false
