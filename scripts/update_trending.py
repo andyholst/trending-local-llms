@@ -33,11 +33,13 @@ SCRAPE_DIR = _DATA_DIR / "scrape"
 SNAPSHOT_DIR = _DATA_DIR / "snapshots"
 RAW_DIR = _DATA_DIR / "raw"
 
-# Three backend search groups (last-3-day window), refined by live probing (Sep 28
-# 2026) for maximum matches per backend. NVIDIA/CUDA and Apple/Metal carry most
-# of the signal; CPU is sparse on X (offload-capable engines like FreeToken and
-# llama.cpp-cpu surface under the CUDA/engine queries). The General catch-all
-# group was removed; the Hermes refresh drives the live search.
+# Four backend search groups (last-3-day window), refined by live probing (Sep 28
+# 2026; AMD Oct 2 2026) for maximum matches per backend. NVIDIA/CUDA and
+# Apple/Metal carry most of the signal; CPU is sparse on X (offload-capable
+# engines like FreeToken and llama.cpp-cpu surface under the CUDA/engine
+# queries); AMD/ROCm posts name the card (RX 7900 XTX, RX 9070 XT, Strix Halo)
+# far more often than the API. The General catch-all group was removed; the
+# Hermes refresh drives the live search. Keys are BACKENDS names.
 SEARCH_GROUPS = {
     "CUDA": [
         "rtx tokens per second llm",
@@ -63,7 +65,22 @@ SEARCH_GROUPS = {
         "llama.cpp cpu only tokens per second",
         "local llm tokens per second gpu",
     ],
+    "ROCm": [
+        "rx 7900 xtx tokens per second",
+        "rx 9070 xt tokens per second",
+        "rocm tokens per second",
+        "llama.cpp vulkan amd tokens",
+        "strix halo tokens per second",
+        "rx 7900 xtx qwen",
+    ],
 }
+
+# The Hermes search legs: raw-snapshot backend name (Makefile `_search-<leg>`,
+# `--write-raw <leg>`, data/raw/<leg>-<UTC>.json, CI matrix entry, smoke
+# BACKEND=<leg>) -> the README backend table its figures mostly land in. ONE
+# list: tests/test_amd_backend.py asserts every place that wires a leg (Makefile,
+# both workflows, smoke, search contract, self-correct) carries exactly these.
+SEARCH_LEGS = {"nvidia": "CUDA", "metal": "Metal", "cpu": "CPU", "amd": "ROCm"}
 USER_AGENT = "trending-local-llms-bot/1.0 (research-index)"
 STRICT = os.environ.get("STRICT") == "1"
 
@@ -369,6 +386,9 @@ def peak_tps(m: dict) -> float:
 
 # Engine -> backend for single-backend engines. Multi-backend engines (None)
 # are decided from the hardware/quant text. ONE classifier for every table.
+# AMD is decided by HARDWARE, never by engine name: llama.cpp / Ollama / vLLM /
+# SGLang / Strata all run on AMD (ROCm/HIP or Vulkan) as well, and Vulkan also
+# runs on NVIDIA and Intel, so 'Vulkan' alone is not AMD evidence.
 ENGINE_BACKEND = {
     "Ollama": None, "llama.cpp": None, "vLLM": "CUDA", "SGLang": "CUDA",
     "FreeToken": "CUDA", "TensorRT-LLM": "CUDA", "DFlash2": "CUDA",
@@ -378,27 +398,90 @@ ENGINE_BACKEND = {
 _METAL_HW = ("apple", "mac", "m1 ", "m2 ", "m3 ", "m4 ", "m5 ", "m6 ", "m1)", "m2)", "m3)", "m4)", "m5)", "m6)", "mlx")
 _CPU_HW = ("cpu", "intel", "amd ryzen", "ryzen", "epyc", "xeon", "threadripper", "no gpu", "raspberry", "arm64", "snapdragon")
 _CUDA_HW = ("rtx", "nvidia", "cuda", "geforce", "tesla", "a100", "h100", "l40", "aic")
-BACKENDS = ("CUDA", "Metal", "CPU")
+# AMD GPU evidence in a hardware string. Word-bounded on purpose: a bare 'amd'
+# is also AMD Ryzen/EPYC CPUs, 'hip' is inside 'chip'/'ship', 'rx' inside words,
+# and 'vulkan' is cross-vendor - none of those alone means an AMD GPU.
+_AMD_GPU_RE = re.compile(
+    r"\bradeon\b|\brx\s?-?\d{3,4}\b|\b(?:9070|9060|7900|7800|7700|7600|6950|6900|6800|6750|6700|6650|6600|5700)\s?(?:xtx|xt|gre)\b"
+    r"|\brocm\b|\bhip\b|\bstrix[\s-]?halo\b|\bryzen\s+ai\s+max\b|\b(?:8065s|8060s|8050s|890m|880m|780m|760m|680m|660m)\b"
+    r"|\bgfx\d{3,4}\b|\binstinct\b|\bmi\d{3}x?\b|\br9700\b|\bw7[89]00\b|\brdna\s?\d|\bnavi\s?\d|\bbc-?250\b"
+    r"|\bamd\s+(?:gpu|graphics)\b", re.I)
+# Explicit CPU-only wording beats any GPU token ('Ryzen AI Max+ 395, CPU only').
+_CPU_ONLY_RE = re.compile(r"\bcpu[\s-]only\b|\bno[\s-]gpu\b|\bwithout (?:a )?gpu\b", re.I)
+# AMD unified-memory APUs: judged by platform (like Apple), not by RAM size -
+# a 128 GB Strix Halo is a consumer box, not a > 48 GB datacenter GPU.
+_AMD_APU_RE = re.compile(r"\bstrix[\s-]?halo\b|\bryzen\s+ai\b|\b(?:8065s|8060s|8050s|890m|880m|780m|760m|680m|660m)\b", re.I)
+# README / most-loved column order. ROCm = AMD GPUs (ROCm/HIP or Vulkan).
+BACKENDS = ("CUDA", "Metal", "CPU", "ROCm")
+# Canonical order when several backends are joined ('CUDA / ROCm / CPU / Metal'):
+# keeps the historical 'CUDA / CPU / Metal' and 'CUDA / Metal' values unchanged.
+_JOIN_ORDER = ("CUDA", "ROCm", "CPU", "Metal")
+
+
+def is_amd_gpu(hw: str) -> bool:
+    """True when the hardware text names an AMD GPU / APU (and not an NVIDIA one)."""
+    h = (hw or "").lower()
+    return bool(_AMD_GPU_RE.search(h)) and not any(k in h for k in _CUDA_HW)
+
+
+def join_backends(backends) -> str:
+    """{'ROCm','CUDA'} -> 'CUDA / ROCm' in the canonical order (contract pattern)."""
+    seen = {b for b in backends if b in _JOIN_ORDER}
+    return " / ".join(b for b in _JOIN_ORDER if b in seen)
+
+
+def split_backends(raw: str) -> list[str]:
+    """'CUDA / ROCm / Metal' -> ['CUDA', 'ROCm', 'Metal'] (known backends only)."""
+    return [x.strip() for x in re.split(r"[/,|+]", raw or "") if x.strip() in BACKENDS]
+
+
+def measured_backends(m: dict, registry: dict | None = None) -> list[str]:
+    """The backends a model's measurements actually land in, in BACKENDS order."""
+    seen = {measurement_backend(e, registry) for e in m.get("engines", [])}
+    return [b for b in BACKENDS if b in seen]
+
+
+def sync_backends(m: dict, registry: dict | None = None) -> list[str]:
+    """Add every backend the model has a measurement on to m['backends'] (never
+    removes one: 'backends' also records platforms a model is known to run on
+    without a figure yet). Without this an existing model that gains its first
+    AMD figure keeps backends without 'ROCm' forever, because ingest only
+    derives backends for NEW models."""
+    cur = [b for b in (m.get("backends") or []) if b]
+    for b in measured_backends(m, registry):
+        if b not in cur:
+            cur.append(b)
+    m["backends"] = cur or ["CUDA"]
+    return m["backends"]
 
 
 def registry_backend(engine: str, registry: dict | None) -> str | None:
     """The single backend the engine registry declares for `engine`
-    ('Metal', 'CUDA' or 'CPU'), or None when it lists several / is unknown."""
+    ('Metal', 'CUDA', 'CPU' or 'ROCm'), or None when it lists several / is unknown."""
     raw = ((registry or {}).get(engine) or {}).get("backend", "")
     parts = [x.strip() for x in re.split(r"[/,|+]", raw) if x.strip()]
     return parts[0] if len(parts) == 1 and parts[0] in BACKENDS else None
 
 
 def measurement_backend(e: dict, registry: dict | None = None) -> str:
-    """Which backend table a measurement belongs to: CUDA, Metal or CPU.
-    Priority: explicit Apple/CPU hardware -> the engine registry when it names
-    ONE backend -> the built-in single-backend map -> GPU/Apple keywords in
-    hardware+quant -> CUDA (default until evidence says otherwise). Pass the
-    store's `engines` registry so a new registry-only engine (e.g. a Mac-only
-    server) never falls through to the CUDA default."""
+    """Which backend table a measurement belongs to: CUDA, Metal, CPU or ROCm.
+    Priority: explicit Apple hardware -> explicit CPU-only wording -> AMD GPU
+    hardware (Radeon / RX / Strix Halo / ROCm / HIP ..., no NVIDIA token) ->
+    CPU hardware -> the engine registry when it names ONE backend -> the
+    built-in single-backend map -> GPU/Apple keywords in hardware+quant -> CUDA
+    (default until evidence says otherwise). AMD hardware is checked BEFORE the
+    engine lookups because the engines that run on AMD (llama.cpp, vLLM,
+    Strata ...) are registered or mapped as CUDA, and before CPU because AMD
+    GPU strings often carry the host CPU ('Ryzen 5 7600 + RX 7800 XT'). Pass
+    the store's `engines` registry so a new registry-only engine (e.g. a
+    Mac-only server) never falls through to the CUDA default."""
     hw = (" " + (e.get("hardware") or "") + " ").lower()
     if "apple" in hw or "mac" in hw:
         return "Metal"
+    if _CPU_ONLY_RE.search(hw):
+        return "CPU"
+    if is_amd_gpu(hw):
+        return "ROCm"
     if any(k in hw for k in _CPU_HW) and not any(k in hw for k in _CUDA_HW):
         return "CPU"
     b = registry_backend(e.get("engine", ""), registry) or ENGINE_BACKEND.get(e.get("engine", ""))
@@ -407,6 +490,8 @@ def measurement_backend(e: dict, registry: dict | None = None) -> str:
     text = hw + " " + (e.get("quant") or "").lower() + " "
     if any(k in text for k in _CUDA_HW):
         return "CUDA"
+    if is_amd_gpu(text):
+        return "ROCm"
     if any(k in text for k in _METAL_HW):
         return "Metal"
     return "CUDA"
@@ -418,7 +503,7 @@ def measurement_backend(e: dict, registry: dict | None = None) -> str:
 # hardware earn the speed bonus; a datacenter figure never does.
 MAX_SCOPE_VRAM_GB = 48
 _DATACENTER_HW = ("h100", "h200", "h800", "a100", "a800", "b100", "b200", "gb200", "gb300",
-                  "mi250", "mi300", "mi325", "mi355", "tpu", "gaudi")
+                  "mi210", "mi250", "mi300", "mi308", "mi325", "mi355", "tpu", "gaudi")
 # Known consumer cards -> VRAM (GB). Laptop variants listed first (more specific).
 _CARD_VRAM = (
     ("5090 laptop", 24), ("4090 laptop", 16), ("5080 laptop", 16), ("4080 laptop", 12),
@@ -426,6 +511,14 @@ _CARD_VRAM = (
     ("4090", 24), ("4080", 16), ("4070 ti super", 16), ("4070 ti", 12), ("4070", 12),
     ("4060 ti", 16), ("4060", 8), ("3090", 24), ("3080 ti", 12), ("3080", 10),
     ("3070", 8), ("3060 ti", 8), ("3060", 12), ("a6000", 48), ("l40", 48),
+    # AMD Radeon (consumer + workstation). Suffixed names first (7900 xtx before
+    # 7900 xt); bare model numbers need the 'rx ' prefix so a host CPU such as
+    # 'Ryzen 5 7600' is never read as an RX 7600 (8 GB).
+    ("7900 xtx", 24), ("7900 xt", 20), ("7900 gre", 16), ("7800 xt", 16), ("7700 xt", 12),
+    ("7600 xt", 16), ("rx 7600", 8), ("9070 xt", 16), ("rx 9070", 16), ("9060 xt", 16),
+    ("rx 9060", 8), ("6950 xt", 16), ("6900 xt", 16), ("6800 xt", 16), ("rx 6800", 16),
+    ("6750 xt", 12), ("6700 xt", 12), ("6650 xt", 8), ("6600 xt", 8), ("rx 6600", 8),
+    ("5700 xt", 8), ("vega 64", 8), ("vega 56", 8), ("r9700", 32), ("w7900", 48), ("w7800", 32),
 )
 
 
@@ -433,9 +526,11 @@ def hardware_vram_gb(hw: str) -> float | None:
     """Total GPU memory the hardware string implies, or None if unknown.
     An explicit 'NN GB' wins; otherwise a known card. 'Nx' multiplies
     ('2x RTX 3090' -> 48)."""
-    h = (hw or "").lower()
+    h = re.sub(r"\brx\s*-?(?=\d)", "rx ", (hw or "").lower())  # 'RX7900' / 'rx-7600' -> 'rx 7900'
     mult = 1
-    mm = re.search(r"(\d+)\s*x\s*(?=[a-z])", h)
+    # '2x RTX 3090' / '4 x 3090' multiply; a standalone 1-2 digit count only, so
+    # the 'x' of an AMD suffix ('7900 xtx', '9070 xt') is never read as one.
+    mm = re.search(r"(?<![\w.])(\d{1,2})\s*[x×]\s*(?=[a-z0-9])", h)
     if mm:
         mult = int(mm.group(1))
     m = re.search(r"(\d+(?:\.\d+)?)\s*gb", h)
@@ -451,11 +546,15 @@ def in_scope(e: dict) -> bool:
     """True when a measurement ran on consumer/workstation hardware: not a
     datacenter part and not more than MAX_SCOPE_VRAM_GB of GPU memory. Apple
     and CPU measurements are in scope (first-class backends); unified-memory
-    Macs are judged by platform, not by their RAM size."""
+    Macs and AMD APUs (Strix Halo / Ryzen AI, Radeon 8060S ...) are judged by
+    platform, not by their RAM size. Consumer Radeon cards are judged by VRAM
+    exactly like NVIDIA; AMD Instinct (MI210/MI250/MI300/MI355) never counts."""
     h = (e.get("hardware") or "").lower()
-    if any(k in h for k in _DATACENTER_HW):
+    if any(k in h for k in _DATACENTER_HW) or re.search(r"\binstinct\b", h):
         return False
     if "apple" in h or "mac" in h or measurement_backend(e) in ("Metal", "CPU"):
+        return True
+    if _AMD_APU_RE.search(h):
         return True
     vram = hardware_vram_gb(h)
     return vram is None or vram <= MAX_SCOPE_VRAM_GB
@@ -484,6 +583,7 @@ BACKEND_LABEL = {
     "CUDA": ("🟦", "CUDA — NVIDIA GPUs (8–48 GB)"),
     "Metal": ("🟩", "Metal — Apple Silicon (unified memory)"),
     "CPU": ("🟨", "CPU — no GPU"),
+    "ROCm": ("🟪", "ROCm — AMD GPUs (8–48 GB)"),
 }
 BAND_LABEL = ("🔥 trending", "🕑 recent", "💤 stale")
 
@@ -518,7 +618,7 @@ def render_readme(store: dict, today: datetime) -> str:
     best_measurement() so the tables can never disagree):
       1. Most loved — one row per model in rank order (band -> 7-day score ->
          posts -> peak t/s): status, 7-day buzz, BEST t/s per backend
-         (CUDA / Metal / CPU) with engine + hardware + quant, VRAM, why.
+         (CUDA / Metal / CPU / ROCm) with engine + hardware + quant, VRAM, why.
       2. Engine matrix — which inference engine runs which model, best t/s per
          backend on that engine. Only engines with a measurement are columns.
       3. Backend tables — numeric Peak t/s column + every measurement
@@ -565,9 +665,10 @@ def render_readme(store: dict, today: datetime) -> str:
         status = BAND_LABEL[model_band(m, today)] + (f"<br><sub>last seen {m['last_seen']}</sub>" if m.get("last_seen") else "")
         buzz = trend_cell(m)
         bb = by_backend(m)
+        best_cells = " | ".join(best_cell(bb[b]) for b in BACKENDS)
         loved.append(
-            f"| {model_cell} | {status} | {buzz} | {best_cell(bb['CUDA'])} | {best_cell(bb['Metal'])} "
-            f"| {best_cell(bb['CPU'])} | {_cell(m.get('vram_tier')) or '—'} | {_cell(m.get('why')) or '—'} |"
+            f"| {model_cell} | {status} | {buzz} | {best_cells} "
+            f"| {_cell(m.get('vram_tier')) or '—'} | {_cell(m.get('why')) or '—'} |"
         )
     most_loved = "\n".join(loved)
 
@@ -624,7 +725,10 @@ def render_readme(store: dict, today: datetime) -> str:
             )
         return "\n".join(lines)
 
-    cuda_md, metal_md, cpu_md = (backend_table(b) for b in BACKENDS)
+    tables = {b: backend_table(b) for b in BACKENDS}
+    cuda_md, metal_md, cpu_md, rocm_md = (tables[b] for b in ("CUDA", "Metal", "CPU", "ROCm"))
+    loved_hdr = " | ".join(f"{b} t/s (best)" for b in BACKENDS)
+    legend = " · ".join(f"{BACKEND_LABEL[b][0]} {b}" for b in BACKENDS)
 
     # ---- 4. engine guide -----------------------------------------------------
     engine_guide = "\n".join(
@@ -652,21 +756,27 @@ Ties go to more posts, then the highest t/s. t/s is always shown **per engine**,
 
 Best measured t/s per backend; the full list of measurements is in the backend tables below.
 
-| Model | Status | Trend | CUDA t/s (best) | Metal t/s (best) | CPU t/s (best) | VRAM | Why people love it |
-|---|---|---|---|---|---|---|---|
+| Model | Status | Trend | {loved_hdr} | VRAM | Why people love it |
+|---|---|---|{"---|" * len(BACKENDS)}---|---|
 {most_loved}
 
 ---
 
 ## 🧭 Which inference engine runs what
 
-Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU). Only engines with at least one measurement are shown.
+Best measured t/s per model on each engine ({legend}). Only engines with at least one measurement are shown.
 
 {engine_matrix}
 
 ---
 
 {cuda_md}
+
+---
+
+{rocm_md}
+
+> AMD figures land here by **hardware** (Radeon / RX / Strix Halo / ROCm), whichever API ran them: ROCm/HIP (vLLM, SGLang, Ollama, llama.cpp `GGML_HIP`) or Vulkan (llama.cpp `GGML_VULKAN`, often the faster llama.cpp path on consumer Radeon). Vulkan on an NVIDIA card stays in the CUDA table.
 
 ---
 
@@ -688,7 +798,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU)
 |---|---|---|---|
 {engine_guide}
 
-**Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp CPU (tiny/edge).
+**Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp Vulkan / ROCm (AMD Radeon) · llama.cpp CPU (tiny/edge).
 
 ---
 
@@ -716,7 +826,7 @@ def write_snapshot(store: dict) -> Path:
 
 def write_raw_snapshot(backend: str, payload: dict) -> Path:
     """Write one backend's raw search findings to data/raw/<backend>-<UTC>.json.
-    Each of the three Hermes search prompts (NVIDIA, Metal, CPU) writes its own
+    Each of the four Hermes search prompts (NVIDIA, Metal, CPU, AMD) writes its own
     timestamped file here; never overwrite another backend's file."""
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     ts = now_utc().strftime("%Y%m%d-%H%M%S")
@@ -790,6 +900,7 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
                 incoming = apply_engine_aliases(existing, [dict(e) for e in m.get("engines", [])])
                 existing["engines"] = merge_engines(existing.get("engines", []), incoming)
                 apply_engine_aliases(existing)
+                sync_backends(existing, store.get("engines", {}))
                 existing["last_seen"] = now_utc().strftime("%Y-%m-%d")
                 # merge post-granularity engagement, deduped by source_post URL
                 eng = existing.setdefault("engagement", {})
@@ -845,14 +956,26 @@ def _gpu_size(hardware: str) -> str:
     with the same engine + t/s + this identity are the same measurement.
     Returns '' when nothing recognizable (kept as-is, distinct)."""
     hw = (hardware or "").lower()
+    if _CPU_ONLY_RE.search(hw):
+        return "cpu"
     m = re.search(r"rtx\s*(\d{3,4})\s*(ti)?", hw)
     if m:
         return f"rtx{m.group(1)}{m.group(2) or ''}"
+    # AMD card identity (RX 7900 XTX vs RX 7900 XT are different cards); must
+    # run before the 'amd' -> cpu rule below, which would otherwise collapse an
+    # 'AMD Radeon RX 7900 XTX' figure with a CPU one.
+    m = re.search(r"\b(?:rx\s*-?)?(\d{4})\s*(xtx|xt|gre)\b", hw) or re.search(r"\brx\s*-?(\d{3,4})()\b", hw)
+    if m:
+        return f"rx{m.group(1)}{m.group(2)}"
+    if _AMD_APU_RE.search(hw):
+        return "amd-apu"
     m = re.search(r"(\d+)\s*gb", hw)
     if m:
         return f"{m.group(1)}gb"
     if any(k in hw for k in ("apple", "mac", "m1", "m2", "m3", "m4", "m5", "m6", "mlx")):
         return "apple"
+    if is_amd_gpu(hw):
+        return "amd-gpu"
     if any(k in hw for k in ("cpu", "intel", "amd", "no gpu", "raspberry")):
         return "cpu"
     return ""
@@ -1005,13 +1128,21 @@ def normalize_model(m: dict, store: dict) -> dict:
     # dedup the raw model's own engine rows (same engine+tps+GPU size reported
     # by two posts in ONE snapshot) so a brand-new model never carries duplicates
     engs = merge_engines([], engs)
-    backends = []
-    for e in engs:
-        b = store.get("engines", {}).get(e.get("engine"), {}).get("backend", "")
-        for cand in ("CUDA", "Metal", "CPU"):
-            if cand in b and cand not in backends:
-                backends.append(cand)
-    m.setdefault("backends", backends or ["CUDA"])
+    # backends: what the search wrote, plus every backend its measurements land
+    # in (same classifier as the README, so an AMD figure always adds 'ROCm').
+    # Fallback for a model with no classifiable rows: the engines' registry
+    # backends (legacy behaviour).
+    reg = store.get("engines", {})
+    backends = [b for b in (m.get("backends") or []) if b in BACKENDS]
+    for b in measured_backends({"engines": engs}, reg):
+        if b not in backends:
+            backends.append(b)
+    if not backends:
+        for e in engs:
+            for cand in split_backends(reg.get(e.get("engine"), {}).get("backend", "")):
+                if cand not in backends:
+                    backends.append(cand)
+    m["backends"] = backends or ["CUDA"]
     m.setdefault("supported_engines", [e.get("engine") for e in engs if e.get("engine")])
     m.setdefault("why", m.get("why") or (m.get("full_name", m.get("name", "")) + " — see source posts."))
     m.setdefault("formats", [{"name": m.get("name", ""), "hf": m.get("hf", "")}])

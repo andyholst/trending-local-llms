@@ -245,7 +245,7 @@ def test_contracts_and_prompts():
     check("contract: store measurements do NOT accept engine_repo (stripped at ingest)",
           "engine_repo" not in mc["properties"]["models"]["items"]["properties"]["engines"]["items"]["properties"])
     mk = (ROOT / "Makefile").read_text()
-    for b in ("nvidia", "metal", "cpu"):
+    for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         prompt = mk[mk.index(f"_search-{b}:\n"):].split("\n", 2)[1]
         check(f"prompt {b}: defines engine vs harness/app/benchmark", "harnesses, agent frameworks" in prompt)
         check(f"prompt {b}: asks for engine_repo, never invent", "engine_repo" in prompt and "never invent" in prompt)
@@ -344,10 +344,16 @@ def test_renamed_repo_uses_canonical_url():
 def test_backend_inference_matches_contract_enum():
     enum = json.loads((ROOT / "data" / "model_contract.json").read_text())[
         "properties"]["engines"]["additionalProperties"]["properties"]["backend"]["enum"]
-    hw = {"CUDA": "RTX 4090", "Metal": "MacBook Pro M4", "CPU": "Ryzen 9 7950X"}
-    combos = {("CUDA",): "CUDA", ("Metal",): "Metal", ("CPU",): "CPU", ("CUDA", "Metal"): "CUDA / Metal",
-              ("CUDA", "CPU"): "CUDA / CPU / Metal", ("Metal", "CPU"): "CUDA / CPU / Metal",
-              ("CUDA", "Metal", "CPU"): "CUDA / CPU / Metal"}
+    hw = {"CUDA": "RTX 4090", "Metal": "MacBook Pro M4", "CPU": "Ryzen 9 7950X", "ROCm": "RX 7900 XTX 24GB"}
+    # The registry records exactly the backends measured, joined in the
+    # canonical order (CUDA, ROCm, CPU, Metal). Before the AMD backend any mix
+    # with CPU collapsed to 'CUDA / CPU / Metal' (claiming CUDA for a Metal+CPU
+    # engine); an AMD-only engine must register as 'ROCm', not 'CUDA'.
+    combos = {("CUDA",): "CUDA", ("Metal",): "Metal", ("CPU",): "CPU", ("ROCm",): "ROCm",
+              ("CUDA", "Metal"): "CUDA / Metal", ("CUDA", "CPU"): "CUDA / CPU", ("Metal", "CPU"): "CPU / Metal",
+              ("CUDA", "Metal", "CPU"): "CUDA / CPU / Metal", ("CUDA", "ROCm"): "CUDA / ROCm",
+              ("ROCm", "CUDA"): "CUDA / ROCm", ("CUDA", "ROCm", "Metal"): "CUDA / ROCm / Metal",
+              ("Metal", "CPU", "ROCm", "CUDA"): "CUDA / ROCm / CPU / Metal"}
     for combo, want in combos.items():
         got = ER._infer_backend([meas("E", hw=hw[b]) for b in combo])
         check(f"backend: {'+'.join(combo)} -> {want} (in contract enum)", got == want and got in enum, got)

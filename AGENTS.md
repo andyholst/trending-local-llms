@@ -38,10 +38,17 @@ retains 30 days of history.
    more precise, e.g. a DFlash2 draft). No bare engine name without a link
    in the generated tables or the engine guide.
 6. **Backends are equal categories, not primary/secondary.** NVIDIA (CUDA),
-   Apple (Metal), and CPU each render as a **first-class table**. A model
+   AMD (ROCm), Apple (Metal), and CPU each render as a **first-class table**. A model
    measured on multiple backends appears under each with its own engine + t/s.
    The headline scope is GPU models serving **8–48 GB VRAM** (consumer/
-   workstation); CPU and Metal tables exist alongside, not demoted below it.
+   workstation) on NVIDIA and AMD alike; CPU and Metal tables exist alongside,
+   not demoted below it. **AMD is classified by hardware, never by engine
+   name**: a figure whose hardware names an AMD GPU/APU (Radeon, RX 7900 XTX,
+   R9700, Strix Halo / Ryzen AI Max, ROCm, HIP …, and no NVIDIA token) is ROCm,
+   whichever engine ran it (llama.cpp, Ollama, vLLM, SGLang, Strata). Vulkan is
+   cross-vendor: it goes in `quant`, and Vulkan on an RTX card stays CUDA. Do
+   not invent API-suffixed pseudo-engines (`llama.cpp (Vulkan)`, `vLLM (ROCm)`)
+   — they split one engine's figures across names.
    Do not pull in datacenter-only multi-TB models as top-line entries.
 6b. **Change the data/format/contract → update the tests, in the same change.**
    Any edit to a contract (`model_contract.json`, `search_contract.json`), a
@@ -100,15 +107,15 @@ The README is **generated**, not hand-maintained:
   bind-mounted at `/workspace`, so all data writes back to the host). Internal
   `_`-prefixed recipes hold the host commands; the public names are docker
   wrappers. Targets: `make docker-build` (build the image once),
-  `make setup`, `make search-nvidia|search-metal|search-cpu`
-  (the three separate searches, each writing its own
-  `data/raw/<backend>-<UTC>.json`), `make search` (all three), `make merge`
+  `make setup`, `make search-nvidia|search-metal|search-cpu|search-amd`
+  (the four separate searches, each writing its own
+  `data/raw/<backend>-<UTC>.json`), `make search` (all four), `make merge`
   (ingest raw → models.json + README + snapshot), `make validate` (QA),
   `make validate-search|validate-mapped|validate-readme` (stages), `make test`
   (unit tests), `make fix` (correct a red CI with Hermes), and `make refresh`
   (the full pipeline = setup + search + merge + validate + test, in one
   container). Live smoke targets (real network, bounded, skip cleanly without
-  keys): `make search-smoke [BACKEND=nvidia|metal|cpu]` (the exact Firecrawl →
+  keys): `make search-smoke [BACKEND=nvidia|metal|cpu|amd]` (the exact Firecrawl →
   lightbrd scrape of every search query, **3 s cap per query**),
   `make hermes-smoke` (one real Hermes call through the `nous-deepseek` alias
   with every key the pipeline passes, incl. `HF_TOKEN`), and
@@ -207,6 +214,15 @@ The README is **generated**, not hand-maintained:
   can keep writing what the post says. Add the fork URL to
   `KNOWN_ENGINE_URLS`; `check_engine_aliases` fails a leftover un-aliased
   measurement, an unregistered target, or a wrong fork URL.
+- **Backends follow the measurements.** `backends` is never narrowed, but
+  ingest (`sync_backends`, for existing AND new models) adds every backend a
+  model's measurements render in, with the same `measurement_backend` the
+  README uses — an existing model that gains its first Radeon figure gets
+  `ROCm`. A registry engine's `backend` lists every backend it runs on, joined
+  in the canonical order CUDA, ROCm, CPU, Metal (`join_backends`; the contract
+  enum is exactly those combinations). The search legs are ONE list,
+  `update_trending.SEARCH_LEGS` (`nvidia`, `metal`, `cpu`, `amd`) — adding a
+  leg means wiring it everywhere `tests/test_amd_backend.py` checks.
 - **Ingest is contract-driven.** `normalize_model` / `ingest_raw_snapshots`
   prune a model's top-level `engagement` to exactly the keys declared in
   `data/model_contract.json` (read at runtime — no second list to drift) and
@@ -246,9 +262,12 @@ The README is **generated**, not hand-maintained:
 - **Speed** (`speed_bonus`) = `log2(1 + t/s ÷ 10)` of the model's fastest
   **in-scope** measurement, only while it has posts in the window. In scope =
   consumer/workstation hardware: GPUs with ≤ 48 GB total VRAM (explicit
-  `NN GB`, a known-card table incl. laptop variants, `Nx` multiplied), every
-  Apple Silicon and CPU measurement. Datacenter parts (H100/H200/A100/B200/
-  GB200/MI300…) or > 48 GB never earn speed. 10 t/s → +1, 70 → +3, 150 → +4.
+  `NN GB`, a known-card table incl. laptop variants and Radeon cards, `Nx`
+  multiplied — a standalone 1–2 digit count only, so the `x` of `7900 XTX` is
+  never a multiplier), every Apple Silicon, AMD APU (Strix Halo / Ryzen AI,
+  Radeon 8060S …; judged by platform like a Mac) and CPU measurement.
+  Datacenter parts (H100/H200/A100/B200/GB200, AMD Instinct MI210/MI250/MI300/
+  MI355…) or > 48 GB never earn speed. 10 t/s → +1, 70 → +3, 150 → +4.
 - **`trend_score` = buzz + speed.** Order: band (trending → recent → stale) →
   `trend_score` → `posts_7d` → peak t/s (`_tps_core`, max of a range) → name.
   `posts_7d` = distinct posts in 7 days (`last_7d_likes` mirrors it).
@@ -258,21 +277,22 @@ The README is **generated**, not hand-maintained:
 ## 5b. README layout (generated by `render_readme`)
 
 Every section uses the same `measurement_backend(e, registry)` (CUDA / Metal /
-CPU from explicit Apple/CPU hardware first, then the engine registry's
-`backend` when it names ONE backend, then the built-in engine map, then
-keywords; CUDA only as the last resort) and
+CPU / ROCm: explicit Apple hardware → explicit CPU-only wording → AMD GPU
+hardware → CPU hardware, then the engine registry's `backend` when it names ONE
+backend, then the built-in engine map, then keywords; CUDA only as the last
+resort) and
 `best_measurement()` (highest t/s core, newest date on a tie), so no two tables
 can disagree about where a figure belongs.
 
 1. **❤️ Most loved** — one row per model in rank order: model (HF link, full
    name · params · license), status (🔥 / 🕑 / 💤 + last seen), **Trend**
    (`trend_score`, with `buzz · N posts · speed +X (t/s, hardware)` beneath),
-   the **best** t/s for each of CUDA / Metal / CPU with engine
+   the **best** t/s for each of CUDA / Metal / CPU / ROCm (`BACKENDS` order) with engine
    link · hardware · quant (`+N more` when there are others), VRAM, why. No
    `#` rank column — rank is row order.
 2. **🧭 Which inference engine runs what** — models × engines that have at
    least one measurement; each cell is the best t/s per backend on that engine.
-3. **🟦 / 🟨 / 🟩 backend tables** — numeric `Peak t/s` column (the sort key
+3. **🟦 CUDA / 🟪 ROCm / 🟨 CPU / 🟩 Metal backend tables** — numeric `Peak t/s` column (the sort key
    the validator reads by header name) + every measurement as
    `engine **t/s** · hardware · quant · date`, best first.
 4. **⚙️ Engine guide** — engine link, backend, models measured, best for.
@@ -287,8 +307,8 @@ The refresh is driven by the **GitHub Actions pipelines** (`refresh-bot.yml`,
 Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
 this `AGENTS.md` and the `gather-data` skill, then:
 
-1. Runs the **three search groups** against **lightbrd.com only**, fetched via
-   the Firecrawl scrape API (`FIRECRAWL_API_KEY`) — NVIDIA/CUDA, Metal/MLX, and
+1. Runs the **four search groups** against **lightbrd.com only**, fetched via
+   the Firecrawl scrape API (`FIRECRAWL_API_KEY`) — NVIDIA/CUDA, AMD/ROCm, Metal/MLX, and
    CPU (see `skills/gather-data.md`), last-3-day
    window. **One search at a time** to keep context small: run a query, capture
    its results, then move to the next — never hold all results in context at
@@ -309,7 +329,7 @@ this `AGENTS.md` and the `gather-data` skill, then:
 
 - **`refresh-bot.yml`** — the **bot** pipeline. Scheduled (daily, 06:00 UTC +
   a 17:43 UTC backup slot — GitHub delays/drops on-the-hour crons) + manual
-  dispatch (owner only). Per backend (nvidia / metal / cpu, parallel matrix):
+  dispatch (owner only). Per backend (nvidia / metal / cpu / amd, parallel matrix):
   3 s reachability smoke → Hermes routing smoke → Hermes search. Then
   `aggregate` (runs even if a leg failed): merge → soft validate → **opens a PR
   only when there is new data**, authored by the owner PAT so qa-validate
@@ -321,7 +341,7 @@ this `AGENTS.md` and the `gather-data` skill, then:
   - `validate` — deterministic: `make validate`, `validate-search`,
     `validate-mapped`, `test`. This is the only job fix-bot is asked to repair.
   - `live-smoke` — real network, bounded: `make search-smoke BACKEND=<b>` for
-    nvidia, metal, cpu (3 s cap per query), `make hermes-smoke`, and
+    nvidia, metal, cpu, amd (3 s cap per query), `make hermes-smoke`, and
     `make validate-fetch` (real search, `--require-hits`). An outage here is
     infra, not data, so it never dispatches fix-bot.
   - `dispatch-fixbot` — only when `validate` failed on a same-repo
@@ -496,6 +516,8 @@ actually happened.
 | `tests/test_post_signal.py` | a registry-only engine (e.g. Mac-only) with blank hardware landing in the CUDA table; renderer and validator classifying differently; search prompts not asking for the `…/status/<id>` URL + per-post counts; the coverage report failing CI |
 | `tests/test_trend_score.py` | one lightly-engaged post outranking many posts (real refresh-#58 fixture: Qwen3.8 1 post vs Bonsai); a viral post no longer able to lead; speed ignored or earned by datacenter / > 48 GB parts; VRAM parsing; duplicate placeholder posts after a `tps` rewrite; real posts lost; README Trend cell; validator not catching a reordered table or a wrong score |
 | `tests/test_engine_aliases.py` | a model that needs a fork (Bonsai 2 → PrismML llama.cpp) linked to the stock engine; aliases not applied on sort or ingest; stored + raw rows duplicating when only one side is aliased; aliases leaking to other models; search prompts not mentioning forks |
+| `tests/test_amd_backend.py` (issue #76) | AMD hardware falling to the CUDA default or CPU (`Ryzen 5 7600 + RX 7800 XT`, Strata/vLLM on a Radeon); bare `amd` / `hip` / `vulkan` read as AMD; `RX 7900 XTX 24GB` read as 189,600 GB (`xtx` as a multiplier); a host CPU read as an RX card; Instinct earning speed / Strix Halo not; a Radeon row merged with a Ryzen CPU row; ROCm table / most-loved column / matrix cell missing; validator skipping an unsorted, missing or misplaced ROCm table; an existing model gaining an AMD figure without `ROCm` in `backends`; an AMD-only engine registered as CUDA; contract enums drifting from `BACKENDS` / `join_backends`; the amd leg missing from the Makefile, either workflow, the smoke, the contract or self-correct (one list: `SEARCH_LEGS`) |
+| `check_backends_cover_measurements` (validate, data stage) | a model whose measurements render in a backend table its `backends` does not list (ingest + `normalize_model` now sync it via `sync_backends`) |
 | `check_engine_aliases` (validate, data stage) | a measurement still on the aliased-away engine name; an alias target missing from the registry or with the wrong repo URL |
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |

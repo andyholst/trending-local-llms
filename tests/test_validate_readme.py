@@ -76,10 +76,21 @@ def _restore_readme():
         delattr(V, "__saved_readme")
 
 
+def empty_backend_tables(header: str = "| Model | t/s |", sep: str = "|---|---|") -> list[str]:
+    """Empty Metal + CPU + ROCm tables: every backend check_backend_sort requires
+    besides CUDA (update_trending.BACKENDS). The ONE place a new backend table is
+    added to these README fixtures."""
+    rows = []
+    for title in ("# 🟩 Metal — Apple Silicon", "# 🟨 CPU — no GPU", "# 🟪 ROCm — AMD GPUs"):
+        rows += ["", title, "", header, sep, "_No models measured on this backend yet._"]
+    return rows
+
+
 def cuda_table(numbers):
-    """Build a README with CUDA + Metal + CPU backend tables (the three that
-    check_backend_sort requires). Only CUDA carries rows; Metal+CPU are empty
-    (empty tables pass the sorted check, so they don't mask the real assertion)."""
+    """Build a README with CUDA + Metal + CPU + ROCm backend tables (the four
+    that check_backend_sort requires). Only CUDA carries rows; the others are
+    empty (empty tables pass the sorted check, so they don't mask the real
+    assertion)."""
     rows = ["# Trending Local LLMs"]
     rows.append("")
     rows.append("# 🟦 CUDA — NVIDIA GPUs")
@@ -88,18 +99,7 @@ def cuda_table(numbers):
     rows.append("|---|---|")
     for n in numbers:
         rows.append(f"| **X** | {n} |")
-    rows.append("")
-    rows.append("# 🟩 Metal — Apple Silicon")
-    rows.append("")
-    rows.append("| Model | t/s |")
-    rows.append("|---|---|")
-    rows.append("_No models measured on this backend yet._")
-    rows.append("")
-    rows.append("# 🟨 CPU — no GPU")
-    rows.append("")
-    rows.append("| Model | t/s |")
-    rows.append("|---|---|")
-    rows.append("_No models measured on this backend yet._")
+    rows += empty_backend_tables()
     return "\n".join(rows)
 
 
@@ -350,15 +350,12 @@ def test_readme_tables_wellformed():
 
 def _cuda_table_with_dates(cells):
     """Build a CUDA table whose t/s cells carry the real format:
-    'engine tps (YYYY-MM-DD); engine tps (date)'. Metal+CPU are empty."""
+    'engine tps (YYYY-MM-DD); engine tps (date)'. Metal+CPU+ROCm are empty."""
     rows = ["# Trending Local LLMs", "", "# 🟦 CUDA — NVIDIA GPUs", "",
             "| Model | t/s |", "|---|---|"]
     for c in cells:
         rows.append(f"| **X** | {c} |")
-    rows += ["", "# 🟩 Metal — Apple Silicon", "", "| Model | t/s |", "|---|---|",
-             "_No models measured on this backend yet._", "",
-             "# 🟨 CPU — no GPU", "", "| Model | t/s |", "|---|---|",
-             "_No models measured on this backend yet._"]
+    rows += empty_backend_tables()
     return "\n".join(rows)
 
 
@@ -430,8 +427,7 @@ def test_backend_sort_reads_peak_column_by_header():
                "|---|---|---|---|---|---|"]
         out += [f"| **{n}** | 27B | MIT | 16GB | {p} | [Strata](https://github.com/Niko1221/Strata) **{p}** · RTX 5090 · Q4 · 2026-10-01 |"
                 for n, p in rows]
-        out += ["", "# 🟩 Metal", "", "| Model | Peak t/s |", "|---|---|", "",
-                "# 🟨 CPU", "", "| Model | Peak t/s |", "|---|---|"]
+        out += empty_backend_tables("| Model | Peak t/s |")
         return "\n".join(out)
     reset()
     s = store()

@@ -23,6 +23,8 @@ validator enforces this.
 
 - `engines` — the engine registry. Every engine a model references must exist
   here with a `url` (repo link). The README engine guide is built from this.
+  `backend` is one of CUDA, ROCm, Metal, CPU or several joined with ` / ` in
+  the canonical order CUDA, ROCm, CPU, Metal (e.g. `CUDA / ROCm / CPU / Metal`).
 - `models` — the list of models. **No duplicates.**
 
 ## Model object contract
@@ -44,7 +46,7 @@ Each entry in `models` has exactly this shape:
   "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
   "vram_tier": "12GB",
   "vram_min": "8GB",
-  "backends": ["CUDA", "Metal", "CPU"],
+  "backends": ["CUDA", "Metal", "CPU", "ROCm"],
   "supported_engines": ["llama.cpp", "MLX-fast (Bonsai 2)"],
   "engines": [
     {
@@ -76,7 +78,7 @@ Each entry in `models` has exactly this shape:
 | `hf` | yes | Primary Hugging Face repo id → `https://huggingface.co/<hf>`. |
 | `vram_tier` | yes | VRAM category (8GB, 12GB, 16GB, 24GB, 32GB, 48GB). |
 | `vram_min` | yes | **LEAST required VRAM** needed to run the model (e.g. 8GB). Community-reported from the X measurement posts; cross-checked against the smallest usable quant file size on Hugging Face (HF does not expose a VRAM field — see note below). |
-| `backends` | yes | Backends it runs on (CUDA, Metal, CPU). |
+| `backends` | yes | Backends it runs on (CUDA, Metal, CPU, ROCm = AMD GPUs). Must include every backend its measurements render in — ingest adds it (`sync_backends`); AMD hardware (Radeon / RX / Strix Halo / ROCm) is ROCm whatever the engine. |
 | `supported_engines` | yes | **List of engines the model is supported by.** Each must have a measurement in `engines`. |
 | `engines` | yes | **Per-engine t/s measurements** — the core data. One entry per (engine, date). |
 | `why` | yes | Why people love it. |

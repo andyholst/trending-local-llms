@@ -105,6 +105,8 @@ def _backend_table_readme(rows: list) -> Path:
     lines += ["", "# 🟩 Metal — Apple Silicon", "", "| Model | t/s |", "|---|---|",
               "_No models measured on this backend yet._", "",
               "# 🟨 CPU — no GPU", "", "| Model | t/s |", "|---|---|",
+              "_No models measured on this backend yet._", "",
+              "# 🟪 ROCm — AMD GPUs", "", "| Model | t/s |", "|---|---|",
               "_No models measured on this backend yet._"]
     td = tempfile.mkdtemp()
     p = Path(td) / "README.md"

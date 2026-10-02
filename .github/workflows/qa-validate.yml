@@ -6,7 +6,7 @@ name: qa-validate
 #                   tests (incl. Makefile recipe, workflow wiring and fix-loop
 #                   control-flow tests). This is what fix-bot can repair.
 #   live-smoke      REAL network, bounded: the exact Firecrawl->lightbrd scrape
-#                   for every nvidia / metal / cpu search query (3s cap each),
+#                   for every nvidia / metal / cpu / amd search query (3s cap each),
 #                   one real Hermes call through the search alias, and a real
 #                   --require-hits search. Catches a dead key, a broken alias, a
 #                   provider mis-route or an unreachable mirror on the PR,
@@ -88,6 +88,8 @@ jobs:
         run: make search-smoke BACKEND=metal
       - name: Search reachability — cpu (HTTP 200 within 3s per query)
         run: make search-smoke BACKEND=cpu
+      - name: Search reachability — amd (HTTP 200 within 3s per query)
+        run: make search-smoke BACKEND=amd
 
       - name: Model caps (model served, max_tokens fits, accepts reasoning)
         run: make model-caps

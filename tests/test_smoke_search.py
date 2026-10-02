@@ -9,18 +9,23 @@ Rules these enforce (all offline):
      how we guarantee the smoke is "tested with the same search parameters".
   2. Every keyword is URL-encoded into a lightbrd search URL so the exact
      request the Hermes search agent would build is reproduced.
-  3. There is exactly one keyword list per backend (nvidia/metal/cpu) — the
-     removed `general` group must not come back.
+  3. There is exactly one keyword list per search leg (nvidia/metal/cpu/amd =
+     update_trending.SEARCH_LEGS) — the removed `general` group must not come back.
 
 Run standalone: python3 tests/test_smoke_search.py
 """
 import math
 import re
+import sys
 import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MAKEFILE = ROOT / "Makefile"
+sys.path.insert(0, str(ROOT / "scripts"))
+from update_trending import SEARCH_LEGS  # noqa: E402
+
+LEGS = tuple(SEARCH_LEGS)  # ('nvidia', 'metal', 'cpu', 'amd')
 SMOKE = ROOT / "scripts" / "smoke_search.py"
 SEARCH_NS = {}
 
@@ -65,7 +70,7 @@ def main() -> int:
     print("smoke_search: Makefile keywords match the bounded smoke (same params)")
     smoke = _load_smoke_backends()
 
-    for backend in ("nvidia", "metal", "cpu"):
+    for backend in LEGS:
         mk_kw = _makefile_keywords(backend)
         smoke_kw = smoke.get(backend, [])
         check(f"backend {backend}: smoke defines {len(smoke[backend])} keywords",
@@ -76,7 +81,7 @@ def main() -> int:
 
     check("no 'general' backend resurrected", "general" not in smoke,
           f"got: {list(smoke)}")
-    check("exactly three backends", sorted(smoke) == ["cpu", "metal", "nvidia"])
+    check("exactly the four search legs (nvidia/metal/cpu/amd)", sorted(smoke) == sorted(LEGS), f"got: {sorted(smoke)}")
 
     # URL building: each keyword -> exact lightbrd search URL (urlencoded q=)
     print("smoke_search: every keyword builds a lightbrd search URL")

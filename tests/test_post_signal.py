@@ -146,7 +146,7 @@ def test_post_signal_never_fails():
 
 def test_prompts_ask_for_post_url():
     text = (ROOT / "Makefile").read_text()
-    for b in ("nvidia", "metal", "cpu"):
+    for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         body = text[text.index(f"_search-{b}:\n"):]
         prompt = re.search(r'hermes -z "(.*?)" \\', body, re.S).group(1)
         check(f"prompt {b}: requires the …/status/<id> post URL", "/status/<id>" in prompt)

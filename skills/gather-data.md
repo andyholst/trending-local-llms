@@ -6,7 +6,7 @@
 > (deepseek-v4-flash-0731 via the Nous portal, token from the repo secret
 > `NOUS_PORTAL_API_TOKEN`) that loads this skill + AGENTS.md and searches
 > lightbrd.com via the Firecrawl scrape API (`FIRECRAWL_API_KEY`). Each of the
-> three searches for the backend groups (NVIDIA, Metal, CPU) each write their
+> four searches for the backend groups (NVIDIA, Metal, CPU, AMD) each write their
 > own timestamped raw snapshot; they aggregate into
 > `models.json`. You should **add models to the JSON store**, not hand-edit the
 > tables, then run the script to regenerate. See `AGENTS.md` for the full
@@ -66,6 +66,31 @@ verified against the lightbrd.com mirror.
 | llama.cpp CPU only | `llama.cpp cpu only tokens per second` |
 | Local LLM on GPU (CPU offload) | `local llm tokens per second gpu` |
 
+### Backend D — AMD / ROCm (Radeon 8–48 GB + Strix Halo APUs)
+| Goal | Query |
+|---|---|
+| RX 7900 XTX t/s | `rx 7900 xtx tokens per second` |
+| RX 9070 XT t/s | `rx 9070 xt tokens per second` |
+| ROCm runs | `rocm tokens per second` |
+| llama.cpp Vulkan on AMD | `llama.cpp vulkan amd tokens` |
+| Strix Halo / Ryzen AI Max | `strix halo tokens per second` |
+| (`--fetch` path only) 7900 XTX + model | `rx 7900 xtx qwen` |
+
+> **AMD probing notes (tested Oct 2 2026):** AMD posts name the **card** far
+> more than the API — query by card (`rx 7900 xtx`, `rx 9070 xt`, `strix halo`)
+> rather than `rocm` alone. Record the card in `hardware` exactly as posted
+> (`RX 7900 XTX 24GB`, `Radeon 8060S / Strix Halo 128GB`): the hardware is what
+> classifies a figure as ROCm, whatever engine ran it. Keep the engine's
+> registry name (`llama.cpp`, `vLLM`, `Strata` …) and put the API (`ROCm`,
+> `HIP`, `Vulkan`) in `quant` — never `llama.cpp (Vulkan)` as an engine.
+> Vulkan also runs on NVIDIA/Intel, so Vulkan alone is not AMD. Strix Halo
+> posts often quote **prompt-processing / prefill** t/s (1,000+): skip those,
+> record generation t/s only. Datacenter Instinct (MI300/MI355) is out of scope.
+> lightbrd (a Nitter front end) prints a post's counts without labels, zeros
+> omitted, in Nitter's order replies · reposts · quotes · likes · views — so 4
+> numbers on a post with no quotes are replies, reposts, likes, views (the
+> coldniko RX 7900 XTX post: 41 · 59 · 504 · 38,670).
+
 > **Probing notes (tested Sep 28 2026):** plain engine-name-only queries (e.g.
 > `free%20token engine moE small gpu`) return **nothing** — FreeToken's raw
 > name isn't indexed as a search term. Prefer **model + token/VRAM** queries;
@@ -73,7 +98,7 @@ verified against the lightbrd.com mirror.
 > sparse on X — most "CPU" signal lives in offload-capable engines (FreeToken,
 > llama.cpp cpu) that appear under the CUDA/engine queries. The pipeline's CPU
 > table will be thinner by nature; don't pad it with fabricated numbers. There
-> is NO separate "general" search — the three backend searches (CUDA/Metal/CPU)
+> is NO separate "general" search — the four backend searches (CUDA/Metal/CPU/ROCm)
 > already capture every model; an unfiltered general query produced a payload
 > too large for the model's output cap and was removed.
 
@@ -115,9 +140,9 @@ Known gotchas:
 
 ## 6. README structure
 
-- **"Most loved" table** ranked by engagement, with: rank, model, full name, HF link, why people love it, **CUDA t/s**, **Metal t/s**, VRAM, engine.
-- **GPU type first**: CUDA (NVIDIA), then CPU, then Metal (Apple Silicon).
-- **VRAM tiers** within each: 6/8/12/16/24/32/48/64/96/128/256/384/512/576 GB (CUDA), 48/64/96/128/256/512 (Metal), by RAM (CPU).
+- **"Most loved" table** ranked by engagement, with: rank, model, full name, HF link, why people love it, **CUDA t/s**, **Metal t/s**, **CPU t/s**, **ROCm t/s**, VRAM, engine.
+- **GPU type first**: CUDA (NVIDIA), ROCm (AMD), then CPU, then Metal (Apple Silicon).
+- **VRAM tiers** within each: 6/8/12/16/24/32/48/64/96/128/256/384/512/576 GB (CUDA), 8/12/16/20/24/32/48 GB (ROCm), 48/64/96/128/256/512 (Metal), by RAM (CPU).
 - **Same column pattern per tier**: Model | Params | License | HF | VRAM | t/s | Engine.
 - **Sort by highest t/s** within each tier.
 - **One specific engine per model** — not a list.
@@ -135,12 +160,12 @@ Known gotchas:
 
 | Engine | Backend | Best for |
 |---|---|---|
-| **Ollama** | CUDA / CPU / Metal | Easiest start |
-| **llama.cpp** | CUDA / CPU / Metal | Max control, custom quants (Bonsai 2, Mirai 2.4-bit) |
+| **Ollama** | CUDA / ROCm / CPU / Metal | Easiest start |
+| **llama.cpp** | CUDA / ROCm / CPU / Metal | Max control, custom quants (Bonsai 2, Mirai 2.4-bit); AMD via ROCm/HIP or Vulkan |
 | **FreeToken** | CUDA | 2-4x faster than Ollama; big MoE on small GPUs |
-| **vLLM / SGLang** | CUDA | Production serving, big MoE; + DFlash2 speculative decode |
+| **vLLM / SGLang** | CUDA / ROCm | Production serving, big MoE; + DFlash2 speculative decode |
 | **DFlash2** | CUDA | Spec decode + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat on 24 GB 3090 |
-| **Strata** | CUDA | Big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA; experts across GPU/RAM/SSD, ~1.6-1.8x (Niko1221/Strata) |
+| **Strata** | CUDA / ROCm | Big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB NVIDIA or AMD (`--backend hip`); experts across GPU/RAM/SSD, ~1.6-1.8x (Niko1221/Strata) |
 | **MLX** | Metal | Fastest on Apple Silicon |
 | **TensorFold** | Metal | Speculative decoding on Mac, 3-6x |
 | **MLX-fast (Bonsai 2)** | Metal | Speedup engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s on 16 GB Mac (Layr-Labs/mlxfast-bonsai2-27b-engine) |

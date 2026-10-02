@@ -2,7 +2,7 @@ name: refresh-bot
 
 # BOT pipeline — scheduled data refresh. Fully container-agnostic: builds the
 # self-contained Docker image (Python deps + Hermes CLI) ONCE, pushes it to
-# GHCR, and the three Hermes searches run as SEPARATE PARALLEL jobs that PULL
+# GHCR, and the four Hermes searches run as SEPARATE PARALLEL jobs that PULL
 # the prebuilt image (each writes its own data/raw/<backend>-<UTC>.json), then
 # a final job aggregates them (merge -> validate -> test) and opens a PR only
 # when there is new data. Never auto-merges. The PR is validated by
@@ -137,7 +137,7 @@ jobs:
         run: |
           echo "GHCR image exists and today is not Sunday; reusing existing image."
 
-  # Four independent searches, run in parallel. Each PULLS the prebuilt image
+  # Four independent searches (nvidia, metal, cpu, amd), run in parallel. Each PULLS the prebuilt image
   # (no rebuild), writes its own raw snapshot, and uploads it as an artifact.
   search:
     needs: build
@@ -146,7 +146,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [nvidia, metal, cpu]
+        backend: [nvidia, metal, cpu, amd]
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
