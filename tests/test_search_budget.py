@@ -67,7 +67,7 @@ def test_makefile_budget_settings():
 
 def test_prompts_write_per_query():
     text = (ROOT / "Makefile").read_text()
-    for b in ("nvidia", "metal", "cpu"):
+    for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         prompt = text[text.index(f"_search-{b}:\n"):].split("\n", 2)[1]
         check(f"prompt {b}: write after EACH query", "After EACH query, immediately write only that query" in prompt)
         check(f"prompt {b}: never one big payload", "never collect all queries into one big payload" in prompt)

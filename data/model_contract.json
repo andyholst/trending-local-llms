@@ -31,12 +31,23 @@
         "properties": {
           "backend": {
             "type": "string",
+            "description": "Backend(s) the engine runs on. One of CUDA (NVIDIA), ROCm (AMD GPUs: ROCm/HIP or Vulkan), Metal (Apple), CPU, or several joined with ' / ' in the canonical order CUDA, ROCm, CPU, Metal (update_trending.join_backends).",
             "enum": [
               "CUDA",
               "Metal",
               "CPU",
               "CUDA / CPU / Metal",
-              "CUDA / Metal"
+              "CUDA / Metal",
+              "ROCm",
+              "CUDA / ROCm",
+              "CUDA / CPU",
+              "ROCm / CPU",
+              "ROCm / Metal",
+              "CPU / Metal",
+              "CUDA / ROCm / CPU",
+              "CUDA / ROCm / Metal",
+              "ROCm / CPU / Metal",
+              "CUDA / ROCm / CPU / Metal"
             ]
           },
           "note": {
@@ -138,9 +149,11 @@
               "enum": [
                 "CUDA",
                 "Metal",
-                "CPU"
+                "CPU",
+                "ROCm"
               ]
-            }
+            },
+            "description": "Backends the model runs on: CUDA (NVIDIA), Metal (Apple), CPU, ROCm (AMD GPUs). Always includes every backend its measurements render in."
           },
           "supported_engines": {
             "type": "array",
@@ -327,7 +340,7 @@
               "speed_bonus": {
                 "type": "number",
                 "minimum": 0,
-                "description": "log2(1 + t/s / 10) of the fastest in-scope (consumer, <=48 GB / Apple / CPU) measurement; 0 when no posts in 7 days (computed by sort_models)."
+                "description": "log2(1 + t/s / 10) of the fastest in-scope (consumer, <=48 GB GPU incl. Radeon / Apple / AMD APU / CPU) measurement; 0 when no posts in 7 days (computed by sort_models)."
               },
               "trend_score": {
                 "type": "number",

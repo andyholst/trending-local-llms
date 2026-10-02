@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded reachability smoke for the three Hermes search targets.
+"""Bounded reachability smoke for the four Hermes search targets.
 
 Replays the EXACT same Firecrawl scrape call that the Makefile ``_search-{backend}``
 prompts issue -- POST https://api.firecrawl.dev/v1/scrape with
@@ -16,7 +16,7 @@ The per-backend keyword lists below must stay identical to the Makefile
 (scripts/smoke_search.py) cross-checks them so one side cannot drift.
 
 Usage:
-  python3 scripts/smoke_search.py [--budget 90] [--backend nvidia|metal|cpu] [--url-only]
+  python3 scripts/smoke_search.py [--budget 90] [--backend nvidia|metal|cpu|amd] [--url-only]
 """
 import argparse
 import json
@@ -49,6 +49,13 @@ BACKEND_KEYWORDS = {
         "llama.cpp cpu only",
         "raspberry pi llm tokens per second",
         "local llm cpu",
+    ],
+    "amd": [
+        "rx 7900 xtx tokens per second",
+        "rx 9070 xt tokens per second",
+        "rocm tokens per second",
+        "llama.cpp vulkan amd tokens",
+        "strix halo tokens per second",
     ],
 }
 

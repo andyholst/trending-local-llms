@@ -410,10 +410,31 @@ def check_newline_terminators() -> None:
         print(f"  OK: all {len(tracked)} tracked files end with a newline")
 
 
+def _ut():
+    """scripts/update_trending.py — the ONE source of BACKENDS / BACKEND_LABEL /
+    measurement_backend, so the validator can never disagree with the renderer
+    about which backend tables exist (a hard-coded CUDA/Metal/CPU list here
+    silently skipped any new backend table, e.g. ROCm)."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import update_trending as ut
+    finally:
+        sys.path.pop(0)
+    return ut
+
+
+def backend_headings() -> list[tuple[str, str]]:
+    """[(backend, emoji)] for every README backend table, in BACKENDS order."""
+    ut = _ut()
+    return [(b, ut.BACKEND_LABEL[b][0]) for b in ut.BACKENDS]
+
+
 def check_backend_sort(store: dict) -> None:
     """Verify each README backend table is sorted by highest t/s descending.
     Parses the rendered tables (the store itself is sorted by engagement for
-    the most-loved list; the backend tables are the t/s-sorted view)."""
+    the most-loved list; the backend tables are the t/s-sorted view). Every
+    backend in update_trending.BACKENDS (CUDA, Metal, CPU, ROCm) must have its
+    table — a missing one fails."""
     if not README.exists():
         fail("README.md missing")
         return
@@ -421,7 +442,7 @@ def check_backend_sort(store: dict) -> None:
     # Each backend table: header line "# <emoji> <title>" then a markdown table.
     # Find the table under each backend heading.
     lines = text.split("\n")
-    for backend, emoji in (("CUDA", "🟦"), ("Metal", "🟩"), ("CPU", "🟨")):
+    for backend, emoji in backend_headings():
         # find the backend heading, then take only the markdown table block
         # that immediately follows it (stop at the first non-table line).
         start = next((i for i, ln in enumerate(lines) if ln.startswith(f"# {emoji}")), None)
@@ -479,14 +500,12 @@ def _readme_sections(text: str) -> dict[str, list[str]]:
     """Map each top-level backend heading / the most-loved heading to the table
     rows that follow it."""
     sections: dict[str, list[str]] = {}
+    heads = {f"# {emoji}": b for b, emoji in backend_headings()}
     cur = None
     for ln in text.split("\n"):
-        if ln.startswith("# 🟦"):
-            cur = "CUDA"
-        elif ln.startswith("# 🟩"):
-            cur = "Metal"
-        elif ln.startswith("# 🟨"):
-            cur = "CPU"
+        head = next((h for h in heads if ln.startswith(h)), None)
+        if head:
+            cur = heads[head]
         elif ln.startswith("## ❤️"):
             cur = "loved"
         elif ln.startswith("#"):
@@ -533,7 +552,8 @@ def check_readme_measurements(store: dict) -> None:
             fail(f"readme-measurements: {m['name']} missing from the most-loved table")
             continue
         cells = _split_row(loved)
-        for idx, b in ((3, "CUDA"), (4, "Metal"), (5, "CPU")):
+        # most-loved columns: Model | Status | Trend | <one per BACKENDS> | VRAM | Why
+        for idx, b in enumerate(ut.BACKENDS, start=3):
             best = ut.best_measurement([e for e in m.get("engines", []) if ut.measurement_backend(e, store.get("engines", {})) == b])
             cell = cells[idx].strip() if idx < len(cells) else ""
             want = f"**{best['tps']}**" if best else "—"
@@ -542,6 +562,23 @@ def check_readme_measurements(store: dict) -> None:
                 fail(f"readme-measurements: most-loved {b} cell for {m['name']} should start with {want!r}, got {cell[:40]!r}")
     if not bad:
         print("  OK: every measurement is in its own backend row; most-loved shows the best per backend")
+
+
+def check_backends_cover_measurements(store: dict) -> None:
+    """Every backend a model has a measurement on is listed in its `backends`
+    (the README table it renders in must be one the model claims). Catches an
+    existing model that gained an AMD figure on ingest but kept backends
+    without 'ROCm' — ingest/normalize now sync it (update_trending.sync_backends)."""
+    ut = _ut()
+    reg = store.get("engines", {})
+    bad = 0
+    for m in store.get("models", []):
+        missing = [b for b in ut.measured_backends(m, reg) if b not in (m.get("backends") or [])]
+        if missing:
+            bad += 1
+            fail(f"backends: {m.get('id')} has {', '.join(missing)} measurement(s) but backends={m.get('backends')}")
+    if not bad:
+        print("  OK: every model's backends cover the backends its measurements render in")
 
 
 def _as_of(store: dict) -> datetime:
@@ -1032,6 +1069,7 @@ def main() -> int:
     add("README completeness", "readme", lambda: check_readme_has_all_models(store))
     add("JSON <-> README sync", "readme", lambda: check_readme_sync(store))
     add("measurements in their backend rows", "readme", lambda: check_readme_measurements(store))
+    add("backends cover measurements", "data", lambda: check_backends_cover_measurements(store))
     add("post-signal coverage (report only)", "data", lambda: check_post_signal(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))
     add("README engine links", "readme", lambda: check_readme_engine_links(store))

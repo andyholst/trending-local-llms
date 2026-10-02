@@ -31,6 +31,9 @@ except ImportError:  # pragma: no cover
     print("SKIP: PyYAML not installed (it is in requirements-test.txt)")
     raise SystemExit(0)
 
+sys.path.insert(0, str(ROOT / "scripts"))
+from update_trending import SEARCH_LEGS  # noqa: E402  ('nvidia', 'metal', 'cpu', 'amd')
+
 PAT = "secrets.FIXBOT_DISPATCH_TOKEN"
 _PASS = 0
 _FAIL = 0
@@ -73,8 +76,8 @@ def test_refresh_bot():
     wf = load("refresh-bot.yml")
     search = wf["jobs"]["search"]
     agg = wf["jobs"]["aggregate"]
-    check("refresh: search matrix is exactly nvidia/metal/cpu",
-          search["strategy"]["matrix"]["backend"] == ["nvidia", "metal", "cpu"],
+    check("refresh: search matrix is exactly the search legs nvidia/metal/cpu/amd",
+          search["strategy"]["matrix"]["backend"] == list(SEARCH_LEGS),
           search["strategy"]["matrix"])
     order = [s.get("run", "").strip() for s in steps(search) if s.get("run")]
     def idx(sub):
@@ -118,7 +121,7 @@ def test_qa_validate():
     check("qa: validate job has no network-dependent targets",
           "validate-fetch" not in v and "smoke" not in v, v)
     live = run_text(jobs.get("live-smoke", {}))
-    for b in ("nvidia", "metal", "cpu"):
+    for b in SEARCH_LEGS:
         check(f"qa: live search smoke for {b}", f"BACKEND={b}" in live, "")
     check("qa: live hermes routing smoke", "make hermes-smoke" in live, "")
     check("qa: live model-caps check", "make model-caps" in live, "")

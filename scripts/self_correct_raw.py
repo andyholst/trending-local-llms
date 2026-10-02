@@ -15,7 +15,8 @@ Fill rules (per missing field, uses only data already present in the payload):
   - hf          -> left as-is (cannot derive; must come from search) -> flagged
   - vram_tier   -> derive from smallest vram_min-style value present, else leave
   - vram_min    -> derive from vram_tier if present, else leave
-  - backends    -> derive from engine registry backend of the engines present
+  - backends    -> derive from engine registry backend of the engines present,
+                   plus ROCm for any row measured on AMD hardware
   - date on engine -> use snapshot generated_utc date (fallback)
   - source_post remains required (cannot fake) -> flagged if missing
 
@@ -54,20 +55,38 @@ def derive_vram_min(vram_tier: str) -> str:
     return f"{m.group(1)}GB" if m else ""
 
 
+# Store/README backends, in the order update_trending.BACKENDS renders them.
+_BACKENDS = ("CUDA", "Metal", "CPU", "ROCm")
+# Raw-snapshot backend names (the search legs) — update_trending.SEARCH_LEGS
+# keys, plus the retired 'general' kept so historical snapshots still validate.
+RAW_BACKENDS = ("nvidia", "metal", "cpu", "amd", "general")
+_LEG_OF = {"CUDA": "nvidia", "Metal": "metal", "CPU": "cpu", "ROCm": "amd"}
+
+
+def _is_amd_gpu(hw: str) -> bool:
+    import sys
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import update_trending as ut
+    finally:
+        sys.path.pop(0)
+    return ut.is_amd_gpu(hw)
+
+
 def derive_backends(engines, store_engines) -> list:
     backs = []
     for e in engines:
         eng = store_engines.get(e.get("engine"), {})
         b = eng.get("backend", "")
-        if "Metal" in b:
-            backs.append("Metal")
-        if "CUDA" in b:
-            backs.append("CUDA")
-        if "CPU" in b:
-            backs.append("CPU")
-    # de-dup, preserve order CUDA,Metal,CPU
+        for cand in _BACKENDS:
+            if re.search(rf"\b{cand}\b", b):
+                backs.append(cand)
+        # an AMD card in the hardware is ROCm whatever the engine is registered as
+        if _is_amd_gpu(e.get("hardware") or ""):
+            backs.append("ROCm")
+    # de-dup, preserve order CUDA,Metal,CPU,ROCm
     out = []
-    for b in ("CUDA", "Metal", "CPU"):
+    for b in _BACKENDS:
         if b in backs and b not in out:
             out.append(b)
     return out or ["CUDA"]
@@ -97,11 +116,12 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
     if not data.get("backend"):
         stem = path.stem
         prefix = stem.split("-")[0].lower()
-        if prefix in ("nvidia", "metal", "cpu", "general"):
+        if prefix in RAW_BACKENDS:
             data["backend"] = prefix
         else:
-            backs = {b.lower() for m in data.get("models", []) for b in m.get("backends", [])}
-            data["backend"] = "metal" if "metal" in backs else ("cpu" if "cpu" in backs else "general")
+            backs = {b for m in data.get("models", []) for b in m.get("backends", [])}
+            legs = [_LEG_OF[b] for b in ("Metal", "ROCm", "CPU") if b in backs]
+            data["backend"] = legs[0] if legs else "general"
         notes.append(f"{path.name}: backend <- '{data['backend']}' (derived from filename/models)")
     for m in data.get("models", []):
         if not m.get("id"):

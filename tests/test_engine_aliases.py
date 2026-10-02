@@ -175,7 +175,7 @@ def test_fork_registered_and_known():
 
 def test_prompts_mention_forks():
     text = (ROOT / "Makefile").read_text()
-    for b in ("nvidia", "metal", "cpu"):
+    for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         body = text[text.index(f"_search-{b}:\n"):].split("\n", 2)[1]
         check(f"prompt {b}: record forks by their registry name",
               "fork or custom build" in body and "engines registry" in body)

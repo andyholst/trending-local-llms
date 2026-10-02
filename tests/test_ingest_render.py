@@ -224,7 +224,7 @@ def test_ingest_normalizes_missing_derived_fields():
 
 
 def test_aggregate_three_backend_searches():
-    """The CI runs the 3 backend searches (nvidia/metal/cpu) as separate parallel
+    """The CI runs the 4 backend searches (nvidia/metal/cpu/amd) as separate parallel
     jobs, each writing its own data/raw/<backend>-<UTC>.json; the aggregate job
     then merges ALL of them into models.json + README. Verify that ingesting
     the three backend snapshots lands every model in the store and README, and
@@ -255,6 +255,16 @@ def test_aggregate_three_backend_searches():
                          "date": "2026-09-28", "source_post": "https://lightbrd.com/cpu"}],
             "last_seen": "2026-09-28",
         }]),
+        # the AMD leg: an existing model gains a Radeon figure (Vulkan is an
+        # engine detail in quant, the card puts it in the ROCm table)
+        raw_snapshot("amd", [{
+            "id": "qwen3-14b", "name": "Qwen3 14B", "full_name": "Qwen3-14B", "type": "LLM",
+            "license": "Apache 2.0", "params": "14B", "hf": "Qwen/Qwen3-14B",
+            "vram_tier": "9GB", "vram_min": "8GB", "backends": ["ROCm"],
+            "engines": [{"engine": "llama.cpp", "tps": "64", "hardware": "RX 7900 XTX 24GB", "quant": "Q4_K_M, Vulkan",
+                         "date": "2026-09-28", "source_post": "https://lightbrd.com/amd"}],
+            "last_seen": "2026-09-28",
+        }]),
     ]
     run(s, raws)
     ids = [m["id"] for m in s["models"]]
@@ -264,11 +274,18 @@ def test_aggregate_three_backend_searches():
     engs = [e["engine"] for e in qwen["engines"]]
     check("aggregate: multi-backend model keeps both engines (llama.cpp + MLX)",
           "llama.cpp" in engs and "MLX" in engs)
+    check("aggregate: the amd leg's Radeon figure merged as its own row (not collapsed with the RTX one)",
+          {e["tps"] for e in qwen["engines"] if e["engine"] == "llama.cpp"} == {"50", "64"},
+          [e["tps"] for e in qwen["engines"]])
+    check("aggregate: existing model gains 'ROCm' in backends from its AMD figure",
+          "ROCm" in qwen.get("backends", []), qwen.get("backends"))
     readme = UT.render_readme(s, datetime(2026, 9, 28, tzinfo=timezone.utc))
     check("aggregate: README shows all merged models",
           "TinyCPU" in readme and "Qwen3 14B" in readme)
-    check("aggregate: README has CUDA + Metal + CPU backend tables",
-          "# 🟦 CUDA" in readme and "# 🟩 Metal" in readme and "# 🟨 CPU" in readme)
+    check("aggregate: README has CUDA + Metal + CPU + ROCm backend tables",
+          "# 🟦 CUDA" in readme and "# 🟩 Metal" in readme and "# 🟨 CPU" in readme and "# 🟪 ROCm" in readme)
+    rocm = readme.split("# 🟪 ROCm", 1)[1].split("\n---", 1)[0]
+    check("aggregate: the Radeon figure renders in the ROCm table", "**Qwen3 14B**" in rocm and "**64**" in rocm, rocm[:300])
 
 
 def main() -> int:

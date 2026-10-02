@@ -66,7 +66,7 @@ def test_makefile_prompts_cap_reasoning():
     check("reasoning: fix level defined + valid", levels.get("HERMES_FIX_REASONING") in valid, str(levels))
 
 
-HERMES_TARGETS = ("_search-nvidia", "_search-metal", "_search-cpu", "_fix")
+HERMES_TARGETS = ("_search-nvidia", "_search-metal", "_search-cpu", "_search-amd", "_fix")
 
 
 def _logical_commands(text: str) -> list[str]:

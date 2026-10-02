@@ -59,7 +59,8 @@ _ENGINE = re.compile(
     r"\b(inference (?:engine|server|runtime|framework|library)|llm (?:inference|serving|runtime|engine)|"
     r"serving (?:engine|framework|system)|model serving|runtime for (?:llms?|language models)|"
     r"gguf|ggml|llama\.cpp|bitnet|cuda kernels?|metal kernels?|quantized inference|"
-    r"speculative decoding|token(?:s)? per second|tensorrt|mlx|onnx runtime|vllm|sglang)\b", re.I)
+    r"speculative decoding|token(?:s)? per second|tensorrt|mlx|onnx runtime|vllm|sglang|"
+    r"rocm|hip kernels?|vulkan (?:backend|inference|compute))\b", re.I)
 
 
 def repo_slug(url: str) -> str | None:
@@ -130,16 +131,11 @@ def _infer_backend(measurements: list[dict]) -> str:
         import update_trending as ut
     finally:
         sys.path.pop(0)
-    seen = []
-    for e in measurements:
-        b = ut.measurement_backend(e)
-        if b not in seen:
-            seen.append(b)
-    if len(seen) == 1:
-        return seen[0]
-    if set(seen) <= {"CUDA", "Metal"}:
-        return "CUDA / Metal"
-    return "CUDA / CPU / Metal"
+    # One backend -> that backend; several -> joined in the canonical order
+    # (ut.join_backends: 'CUDA / ROCm', 'CUDA / ROCm / Metal', 'CUDA / CPU /
+    # Metal' ...), exactly the values the contract's backend enum allows.
+    # An AMD-only engine therefore registers as 'ROCm', never 'CUDA'.
+    return ut.join_backends(ut.measurement_backend(e) for e in measurements) or "CUDA"
 
 
 def register_new_engines(store: dict, models: list[dict], fetch=fetch_repo_meta) -> list[dict]:
