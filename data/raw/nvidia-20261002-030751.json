@@ -1,0 +1,35 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-02T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU (est, vendor-claimed MoE weight offload)",
+          "quant": "MoE, experts across VRAM/RAM",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/kumard_3/status/2104882430364815555",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 52
+        }
+      ]
+    }
+  ]
+}
