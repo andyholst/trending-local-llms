@@ -282,6 +282,34 @@ def test_registered_engines_never_refused():
     check("reality: open-webui (real) -> not-engine", ER.classify_repo(meta["open-webui/open-webui"])[0] == "not-engine")
 
 
+def test_app_bundled_inference_server():
+    """PR #80: mlx-serve ('Native LLM inference server for Apple Silicon ...
+    Zig backend, Swift frontend macOS app') was refused on 'frontend', so it
+    never registered and validation failed on every Metal refresh."""
+    meta = real_meta()
+    check("app+server: mlx-serve (real) -> engine", ER.classify_repo(meta["ddalcu/mlx-serve"])[0] == "engine",
+          ER.classify_repo(meta["ddalcu/mlx-serve"]))
+    check("app+server: oMLX (real, menu-bar app) -> engine", ER.classify_repo(meta["jundot/omlx"])[0] == "engine")
+    check("app+server: a chat UI that only SUPPORTS llama.cpp is still not-engine",
+          ER.classify_repo(META["acme/chatbox"])[0] == "not-engine")
+    check("app+server: open-webui (real) still not-engine",
+          ER.classify_repo(meta["open-webui/open-webui"])[0] == "not-engine")
+    c = lambda d, t=(): ER.classify_repo({"full_name": "x/y", "description": d, "topics": list(t)})[0]  # noqa: E731
+    check("app+server: hard signal wins over a self-declared server (harness with inference server)",
+          c("Agent framework with a built-in inference server") == "not-engine")
+    check("app+server: 'inference server' only in topics does not rescue an app",
+          c("Desktop app chat UI", ["inference-server"]) == "not-engine")
+
+
+def test_search_prompts_look_up_missing_repos():
+    """mlx-serve's post linked no repo, so engine_repo was empty and ingest
+    could not register it. The prompts must ask for ONE verified lookup."""
+    mk = (ROOT / "Makefile").read_text()
+    lines = [l for l in mk.splitlines() if "hermes -z" in l and "--write-raw" in l]
+    check("prompts: every search prompt asks for a verified repo lookup when the post links none",
+          lines and all("links no repo" in l and "page resolves" in l for l in lines), len(lines))
+
+
 def test_classifier_signals():
     def c(desc, topics=(), full="x/y", name=""):
         return ER.classify_repo({"full_name": full, "description": desc, "topics": list(topics)}, name)[0]
@@ -512,6 +540,8 @@ def main() -> int:
     test_contracts_and_prompts()
     test_registered_engines_never_refused()
     test_classifier_signals()
+    test_app_bundled_inference_server()
+    test_search_prompts_look_up_missing_repos()
     test_repo_slug_edges()
     test_invalid_name_never_registered()
     test_conflicting_repos()

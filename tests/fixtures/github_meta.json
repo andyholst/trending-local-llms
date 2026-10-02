@@ -195,6 +195,44 @@
         "ui",
         "webui"
       ]
+    },
+    "ddalcu/mlx-serve": {
+      "description": "Native LLM inference server for Apple Silicon. OpenAI + Anthropic API compatible. No Python. Zig backend, Swift frontend macOS app with chat, music, voice, video generation.",
+      "full_name": "ddalcu/mlx-serve",
+      "topics": [
+        "agent",
+        "anthropic-api",
+        "apple-silicon",
+        "claude-code",
+        "deepseek-v4",
+        "diffusion",
+        "gguf",
+        "image-generation",
+        "inference",
+        "llm",
+        "local-llm",
+        "macos",
+        "macos-app",
+        "mlx",
+        "openai-api",
+        "tool-calling",
+        "video-generation",
+        "voice-agent",
+        "voice-cloning",
+        "zig"
+      ]
+    },
+    "jundot/omlx": {
+      "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon — managed from the macOS menu bar",
+      "full_name": "jundot/omlx",
+      "topics": [
+        "apple-silicon",
+        "inference-server",
+        "llm",
+        "macos",
+        "mlx",
+        "openai-api"
+      ]
     }
   }
 }
