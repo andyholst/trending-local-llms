@@ -83,6 +83,8 @@ def test_refresh_bot():
           0 <= idx("_search-smoke") < idx("make search-"), order)
     check("refresh: hermes routing smoke runs before the search",
           0 <= idx("make hermes-smoke") < idx("make search-"), order)
+    check("refresh: model-caps check runs before the search",
+          0 <= idx("make model-caps") < idx("make search-"), order)
     checkout = step(agg, "checkout")
     check("refresh: aggregate checkout uses the owner PAT (push as owner)",
           PAT in str(checkout.get("with", {}).get("token", "")), checkout)
@@ -109,6 +111,7 @@ def test_qa_validate():
     for b in ("nvidia", "metal", "cpu"):
         check(f"qa: live search smoke for {b}", f"BACKEND={b}" in live, "")
     check("qa: live hermes routing smoke", "make hermes-smoke" in live, "")
+    check("qa: live model-caps check", "make model-caps" in live, "")
     check("qa: live --require-hits search", "make validate-fetch" in live, "")
     d = jobs.get("dispatch-fixbot", {})
     cond = str(d.get("if", ""))

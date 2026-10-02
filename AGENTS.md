@@ -120,13 +120,28 @@ The README is **generated**, not hand-maintained:
   $(HERMES_REASONING) --yolo` stays on the same command. Without it make runs
   the model flags as a separate command and Hermes starts with NO alias — it
   then auto-routes to whatever provider key is in the env (`HF_TOKEN` →
-  Hugging Face → HTTP 403), which silently broke every fix-bot run. Every call
-  passes an explicit `--reasoning` level: `HERMES_REASONING := low` for the
-  mechanical searches, `HERMES_FIX_REASONING := medium` for fix-bot. Raising
-  `max_tokens` does NOT fix "No visible answer was produced … reasoning
-  consumed the entire budget" — the model just reasons longer; lowering the
-  reasoning level does. Prose inside a prompt uses single quotes; only the
+  Hugging Face → HTTP 403). Prose inside a prompt uses single quotes; only the
   JSON body uses `\"`.
+- **Model budget (measured, not assumed).** `deepseek/deepseek-v4-flash-0731`
+  on the Nous endpoint caps output at **65,536 tokens**
+  (`/v1/models` → `max_completion_tokens`); a larger `max_tokens` is accepted
+  SILENTLY and clamped, so `HERMES_MAX_TOKENS := 65536`. The SKU thinks by
+  default and only takes a generic `reasoning` switch: effort `low` still
+  spends reasoning tokens (a Metal search burned the whole cap: "No visible
+  answer was produced … reasoning consumed the entire budget"), while
+  `--reasoning none` sends `enabled: false` → 0 reasoning tokens. So the
+  searches run `HERMES_REASONING := none` (they are mechanical) and fix-bot
+  `HERMES_FIX_REASONING := low`. The search prompts write each query's models
+  right after that query (`--write-raw <backend>`, one small file per call;
+  same-second writes get `-2`, `-3`) — never one big end-of-run payload.
+  `make model-caps` (live, in `live-smoke` and before every refresh search)
+  fails if the model isn't served, `max_tokens` exceeds its real cap, or it
+  doesn't accept `reasoning`. Re-check the catalog when changing the model.
+- **Routing smoke tests routing, not obedience.** `scripts/hermes_smoke.sh`
+  passes when Hermes answers through the alias (exit 0, non-empty, no
+  provider-failure signature) and retries once. Never require an exact reply
+  word — deepseek answered "Reply with exactly PONG" with "No. I'm an AI
+  assistant, not a ping-pong game" and failed qa-validate on master.
 - **Base image is built ONCE and pulled, never rebuilt per-run.** The base
   image (`ghcr.io/andyholst/trending-local-llms:latest` — Python deps + Hermes
   CLI baked in) is **built and pushed to GHCR only by `refresh-bot.yml`**, and
@@ -428,6 +443,10 @@ actually happened.
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |
 | `make search-smoke` (live, 3 s/attempt, 1 retry on timeout/429/5xx) | lightbrd mirror / Firecrawl key down, per backend. An uncached scrape can miss 3 s once (Firecrawl finishes and caches it server-side), so a transient miss gets ONE more 3 s attempt; auth errors (401/403) never retry. Retry policy unit-tested in `tests/test_smoke_search.py` |
+| `tests/test_search_budget.py` | searches not running with reasoning off; `HERMES_MAX_TOKENS` above the 65,536 provider cap; prompts building one big payload instead of writing per query; same-second raw writes overwriting each other; `model_caps_check` logic (cap overrun, missing model, no `reasoning`) |
+| `tests/test_hermes_smoke.py` | the routing smoke failing on a refusal reply (real CI false negative) or passing an HF 403 / provider error / empty reply / timeout; no retry |
+| `check_readme_engine_links` (validate, readme stage) | a README engine link that differs from the registry, or a registry URL that differs from `KNOWN_ENGINE_URLS` |
+| `make model-caps` (live) | model not served, `max_tokens` above the real cap (silent clamp), model can't switch reasoning off |
 | `make hermes-smoke` (live) | dead Nous key, broken alias, Hermes routing to another provider |
 | `make validate-fetch` (live) | the search returning 0 model hits |
 

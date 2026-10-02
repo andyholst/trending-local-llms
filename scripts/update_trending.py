@@ -722,6 +722,13 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
     ts = now_utc().strftime("%Y%m%d-%H%M%S")
     safe = re.sub(r"[^A-Za-z0-9_-]", "-", backend).lower()
     path = RAW_DIR / f"{safe}-{ts}.json"
+    # Searches write once PER QUERY now, so two writes can land in the same
+    # second: never overwrite, suffix -2, -3 ... (backend stays the first
+    # '-'-separated token of the name, which self_correct_raw relies on).
+    n = 2
+    while path.exists():
+        path = RAW_DIR / f"{safe}-{ts}-{n}.json"
+        n += 1
     payload = dict(payload)
     payload.setdefault("generated_utc", now_utc().strftime("%Y-%m-%dT%H:%M:%SZ"))
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")

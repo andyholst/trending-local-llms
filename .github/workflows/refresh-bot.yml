@@ -129,6 +129,11 @@ jobs:
       # One real Hermes call through the search alias before the 20-minute
       # search: a dead key / broken alias / provider mis-route fails here in
       # seconds instead of after the search burned its budget.
+      # The endpoint silently clamps max_tokens to the model's real cap; a
+      # mismatch (or a model that can't switch reasoning off) burns the budget.
+      - name: Model caps (model served, max_tokens fits, accepts reasoning)
+        run: make model-caps
+
       - name: Hermes routing smoke
         run: make hermes-smoke
 
