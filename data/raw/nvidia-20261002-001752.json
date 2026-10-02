@@ -1,0 +1,133 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-02T00:00:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "67",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "ternary 5.95GB, MTP",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/sudoingX/status/2105701032420687988",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "65.3",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "ternary, author conditions",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/ivyxon_jp/status/2105625789761011752",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 133
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "54.1",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "ternary, Japanese text",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/ivyxon_jp/status/2105625789761011752",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 133
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "44",
+          "hardware": "DGX Spark",
+          "quant": "DFlash2 spec-decode draft head",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 310
+        },
+        {
+          "engine": "SGLang",
+          "tps": "12",
+          "hardware": "DGX Spark",
+          "quant": "no spec-decode",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 310
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "93",
+          "hardware": "RTX 5070 12GB",
+          "quant": "MoE, experts across GPU/RAM/SSD",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 188
+        }
+      ]
+    }
+  ]
+}
