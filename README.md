@@ -8,7 +8,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 Ties go to more posts, then the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
-> Last generated: 2026-10-02 21:36 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-10-03 20:24 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
@@ -18,10 +18,12 @@ Best measured t/s per backend; the full list of measurements is in the backend t
 
 | Model | Status | Trend | CUDA t/s (best) | Metal t/s (best) | CPU t/s (best) | ROCm t/s (best) | VRAM | Why people love it |
 |---|---|---|---|---|---|---|---|---|
-| [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B)<br><sub>Qwen3.8-27B-Instruct · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-02</sub> | **25.5**<br><sub>buzz 21.2 · 6 posts · speed +4.3 (189 t/s, M5 Max (Apple Silicon))</sub> | **133** t/s<br>[DFlash2](https://github.com/z-lab/dflash) · RTX 3090 24GB · DFlash2 speculative decode + lookup-augmented drafting, optimized vLLM, prefix caching, quantized KV cache; ~133 t/s real chat, ~138 t/s DFlash2+lookup, up to 381 t/s longer-verification + context lookup<br><sub>+4 more</sub> | **189** t/s<br>[TensorFold](https://github.com/ashhart/TensorFold) · M5 Max (Apple Silicon) · MLX 4-bit, DFlash2 drafter<br><sub>+4 more</sub> | — | — | 16GB | Flagship local model. 384K views on release. 262K ctx (1M via YaRN). |
+| [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B)<br><sub>Qwen3.8-27B-Instruct · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-02</sub> | **30.8**<br><sub>buzz 26.5 · 7 posts · speed +4.3 (189 t/s, M5 Max (Apple Silicon))</sub> | **133** t/s<br>[DFlash2](https://github.com/z-lab/dflash) · RTX 3090 24GB · DFlash2 speculative decode + lookup-augmented drafting, optimized vLLM, prefix caching, quantized KV cache; ~133 t/s real chat, ~138 t/s DFlash2+lookup, up to 381 t/s longer-verification + context lookup<br><sub>+4 more</sub> | **189** t/s<br>[TensorFold](https://github.com/ashhart/TensorFold) · M5 Max (Apple Silicon) · MLX 4-bit, DFlash2 drafter<br><sub>+5 more</sub> | — | — | 16GB | Flagship local model. 384K views on release. 262K ctx (1M via YaRN). |
 | [**Qwen3.8-Flash-Next 125B**](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)<br><sub>Qwen3.8-Flash-Next-125B · 125B (MoE) · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-01</sub> | **16.2**<br><sub>buzz 12.8 · 3 posts · speed +3.4 (93 t/s, RTX 5070 12GB)</sub> | **93** t/s<br>[Strata](https://github.com/Niko1221/Strata) · RTX 5070 12GB · MoE, experts across GPU/RAM/SSD | — | — | **60** t/s<br>[Strata](https://github.com/Niko1221/Strata) · RX 7900 XTX 24GB · ROCm, MoE, experts across GPU/RAM/SSD, KV k8v4; sustained 52-60 output t/s<br><sub>+1 more</sub> | 12GB | Qwen3.8-Flash-Next-125B — see source posts. |
 | [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)<br><sub>Ternary-Bonsai-2-27B · 27B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-10-02</sub> | **14.2**<br><sub>buzz 9.6 · 5 posts · speed +4.6 (237 t/s, Apple Silicon 16GB Mac)</sub> | **143** t/s<br>[llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) · RTX 5090 · ternary<br><sub>+4 more</sub> | **237** t/s<br>[MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) · Apple Silicon 16GB Mac · mlx.fast 4-bit | — | — | 12GB | PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards. |
+| [**Nemotron 3.5 Lightning 30B-A3B**](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16)<br><sub>NVIDIA-Nemotron-3.5-Lightning-30B-A3B · 30B (MoE, 3B active) · NVIDIA Open Model</sub> | 🔥 trending<br><sub>last seen 2026-09-30</sub> | **11**<br><sub>buzz 6.6 · 1 post · speed +4.4 (206 t/s, M5 Max (Apple Silicon))</sub> | — | **206** t/s<br>[TensorFold](https://github.com/ashhart/TensorFold) · M5 Max (Apple Silicon) · MLX 4-bit, TensorFold spec-decode | — | — | 8GB | NVIDIA's open-weight 30B-A3B MoE agent/tool-caller. On Apple Silicon via TensorFold + MLX 4-bit it holds 188-206 tok/s on an M5 Max; fastest measured Metal figure in the recent window. |
 | [**RavenX-Conjecture-Qwen3-8B-MLX**](https://huggingface.co/deadbydawn101/RavenX-Conjecture-Qwen3-8B-MLX)<br><sub>RavenX-Conjecture-Qwen3-8B-MLX · 8B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-09-29</sub> | **6.1**<br><sub>buzz 3.7 · 1 post · speed +2.4 (42 t/s, M3 (Apple Silicon))</sub> | — | **42** t/s<br>[MLX](https://github.com/ml-explore/mlx) · M3 (Apple Silicon) · MLX | — | — | 8GB | RavenX-Conjecture-Qwen3-8B-MLX — see source posts. |
+| [**BitNet b1.58 (100B)**](https://huggingface.co/microsoft/BitNet-b1.58-2B-4T)<br><sub>BitNet b1.58 100B (bitnet.cpp 1-bit ref) · 100B (1.58-bit) · MIT</sub> | 🔥 trending<br><sub>last seen 2026-10-03</sub> | **5.5**<br><sub>buzz 4.7 · 1 post · speed +0.8 (7 t/s, single CPU)</sub> | — | — | **7** t/s<br>[BitNet.cpp](https://github.com/microsoft/BitNet) · single CPU · 1.58-bit (ternary) b1.58, bitnet.cpp kernels; engine-documented figure for a 100B BitNet b1.58 model (~human reading speed) | — | CPU | Microsoft's BitNet.cpp 1-bit/1.58-bit inference framework reports a 100B BitNet b1.58 model running on a single CPU at ~5-7 t/s (est, engine-vendor-documented figure quoted in the source X post). CPU t/s figures are sparse on X; this is the framework's own stated capability. |
 | [**Qwen3.6-35B-A3B**](https://huggingface.co/Qwen/Qwen3.6-35B-A3B)<br><sub>Qwen3.6-35B-A3B · 35B (MoE, 3B active) · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-09-29</sub> | **5**<br><sub>buzz 2.7 · 1 post · speed +2.3 (39.3 t/s, 8GB GPU (est, vendor-claimed MoE weight offload))</sub> | **39.3** t/s<br>[FreeToken](https://github.com/FlashML-org/FreeToken) · 8GB GPU (est, vendor-claimed MoE weight offload) · MoE, experts across VRAM/RAM | — | — | — | 8GB | Qwen3.6-35B-A3B — see source posts. |
 | [**Ornith 1.5**](https://huggingface.co/ornith-ai/Ornith-1.5-9B)<br><sub>Ornith 1.5 · 9B · Apache 2.0</sub> | 🔥 trending<br><sub>last seen 2026-09-29</sub> | **4.8**<br><sub>buzz 2.2 · 1 post · speed +2.6 (50 t/s, MacBook Pro M5 48GB)</sub> | — | **50** t/s<br>[MLX](https://github.com/ml-explore/mlx) · MacBook Pro M5 48GB · MLX 4-bit | — | — | 48GB | Ornith 1.5 — see source posts. |
 | [**Qwen3 8B**](https://huggingface.co/Qwen/Qwen3-8B)<br><sub>Qwen3-8B · 8B · Apache 2.0</sub> | 🕑 recent<br><sub>last seen 2026-09-12</sub> | **0**<br><sub>no posts in 7 days</sub> | **100** t/s<br>[Ollama](https://github.com/ollama/ollama) · RTX 4060 · Q4_K_M | — | — | — | 8GB | The default 8 GB pick. Fast, Apache 2.0. |
@@ -38,21 +40,23 @@ Best measured t/s per backend; the full list of measurements is in the backend t
 
 Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU · 🟪 ROCm). Only engines with at least one measurement are shown.
 
-| Model | [llama.cpp](https://github.com/ggml-org/llama.cpp) | [MLX](https://github.com/ml-explore/mlx) | [Ollama](https://github.com/ollama/ollama) | [DFlash2](https://github.com/z-lab/dflash) | [FreeToken](https://github.com/FlashML-org/FreeToken) | [LiteRT](https://github.com/google-ai-edge/LiteRT) | [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | [SGLang](https://github.com/sgl-project/sglang) | [Strata](https://github.com/Niko1221/Strata) | [TensorFold](https://github.com/ashhart/TensorFold) |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Qwen3.8-27B** | 🟦 43.7 | 🟩 44.6 | — | 🟦 133 | — | — | — | — | 🟦 44 | — | 🟩 189 |
-| **Qwen3.8-Flash-Next 125B** | — | — | — | — | — | — | — | — | — | 🟦 93<br>🟪 60 | — |
-| **Bonsai 2 27B** | — | — | — | — | — | — | 🟦 143 | 🟩 237 | — | — | — |
-| **RavenX-Conjecture-Qwen3-8B-MLX** | — | 🟩 42 | — | — | — | — | — | — | — | — | — |
-| **Qwen3.6-35B-A3B** | — | — | — | — | 🟦 39.3 | — | — | — | — | — | — |
-| **Ornith 1.5** | — | 🟩 50 | — | — | — | — | — | — | — | — | — |
-| **Qwen3 8B** | — | — | 🟦 100 | — | — | — | — | — | — | — | — |
-| **Gemma 4 12B** | 🟦 99.7<br>🟩 49.67 | — | — | — | — | — | — | — | — | — | — |
-| **Qwen3 14B** | — | — | 🟦 65 | — | — | — | — | — | — | — | — |
-| **Qwen 3.6 27B** | 🟦 37 | — | — | — | — | — | — | — | — | — | — |
-| **Gemma 4 E2B** | — | — | — | — | — | 🟨 9 | — | — | — | — | — |
-| **Muse Glimmer 30B** | 🟦 233<br>🟩 50 | — | — | — | — | — | — | — | — | — | — |
-| **DeepSeek R1 1.5B** | — | — | 🟨 4 | — | — | — | — | — | — | — | — |
+| Model | [llama.cpp](https://github.com/ggml-org/llama.cpp) | [MLX](https://github.com/ml-explore/mlx) | [Ollama](https://github.com/ollama/ollama) | [TensorFold](https://github.com/ashhart/TensorFold) | [BitNet.cpp](https://github.com/microsoft/BitNet) | [DFlash2](https://github.com/z-lab/dflash) | [FreeToken](https://github.com/FlashML-org/FreeToken) | [LiteRT](https://github.com/google-ai-edge/LiteRT) | [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | [SGLang](https://github.com/sgl-project/sglang) | [Strata](https://github.com/Niko1221/Strata) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **Qwen3.8-27B** | 🟦 43.7 | 🟩 44.6 | — | 🟩 189 | — | 🟦 133 | — | — | — | — | 🟦 44 | — |
+| **Qwen3.8-Flash-Next 125B** | — | — | — | — | — | — | — | — | — | — | — | 🟦 93<br>🟪 60 |
+| **Bonsai 2 27B** | — | — | — | — | — | — | — | — | 🟦 143 | 🟩 237 | — | — |
+| **Nemotron 3.5 Lightning 30B-A3B** | — | — | — | 🟩 206 | — | — | — | — | — | — | — | — |
+| **RavenX-Conjecture-Qwen3-8B-MLX** | — | 🟩 42 | — | — | — | — | — | — | — | — | — | — |
+| **BitNet b1.58 (100B)** | — | — | — | — | 🟨 7 | — | — | — | — | — | — | — |
+| **Qwen3.6-35B-A3B** | — | — | — | — | — | — | 🟦 39.3 | — | — | — | — | — |
+| **Ornith 1.5** | — | 🟩 50 | — | — | — | — | — | — | — | — | — | — |
+| **Qwen3 8B** | — | — | 🟦 100 | — | — | — | — | — | — | — | — | — |
+| **Gemma 4 12B** | 🟦 99.7<br>🟩 49.67 | — | — | — | — | — | — | — | — | — | — | — |
+| **Qwen3 14B** | — | — | 🟦 65 | — | — | — | — | — | — | — | — | — |
+| **Qwen 3.6 27B** | 🟦 37 | — | — | — | — | — | — | — | — | — | — | — |
+| **Gemma 4 E2B** | — | — | — | — | — | — | — | 🟨 9 | — | — | — | — |
+| **Muse Glimmer 30B** | 🟦 233<br>🟩 50 | — | — | — | — | — | — | — | — | — | — | — |
+| **DeepSeek R1 1.5B** | — | — | 🟨 4 | — | — | — | — | — | — | — | — | — |
 
 ---
 
@@ -87,6 +91,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 | Model | Params | License | VRAM | Peak t/s | Measurements (engine · t/s · hardware · quant · date) |
 |---|---|---|---|---|---|
 | [**Gemma 4 E2B**](https://huggingface.co/google/gemma-4-E2B) | 2B | Gemma | 2GB | 9 | [LiteRT](https://github.com/google-ai-edge/LiteRT) **9** · Raspberry Pi 5 (CPU) · 1432 MB peak RAM · 2026-09-05 |
+| [**BitNet b1.58 (100B)**](https://huggingface.co/microsoft/BitNet-b1.58-2B-4T) | 100B (1.58-bit) | MIT | CPU | 7 | [BitNet.cpp](https://github.com/microsoft/BitNet) **7** · single CPU · 1.58-bit (ternary) b1.58, bitnet.cpp kernels; engine-documented figure for a 100B BitNet b1.58 model (~human reading speed) · 2026-10-03 |
 | [**DeepSeek R1 1.5B**](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B) | 1.5B | MIT | 2GB | 4 | [Ollama](https://github.com/ollama/ollama) **4** · Raspberry Pi 4B 2GB (CPU) · quantized · 2026-06-25 |
 
 > CPU inference is **memory-bandwidth bound**. Use Q4 quant + a fast CPU build (AVX-512/AMX).
@@ -98,7 +103,8 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 | Model | Params | License | VRAM | Peak t/s | Measurements (engine · t/s · hardware · quant · date) |
 |---|---|---|---|---|---|
 | [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 27B | Apache 2.0 | 12GB | 237 | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) **237** · Apple Silicon 16GB Mac · mlx.fast 4-bit · 2026-09-26 |
-| [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B) | 27B | Apache 2.0 | 16GB | 189 | [TensorFold](https://github.com/ashhart/TensorFold) **189** · M5 Max (Apple Silicon) · MLX 4-bit, DFlash2 drafter · 2026-09-30<br>[TensorFold](https://github.com/ashhart/TensorFold) **154** · M4 Max (Apple Silicon) · MLX 4-bit, DFlash drafter · 2026-10-01<br>[TensorFold](https://github.com/ashhart/TensorFold) **124** · MacBook Pro M5 Max · 4-bit MLX · 2026-09-20<br>[MLX](https://github.com/ml-explore/mlx) **44.6** · M3 Max 96GB (Apple Silicon) · MLX 4-bit, z-lab DFlash2 8-bit drafter · 2026-09-27<br>[TensorFold](https://github.com/ashhart/TensorFold) **41.5** · M3 Max 96GB (Apple Silicon) · MLX 4-bit, z-lab DFlash2 8-bit drafter · 2026-09-27 |
+| [**Nemotron 3.5 Lightning 30B-A3B**](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) | 30B (MoE, 3B active) | NVIDIA Open Model | 8GB | 206 | [TensorFold](https://github.com/ashhart/TensorFold) **206** · M5 Max (Apple Silicon) · MLX 4-bit, TensorFold spec-decode · 2026-09-30 |
+| [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B) | 27B | Apache 2.0 | 16GB | 189 | [TensorFold](https://github.com/ashhart/TensorFold) **189** · M5 Max (Apple Silicon) · MLX 4-bit, DFlash2 drafter · 2026-09-30<br>[TensorFold](https://github.com/ashhart/TensorFold) **154** · M4 Max (Apple Silicon) · MLX 4-bit, DFlash drafter · 2026-10-01<br>[TensorFold](https://github.com/ashhart/TensorFold) **124** · MacBook Pro M5 Max · 4-bit MLX · 2026-09-20<br>[TensorFold](https://github.com/ashhart/TensorFold) **61.9** · Mac mini M6 32GB (Apple Silicon) · MLX 4-bit, DFlash2 drafter, code workload (6.1x over 10.1 serial) · 2026-09-27<br>[MLX](https://github.com/ml-explore/mlx) **44.6** · M3 Max 96GB (Apple Silicon) · MLX 4-bit, z-lab DFlash2 8-bit drafter · 2026-09-27<br>[TensorFold](https://github.com/ashhart/TensorFold) **41.5** · M3 Max 96GB (Apple Silicon) · MLX 4-bit, z-lab DFlash2 8-bit drafter · 2026-09-27 |
 | [**Ornith 1.5**](https://huggingface.co/ornith-ai/Ornith-1.5-9B) | 9B | Apache 2.0 | 48GB | 50 | [MLX](https://github.com/ml-explore/mlx) **50** · MacBook Pro M5 48GB · MLX 4-bit · 2026-09-29 |
 | [**Muse Glimmer 30B**](https://huggingface.co/meta-models/Muse-Glimmer-30B) | 30B | Apache 2.0 | 24GB | 50 | [llama.cpp](https://github.com/ggml-org/llama.cpp) **50** · M5 Max (Apple Silicon) · 4-bit · 2026-08-10 |
 | [**Gemma 4 12B**](https://huggingface.co/google/gemma-4-12B-it) | 12B | Gemma | 9GB | 49.67 | [llama.cpp](https://github.com/ggml-org/llama.cpp) **49.67** · Apple Silicon · Q4 · 2026-09-19 |
@@ -119,13 +125,14 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 | [vLLM](https://github.com/vllm-project/vllm) | CUDA / ROCm | 0 | Production serving, high throughput |
 | [SGLang](https://github.com/sgl-project/sglang) | CUDA / ROCm | 1 | High-throughput serving |
 | [MLX](https://github.com/ml-explore/mlx) | Metal | 3 | Fastest on Apple Silicon |
-| [TensorFold](https://github.com/ashhart/TensorFold) | Metal | 1 | Speculative decoding on Mac, 3-6x |
+| [TensorFold](https://github.com/ashhart/TensorFold) | Metal | 2 | Speculative decoding on Mac, 3-6x |
 | [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) | CUDA | 0 | Max NVIDIA perf |
 | [LiteRT](https://github.com/google-ai-edge/LiteRT) | CUDA / Metal | 1 | Google local runtime |
 | [Strata](https://github.com/Niko1221/Strata) | CUDA / ROCm | 1 | Runs big MoE (Qwen3.8-Flash-Next 125B) on 8-48 GB GPUs; experts across GPU/RAM/SSD, speculative decoding ~1.6-1.8x; AMD RX 7900 XT/XTX, 9070 (XT), R9700 on Linux via --backend hip (ROCm, experimental) |
 | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | Metal | 1 | Speedup benchmark engine for Ternary Bonsai 2 27B on Apple Silicon; ~237 tok/s decode on 16 GB Mac (mlx.fast, Yukon/Layr-Labs) |
 | [DFlash2](https://github.com/z-lab/dflash) | CUDA | 1 | Speculative decoding + context-lookup (Inco AI / syv-ai); Qwen3.8-27B ~118-133 tok/s chat, up to ~381 tok/s context-lookup on 24 GB RTX 3090 |
 | [WebLLM](https://github.com/mlc-ai/web-llm) | CUDA / Metal | 0 | In-browser LLM inference accelerated with WebGPU (MLC-LLM). |
+| [BitNet.cpp](https://github.com/microsoft/BitNet) | CPU | 1 | Auto-registered from https://lightbrd.com/DivyanshT91162/status/2106363040895799770 — Official inference framework for 1-bit LLMs |
 
 **Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp Vulkan / ROCm (AMD Radeon) · llama.cpp CPU (tiny/edge).
 

@@ -1,0 +1,68 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-03T18:20:00Z",
+  "models": [
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Lightning 30B-A3B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "license": "NVIDIA Open Model",
+      "params": "30B (MoE, 3B active)",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "206",
+          "hardware": "M5 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, TensorFold spec-decode",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 344,
+          "comments": 24,
+          "reshares": 30,
+          "views": 33042,
+          "interactions": 344
+        }
+      ],
+      "last_seen": "2026-10-03",
+      "why": "NVIDIA's open-weight 30B-A3B MoE agent/tool-caller. On Apple Silicon via TensorFold + MLX 4-bit it holds 188-206 tok/s on an M5 Max; fastest measured Metal figure in the recent window."
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "hf": "Qwen/Qwen3.8-27B",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6 32GB (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafter, code workload (6.1x over 10.1 serial)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 388,
+          "comments": 3,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 388
+        }
+      ],
+      "last_seen": "2026-10-03",
+      "why": "Flagship local model. TensorFold + DFlash2 spec-decode on MLX 4-bit lifts a baseline Mac: code gen 10.1 -> 61.9 tok/s (6.1x) on a 32GB Mac mini M6, chat 10.1 -> 30.8 (3.0x), outputs byte-identical to serial."
+    }
+  ]
+}

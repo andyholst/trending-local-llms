@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-03T20:15:00Z",
+  "models": [
+    {
+      "id": "bitnet-b1.58-100b",
+      "name": "BitNet b1.58 (100B)",
+      "full_name": "BitNet b1.58 100B (bitnet.cpp 1-bit ref)",
+      "type": "LLM (1.58-bit ternary)",
+      "license": "MIT",
+      "params": "100B (1.58-bit)",
+      "hf": "microsoft/BitNet-b1.58-2B-4T",
+      "vram_tier": "CPU",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "BitNet.cpp",
+          "engine_repo": "https://github.com/microsoft/BitNet",
+          "tps": "5-7",
+          "hardware": "single CPU",
+          "quant": "1.58-bit (ternary) b1.58, bitnet.cpp kernels; engine-documented figure for a 100B BitNet b1.58 model (~human reading speed)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/DivyanshT91162/status/2106363040895799770",
+          "likes": 14,
+          "comments": 2,
+          "reshares": 13,
+          "views": 1074,
+          "interactions": 0
+        }
+      ],
+      "why": "Microsoft's BitNet.cpp 1-bit/1.58-bit inference framework reports a 100B BitNet b1.58 model running on a single CPU at ~5-7 t/s (est, engine-vendor-documented figure quoted in the source X post). CPU t/s figures are sparse on X; this is the framework's own stated capability.",
+      "last_seen": "2026-10-03"
+    }
+  ]
+}
