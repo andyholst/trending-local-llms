@@ -1,0 +1,66 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-03T11:17:11Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash drafter, Numbers workload; Code 114, JSON 146, Story 51 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash drafter, Numbers workload; Code 111, JSON 144, Story 53 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_repo": "https://github.com/jundot/omlx"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash drafter (--no-mtp), Numbers workload; Code 115, JSON 139, Story 54 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_repo": "https://github.com/ddalcu/mlx-serve"
+        }
+      ]
+    }
+  ]
+}

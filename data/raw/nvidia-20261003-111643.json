@@ -1,0 +1,58 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-03T11:23:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary MTP (5.95 GB weights), 125K ctx; ~50 t/s fresh, ~22 t/s avg agentic coding",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 4,
+          "comments": 4,
+          "reshares": 48,
+          "views": 15553,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "91",
+          "hardware": "RTX 4070 12GB",
+          "quant": "PTQ1_0-mtp-lean (6.30 GB), NixOS; 60-91 t/s output",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/MarkRijckenberg/status/2103920092199444741",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 28,
+          "interactions": 0
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in ~6 GB weights.",
+      "engagement": {
+        "likes": 4,
+        "comments": 4,
+        "reshares": 48,
+        "views": 15553
+      }
+    }
+  ]
+}

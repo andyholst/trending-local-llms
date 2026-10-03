@@ -1,0 +1,83 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-03T11:25:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "RTX 4090 24GB",
+          "quant": "UD-Q4_K_XL GGUF (111GB, 4 shards), hybrid inference, MoE experts in 110GB DDR4 system RAM; ~21 t/s decode, ~364 t/s prefill, 250K context, no MTP/DFlash/KV-quant",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 15,
+          "views": 3279,
+          "interactions": 0
+        }
+      ],
+      "why": "125B MoE running on a single RTX 4090 via hybrid llama.cpp inference (experts in system RAM) at ~21 t/s decode with 250K context.",
+      "engagement": {
+        "likes": 2,
+        "comments": 3,
+        "reshares": 15,
+        "views": 3279
+      }
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "90",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Q4_K_M + Unsloth UD-Q4_K_XL, Z-Lab DFlash2 drafter, patched llama.cpp, parallel block diffusion drafting; ~87 t/s @ 30K ctx to ~83 t/s @ 110K ctx, 24GB VRAM",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105847723660349725",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "DFlash2 block-diffusion speculative decoding pushes Qwen3.8-27B to ~90 t/s on a single RTX 4090 at 100K+ context.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "reshares": 0,
+        "views": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (MoE, 18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "glm53-flash-offload",
+          "engine_repo": "https://github.com/0xSero/glm53-flash-offload",
+          "tps": "2.11",
+          "hardware": "RTX 4060 Ti 16GB + CPU + 256GB RAM",
+          "quant": "EXL3 3.05bpw, CPU/RAM offload (AVX2 CPU tier), exact mode",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/UtaAoya/status/2105914296219668494",
+          "likes": 0,
+          "comments": 5,
+          "reshares": 21,
+          "views": 2023
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-03T11:16:33Z"
+}

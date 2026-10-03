@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-03T11:24:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE, experts across VRAM/RAM; 39.3 t/s on an 8GB GPU, 2-4x faster than Ollama",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "FreeToken serves a 35B MoE on an 8GB GPU at 39.3 t/s by splitting expert misses between GPU and CPU.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "reshares": 0,
+        "views": 0
+      }
+    }
+  ]
+}

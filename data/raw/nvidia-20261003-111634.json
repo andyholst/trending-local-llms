@@ -1,0 +1,96 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-03T11:21:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + lookup-augmented drafting, optimized vLLM, prefix caching, quantized KV cache; ~133 t/s real chat, ~138 t/s DFlash2+lookup, up to 381 t/s longer-verification + context lookup",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105848435672764747",
+          "likes": 24,
+          "comments": 37,
+          "reshares": 519,
+          "views": 36560,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "55",
+          "hardware": "RTX 3090 24GB",
+          "quant": "ukisai Swift 1.5 on Qwen3.8-27B, GGUF; ~55 t/s decode, ~15% bump over Swift 1.0",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/Aaleks_crypt/status/2103904525757083673",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 91,
+          "interactions": 0
+        }
+      ],
+      "why": "Dense 27B model; DFlash2 speculative decoding on a single RTX 3090 reaches ~133 t/s real-world chat.",
+      "engagement": {
+        "likes": 25,
+        "comments": 37,
+        "reshares": 519,
+        "views": 36651
+      }
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "93",
+          "hardware": "RTX 5070 12GB",
+          "quant": "MoE, experts across GPU/RAM/SSD; 62-93 t/s writing answers, 1,600-2,200 t/s prompt reading",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 326,
+          "interactions": 0
+        }
+      ],
+      "why": "125B MoE that runs on consumer GPUs via Strata hybrid inference (experts across GPU/RAM/SSD).",
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "reshares": 0,
+        "views": 326
+      }
+    }
+  ]
+}

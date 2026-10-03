@@ -1,0 +1,96 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-03T11:22:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-02",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "80",
+          "hardware": "RTX 5090 24GB",
+          "quant": "MoE, experts across GPU/RAM/SSD, 128GB DDR4-3200; ~80 t/s decode, ~3,000 t/s prefill",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105849239439843345",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 5090 24GB",
+          "quant": "MoE, experts across GPU/RAM/SSD, 64GB RAM; 60-100 t/s decode, 1,600 t/s prefill cold",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106030036302303393",
+          "likes": 42,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "125B MoE that runs on a single RTX 5090 via Strata hybrid inference at ~80-100 t/s decode.",
+      "engagement": {
+        "likes": 42,
+        "comments": 0,
+        "reshares": 0,
+        "views": 0
+      }
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-09-19",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RTX 5090",
+          "quant": "DFlash2 speculative decoding in llama.cpp; 140-190 t/s code generation, ~100 t/s prose, ~62 t/s without speculation",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/xqliu/status/2101126630274125921",
+          "likes": 4,
+          "comments": 3,
+          "reshares": 0,
+          "views": 428,
+          "interactions": 0
+        }
+      ],
+      "why": "DFlash2 speculative decoding in llama.cpp pushes Qwen3.8-27B to 140-190 t/s on code on an RTX 5090.",
+      "engagement": {
+        "likes": 4,
+        "comments": 3,
+        "reshares": 0,
+        "views": 428
+      }
+    }
+  ]
+}
