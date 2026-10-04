@@ -1,0 +1,36 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "engine_repo": "https://github.com/CarouselAether/rocm_exl3",
+          "tps": "34.7",
+          "hardware": "Radeon 32GB",
+          "quant": "ROCm, patched ExLlamaV3 ROCm fork, EXL3 5.05 bpw, Q8 KV, 112/512 experts on GPU, rest CPU/RAM + NVMe; decode t/s",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 2,
+          "views": 979
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-04T12:01:51Z"
+}

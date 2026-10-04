@@ -1,0 +1,62 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "51.8",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "llama.cpp (Vulkan), MTP=2; AMD day-0 pre-verification generation speed",
+          "date": "2026-09-06",
+          "source_post": "https://lightbrd.com/xfxjapan/status/2096715285923520644",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 37,
+          "views": 4243
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "AMD AI Pro R9700",
+          "quant": "llama.cpp (Vulkan), 256k tokens, 8-bit/16-bit KV; decodes close to 50 t/s short and long generation",
+          "date": "2026-08-17",
+          "source_post": "https://lightbrd.com/Mayhem4Markets/status/2089147394680111348",
+          "likes": 53,
+          "comments": 16,
+          "reshares": 5,
+          "views": 17615
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "26.39",
+          "hardware": "Radeon 8060S / Strix Halo (Ryzen AI Max+ 395)",
+          "quant": "llama.cpp (Vulkan), Qwen3.8-27B UD-Q4_K_XL + DFlash2 drafter Q8_0 (n=4), spec-decode; ~2x vs 10.54 t/s stock decode at 32K",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 25,
+          "comments": 5,
+          "reshares": 2,
+          "views": 2557
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-04T12:04:13Z"
+}

@@ -1,0 +1,51 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "llama.cpp (LaurentZuijdwijk fork)",
+          "engine_repo": "https://github.com/LaurentZuijdwijk/llama.cpp",
+          "tps": "65",
+          "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
+          "quant": "adaptive speculation (llama.cpp fork), decode t/s; 440 t/s prefill; up from 44 t/s on mainline",
+          "date": "2026-08-25",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2092215141144162519",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 352
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "33",
+          "hardware": "Strix Halo 128GB (GMKtec Evo-X2)",
+          "quant": "Q3_K_XL, 64K ctx, vision; ~33 tok/s total across four concurrent lanes; portable 'Vulcan' fork by Nathanw1014",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099665294285299780",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-04T12:08:10Z"
+}

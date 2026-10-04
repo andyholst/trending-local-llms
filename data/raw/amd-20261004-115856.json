@@ -1,0 +1,35 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "96",
+          "hardware": "RX 7900 XTX",
+          "quant": "ROCm 7.2, continuous batching + PagedAttention; generation t/s on IDLE distributed network",
+          "date": "2026-07-06",
+          "source_post": "https://lightbrd.com/IdleProtocol/status/2074186476779078137",
+          "likes": 66,
+          "comments": 6,
+          "reshares": 16,
+          "views": 3555
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-04T11:58:56Z"
+}
