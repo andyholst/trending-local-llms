@@ -5,6 +5,11 @@ Covers:
   - _extract_links pulls links from models.json (engine registry, model HF,
     format HF, source_post), README, and raw search snapshots.
   - _link_ok resolves a real URL (HTTP 2xx/3xx) and rejects a dead one.
+  - a strict (HF / engine) link that is rate-limited (429) / 5xx / timing out
+    is retried with backoff and, if it never settles, reported UNVERIFIED — a
+    warning, not a dead link (PRs #83 / #84 went red on ~40 HF repos that all
+    exist because 429s were counted as "does not resolve").
+  - each URL is probed once per run (models.json + raw snapshots repeat them).
   - check_links_resolve FAILS on a dead link and auto-corrects a known-good
     engine URL that was wrong in the store.
 
@@ -113,6 +118,7 @@ def _run_hermetic(s):
         V.README, V.RAW_DIR = rp, rawdir
         try:
             V.FAILURES.clear()
+            V._LINK_CACHE.clear()
             V.check_links_resolve(s)
         finally:
             V.README, V.RAW_DIR = saved_r, saved_raw
@@ -304,30 +310,137 @@ def test_hf_id_autofix_known_model():
           s["models"][0]["hf"] == "Qwen/Qwen3-14B", s["models"][0]["hf"])
 
 
+class FakeResp:
+    def __init__(self, status):
+        self.status = status
+    def __enter__(self):
+        return self
+    def __exit__(self, *a):
+        return False
+
+
+def _http_error(code, retry_after=None):
+    import email.message
+    import urllib.error
+    h = email.message.Message()
+    if retry_after is not None:
+        h["Retry-After"] = str(retry_after)
+    return urllib.error.HTTPError("https://example.com/x", code, "x", h, None)
+
+
+def _urlopen_seq(responses):
+    """urlopen stub: each call pops the next item — an int status (returned as a
+    response, like a 2xx) or an exception instance (raised, like urllib does
+    for 4xx/5xx). Records the calls so tests can count probes."""
+    calls = []
+    seq = list(responses)
+
+    def fake(req, timeout=None):
+        calls.append((req.get_method(), req.full_url))
+        item = seq.pop(0) if len(seq) > 1 else seq[0]
+        if isinstance(item, BaseException):
+            raise item
+        return FakeResp(item)
+    return fake, calls
+
+
 def test_link_ok_strict_2xx():
-    """_link_ok must return True ONLY for HTTP 2xx. A 403/429/5xx (rate-limit,
-    bot-block, server error) is a FAILURE for public model / inference-server
-    links — not indeterminate. Only 2xx counts as reachable."""
+    """Strict _link_ok is True ONLY for HTTP 2xx. 403/404 are dead at once.
+    429/5xx are retried (backoff, no real sleep here) and, still failing, are
+    not OK — but they are UNVERIFIED, not dead (see the next test)."""
     import unittest.mock as mock
-
-    class FakeResp:
-        def __init__(self, status):
-            self.status = status
-        def __enter__(self):
-            return self
-        def __exit__(self, *a):
-            return False
-
     for status, expect in [(200, True), (403, False), (404, False),
                            (429, False), (500, False), (503, False)]:
-        with mock.patch("urllib.request.urlopen", return_value=FakeResp(status)):
+        V._LINK_CACHE.clear()
+        with mock.patch.object(V, "_sleep", lambda s: None), \
+             mock.patch("urllib.request.urlopen", side_effect=_urlopen_seq([_http_error(status) if status >= 400 else status])[0]):
             got = V._link_ok("https://example.com/x")
         check(f"link_ok: HTTP {status} -> {expect}", got == expect, f"got {got}")
     # lenient mode (source_post / README): 403/429/5xx is NOT a dead link
     for status, expect in [(200, True), (403, True), (429, True), (503, True), (404, False)]:
-        with mock.patch("urllib.request.urlopen", return_value=FakeResp(status)):
+        V._LINK_CACHE.clear()
+        with mock.patch("urllib.request.urlopen", side_effect=_urlopen_seq([_http_error(status) if status >= 400 else status])[0]):
             got = V._link_ok("https://example.com/x", strict=False)
         check(f"link_ok lenient: HTTP {status} -> {expect}", got == expect, f"got {got}")
+
+
+def test_strict_rate_limit_is_retried_then_unverified_not_dead():
+    """Regression for PRs #83/#84: HF answered 429 to a burst of link checks
+    and validate reported real repos as dead. A 429 that clears is OK; a 429
+    that never clears is UNVERIFIED (warned, not failed); a 404 stays DEAD and
+    is not retried."""
+    import unittest.mock as mock
+    url = "https://huggingface.co/Qwen/Qwen3-8B"
+    slept = []
+    # 429 (Retry-After 7) then 200 -> ok, honoured Retry-After, 2 probes
+    V._LINK_CACHE.clear()
+    fake, calls = _urlopen_seq([_http_error(429, retry_after=7), 200])
+    with mock.patch.object(V, "_sleep", slept.append), mock.patch("urllib.request.urlopen", side_effect=fake):
+        ok = V._link_ok(url)
+    check("retry: 429 then 200 -> ok", ok, f"calls={calls}")
+    check("retry: Retry-After honoured", slept == [7.0], f"slept={slept}")
+    check("retry: 429 does not also burn a GET", len(calls) == 2, f"calls={calls}")
+    # 429 forever -> not ok, but unverified (not dead)
+    V._LINK_CACHE.clear()
+    fake, calls = _urlopen_seq([_http_error(429)])
+    with mock.patch.object(V, "_sleep", lambda s: None), mock.patch("urllib.request.urlopen", side_effect=fake):
+        dead = V._link_dead(url, strict=True)
+    check("retry: persistent 429 is NOT dead", not dead)
+    check("retry: persistent 429 is unverified", V._unverified(url))
+    check("retry: bounded attempts", len(calls) == V._LINK_RETRIES + 1, f"{len(calls)} calls")
+    # 404 -> dead immediately, no retry, no sleep
+    V._LINK_CACHE.clear()
+    slept.clear()
+    fake, calls = _urlopen_seq([_http_error(404)])
+    with mock.patch.object(V, "_sleep", slept.append), mock.patch("urllib.request.urlopen", side_effect=fake):
+        dead = V._link_dead("https://huggingface.co/org/nope", strict=True)
+    check("404: dead", dead)
+    check("404: no retry / no sleep", len(calls) == 1 and not slept, f"calls={calls} slept={slept}")
+    # DNS failure -> dead (a typo'd host is a real dead link)
+    import socket
+    import urllib.error
+    V._LINK_CACHE.clear()
+    fake, calls = _urlopen_seq([urllib.error.URLError(socket.gaierror(-2, "Name or service not known"))])
+    with mock.patch.object(V, "_sleep", lambda s: None), mock.patch("urllib.request.urlopen", side_effect=fake):
+        dead = V._link_dead("https://no-such-host.invalid/x", strict=True)
+    check("dns: unresolvable host is dead", dead and len(calls) == 1, f"calls={calls}")
+
+
+def test_each_url_probed_once_per_run():
+    """models.json + raw snapshots repeat the same HF repo many times (86 HF
+    links / 15 unique on master). Each URL must be probed once per run, or a
+    full validate bursts past the HF rate limit."""
+    import unittest.mock as mock
+    V._LINK_CACHE.clear()
+    fake, calls = _urlopen_seq([200])
+    with mock.patch("urllib.request.urlopen", side_effect=fake):
+        for _ in range(10):
+            V._link_ok("https://huggingface.co/Qwen/Qwen3-14B")
+    check("cache: 10 checks of one URL -> 1 probe", len(calls) == 1, f"{len(calls)} probes")
+
+
+def test_rate_limited_store_does_not_fail_validation():
+    """End to end through check_links_resolve: every HF link answers 429 for
+    the whole run (the #83/#84 state). No 'does not resolve' failures — they
+    are unverified warnings. A genuinely dead (404) HF link in the same run
+    still fails."""
+    import unittest.mock as mock
+    s = store()
+    s["models"].append({"id": "gone", "hf": "org/gone", "formats": [], "engines": []})
+
+    def fake(req, timeout=None):
+        u = req.full_url
+        if u == "https://huggingface.co/org/gone":
+            raise _http_error(404)
+        if u.startswith("https://huggingface.co/"):
+            raise _http_error(429)
+        return FakeResp(200)
+    with mock.patch.object(V, "_sleep", lambda s: None), mock.patch("urllib.request.urlopen", side_effect=fake):
+        errs = _run_hermetic(s)
+    rate_limited = [e for e in errs if "huggingface.co/" in e and "org/gone" not in e]
+    check("rate-limited HF links are not reported dead", not rate_limited, json.dumps(rate_limited))
+    check("a real 404 HF link still fails in the same run",
+          any("org/gone" in e and "does not resolve" in e for e in errs), json.dumps(errs))
 
 
 def test_wrong_but_resolving_link_is_corrected():
@@ -371,6 +484,9 @@ def main() -> int:
     test_extract_links_covers_all_sources()
     test_link_ok_resolves_real_url()
     test_link_ok_strict_2xx()
+    test_strict_rate_limit_is_retried_then_unverified_not_dead()
+    test_each_url_probed_once_per_run()
+    test_rate_limited_store_does_not_fail_validation()
     test_wrong_but_resolving_link_is_corrected()
     test_wrong_but_resolving_link_fails_when_canonical_unverifiable()
     test_check_links_resolve_passes_valid_store()

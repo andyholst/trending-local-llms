@@ -19,6 +19,7 @@ Run:  python3 tests/test_workflows.py   or   make test
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -347,6 +348,42 @@ def test_nothing_pushes_master():
         check(f"no-master: {f.name} never merges a PR", "gh pr merge" not in t, "")
 
 
+def test_unit_tests_really_run():
+    """The unit tests are plain scripts (pytest is not in the test image), so a
+    test only counts if CI actually executes it: the validate job must reach
+    the link-validator tests, every `def test_*` must be called from its file's
+    main(), and every file must exit non-zero when a check fails. A test that
+    is defined but never called passes CI silently."""
+    import ast
+    mk = (ROOT / "Makefile").read_text()
+
+    def recipe(target):
+        m = re.search(rf"\n{re.escape(target)}:\n((?:\t[^\n]*\n)+)", mk)
+        return m.group(1) if m else ""
+    v = run_text(load("qa-validate.yml")["jobs"]["validate"])
+    for target, public in (("_validate-search", "make validate-search"),
+                           ("_validate-mapped", "make validate-mapped"),
+                           ("_test", "make test")):
+        check(f"ci: validate job runs `{public}`", public in v, "")
+        check(f"ci: {target} runs the link-validator unit tests",
+              "tests/test_validate_links.py" in recipe(target), recipe(target)[:200])
+    for f in sorted((ROOT / "tests").glob("test_*.py")):
+        tree = ast.parse(f.read_text())
+        defs = [n.name for n in tree.body if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")]
+        main = next((n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main"), None)
+        if not defs:
+            continue
+        check(f"ci: {f.name} has a main() runner", main is not None)
+        if main is None:
+            continue
+        used = {n.id for n in ast.walk(main) if isinstance(n, ast.Name)}
+        uncalled = [d for d in defs if d not in used]
+        check(f"ci: every test_* in {f.name} is called from main()", not uncalled, uncalled)
+        src = f.read_text()
+        check(f"ci: {f.name} exits non-zero on failure",
+              "raise SystemExit(main())" in src or "sys.exit(main())" in src, "")
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -356,6 +393,7 @@ def main() -> int:
     test_owner_guards()
     test_guard_behaviour()
     test_nothing_pushes_master()
+    test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

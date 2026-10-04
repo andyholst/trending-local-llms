@@ -23,7 +23,9 @@ import argparse
 import json
 import os
 import re
+import socket
 import sys
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -862,10 +864,89 @@ def _lookup_hf_id(model_id: str) -> str | None:
 
 
 # Statuses that mean "the link is fine but we can't verify right now" — rate
-# limits (429), bot-blocks (403), and server errors (5xx). Used ONLY for
-# source_post (X posts via the lightbrd.com mirror, which bot-blocks) and README
-# links. HF / engine / inference links are STRICT 2xx.
+# limits (429), bot-blocks (403), and server errors (5xx). Lenient links
+# (source_post via the lightbrd.com X mirror, which bot-blocks, and README links)
+# accept all of these as reachable.
 _INDETERMINATE = {403, 429, 500, 502, 503, 504}
+# Strict links (HF / engine repos) still treat 403 as dead (gated / blocked),
+# but a rate limit, server error or timeout says nothing about whether the repo
+# exists. These are RETRIED with backoff; if they never settle, the link is
+# reported as UNVERIFIED (warning), not dead. Treating them as dead is what
+# turned PRs #83 and #84 red: after `make fix` link-checked all ~245 links,
+# the next `make validate` got 429s from Hugging Face and reported ~40 repos
+# that all exist (Qwen/Qwen3-8B, deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B, ...)
+# as "does not resolve", so the fix-bot never pushed its (correct) fix.
+_RETRYABLE = {429, 500, 502, 503, 504}
+LINK_OK, LINK_DEAD, LINK_UNVERIFIED = "ok", "dead", "unverified"
+_LINK_RETRIES = int(os.environ.get("LINKCHECK_RETRIES", "3"))
+_LINK_BACKOFF = float(os.environ.get("LINKCHECK_BACKOFF", "2"))
+_LINK_MAX_WAIT = 30.0
+_sleep = time.sleep  # patched in tests
+# One result per URL per process. models.json + raw snapshots repeat the same
+# HF repo many times (86 HF links, 15 unique); checking each once is what keeps
+# a full validate under the HF rate limit.
+_LINK_CACHE: dict[str, str] = {}
+
+
+def _retry_after(e: urllib.error.HTTPError, attempt: int) -> float:
+    try:
+        ra = float(e.headers.get("Retry-After", "")) if e.headers else None
+    except (TypeError, ValueError):
+        ra = None
+    wait = ra if ra is not None else _LINK_BACKOFF * (2 ** attempt)
+    return max(0.0, min(wait, _LINK_MAX_WAIT))
+
+
+def _probe(url: str, timeout: float) -> tuple[str, str]:
+    """One HEAD (GET fallback) probe with retries. Returns (status, detail):
+    ok = HTTP 2xx; dead = definitive (404/410/401/403/DNS failure);
+    unverified = still 429/5xx/timeout after _LINK_RETRIES retries."""
+    headers = {"User-Agent": "trending-local-llms-linkcheck/1.0"}
+    if url.startswith("https://huggingface.co/") and os.environ.get("HF_TOKEN"):
+        headers["Authorization"] = "Bearer " + os.environ["HF_TOKEN"]
+    detail = ""
+    for attempt in range(_LINK_RETRIES + 1):
+        wait = None
+        for method in ("HEAD", "GET"):
+            try:
+                req = urllib.request.Request(url, method=method, headers=headers)
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    code = resp.status
+            except urllib.error.HTTPError as e:
+                code = e.code
+                if code in _RETRYABLE:
+                    wait = _retry_after(e, attempt)
+            except urllib.error.URLError as e:
+                if isinstance(e.reason, socket.gaierror):
+                    return LINK_DEAD, f"DNS: {e.reason}"
+                detail, code = f"network: {e.reason}", None
+            except (TimeoutError, socket.timeout, ConnectionError, OSError) as e:
+                detail, code = f"network: {e.__class__.__name__}", None
+            if code is not None:
+                if 200 <= code < 300:
+                    return LINK_OK, f"HTTP {code}"
+                detail = f"HTTP {code}"
+                if code in (405, 501):  # HEAD not allowed -> try GET
+                    continue
+                if code not in _RETRYABLE:
+                    return LINK_DEAD, detail
+            # retryable status or network error: GET won't fare better now
+            break
+        if attempt < _LINK_RETRIES:
+            _sleep(wait if wait is not None else _LINK_BACKOFF * (2 ** attempt))
+    return LINK_UNVERIFIED, f"{detail} after {_LINK_RETRIES + 1} attempts"
+
+
+def _link_status(url: str, timeout: float = 8.0) -> str:
+    """ok / dead / unverified for a URL (cached per process)."""
+    if not url or not url.startswith(("http://", "https://")):
+        return LINK_DEAD
+    if url not in _LINK_CACHE:
+        status, detail = _probe(url, timeout)
+        _LINK_CACHE[url] = status
+        if status == LINK_UNVERIFIED:
+            print(f"  WARN: link unverified ({detail}): {url}")
+    return _LINK_CACHE[url]
 
 
 def _link_ok(url: str, timeout: float = 8.0, strict: bool = True) -> bool:
@@ -873,30 +954,44 @@ def _link_ok(url: str, timeout: float = 8.0, strict: bool = True) -> bool:
     2xx — used for public model / inference-server links (Hugging Face, engine
     repos) that must genuinely resolve. strict=False also accepts indeterminate
     (403/429/5xx) — used for source_post (X mirror bot-blocks) and README links.
-    HEAD first, GET fallback. When HF_TOKEN is set (repo secret), Hugging Face
-    requests are authenticated with it, so batch link-checking isn't held to the
-    anonymous rate limit."""
+    Rate limits / 5xx / timeouts are retried with backoff (Retry-After honoured)
+    before giving up. When HF_TOKEN is set (repo secret), Hugging Face requests
+    are authenticated with it. check_links_resolve uses _link_dead instead, so a
+    strict link that stays rate-limited is a warning, not a dead link."""
     if not url or not url.startswith(("http://", "https://")):
         return False
+    if not strict:
+        return _link_lenient_ok(url, timeout)
+    return _link_status(url, timeout) == LINK_OK
+
+
+def _link_lenient_ok(url: str, timeout: float = 8.0) -> bool:
     headers = {"User-Agent": "trending-local-llms-linkcheck/1.0"}
-    if url.startswith("https://huggingface.co/") and os.environ.get("HF_TOKEN"):
-        headers["Authorization"] = "Bearer " + os.environ["HF_TOKEN"]
     for method in ("HEAD", "GET"):
         try:
             req = urllib.request.Request(url, method=method, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                if 200 <= resp.status < 300:
-                    return True
-                if not strict and resp.status in _INDETERMINATE:
+                if 200 <= resp.status < 300 or resp.status in _INDETERMINATE:
                     return True
         except urllib.error.HTTPError as e:
-            if 200 <= e.code < 300:
-                return True
-            if not strict and e.code in _INDETERMINATE:
+            if 200 <= e.code < 300 or e.code in _INDETERMINATE:
                 return True
         except Exception:  # noqa: BLE001 — connection error / timeout / DNS
             continue
     return False
+
+
+def _unverified(url: str) -> bool:
+    """True when the last strict probe of url never settled (429/5xx/timeout)."""
+    return _LINK_CACHE.get(url) == LINK_UNVERIFIED
+
+
+def _link_dead(url: str, strict: bool) -> bool:
+    """True only when the link is DEFINITELY dead. A strict link that stays
+    rate-limited / 5xx / timing out is unverified: warned about, not failed."""
+    if _link_ok(url, strict=strict):
+        return False
+    return not (strict and _unverified(url))
 
 
 def _extract_links(store: dict) -> list[tuple[str, str, str]]:
@@ -980,6 +1075,7 @@ def check_links_resolve(store: dict) -> None:
         return
     bad = 0
     fixed = 0
+    unverified = 0
     # HF + engine/inference links must be STRICT 2xx (public model links that
     # must genuinely resolve). source_post (X mirror bot-blocks) and README links
     # are lenient (indeterminate 403/429/5xx is not a dead link).
@@ -999,7 +1095,12 @@ def check_links_resolve(store: dict) -> None:
             if canonical_id:
                 canonical = "https://huggingface.co/" + canonical_id
         if canonical and url != canonical:
-            if _link_ok(canonical, strict=(kind in _STRICT_KINDS)):
+            strict = kind in _STRICT_KINDS
+            if not _link_ok(canonical, strict=strict) and strict and _unverified(canonical):
+                unverified += 1
+                print(f"  WARN: [{kind}] {owner}: canonical {canonical} unverified (rate-limited/5xx); left as {url}")
+                continue
+            if _link_ok(canonical, strict=strict):
                 # correct the store to the canonical link
                 if kind == "engine-registry":
                     store["engines"][owner]["url"] = canonical
@@ -1018,14 +1119,18 @@ def check_links_resolve(store: dict) -> None:
             bad += 1
             fail(f"link: [{kind}] {owner}: {url} does not match known-good {canonical}")
             continue
-        if _link_ok(url, strict=(kind in _STRICT_KINDS)):
+        if not _link_dead(url, strict=(kind in _STRICT_KINDS)):
+            if kind in _STRICT_KINDS and _unverified(url):
+                unverified += 1
             continue
         bad += 1
         fail(f"link: [{kind}] {owner}: {url} does not resolve")
     if fixed:
         print(f"  auto-fixed {fixed} link(s) to known-good repos")
+    if unverified:
+        print(f"  WARN: {unverified} strict link(s) unverified (rate-limited/5xx/timeout after retries) — not counted as dead")
     if not bad:
-        print(f"  OK: all {len(links)} links resolve ({fixed} auto-fixed)")
+        print(f"  OK: all {len(links)} links resolve ({fixed} auto-fixed, {unverified} unverified)")
 
 
 def main() -> int:
