@@ -223,7 +223,7 @@
       ]
     },
     "jundot/omlx": {
-      "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon — managed from the macOS menu bar",
+      "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon \u2014 managed from the macOS menu bar",
       "full_name": "jundot/omlx",
       "topics": [
         "apple-silicon",
@@ -232,6 +232,23 @@
         "macos",
         "mlx",
         "openai-api"
+      ]
+    },
+    "carouselaether/rocm_exl3": {
+      "description": "A fork of exllamav3 for ROCm.",
+      "full_name": "CarouselAether/rocm_exl3",
+      "topics": []
+    },
+    "laurentzuijdwijk/llama.cpp": {
+      "description": "llama.cpp with adaptive speculative decoding (--spec-draft-adaptive) and a Vulkan backend tuned for AMD Strix Halo. 4.7x on structured output, 1.9x mainline prefill on MoE.",
+      "full_name": "LaurentZuijdwijk/llama.cpp",
+      "topics": [
+        "amd",
+        "llama-cpp",
+        "local-llm",
+        "speculative-decoding",
+        "strix-halo",
+        "vulkan"
       ]
     }
   }
