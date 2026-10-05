@@ -191,8 +191,11 @@ def test_readme_sync_timestamp_mismatch():
 def test_readme_generated_pass():
     reset()
     s = store()
-    # README exactly equals the generator output -> pass
-    expected = UT.render_readme(s, datetime.now(timezone.utc))
+    # README exactly equals the generator output -> pass. Render as of the
+    # store's generated_utc, exactly like check_readme_generated does: status
+    # bands + the 7-day score are date-relative, so a wall-clock render drifts
+    # out of sync with the validator once the fixture date ages past a band.
+    expected = UT.render_readme(s, _store_as_of(s))
     r = _set_readme(expected)
     try:
         V.check_readme_generated(s)
@@ -204,7 +207,7 @@ def test_readme_generated_pass():
 def test_readme_generated_handedited():
     reset()
     s = store()
-    expected = UT.render_readme(s, datetime.now(timezone.utc))
+    expected = UT.render_readme(s, _store_as_of(s))
     tampered = expected.replace("**Model One**", "**Model One** [HAND EDITED]")
     r = _set_readme(tampered)
     try:
@@ -212,6 +215,30 @@ def test_readme_generated_handedited():
         check("readme-generated: catches hand-edited README", any("NOT regenerated" in f or "hand-edited" in f for f in V.FAILURES))
     finally:
         _restore_readme()
+
+
+def _store_as_of(s: dict) -> datetime:
+    return datetime.strptime(s["generated_utc"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+
+def test_readme_generated_tests_are_clock_independent():
+    """Regression: test_readme_generated_pass rendered the expected README with
+    datetime.now() while the validator renders as of store.generated_utc, so the
+    test went red on master once the fixture (2026-09-28) aged past the 7-day
+    trending band (run 37247105182). No test may render a README from the wall
+    clock; it must use a fixed as-of date."""
+    import ast
+    offenders = []
+    for f in sorted((ROOT / "tests").glob("test_*.py")):
+        tree = ast.parse(f.read_text())
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and getattr(node.func, "attr", getattr(node.func, "id", "")) == "render_readme"):
+                continue
+            for arg in node.args[1:] + [k.value for k in node.keywords]:
+                for sub in ast.walk(arg):
+                    if isinstance(sub, ast.Attribute) and sub.attr in ("now", "utcnow", "today"):
+                        offenders.append(f"{f.name}:{node.lineno}")
+    check("readme-generated: no test renders README from the wall clock", not offenders, ", ".join(offenders))
 
 
 def _run_raw_mapping(raw_files, store):
@@ -463,6 +490,7 @@ def main() -> int:
     test_readme_sync_timestamp_mismatch()
     test_readme_generated_pass()
     test_readme_generated_handedited()
+    test_readme_generated_tests_are_clock_independent()
     test_raw_mapping_maps_existing()
     test_raw_mapping_new_model()
     test_raw_mapping_id_collision__maps_by_id()
