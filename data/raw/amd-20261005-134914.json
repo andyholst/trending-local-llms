@@ -1,0 +1,35 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-05",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 507,
+          "comments": 43,
+          "reshares": 59,
+          "views": 39532
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-05T13:49:14Z"
+}
