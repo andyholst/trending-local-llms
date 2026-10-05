@@ -1,0 +1,64 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "120-124",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B-A22B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "88-92",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-04T20:45:36Z"
+}
