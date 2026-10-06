@@ -1,0 +1,47 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Lightning 30B-A3B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "OpenMDW 1.1",
+      "params": "30B (A3B MoE)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-30",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "206",
+          "hardware": "M5 Max (Apple Silicon)",
+          "quant": "MLX 4-bit; 188-206 t/s range, speculative decoding drafters tuned per model family",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2105337375941357786",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 133
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "206",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit; 188-206 t/s",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 20,
+          "comments": 2,
+          "reshares": 5,
+          "views": 3754
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-06T22:10:00Z"
+}

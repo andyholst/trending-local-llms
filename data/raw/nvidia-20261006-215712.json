@@ -1,0 +1,64 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-06T21:58:30Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode, 16-token verification + context lookup, prefix caching, quantized KV; ~260 t/s DFlash2 alone, ~133 t/s real chat",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107311304700576218",
+          "likes": 64,
+          "comments": 2,
+          "reshares": 5,
+          "views": 8912
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 / RTX 3090",
+          "quant": "GSQ-RCO ~3.5 bits/weight, MoE experts across GPU/RAM; 50-94 t/s on 12GB VRAM, 55-70 t/s RTX 3090, up to 94 t/s RTX 5070",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
+          "likes": 50,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}
