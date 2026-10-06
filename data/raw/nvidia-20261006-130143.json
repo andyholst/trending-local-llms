@@ -1,0 +1,47 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "62",
+          "hardware": "RTX 3090 24GB",
+          "quant": "ternary (5.95 GB weights), full 262k context; initial tps ~59-62",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/lukemaj_/status/2107373060311707840",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 29
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 (7.21 GB, 1.72 bits/weight), ~220K ctx, ~550 t/s prefill; PTQ1_0 5.95 GB drops to ~26 t/s decode / ~260 t/s prefill at 262K",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107064827923284104",
+          "likes": 7161,
+          "comments": 3,
+          "reshares": 12,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-06T12:58:39Z"
+}
