@@ -1,0 +1,51 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "date": "2026-10-05",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "ROCm (Strata --backend hip)",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+          "likes": 208,
+          "comments": 23,
+          "reshares": 29,
+          "views": 13575,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-05",
+      "why": "Runs 125B MoE on consumer GPUs; Strata reports ~60 output t/s on an RX 9070 XT (16GB).",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1
+      }
+    }
+  ],
+  "generated_utc": "2026-10-06T13:08:14Z"
+}
