@@ -1,0 +1,65 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-07T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-05",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode, 16-position verification block + context lookup, prefix caching; ~260 t/s DFlash2 alone, ~382 t/s longer verification + context lookup, ~133 t/s chat, acceptance ~15/16",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106920660727402523",
+          "likes": 7,
+          "comments": 1,
+          "reshares": 2,
+          "views": 1207
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-05",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "110",
+          "hardware": "dual RTX 3090 24GB + 96GB DDR5",
+          "quant": "MoE experts across GPU/RAM; 80-110 t/s on dual RTX 3090 + 96GB DDR5, 60-90 t/s on single 3090 + 128GB DDR5 IQ2XS",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/FatimaYappin/status/2106898318848643105",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

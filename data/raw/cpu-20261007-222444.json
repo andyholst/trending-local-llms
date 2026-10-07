@@ -1,0 +1,45 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "33.7",
+          "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
+          "quant": "UD-Q2_K_XL, 65K ctx",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 0,
+          "views": 81,
+          "interactions": 85
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next served at 33.7 t/s decode via llama.cpp with n-cpu-moe=32 (MoE experts computed on the Ryzen 5950X CPU) with a RTX 3090 + 64GB RAM, sustained over 1.59M production tokens.",
+      "engagement": {
+        "likes": 3,
+        "comments": 1,
+        "views": 81
+      },
+      "last_seen": "2026-10-05"
+    }
+  ],
+  "generated_utc": "2026-10-07T22:24:44Z"
+}
