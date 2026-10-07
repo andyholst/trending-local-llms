@@ -13,7 +13,8 @@ name: fix-bot
 #   red  -> write qa-report.txt -> `make fix` (Hermes reads the report) -> re-check
 #   at most FIX_ROUNDS Hermes attempts.
 # Push ONLY when the loop ends green. Still red -> comment the report on the PR,
-# push nothing, leave for manual review. Never touches master; never merges.
+# push nothing, leave for manual review. Never touches master; never merges
+# (qa-validate's auto-merge job merges the PR once the re-run is green).
 #
 # The checkout + push use the owner-scoped PAT (FIXBOT_DISPATCH_TOKEN) so the
 # push re-triggers qa-validate on the PR — a push made with the default
@@ -189,9 +190,9 @@ jobs:
             if [ "$GREEN" = "true" ] && [ "$PUSH_OUTCOME" != "success" ]; then
               echo "fix-bot: local checks went **green**, but committing/pushing the fix **failed** — nothing reached the PR. See the run log; manual review needed."
             elif [ "$GREEN" = "true" ] && [ "$PUSHED" = "yes" ]; then
-              echo "fix-bot: local checks are **green** after the repair loop; the fix was pushed and qa-validate re-runs. Manual review is still required before merge."
+              echo "fix-bot: local checks are **green** after the repair loop; the fix was pushed and qa-validate re-runs; it auto-merges if green."
             elif [ "$GREEN" = "true" ]; then
-              echo "fix-bot: checks are **green** with no changes (the CI failure was transient); nothing pushed. Re-run qa-validate. Manual review is still required before merge."
+              echo "fix-bot: checks are **green** with no changes (the CI failure was transient); nothing pushed. Re-run qa-validate; it auto-merges if green."
             else
               echo "fix-bot: still **red** after up to $FIX_ROUNDS Hermes fix round(s) (or the run failed before the loop). Nothing pushed — manual review needed."
               echo

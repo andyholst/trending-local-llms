@@ -345,7 +345,38 @@ def test_nothing_pushes_master():
         bad = [l.strip() for l in t.splitlines()
                if "git push" in l and ("master" in l or "main" in l)]
         check(f"no-master: {f.name} never pushes master/main", not bad, bad)
-        check(f"no-master: {f.name} never merges a PR", "gh pr merge" not in t, "")
+        jobs = load(f.name).get("jobs", {})
+        mergers = sorted(n for n, j in jobs.items() if "gh pr merge" in run_text(j))
+        allowed = ["auto-merge"] if f.name == "qa-validate.yml" else []
+        check(f"no-master: {f.name} merges a PR only from qa-validate's auto-merge job",
+              mergers == allowed, mergers)
+
+
+def test_auto_merge():
+    """Green PR -> squash-merge + delete branch. Must never merge a red, stale,
+    draft or fork PR, and must merge as the owner (PAT) so master CI runs."""
+    jobs = load("qa-validate.yml")["jobs"]
+    am = jobs.get("auto-merge", {})
+    needs = am.get("needs", [])
+    needs = [needs] if isinstance(needs, str) else needs
+    check("auto-merge: needs validate AND live-smoke", {"validate", "live-smoke"} <= set(needs), needs)
+    cond = str(am.get("if", ""))
+    check("auto-merge: only when every needed job succeeded", "success()" in cond
+          and "always()" not in cond and "failure()" not in cond, cond)
+    check("auto-merge: only on pull_request events", "github.event_name == 'pull_request'" in cond, cond)
+    check("auto-merge: never a draft PR", "draft == false" in cond, cond)
+    check("auto-merge: only same-repo PRs (no forks)", "head.repo.full_name == github.repository" in cond, cond)
+    check("auto-merge: never from master/main", "'master'" in cond and "'main'" in cond, cond)
+    st = step(am, "merge")
+    run = st.get("run", "")
+    check("auto-merge: uses the owner PAT (GITHUB_TOKEN merge starts no master CI)",
+          PAT in str(st.get("env", {}).get("GH_TOKEN", "")), st.get("env"))
+    check("auto-merge: squash-merges", "gh pr merge" in run and "--squash" in run, run)
+    check("auto-merge: deletes the feature branch", "--delete-branch" in run, run)
+    check("auto-merge: merges only the validated head commit",
+          "--match-head-commit" in run and "pull_request.head.sha" in str(st.get("env", {})), run)
+    check("auto-merge: never --admin (bypasses checks)", "--admin" not in run, run)
+    check("auto-merge: one merge attempt per PR at a time", bool(am.get("concurrency")), am.get("concurrency"))
 
 
 def test_unit_tests_really_run():
@@ -393,6 +424,7 @@ def main() -> int:
     test_owner_guards()
     test_guard_behaviour()
     test_nothing_pushes_master()
+    test_auto_merge()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
