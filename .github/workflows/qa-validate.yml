@@ -1,6 +1,6 @@
 name: qa-validate
 
-# PR CI — VALIDATION. Never refreshes data, never merges, never commits.
+# PR CI — VALIDATION + AUTO-MERGE. Never refreshes data, never commits.
 #
 #   validate        deterministic: data store, README, contracts, mapping, unit
 #                   tests (incl. Makefile recipe, workflow wiring and fix-loop
@@ -15,6 +15,9 @@ name: qa-validate
 #   dispatch-fixbot when `validate` is RED on a refresh PR (ci/trending-refresh-*),
 #                   dispatch fix-bot with the owner PAT, capped at 2 fix-bot
 #                   commits per PR so a fix that doesn't stick can't loop.
+#   auto-merge      when `validate` AND `live-smoke` are GREEN on a same-repo,
+#                   non-draft PR: squash-merge exactly the validated head commit
+#                   and delete the feature branch (owner PAT). Red -> stays open.
 #
 # Workflow-only PRs (.github/**) are validated too: the workflow wiring is
 # itself under test (tests/test_workflows.py).
@@ -127,3 +130,36 @@ jobs:
           fi
           gh workflow run fix-bot.yml --repo "$REPO" -f pr_number="$PR_NUM" -f branch="$BRANCH"
           echo "Dispatched fix-bot for PR #$PR_NUM ($BRANCH)"
+
+  auto-merge:
+    needs: [validate, live-smoke]
+    if: >-
+      success() &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref != 'master' && github.head_ref != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: auto-merge-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      # Squash-merge ONLY the exact commit that was validated (--match-head-commit):
+      # a push after this run started leaves the PR open for the newer run.
+      # Owner PAT, not GITHUB_TOKEN: a merge made with GITHUB_TOKEN starts no
+      # workflows, so the post-merge qa-validate on master would never run.
+      - name: Squash-merge the green PR + delete its branch (owner PAT)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          STATE=$(gh pr view "$PR_NUM" --repo "$REPO" --json state --jq .state)
+          if [ "$STATE" != "OPEN" ]; then
+            echo "PR #$PR_NUM is $STATE — nothing to merge."
+            exit 0
+          fi
+          gh pr merge "$PR_NUM" --repo "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          echo "Merged PR #$PR_NUM at $HEAD_SHA (validate + live-smoke green)"

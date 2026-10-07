@@ -807,7 +807,7 @@ Best measured t/s per model on each engine ({legend}). Only engines with at leas
 - Update `data/models.json` (add/refresh a model row with real X-sourced engagement and per-engine t/s), then run `python3 scripts/update_trending.py` to regenerate the README.
 - Include: full model name, HF link, license, params, type, VRAM tier, a **measured** t/s + **engine + hardware + quant**, and the source X post (a `…/status/<id>` URL, so engagement is counted once per post).
 - Prefer numbers from real X benchmark posts over vendor claims. Data is **community-reported on X** — directional, not lab-grade; mark projections `(est)`.
-- All changes go through a **feature branch + PR**; automation never pushes to/merges `master` directly.
+- All changes go through a **feature branch + PR**; automation never pushes to `master`. A PR is auto-merged (squash, branch deleted) only when CI (`validate` + `live-smoke`) is green.
 
 ## License
 

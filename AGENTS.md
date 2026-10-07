@@ -16,8 +16,11 @@ retains 30 days of history.
 ## 2. Hard rules (non-negotiable)
 
 1. **Never push to `master`/`main` directly — by manual action or automation.**
-   Every change lands on a **feature branch** and is merged via a **PR reviewed
-   by a human**. The CI pipeline may *open* PRs but must never *merge* them.
+   Every change lands on a **feature branch** and is merged via a **PR**. A PR
+   is **auto-merged** (squash, feature branch deleted) by qa-validate's
+   `auto-merge` job ONLY when `validate` AND `live-smoke` are green on the
+   exact head commit; a red PR stays open for a human. No workflow may merge
+   from anywhere else, use `--admin`, or push to `master`.
 2. **Never fabricate data.** No engagement number, like count, or t/s figure
    may be invented. It must trace to a **real X post** (via the lightbrd.com
    mirror technique in `skills/gather-data.md`) or be marked explicitly as
@@ -331,8 +334,8 @@ this `AGENTS.md` and the `gather-data` skill, then:
    removes any existing model**.
 3. Applies the 7-day trending / 30-day retention sort and regenerates
    `README.md` via `scripts/update_trending.py`; writes a timestamped snapshot.
-4. Commits on a **feature branch** and opens a **PR** to `master` for manual
-   review, using the owner-scoped PAT (`FIXBOT_DISPATCH_TOKEN`) for the push
+4. Commits on a **feature branch** and opens a **PR** to `master` (auto-merged
+   by qa-validate once green), using the owner-scoped PAT (`FIXBOT_DISPATCH_TOKEN`) for the push
    and `gh pr create` — never the default `GITHUB_TOKEN` (see §6b). It never
    pushes to or merges `master` itself.
 
@@ -345,10 +348,11 @@ this `AGENTS.md` and the `gather-data` skill, then:
   `aggregate` (runs even if a leg failed): merge → soft validate → **opens a PR
   only when there is new data**, authored by the owner PAT so qa-validate
   starts without an approval click. It does NOT dispatch fix-bot — that is
-  qa-validate's job, after it has validated. Never auto-merges.
+  qa-validate's job, after it has validated. It never merges; qa-validate's
+  `auto-merge` does, once the PR is green.
 - **`qa-validate.yml`** — the **PR CI** pipeline. Runs on every PR (including
   workflow-only PRs — the wiring is under test), push to master, or dispatch.
-  Three jobs:
+  Four jobs:
   - `validate` — deterministic: `make validate`, `validate-search`,
     `validate-mapped`, `test`. This is the only job fix-bot is asked to repair.
   - `live-smoke` — real network, bounded: `make search-smoke BACKEND=<b>` for
@@ -359,6 +363,11 @@ this `AGENTS.md` and the `gather-data` skill, then:
     `ci/trending-refresh-*` PR: dispatches fix-bot with `pr_number` + `branch`
     using the owner PAT, unless the PR already has 2 `fix-bot:` commits (a fix
     that didn't stick → manual review, no loop).
+  - `auto-merge` — `needs: [validate, live-smoke]`, `if: success()` on a
+    same-repo, non-draft `pull_request` (never `master`/`main`): `gh pr merge
+    --squash --delete-branch --match-head-commit <validated sha>` with the
+    owner PAT (a `GITHUB_TOKEN` merge would start no master CI). A push after
+    the run started makes the SHA mismatch → no merge; the newer run decides.
 - **`fix-bot.yml`** — the **fix** pipeline. `workflow_dispatch` ONLY (no
   `workflow_run`: it double-fired with the dispatch and was suppressed for bot
   PRs). One run per PR (`concurrency`). Resolves the PR (refuses
@@ -374,8 +383,8 @@ this `AGENTS.md` and the `gather-data` skill, then:
   makes git exit 1 — every green fix was lost that way until PR #80. Still red
   → nothing is pushed and the failing lines are commented on the PR; the PR
   comment reads the push step's outcome, so a failed push is never reported
-  as 'pushed'. `qa-report.txt` is uploaded as a run artifact. Either way a
-  human reviews and merges.
+  as 'pushed'. `qa-report.txt` is uploaded as a run artifact. A pushed fix
+  re-runs qa-validate, which auto-merges if green; still red → a human.
 
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
@@ -484,8 +493,8 @@ re-validate old data against a changed contract.
 
 Flow: bot refreshes + opens PR (PAT) → qa-validate (`validate` + `live-smoke`)
 → if `validate` is red, qa-validate dispatches fix-bot → fix-bot loops until
-green (≤3 Hermes rounds) and pushes (PAT) → qa-validate re-runs → green → human
-merges. Red after the loop → PR comment, manual review. Max 2 fix-bot pushes
+green (≤3 Hermes rounds) and pushes (PAT) → qa-validate re-runs → green →
+`auto-merge` squash-merges + deletes the branch. Red after the loop → PR comment, manual review. Max 2 fix-bot pushes
 per PR.
 
 **Fix the class, not the PR.** If the same validation failure shows up on
@@ -498,7 +507,7 @@ Rules for the refresh run:
 - If the mirror is unreachable, **preserve last-known data**; never blank the
   store or README. Report the failure in the PR/commit instead.
 - The PR body states what changed, how many models were added/updated for
-  trending, and that manual review is required before merge.
+  trending, and that it is auto-merged once qa-validate is green.
 - The Nous token is read from the repo secret `NOUS_PORTAL_API_TOKEN`; never
   hardcode it in files or commit it.
 
@@ -526,7 +535,7 @@ actually happened.
 | `tests/test_engine_registry.py` (offline: `tests/fixtures/github_meta.json` = real GitHub metadata of every registered engine; `ENGINE_REGISTRY_META_FILE` switches `fetch_repo_meta` to it) | the classifier refusing ANY registered engine (it refused MLX-fast); a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting |
 | `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary |
-| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing/merging master; refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
+| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
