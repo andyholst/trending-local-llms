@@ -1,0 +1,61 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-07T22:24:17Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-Flash-Next-MLX"
+        }
+      ],
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "128GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "80",
+          "hardware": "M3 Ultra",
+          "quant": "oQ8 + MTP spec decode, generation t/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468",
+          "likes": 99,
+          "comments": 18,
+          "reshares": 4,
+          "views": 9992
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "111.9",
+          "hardware": "2x M5 Max via TB5",
+          "quant": "Q4, code decode t/s (82.3 prose)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Yves_From_BE/status/2106326475779833952",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 279
+        }
+      ],
+      "why": "Fast Flash-Next on Apple Silicon via TensorFold spec-decode; ~80 t/s oQ8 MTP on M3 Ultra, ~82-112 t/s Q4 on 2x M5 Max.",
+      "last_seen": "2026-10-03",
+      "engagement": {
+        "likes": 101,
+        "comments": 19,
+        "reshares": 4,
+        "views": 10271,
+        "interactions": 10271
+      }
+    }
+  ]
+}

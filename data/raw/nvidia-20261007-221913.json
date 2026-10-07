@@ -1,0 +1,77 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-07T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + context lookup, longer verification blocks (16 positions), prefix caching, quantized KV cache, optimized verification; ~260 t/s DFlash2 alone, ~382 t/s optimized verification, ~133 t/s chat",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107883015519293593",
+          "likes": 13,
+          "comments": 1,
+          "reshares": 4,
+          "views": 3035
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode, 16-slot context lookup verification, 4-bit weights, 250W; 381 t/s document copy, 133 t/s chat, 67-71 t/s free-form summary",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/0xaqt/status/2107684197498331550",
+          "likes": 131,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB",
+          "quant": "GSQ-RCO ~3.5 bits/weight, MoE experts across GPU/RAM, 262K context; 50-94 t/s on 12GB VRAM, 55-70 t/s on RTX 3090",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
+          "likes": 13,
+          "comments": 2,
+          "reshares": 2,
+          "views": 920
+        }
+      ]
+    }
+  ]
+}

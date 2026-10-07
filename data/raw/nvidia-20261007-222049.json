@@ -1,0 +1,47 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-07T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "108.3",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "UD-Q3_K_XL (13.1GB), DFlash 1.09GB drafter, --spec-type draft-dflash --spec-draft-n-max 7, -c 16384; no drafter 29.8 t/s, refactor Python 101.7 t/s, extract JSON 108.3 t/s, 400-word answer 52.6 t/s, translate 41.9 t/s",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/bountyAIhunter/status/2107870818974019995",
+          "likes": 29,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "58",
+          "hardware": "RTX 3090 24GB",
+          "quant": "MTP (model's own prediction layer), fine-tuned Qwen3.8-27B, Turkish text; ~39 to 58 t/s with MTP",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/GlobalFeedAI/status/2107855355136876823",
+          "likes": 49,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

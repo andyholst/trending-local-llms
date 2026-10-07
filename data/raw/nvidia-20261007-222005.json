@@ -1,0 +1,64 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-07T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "86",
+          "hardware": "RTX 4090 24GB",
+          "quant": "TensorFold + DFlash2 drafter, 40,182-token window, prompt processing 2.4-2.6k tok/s, decode 64-86 tok/s",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/superdoccimo/status/2107835949166006467",
+          "likes": 750,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "100",
+          "hardware": "12GB GPU",
+          "quant": "PTQ1_0 ternary GGUF, agentic workflow fixes baked into serve, 100 tok/s on 12GB GPU",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/CaryPalmerr/status/2107272801568636943",
+          "likes": 144,
+          "comments": 10,
+          "reshares": 7,
+          "views": 6886
+        }
+      ]
+    }
+  ]
+}
