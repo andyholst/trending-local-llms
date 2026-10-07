@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-07T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB",
+          "quant": "claimed 100 t/s running 125B MoE on consumer GPU (news roundup citing HN discussion)",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/yama_boku/status/2106890650969055716",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 1,
+          "views": 212
+        }
+      ]
+    }
+  ]
+}

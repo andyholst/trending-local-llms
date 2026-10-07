@@ -1,0 +1,61 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-07T12:52:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max",
+          "quant": "4-bit + DFlash drafter, spec decode (numbers workload), median of 2",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 35,
+          "views": 4148
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max",
+          "quant": "4-bit + DFlash drafter, spec decode (numbers workload), oMLX 0.7.0",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 35,
+          "views": 4148,
+          "engine_repo": "https://github.com/jundot/omlx"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max",
+          "quant": "4-bit + DFlash drafter (--no-mtp), spec decode (numbers workload), mlx-serve 26.10.1",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 35,
+          "views": 4148,
+          "engine_repo": "https://github.com/ddalcu/mlx-serve"
+        }
+      ]
+    }
+  ]
+}

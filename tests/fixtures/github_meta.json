@@ -250,6 +250,28 @@
         "strix-halo",
         "vulkan"
       ]
+    },
+    "perkel666/megacapybara": {
+      "description": "The fastest inference engine for Qwen3.8-27B on the NVIDIA RTX 5090: up to 500 tokens/s for one agent and up to 2,000 tokens/s for many, contexts up to 1M tokens, and a launcher that shows what every setting costs. Windows and Linux.",
+      "full_name": "perkel666/MegaCapybara",
+      "topics": [
+        "anthropic-api",
+        "claude-code",
+        "cuda",
+        "inference-engine",
+        "linux",
+        "llm",
+        "local-llm",
+        "openai-api",
+        "qwen",
+        "rtx-5090",
+        "windows"
+      ]
+    },
+    "turboderp-org/exllamav3": {
+      "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
+      "full_name": "turboderp-org/exllamav3",
+      "topics": []
     }
   }
 }
