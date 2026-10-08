@@ -1,0 +1,80 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-3-4b",
+      "name": "Gemma 3 4B",
+      "full_name": "Gemma-3-4B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "google/gemma-3-4b-it"
+        }
+      ],
+      "license": "Gemma",
+      "params": "4B",
+      "hf": "google/gemma-3-4b-it",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-29",
+      "why": "Vitanom offline Android app: llama.cpp CPU-only, mmap GGUF, arm64 KleidiAI, no GPU backend, no INTERNET permission; Gemma 3 4B Q4_K_M (~2.5 GB) runs on a 6GB phone, ~a few tok/s (flash-resident MoE expert paging).",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
+          "quant": "Q4_K_M, ~2.5 GB, mmap so weights stay on flash and kernel pages in what each token touches; no GPU backend, CPU path uses KleidiAI on arm64",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568",
+          "likes": 7,
+          "comments": 8,
+          "reshares": 34,
+          "views": 1000,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-30B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-29",
+      "why": "Vitanom Android app (llama.cpp CPU-only): Qwen3-30B-A3B UD-Q2_K_XL (11.8 GB) loads on a 12GB phone; MoE leaves cold experts on flash and re-reads them when the router changes, paying 'a few tokens per second' instead of a server.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
+          "quant": "UD-Q2_K_XL, 11.8 GB; MoE 128 experts/layer, 8 active (~3B params of work per token) with cold experts left on flash and re-read on router change",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568",
+          "likes": 7,
+          "comments": 8,
+          "reshares": 34,
+          "views": 1000,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-08T22:36:55Z"
+}
