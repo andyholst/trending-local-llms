@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-08T13:36:03Z",
+  "generated_utc": "2026-10-08T13:09:20Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -1272,13 +1272,13 @@
           "engine": "llama.cpp (PrismML fork)",
           "tps": "100",
           "hardware": "12GB GPU",
-          "quant": "PTQ1_0 ternary, agentic workflow failures fixed via serve patch (bonsai-ada-surgery)",
+          "quant": "PTQ1_0 ternary GGUF, agentic workflow fixes baked into serve, 100 tok/s on 12GB GPU",
           "date": "2026-10-06",
           "source_post": "https://lightbrd.com/CaryPalmerr/status/2107272801568636943",
-          "likes": 149,
-          "comments": 11,
+          "likes": 144,
+          "comments": 10,
           "reshares": 7,
-          "views": 7424,
+          "views": 6886,
           "interactions": 0
         },
         {
@@ -1479,11 +1479,11 @@
             "engine": "llama.cpp (PrismML fork)",
             "tps": "100",
             "hardware": "12GB GPU",
-            "quant": "PTQ1_0 ternary, agentic workflow failures fixed via serve patch (bonsai-ada-surgery)",
-            "likes": 149,
-            "comments": 11,
+            "quant": "PTQ1_0 ternary GGUF, agentic workflow fixes baked into serve, 100 tok/s on 12GB GPU",
+            "likes": 144,
+            "comments": 10,
             "reshares": 7,
-            "views": 7424
+            "views": 6886
           },
           {
             "url": "https://lightbrd.com/MarkRijckenberg",
@@ -1524,6 +1524,71 @@
       "vram_min": "8GB",
       "engine_aliases": {
         "llama.cpp": "llama.cpp (PrismML fork)"
+      }
+    },
+    {
+      "id": "ternary-bonsai-2-27b",
+      "name": "Ternary Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "100",
+          "hardware": "12GB GPU",
+          "quant": "PTQ1_0 ternary, agentic workflow failures fixed via serve patch (bonsai-ada-surgery)",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/CaryPalmerr/status/2107272801568636943",
+          "likes": 149,
+          "comments": 11,
+          "reshares": 7,
+          "views": 7424,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp (PrismML fork)"
+      ],
+      "why": "Ternary Bonsai 2 27B — see source posts.",
+      "formats": [
+        {
+          "name": "Ternary Bonsai 2 27B",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/CaryPalmerr/status/2107272801568636943",
+            "date": "2026-10-06",
+            "engine": "llama.cpp (PrismML fork)",
+            "tps": "100",
+            "hardware": "12GB GPU",
+            "quant": "PTQ1_0 ternary, agentic workflow failures fixed via serve patch (bonsai-ada-surgery)",
+            "likes": 149,
+            "comments": 11,
+            "reshares": 7,
+            "views": 7424
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 5.8,
+        "score_7d": 5.8,
+        "speed_bonus": 3.5,
+        "trend_score": 9.3
       }
     },
     {
