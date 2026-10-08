@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-08T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (LlamAmpere fork)",
+          "tps": "95",
+          "hardware": "RTX 3090 24GB",
+          "quant": "4.6 bpw, 262K context, 100K+ tokens in one run",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/so_sthbryan/status/2108248560466800749",
+          "likes": 0,
+          "comments": 13,
+          "reshares": 0,
+          "views": 0,
+          "engine_repo": "https://github.com/JakeATX/llamAmpere"
+        }
+      ],
+      "last_seen": "2026-10-08"
+    }
+  ]
+}

@@ -272,6 +272,37 @@
       "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
       "full_name": "turboderp-org/exllamav3",
       "topics": []
+    },
+    "daig/omlx-exl3": {
+      "description": "EXL3 (ExLlamaV3) quantized models on Apple Silicon with oMLX: Metal kernels; Qwen3.8-27B at MLX 8-bit quality in 6 bits, 2.3x faster with MTP",
+      "full_name": "daig/omlx-exl3",
+      "topics": []
+    },
+    "jakeatx/llamampere": {
+      "description": "llama.cpp fork for significantly improved performance on Ampere (especially RTX 3090 / 3090 Ti): example: 95+ tok/s over a 100K-token generation at temperature 1 for qwen3.8, supporting full 262K ctx.",
+      "full_name": "JakeATX/llamAmpere",
+      "topics": [
+        "ampere",
+        "consumer-gpu",
+        "cuda",
+        "ggml",
+        "gguf",
+        "kv-cache-quantization",
+        "llama-cpp",
+        "llm",
+        "llm-inference",
+        "local-llm",
+        "long-context",
+        "mtp",
+        "multi-token-prediction",
+        "quantization",
+        "qwen",
+        "qwen3",
+        "rtx-3090",
+        "rtx-3090-ti",
+        "speculative-decoding",
+        "turboquant"
+      ]
     }
   }
 }

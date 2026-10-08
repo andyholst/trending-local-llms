@@ -1,0 +1,186 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-08T13:00:00Z",
+  "models": [
+    {
+      "id": "cyber-frost-3.8-mlx",
+      "name": "CYBER-FROST-3.8-MLX",
+      "full_name": "CYBER-FROST-3.8-MLX-4bit",
+      "type": "LLM (MoE)",
+      "license": "Qwen Community License 1.0",
+      "params": "180B (MoE)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "grant-ai/CYBER-FROST-3.8-MLX-4bit"
+        }
+      ],
+      "hf": "grant-ai/CYBER-FROST-3.8-MLX-4bit",
+      "vram_tier": "128GB",
+      "vram_min": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "136",
+          "hardware": "M3 Ultra 256GB",
+          "quant": "oQ4e DWQ vs BF16 + retrained MTP head; 96 tok/s at 26k agentic context (xhigh thinking)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/grantoverton/status/2107897439571309032",
+          "likes": 4,
+          "comments": 6,
+          "reshares": 258,
+          "views": 0
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next cybersecurity finetune; up to 136 tok/s on TensorFold 0.6.5, M3 Ultra 256GB, oQ4e DWQ.",
+      "last_seen": "2026-10-07",
+      "engagement": {
+        "likes": 4,
+        "comments": 6,
+        "reshares": 258,
+        "views": 0,
+        "interactions": 0
+      }
+    },
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Lightning 30B-A3B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "OpenMDW 1.1",
+      "params": "30B (A3B MoE)",
+      "formats": [
+        {
+          "name": "Nemotron 3.5 Lightning 30B-A3B",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+        }
+      ],
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "245.5",
+          "hardware": "Apple Silicon",
+          "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; +63% throughput (151 -> 245.5)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 1969,
+          "views": 0
+        }
+      ],
+      "why": "Nemotron 3.5 Lightning 30B-A3B on Apple Silicon via TensorFold profile: 245.5 tok/s in Rapid-MLX 0.15.7.",
+      "last_seen": "2026-10-07",
+      "engagement": {
+        "likes": 1,
+        "comments": 4,
+        "reshares": 1969,
+        "views": 0,
+        "interactions": 0
+      }
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "128GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "112.3",
+          "hardware": "Apple Silicon",
+          "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 1969,
+          "views": 0
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next 125B MoE at 112.3 tok/s on Apple Silicon via TensorFold accelerated profile (Rapid-MLX 0.15.7).",
+      "last_seen": "2026-10-07",
+      "engagement": {
+        "likes": 1,
+        "comments": 4,
+        "reshares": 1969,
+        "views": 0,
+        "interactions": 0
+      }
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        },
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "omlx-exl3",
+          "tps": "78.0",
+          "hardware": "M5 Ultra 256GB",
+          "quant": "EXL3 6bpw (20% smaller than 8-bit MLX for same quality)",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/fluxlesss/status/2108133917706575880",
+          "likes": 18,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_repo": "https://github.com/daig/omlx-exl3"
+        }
+      ],
+      "why": "Qwen3.8-27B at ~78 tok/s on Apple Silicon via EXL3 quant in the omlx-exl3 fork (oMLX Metal kernels).",
+      "last_seen": "2026-10-08",
+      "engagement": {
+        "likes": 18,
+        "comments": 0,
+        "reshares": 0,
+        "views": 0,
+        "interactions": 0
+      }
+    }
+  ]
+}
