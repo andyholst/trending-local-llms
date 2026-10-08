@@ -1,0 +1,35 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-08T00:00:00Z",
+  "models": [
+    {
+      "id": "ternary-bonsai-2-27b",
+      "name": "Ternary Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "PrismML/Ternary-Bonsai-2-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "100",
+          "hardware": "12GB GPU",
+          "quant": "PTQ1_0 ternary, agentic workflow failures fixed via serve patch (bonsai-ada-surgery)",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/CaryPalmerr/status/2107272801568636943",
+          "likes": 149,
+          "comments": 11,
+          "reshares": 7,
+          "views": 7424
+        }
+      ]
+    }
+  ]
+}

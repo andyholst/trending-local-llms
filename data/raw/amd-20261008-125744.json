@@ -1,0 +1,97 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-08T12:57:44Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 511,
+          "comments": 43,
+          "reshares": 58,
+          "views": 39948
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Vulkan, Q4_K_M, MTP head N=5, 291W power cap; 129 t/s MTP off",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "96",
+          "hardware": "RX 7900 XTX",
+          "quant": "ROCm 7.2, continuous batching + PagedAttention; generation t/s on IDLE distributed network",
+          "date": "2026-07-06",
+          "source_post": "https://lightbrd.com/IdleProtocol/status/2074186476779078137",
+          "likes": 66,
+          "comments": 6,
+          "reshares": 16,
+          "views": 3557
+        }
+      ]
+    }
+  ]
+}

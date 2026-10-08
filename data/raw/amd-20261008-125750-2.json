@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-08T12:57:50Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "32GB Radeon",
+          "quant": "EXL3 5.05 bpw, Q8 KV, ROCm; 112 experts/layer GPU + 400 CPU/RAM + ~102GB BF16 n-gram NVMe; ~863 t/s prefill",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

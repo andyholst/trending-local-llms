@@ -1,0 +1,59 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-08T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB",
+          "quant": "Unsloth IQ4_XS, 14.6GB on disk, 64K context, native MTP, 25 layers offloaded, ~150 tok/s prefill, no VRAM overflow",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108017506484887639",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 2,
+          "views": 543
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "108",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "UD-Q3_K_XL 13.1GB, DFlash drafter (1.09GB), -c 16384, n-max 7; no drafter 29.8 t/s, refactor 101.7, JSON 108.3, 400-word 52.6, translate 41.9",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/bountyAIhunter/status/2107870818974019995",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 46,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "58",
+          "hardware": "RTX 3090",
+          "quant": "MTP speculative decoding, fine-tuned Qwen3.8-27B, Turkish text, 39->58 tok/s (llama.cpp 0.6.0)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/GlobalFeedAI/status/2107855355136876823",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 115,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}
