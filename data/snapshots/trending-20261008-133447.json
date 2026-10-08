@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-08T13:36:03Z",
+  "generated_utc": "2026-10-08T13:34:47Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {

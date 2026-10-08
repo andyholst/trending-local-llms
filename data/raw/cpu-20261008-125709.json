@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "kolibri-1",
+      "name": "Kolibri-1",
+      "full_name": "Kolibri-1",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "78B (MoE, 3.46B active)",
+      "hf": "Aleph-Alpha/Kolibri-1",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Hob-forge/Kolibri-1-GGUF"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "Ryzen 7 7800X3D CPU, 128GB RAM",
+          "quant": "Q4_K_M, CPU-only, patched llama.cpp build; 12-15 t/s reported",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2107652135479332932",
+          "likes": 5,
+          "comments": 21,
+          "reshares": 0,
+          "views": 1621
+        }
+      ],
+      "last_seen": "2026-10-07",
+      "why": "Aleph Alpha Kolibri-1 78B MoE (3.46B active) — community GGUF conversion, CPU-only on Ryzen 7 7800X3D."
+    }
+  ],
+  "generated_utc": "2026-10-08T12:57:09Z"
+}

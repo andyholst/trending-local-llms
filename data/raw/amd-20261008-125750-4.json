@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-08T12:57:50Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
+          "quant": "ROCm, experimental Strix Halo support, 1M ctx, Unsloth Q4 / GSQ-RCO; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

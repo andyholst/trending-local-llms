@@ -1,0 +1,100 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-08T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + context lookup, longer verification blocks (16 positions), prefix caching, quantized KV cache, optimized verification; ~260 t/s DFlash2 alone, ~382 t/s optimized verification, ~133 t/s chat",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107883015519293593",
+          "likes": 28,
+          "comments": 4,
+          "reshares": 4,
+          "views": 11304
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode, 16-slot context lookup verification, 4-bit weights, 250W; 381 t/s document copy, 133 t/s chat, 67-71 t/s free-form summary",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/0xaqt/status/2107684197498331550",
+          "likes": 141,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + lookup-augmented drafting, longer verification blocks + context lookup, prefix caching, quantized KV cache; ~82->114->138->381 tok/s progression, ~133 t/s chat",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107311304700576218",
+          "likes": 118,
+          "comments": 2,
+          "reshares": 12,
+          "views": 13463
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "60",
+          "hardware": "RTX 3090 24GB",
+          "quant": "Qwen 27B, 150k context, ~60 t/s; UD-Q4_K_XL quants, Strata offloading discussion",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/raminaol9ykas/status/2108108026204872900",
+          "likes": 170,
+          "comments": 9,
+          "reshares": 9,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "35",
+          "hardware": "RTX 3090 24GB + 50GB DDR4 + 100GB NVMe",
+          "quant": "EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/0xSero/status/2107737091199435072",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 804,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

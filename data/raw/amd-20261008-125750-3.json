@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-08T12:57:50Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Vulkan, Q4_K_M, MTP head N=5, 291W power cap; 129 t/s MTP off",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}
