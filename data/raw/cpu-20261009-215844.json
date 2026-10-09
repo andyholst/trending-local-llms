@@ -8,7 +8,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "1.5B",
-      "hf": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct",
+      "hf": "Qwen/Qwen2.5-1.5B-Instruct",
       "vram_tier": "8",
       "vram_min": "8GB RAM (no GPU)",
       "backends": [

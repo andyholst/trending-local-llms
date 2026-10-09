@@ -21,7 +21,7 @@
       "engines": [
         {
           "engine": "llama.cpp (LaurentZuijdwijk fork)",
-          "engine_repo": "https://github.com/LaurentZuijdwijk/llama.cpp",
+          "engine_repo": "https://github.com/HaddarD/llama.cpp",
           "tps": "65",
           "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
           "quant": "adaptive speculation (llama.cpp fork), decode t/s; 440 t/s prefill; up from 44 t/s on mainline",
