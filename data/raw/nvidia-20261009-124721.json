@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "160",
+          "hardware": "RTX 5090 32GB",
+          "quant": "Strata IQ3_S, up from 15 tok/s on llama.cpp",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2107293459556225446",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-06"
+    }
+  ],
+  "generated_utc": "2026-10-09T12:47:21Z"
+}

@@ -1,0 +1,158 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-09T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        },
+        {
+          "name": "MLX",
+          "hf": "Jundot/Qwen3.8-Flash-Next-oQ4e-mtp"
+        }
+      ],
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "128GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "decode; TensorFold 0.6.x, bf16, oQ4e MTP pack (drift caveat vs llama.cpp)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 11,
+          "comments": 1,
+          "reshares": 97,
+          "views": 11052
+        },
+        {
+          "engine": "oMLX",
+          "tps": "157.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "tuned oMLX 0.6.x, oQ4e MTP packs; holds 96.6 at 195k context",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 11,
+          "comments": 1,
+          "reshares": 97,
+          "views": 11052
+        },
+        {
+          "engine": "oMLX",
+          "tps": "102",
+          "hardware": "M3 Ultra 256GB",
+          "quant": "fused-kernel oMLX branch (spec-decode head), single stream",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 11,
+          "comments": 1,
+          "reshares": 97,
+          "views": 11052
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "90",
+          "hardware": "M5 Max 128GB",
+          "quant": "Sushi-4 hybrid pack",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 11,
+          "comments": 1,
+          "reshares": 97,
+          "views": 11052
+        },
+        {
+          "engine": "oMLX",
+          "tps": "83",
+          "hardware": "M4 Max 128GB",
+          "quant": "oMLX 0.6.4, MTP depth 6",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 11,
+          "comments": 1,
+          "reshares": 97,
+          "views": 11052
+        },
+        {
+          "engine": "MLX",
+          "tps": "101",
+          "hardware": "M5 Max 128GB",
+          "quant": "MTPLX-Optimized-Speed pack",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/jlucas/status/2108390255363592378",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 144,
+          "views": 0
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next on Apple Silicon: TensorFold 200.7 tok/s decode and tuned oMLX 157.7 on M5 Ultra 80-core 256GB; MLX MTPLX 101 on M5 Max 128GB.",
+      "last_seen": "2026-10-09",
+      "engagement": {
+        "likes": 11,
+        "comments": 1,
+        "reshares": 97,
+        "views": 11052
+      }
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "formats": [
+        {
+          "name": "GLM-5.3-Flash",
+          "hf": "zai-org/GLM-5.3-Flash"
+        },
+        {
+          "name": "MLX",
+          "hf": "TensorFold/Qwen3.8-Flash-Next-MLX-oQ4-MTP"
+        }
+      ],
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "114",
+          "hardware": "2x M5 Ultra 256GB (TP=2, 4x Thunderbolt 5)",
+          "quant": "4-bit oQ4e, tensor parallel across two M5 Ultras; ~1600 tok/s prefill, up to 200 tok/s at C=8",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/ashxhart/status/2107921303894151584",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 439,
+          "views": 0
+        }
+      ],
+      "why": "GLM-5.3-Flash 4-bit at 114 tok/s decode on dual M5 Ultras (TP=2 over Thunderbolt 5) with TensorFold.",
+      "last_seen": "2026-10-07",
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "reshares": 439,
+        "views": 0
+      }
+    }
+  ]
+}

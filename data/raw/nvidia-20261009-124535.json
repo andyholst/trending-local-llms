@@ -1,0 +1,66 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (LlamAmpere fork)",
+          "tps": "95",
+          "hardware": "RTX 3090 24GB",
+          "quant": "4.6 bpw, 262K context, over 100K tokens generated in one run",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/so_sthbryan/status/2108248560466800749",
+          "likes": 0,
+          "comments": 13,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-08"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "60",
+          "hardware": "RTX 3090 24GB",
+          "quant": "~150k context; UD-Q4_K_XL quants fit with 64GB system memory (Strata offloading discussion)",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/raminaol9ykas/status/2108108026204872900",
+          "likes": 219,
+          "comments": 0,
+          "reshares": 10,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-08"
+    }
+  ],
+  "generated_utc": "2026-10-09T12:45:35Z"
+}

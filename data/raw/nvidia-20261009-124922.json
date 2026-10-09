@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB",
+          "quant": "Unsloth IQ4_XS, 14.6GB on disk, 64K context, native MTP, 25 layers offloaded, ~150 tok/s prefill",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108017506484887639",
+          "likes": 9,
+          "comments": 1,
+          "reshares": 2,
+          "views": 1250,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-08"
+    }
+  ],
+  "generated_utc": "2026-10-09T12:49:22Z"
+}
