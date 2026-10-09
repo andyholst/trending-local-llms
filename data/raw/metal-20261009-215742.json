@@ -1,0 +1,67 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "Qwen3.8-Flash-Next decode, 471 tok/s prefill; independent M5 Ultra run (issue #22)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 97,
+          "comments": 11,
+          "reshares": 1,
+          "views": 11019
+        },
+        {
+          "engine": "oMLX",
+          "tps": "157.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "tuned oMLX, Qwen3.8-Flash-Next; holds 96.6 at 195k context",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 97,
+          "comments": 11,
+          "reshares": 1,
+          "views": 11019
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "90",
+          "hardware": "M5 Max 128GB",
+          "quant": "Qwen3.8-Flash-Next, Sushi-4 hybrid pack",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 97,
+          "comments": 11,
+          "reshares": 1,
+          "views": 11019
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "last_seen": "2026-10-09",
+      "engagement": {
+        "likes": 97,
+        "comments": 11,
+        "reshares": 1,
+        "views": 11019,
+        "interactions": 0
+      }
+    }
+  ],
+  "generated_utc": "2026-10-09T21:57:42Z"
+}

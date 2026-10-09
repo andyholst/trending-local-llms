@@ -1,0 +1,49 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "74",
+          "hardware": "M1 Max",
+          "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
+          "likes": 7,
+          "comments": 3,
+          "reshares": 2,
+          "views": 1028
+        }
+      ],
+      "why": "LittleBit Qwen3-4B in 4-bit MLX for Apple Silicon; ~74 tok/s on M1 Max.",
+      "last_seen": "2026-10-09",
+      "engagement": {
+        "likes": 7,
+        "comments": 3,
+        "reshares": 2,
+        "views": 1028,
+        "interactions": 0
+      }
+    }
+  ],
+  "generated_utc": "2026-10-09T21:57:45Z"
+}
