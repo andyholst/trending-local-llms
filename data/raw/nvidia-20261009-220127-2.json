@@ -1,0 +1,35 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary 5.95GB weights, MTP spec decode, 125K context; ~50 tok/s fresh, ~22 tok/s avg over 5h agent build",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108401318540779749",
+          "likes": 12,
+          "comments": 3,
+          "reshares": 3,
+          "views": 4188
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ],
+  "generated_utc": "2026-10-09T22:01:27Z"
+}

@@ -303,6 +303,11 @@
         "speculative-decoding",
         "turboquant"
       ]
+    },
+    "haddard/llama.cpp": {
+      "full_name": "HaddarD/llama.cpp",
+      "description": "llama.cpp \u2013 Adaptive Speculation + Fastest Vulkan on AMD Strix Halo",
+      "topics": []
     }
   }
 }

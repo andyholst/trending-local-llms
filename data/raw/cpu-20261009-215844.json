@@ -1,0 +1,51 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen2.5-1.5b-instruct",
+      "name": "Qwen2.5-1.5B-Instruct",
+      "full_name": "Qwen2.5-1.5B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "1.5B",
+      "hf": "Qwen/Qwen2.5-1.5B-Instruct",
+      "vram_tier": "8",
+      "vram_min": "8GB RAM (no GPU)",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "49",
+          "hardware": "CPU-only, no GPU (8GB RAM, min config)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Excavationpro/status/2108645459359420426",
+          "likes": 0,
+          "comments": 4,
+          "reshares": 0,
+          "views": 24
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "49",
+          "hardware": "CPU-only, no GPU (8GB RAM, min config)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Excavationpro/status/2108491882351485187",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "why": "Runs CPU-only at ~49 tok/s via llama.cpp in the LYGO local agent console (no GPU required); ~1GB model.",
+      "engagement": {
+        "likes": 0,
+        "comments": 4,
+        "views": 24
+      }
+    }
+  ],
+  "generated_utc": "2026-10-09T21:58:44Z"
+}

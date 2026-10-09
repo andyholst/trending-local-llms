@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-09T22:45:11Z",
+  "generated_utc": "2026-10-09T22:03:56Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -80,8 +80,8 @@
     },
     "llama.cpp (LaurentZuijdwijk fork)": {
       "backend": "ROCm",
-      "url": "https://github.com/HaddarD/llama.cpp",
-      "note": "Auto-registered from https://lightbrd.com/laurent_zw/status/2092215141144162519 — llama.cpp with adaptive speculative decoding (--spec-draft-adaptive) and a Vulkan backend tuned for AMD Strix Halo. 4.7x. Original repo LaurentZuijdwijk/llama.cpp was deleted; code preserved as a fork at HaddarD/llama.cpp (parent: LaurentZuijdwijk/llama.cpp).",
+      "url": "https://github.com/LaurentZuijdwijk/llama.cpp",
+      "note": "Auto-registered from https://lightbrd.com/laurent_zw/status/2092215141144162519 — llama.cpp with adaptive speculative decoding (--spec-draft-adaptive) and a Vulkan backend tuned for AMD Strix Halo. 4.7x",
       "auto": true
     },
     "mlx-serve": {
@@ -2231,7 +2231,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "1.5B",
-      "hf": "Qwen/Qwen2.5-1.5B-Instruct",
+      "hf": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct",
       "vram_tier": "8",
       "vram_min": "8GB RAM (no GPU)",
       "backends": [
@@ -2296,7 +2296,7 @@
       "formats": [
         {
           "name": "Qwen2.5-1.5B-Instruct",
-          "hf": "Qwen/Qwen2.5-1.5B-Instruct"
+          "hf": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct"
         }
       ]
     },

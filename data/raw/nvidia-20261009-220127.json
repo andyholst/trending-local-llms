@@ -1,0 +1,64 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 spec decode + context lookup, longer verification (16 positions), prefix caching, quantized KV cache; ~260 t/s DFlash2 alone, ~382 t/s longer verification + context lookup, ~133 t/s general chat, acceptance ~15/16",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108399085514371078",
+          "likes": 670,
+          "comments": 2,
+          "reshares": 3,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-09"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "RTX 3090 24GB + 64GB RAM",
+          "quant": "GSQ-RSO IQ3_S vs IQ3_XXS; ~100-140 t/s (est, Strata docs for RTX 3090 24GB), MoE experts across GPU/RAM/SSD",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ],
+  "generated_utc": "2026-10-09T22:01:27Z"
+}
