@@ -8,7 +8,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 Ties go to more posts, then the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
-> Last generated: 2026-10-10 12:11 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-10-10 12:43 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
@@ -47,7 +47,7 @@ Best measured t/s per backend; the full list of measurements is in the backend t
 
 Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU · 🟪 ROCm). Only engines with at least one measurement are shown.
 
-| Model | [llama.cpp](https://github.com/ggml-org/llama.cpp) | [TensorFold](https://github.com/ashhart/TensorFold) | [MLX](https://github.com/ml-explore/mlx) | [mlx-serve](https://github.com/ddalcu/mlx-serve) | [Ollama](https://github.com/ollama/ollama) | [FreeToken](https://github.com/FlashML-org/FreeToken) | [oMLX](https://github.com/jundot/omlx) | [vLLM](https://github.com/vllm-project/vllm) | [DFlash2](https://github.com/z-lab/dflash) | [ExLlamaV3](https://github.com/turboderp-org/exllamav3) | [ExLlamaV3 (ROCm fork)](https://github.com/CarouselAether/rocm_exl3) | glm-flash-lite | [LiteRT](https://github.com/google-ai-edge/LiteRT) | [llama.cpp (LaurentZuijdwijk fork)](https://github.com/HaddarD/llama.cpp) | [llama.cpp (LlamAmpere fork)](https://github.com/JakeATX/llamAmpere) | [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | [MegaCapybara](https://github.com/perkel666/MegaCapybara) | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | [omlx-exl3](https://github.com/daig/omlx-exl3) | [SGLang](https://github.com/sgl-project/sglang) | [Strata](https://github.com/Niko1221/Strata) |
+| Model | [llama.cpp](https://github.com/ggml-org/llama.cpp) | [TensorFold](https://github.com/ashhart/TensorFold) | [MLX](https://github.com/ml-explore/mlx) | [mlx-serve](https://github.com/ddalcu/mlx-serve) | [Ollama](https://github.com/ollama/ollama) | [FreeToken](https://github.com/FlashML-org/FreeToken) | [oMLX](https://github.com/jundot/omlx) | [vLLM](https://github.com/vllm-project/vllm) | [DFlash2](https://github.com/z-lab/dflash) | [ExLlamaV3](https://github.com/turboderp-org/exllamav3) | [ExLlamaV3 (ROCm fork)](https://github.com/CarouselAether/rocm_exl3) | [glm-flash-lite](https://github.com/sybil-solutions/glm-flash-lite) | [LiteRT](https://github.com/google-ai-edge/LiteRT) | [llama.cpp (LaurentZuijdwijk fork)](https://github.com/HaddarD/llama.cpp) | [llama.cpp (LlamAmpere fork)](https://github.com/JakeATX/llamAmpere) | [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | [MegaCapybara](https://github.com/perkel666/MegaCapybara) | [MLX-fast (Bonsai 2)](https://github.com/Layr-Labs/mlxfast-bonsai2-27b-engine) | [omlx-exl3](https://github.com/daig/omlx-exl3) | [SGLang](https://github.com/sgl-project/sglang) | [Strata](https://github.com/Niko1221/Strata) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | **Qwen3.8-Flash-Next 125B** | 🟦 33.7 | 🟩 200.7 | — | 🟩 90 | — | — | 🟩 157.7 | — | — | — | 🟪 34.7 | — | — | — | — | — | — | — | — | — | 🟦 140<br>🟪 60 |
 | **Qwen3.8-27B** | 🟦 108.3<br>🟪 51.8 | 🟩 189 | 🟩 80 | 🟩 146 | — | — | 🟩 146 | 🟦 300 | 🟦 382 | — | — | — | — | 🟪 65 | 🟦 95 | — | 🟦 500 | — | 🟩 78 | 🟦 44 | — |
@@ -87,7 +87,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 | [**Qwen3 14B**](https://huggingface.co/Qwen/Qwen3-14B) | 14B | Apache 2.0 | 9GB | 65 | [Ollama](https://github.com/ollama/ollama) **65** · RTX 3090 · Q4_K_M · 2026-09-15 |
 | [**Qwen3.6-35B-A3B**](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) | 35B (MoE, 3B active) | Apache 2.0 | 8GB | 39.3 | [FreeToken](https://github.com/FlashML-org/FreeToken) **39.3** · 8GB GPU · MoE, experts in system RAM + GPU cache · 2026-09-27 |
 | [**Qwen 3.6 27B**](https://huggingface.co/Qwen/Qwen3.6-27B) | 27B | Apache 2.0 | 18GB | 37 | [llama.cpp](https://github.com/ggml-org/llama.cpp) **37** · RTX 3090 · Q4_K_M · 2026-09-10 |
-| [**GLM-5.3-Flash**](https://huggingface.co/zai-org/GLM-5.3-Flash) | 320B (18B active) | MIT | 24GB | 35 | [ExLlamaV3](https://github.com/turboderp-org/exllamav3) **35** · RTX 3090 24GB + 50GB DDR4 + 100GB NVMe · EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s · 2026-10-07<br>glm-flash-lite **20** · RTX 3090 · MoE offload (GPU+RAM+SSD) · 2026-10-10<br>[FreeToken](https://github.com/FlashML-org/FreeToken) **20** · RTX 6000 Pro · MoE offload, PCIe 3.0 · 2026-10-04 |
+| [**GLM-5.3-Flash**](https://huggingface.co/zai-org/GLM-5.3-Flash) | 320B (18B active) | MIT | 24GB | 35 | [ExLlamaV3](https://github.com/turboderp-org/exllamav3) **35** · RTX 3090 24GB + 50GB DDR4 + 100GB NVMe · EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s · 2026-10-07<br>[glm-flash-lite](https://github.com/sybil-solutions/glm-flash-lite) **20** · RTX 3090 · MoE offload (GPU+RAM+SSD) · 2026-10-10<br>[FreeToken](https://github.com/FlashML-org/FreeToken) **20** · RTX 6000 Pro · MoE offload, PCIe 3.0 · 2026-10-04 |
 
 ---
 
@@ -167,6 +167,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 | [MegaCapybara](https://github.com/perkel666/MegaCapybara) | CUDA | 1 | Auto-registered from https://lightbrd.com/BIGBULLapp/status/2106760778229420383 — The fastest inference engine for Qwen3.8-27B on the NVIDIA RTX 5090: up to 500 tokens/s for one agent and up to 2,000 to |
 | [omlx-exl3](https://github.com/daig/omlx-exl3) | Metal | 1 | Auto-registered from https://lightbrd.com/fluxlesss/status/2108133917706575880 — EXL3 (ExLlamaV3) quantized models on Apple Silicon with oMLX: Metal kernels; Qwen3.8-27B at MLX 8-bit quality in 6 bits, |
 | [llama.cpp (LlamAmpere fork)](https://github.com/JakeATX/llamAmpere) | CUDA | 1 | Auto-registered from https://lightbrd.com/so_sthbryan/status/2108248560466800749 — llama.cpp fork for significantly improved performance on Ampere (especially RTX 3090 / 3090 Ti): example: 95+ tok/s over |
+| [glm-flash-lite](https://github.com/sybil-solutions/glm-flash-lite) | CUDA | 1 | Auto-registered from https://lightbrd.com/Ferm0s/status/2108789403325714735 — GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API |
 
 **Quick picks:** Ollama (just works) · llama.cpp (gaming laptop, max speed) · FreeToken (big MoE on small GPU) · MLX + TensorFold + MLX-fast (Mac) · Strata (125B MoE on 12–24 GB) · vLLM + DFlash2 (spec decode) · llama.cpp Vulkan / ROCm (AMD Radeon) · llama.cpp CPU (tiny/edge).
 

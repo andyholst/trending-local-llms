@@ -308,6 +308,11 @@
       "full_name": "HaddarD/llama.cpp",
       "description": "llama.cpp \u2013 Adaptive Speculation + Fastest Vulkan on AMD Strix Halo",
       "topics": []
+    },
+    "sybil-solutions/glm-flash-lite": {
+      "full_name": "sybil-solutions/glm-flash-lite",
+      "description": "GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API",
+      "topics": []
     }
   }
 }
