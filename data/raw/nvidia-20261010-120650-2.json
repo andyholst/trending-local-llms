@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-10T12:06:50Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "80",
+          "hardware": "RTX 3090",
+          "quant": "ternary 1.76bpw, 262K context",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/jstnimo/status/2108824415026700559",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 11,
+          "interactions": 11
+        }
+      ],
+      "last_seen": "2026-10-10"
+    }
+  ]
+}

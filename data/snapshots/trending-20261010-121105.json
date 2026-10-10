@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-10T12:43:38Z",
+  "generated_utc": "2026-10-10T12:10:54Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -118,12 +118,6 @@
       "backend": "CUDA",
       "url": "https://github.com/JakeATX/llamAmpere",
       "note": "Auto-registered from https://lightbrd.com/so_sthbryan/status/2108248560466800749 — llama.cpp fork for significantly improved performance on Ampere (especially RTX 3090 / 3090 Ti): example: 95+ tok/s over",
-      "auto": true
-    },
-    "glm-flash-lite": {
-      "backend": "CUDA",
-      "url": "https://github.com/sybil-solutions/glm-flash-lite",
-      "note": "Auto-registered from https://lightbrd.com/Ferm0s/status/2108789403325714735 — GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API",
       "auto": true
     }
   },

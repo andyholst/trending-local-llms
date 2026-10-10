@@ -1,0 +1,136 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-10T12:06:38Z",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "glm-flash-lite",
+          "tps": "20",
+          "hardware": "RTX 3090",
+          "quant": "MoE offload (GPU+RAM+SSD)",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 3,
+          "views": 294,
+          "interactions": 304,
+          "engine_repo": "https://github.com/sybil-solutions/glm-flash-lite"
+        }
+      ],
+      "last_seen": "2026-10-10"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "4-bit, context-lookup + 16-token verification",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108729001762079052",
+          "likes": 20,
+          "comments": 4,
+          "reshares": 4,
+          "views": 3322,
+          "interactions": 3350
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "RTX 3090 24GB",
+          "quant": "4-bit, ordinary chat",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108729001762079052",
+          "likes": 20,
+          "comments": 4,
+          "reshares": 4,
+          "views": 3322,
+          "interactions": 3350
+        },
+        {
+          "engine": "llama.cpp (LlamAmpere fork)",
+          "tps": "95",
+          "hardware": "RTX 3090",
+          "quant": "4.6 bpw, 262K context",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/so_sthbryan/status/2108248560466800749",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 18,
+          "interactions": 18
+        }
+      ],
+      "last_seen": "2026-10-10"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "RTX 3090 24GB",
+          "quant": "IQ3_S (est)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996",
+          "likes": 244,
+          "comments": 26,
+          "reshares": 36,
+          "views": 16360,
+          "interactions": 16666
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090",
+          "quant": "GSQ-RCO",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 104,
+          "interactions": 104
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ]
+}

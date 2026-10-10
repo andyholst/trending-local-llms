@@ -1,0 +1,92 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-10T12:06:43Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2x RTX 4090",
+          "quant": "INT8-W8A16-MTP, 128K ctx, 8 concurrent",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "58",
+          "hardware": "RTX 3090",
+          "quant": "MTP spec-decode, fine-tuned Qwen3.8-27B",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/GlobalFeedAI/status/2107855355136876823",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 2,
+          "views": 112,
+          "interactions": 115
+        }
+      ],
+      "last_seen": "2026-10-10"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "124",
+          "hardware": "RTX 4090",
+          "quant": "GSQ-RCO, 128GB RAM",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+          "likes": 244,
+          "comments": 26,
+          "reshares": 36,
+          "views": 16360,
+          "interactions": 16666
+        },
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090",
+          "quant": "GSQ-RCO",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/techwithjoe_io/status/2107112525179326633",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 103,
+          "interactions": 103
+        }
+      ],
+      "last_seen": "2026-10-05"
+    }
+  ]
+}
