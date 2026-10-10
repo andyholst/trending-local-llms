@@ -1,0 +1,91 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-10T12:09:23Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "Qwen3.8-Flash-Next decode, 471 tok/s prefill; independent M5 Ultra run (issue #22)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 97,
+          "comments": 11,
+          "reshares": 1,
+          "views": 11019
+        },
+        {
+          "engine": "oMLX",
+          "tps": "157.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "tuned oMLX, Qwen3.8-Flash-Next; holds 96.6 at 195k context",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 97,
+          "comments": 11,
+          "reshares": 1,
+          "views": 11019
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "90",
+          "hardware": "M5 Max 128GB",
+          "quant": "Qwen3.8-Flash-Next, Sushi-4 hybrid pack",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 97,
+          "comments": 11,
+          "reshares": 1,
+          "views": 11019
+        }
+      ]
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "27.8",
+          "hardware": "Mac Studio (Apple Silicon)",
+          "quant": "Rapid-MLX spec-decode profile, 4x Apple MLX on same chip",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 1079
+        }
+      ]
+    }
+  ]
+}

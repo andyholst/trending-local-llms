@@ -1,0 +1,49 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-10T12:06:50Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "96",
+          "hardware": "RTX 5090",
+          "quant": "UD-IQ3_XXS, 11.1GB",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108732175809962430",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "110",
+          "hardware": "2x RTX 5090",
+          "quant": "long context",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/NicW_AI/status/2107444282395115718",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 4,
+          "views": 2923,
+          "interactions": 2928
+        }
+      ],
+      "last_seen": "2026-10-10"
+    }
+  ]
+}

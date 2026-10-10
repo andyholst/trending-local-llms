@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-10T12:06:55Z",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "20",
+          "hardware": "RTX 6000 Pro",
+          "quant": "MoE offload, PCIe 3.0",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
+          "likes": 50,
+          "comments": 3,
+          "reshares": 3,
+          "views": 12819,
+          "interactions": 12875
+        }
+      ],
+      "last_seen": "2026-10-04"
+    }
+  ]
+}

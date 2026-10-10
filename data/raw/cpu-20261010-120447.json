@@ -1,0 +1,64 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "kolibri-1",
+      "name": "Kolibri-1",
+      "full_name": "Aleph-Alpha/Kolibri-1",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "78B (MoE, 3.46B active)",
+      "hf": "Aleph-Alpha/Kolibri-1",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "Ryzen 7 7800X3D (CPU-only), 128GB RAM",
+          "quant": "Q4_K_M, community GGUF conversion, patched llama.cpp build; 12-15 t/s reported across five CPU-only tests",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2107652135479332932",
+          "likes": 1649,
+          "comments": 5,
+          "reshares": 21,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-07"
+    },
+    {
+      "id": "qwen2.5-1.5b-instruct",
+      "name": "Qwen2.5-1.5B Instruct",
+      "full_name": "Qwen2.5-1.5B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "1.5B",
+      "hf": "Qwen/Qwen2.5-1.5B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "49",
+          "hardware": "CPU (no GPU), 8GB RAM",
+          "quant": "Qwen2.5-1.5B Instruct ~1GB, fully offline; ~49 tok/s with GPU off",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Excavationpro/status/2108645459359420426",
+          "likes": 65,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ],
+  "generated_utc": "2026-10-10T12:04:47Z"
+}
