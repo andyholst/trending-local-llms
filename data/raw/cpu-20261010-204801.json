@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-10T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen2.5-1.5b-instruct",
+      "name": "Qwen2.5-1.5B-Instruct",
+      "full_name": "Qwen2.5-1.5B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "1.5B",
+      "formats": [
+        {
+          "name": "Qwen2.5-1.5B-Instruct",
+          "hf": "Qwen/Qwen2.5-1.5B-Instruct"
+        }
+      ],
+      "hf": "Qwen/Qwen2.5-1.5B-Instruct",
+      "vram_tier": "8",
+      "vram_min": "8GB RAM (no GPU)",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "49",
+          "hardware": "CPU (no GPU), 8GB RAM",
+          "quant": "Qwen2.5-1.5B Instruct ~1GB, fully offline, ~49 tok/s with GPU off",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Excavationpro/status/2108645459359420426",
+          "likes": 65,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ]
+}
