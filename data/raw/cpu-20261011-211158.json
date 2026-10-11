@@ -1,0 +1,66 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU)",
+          "quant": "1432 MB peak RAM",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 2,
+          "views": 538,
+          "interactions": 541
+        }
+      ],
+      "last_seen": "2026-09-05"
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek R1 1.5B",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B 2GB (CPU)",
+          "quant": "quantized",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 47,
+          "comments": 5,
+          "reshares": 7,
+          "views": 5484,
+          "interactions": 5543
+        }
+      ],
+      "last_seen": "2026-06-25"
+    }
+  ],
+  "generated_utc": "2026-10-11T21:11:58Z"
+}

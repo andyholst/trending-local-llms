@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-11T12:28:27Z",
+  "generated_utc": "2026-10-11T21:15:55Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -1003,6 +1003,32 @@
           "interactions": 16666
         },
         {
+          "engine": "MLX",
+          "tps": "101",
+          "hardware": "M5 Max 128GB",
+          "quant": "MTPLX (MLX with MTP multi-token prediction) optimized",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/jlucas/status/2108390255363592378",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 199,
+          "interactions": 200
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "300",
+          "hardware": "M5 Max 128GB",
+          "quant": "mlx-serve, Qwen3.8-Flash-Next",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/thelogicalgate/status/2108375251637981693",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 218,
+          "interactions": 220
+        },
+        {
           "engine": "mlx-serve",
           "tps": "83",
           "hardware": "M4 Max",
@@ -1238,7 +1264,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 15,
+        "last_7d_likes": 17,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
@@ -1501,13 +1527,37 @@
             "comments": 0,
             "reshares": 0,
             "views": 103
+          },
+          {
+            "url": "https://lightbrd.com/jlucas/status/2108390255363592378",
+            "date": "2026-10-09",
+            "engine": "MLX",
+            "tps": "101",
+            "hardware": "M5 Max 128GB",
+            "quant": "MTPLX (MLX with MTP multi-token prediction) optimized",
+            "likes": 0,
+            "comments": 1,
+            "reshares": 0,
+            "views": 199
+          },
+          {
+            "url": "https://lightbrd.com/thelogicalgate/status/2108375251637981693",
+            "date": "2026-10-09",
+            "engine": "mlx-serve",
+            "tps": "300",
+            "hardware": "M5 Max 128GB",
+            "quant": "mlx-serve, Qwen3.8-Flash-Next",
+            "likes": 0,
+            "comments": 2,
+            "reshares": 0,
+            "views": 218
           }
         ],
-        "posts_7d": 15,
-        "score_7d": 70.2,
-        "buzz_7d": 70.2,
-        "speed_bonus": 4.4,
-        "trend_score": 74.6
+        "posts_7d": 17,
+        "score_7d": 75.3,
+        "buzz_7d": 75.3,
+        "speed_bonus": 5.0,
+        "trend_score": 80.3
       }
     },
     {
@@ -3197,11 +3247,11 @@
           "quant": "1432 MB peak RAM",
           "date": "2026-09-05",
           "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
-          "likes": 1,
-          "comments": 2,
-          "reshares": 0,
-          "views": 528,
-          "interactions": 531
+          "likes": 0,
+          "comments": 1,
+          "reshares": 2,
+          "views": 538,
+          "interactions": 541
         }
       ],
       "why": "Google's compact Gemma 4 edge model runs on-device via LiteRT on a Raspberry Pi 5: 99 tok/s prefill and 9 tok/s decode at 1432 MB peak RAM, fully offline.",
@@ -3249,11 +3299,11 @@
           "quant": "quantized",
           "date": "2026-06-25",
           "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
+          "likes": 47,
+          "comments": 5,
+          "reshares": 7,
+          "views": 5484,
+          "interactions": 5543
         }
       ],
       "why": "DeepSeek R1 1.5B served fully offline by Ollama on a 7-year-old Raspberry Pi 4B at 4 tok/s under 5 W, no network or API needed.",

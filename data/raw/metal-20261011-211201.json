@@ -1,0 +1,51 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "101",
+          "hardware": "M5 Max 128GB",
+          "quant": "MTPLX (MLX with MTP multi-token prediction) optimized",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/jlucas/status/2108390255363592378",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 199,
+          "interactions": 200
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "300",
+          "hardware": "M5 Max 128GB",
+          "quant": "mlx-serve, Qwen3.8-Flash-Next",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/thelogicalgate/status/2108375251637981693",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 218,
+          "interactions": 220
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ],
+  "generated_utc": "2026-10-11T21:12:01Z"
+}
