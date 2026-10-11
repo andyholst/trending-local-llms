@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-10T20:50:31Z",
+  "generated_utc": "2026-10-11T12:28:27Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -128,583 +128,6 @@
     }
   },
   "models": [
-    {
-      "id": "qwen3.8-flash-next-125b",
-      "name": "Qwen3.8-Flash-Next 125B",
-      "full_name": "Qwen3.8-Flash-Next-125B",
-      "type": "LLM (MoE)",
-      "license": "Apache 2.0",
-      "params": "125B (MoE)",
-      "hf": "Qwen/Qwen3.8-Flash-Next",
-      "vram_tier": "12GB",
-      "vram_min": "12GB",
-      "backends": [
-        "CUDA",
-        "ROCm",
-        "Metal"
-      ],
-      "last_seen": "2026-10-09",
-      "engines": [
-        {
-          "engine": "TensorFold",
-          "tps": "200.7",
-          "hardware": "M5 Ultra 80-core 256GB",
-          "quant": "decode, tuned build (independent issue #22 run); post notes fast decode / slow prefill",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
-          "likes": 130,
-          "comments": 16,
-          "reshares": 2,
-          "views": 16699,
-          "interactions": 0
-        },
-        {
-          "engine": "oMLX",
-          "tps": "157.7",
-          "hardware": "M5 Ultra 80-core 256GB",
-          "quant": "tuned oMLX; also 83 tok/s on M4 Max 128GB (oMLX 0.6.4, MTP depth 6)",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
-          "likes": 130,
-          "comments": 16,
-          "reshares": 2,
-          "views": 16699,
-          "interactions": 0
-        },
-        {
-          "engine": "mlx-serve",
-          "tps": "90",
-          "hardware": "M5 Max 128GB",
-          "quant": "Sushi-4 hybrid pack, best public recipe",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
-          "likes": 130,
-          "comments": 16,
-          "reshares": 2,
-          "views": 16699,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "140",
-          "hardware": "RTX 3090 24GB",
-          "quant": "IQ3_S (est)",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996",
-          "likes": 244,
-          "comments": 26,
-          "reshares": 36,
-          "views": 16360,
-          "interactions": 16666
-        },
-        {
-          "engine": "mlx-serve",
-          "tps": "83",
-          "hardware": "M4 Max",
-          "quant": "MLX-Serve 26.9.5 Qwen3.8-Flash-Next decode",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
-          "likes": 2,
-          "comments": 2,
-          "reshares": 3,
-          "views": 755,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "58",
-          "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
-          "quant": "ROCm, experimental Strata Strix Halo support; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context, 1M ctx (generation)",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
-          "likes": 255,
-          "comments": 8,
-          "reshares": 17,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "TensorFold",
-          "tps": "112.3",
-          "hardware": "Apple Silicon",
-          "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
-          "likes": 1,
-          "comments": 4,
-          "reshares": 1969,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "70",
-          "hardware": "RTX 3090",
-          "quant": "GSQ-RCO",
-          "date": "2026-10-06",
-          "source_post": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 104,
-          "interactions": 104
-        },
-        {
-          "engine": "Strata",
-          "tps": "94",
-          "hardware": "RTX 5070 12GB",
-          "quant": "Q20 (2-bit-class), MoE experts across GPU/RAM/SSD, 64GB RAM",
-          "date": "2026-10-05",
-          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
-          "likes": 146,
-          "comments": 14,
-          "reshares": 19,
-          "views": 8211,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "124",
-          "hardware": "RTX 4090",
-          "quant": "GSQ-RCO, 128GB RAM",
-          "date": "2026-10-05",
-          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
-          "likes": 244,
-          "comments": 26,
-          "reshares": 36,
-          "views": 16360,
-          "interactions": 16666
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "33.7",
-          "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
-          "quant": "UD-Q2_K_XL, 65K ctx",
-          "date": "2026-10-05",
-          "source_post": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
-          "likes": 3,
-          "comments": 1,
-          "reshares": 0,
-          "views": 81,
-          "interactions": 85
-        },
-        {
-          "engine": "Strata",
-          "tps": "60",
-          "hardware": "RX 9070 XT 16GB",
-          "quant": "ROCm",
-          "date": "2026-10-04",
-          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
-          "likes": 875,
-          "comments": 52,
-          "reshares": 63,
-          "views": 120482,
-          "interactions": 0
-        },
-        {
-          "engine": "ExLlamaV3 (ROCm fork)",
-          "tps": "34.7",
-          "hardware": "32GB Radeon",
-          "quant": "EXL3 5.05 bpw, Q8 KV cache, ROCm; 112 experts/layer GPU + 400 CPU/RAM + ~102GB BF16 n-gram from NVMe, ~230K ctx (decode); ~863 t/s prefill",
-          "date": "2026-10-04",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
-          "likes": 7,
-          "comments": 2,
-          "reshares": 2,
-          "views": 1575,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "40",
-          "hardware": "Strix Halo (Ryzen AI Max APU)",
-          "quant": "ROCm",
-          "date": "2026-10-04",
-          "source_post": "https://lightbrd.com/basel_by/status/2106492205313478868",
-          "likes": 146,
-          "comments": 2,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "100",
-          "hardware": "RTX 4090 24GB",
-          "quant": "claimed 100 tok/s on consumer GPU",
-          "date": "2026-10-04",
-          "source_post": "https://lightbrd.com/yama_boku/status/2106890650969055716",
-          "likes": 0,
-          "comments": 55,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "21",
-          "hardware": "RTX 4090 24GB",
-          "quant": "UD-Q4_K_XL (111 GB across 4 GGUF shards), MoE experts offloaded to 110 GB DDR4 system RAM, 250K ctx, no MTP/DFlash, -b 4096 -ub 4096; ~20.97 t/s decode @ 250K, ~364 t/s prefill",
-          "date": "2026-10-03",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
-          "likes": 0,
-          "comments": 3,
-          "reshares": 12,
-          "views": 1889,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "110",
-          "hardware": "RTX 3090 / RTX 4090 / RTX 5090",
-          "quant": "70-100 t/s decode, ~1500 t/s prefill (coldniko's established figures)",
-          "date": "2026-10-03",
-          "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101",
-          "likes": 88,
-          "comments": 2,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "TensorFold",
-          "tps": "80",
-          "hardware": "M3 Ultra",
-          "quant": "oQ8 + MTP spec decode, generation t/s",
-          "date": "2026-10-03",
-          "source_post": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468",
-          "likes": 99,
-          "comments": 18,
-          "reshares": 4,
-          "views": 9992,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "60",
-          "hardware": "RX 7900 XTX 24GB",
-          "quant": "ROCm, sustained 52-60 output t/s (generation); prompt processing 1250 t/s",
-          "date": "2026-09-29",
-          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
-          "likes": 512,
-          "comments": 43,
-          "reshares": 58,
-          "views": 40287,
-          "interactions": 0
-        },
-        {
-          "engine": "Strata",
-          "tps": "40",
-          "hardware": "RX 7900 XT 20GB + 80GB DDR4 (WSL2)",
-          "quant": "ROCm, MoE experts across GPU/RAM; ~30-40 t/s",
-          "date": "2026-09-29",
-          "source_post": "https://lightbrd.com/smogporter/status/2105055489209868522",
-          "likes": 4,
-          "comments": 2,
-          "reshares": 1,
-          "views": 495,
-          "interactions": 0
-        },
-        {
-          "engine": "TensorFold",
-          "tps": "92",
-          "hardware": "Apple Silicon",
-          "quant": "MLX 4-bit",
-          "date": "2026-09-27",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "Strata"
-      ],
-      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
-      "formats": [
-        {
-          "name": "Qwen3.8-Flash-Next 125B",
-          "hf": "Qwen/Qwen3.8-Flash-Next"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 19,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
-            "date": "2026-10-01",
-            "engine": "Strata",
-            "tps": "93",
-            "likes": 2,
-            "comments": 0,
-            "reshares": 0,
-            "views": 188
-          },
-          {
-            "url": "https://lightbrd.com/coldniko/status/2104992294893936665",
-            "date": "2026-10-05",
-            "engine": "Strata",
-            "tps": "60",
-            "hardware": "RX 7900 XTX 24GB",
-            "quant": "ROCm",
-            "likes": 507,
-            "comments": 43,
-            "reshares": 59,
-            "views": 39532
-          },
-          {
-            "url": "https://lightbrd.com/smogporter/status/2105055489209868522",
-            "date": "2026-09-29",
-            "engine": "Strata",
-            "tps": "40",
-            "hardware": "RX 7900 XT 20GB + 80GB DDR4 (WSL2)",
-            "quant": "ROCm, MoE experts across GPU/RAM; ~30-40 t/s",
-            "likes": 4,
-            "comments": 2,
-            "reshares": 1,
-            "views": 495
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
-            "date": "2026-10-04",
-            "engine": "ExLlamaV3 (ROCm fork)",
-            "tps": "34.7",
-            "hardware": "32GB Radeon",
-            "quant": "EXL3 5.05 bpw, Q8 KV, ROCm",
-            "likes": 7,
-            "comments": 2,
-            "reshares": 2,
-            "views": 1575
-          },
-          {
-            "url": "https://lightbrd.com/basel_by/status/2106492205313478868",
-            "date": "2026-10-04",
-            "engine": "Strata",
-            "tps": "40",
-            "hardware": "Strix Halo (Ryzen AI Max APU)",
-            "quant": "ROCm",
-            "likes": 146,
-            "comments": 2,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
-            "date": "2026-09-27",
-            "engine": "TensorFold",
-            "tps": "88-92",
-            "hardware": "Apple Silicon",
-            "quant": "MLX 4-bit",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
-            "date": "2026-10-05",
-            "engine": "Strata",
-            "tps": "60",
-            "hardware": "RX 9070 XT 16GB",
-            "quant": "ROCm",
-            "likes": 299,
-            "comments": 10,
-            "reshares": 27,
-            "views": 57144
-          },
-          {
-            "url": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
-            "date": "2026-10-05",
-            "engine": "Strata",
-            "tps": "60",
-            "hardware": "RX 9070 XT 16GB",
-            "quant": "ROCm",
-            "likes": 244,
-            "comments": 26,
-            "reshares": 37,
-            "views": 15966
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
-            "date": "2026-10-03",
-            "engine": "llama.cpp",
-            "tps": "21",
-            "hardware": "RTX 4090 24GB",
-            "quant": "UD-Q4_K_XL (111 GB across 4 GGUF shards), MoE experts offloaded to 110 GB DDR4 system RAM, 250K ctx, no MTP/DFlash, -b 4096 -ub 4096; ~20.97 t/s decode @ 250K, ~364 t/s prefill",
-            "likes": 0,
-            "comments": 3,
-            "reshares": 12,
-            "views": 1889
-          },
-          {
-            "url": "https://lightbrd.com/FatimaYappin/status/2106898318848643105",
-            "date": "2026-10-05",
-            "engine": "Strata",
-            "tps": "110",
-            "hardware": "2x RTX 3090 + 96GB DDR5",
-            "quant": "MoE experts across GPU/RAM; 80-110 t/s (2x 3090), single 3090 + 128GB DDR5 dips to 60-90 t/s IQ2XS",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101",
-            "date": "2026-10-03",
-            "engine": "Strata",
-            "tps": "100",
-            "hardware": "RTX 3090 / RTX 4090 / RTX 5090",
-            "quant": "70-100 t/s decode, ~1500 t/s prefill (coldniko's established figures)",
-            "likes": 88,
-            "comments": 2,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
-            "date": "2026-10-06",
-            "engine": "Strata",
-            "tps": "94",
-            "hardware": "RTX 5070 / RTX 3090",
-            "quant": "GSQ-RCO ~3.5 bits/weight, MoE experts across GPU/RAM; 50-94 t/s on 12GB VRAM, 55-70 t/s RTX 3090, up to 94 t/s RTX 5070",
-            "likes": 50,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
-            "date": "2026-10-07",
-            "engine": "mlx-serve",
-            "tps": "83",
-            "hardware": "M4 Max",
-            "quant": "MLX-Serve 26.9.5 Qwen3.8-Flash-Next decode",
-            "likes": 2,
-            "comments": 2,
-            "reshares": 3,
-            "views": 755
-          },
-          {
-            "url": "https://lightbrd.com/yama_boku/status/2106890650969055716",
-            "date": "2026-10-04",
-            "engine": "Strata",
-            "tps": "100",
-            "hardware": "RTX 4090 24GB",
-            "quant": "claimed 100 tok/s on consumer GPU",
-            "likes": 0,
-            "comments": 55,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
-            "date": "2026-10-05",
-            "engine": "llama.cpp",
-            "tps": "33.7",
-            "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
-            "quant": "UD-Q2_K_XL, 65K ctx",
-            "likes": 3,
-            "comments": 1,
-            "reshares": 0,
-            "views": 81
-          },
-          {
-            "url": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468",
-            "date": "2026-10-03",
-            "engine": "TensorFold",
-            "tps": "80",
-            "hardware": "M3 Ultra",
-            "quant": "oQ8 + MTP spec decode, generation t/s",
-            "likes": 99,
-            "comments": 18,
-            "reshares": 4,
-            "views": 9992
-          },
-          {
-            "url": "https://lightbrd.com/Yves_From_BE/status/2106326475779833952",
-            "date": "2026-10-03",
-            "engine": "TensorFold",
-            "tps": "111.9",
-            "hardware": "2x M5 Max via TB5",
-            "quant": "Q4, code decode t/s (82.3 prose)",
-            "likes": 2,
-            "comments": 1,
-            "reshares": 0,
-            "views": 279
-          },
-          {
-            "url": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
-            "date": "2026-10-07",
-            "engine": "Strata",
-            "tps": "58",
-            "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
-            "quant": "ROCm, experimental Strata Strix Halo support; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context, 1M ctx (generation)",
-            "likes": 255,
-            "comments": 8,
-            "reshares": 17,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
-            "date": "2026-10-07",
-            "engine": "TensorFold",
-            "tps": "112.3",
-            "hardware": "Apple Silicon",
-            "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
-            "likes": 1,
-            "comments": 4,
-            "reshares": 1969,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
-            "date": "2026-10-09",
-            "engine": "TensorFold",
-            "tps": "200.7",
-            "hardware": "M5 Ultra 80-core 256GB",
-            "quant": "decode, tuned build (independent issue #22 run); post notes fast decode / slow prefill",
-            "likes": 130,
-            "comments": 16,
-            "reshares": 2,
-            "views": 16699
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996",
-            "date": "2026-10-09",
-            "engine": "Strata",
-            "tps": "140",
-            "hardware": "RTX 3090 24GB",
-            "quant": "IQ3_S (est)",
-            "likes": 244,
-            "comments": 26,
-            "reshares": 36,
-            "views": 16360
-          },
-          {
-            "url": "https://lightbrd.com/techwithjoe_io/status/2107112525179326633",
-            "date": "2026-10-05",
-            "engine": "Strata",
-            "tps": "100",
-            "hardware": "RTX 4090",
-            "quant": "GSQ-RCO",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 103
-          }
-        ],
-        "posts_7d": 19,
-        "score_7d": 87.3,
-        "buzz_7d": 87.3,
-        "speed_bonus": 4.4,
-        "trend_score": 91.7
-      }
-    },
     {
       "id": "qwen3.8-27b",
       "name": "Qwen3.8-27B",
@@ -864,11 +287,11 @@
           "quant": "Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF, 128K context; community-reported ~45 tok/s",
           "date": "2026-10-07",
           "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
+          "likes": 1101,
+          "comments": 2,
+          "reshares": 7,
           "views": 0,
-          "interactions": 0
+          "interactions": 1110
         },
         {
           "engine": "vLLM",
@@ -1136,7 +559,7 @@
         "likes": 4120,
         "comments": 890,
         "views": 384000,
-        "last_7d_likes": 21,
+        "last_7d_likes": 20,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
@@ -1371,9 +794,9 @@
             "tps": "45",
             "hardware": "RX 9070 XT 16GB",
             "quant": "Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF, 128K context; community-reported ~45 tok/s",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
+            "likes": 1101,
+            "comments": 2,
+            "reshares": 7,
             "views": 0
           },
           {
@@ -1497,11 +920,11 @@
             "views": 0
           }
         ],
-        "posts_7d": 21,
-        "score_7d": 76.4,
-        "buzz_7d": 76.4,
+        "posts_7d": 20,
+        "score_7d": 80.5,
+        "buzz_7d": 80.5,
         "speed_bonus": 5.7,
-        "trend_score": 82.1
+        "trend_score": 86.2
       },
       "last_seen": "2026-10-10",
       "supported_engines": [
@@ -1509,6 +932,583 @@
         "llama.cpp"
       ],
       "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "decode, tuned build (independent issue #22 run); post notes fast decode / slow prefill",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 130,
+          "comments": 16,
+          "reshares": 2,
+          "views": 16699,
+          "interactions": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "157.7",
+          "hardware": "M5 Ultra 80-core 256GB",
+          "quant": "tuned oMLX; also 83 tok/s on M4 Max 128GB (oMLX 0.6.4, MTP depth 6)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 130,
+          "comments": 16,
+          "reshares": 2,
+          "views": 16699,
+          "interactions": 0
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "90",
+          "hardware": "M5 Max 128GB",
+          "quant": "Sushi-4 hybrid pack, best public recipe",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 130,
+          "comments": 16,
+          "reshares": 2,
+          "views": 16699,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "RTX 3090 24GB",
+          "quant": "IQ3_S (est)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996",
+          "likes": 244,
+          "comments": 26,
+          "reshares": 36,
+          "views": 16360,
+          "interactions": 16666
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "83",
+          "hardware": "M4 Max",
+          "quant": "MLX-Serve 26.9.5 Qwen3.8-Flash-Next decode",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 3,
+          "views": 755,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
+          "quant": "ROCm, experimental Strata Strix Halo support; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context, 1M ctx (generation)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 255,
+          "comments": 8,
+          "reshares": 17,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "112.3",
+          "hardware": "Apple Silicon",
+          "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 1969,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090",
+          "quant": "GSQ-RCO",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 104,
+          "interactions": 104
+        },
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB",
+          "quant": "Q20 (2-bit-class), MoE experts across GPU/RAM/SSD, 64GB RAM",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+          "likes": 146,
+          "comments": 14,
+          "reshares": 19,
+          "views": 8211,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "124",
+          "hardware": "RTX 4090",
+          "quant": "GSQ-RCO, 128GB RAM",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+          "likes": 244,
+          "comments": 26,
+          "reshares": 36,
+          "views": 16360,
+          "interactions": 16666
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "33.7",
+          "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
+          "quant": "UD-Q2_K_XL, 65K ctx",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 0,
+          "views": 81,
+          "interactions": 85
+        },
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "ROCm",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 875,
+          "comments": 52,
+          "reshares": 63,
+          "views": 120482,
+          "interactions": 0
+        },
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "32GB Radeon",
+          "quant": "EXL3 5.05 bpw, Q8 KV cache, ROCm; 112 experts/layer GPU + 400 CPU/RAM + ~102GB BF16 n-gram from NVMe, ~230K ctx (decode); ~863 t/s prefill",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 2,
+          "views": 1599,
+          "interactions": 1610
+        },
+        {
+          "engine": "Strata",
+          "tps": "40",
+          "hardware": "Strix Halo (Ryzen AI Max APU)",
+          "quant": "ROCm",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/basel_by/status/2106492205313478868",
+          "likes": 146,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB",
+          "quant": "claimed 100 tok/s on consumer GPU",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/yama_boku/status/2106890650969055716",
+          "likes": 0,
+          "comments": 55,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "RTX 4090 24GB",
+          "quant": "UD-Q4_K_XL (111 GB across 4 GGUF shards), MoE experts offloaded to 110 GB DDR4 system RAM, 250K ctx, no MTP/DFlash, -b 4096 -ub 4096; ~20.97 t/s decode @ 250K, ~364 t/s prefill",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 12,
+          "views": 1889,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "110",
+          "hardware": "RTX 3090 / RTX 4090 / RTX 5090",
+          "quant": "70-100 t/s decode, ~1500 t/s prefill (coldniko's established figures)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101",
+          "likes": 88,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "80",
+          "hardware": "M3 Ultra",
+          "quant": "oQ8 + MTP spec decode, generation t/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468",
+          "likes": 99,
+          "comments": 18,
+          "reshares": 4,
+          "views": 9992,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm, sustained 52-60 output t/s (generation); prompt processing 1250 t/s",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 512,
+          "comments": 43,
+          "reshares": 58,
+          "views": 40287,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "40",
+          "hardware": "RX 7900 XT 20GB + 80GB DDR4 (WSL2)",
+          "quant": "ROCm, MoE experts across GPU/RAM; ~30-40 t/s",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/smogporter/status/2105055489209868522",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 1,
+          "views": 495,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "92",
+          "hardware": "Apple Silicon",
+          "quant": "MLX 4-bit",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "Strata"
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 15,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
+            "date": "2026-10-01",
+            "engine": "Strata",
+            "tps": "93",
+            "likes": 2,
+            "comments": 0,
+            "reshares": 0,
+            "views": 188
+          },
+          {
+            "url": "https://lightbrd.com/coldniko/status/2104992294893936665",
+            "date": "2026-10-05",
+            "engine": "Strata",
+            "tps": "60",
+            "hardware": "RX 7900 XTX 24GB",
+            "quant": "ROCm",
+            "likes": 507,
+            "comments": 43,
+            "reshares": 59,
+            "views": 39532
+          },
+          {
+            "url": "https://lightbrd.com/smogporter/status/2105055489209868522",
+            "date": "2026-09-29",
+            "engine": "Strata",
+            "tps": "40",
+            "hardware": "RX 7900 XT 20GB + 80GB DDR4 (WSL2)",
+            "quant": "ROCm, MoE experts across GPU/RAM; ~30-40 t/s",
+            "likes": 4,
+            "comments": 2,
+            "reshares": 1,
+            "views": 495
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+            "date": "2026-10-04",
+            "engine": "ExLlamaV3 (ROCm fork)",
+            "tps": "34.7",
+            "hardware": "32GB Radeon",
+            "quant": "EXL3 5.05 bpw, Q8 KV cache, ROCm; 112 experts/layer GPU + 400 CPU/RAM + ~102GB BF16 n-gram from NVMe, ~230K ctx (decode); ~863 t/s prefill",
+            "likes": 7,
+            "comments": 2,
+            "reshares": 2,
+            "views": 1599
+          },
+          {
+            "url": "https://lightbrd.com/basel_by/status/2106492205313478868",
+            "date": "2026-10-04",
+            "engine": "Strata",
+            "tps": "40",
+            "hardware": "Strix Halo (Ryzen AI Max APU)",
+            "quant": "ROCm",
+            "likes": 146,
+            "comments": 2,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+            "date": "2026-09-27",
+            "engine": "TensorFold",
+            "tps": "88-92",
+            "hardware": "Apple Silicon",
+            "quant": "MLX 4-bit",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+            "date": "2026-10-05",
+            "engine": "Strata",
+            "tps": "60",
+            "hardware": "RX 9070 XT 16GB",
+            "quant": "ROCm",
+            "likes": 299,
+            "comments": 10,
+            "reshares": 27,
+            "views": 57144
+          },
+          {
+            "url": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+            "date": "2026-10-05",
+            "engine": "Strata",
+            "tps": "60",
+            "hardware": "RX 9070 XT 16GB",
+            "quant": "ROCm",
+            "likes": 244,
+            "comments": 26,
+            "reshares": 37,
+            "views": 15966
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+            "date": "2026-10-03",
+            "engine": "llama.cpp",
+            "tps": "21",
+            "hardware": "RTX 4090 24GB",
+            "quant": "UD-Q4_K_XL (111 GB across 4 GGUF shards), MoE experts offloaded to 110 GB DDR4 system RAM, 250K ctx, no MTP/DFlash, -b 4096 -ub 4096; ~20.97 t/s decode @ 250K, ~364 t/s prefill",
+            "likes": 0,
+            "comments": 3,
+            "reshares": 12,
+            "views": 1889
+          },
+          {
+            "url": "https://lightbrd.com/FatimaYappin/status/2106898318848643105",
+            "date": "2026-10-05",
+            "engine": "Strata",
+            "tps": "110",
+            "hardware": "2x RTX 3090 + 96GB DDR5",
+            "quant": "MoE experts across GPU/RAM; 80-110 t/s (2x 3090), single 3090 + 128GB DDR5 dips to 60-90 t/s IQ2XS",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101",
+            "date": "2026-10-03",
+            "engine": "Strata",
+            "tps": "100",
+            "hardware": "RTX 3090 / RTX 4090 / RTX 5090",
+            "quant": "70-100 t/s decode, ~1500 t/s prefill (coldniko's established figures)",
+            "likes": 88,
+            "comments": 2,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/techwithjoe_io/status/2107474901690990673",
+            "date": "2026-10-06",
+            "engine": "Strata",
+            "tps": "94",
+            "hardware": "RTX 5070 / RTX 3090",
+            "quant": "GSQ-RCO ~3.5 bits/weight, MoE experts across GPU/RAM; 50-94 t/s on 12GB VRAM, 55-70 t/s RTX 3090, up to 94 t/s RTX 5070",
+            "likes": 50,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+            "date": "2026-10-07",
+            "engine": "mlx-serve",
+            "tps": "83",
+            "hardware": "M4 Max",
+            "quant": "MLX-Serve 26.9.5 Qwen3.8-Flash-Next decode",
+            "likes": 2,
+            "comments": 2,
+            "reshares": 3,
+            "views": 755
+          },
+          {
+            "url": "https://lightbrd.com/yama_boku/status/2106890650969055716",
+            "date": "2026-10-04",
+            "engine": "Strata",
+            "tps": "100",
+            "hardware": "RTX 4090 24GB",
+            "quant": "claimed 100 tok/s on consumer GPU",
+            "likes": 0,
+            "comments": 55,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
+            "date": "2026-10-05",
+            "engine": "llama.cpp",
+            "tps": "33.7",
+            "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
+            "quant": "UD-Q2_K_XL, 65K ctx",
+            "likes": 3,
+            "comments": 1,
+            "reshares": 0,
+            "views": 81
+          },
+          {
+            "url": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468",
+            "date": "2026-10-03",
+            "engine": "TensorFold",
+            "tps": "80",
+            "hardware": "M3 Ultra",
+            "quant": "oQ8 + MTP spec decode, generation t/s",
+            "likes": 99,
+            "comments": 18,
+            "reshares": 4,
+            "views": 9992
+          },
+          {
+            "url": "https://lightbrd.com/Yves_From_BE/status/2106326475779833952",
+            "date": "2026-10-03",
+            "engine": "TensorFold",
+            "tps": "111.9",
+            "hardware": "2x M5 Max via TB5",
+            "quant": "Q4, code decode t/s (82.3 prose)",
+            "likes": 2,
+            "comments": 1,
+            "reshares": 0,
+            "views": 279
+          },
+          {
+            "url": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+            "date": "2026-10-07",
+            "engine": "Strata",
+            "tps": "58",
+            "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
+            "quant": "ROCm, experimental Strata Strix Halo support; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context, 1M ctx (generation)",
+            "likes": 255,
+            "comments": 8,
+            "reshares": 17,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
+            "date": "2026-10-07",
+            "engine": "TensorFold",
+            "tps": "112.3",
+            "hardware": "Apple Silicon",
+            "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
+            "likes": 1,
+            "comments": 4,
+            "reshares": 1969,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+            "date": "2026-10-09",
+            "engine": "TensorFold",
+            "tps": "200.7",
+            "hardware": "M5 Ultra 80-core 256GB",
+            "quant": "decode, tuned build (independent issue #22 run); post notes fast decode / slow prefill",
+            "likes": 130,
+            "comments": 16,
+            "reshares": 2,
+            "views": 16699
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996",
+            "date": "2026-10-09",
+            "engine": "Strata",
+            "tps": "140",
+            "hardware": "RTX 3090 24GB",
+            "quant": "IQ3_S (est)",
+            "likes": 244,
+            "comments": 26,
+            "reshares": 36,
+            "views": 16360
+          },
+          {
+            "url": "https://lightbrd.com/techwithjoe_io/status/2107112525179326633",
+            "date": "2026-10-05",
+            "engine": "Strata",
+            "tps": "100",
+            "hardware": "RTX 4090",
+            "quant": "GSQ-RCO",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 103
+          }
+        ],
+        "posts_7d": 15,
+        "score_7d": 70.2,
+        "buzz_7d": 70.2,
+        "speed_bonus": 4.4,
+        "trend_score": 74.6
+      }
     },
     {
       "id": "bonsai-2-27b",
@@ -2284,6 +2284,178 @@
       }
     },
     {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "74",
+          "hardware": "M1 Max",
+          "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
+          "likes": 7,
+          "comments": 3,
+          "reshares": 2,
+          "views": 1028,
+          "interactions": 0
+        }
+      ],
+      "why": "LittleBit Qwen3-4B in 4-bit MLX for Apple Silicon; ~74 tok/s on M1 Max.",
+      "last_seen": "2026-10-09",
+      "engagement": {
+        "likes": 7,
+        "comments": 3,
+        "reshares": 2,
+        "views": 1028,
+        "interactions": 0,
+        "last_7d_likes": 2,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
+            "date": "2026-10-09",
+            "engine": "MLX",
+            "tps": "74",
+            "hardware": "M1 Max",
+            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+            "likes": 7,
+            "comments": 3,
+            "reshares": 2,
+            "views": 1028
+          },
+          {
+            "url": "https://lightbrd.com/LittleBit_llm/status/2108595901514338423",
+            "date": "2026-10-09",
+            "engine": "MLX",
+            "tps": "74",
+            "hardware": "M1 Max",
+            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 2,
+        "buzz_7d": 4.9,
+        "score_7d": 4.9,
+        "speed_bonus": 3.1,
+        "trend_score": 8.0
+      },
+      "supported_engines": [
+        "MLX"
+      ]
+    },
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-14B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "9GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 95,
+          "views": 0,
+          "interactions": 97
+        },
+        {
+          "engine": "Ollama",
+          "tps": "65",
+          "hardware": "RTX 3090",
+          "quant": "Q4_K_M",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "2M HF downloads. The community mid-size favorite.",
+      "engagement": {
+        "likes": 2310,
+        "comments": 410,
+        "views": 152000,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+            "date": "2026-10-09",
+            "engine": "llama.cpp",
+            "tps": "43.7",
+            "hardware": "RX 9070 XT 16GB",
+            "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
+            "likes": 0,
+            "comments": 2,
+            "reshares": 95,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-15",
+            "engine": "Ollama",
+            "tps": "65",
+            "hardware": "RTX 3090",
+            "quant": "Q4_K_M",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 1,
+        "score_7d": 5.1,
+        "buzz_7d": 5.1,
+        "speed_bonus": 2.9,
+        "trend_score": 8.0
+      },
+      "last_seen": "2026-10-09",
+      "supported_engines": [
+        "Ollama"
+      ],
+      "vram_min": "8GB"
+    },
+    {
       "id": "qwen2.5-1.5b-instruct",
       "name": "Qwen2.5-1.5B-Instruct",
       "full_name": "Qwen2.5-1.5B-Instruct",
@@ -2437,166 +2609,6 @@
         "speed_bonus": 1.3,
         "trend_score": 7.7
       }
-    },
-    {
-      "id": "qwen3-14b",
-      "name": "Qwen3 14B",
-      "full_name": "Qwen3-14B",
-      "type": "LLM",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "Qwen/Qwen3-14B"
-        }
-      ],
-      "license": "Apache 2.0",
-      "params": "14B",
-      "hf": "Qwen/Qwen3-14B",
-      "vram_tier": "9GB",
-      "backends": [
-        "CUDA",
-        "CPU",
-        "Metal",
-        "ROCm"
-      ],
-      "engines": [
-        {
-          "engine": "llama.cpp",
-          "tps": "43.7",
-          "hardware": "RX 9070 XT 16GB",
-          "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
-          "likes": 86,
-          "comments": 2,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "Ollama",
-          "tps": "65",
-          "hardware": "RTX 3090",
-          "quant": "Q4_K_M",
-          "date": "2026-09-15",
-          "source_post": "https://lightbrd.com/",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        }
-      ],
-      "why": "2M HF downloads. The community mid-size favorite.",
-      "engagement": {
-        "likes": 2310,
-        "comments": 410,
-        "views": 152000,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/g_lejars/status/2108555007012282460",
-            "date": "2026-10-09",
-            "engine": "llama.cpp",
-            "tps": "43.7",
-            "hardware": "RX 9070 XT 16GB",
-            "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
-            "likes": 86,
-            "comments": 2,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/",
-            "date": "2026-09-15",
-            "engine": "Ollama",
-            "tps": "65",
-            "hardware": "RTX 3090",
-            "quant": "Q4_K_M",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 1,
-        "score_7d": 4.3,
-        "buzz_7d": 4.3,
-        "speed_bonus": 2.9,
-        "trend_score": 7.2
-      },
-      "last_seen": "2026-10-09",
-      "supported_engines": [
-        "Ollama"
-      ],
-      "vram_min": "8GB"
-    },
-    {
-      "id": "qwen3-4b",
-      "name": "Qwen3-4B",
-      "full_name": "Qwen3-4B",
-      "type": "LLM",
-      "license": "Apache 2.0",
-      "params": "4B",
-      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
-      "vram_tier": "8GB",
-      "vram_min": "8GB",
-      "backends": [
-        "Metal"
-      ],
-      "formats": [
-        {
-          "name": "MLX",
-          "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit"
-        }
-      ],
-      "engines": [
-        {
-          "engine": "MLX",
-          "tps": "74",
-          "hardware": "M1 Max",
-          "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
-          "likes": 7,
-          "comments": 3,
-          "reshares": 2,
-          "views": 1028,
-          "interactions": 0
-        }
-      ],
-      "why": "LittleBit Qwen3-4B in 4-bit MLX for Apple Silicon; ~74 tok/s on M1 Max.",
-      "last_seen": "2026-10-09",
-      "engagement": {
-        "likes": 7,
-        "comments": 3,
-        "reshares": 2,
-        "views": 1028,
-        "interactions": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
-            "date": "2026-10-09",
-            "engine": "MLX",
-            "tps": "74",
-            "hardware": "M1 Max",
-            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
-            "likes": 7,
-            "comments": 3,
-            "reshares": 2,
-            "views": 1028
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 3.9,
-        "score_7d": 3.9,
-        "speed_bonus": 3.1,
-        "trend_score": 7.0
-      },
-      "supported_engines": [
-        "MLX"
-      ]
     },
     {
       "id": "qwen3-8b",
@@ -2873,67 +2885,6 @@
       }
     },
     {
-      "id": "qwen-3.6-27b",
-      "name": "Qwen 3.6 27B",
-      "full_name": "Qwen3.6-27B",
-      "type": "LLM",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "Qwen/Qwen3.6-27B"
-        }
-      ],
-      "license": "Apache 2.0",
-      "params": "27B",
-      "hf": "Qwen/Qwen3.6-27B",
-      "vram_tier": "18GB",
-      "backends": [
-        "CUDA",
-        "Metal"
-      ],
-      "engines": [
-        {
-          "engine": "llama.cpp",
-          "tps": "37",
-          "hardware": "RTX 3090",
-          "quant": "Q4_K_M",
-          "date": "2026-09-10",
-          "source_post": "https://lightbrd.com/"
-        }
-      ],
-      "why": "Strongest local coding model (SWE-bench 77.2%).",
-      "engagement": {
-        "likes": 1210,
-        "comments": 215,
-        "views": 61000,
-        "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/",
-            "date": "2026-09-10",
-            "engine": "llama.cpp",
-            "tps": "37",
-            "hardware": "RTX 3090",
-            "quant": "Q4_K_M",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 0,
-        "score_7d": 0,
-        "buzz_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      },
-      "last_seen": "2026-09-10",
-      "supported_engines": [
-        "llama.cpp"
-      ],
-      "vram_min": "12GB"
-    },
-    {
       "id": "gemma-3-4b",
       "name": "Gemma 3 4B",
       "full_name": "Gemma-3-4B-Instruct",
@@ -3170,6 +3121,54 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       }
+    },
+    {
+      "id": "qwen-3.6-27b",
+      "name": "Qwen 3.6 27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "18GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "37",
+          "hardware": "RTX 3090",
+          "quant": "Q4_K_M",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/"
+        }
+      ],
+      "why": "Strongest local coding model (SWE-bench 77.2%).",
+      "engagement": {
+        "likes": 1210,
+        "comments": 215,
+        "views": 61000,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "score_7d": 0,
+        "buzz_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      },
+      "last_seen": "2026-09-10",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "vram_min": "12GB"
     },
     {
       "id": "gemma-4-e2b",

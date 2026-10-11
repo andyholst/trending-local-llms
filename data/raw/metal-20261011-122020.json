@@ -1,0 +1,35 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "74",
+          "hardware": "M1 Max",
+          "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/LittleBit_llm/status/2108595901514338423",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-11T12:20:20Z"
+}
