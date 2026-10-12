@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-12T14:41:32Z",
+  "generated_utc": "2026-10-12T23:52:23Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -157,11 +157,11 @@
           "quant": "Q8 DFlash2 draft, 131k context, Qwen3.8-27B Q4",
           "date": "2026-10-12",
           "source_post": "https://lightbrd.com/dextune/status/2109530059765858549",
-          "likes": 1,
-          "comments": 0,
+          "likes": 104,
+          "comments": 1,
           "reshares": 0,
-          "views": 104,
-          "interactions": 105
+          "views": 0,
+          "interactions": 0
         },
         {
           "engine": "vLLM",
@@ -927,10 +927,10 @@
             "tps": "158.5",
             "hardware": "Radeon AI PRO R9700 eGPU",
             "quant": "Q8 DFlash2 draft, 131k context, Qwen3.8-27B Q4",
-            "likes": 1,
-            "comments": 0,
+            "likes": 104,
+            "comments": 1,
             "reshares": 0,
-            "views": 104
+            "views": 0
           },
           {
             "url": "https://lightbrd.com/",
@@ -946,10 +946,10 @@
           }
         ],
         "posts_7d": 19,
-        "score_7d": 77.5,
-        "buzz_7d": 77.5,
+        "score_7d": 79.9,
+        "buzz_7d": 79.9,
         "speed_bonus": 5.7,
-        "trend_score": 83.2
+        "trend_score": 85.6
       },
       "last_seen": "2026-10-12",
       "supported_engines": [
@@ -2359,6 +2359,99 @@
       }
     },
     {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-14B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "9GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 114,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "Ollama",
+          "tps": "65",
+          "hardware": "RTX 3090",
+          "quant": "Q4_K_M",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "2M HF downloads. The community mid-size favorite.",
+      "engagement": {
+        "likes": 2310,
+        "comments": 410,
+        "views": 152000,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+            "date": "2026-10-09",
+            "engine": "llama.cpp",
+            "tps": "43.7",
+            "hardware": "RX 9070 XT 16GB",
+            "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
+            "likes": 0,
+            "comments": 2,
+            "reshares": 114,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/",
+            "date": "2026-09-15",
+            "engine": "Ollama",
+            "tps": "65",
+            "hardware": "RTX 3090",
+            "quant": "Q4_K_M",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 1,
+        "score_7d": 5.2,
+        "buzz_7d": 5.2,
+        "speed_bonus": 2.9,
+        "trend_score": 8.1
+      },
+      "last_seen": "2026-10-09",
+      "supported_engines": [
+        "Ollama"
+      ],
+      "vram_min": "8GB"
+    },
+    {
       "id": "qwen3-4b",
       "name": "Qwen3-4B",
       "full_name": "Qwen3-4B",
@@ -2436,99 +2529,6 @@
       "supported_engines": [
         "MLX"
       ]
-    },
-    {
-      "id": "qwen3-14b",
-      "name": "Qwen3 14B",
-      "full_name": "Qwen3-14B",
-      "type": "LLM",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "Qwen/Qwen3-14B"
-        }
-      ],
-      "license": "Apache 2.0",
-      "params": "14B",
-      "hf": "Qwen/Qwen3-14B",
-      "vram_tier": "9GB",
-      "backends": [
-        "CUDA",
-        "CPU",
-        "Metal",
-        "ROCm"
-      ],
-      "engines": [
-        {
-          "engine": "llama.cpp",
-          "tps": "43.7",
-          "hardware": "RX 9070 XT 16GB",
-          "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
-          "likes": 0,
-          "comments": 2,
-          "reshares": 95,
-          "views": 0,
-          "interactions": 97
-        },
-        {
-          "engine": "Ollama",
-          "tps": "65",
-          "hardware": "RTX 3090",
-          "quant": "Q4_K_M",
-          "date": "2026-09-15",
-          "source_post": "https://lightbrd.com/",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        }
-      ],
-      "why": "2M HF downloads. The community mid-size favorite.",
-      "engagement": {
-        "likes": 2310,
-        "comments": 410,
-        "views": 152000,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/g_lejars/status/2108555007012282460",
-            "date": "2026-10-09",
-            "engine": "llama.cpp",
-            "tps": "43.7",
-            "hardware": "RX 9070 XT 16GB",
-            "quant": "Q4_K_M, Vulkan (RADV); +23% gen vs ROCm at 30k ctx (35.5 tok/s), llama.cpp b11177",
-            "likes": 0,
-            "comments": 2,
-            "reshares": 95,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/",
-            "date": "2026-09-15",
-            "engine": "Ollama",
-            "tps": "65",
-            "hardware": "RTX 3090",
-            "quant": "Q4_K_M",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 1,
-        "score_7d": 5.1,
-        "buzz_7d": 5.1,
-        "speed_bonus": 2.9,
-        "trend_score": 8.0
-      },
-      "last_seen": "2026-10-09",
-      "supported_engines": [
-        "Ollama"
-      ],
-      "vram_min": "8GB"
     },
     {
       "id": "qwen2.5-1.5b-instruct",
