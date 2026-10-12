@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-11T21:15:55Z",
+  "generated_utc": "2026-10-12T14:41:32Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -150,6 +150,19 @@
         "ROCm"
       ],
       "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "158.5",
+          "hardware": "Radeon AI PRO R9700 eGPU",
+          "quant": "Q8 DFlash2 draft, 131k context, Qwen3.8-27B Q4",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dextune/status/2109530059765858549",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 104,
+          "interactions": 105
+        },
         {
           "engine": "vLLM",
           "tps": "300",
@@ -559,7 +572,7 @@
         "likes": 4120,
         "comments": 890,
         "views": 384000,
-        "last_7d_likes": 20,
+        "last_7d_likes": 19,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
@@ -908,6 +921,18 @@
             "views": 2923
           },
           {
+            "url": "https://lightbrd.com/dextune/status/2109530059765858549",
+            "date": "2026-10-12",
+            "engine": "DFlash2",
+            "tps": "158.5",
+            "hardware": "Radeon AI PRO R9700 eGPU",
+            "quant": "Q8 DFlash2 draft, 131k context, Qwen3.8-27B Q4",
+            "likes": 1,
+            "comments": 0,
+            "reshares": 0,
+            "views": 104
+          },
+          {
             "url": "https://lightbrd.com/",
             "date": "2026-09-18",
             "engine": "llama.cpp",
@@ -920,13 +945,13 @@
             "views": 0
           }
         ],
-        "posts_7d": 20,
-        "score_7d": 80.5,
-        "buzz_7d": 80.5,
+        "posts_7d": 19,
+        "score_7d": 77.5,
+        "buzz_7d": 77.5,
         "speed_bonus": 5.7,
-        "trend_score": 86.2
+        "trend_score": 83.2
       },
-      "last_seen": "2026-10-10",
+      "last_seen": "2026-10-12",
       "supported_engines": [
         "TensorFold",
         "llama.cpp"
@@ -1264,7 +1289,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 17,
+        "last_7d_likes": 14,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
@@ -1553,11 +1578,11 @@
             "views": 218
           }
         ],
-        "posts_7d": 17,
-        "score_7d": 75.3,
-        "buzz_7d": 75.3,
+        "posts_7d": 14,
+        "score_7d": 62.4,
+        "buzz_7d": 62.4,
         "speed_bonus": 5.0,
-        "trend_score": 80.3
+        "trend_score": 67.4
       }
     },
     {
@@ -1989,7 +2014,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 4,
+        "last_7d_likes": 3,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/0xSero/status/2107737091199435072",
@@ -2040,11 +2065,11 @@
             "views": 12819
           }
         ],
-        "posts_7d": 4,
-        "buzz_7d": 18.5,
-        "score_7d": 18.5,
+        "posts_7d": 3,
+        "buzz_7d": 13.5,
+        "score_7d": 13.5,
         "speed_bonus": 2.2,
-        "trend_score": 20.7
+        "trend_score": 15.7
       }
     },
     {
