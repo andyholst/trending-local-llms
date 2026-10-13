@@ -283,7 +283,7 @@ jobs:
             git push origin "$BRANCH"
             PR_URL=$(gh pr create --base master --head "$BRANCH" \
               --title "chore: Hermes refresh of trending LLM data" \
-              --body "Hermes CLI refresh (deepseek-v4-flash-0731 via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Closes #1" 2>/dev/null)
+              --body "Hermes CLI refresh (deepseek-v4.1-flash via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Closes #1" 2>/dev/null)
             PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$' | head -1 || echo "")
             echo "pr_opened=true" >> "$GITHUB_OUTPUT"
             echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"

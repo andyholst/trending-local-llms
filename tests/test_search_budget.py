@@ -3,7 +3,7 @@
 
 The Metal (and earlier CPU) refresh leg died with 'No visible answer was
 produced ... reasoning consumed the entire budget'. Root cause: the endpoint
-caps deepseek-v4-flash-0731 at 65,536 output tokens (our 384000 was silently
+capped deepseek/deepseek-v4-flash-0731 at 65,536 output tokens (our 384000 was silently
 clamped) and effort 'low' still reasons; only reasoning OFF gives 0 reasoning
 tokens. Plus the prompt built one giant final payload.
 
@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import model_caps_check as MC  # noqa: E402
 import update_trending as UT  # noqa: E402
 
-MODEL = "deepseek/deepseek-v4-flash-0731"
+MODEL = "deepseek/deepseek-v4.1-flash"
 _PASS = 0
 _FAIL = 0
 
@@ -67,7 +67,8 @@ def test_makefile_budget_settings():
           "make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING)" in fix_recipe, fix_recipe)
     mt = int(mkvar("HERMES_MAX_TOKENS") or 0)
     check("make: HERMES_MAX_TOKENS within the 65,536 provider cap", 0 < mt <= 65536, mt)
-    check("make: model is the 0731 SKU the cap was measured for", mkvar("HERMES_MODEL") == MODEL, mkvar("HERMES_MODEL"))
+    check("make: model is the pinned SKU (cap kept conservative until re-measured)",
+          mkvar("HERMES_MODEL") == MODEL, mkvar("HERMES_MODEL"))
 
 
 def test_prompts_write_per_query():

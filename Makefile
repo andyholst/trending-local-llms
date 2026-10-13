@@ -33,7 +33,7 @@ TEST_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN $(TEST_IMAGE)
 
 
-HERMES_MODEL := deepseek/deepseek-v4-flash-0731
+HERMES_MODEL := deepseek/deepseek-v4.1-flash
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # Raise the per-reply output cap. The deepseek model was truncating its reply
 # mid-search (hit the default max_tokens), dropping the incomplete action and
@@ -42,14 +42,18 @@ NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # 384K output). Input context is also raised to the model's 1M-token ceiling
 # (model card: 1M input / 384K output) so a long AGENTS.md + skill + mirrors
 # page is never squeezed. One variable each so CI + local runs agree.
-# The REAL output cap of deepseek/deepseek-v4-flash-0731 on the Nous endpoint
-# is 65,536 tokens (/v1/models -> top_provider.max_completion_tokens). A larger
-# value is accepted SILENTLY and clamped, which is how 384000 hid the real cap.
+# The 65,536 figure below was measured against the predecessor pin,
+# deepseek/deepseek-v4-flash-0731 (/v1/models -> top_provider.max_completion_tokens).
+# The current pin, deepseek/deepseek-v4.1-flash, declares NO
+# max_completion_tokens on the endpoint, so we keep the conservative 65,536
+# until a live measurement of the new SKU. A larger value is accepted SILENTLY
+# and clamped, which is how 384000 once hid the real cap.
 # `make model-caps` checks this live against the catalog.
 HERMES_MAX_TOKENS    := 65536
 HERMES_CONTEXT_WINDOW := 1048576
-# Reasoning per hermes call. This SKU thinks by default and only understands a
-# generic `reasoning` switch: effort 'low' STILL produces reasoning tokens, and
+# Reasoning per hermes call. Measured on the deepseek flash family: the SKU
+# thinks by default and takes a generic `reasoning` switch (V4.1 Flash also
+# exposes `reasoning_effort`). Effort 'low' STILL produces reasoning tokens, and
 # a long multi-query search burned the whole 65,536-token budget on them
 # ('No visible answer was produced ... reasoning consumed the entire budget').
 # 'none' sends reasoning.enabled=false -> 0 reasoning tokens (measured). The

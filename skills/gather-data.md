@@ -3,7 +3,7 @@
 > **As of the `ci/x-trending-pipeline` work (issue #1), the README is generated**
 > from `data/models.json` by `scripts/update_trending.py`. The refresh is run by
 > the **GitHub Actions pipelines** invoking a **Hermes agent session**
-> (deepseek-v4-flash-0731 via the Nous portal, token from the repo secret
+> (deepseek-v4.1-flash via the Nous portal, token from the repo secret
 > `NOUS_PORTAL_API_TOKEN`) that loads this skill + AGENTS.md and searches
 > lightbrd.com via the Firecrawl scrape API (`FIRECRAWL_API_KEY`). Each of the
 > four searches for the backend groups (NVIDIA, Metal, CPU, AMD) each write their
