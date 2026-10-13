@@ -318,6 +318,41 @@
       "full_name": "mw00/project-maya",
       "description": "Project Maya - GLM-5.3-Flash (321B MoE) on your own NVIDIA GPU(s): engine, server, dashboard, quant tools. Built on Strata.",
       "topics": []
+    },
+    "shawnshekari/strixite": {
+      "full_name": "shawnshekari/strixite",
+      "description": "LLM inference engine written from scratch in HIP for AMD Strix Halo (gfx1151) and Qwen3.8-Flash-Next - ~50 tokens/s out to 492k context",
+      "topics": [
+        "amd",
+        "hip",
+        "llm-inference",
+        "local-llm",
+        "qwen",
+        "rocm",
+        "strix-halo"
+      ]
+    },
+    "prabanta-dev/janas": {
+      "full_name": "prabanta-dev/janas",
+      "description": "37 tok/s from Qwen3-Next-80B (48 GB) on a 32 GB laptop, 24 without drafts vs 2.8 for llama.cpp; reading 62 vs 16 tok/s. Faster than llama.cpp on all 13 models compared in Q4_K_M. LLMs bigger than your RAM, pure C, CPU or GPU.",
+      "topics": [
+        "avx2",
+        "c",
+        "cpu-inference",
+        "gguf",
+        "inference-engine",
+        "linux",
+        "llm",
+        "local-llm",
+        "mixture-of-experts",
+        "moe",
+        "nvme",
+        "quantization",
+        "qwen3",
+        "simd",
+        "speculative-decoding",
+        "vulkan"
+      ]
     }
   }
 }
