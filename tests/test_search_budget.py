@@ -3,11 +3,14 @@
 
 The Metal (and earlier CPU) refresh leg died with 'No visible answer was
 produced ... reasoning consumed the entire budget'. Root cause: the endpoint
-capped deepseek/deepseek-v4-flash-0731 at 65,536 output tokens (our 384000 was silently
+capped the then-current SKU at 65,536 output tokens (our 384000 was silently
 clamped) and effort 'low' still reasons; only reasoning OFF gives 0 reasoning
-tokens. Plus the prompt built one giant final payload.
+tokens. Plus the prompt built one giant final payload. The pin has since moved
+to deepseek/deepseek-v4.1-flash, which declares NO max_completion_tokens — so
+HERMES_MAX_TOKENS keeps the conservative 65,536 until a live measurement.
 
   - test_makefile_budget_settings     searches --reasoning none, fix low, max_tokens <= 65536
+  - test_no_stale_model_pin           no retired SKU string left in the pipeline files
   - test_prompts_write_per_query      all 3 search prompts write after EACH query
   - test_model_caps_evaluate          offline catalog: ok / cap overrun / missing / no reasoning
   - test_model_caps_cli               --catalog file exit codes; SKIP without key
@@ -32,6 +35,8 @@ import model_caps_check as MC  # noqa: E402
 import update_trending as UT  # noqa: E402
 
 MODEL = "deepseek/deepseek-v4.1-flash"
+# The retired pin, split so THIS guard file never matches its own scan.
+OLD_MODEL = "deepseek/deepseek-v4-flash" + "-0731"
 _PASS = 0
 _FAIL = 0
 
@@ -66,9 +71,34 @@ def test_makefile_budget_settings():
           "(fix_loop.sh retries with none when 'low' burns the budget)",
           "make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING)" in fix_recipe, fix_recipe)
     mt = int(mkvar("HERMES_MAX_TOKENS") or 0)
-    check("make: HERMES_MAX_TOKENS within the 65,536 provider cap", 0 < mt <= 65536, mt)
+    check("make: HERMES_MAX_TOKENS within the 65,536 conservative bound", 0 < mt <= 65536, mt)
     check("make: model is the pinned SKU (cap kept conservative until re-measured)",
           mkvar("HERMES_MODEL") == MODEL, mkvar("HERMES_MODEL"))
+
+
+def test_no_stale_model_pin():
+    """Every pipeline file names the current pin, never the retired SKU.
+
+    The model pin lives in one Makefile variable, but its NAME is repeated in
+    the prompts, the skill, the workflows and the comments. A bump that updates
+    the variable and leaves a stale SKU behind (issue #109 acceptance: no
+    stale SKU reference left in Makefile/tests/skills/AGENTS.md/workflows/
+    scripts) misleads the next reader
+    and lets a live check quote a model the pipeline no longer runs. Scoped to
+    the pipeline files, not data/ or the fixtures, where the model itself is
+    legitimately tracked as data.
+    """
+    targets = (["Makefile", "AGENTS.md", "scripts/fix_loop.sh", "skills/gather-data.md"]
+               + [str(p.relative_to(ROOT)) for p in sorted((ROOT / ".github" / "workflows").glob("*.yml"))]
+               + [str(p.relative_to(ROOT)) for p in sorted((ROOT / "scripts").glob("*.sh"))]
+               + [str(p.relative_to(ROOT)) for p in sorted((ROOT / "tests").glob("test_*.py"))])
+    stale = []
+    for rel in targets:
+        f = ROOT / rel
+        if f.exists() and OLD_MODEL in f.read_text():
+            stale.append(rel)
+    check("pin: no retired SKU left in the pipeline files", not stale, stale)
+    check("pin: the current SKU is named in the Makefile", MODEL in (ROOT / "Makefile").read_text())
 
 
 def test_prompts_write_per_query():
@@ -140,6 +170,7 @@ def test_write_raw_never_overwrites():
 def main() -> int:
     print("search-leg budget guards (issue #64)")
     test_makefile_budget_settings()
+    test_no_stale_model_pin()
     test_prompts_write_per_query()
     test_model_caps_evaluate()
     test_model_caps_cli()

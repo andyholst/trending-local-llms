@@ -133,8 +133,8 @@ The README is **generated**, not hand-maintained:
   Hugging Face → HTTP 403). Prose inside a prompt uses single quotes; only the
   JSON body uses `\"`.
 - **Model budget (measured, not assumed).** The pinned model is
-  `deepseek/deepseek-v4.1-flash` (predecessor: `deepseek/deepseek-v4-flash-0731`).
-  The **65,536**-token cap was measured on the predecessor
+  `deepseek/deepseek-v4.1-flash`.
+  The **65,536**-token cap was measured on the PREVIOUS pin of the same family
   (`/v1/models` → `max_completion_tokens`); V4.1 Flash declares no
   `max_completion_tokens`, so `HERMES_MAX_TOKENS := 65536` stays conservative
   until it is re-measured — a larger `max_tokens` is accepted SILENTLY and
@@ -556,7 +556,7 @@ actually happened.
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |
 | `make search-smoke` (live, 3 s/attempt, 1 retry on timeout/429/5xx) | lightbrd mirror / Firecrawl key down, per backend. An uncached scrape can miss 3 s once (Firecrawl finishes and caches it server-side), so a transient miss gets ONE more 3 s attempt; auth errors (401/403) never retry. Retry policy unit-tested in `tests/test_smoke_search.py` |
-| `tests/test_search_budget.py` | searches not running with reasoning off; `HERMES_MAX_TOKENS` above the 65,536 provider cap; prompts building one big payload instead of writing per query; same-second raw writes overwriting each other; `model_caps_check` logic (cap overrun, missing model, no `reasoning`) |
+| `tests/test_search_budget.py` | searches not running with reasoning off; `HERMES_MAX_TOKENS` above the 65,536 bound; a stale model pin (`HERMES_MODEL` not the current SKU, or the retired SKU string left in Makefile/AGENTS.md/skill/workflows/scripts/tests); prompts building one big payload instead of writing per query; same-second raw writes overwriting each other; `model_caps_check` logic (cap overrun, missing model, no `reasoning`) |
 | `tests/test_hermes_smoke.py` | the routing smoke failing on a refusal reply (real CI false negative) or passing an HF 403 / provider error / empty reply / timeout; no retry |
 | `check_readme_engine_links` (validate, readme stage) | a README engine link that differs from the registry, or a registry URL that differs from `KNOWN_ENGINE_URLS` |
 | `make model-caps` (live) | model not served, `max_tokens` above the real cap (silent clamp), model can't switch reasoning off |
