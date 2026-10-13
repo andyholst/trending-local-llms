@@ -19,7 +19,7 @@
 #   MAKE        make binary (default make) — tests point this at a recorder
 #
 # Reasoning budget: `make fix` runs Hermes with HERMES_FIX_REASONING (low).
-# deepseek-v4-flash still burns its whole 65,536-token output cap on reasoning
+# the pinned deepseek flash SKU still burns its whole 65,536-token output cap on reasoning
 # at `low` in some rounds ('No visible answer was produced ... reasoning
 # consumed the entire budget') and writes nothing — 2 of 3 rounds on PR #80.
 # When that signature shows up, the SAME round is retried once with

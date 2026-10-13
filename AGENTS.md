@@ -132,10 +132,13 @@ The README is **generated**, not hand-maintained:
   then auto-routes to whatever provider key is in the env (`HF_TOKEN` →
   Hugging Face → HTTP 403). Prose inside a prompt uses single quotes; only the
   JSON body uses `\"`.
-- **Model budget (measured, not assumed).** `deepseek/deepseek-v4-flash-0731`
-  on the Nous endpoint caps output at **65,536 tokens**
-  (`/v1/models` → `max_completion_tokens`); a larger `max_tokens` is accepted
-  SILENTLY and clamped, so `HERMES_MAX_TOKENS := 65536`. The SKU thinks by
+- **Model budget (measured, not assumed).** The pinned model is
+  `deepseek/deepseek-v4.1-flash` (predecessor: `deepseek/deepseek-v4-flash-0731`).
+  The **65,536**-token cap was measured on the predecessor
+  (`/v1/models` → `max_completion_tokens`); V4.1 Flash declares no
+  `max_completion_tokens`, so `HERMES_MAX_TOKENS := 65536` stays conservative
+  until it is re-measured — a larger `max_tokens` is accepted SILENTLY and
+  clamped, which is how 384000 once hid the real cap. The flash SKU thinks by
   default and only takes a generic `reasoning` switch: effort `low` still
   spends reasoning tokens (a Metal search burned the whole cap: "No visible
   answer was produced … reasoning consumed the entire budget"), while
@@ -317,7 +320,7 @@ unescaped pipes only.
 ## 6. Refresh workflow — GitHub Actions invoking the Hermes CLI
 
 The refresh is driven by the **GitHub Actions pipelines** (`refresh-bot.yml`,
-`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4-flash-0731 via the
+`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4.1-flash via the
 Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
 this `AGENTS.md` and the `gather-data` skill, then:
 
