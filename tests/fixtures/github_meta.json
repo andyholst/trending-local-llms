@@ -313,6 +313,11 @@
       "full_name": "sybil-solutions/glm-flash-lite",
       "description": "GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API",
       "topics": []
+    },
+    "mw00/project-maya": {
+      "full_name": "mw00/project-maya",
+      "description": "Project Maya - GLM-5.3-Flash (321B MoE) on your own NVIDIA GPU(s): engine, server, dashboard, quant tools. Built on Strata.",
+      "topics": []
     }
   }
 }
