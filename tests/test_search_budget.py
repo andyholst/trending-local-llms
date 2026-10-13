@@ -82,21 +82,23 @@ def test_no_stale_model_pin():
     The model pin lives in one Makefile variable, but its NAME is repeated in
     the prompts, the skill, the workflows and the comments. A bump that updates
     the variable and leaves a stale SKU behind (issue #109 acceptance: no
-    stale SKU reference left in Makefile/tests/skills/AGENTS.md/workflows/
-    scripts) misleads the next reader
-    and lets a live check quote a model the pipeline no longer runs. Scoped to
-    the pipeline files, not data/ or the fixtures, where the model itself is
-    legitimately tracked as data.
+    stale SKU reference left in Makefile / tests / skills / AGENTS.md /
+    workflows / scripts) misleads the next reader
+    and lets a live check quote a model the pipeline no longer runs.
+
+    The scan is by DIRECTORY + suffix, never a hand-kept file list, so a new
+    workflow, script, skill or test is covered the moment it lands. `data/`
+    (the store, where the model itself is tracked as data) and
+    `tests/fixtures/` (fixture model ids) are excluded on purpose; the guard
+    constant is split in two so THIS file never matches its own scan.
     """
-    targets = (["Makefile", "AGENTS.md", "scripts/fix_loop.sh", "skills/gather-data.md"]
-               + [str(p.relative_to(ROOT)) for p in sorted((ROOT / ".github" / "workflows").glob("*.yml"))]
-               + [str(p.relative_to(ROOT)) for p in sorted((ROOT / "scripts").glob("*.sh"))]
-               + [str(p.relative_to(ROOT)) for p in sorted((ROOT / "tests").glob("test_*.py"))])
-    stale = []
-    for rel in targets:
-        f = ROOT / rel
-        if f.exists() and OLD_MODEL in f.read_text():
-            stale.append(rel)
+    targets = ["Makefile", "AGENTS.md", "README.md"]
+    for d in (".github/workflows", "scripts", "skills", "tests"):
+        targets += [str(p.relative_to(ROOT)) for p in sorted((ROOT / d).rglob("*"))
+                    if p.is_file() and p.suffix in {".md", ".yml", ".yaml", ".sh", ".py"}
+                    and "__pycache__" not in p.parts]
+    stale = [rel for rel in targets
+             if (ROOT / rel).exists() and OLD_MODEL in (ROOT / rel).read_text(errors="ignore")]
     check("pin: no retired SKU left in the pipeline files", not stale, stale)
     check("pin: the current SKU is named in the Makefile", MODEL in (ROOT / "Makefile").read_text())
 
