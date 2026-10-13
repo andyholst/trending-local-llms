@@ -1,0 +1,67 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "96",
+          "hardware": "RTX 5090",
+          "quant": "UD-IQ3_XXS, 11.1GB",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108732175809962430",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 2,
+          "views": 687,
+          "interactions": 695
+        }
+      ],
+      "last_seen": "2026-10-10"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Project Maya",
+          "tps": "30",
+          "hardware": "RTX 5090",
+          "quant": "MoE experts across GPU VRAM / system RAM / NVMe SSD, three-tier memory hierarchy",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+          "likes": 34,
+          "comments": 32,
+          "reshares": 1,
+          "views": 234,
+          "interactions": 301,
+          "engine_repo": "https://github.com/mw00/project-maya"
+        }
+      ],
+      "last_seen": "2026-10-12"
+    }
+  ],
+  "generated_utc": "2026-10-13T13:53:04Z"
+}

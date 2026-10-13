@@ -1,0 +1,79 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "56",
+          "hardware": "RTX 4070 12GB",
+          "quant": "PTQ1_0 ternary, ~16x faster than Qwen3.8-27B Q4_K_M (3.55 t/s)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/localai_lab/status/2109533645279199248",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 14,
+          "interactions": 14
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060",
+          "quant": "ternary ~6GB, MTP head",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/EamonMcKiernan5/status/2109202343354900727",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Q4_K_M, Flash Attention, Q8 KV cache, 26 MoE layers on CPU, 262K ctx",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+          "likes": 26,
+          "comments": 2,
+          "reshares": 4,
+          "views": 2104,
+          "interactions": 2136
+        }
+      ],
+      "last_seen": "2026-10-12"
+    }
+  ],
+  "generated_utc": "2026-10-13T13:58:43Z"
+}

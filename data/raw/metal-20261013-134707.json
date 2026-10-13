@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "156",
+          "hardware": "M5 Max 64GB (Mac Studio)",
+          "quant": "4-bit, tuned; ~154 tok/s short QA, ~156 tok/s code, ~2x Ollama on same box; 256k context runs but first long read ~9.7 min",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/ainohsia/status/2109185446727278984",
+          "likes": 77,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-11"
+    }
+  ],
+  "generated_utc": "2026-10-13T14:10:00Z"
+}
