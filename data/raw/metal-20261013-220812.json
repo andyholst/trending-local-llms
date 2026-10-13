@@ -1,0 +1,83 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-13T22:09:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6 (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafting, code generation; 6.1x vs 10.1 baseline (chat 30.8, 3.0x)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 406,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "Qwen3.8-27B 4-bit, DFlash drafter, numbers workload, median of 2",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "Qwen3.8-27B 4-bit, DFlash drafter, numbers workload, oMLX 0.7.0, median of 2",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "Qwen3.8-27B 4-bit, DFlash drafter (--no-mtp), numbers workload, mlx-serve 26.10.1, median of 2",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0
+      }
+    }
+  ]
+}
