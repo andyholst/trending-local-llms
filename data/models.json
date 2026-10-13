@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-13T14:31:40Z",
+  "generated_utc": "2026-10-13T22:11:23Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -131,6 +131,18 @@
       "url": "https://github.com/mw00/project-maya",
       "note": "Auto-registered from https://lightbrd.com/loudchirper/status/2109588037214642210 — Project Maya: GLM-5.3-Flash (321B MoE) on your own NVIDIA GPU(s): engine, server, dashboard, quant tools. Built on Strata.",
       "auto": true
+    },
+    "strixite": {
+      "backend": "ROCm",
+      "url": "https://github.com/shawnshekari/strixite",
+      "note": "Auto-registered from https://lightbrd.com/BIGBULLapp/status/2109493637352509501 — LLM inference engine written from scratch in HIP for AMD Strix Halo (gfx1151) and Qwen3.8-Flash-Next - ~50 tokens/s out ",
+      "auto": true
+    },
+    "Janas": {
+      "backend": "CPU",
+      "url": "https://github.com/prabanta-dev/janas",
+      "note": "Auto-registered from https://lightbrd.com/MauCammalleri/status/2109656339043451014 — 37 tok/s from Qwen3-Next-80B (48 GB) on a 32 GB laptop, 24 without drafts vs 2.8 for llama.cpp; reading 62 vs 16 tok/s. ",
+      "auto": true
     }
   },
   "models": [
@@ -199,14 +211,14 @@
           "engine": "DFlash2",
           "tps": "140.6",
           "hardware": "RTX 6000",
-          "quant": "DFlash2 spec decode, 16 candidates, 56% acceptance; baseline 47.4, MTP 114.7, DFlash 99.3",
+          "quant": "DFlash2 spec decode, 16 candidates, 56% acceptance, 2.97x baseline (47.4 t/s)",
           "date": "2026-10-11",
           "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109108033091465404",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
+          "likes": 4,
+          "comments": 1,
+          "reshares": 2,
+          "views": 2970,
+          "interactions": 2977
         },
         {
           "engine": "vLLM",
@@ -531,6 +543,19 @@
           "comments": 0,
           "reshares": 0,
           "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6 (Apple Silicon)",
+          "quant": "MLX 4-bit, DFlash2 drafting, code generation; 6.1x vs 10.1 baseline (chat 30.8, 3.0x)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 406,
           "interactions": 0
         },
         {
@@ -1031,11 +1056,23 @@
             "engine": "DFlash2",
             "tps": "140.6",
             "hardware": "RTX 6000",
-            "quant": "DFlash2 spec decode, 16 candidates, 56% acceptance; baseline 47.4, MTP 114.7, DFlash 99.3",
-            "likes": 0,
-            "comments": 0,
+            "quant": "DFlash2 spec decode, 16 candidates, 56% acceptance, 2.97x baseline (47.4 t/s)",
+            "likes": 4,
+            "comments": 1,
+            "reshares": 2,
+            "views": 2970
+          },
+          {
+            "url": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+            "date": "2026-09-27",
+            "engine": "TensorFold",
+            "tps": "61.9",
+            "hardware": "Mac mini M6 (Apple Silicon)",
+            "quant": "MLX 4-bit, DFlash2 drafting, code generation; 6.1x vs 10.1 baseline (chat 30.8, 3.0x)",
+            "likes": 3,
+            "comments": 3,
             "reshares": 0,
-            "views": 0
+            "views": 406
           },
           {
             "url": "https://lightbrd.com/",
@@ -1051,10 +1088,10 @@
           }
         ],
         "posts_7d": 23,
-        "score_7d": 101.0,
-        "buzz_7d": 101.0,
+        "score_7d": 103.8,
+        "buzz_7d": 103.8,
         "speed_bonus": 5.7,
-        "trend_score": 106.7
+        "trend_score": 109.5
       },
       "last_seen": "2026-10-13",
       "supported_engines": [
@@ -1107,6 +1144,19 @@
           "interactions": 5052
         },
         {
+          "engine": "strixite",
+          "tps": "50",
+          "hardware": "Strix Halo 128GB",
+          "quant": "HIP (gfx1151), Qwen3.8-Flash-Next strixw-tuned; ~50 t/s out to ~492k context",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
+          "likes": 41,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 41
+        },
+        {
           "engine": "Strata",
           "tps": "104",
           "hardware": "RTX PRO 4000 Blackwell 24GB",
@@ -1122,8 +1172,8 @@
         {
           "engine": "TensorFold",
           "tps": "200.7",
-          "hardware": "M5 Ultra 80-core 256GB",
-          "quant": "decode, tuned build (independent issue #22 run); post notes fast decode / slow prefill",
+          "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
+          "quant": "decode, tuned build (independent issue #22 run)",
           "date": "2026-10-09",
           "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
           "likes": 130,
@@ -1135,8 +1185,8 @@
         {
           "engine": "oMLX",
           "tps": "157.7",
-          "hardware": "M5 Ultra 80-core 256GB",
-          "quant": "tuned oMLX; also 83 tok/s on M4 Max 128GB (oMLX 0.6.4, MTP depth 6)",
+          "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
+          "quant": "tuned oMLX",
           "date": "2026-10-09",
           "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
           "likes": 130,
@@ -1433,7 +1483,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 12,
+        "last_7d_likes": 13,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
@@ -1763,18 +1813,30 @@
             "engine": "Strata",
             "tps": "97.3",
             "hardware": "RTX 5070 12GB",
-            "quant": "MoE experts across GPU/RAM/SSD, 64GB RAM",
+            "quant": "MoE experts across GPU/RAM, i9 workstation 64GB RAM",
             "likes": 0,
             "comments": 1,
+            "reshares": 26,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
+            "date": "2026-10-12",
+            "engine": "strixite",
+            "tps": "50",
+            "hardware": "Strix Halo 128GB",
+            "quant": "HIP (gfx1151), Qwen3.8-Flash-Next strixw-tuned; ~50 t/s out to ~492k context",
+            "likes": 41,
+            "comments": 0,
             "reshares": 0,
-            "views": 22
+            "views": 0
           }
         ],
-        "posts_7d": 12,
-        "score_7d": 53.4,
-        "buzz_7d": 53.4,
+        "posts_7d": 13,
+        "score_7d": 59.1,
+        "buzz_7d": 59.1,
         "speed_bonus": 5.0,
-        "trend_score": 58.4
+        "trend_score": 64.1
       }
     },
     {
@@ -2327,6 +2389,149 @@
       }
     },
     {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "19",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas vs llama.cpp 12 tok/s; Q4_K_M",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "239",
+          "hardware": "M4 Max",
+          "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 3,
+          "views": 755,
+          "interactions": 0
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE, experts in system RAM + GPU cache",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 86,
+          "comments": 11,
+          "reshares": 7,
+          "views": 8706,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Vulkan, Q4_K_M, MTP head N=5, 291W power cap; 153-190 t/s MTP on, 129 t/s MTP off, 97% draft acceptance (decode)",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "FreeToken"
+      ],
+      "why": "Qwen3.6-35B-A3B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 2,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/kumard_3/status/2104882430364815555",
+            "date": "2026-09-29",
+            "engine": "FreeToken",
+            "tps": "39.3",
+            "hardware": "8GB GPU (est, vendor-claimed MoE weight offload)",
+            "quant": "MoE, experts across VRAM/RAM",
+            "likes": 1,
+            "comments": 2,
+            "reshares": 0,
+            "views": 52
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+            "date": "2026-10-07",
+            "engine": "mlx-serve",
+            "tps": "239",
+            "hardware": "M4 Max",
+            "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
+            "likes": 2,
+            "comments": 2,
+            "reshares": 3,
+            "views": 755
+          },
+          {
+            "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+            "date": "2026-09-27",
+            "engine": "FreeToken",
+            "tps": "39.3",
+            "hardware": "8GB GPU",
+            "quant": "MoE, experts in system RAM + GPU cache",
+            "likes": 86,
+            "comments": 11,
+            "reshares": 7,
+            "views": 8706
+          },
+          {
+            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+            "date": "2026-10-12",
+            "engine": "Janas",
+            "tps": "19",
+            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+            "quant": "Janas vs llama.cpp 12 tok/s; Q4_K_M",
+            "likes": 0,
+            "comments": 1,
+            "reshares": 5,
+            "views": 409
+          }
+        ],
+        "posts_7d": 2,
+        "buzz_7d": 7.5,
+        "score_7d": 7.5,
+        "speed_bonus": 4.6,
+        "trend_score": 12.1
+      }
+    },
+    {
       "id": "nemotron-3.5-lightning-30b-a3b",
       "name": "Nemotron 3.5 Lightning 30B-A3B",
       "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
@@ -2429,6 +2634,181 @@
       }
     },
     {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "27",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas vs llama.cpp 18 tok/s; Q4_K_M",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        },
+        {
+          "engine": "MLX",
+          "tps": "74",
+          "hardware": "M1 Max",
+          "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
+          "likes": 7,
+          "comments": 3,
+          "reshares": 2,
+          "views": 1028,
+          "interactions": 0
+        }
+      ],
+      "why": "LittleBit Qwen3-4B in 4-bit MLX for Apple Silicon; ~74 tok/s on M1 Max.",
+      "last_seen": "2026-10-12",
+      "engagement": {
+        "likes": 7,
+        "comments": 3,
+        "reshares": 2,
+        "views": 1028,
+        "interactions": 0,
+        "last_7d_likes": 3,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
+            "date": "2026-10-09",
+            "engine": "MLX",
+            "tps": "74",
+            "hardware": "M1 Max",
+            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+            "likes": 7,
+            "comments": 3,
+            "reshares": 2,
+            "views": 1028
+          },
+          {
+            "url": "https://lightbrd.com/LittleBit_llm/status/2108595901514338423",
+            "date": "2026-10-09",
+            "engine": "MLX",
+            "tps": "74",
+            "hardware": "M1 Max",
+            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+            "date": "2026-10-12",
+            "engine": "Janas",
+            "tps": "27",
+            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+            "quant": "Janas vs llama.cpp 18 tok/s; Q4_K_M",
+            "likes": 0,
+            "comments": 1,
+            "reshares": 5,
+            "views": 409
+          }
+        ],
+        "posts_7d": 3,
+        "buzz_7d": 8.7,
+        "score_7d": 8.7,
+        "speed_bonus": 3.1,
+        "trend_score": 11.8
+      },
+      "supported_engines": [
+        "MLX"
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-13",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max (Apple Silicon)",
+          "quant": "vendor day-1 figure, 24B A2B MoE, 131K context",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/liquidai/status/2110055810940428387",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 96,
+          "views": 6322,
+          "interactions": 0
+        }
+      ],
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "views": 6322,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/liquidai/status/2110055810940428387",
+            "date": "2026-10-13",
+            "engine": "MLX",
+            "tps": "184",
+            "hardware": "Apple M5 Max (Apple Silicon)",
+            "quant": "vendor day-1 figure, 24B A2B MoE, 131K context",
+            "likes": 2,
+            "comments": 0,
+            "reshares": 96,
+            "views": 6322
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 6.0,
+        "score_7d": 6.0,
+        "speed_bonus": 4.3,
+        "trend_score": 10.3
+      },
+      "supported_engines": [
+        "MLX"
+      ],
+      "why": "LFM2.5-24B-A2B — see source posts."
+    },
+    {
       "id": "cyber-frost-3.8-mlx",
       "name": "CYBER-FROST-3.8-MLX",
       "full_name": "CYBER-FROST-3.8-MLX-4bit",
@@ -2494,123 +2874,6 @@
       "supported_engines": [
         "TensorFold"
       ]
-    },
-    {
-      "id": "qwen3.6-35b-a3b",
-      "name": "Qwen3.6-35B-A3B",
-      "full_name": "Qwen3.6-35B-A3B",
-      "type": "LLM (MoE)",
-      "license": "Apache 2.0",
-      "params": "35B (MoE, 3B active)",
-      "hf": "Qwen/Qwen3.6-35B-A3B",
-      "vram_tier": "8GB",
-      "vram_min": "8GB",
-      "backends": [
-        "CUDA",
-        "ROCm",
-        "Metal"
-      ],
-      "last_seen": "2026-10-07",
-      "engines": [
-        {
-          "engine": "mlx-serve",
-          "tps": "239",
-          "hardware": "M4 Max",
-          "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
-          "likes": 2,
-          "comments": 2,
-          "reshares": 3,
-          "views": 755,
-          "interactions": 0
-        },
-        {
-          "engine": "FreeToken",
-          "tps": "39.3",
-          "hardware": "8GB GPU",
-          "quant": "MoE, experts in system RAM + GPU cache",
-          "date": "2026-09-27",
-          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
-          "likes": 86,
-          "comments": 11,
-          "reshares": 7,
-          "views": 8706,
-          "interactions": 0
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "190",
-          "hardware": "RX 7900 XTX 24GB",
-          "quant": "Vulkan, Q4_K_M, MTP head N=5, 291W power cap; 153-190 t/s MTP on, 129 t/s MTP off, 97% draft acceptance (decode)",
-          "date": "2026-07-11",
-          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
-          "likes": 114,
-          "comments": 3,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "FreeToken"
-      ],
-      "why": "Qwen3.6-35B-A3B — see source posts.",
-      "formats": [
-        {
-          "name": "Qwen3.6-35B-A3B",
-          "hf": "Qwen/Qwen3.6-35B-A3B"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/kumard_3/status/2104882430364815555",
-            "date": "2026-09-29",
-            "engine": "FreeToken",
-            "tps": "39.3",
-            "hardware": "8GB GPU (est, vendor-claimed MoE weight offload)",
-            "quant": "MoE, experts across VRAM/RAM",
-            "likes": 1,
-            "comments": 2,
-            "reshares": 0,
-            "views": 52
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
-            "date": "2026-10-07",
-            "engine": "mlx-serve",
-            "tps": "239",
-            "hardware": "M4 Max",
-            "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
-            "likes": 2,
-            "comments": 2,
-            "reshares": 3,
-            "views": 755
-          },
-          {
-            "url": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
-            "date": "2026-09-27",
-            "engine": "FreeToken",
-            "tps": "39.3",
-            "hardware": "8GB GPU",
-            "quant": "MoE, experts in system RAM + GPU cache",
-            "likes": 86,
-            "comments": 11,
-            "reshares": 7,
-            "views": 8706
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 3.7,
-        "score_7d": 3.7,
-        "speed_bonus": 4.6,
-        "trend_score": 8.3
-      }
     },
     {
       "id": "qwen3-14b",
@@ -2704,85 +2967,6 @@
         "Ollama"
       ],
       "vram_min": "8GB"
-    },
-    {
-      "id": "qwen3-4b",
-      "name": "Qwen3-4B",
-      "full_name": "Qwen3-4B",
-      "type": "LLM",
-      "license": "Apache 2.0",
-      "params": "4B",
-      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
-      "vram_tier": "8GB",
-      "vram_min": "8GB",
-      "backends": [
-        "Metal"
-      ],
-      "formats": [
-        {
-          "name": "MLX",
-          "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit"
-        }
-      ],
-      "engines": [
-        {
-          "engine": "MLX",
-          "tps": "74",
-          "hardware": "M1 Max",
-          "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
-          "date": "2026-10-09",
-          "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
-          "likes": 7,
-          "comments": 3,
-          "reshares": 2,
-          "views": 1028,
-          "interactions": 0
-        }
-      ],
-      "why": "LittleBit Qwen3-4B in 4-bit MLX for Apple Silicon; ~74 tok/s on M1 Max.",
-      "last_seen": "2026-10-09",
-      "engagement": {
-        "likes": 7,
-        "comments": 3,
-        "reshares": 2,
-        "views": 1028,
-        "interactions": 0,
-        "last_7d_likes": 2,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998",
-            "date": "2026-10-09",
-            "engine": "MLX",
-            "tps": "74",
-            "hardware": "M1 Max",
-            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
-            "likes": 7,
-            "comments": 3,
-            "reshares": 2,
-            "views": 1028
-          },
-          {
-            "url": "https://lightbrd.com/LittleBit_llm/status/2108595901514338423",
-            "date": "2026-10-09",
-            "engine": "MLX",
-            "tps": "74",
-            "hardware": "M1 Max",
-            "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 2,
-        "buzz_7d": 4.9,
-        "score_7d": 4.9,
-        "speed_bonus": 3.1,
-        "trend_score": 8.0
-      },
-      "supported_engines": [
-        "MLX"
-      ]
     },
     {
       "id": "qwen2.5-1.5b-instruct",
@@ -3002,6 +3186,161 @@
         "score_7d": 4.5,
         "speed_bonus": 2.6,
         "trend_score": 7.1
+      }
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-30B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "Vitanom Android app (llama.cpp CPU-only): Qwen3-30B-A3B UD-Q2_K_XL (11.8 GB) loads on a 12GB phone; MoE leaves cold experts on flash and re-reads them when the router changes, paying 'a few tokens per second' instead of a server.",
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "32",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas vs llama.cpp 15 tok/s; Q4_K_M",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
+          "quant": "UD-Q2_K_XL, 11.8 GB; MoE 128 experts/layer, 8 active (~3B params of work per token) with cold experts left on flash and re-read on router change",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568",
+          "likes": 7,
+          "comments": 8,
+          "reshares": 34,
+          "views": 1000,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/nrlartt/status/2104892734003642568",
+            "date": "2026-09-29",
+            "engine": "llama.cpp",
+            "tps": "5",
+            "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
+            "quant": "UD-Q2_K_XL, 11.8 GB; MoE 128 experts/layer, 8 active (~3B params of work per token) with cold experts left on flash and re-read on router change",
+            "likes": 7,
+            "comments": 8,
+            "reshares": 34,
+            "views": 1000
+          },
+          {
+            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+            "date": "2026-10-12",
+            "engine": "Janas",
+            "tps": "32",
+            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+            "quant": "Janas vs llama.cpp 15 tok/s; Q4_K_M",
+            "likes": 0,
+            "comments": 1,
+            "reshares": 5,
+            "views": 409
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 3.7,
+        "score_7d": 3.7,
+        "speed_bonus": 2.1,
+        "trend_score": 5.8
+      }
+    },
+    {
+      "id": "qwen3-next-80b-a3b",
+      "name": "Qwen3-Next-80B-A3B",
+      "full_name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "80B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "vram_tier": "48",
+      "vram_min": "48GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "24",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas draft: 37 tok/s; llama.cpp baseline 2.8 tok/s (cpu-moe, Q4_K_M)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        }
+      ],
+      "why": "Runs a 48GB 80B-A3B MoE model on a 32GB laptop by streaming experts from NVMe SSD (Janas engine); 24 tok/s gen (37 with draft block), 62 tok/s prompt read.",
+      "last_seen": "2026-10-12",
+      "supported_engines": [
+        "Janas"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3-Next-80B-A3B",
+          "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+            "date": "2026-10-12",
+            "engine": "Janas",
+            "tps": "24",
+            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+            "quant": "Janas draft: 37 tok/s; llama.cpp baseline 2.8 tok/s (cpu-moe, Q4_K_M)",
+            "likes": 0,
+            "comments": 1,
+            "reshares": 5,
+            "views": 409
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 3.7,
+        "score_7d": 3.7,
+        "speed_bonus": 1.8,
+        "trend_score": 5.5
       }
     },
     {
@@ -3268,71 +3607,6 @@
             "tps": "5",
             "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
             "quant": "Q4_K_M, ~2.5 GB, mmap so weights stay on flash and kernel pages in what each token touches; no GPU backend, CPU path uses KleidiAI on arm64",
-            "likes": 7,
-            "comments": 8,
-            "reshares": 34,
-            "views": 1000
-          }
-        ],
-        "posts_7d": 0,
-        "buzz_7d": 0,
-        "score_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      }
-    },
-    {
-      "id": "qwen3-30b-a3b",
-      "name": "Qwen3-30B-A3B",
-      "full_name": "Qwen3-30B-A3B-Instruct",
-      "type": "LLM (MoE)",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "Qwen/Qwen3-30B-A3B"
-        }
-      ],
-      "license": "Apache 2.0",
-      "params": "30B (MoE, 3B active)",
-      "hf": "Qwen/Qwen3-30B-A3B",
-      "vram_tier": "CPU",
-      "vram_min": "CPU",
-      "backends": [
-        "CPU"
-      ],
-      "last_seen": "2026-09-29",
-      "why": "Vitanom Android app (llama.cpp CPU-only): Qwen3-30B-A3B UD-Q2_K_XL (11.8 GB) loads on a 12GB phone; MoE leaves cold experts on flash and re-reads them when the router changes, paying 'a few tokens per second' instead of a server.",
-      "engines": [
-        {
-          "engine": "llama.cpp",
-          "tps": "5",
-          "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
-          "quant": "UD-Q2_K_XL, 11.8 GB; MoE 128 experts/layer, 8 active (~3B params of work per token) with cold experts left on flash and re-read on router change",
-          "date": "2026-09-29",
-          "source_post": "https://lightbrd.com/nrlartt/status/2104892734003642568",
-          "likes": 7,
-          "comments": 8,
-          "reshares": 34,
-          "views": 1000,
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "llama.cpp"
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/nrlartt/status/2104892734003642568",
-            "date": "2026-09-29",
-            "engine": "llama.cpp",
-            "tps": "5",
-            "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
-            "quant": "UD-Q2_K_XL, 11.8 GB; MoE 128 experts/layer, 8 active (~3B params of work per token) with cold experts left on flash and re-read on router change",
             "likes": 7,
             "comments": 8,
             "reshares": 34,

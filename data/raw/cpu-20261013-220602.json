@@ -1,0 +1,134 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-13T22:06:02Z",
+  "models": [
+    {
+      "id": "qwen3-next-80b-a3b",
+      "name": "Qwen3-Next-80B-A3B",
+      "full_name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "80B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "vram_tier": "48",
+      "vram_min": "48GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "24",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas draft: 37 tok/s; llama.cpp baseline 2.8 tok/s (cpu-moe, Q4_K_M)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "engine_repo": "https://github.com/prabanta-dev/janas",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        }
+      ],
+      "why": "Runs a 48GB 80B-A3B MoE model on a 32GB laptop by streaming experts from NVMe SSD (Janas engine); 24 tok/s gen (37 with draft block), 62 tok/s prompt read.",
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "27",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas vs llama.cpp 18 tok/s; Q4_K_M",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "engine_repo": "https://github.com/prabanta-dev/janas",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        }
+      ],
+      "why": "see source posts.",
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "32",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas vs llama.cpp 15 tok/s; Q4_K_M",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "engine_repo": "https://github.com/prabanta-dev/janas",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        }
+      ],
+      "why": "see source posts.",
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Janas",
+          "tps": "19",
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+          "quant": "Janas vs llama.cpp 12 tok/s; Q4_K_M",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "engine_repo": "https://github.com/prabanta-dev/janas",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 409,
+          "interactions": 415
+        }
+      ],
+      "why": "see source posts.",
+      "last_seen": "2026-10-12"
+    }
+  ]
+}
