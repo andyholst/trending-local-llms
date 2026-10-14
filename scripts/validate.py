@@ -5,7 +5,9 @@ Runs in CI (on PRs) and locally. Enforces the no-removal guarantee and the
 data-quality rules from AGENTS.md:
 
   1. No model that existed in a previous snapshot may be removed from the
-     current store (retention, not deletion).
+     current store (retention, not deletion), and nothing that existed in that
+     snapshot may lose a key, a measurement, a t/s or an engagement counter
+     (additive only — AGENTS.md §2).
   2. New models may be added; they must be valid.
   3. Every model has: name, full_name, HF link, license, params, VRAM tier,
      and at least one engine measurement with engine name + t/s + repo link.
@@ -266,6 +268,129 @@ def check_no_removal(store: dict, snap_dir: Path) -> None:
         fail(f"models removed from previous snapshot {snaps[-1].name}: {sorted(removed)}")
     else:
         print(f"  OK: no models removed (prev {len(prev_ids)} -> cur {len(cur_ids)})")
+
+
+# --- additive-only: no key / value loss (AGENTS.md §2) -----------------------
+#
+# `check_no_removal` only compares MODEL IDS. Everything else could disappear
+# silently: an optional key (`engagement.seen_posts`, a measurement's
+# `hardware`/`quant`), a whole measurement, an engagement counter. The contract
+# (additionalProperties: false) catches an UNDECLARED key and a missing
+# REQUIRED one, never a dropped optional one — and never a shrunk value.
+# This check compares the store against the newest snapshot and fails when
+# anything that existed there lost a key, a measurement, a t/s or a counter.
+
+# Lists of objects inside a model row whose entries may legitimately collapse or
+# reorder — merge_engines collapses concordant measurements, and placeholder
+# posts are rebuilt from the measurements on every sort. Their KEYS are
+# therefore compared per model as a union, not per element.
+_KEY_UNION_LISTS = ("engines", "seen_posts", "formats")
+
+# Scalar lists inside a model row that may only ever GROW: a backend, a
+# supported engine or a format recorded once stays recorded (AGENTS.md §2.3).
+_GROW_ONLY_LISTS = ("backends", "supported_engines")
+
+# Engagement counters. Summed per (engine, GPU size): ingest keeps the HIGHER
+# value for the same measurement, so a lower total means a figure was lost.
+_COUNTERS = ("likes", "comments", "reshares", "views", "interactions")
+
+# Findings printed before the report is summarised (a broken merge can lose
+# hundreds of keys at once and the CI log stays readable).
+_REPORT_LIMIT = 25
+
+
+def _missing_key_paths(prev, cur, path=()):
+    """Yield the key paths present in the snapshot (`prev`) but gone from `cur`.
+
+    Dicts are walked key by key. A list of objects is compared by the UNION of
+    its entries' keys, so collapsing or reordering entries (which the pipeline
+    does legitimately) is not reported as loss, while a key that disappeared
+    from every entry of that list is.
+    """
+    if isinstance(prev, dict) and isinstance(cur, dict):
+        for key, value in prev.items():
+            if key not in cur:
+                yield path + (key,)
+            else:
+                yield from _missing_key_paths(value, cur[key], path + (key,))
+    elif (isinstance(prev, list) and isinstance(cur, list) and prev and isinstance(prev[0], dict)
+          and path and path[-1] in _KEY_UNION_LISTS):
+        before = set().union(*[set(e) for e in prev if isinstance(e, dict)])
+        after = set().union(*[set(e) for e in cur if isinstance(e, dict)]) if cur else set()
+        for key in sorted(before - after):
+            yield path + (key,)
+
+
+def _by_engine_size(measurements: list) -> dict:
+    """Group measurements by (engine, GPU size).
+
+    The GPU SIZE — not the full hardware string — is the group key, so a
+    reworded hardware string ('RTX 4090' -> 'RTX 4090 24GB') is not a loss, and
+    a rewritten quant is not either.
+    """
+    import update_trending as ut
+
+    out: dict = {}
+    for e in measurements:
+        out.setdefault((e.get("engine", ""), ut._gpu_size(e.get("hardware", ""))), []).append(e)
+    return out
+
+
+def check_no_value_loss(store: dict, snap_dir: Path) -> None:
+    """No key, measurement, t/s or counter that existed in the newest snapshot
+    may be lost from the store. Additive only: keys may be ADDED, never removed
+    or narrowed (AGENTS.md §2; the contract versioning rule in §6b)."""
+    import update_trending as ut
+
+    snaps = sorted(snap_dir.glob("trending-*.json"))
+    if not snaps:
+        print("  (no prior snapshots — nothing to compare for value loss)")
+        return
+    prev = json.loads(snaps[-1].read_text())
+    snap_name = snaps[-1].name
+    by_id = {m.get("id"): m for m in store["models"]}
+    findings: list[str] = []
+
+    for pm in prev.get("models", []):
+        model_id = pm.get("id")
+        cm = by_id.get(model_id)
+        if cm is None:
+            continue  # a removed model is check_no_removal's failure, not ours
+
+        for path in _missing_key_paths(pm, cm):
+            findings.append(f"{model_id}: key '{'.'.join(str(p) for p in path)}' present in {snap_name} is gone")
+
+        for field in _GROW_ONLY_LISTS:
+            lost = [x for x in pm.get(field, []) if x not in (cm.get(field) or [])]
+            if lost:
+                findings.append(f"{model_id}: {field} lost {lost}")
+
+        before = _by_engine_size(pm.get("engines", []))
+        after = _by_engine_size(cm.get("engines", []))
+        for key in sorted(before, key=str):
+            engine, size = key
+            label = f"{engine} on {size or 'unspecified hardware'}"
+            if key not in after:
+                findings.append(f"{model_id}: measurement {label} ({len(before[key])} in {snap_name}) is gone")
+                continue
+            best_before = max(ut._tps_core(e.get("tps")) for e in before[key])
+            best_after = max(ut._tps_core(e.get("tps")) for e in after[key])
+            if best_after < best_before:
+                findings.append(f"{model_id}: {label} t/s lowered {best_before} -> {best_after}")
+            for counter in _COUNTERS:
+                was = sum(e.get(counter, 0) for e in before[key])
+                now = sum(e.get(counter, 0) for e in after[key])
+                if now < was:
+                    findings.append(f"{model_id}: {label} {counter} lowered {was} -> {now}")
+
+    if not findings:
+        print(f"  OK: additive-only — no key/value loss vs {snap_name} ({len(store['models'])} models)")
+        return
+
+    for f in findings[:_REPORT_LIMIT]:
+        fail(f)
+    if len(findings) > _REPORT_LIMIT:
+        fail(f"... and {len(findings) - _REPORT_LIMIT} more key/value losses vs {snap_name}")
 
 
 def check_model_fields(store: dict) -> None:
@@ -1154,6 +1279,7 @@ def main() -> int:
             checks.append((label, fn))
 
     add("no-removal guarantee", "removal", lambda: check_no_removal(store, snap_dir))
+    add("additive-only (no key/value loss)", "removal", lambda: check_no_value_loss(store, snap_dir))
     add("no duplicate models", "data", lambda: check_no_duplicates(store))
     add("no duplicate engines", "data", lambda: check_no_duplicate_engines(store))
     add("tps starts with a numeric token", "data", lambda: check_tps_shape(store))
