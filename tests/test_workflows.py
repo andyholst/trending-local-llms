@@ -450,6 +450,33 @@ def test_issue_bot():
     check("issue-bot: guard job runs before any secret-bearing job",
           "guard" in _deps(jobs, "implement"), _deps(jobs, "implement"))
 
+    # The first REAL run (#124, run 38502619350) failed twice, and both failures
+    # are guardable:
+    #  1. `make implement-issue` ran hermes WITHOUT `_setup` in the same
+    #     container, so the `nous-deepseek` alias did not exist and Hermes
+    #     auto-routed to HF_TOKEN -> `HTTP 403 ... Inference Providers`;
+    #  2. the outcome comment used the owner PAT, which has no Issues write ->
+    #     `GraphQL: Resource not accessible by personal access token (addComment)`.
+    mk = (ROOT / "Makefile").read_text()
+    recipe = re.search(r"\nimplement-issue:\n((?:\t[^\n]*\n)+)", mk)
+    body = recipe.group(1) if recipe else ""
+    check("issue-bot: `make implement-issue` runs `_setup` in the SAME container as the hermes call",
+          "_setup" in body and "_implement-issue" in body, body[:200])
+    check("issue-bot: the hermes recipe is the alias-using one (`-m nous-deepseek` on the continued line)",
+          "-m nous-deepseek" in mk.split("_implement-issue:")[1][:4000], "")
+    comment = step(impl, "Report the outcome")
+    check("issue-bot: the outcome comment uses the default token (the PAT has no Issues write)",
+          comment.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", comment.get("env"))
+    resolve = step(impl, "Resolve the issue")
+    check("issue-bot: issue reads use the default token too",
+          resolve.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", resolve.get("env"))
+    check("issue-bot: the PR step still uses the owner PAT (a GITHUB_TOKEN PR is held for approval)",
+          PAT in str(step(impl, "Open the PR").get("env", {}).get("GH_TOKEN", "")))
+    fail_step = step(impl, "Fail loudly")
+    check("issue-bot: a missing implementation makes the RUN red at a named step",
+          "implemented != 'true'" in str(fail_step.get("if", ""))
+          and "exit 1" in fail_step.get("run", ""), fail_step.get("if"))
+
 
 def test_unit_tests_really_run():
     """The unit tests are plain scripts (pytest is not in the test image), so a

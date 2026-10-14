@@ -91,7 +91,12 @@ jobs:
       - name: Resolve the issue (open, labelled, one branch per issue)
         id: iss
         env:
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          # Issue READS + the outcome comment use the default token: this job
+          # declares `permissions: issues: write`, while FIXBOT_DISPATCH_TOKEN is
+          # scoped to Actions/Contents/Pull-requests only — commenting on an issue
+          # with it fails (measured: `GraphQL: Resource not accessible by personal
+          # access token (addComment)` on the first run, #124).
+          GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number || inputs.issue_number }}
         run: |
@@ -240,7 +245,8 @@ jobs:
       - name: Report the outcome on the issue
         if: always() && steps.iss.outputs.implement == 'true'
         env:
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          # default token + `permissions: issues: write` (the PAT cannot comment)
+          GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ steps.iss.outputs.issue }}
           BRANCH: ${{ steps.iss.outputs.branch }}
@@ -261,3 +267,18 @@ jobs:
             echo "and is listed in this run's report artifact."
           } > comment.md
           gh issue comment "$ISSUE" --body-file comment.md
+
+      # The implement step is soft-captured so the outcome comment still runs;
+      # this is what makes the RUN red when there is nothing to review. Without
+      # it the first real run (#124) failed only because the comment hit the
+      # wrong token — the missing implementation itself was invisible.
+      - name: Fail loudly when the implementation did not happen
+        if: always() && steps.iss.outputs.implement == 'true' && steps.impl.outputs.implemented != 'true'
+        env:
+          RC: ${{ steps.impl.outputs.rc }}
+        run: |
+          echo "::error::issue-bot produced no implementation for #$ISSUE (make implement-issue rc=${RC:-unknown})."
+          echo "See the 'Implement the issue' step above: the agent must exit non-zero on its own"
+          echo "failure, and a missing alias / dead key / burned token budget is a pipeline defect,"
+          echo "not a data problem."
+          exit 1
