@@ -1011,6 +1011,9 @@ _sleep = time.sleep  # patched in tests
 # HF repo many times (86 HF links, 15 unique); checking each once is what keeps
 # a full validate under the HF rate limit.
 _LINK_CACHE: dict[str, str] = {}
+# Lenient verdicts (README / source_post), keyed the same way: the same URL is
+# probed once per run whichever kind asks for it.
+_LENIENT_CACHE: dict[str, bool] = {}
 
 
 def _retry_after(e: urllib.error.HTTPError, attempt: int) -> float:
@@ -1091,19 +1094,32 @@ def _link_ok(url: str, timeout: float = 8.0, strict: bool = True) -> bool:
 
 
 def _link_lenient_ok(url: str, timeout: float = 8.0) -> bool:
-    headers = {"User-Agent": "trending-local-llms-linkcheck/1.0"}
-    for method in ("HEAD", "GET"):
-        try:
-            req = urllib.request.Request(url, method=method, headers=headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                if 200 <= resp.status < 300 or resp.status in _INDETERMINATE:
-                    return True
-        except urllib.error.HTTPError as e:
-            if 200 <= e.code < 300 or e.code in _INDETERMINATE:
-                return True
-        except Exception:  # noqa: BLE001 — connection error / timeout / DNS
-            continue
-    return False
+    """Lenient verdict for README / source_post links: dead ONLY on a definitive
+    status (404/410/401, or DNS), observed after the same bounded retry/backoff as
+    the strict probe. Anything that could not be verified (429/5xx/timeout, and
+    403 for lenient kinds) counts as reachable and is WARNed with its evidence.
+
+    It used to be a single HEAD->GET pass with `except Exception: continue`, so a
+    timeout or connection reset returned False and `check_links_resolve` reported
+    "does not resolve" with no status and no attempt count. Measured (#143):
+    PR #142's validate went red on
+    `[readme] README.md: https://github.com/vllm-project/vllm does not resolve`
+    — a live repo — while the same commit passed on master minutes earlier and was
+    green on a re-run. One observation must not decide a link's existence.
+    """
+    if url in _LENIENT_CACHE:
+        return _LENIENT_CACHE[url]
+    status, detail = _probe(url, timeout)
+    if status == LINK_DEAD:
+        # 401/404/410/DNS are definitive. 403 is a bot-block: the content is
+        # there, the probe was refused — lenient kinds accept it.
+        ok = detail == "HTTP 403"
+    else:
+        if status == LINK_UNVERIFIED:
+            print(f"  WARN: link unverified ({detail}): {url}")
+        ok = True
+    _LENIENT_CACHE[url] = ok
+    return ok
 
 
 def _unverified(url: str) -> bool:

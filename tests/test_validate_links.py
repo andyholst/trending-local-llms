@@ -119,6 +119,7 @@ def _run_hermetic(s):
         try:
             V.FAILURES.clear()
             V._LINK_CACHE.clear()
+            V._LENIENT_CACHE.clear()
             V.check_links_resolve(s)
         finally:
             V.README, V.RAW_DIR = saved_r, saved_raw
@@ -359,6 +360,9 @@ def test_link_ok_strict_2xx():
     # lenient mode (source_post / README): 403/429/5xx is NOT a dead link
     for status, expect in [(200, True), (403, True), (429, True), (503, True), (404, False)]:
         V._LINK_CACHE.clear()
+        # The lenient verdict has its own cache (a lenient probe and a strict one
+        # answer differently for 403), so the loop must reset it as well.
+        V._LENIENT_CACHE.clear()
         with mock.patch("urllib.request.urlopen", side_effect=_urlopen_seq([_http_error(status) if status >= 400 else status])[0]):
             got = V._link_ok("https://example.com/x", strict=False)
         check(f"link_ok lenient: HTTP {status} -> {expect}", got == expect, f"got {got}")
@@ -404,6 +408,111 @@ def test_strict_rate_limit_is_retried_then_unverified_not_dead():
     with mock.patch.object(V, "_sleep", lambda s: None), mock.patch("urllib.request.urlopen", side_effect=fake):
         dead = V._link_dead("https://no-such-host.invalid/x", strict=True)
     check("dns: unresolvable host is dead", dead and len(calls) == 1, f"calls={calls}")
+
+
+def test_lenient_link_retries_transient_failures():
+    """Issue #143: a lenient (README / source_post) link used to be decided by a
+    single probe, so one timeout or connection reset read as "does not resolve".
+    It now goes through the same bounded retry/backoff as the strict probe."""
+    import socket
+    import urllib.error
+    import unittest.mock as mock
+    url = "https://github.com/vllm-project/vllm"
+
+    # Given a lenient link whose first probe fails transiently and whose second
+    # succeeds (the measured flake: one observation decided a live repo)
+    V._LINK_CACHE.clear()
+    V._LENIENT_CACHE.clear()
+    fake, calls = _urlopen_seq([urllib.error.URLError(socket.timeout("timed out")), 200])
+
+    # When  the lenient verdict is taken
+    with mock.patch.object(V, "_sleep", lambda s: None), \
+         mock.patch("urllib.request.urlopen", side_effect=fake):
+        dead = V._link_dead(url, strict=False)
+
+    # Then  it is NOT dead and the transient error was actually retried
+    check("lenient: a transient failure is not a dead link", not dead, f"calls={calls}")
+    check("lenient: the transient failure is retried", len(calls) == 2, f"calls={calls}")
+
+    # Given a link whose probe NEVER settles (a persistent timeout)
+    V._LINK_CACHE.clear()
+    V._LENIENT_CACHE.clear()
+    fake, calls = _urlopen_seq([urllib.error.URLError(socket.timeout("timed out"))])
+
+    # When  the lenient verdict is taken
+    with mock.patch.object(V, "_sleep", lambda s: None), \
+         mock.patch("urllib.request.urlopen", side_effect=fake):
+        dead = V._link_dead(url, strict=False)
+
+    # Then  it is unverified, never dead, and the attempts are bounded
+    check("lenient: a probe that never settles is not dead", not dead)
+    check("lenient: bounded attempts", len(calls) == V._LINK_RETRIES + 1, f"{len(calls)} calls")
+
+    # Given a definitive 404 (and a bot-block 403)
+    for status, expect_dead in ((404, True), (410, True), (403, False)):
+        V._LINK_CACHE.clear()
+        V._LENIENT_CACHE.clear()
+        fake, calls = _urlopen_seq([_http_error(status)])
+        with mock.patch.object(V, "_sleep", lambda s: None), \
+             mock.patch("urllib.request.urlopen", side_effect=fake):
+            dead = V._link_dead("https://github.com/org/nope", strict=False)
+        # Then  only the definitive status is dead, on ONE probe
+        check(f"lenient: HTTP {status} -> dead={expect_dead}", dead == expect_dead, f"dead={dead}")
+        check(f"lenient: HTTP {status} is not retried", len(calls) == 1, f"calls={calls}")
+
+    # Given the same lenient URL asked for twice in one run
+    V._LINK_CACHE.clear()
+    V._LENIENT_CACHE.clear()
+    fake, calls = _urlopen_seq([200])
+    with mock.patch("urllib.request.urlopen", side_effect=fake):
+        V._link_lenient_ok(url)
+        V._link_lenient_ok(url)
+
+    # Then  it is probed once (a full validate must not burst past a rate limit)
+    check("lenient: the same URL is probed once per run", len(calls) == 1, f"{len(calls)} probes")
+
+
+def test_flaky_readme_link_does_not_fail_validation():
+    """End to end through check_links_resolve: a README link that fails its first
+    probe and resolves on the retry must not produce a 'does not resolve'
+    failure — this is run 38538830149, reproduced."""
+    import socket
+    import urllib.error
+    import unittest.mock as mock
+    flaky = "https://github.com/vllm-project/vllm"
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        rp = td / "README.md"
+        rp.write_text(f"see [vllm]({flaky})")
+        rawdir = td / "raw"
+        rawdir.mkdir()
+        saved = V.README, V.RAW_DIR
+        V.README, V.RAW_DIR = rp, rawdir
+        seen = []
+
+        # Given the README's link answering a transient error the first time
+        def fake(req, timeout=None):
+            seen.append(req.full_url)
+            if req.full_url == flaky and len(seen) == 1:
+                raise urllib.error.URLError(socket.timeout("timed out"))
+            return FakeResp(200)
+        try:
+            V.FAILURES.clear()
+            V._LINK_CACHE.clear()
+            V._LENIENT_CACHE.clear()
+
+            # When  the link check runs
+            with mock.patch.object(V, "_sleep", lambda s: None), \
+                 mock.patch("urllib.request.urlopen", side_effect=fake):
+                V.check_links_resolve({"engines": {}, "models": []})
+        finally:
+            V.README, V.RAW_DIR = saved
+
+    # Then  the run reports no dead link for it, and the retry happened
+    dead = [m for m in V.FAILURES if m.startswith("link:") and flaky in m]
+    check("flaky README link: no 'does not resolve' failure", not dead, json.dumps(dead))
+    check("flaky README link: the first failure was retried",
+          len([u for u in seen if u == flaky]) >= 2, str(seen))
 
 
 def test_each_url_probed_once_per_run():
@@ -485,6 +594,8 @@ def main() -> int:
     test_link_ok_resolves_real_url()
     test_link_ok_strict_2xx()
     test_strict_rate_limit_is_retried_then_unverified_not_dead()
+    test_lenient_link_retries_transient_failures()
+    test_flaky_readme_link_does_not_fail_validation()
     test_each_url_probed_once_per_run()
     test_rate_limited_store_does_not_fail_validation()
     test_wrong_but_resolving_link_is_corrected()
