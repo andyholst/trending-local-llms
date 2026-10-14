@@ -385,6 +385,19 @@ data-gaps:
 data-gap-issue:
 	$(TEST_RUN) make _data-gap-issue
 
+# ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
+# The issue's title + body are written to issue.md at the repo root by
+# `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements
+# exactly that issue, additive only, with everything wired to a make target.
+.PHONY: _implement-issue
+_implement-issue:
+	hermes -z "Load AGENTS.md for rules. The data-gap issue you must implement is in issue.md at the repo root - read it FIRST and implement exactly its acceptance criteria; do not widen the scope and do not implement a different finding. HARD RULES: (1) ADDITIVE ONLY - never remove or rename an existing key and never shrink an existing value in data/models.json, data/raw/*.json, data/snapshots/*.json or the contracts; a new key is OPTIONAL and must NOT be added to a contract's required list (AGENTS.md rules 3b and 6b). (2) NEVER fabricate data: every value must trace to a real X post or to a verified upstream source, or be marked (est); if you cannot verify it, leave the key unset and say so in your summary. (3) WIRE EVERYTHING: any script, subcommand or validator check you add must be reachable from a make target CI runs - bundle it into an existing stage or add an internal _name recipe plus its public wrapper (AGENTS.md rule 6d) - and update that stage's tests in the same change (rule 6b). (4) If the data changed, regenerate README.md with python3 scripts/update_trending.py; if a stage or guard changed, update AGENTS.md including its section 8 row. (5) Run make validate, make validate-mapped and make test and fix what they report. Do not push, do not merge, do not touch master." \
+		-m nous-deepseek --reasoning $(HERMES_FIX_REASONING) --yolo
+
+.PHONY: implement-issue
+implement-issue:
+	$(DOCKER_RUN) make _implement-issue
+
 .PHONY: test
 test:
 	$(TEST_RUN) make _test
