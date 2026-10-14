@@ -484,8 +484,14 @@ def test_issue_bot():
           isinstance(sched, list) and any("19 */6 * * *" in str(s.get("cron")) for s in sched), sched)
     pick = jobs.get("pick", {})
     check("issue-bot: the picker needs the guard", "guard" in _deps(jobs, "pick"), _deps(jobs, "pick"))
-    check("issue-bot: the picker runs only for the schedule",
-          str(pick.get("if", "")) == "github.event_name == 'schedule'", pick.get("if"))
+    pick_if = str(pick.get("if", ""))
+    check("issue-bot: the picker runs for the cron OR a dispatch with no issue number",
+          "github.event_name == 'schedule'" in pick_if
+          and "workflow_dispatch" in pick_if and "inputs.issue_number == ''" in pick_if, pick_if)
+    sweep_branches = [p for p in cond.split("||") if "issue_number == ''" in p]
+    check("issue-bot: the sweep branch (cron or empty dispatch) requires a picked issue",
+          bool(sweep_branches) and all("needs.pick.outputs.issue != ''" in p for p in sweep_branches),
+          sweep_branches)
     pick_run = run_text(pick)
     check("issue-bot: the picker lists OPEN labelled issues oldest-first",
           "issue list" in pick_run and "data-gap-analysis" in pick_run and "sort_by(.createdAt)" in pick_run, "")
