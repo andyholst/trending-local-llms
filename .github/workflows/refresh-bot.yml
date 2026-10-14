@@ -348,15 +348,13 @@ jobs:
           # before self_correct_raw (only in validate-search) and the aggregate
           # aborted on raw snapshots with extra fields / missing last_seen.
           make correct-raw
-          # Validation is SOFT (like _refresh): a data-quality finding is
-          # reported but does NOT abort — the merged data still lands as a PR,
-          # qa-validate flags it, and fix-bot repairs it on the PR branch.
-          make validate || echo "[aggregate] _validate reported issues (see above); opening PR for review"
-          make validate-search || echo "[aggregate] _validate-search reported issues (see above)"
-          make validate-fetch || echo "[aggregate] Firecrawl->lightbrd search returned no data (worst case)"
-          make validate-mapped || echo "[aggregate] _validate-mapped reported issues (see above)"
-          make test || echo "[aggregate] _test reported failures (see above)"
-          echo "QA findings reported above; data landed for review."
+          # Validation is SOFT for FINDINGS (like _refresh): a data-quality
+          # finding is reported but does NOT abort — the merged data still lands
+          # as a PR, qa-validate flags it, and fix-bot repairs it on the PR branch.
+          # A target that could not run at all (no image, no command: docker
+          # 125/127) is NOT a finding and fails the job — the previous
+          # `|| echo` guards reported that state as a green run (issue #147).
+          make qa-report
 
       - name: Data-gap analysis (report only)
         run: make data-gaps
