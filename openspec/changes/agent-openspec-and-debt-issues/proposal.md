@@ -1,6 +1,7 @@
 # Proposal: agent-openspec-and-debt-issues
 
 Issue: #172
+PR: #173
 
 ## Why
 
