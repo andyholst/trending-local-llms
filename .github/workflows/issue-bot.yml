@@ -98,31 +98,29 @@ jobs:
     outputs:
       issue: ${{ steps.pick.outputs.issue }}
     steps:
-      - name: Pick the oldest unhandled data-gap issue
+      # The queue rule (`oldest open data-gap issue with no implementer`, and the
+      # reviewer's window) lives in scripts/issue_queue.py and is read by BOTH
+      # bots through `make issue-queue` (issue #179): one implementation, no
+      # second copy of the rule in shell. The checkout IS needed now — the job
+      # reads the repo's own target instead of pasting the rule inline.
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Pick the oldest unhandled data-gap issue (the shared queue)
         id: pick
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          PICK=""
-          CANDIDATES=$(gh issue list --repo "$REPO" --label data-gap-analysis --state open \
-            --limit 100 --json number,createdAt --jq 'sort_by(.createdAt) | .[].number')
-          for N in $CANDIDATES; do
-            BRANCHES=$(gh api "repos/$REPO/git/matching-refs/heads/ci/data-gap-${N}-" --jq 'length' 2>/dev/null || echo 0)
-            PRS=$(gh pr list --repo "$REPO" --state open --json headRefName \
-              --jq "[.[] | select(.headRefName | startswith(\"ci/data-gap-${N}-\"))] | length")
-            if [ "$BRANCHES" != "0" ] || [ "$PRS" != "0" ]; then
-              echo "#$N already has an implementer (branches=$BRANCHES prs=$PRS) - next candidate"
-              continue
-            fi
-            PICK="$N"
-            break
-          done
+          QUEUE=$(make issue-queue)
+          echo "$QUEUE"
+          # The head of the pick order (position=0) is the issue this sweep takes.
+          PICK=$(printf '%s\n' "$QUEUE" | sed -n 's/^issue=\([0-9][0-9]*\) position=0 .*/\1/p' | head -1)
           if [ -z "$PICK" ]; then
             echo "data-gap backlog empty: every open labelled issue has an implementer."
             echo "issue=" >> "$GITHUB_OUTPUT"
           else
-            echo "Sweeping #$PICK"
+            echo "Sweeping #$PICK (oldest with no implementer, and no reviewer holding it)"
             echo "issue=$PICK" >> "$GITHUB_OUTPUT"
           fi
 
@@ -208,6 +206,36 @@ jobs:
         if: steps.iss.outputs.implement == 'true'
         run: make hermes-smoke
 
+      # The WINDOW the issue reviewer defers to (issue #179): posted BEFORE the
+      # body is read by the implementation, so the reviewer sees it while this run
+      # is in flight and never rewrites the text this run implements — the text a
+      # human reviews would otherwise differ from the text the PR implements.
+      # Comments use the default token (`permissions: issues: write`): the owner
+      # PAT is scoped to Actions/Contents/Pull-requests and cannot comment
+      # (measured on #124: `Resource not accessible by personal access token`).
+      - name: Announce the window on the issue (the reviewer defers to this)
+        if: steps.iss.outputs.implement == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+          BRANCH: ${{ steps.iss.outputs.branch }}
+        run: |
+          {
+            echo "<!-- issue-bot-start: $(date -u +%FT%TZ) -->"
+            echo "**An implementer has started on this issue.**"
+            echo ""
+            echo "- branch: \`$BRANCH\`"
+            echo "- run: $GITHUB_SERVER_URL/$REPO/actions/runs/$GITHUB_RUN_ID"
+            echo ""
+            echo "The issue reviewer keeps a 3 h quiet window around this start: it will not"
+            echo "rewrite this body while the window is open, because this run reads the body"
+            echo "once, now — a rewrite would make the text a human reviews differ from the text"
+            echo "this run implements. It replies on the issue instead and files what it finds"
+            echo "as its own \`tech-debt\` issues."
+          } > start.md
+          gh issue comment "$ISSUE" --body-file start.md
+
       - name: Implement the issue (Hermes, through make)
         id: impl
         if: steps.iss.outputs.implement == 'true'
@@ -240,7 +268,7 @@ jobs:
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md start.md issue-body.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "The implementation produced no file changes - nothing to push."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
@@ -379,7 +407,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           sudo chown -R "$(id -u):$(id -g)" .
           git add -A
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md start.md issue-body.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Pipeline green with no extra changes."
             exit 0

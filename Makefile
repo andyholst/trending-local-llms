@@ -384,7 +384,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_issue_review.py)
 
 
 .PHONY: _requirements-test
@@ -608,6 +608,82 @@ implement-issue:
 	# issue-bot run (#124, run 38502619350): `HF_TOKEN` -> Hugging Face ->
 	# `HTTP 403 ... does not have sufficient permissions to call Inference Providers`.
 	$(DOCKER_RUN) sh -c "make _setup && make _implement-issue"
+
+# ---- the implementer's queue + the issue reviewer (issue #179) ----------------
+# TWO bots share ONE queue of `data-gap-analysis` issues: `issue-bot` implements
+# one per hour (oldest first), the issue reviewer refines the ones nobody has
+# started. They must never write the same issue at once, so the reviewer keeps a
+# quiet window around an implementer start — REVIEW_GAP_HOURS before the sweep
+# reaches the issue and the same gap after it started. ONE constant, read by both
+# bots through ONE queue implementation (scripts/issue_queue.py, rule 6d):
+# `issue-bot`'s pick runs `make issue-queue` instead of keeping its own copy of
+# the rule in shell.
+REVIEW_GAP_HOURS := 3
+
+.PHONY: issue-queue
+issue-queue: ## Print the implementer's queue (oldest first) with each issue's window
+	python3 scripts/issue_queue.py --gap-hours $(REVIEW_GAP_HOURS)
+
+.PHONY: review-issue-pick
+review-issue-pick: ## Choose the ONE issue this review run works (action=/issue=/path=)
+	python3 scripts/issue_review.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
+
+# Open the reviewer's window BEFORE anything is written: the `review-in-progress`
+# label is what `issue-bot`'s pick defers to, and (body path) one marker comment
+# `<!-- issue-review: <ISO8601Z> -->` records the instant for the next run.
+.PHONY: review-issue-mark
+review-issue-mark: ## Open the reviewer's window on ISSUE= (PATH=body|window)
+	python3 scripts/issue_review.py --mark $(ISSUE) --path $(PATH) $(if $(RUN),--run $(RUN),)
+
+# The TOCTOU re-check, run after the mark and BEFORE the write: the implementer
+# may have started while the review was being prepared, in which case the body
+# must not be touched (`PATH=window` re-checks the reply path instead).
+.PHONY: review-issue-guard
+review-issue-guard: ## Re-check that ISSUE= may still be written (PATH=body|window)
+	python3 scripts/issue_review.py --guard $(ISSUE) --for $(PATH) --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
+
+.PHONY: review-issue-body-hash
+review-issue-body-hash: ## Print the body hash of ISSUE= (proves the window path edited nothing)
+	python3 scripts/issue_review.py --body-hash $(ISSUE)
+
+.PHONY: review-issue-check-markers
+review-issue-check-markers: ## Fail when FILE= dropped an invisible marker from ISSUE='s body
+	python3 scripts/issue_review.py --check-markers $(ISSUE) --file $(if $(FILE),$(FILE),issue-body.md)
+
+.PHONY: review-issue-finish
+review-issue-finish: ## Close the reviewer's window on ISSUE=
+	python3 scripts/issue_review.py --finish $(ISSUE)
+
+# The reviewer's judgement, in the container like every other hermes call. The
+# issue (body + comments) is written to issue.md by the workflow; the agent
+# writes the REWRITTEN body to issue-body.md and its one summary comment to
+# comment.md - the workflow does the `gh` write, so no token ever reaches the
+# container.
+.PHONY: _review-issue
+_review-issue:
+	hermes -z "Load AGENTS.md for rules. You are the ISSUE REVIEWER (issue #179), NOT an implementer. The issue you must review is #$(ISSUE); its current body and its comments are in issue.md at the repo root - read it FIRST and review the WHOLE thread, not just the body. Your job: make this issue implementable by the implementer bot, or say what it is. HARD RULES: (1) NEVER implement or fix the issue - no change to data/, scripts/, the Makefile, the workflows or any code; you refine an issue, you never write the fix, and you never open a PR or a branch. (2) NEVER remove or edit an invisible HTML comment in the body: keep every data-gap-signature, tech-debt-signature, issue-bot-start and issue-review marker byte-identical - they are the dedup keys other bots search for, and dropping one re-files an issue that already exists (measured on #184/#185). (3) THE BODY IS THE DELIVERABLE: write the COMPLETE refined body to issue-body.md at the repo root - the missing acceptance criteria, the scope boundary, the evidence (file:line, a command, measured behaviour) and a Not-covered section. Keep the author intent and wording; add, do not rewrite for style. If the issue is already implementable, write the body UNCHANGED (byte-identical) - that is the honest no-change-needed and the workflow will only comment. (4) You have NO gh CLI and NO network write in this container: do not run gh, do not comment, do not close, do not edit any label - the WORKFLOW publishes your issue-body.md and your comment.md and clears the needs-refinement label when the refinement lands. Never touch the labels tech-debt or data-gap-analysis (the chains key on them) and never remove a label a human added. (5) Write your ONE summary comment to comment.md: what you changed and why, or what is obsolete and the evidence for it, or no-change-needed and the reason. Never close the issue yourself. (6) ANALYSIS SHIPS ISSUES: write findings.md at the repo root with one section per real gap or piece of technical debt you noticed while reviewing (each with Evidence: file:line or a command, Why, Done when), or the single line - none; never fix a finding here. Run make findings-check (it must pass). (7) Do not push, do not merge, do not touch master, never edit .github/workflows/**." \
+		-m nous-deepseek --reasoning $(HERMES_FIX_REASONING) --yolo
+
+.PHONY: review-issue
+review-issue:
+	# `_setup` in the SAME container as the hermes call, exactly like
+	# `implement-issue` (#124: without the alias Hermes auto-routes to whatever
+	# provider key is in the env -> HF_TOKEN -> HTTP 403).
+	$(DOCKER_RUN) sh -c "make _setup && make _review-issue"
+
+# The WINDOW path: an implementer has STARTED this issue. The body is off-limits
+# for REVIEW_GAP_HOURS, so the reviewer replies instead - one bounded comment
+# with the reminders its review found - and files what it found as its own
+# `tech-debt` issues. It writes comment.md (the reply) and findings.md, and it
+# must NOT write issue-body.md: the workflow proves the body is unchanged.
+.PHONY: _review-issue-window
+_review-issue-window:
+	hermes -z "Load AGENTS.md for rules. You are the ISSUE REVIEWER (issue #179) and an implementer has STARTED issue #$(ISSUE). An implementer run reads the body ONCE at its start, so the BODY IS OFF-LIMITS: do NOT write, edit or reword it, and do not run gh issue edit. The issue body and comments are in issue.md at the repo root - read it and review the WHOLE thread. What you DO: (1) write ONE short comment to comment.md: at most 5 bullets, each with evidence (a file:line, a command, a measured behaviour), for the things the implementation should know - an acceptance clause the body contradicts, a contract that cannot hold the value it needs, the issue a defect duplicates, a rule it will trip. No preamble, no restating the issue, no general advice; nothing-to-add is a valid comment when you found nothing. (2) Write findings.md at the repo root with one section per real gap or piece of technical debt your review found (each with Evidence: file:line or a command, Why, Done when), or the single line - none; every finding becomes its own issue, so nothing you noticed is lost just because the body is off-limits. Run make findings-check (it must pass). (3) NEVER write issue-body.md: the workflow compares the body hash and fails loudly if it changed. (4) You have NO gh CLI and NO network write in this container: the workflow posts your comment.md, so do not try to run gh, do not edit the issue, do not touch the labels tech-debt/data-gap-analysis, never close the issue, never implement anything, never push, never merge, never edit .github/workflows/**." \
+		-m nous-deepseek --reasoning $(HERMES_FIX_REASONING) --yolo
+
+.PHONY: review-issue-window
+review-issue-window:
+	$(DOCKER_RUN) sh -c "make _setup && make _review-issue-window"
 
 .PHONY: test
 test:

@@ -8,3 +8,11 @@ comment.md
 issue.md
 pr-body.md
 findings.md
+# issue-bot's start comment (the window the reviewer defers to) and the reviewer's
+# working files: the rewritten body, its one comment, and the live body it compares
+# itself against. All of them are written on the runner, never committed.
+start.md
+issue-body.md
+comment-window.md
+current-body.md
+reply.md

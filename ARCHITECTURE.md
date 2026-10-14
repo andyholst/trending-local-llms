@@ -169,6 +169,20 @@ hold the host command. `$(DOCKER_RUN)` runs the **base image**
 | `findings-check` | Parse `findings.md`; fail loudly when the analysis is missing or a finding lacks Evidence / Why / Done-when (`scripts/file_findings.py --check`) |
 | `file-findings` (`ISSUE=`/`PR=`) | File ONE `tech-debt` issue per finding, deduped by signature (`scripts/file_findings.py --file`) |
 
+### The implementer's queue and the issue reviewer (issue #179)
+
+| Target | What it does |
+|---|---|
+| `issue-queue` | Print the implementer's queue (oldest first) with each candidate's window — the ONE rule both bots read (`scripts/issue_queue.py`) |
+| `review-issue-pick` | Choose the ONE issue a review run works: `action=`, `issue=`, `path=`, `reason=` |
+| `review-issue-mark` (`ISSUE=` `PATH=`) | Open the reviewer's window: the `review-in-progress` label (+ the marker comment on the `body` path); prints `marker_iso=` and `body_sha=` |
+| `review-issue-guard` (`ISSUE=` `PATH=`) | The TOCTOU re-check before any write: exit 0 only while the window still allows that path |
+| `review-issue-body-hash` (`ISSUE=`) | The body hash — the proof the `window` path edited nothing |
+| `review-issue-check-markers` (`ISSUE=` `FILE=`) | Fail when the rewritten body dropped an invisible marker from the live body |
+| `review-issue-finish` (`ISSUE=`) | Close the reviewer's window (remove the label) |
+| `review-issue` | The refinement prompt in the container (`_setup` + `_review-issue`) — never implements, never pushes |
+| `review-issue-window` | The reply prompt in the container (`_setup` + `_review-issue-window`) — an implementer has started, so the body is off-limits |
+
 ### This document
 
 | Target | What it does |
@@ -205,8 +219,9 @@ hold the host command. `$(DOCKER_RUN)` runs the **base image**
 
 ## 4. The pipelines
 
-Four workflows in `.github/workflows/`. Only two have a cron: **`refresh-bot.yml`**
-(daily) and **`issue-bot.yml`** (hourly). GitHub delays and sometimes **drops**
+Five workflows in `.github/workflows/`. Three have a cron: **`refresh-bot.yml`**
+(daily), **`issue-bot.yml`** (hourly, `19`) and **`issue-review-bot.yml`**
+(hourly, `41`). GitHub delays and sometimes **drops**
 on-the-hour crons, hence the odd minutes (:19, :41, 17:43).
 
 ### `.github/workflows/refresh-bot.yml` — the crawler (schedule + owner dispatch)
@@ -246,14 +261,32 @@ same issue queue instead of racing).
 | Job | Does |
 |---|---|
 | `guard` | The same owner/collaborator guard as refresh-bot, before any secret |
-| `pick` | Sweep only: the OLDEST open `data-gap-analysis` issue with **no** `ci/data-gap-<n>-*` branch and no open PR from one. An empty backlog is a green run that implements nothing |
-| `implement` | Resolve the issue (must be open) → `issue.md`; checkout `master` (PAT); `make image-ensure`; `make hermes-smoke`; `make implement-issue`; commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
+| `pick` | Sweep only: `make issue-queue` (`scripts/issue_queue.py`) — the OLDEST open `data-gap-analysis` issue with **no** `ci/data-gap-<n>-*` branch, no open PR from one and no live reviewer marker (a fresh `<!-- issue-review: … run=<id> -->`; the `review-in-progress` label is advisory) (the queue rule has ONE implementation; the reviewer reads the same target). An empty backlog is a green run that implements nothing |
+| `implement` | Resolve the issue (must be open) → `issue.md`; checkout `master` (PAT); `make image-ensure`; `make hermes-smoke`; **announce the window** (one start comment `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted with the default token BEFORE the body is read — the signal the reviewer defers to); `make implement-issue`; commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
 
 **Tokens.** `FIXBOT_DISPATCH_TOKEN` (fine-grained PAT: Actions, Contents, Pull
 requests R/W) is used where a push or a dispatch must re-trigger CI; the default
 `github.token` is used for issue reads/comments (`issues: write`) and for the
 findings filing — the PAT cannot comment. No workflow pushes `master`; only
 `auto-merge` merges, and only through a green PR.
+
+### `.github/workflows/issue-review-bot.yml` — the reviewer (hourly sweep + owner dispatch)
+
+`concurrency: issue-review-bot` (whole runs queue) plus a per-issue group
+(`issue-review-issue-<n>`) so two reviews of one issue queue instead of racing.
+
+| Job | Does |
+|---|---|
+| `guard` | The same owner/collaborator guard as the other pipelines, before any secret |
+| `pick` | `make review-issue-pick`: ONE issue per run — the oldest candidate whose implementer window is CLOSED (`action=review path=body`), else the oldest started issue the reviewer has not answered (`action=window`), else `action=none` (a green no-op). A forced dispatch re-uses the guard to choose the path |
+| `review` | Resolve the issue (must be open); checkout `master`; `make image-ensure`; `make hermes-smoke`; write `issue.md` (`gh issue view --comments`); **open the window** (`make review-issue-mark` → `review-in-progress` label + `<!-- issue-review: <ISO8601Z> run=<id> -->`); **re-check it** (`make review-issue-guard`, the TOCTOU guard) and route: **`body`** → `make review-issue` (Hermes refinines `issue-body.md`), `make review-issue-check-markers` (no invisible dedup marker may vanish), publish the body only when it changed (clearing `needs-refinement`) + ONE summary comment; **`window`** → `make review-issue-window` (the body is OFF-LIMITS), PROVE the body hash is unchanged, then post ONE bounded reply carrying the marker. Both paths: file the findings as their own `tech-debt` issues (`make findings-check` + `make file-findings`) and close the window (`make review-issue-finish`, `always()`). No `comment.md` → the run is RED |
+
+`permissions: issues: write, contents: read` — the reviewer never pushes, opens a
+branch or merges, and never holds the owner PAT (it comments with
+`github.token`, like issue-bot's outcome comment). The quiet window is
+`REVIEW_GAP_HOURS := 3` in the Makefile: one constant for both bots — a run in
+flight, implementer activity younger than the gap, or the issue within the
+implementer's next 3 hourly sweeps all keep the body off-limits.
 
 ---
 
@@ -288,7 +321,9 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/data_gap_analysis.py` | The post-refresh gap analysis (§3) — `analyse`, `rank_impact`, `render`, `file_issue`, `ensure_label` |
 | `scripts/check_openspec_tasks.py` | Fails an active OpenSpec change with an unticked task box |
 | `scripts/openspec_index.py` | Renders / verifies the root `OPENSPEC.md` from `openspec/changes/**` |
-| `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) |
+| `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |
+| `scripts/issue_queue.py` | The implementer's queue, computed once for both bots: pick order, each candidate's implementer window (`window`/`reason`/`started`), the reviewer's markers and run ids |
+| `scripts/issue_review.py` | The reviewer's deterministic core (issue #179): `--pick` (one issue, `body`/`window`/`none`), `--mark`/`--finish` (the `review-in-progress` label + the run-stamped marker), `--guard` (the TOCTOU re-check before a write), `--body-hash` (the proof the window path edited nothing) and `--check-markers` (a rewrite may not drop an invisible dedup marker). It imports `issue_queue` — the queue rule has one implementation |
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |

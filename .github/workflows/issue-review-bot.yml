@@ -1,0 +1,323 @@
+name: issue-review-bot
+
+# ISSUE-REVIEW pipeline (issue #179) — the counterpart of `issue-bot`.
+#
+# It reviews ONE open `data-gap-analysis` issue per run that NO implementer has
+# started (the same "has an implementer" state the implementer's pick tests), and
+# either refines the body so the implementer can actually implement it, or says
+# what the issue is (obsolete / duplicate / already fixed) WITH the evidence —
+# never by closing silently and never by implementing anything.
+#
+# It never touches an issue an implementer has started: `issue-bot` announces its
+# window with a start comment before it implements, and for REVIEW_GAP_HOURS (3 h)
+# around that start this pipeline edits NO body and adds NO label. What it does
+# instead: ONE bounded reply on the issue (the reminders its review found) and a
+# `tech-debt` issue per real finding, filed through the same `make file-findings`
+# path the implementer's own analysis uses.
+#
+# ONE queue, ONE window: both bots read `make issue-queue`
+# (`scripts/issue_queue.py`), so the rule has exactly one implementation
+# (AGENTS.md rule 6d) and the gap is exactly one constant (`REVIEW_GAP_HOURS`).
+#
+# The workflow never pushes, never merges, never opens a branch: `permissions:
+# issues: write` (plus `contents: read` for the checkout) is all it holds, and no
+# token ever reaches the container — the agent writes `issue-body.md` /
+# `comment.md` and THIS workflow performs the `gh` write.
+
+on:
+  # Off the hour, and not `19` (issue-bot's sweep): GitHub delays/drops
+  # on-the-hour crons (the refresh-bot lesson). The window, not the offset, is
+  # what separates the two bots — each run re-checks the queue it shares.
+  schedule:
+    - cron: "41 * * * *"
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to review (owner only; empty = review the queue's head candidate)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+# Two reviews of one issue queue instead of racing: the run-level group serialises
+# whole runs, and the review job adds a per-issue group.
+concurrency:
+  group: issue-review-bot
+  cancel-in-progress: false
+
+jobs:
+  # Before anything touches a secret: only the owner or a collaborator with write
+  # access may run the reviewer (it spends the Nous key and writes issues).
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Owner, or a collaborator with write/maintain/admin, for BOTH the
+          # actor and the triggering actor (covers re-runs). Anything else -
+          # including an API error - is refused.
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  # The picker: ONE issue per run, from the shared queue. `make review-issue-pick`
+  # returns the oldest candidate whose implementer window is CLOSED (path `body`),
+  # else the oldest started issue the reviewer has not answered (path `window`),
+  # else `action=none` — a green run that reviews nothing.
+  pick:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      action: ${{ steps.pick.outputs.action }}
+      issue: ${{ steps.pick.outputs.issue }}
+      path: ${{ steps.pick.outputs.path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Pick ONE issue to review (the queue both bots share)
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          FORCED: ${{ github.event.inputs.issue_number }}
+        run: |
+          if [ -n "${FORCED:-}" ]; then
+            echo "Forced dispatch: reviewing #$FORCED"
+            echo "action=review" >> "$GITHUB_OUTPUT"
+            echo "issue=$FORCED" >> "$GITHUB_OUTPUT"
+            # The window decides the path, never the dispatch: a forced review of
+            # an issue an implementer has started is still a REPLY, not a rewrite.
+            if make review-issue-guard ISSUE="$FORCED" PATH=body; then
+              echo "path=body" >> "$GITHUB_OUTPUT"
+            else
+              echo "path=window" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+          OUT=$(make review-issue-pick)
+          echo "$OUT"
+          for key in action issue path reason; do
+            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1)
+            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
+          done
+          if [ "$(printf '%s\n' "$OUT" | sed -n 's/^action=//p')" = "none" ]; then
+            echo "Nothing to review this run: every candidate is inside an implementer window."
+          fi
+
+  review:
+    needs: [guard, pick]
+    if: >-
+      always()
+      && needs.guard.result == 'success'
+      && needs.pick.result == 'success'
+      && needs.pick.outputs.action != 'none'
+      && needs.pick.outputs.issue != ''
+    # ONE reviewer per issue: a second review of the same issue queues here.
+    concurrency:
+      group: issue-review-issue-${{ needs.pick.outputs.issue }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      ISSUE: ${{ needs.pick.outputs.issue }}
+    steps:
+      - name: Resolve the issue (must be open)
+        id: iss
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq .state 2>/dev/null || echo "missing")
+          if [ "$STATE" != "open" ]; then
+            echo "Issue #$ISSUE is '$STATE' - nothing to review."
+            echo "review=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "review=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.iss.outputs.review == 'true'
+        with:
+          ref: master
+
+      - name: Prepare runner images
+        if: steps.iss.outputs.review == 'true'
+        run: make image-ensure
+
+      - name: Hermes routing smoke
+        if: steps.iss.outputs.review == 'true'
+        run: make hermes-smoke
+
+      # The reviewer reads the WHOLE thread: body plus every comment (a decision
+      # recorded in a comment must reach the body, or the issue is reclassified).
+      - name: Write the issue and its comments for the reviewer
+        if: steps.iss.outputs.review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: gh issue view "$ISSUE" --repo "$REPO" --comments > issue.md
+
+      # Open OUR window BEFORE anything is written: the `review-in-progress` label
+      # is what the implementer's pick defers to, and — on the body path — one
+      # marker comment records the instant and THIS run's id (a run never blocks
+      # its own guard re-check).
+      - name: Open the reviewer window (label + marker)
+        id: mark
+        if: steps.iss.outputs.review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PATH_KIND: ${{ needs.pick.outputs.path }}
+        run: |
+          OUT=$(make review-issue-mark ISSUE="$ISSUE" PATH="$PATH_KIND" RUN="$GITHUB_RUN_ID")
+          echo "$OUT"
+          echo "body_sha=$(printf '%s\n' "$OUT" | sed -n 's/^body_sha=//p')" >> "$GITHUB_OUTPUT"
+
+      # The TOCTOU re-check: the implementer may have started while we prepared,
+      # in which case the pick's `body` becomes a `window` — a reply, never a
+      # rewrite of the text its run already read.
+      - name: Route (re-check the window before writing anything)
+        id: route
+        if: steps.iss.outputs.review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "${{ needs.pick.outputs.path }}" = "window" ]; then
+            echo "path=window" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if make review-issue-guard ISSUE="$ISSUE" PATH=body; then
+            echo "path=body" >> "$GITHUB_OUTPUT"
+          else
+            echo "An implementer started while this run prepared - reviewing as a reply."
+            echo "path=window" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- path `body`: refine the issue (no code, ever) -----------------------
+      - name: Refine the issue (Hermes, through make)
+        if: steps.route.outputs.path == 'body'
+        run: make review-issue
+
+      # The dedup markers are not decoration: dropping one re-files an issue that
+      # already exists (#184/#185). The rewrite is compared against the live body.
+      - name: Every invisible marker survived the rewrite
+        if: steps.route.outputs.path == 'body'
+        run: make review-issue-check-markers ISSUE="$ISSUE" FILE=issue-body.md
+
+      - name: Publish the refined body (only when it changed) and the summary
+        if: steps.route.outputs.path == 'body'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" . 2>/dev/null || true
+          gh api "repos/$REPO/issues/$ISSUE" --jq .body > current-body.md
+          if cmp -s current-body.md issue-body.md; then
+            echo "The review left the body as it was (no change needed)."
+          else
+            gh issue edit "$ISSUE" --repo "$REPO" --body-file issue-body.md
+            echo "Body refined."
+            # The reviewer's own label is `needs-refinement`, and the refinement is
+            # what clears it. The container has no gh (measured: the base image
+            # carries none), so the LABEL is the workflow's job, not the agent's.
+            if gh issue view "$ISSUE" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qx needs-refinement; then
+              gh issue edit "$ISSUE" --repo "$REPO" --remove-label needs-refinement
+              echo "Cleared needs-refinement."
+            fi
+          fi
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file comment.md
+
+      # --- path `window`: an implementer is working — reply, do not rewrite -----
+      - name: Review as a reply (Hermes, through make)
+        if: steps.route.outputs.path == 'window'
+        run: make review-issue-window
+
+      # The hard rule of this path, enforced rather than promised: the body the
+      # implementer's run read is byte-identical to the body it will close.
+      - name: Prove the window path edited no body
+        if: steps.route.outputs.path == 'window'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BEFORE: ${{ steps.mark.outputs.body_sha }}
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" . 2>/dev/null || true
+          if [ -f issue-body.md ]; then
+            echo "::error::the window path wrote issue-body.md - the body is off-limits while an implementer works on this issue (#$ISSUE)."
+            exit 1
+          fi
+          AFTER=$(make review-issue-body-hash ISSUE="$ISSUE" | sed -n 's/^body_sha=//p')
+          if [ "$AFTER" != "$BEFORE" ]; then
+            echo "::error::the body of #$ISSUE changed during a window review (was $BEFORE, now $AFTER)."
+            exit 1
+          fi
+          echo "Body untouched ($AFTER)."
+
+      - name: Reply once on the issue (never twice in one window)
+        if: steps.route.outputs.path == 'window'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! make review-issue-guard ISSUE="$ISSUE" PATH=window; then
+            echo "This window is already answered - no second reply."
+            exit 0
+          fi
+          {
+            printf '<!-- issue-review: window %s run=%s -->\n' "$(date -u +%FT%TZ)" "$GITHUB_RUN_ID"
+            cat comment.md
+          } > reply.md
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file reply.md
+
+      # ANALYSIS SHIPS ISSUES (rule 6g): whatever the review noticed becomes its
+      # own `tech-debt` issue through the SAME filing path the implementer's
+      # analysis uses — deduped by signature, label-verified, linked back here.
+      # `- none` is the honest "found nothing" and files nothing.
+      - name: File the gaps the review surfaced (its own issues)
+        if: steps.iss.outputs.review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          make findings-check
+          make file-findings ISSUE="$ISSUE"
+
+      - name: Close the reviewer window
+        if: always() && steps.iss.outputs.review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: make review-issue-finish ISSUE="$ISSUE"
+
+      # A review that produced nothing to read is a defect, not a green no-op:
+      # both paths must leave a comment a human can see (the body refinement's
+      # summary, or the window reply).
+      - name: Fail loudly when the review produced nothing to read
+        if: always() && steps.iss.outputs.review == 'true' && steps.route.outputs.path != ''
+        run: |
+          if [ ! -s comment.md ]; then
+            echo "::error::the review of #$ISSUE produced no comment.md - the prompt must write its one summary reply (a silent review is indistinguishable from a review that never ran)."
+            exit 1
+          fi
