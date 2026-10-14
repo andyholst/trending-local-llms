@@ -1,6 +1,7 @@
 # Proposal: architecture-doc-and-guard
 
 Issue: #178
+PR: #180
 
 ## Why
 
