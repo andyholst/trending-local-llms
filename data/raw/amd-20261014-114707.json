@@ -47,7 +47,7 @@
       "system_ram_min": "90GB",
       "storage_offload": "NVMe (102GB BF16 n-gram table streamed)",
       "weight_gb": "EXL3 5.05 bpw",
-      "context_tokens": 235520,
+      "context_tokens": "235520",
       "backends": [
         "CUDA",
         "ROCm",

@@ -14,7 +14,7 @@
       "vram_min": "12GB",
       "system_ram_min": "32GB",
       "weight_gb": "37.6GB Q2_0 / 39.2GB IQ2_XS / 54.8GB IQ3_S",
-      "context_tokens": 131072,
+      "context_tokens": "131072",
       "backends": [
         "CUDA",
         "ROCm",

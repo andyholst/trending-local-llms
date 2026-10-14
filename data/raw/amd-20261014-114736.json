@@ -12,7 +12,7 @@
       "hf": "Qwen/Qwen3-14B",
       "vram_tier": "16GB",
       "vram_min": "16GB",
-      "context_tokens": 30720,
+      "context_tokens": "30720",
       "backends": [
         "CUDA",
         "ROCm",

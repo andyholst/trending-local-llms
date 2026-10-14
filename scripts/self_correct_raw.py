@@ -21,6 +21,14 @@ Fill rules (per missing field, uses only data already present in the payload):
                    plus ROCm for any row measured on AMD hardware
   - date on engine -> use snapshot generated_utc date (fallback)
   - source_post remains required (cannot fake) -> flagged if missing
+  - every key the search contract declares as a STRING (the optional dimension
+    fields system_ram_min / weight_gb / context_tokens / storage_offload /
+    engine_min_version, and each engine's tps / hardware / quant / date) ->
+    coerced to its text form when the agent wrote a bare number
+    ("context_tokens": 131072 -> "131072"), the same rule ingest applies
+  - a known one-off stray model key (STRAY_MODEL_KEYS) -> its figure is folded
+    into the declared key that captures the same dimension when that is absent,
+    then the undeclared key is removed
 
 Re-writes the file in place only when changes were made. Exit 0 = all raw
 snapshots now conform (or were corrected); non-zero = some field cannot be
@@ -68,6 +76,45 @@ RAW_BACKENDS = ("nvidia", "metal", "cpu", "amd", "general")
 _LEG_OF = {"CUDA": "nvidia", "Metal": "metal", "CPU": "cpu", "ROCm": "amd"}
 
 
+# A model key the search agent invented that the search contract does NOT
+# declare, mapped to the DECLARED key that captures the same dimension. A
+# dimension VALUE is never dropped by this: when the declared key is absent the
+# figure moves onto it, and only then is the undeclared key removed. (The
+# search prompts ask for system_ram_min — system / unified memory — never for
+# 'interface_ram_gb', which the 2026-10-14 amd leg wrote next to its own
+# system_ram_min: '96GB' on both, for the Strix Halo 96GB box, failing
+# check_search_contract's additionalProperties:false.) A key that recurs across
+# runs carrying a dimension the contracts cannot hold is a contract gap to
+# WIDEN for, with tests — not something to prune here.
+STRAY_MODEL_KEYS = {"interface_ram_gb": "system_ram_min"}
+
+
+def _string_keys(props: dict) -> set:
+    """Keys the contract declares as plain strings (a bare number must be
+    coerced to its text form, never rejected: ingest already does this)."""
+    return {k for k, v in (props or {}).items() if v.get("type") == "string"}
+
+
+def _contract_string_keys() -> tuple[set, set]:
+    """(model-level, engine-level) string keys, read from
+    data/search_contract.json at runtime so there is no second list to drift."""
+    schema = json.loads((ROOT / "data" / "search_contract.json").read_text())
+    items = schema["properties"]["models"]["items"]
+    model_keys = _string_keys(items.get("properties", {}))
+    eng = items.get("properties", {}).get("engines", {}).get("items", {})
+    return model_keys, _string_keys(eng.get("properties", {}))
+
+
+def coerce_text(v):
+    """The text form of a dimension value a post stated as a bare number
+    (131072 -> '131072', 37.6 -> '37.6'). Strings are returned untouched."""
+    if isinstance(v, bool):
+        return str(v).lower()
+    if isinstance(v, (int, float)):
+        return str(v)
+    return v
+
+
 def _is_amd_gpu(hw: str) -> bool:
     sys.path.insert(0, str(ROOT / "scripts"))
     try:
@@ -101,6 +148,7 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
     data = json.loads(path.read_text())
     notes = []
     ts_date = data.get("generated_utc", "")[:10]
+    model_str_keys, engine_str_keys = _contract_string_keys()
 
     # search_contract.json has additionalProperties:false at the top level, so
     # prune any extra keys the Hermes agent wrote (note, window, queries_used,
@@ -156,6 +204,30 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
             if not e.get("date"):
                 e["date"] = ts_date
                 notes.append(f"{path.name}/{m.get('id')}: engine date <- snapshot date")
+        # a stray, undeclared model key: fold its figure onto the declared key
+        # that captures the same dimension (only when that is absent — a stored
+        # figure is never overwritten), then drop the undeclared key.
+        for stray, target in STRAY_MODEL_KEYS.items():
+            if stray not in m:
+                continue
+            val = coerce_text(m.pop(stray))
+            if val and not m.get(target):
+                m[target] = val
+                notes.append(f"{path.name}/{m.get('id')}: {stray} -> {target} ('{val}')")
+            else:
+                notes.append(f"{path.name}/{m.get('id')}: pruned undeclared key {stray}")
+        # a dimension value the post stated as a bare number must be TEXT: the
+        # contract declares these keys as strings and ingest stores the text
+        # form, so a numeric one here is a red refresh PR no value should cost.
+        for k in sorted(model_str_keys):
+            if k in m and not isinstance(m[k], str) and isinstance(m[k], (int, float, bool)):
+                notes.append(f"{path.name}/{m.get('id')}: {k} {m[k]!r} -> text '{coerce_text(m[k])}'")
+                m[k] = coerce_text(m[k])
+        for e in m.get("engines", []):
+            for k in sorted(engine_str_keys):
+                if k in e and not isinstance(e[k], str) and isinstance(e[k], (int, float, bool)):
+                    notes.append(f"{path.name}/{m.get('id')}: {k} {e[k]!r} -> text '{coerce_text(e[k])}'")
+                    e[k] = coerce_text(e[k])
     # detect fields we cannot derive
     cannot = []
     for m in data.get("models", []):

@@ -13,8 +13,7 @@
       "vram_tier": "96GB",
       "vram_min": "16GB",
       "system_ram_min": "96GB",
-      "interface_ram_gb": "96GB",
-      "context_tokens": 262144,
+      "context_tokens": "262144",
       "storage_offload": "1M context window supported by Strata's experimental Strix Halo build",
       "backends": [
         "CUDA",
@@ -155,7 +154,7 @@
       "vram_tier": "128GB",
       "vram_min": "128GB",
       "system_ram_min": "128GB",
-      "context_tokens": 262144,
+      "context_tokens": "262144",
       "backends": [
         "ROCm"
       ],
