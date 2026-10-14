@@ -1,7 +1,8 @@
 # trending-local-llms — TEST image (layered on the base image).
 #
-# The base image (ghcr.io/.../trending-local-llms:latest) only rebuilds on
-# Sunday. TEST-only libs that land mid-week in requirements-test.in (e.g.
+# The base image (ghcr.io/.../trending-local-llms:latest) rebuilds on Sunday,
+# when its Dockerfile hash tag is missing, or when forced. TEST-only libs that
+# land mid-week in requirements-test.in (e.g.
 # markdown-it-py, tabulate — the README-table validator) are NOT in the
 # non-Sunday base. So this TEST image layers the CURRENT requirements-test.txt
 # on whatever base is present and installs it at build time — `make test` /
@@ -11,7 +12,13 @@
 # Build:    make docker-test-build
 # Run QA:   docker run --rm -v "$$PWD":/workspace -w /workspace \
 #             trending-local-llms-test:latest make validate
-FROM ghcr.io/andyholst/trending-local-llms:latest
+#
+# The base is a build arg on purpose: CI pulls the PUBLISHED base when it was
+# built from the revision's Dockerfile and builds from source when it was not
+# (issue #135) — `make docker-test-build BASE_IMAGE=trending-local-llms:latest`
+# uses the just-built local base instead of a cached GHCR pull.
+ARG BASE_IMAGE=ghcr.io/andyholst/trending-local-llms:latest
+FROM ${BASE_IMAGE}
 
 # Layer the current TEST requirements (markdown-it-py, tabulate, mdurl) on the
 # base. Copied before the pip install so a requirements-test change only busts

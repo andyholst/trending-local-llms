@@ -687,6 +687,54 @@ def test_unit_tests_really_run():
               "raise SystemExit(main())" in src or "sys.exit(main())" in src, "")
 
 
+def test_base_image_follows_the_dockerfile():
+    """Issue #135: a merged Dockerfile change must not stay inert in the image
+    every bot and the validate job run until the next Sunday."""
+    rb = (WF / "refresh-bot.yml").read_text()
+    decide = rb.split("- name: Decide whether to rebuild image", 1)[1].split("\n      - name:", 1)[0]
+
+    # Given refresh-bot's rebuild decision
+    # Then  it hashes the Dockerfiles the image is built from
+    check("refresh-bot: the rebuild decision hashes Dockerfile + Dockerfile.test",
+          "cat Dockerfile Dockerfile.test | sha256sum" in decide, decide[:160])
+    # Then  a Dockerfile whose hash tag is not published forces a rebuild
+    check("refresh-bot: an unpublished Dockerfile hash rebuilds the image",
+          'dockerfile-${HASH}' in decide and 'HASHED=0' in decide
+          and '[ "$HASHED" = "0" ]' in decide, decide)
+    # Then  each build publishes the tag naming that hash
+    check("refresh-bot: the build publishes the Dockerfile hash tag",
+          "dockerfile-${{ steps.decide.outputs.hash }}" in rb, "")
+    # Then  the owner can republish without waiting for Sunday
+    check("refresh-bot: `force_rebuild` republishes on demand",
+          "inputs.force_rebuild" in decide and '[ "$FORCE" = "true" ]' in decide, decide)
+
+    # Given qa-validate's base-image step (both jobs)
+    qa = (WF / "qa-validate.yml").read_text()
+    check("qa-validate: both jobs decide the base by the Dockerfile hash",
+          qa.count('dockerfile-$HASH') == 2, qa.count('dockerfile-$HASH'))
+    # Then  a published hash pulls, an unpublished one builds from source
+    check("qa-validate: an unpublished hash builds the base from source",
+          "base for Dockerfile $HASH is NOT published; building it from source" in qa
+          and qa.count("make docker-build") == 3, qa.count("make docker-build"))
+    check("qa-validate: a published hash pulls it instead",
+          qa.count("is published; pulling it") == 1, qa.count("is published; pulling it"))
+    # Then  the test image layers on that base EXPLICITLY (Dockerfile.test
+    # defaults to the GHCR ref, which a cached pull would resolve to the old one)
+    check("qa-validate: the test image layers on the local base explicitly",
+          qa.count("make docker-test-build BASE_IMAGE=trending-local-llms:latest") == 2,
+          qa.count("make docker-test-build BASE_IMAGE=trending-local-llms:latest"))
+    mk = (ROOT / "Makefile").read_text()
+    check("make: the test image takes the base as a build arg",
+          "--build-arg BASE_IMAGE=$(BASE_IMAGE)" in mk and "BASE_IMAGE ?=" in mk, "")
+    check("dockerfile.test: its FROM is that build arg",
+          "FROM ${BASE_IMAGE}" in (ROOT / "Dockerfile.test").read_text(), "")
+
+    # Then  the guard may not report PASSED while its plugin assertion degraded
+    guard = (ROOT / "scripts" / "nerve_key_check.py").read_text()
+    check("nerve guard: a missing plugin is a finding, never a SKIP note",
+          "SKIP:" not in guard and "may not degrade to a note" in guard, "")
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -697,6 +745,7 @@ def main() -> int:
     test_guard_behaviour()
     test_nothing_pushes_master()
     test_auto_merge()
+    test_base_image_follows_the_dockerfile()
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
     test_unit_tests_really_run()

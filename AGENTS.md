@@ -215,8 +215,10 @@ The README is **generated**, not hand-maintained:
   lightbrd scrape of every search query, **3 s cap per query**),
   `make hermes-smoke` (one real Hermes call through the `nous-deepseek` alias
   with every key the pipeline passes, incl. `HF_TOKEN`), and
-  `make pipeline-smoke` (both). `make docker-test-build` builds the test image
-  (needs the base from `make docker-build` or a GHCR pull). Run after
+  `make pipeline-smoke` (both). `make docker-test-build` builds the test image on
+  the base it is given — `BASE_IMAGE=$(IMAGE)` for the base you just built,
+  otherwise the published `ghcr.io/andyholst/trending-local-llms:latest` it
+  defaults to. Run after
   `make docker-build` with `NOUS_API_KEY=... FIRECRAWL_API_KEY=... make refresh`.
 - **Hermes invocation (every `hermes -z` recipe).** One logical shell command:
   the `-z "..."` line MUST end with ` \` so `-m nous-deepseek --reasoning
@@ -251,15 +253,25 @@ The README is **generated**, not hand-maintained:
   provider-failure signature) and retries once. Never require an exact reply
   word — deepseek answered "Reply with exactly PONG" with "No. I'm an AI
   assistant, not a ping-pong game" and failed qa-validate on master.
-- **Base image is built ONCE and pulled, never rebuilt per-run.** The base
-  image (`ghcr.io/andyholst/trending-local-llms:latest` — Python deps + Hermes
-  CLI baked in) is **built and pushed to GHCR only by `refresh-bot.yml`**, and
-  only when it does not exist yet or it is **Sunday** (weekly Hermes update).
-  Every other pipeline that uses the base image — `qa-validate.yml` (PR CI) and
-  `fix-bot.yml` — **pulls** it from GHCR and **only builds the TEST image**
-  (`Dockerfile.test`, base + current `requirements-test.txt`) on each run. They
-  must never rebuild the base image locally. The GHCR image is public, so no
-  login is needed to pull it.
+- **Base image follows its Dockerfile; a published base is pulled, never rebuilt
+  per-run.** The base image (`ghcr.io/andyholst/trending-local-llms:latest` —
+  Python deps + Hermes CLI + the pinned plugins baked in) is **built and pushed
+  to GHCR by `refresh-bot.yml`** when it does not exist, when **Sunday** arrives
+  (weekly Hermes update), or **when the Dockerfile hash it was built from is not
+  published** — each build also publishes `:<repo>:dockerfile-<sha12>` of
+  `Dockerfile` + `Dockerfile.test`, so a merged Dockerfile change (a new pinned
+  plugin, a new apt package) is live on the next refresh instead of waiting for
+  Sunday (issue #135). Owner dispatch may set `force_rebuild=true` to republish
+  on demand.
+  A pipeline that uses the base **pulls it only when that hash tag exists**;
+  otherwise it **builds the base from source** for that run
+  (`qa-validate.yml`; measured: the nerve plugin is installed by the Dockerfile,
+  so validating against a stale base silently degraded the credential guard).
+  It then layers the TEST image on that base **explicitly**
+  (`make docker-test-build BASE_IMAGE=trending-local-llms:latest` —
+  `Dockerfile.test` takes its `FROM` as a build arg, so a cached GHCR pull can
+  never stand in for the revision's own base). `fix-bot.yml` still pulls.
+  The GHCR image is public, so no login is needed to pull it.
 - **Snapshots:** every refresh writes a timestamped snapshot to
   `data/snapshots/trending-<UTC>.json` (full store). This is the history that
   proves no model was ever removed and lets the README be rebuilt from any

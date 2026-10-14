@@ -255,9 +255,15 @@ def plugin_dir() -> Path | None:
 def runtime_proof(directory: Path | None) -> tuple[bool | None, str]:
     """With the credential ABSENT the plugin must fail LOUDLY (a run without the
     key may never degrade silently to another provider). Returns (ok|None, msg);
-    None means the plugin is not installed here (SKIP — CI checks it in the image)."""
+    A missing plugin is NOT a pass with a note: the image must be built from the
+    repo's Dockerfile, which installs it, and a check that cannot run may not
+    silently degrade (the repo's "no skipped tests" rule). The caller turns this
+    into a finding naming the cause and the fix."""
     if directory is None:
-        return None, "SKIP: the nerve plugin is not installed in this environment (checked in the image)"
+        return False, ("the nerve plugin is NOT installed in this environment: this image "
+                       "predates the Dockerfile that pins it. Rebuild it (`make docker-build`) "
+                       "or run against the base the pipeline publishes for this Dockerfile — "
+                       "the plugin-presence assertion may not degrade to a note [#135]")
     code = (
         "import sys; sys.path.insert(0, sys.argv[1]);\n"
         "from hermes_nerve.client import JevClient, JevError\n"
@@ -325,9 +331,7 @@ def run_all() -> tuple[list[str], list[str]]:
     findings += check_makefile(files["Makefile"])
     findings += check_workflows({n: read(f".github/workflows/{n}") for n in CONTAINER_WORKFLOWS})
     ok, msg = runtime_proof(plugin_dir())
-    if ok is None:
-        notes.append(msg)
-    elif not ok:
+    if not ok:
         findings.append(f"plugin: {msg}")
     else:
         notes.append(f"plugin: {msg}")

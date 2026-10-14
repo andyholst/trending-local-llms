@@ -202,8 +202,11 @@ def test_real_tree_is_clean():
     """On the real tree the check reports nothing — and says so out loud."""
     findings, notes = NK.run_all()
     check("real tree: no finding", findings == [], findings)
-    check("real tree: the plugin proof ran or is honestly skipped",
-          any("loud without the key" in n or n.startswith("SKIP") for n in notes), notes)
+    # The plugin is installed by the Dockerfile, so the image this runs in must
+    # have it: a proof that could not run is a FAILURE, never a note in a PASSED
+    # line (issue #135 — the image follows the Dockerfile or it is stale).
+    check("real tree: the plugin proof RAN (never skipped)",
+          any("loud without the key" in n for n in notes), notes)
     check("real tree: the script exits 0", NK.main(["--quiet"]) == 0)
 
 
@@ -233,8 +236,12 @@ def test_provider_names_match_the_pinned_plugin():
     `PROVIDER_API_KEY_ENV` at the pinned revision, so the wiring cannot drift
     from what the plugin actually reads."""
     d = NK.plugin_dir()
+    # Given the environment the guard runs in — the plugin ships in this image,
+    # so an instance without it means the image predates the Dockerfile that
+    # pins it: that is a failure, not a skip (issue #135).
+    check("provenance: the pinned plugin is installed in this environment", d is not None,
+          "run `make docker-build`/`make docker-test-build` — the base image is stale")
     if d is None:
-        print("  --  provenance: plugin not installed here; SKIP (CI checks it in the image)")
         return
     src = ""
     for pkg in ("hermes_nerve", "hermes_jev"):

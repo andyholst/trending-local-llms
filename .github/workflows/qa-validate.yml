@@ -54,19 +54,31 @@ env:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20 -> 30: when the revision's Dockerfile is not published yet this job
+    # builds the base from source before the suite (issue #135).
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Pull the prebuilt base image from GHCR (built only by refresh-bot) and
-      # build ONLY the test image (base + current requirements-test.txt), so
-      # test-only libs added mid-week are present without a base rebuild.
-      - name: Pull base image from GHCR + build test image
+      # The base image carries the pinned plugins (Dockerfile). Pull the PUBLISHED
+      # base only when it was built from THIS revision's Dockerfile — the
+      # published tag names the Dockerfile hash. Otherwise build from source, so a
+      # Dockerfile change is exercised by its own CI run instead of silently
+      # validating the previous base (issue #135: the guard's plugin-presence
+      # assertion used to degrade to a note on a stale base).
+      - name: Base image — published for this Dockerfile, else build from source
         run: |
-          docker pull ghcr.io/${{ github.repository }}:latest
-          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
+          HASH=$(cat Dockerfile Dockerfile.test | sha256sum | cut -c1-12)
+          if docker manifest inspect "ghcr.io/${{ github.repository }}:dockerfile-$HASH" >/dev/null 2>&1; then
+            echo "base for Dockerfile $HASH is published; pulling it"
+            docker pull ghcr.io/${{ github.repository }}:latest
+            docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
+          else
+            echo "base for Dockerfile $HASH is NOT published; building it from source"
+            make docker-build
+          fi
+          make docker-test-build BASE_IMAGE=trending-local-llms:latest
 
       # FIRST: no credential may reach the repo. A finding here turns the PR red
       # (the same gate fix-bot repairs) — remove the value and rotate the key,
@@ -96,16 +108,23 @@ jobs:
 
   live-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Same build-from-source path as `validate` when the Dockerfile is fresh.
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pull base image from GHCR + build test image
+      - name: Base image — published for this Dockerfile, else build from source
         run: |
-          docker pull ghcr.io/${{ github.repository }}:latest
-          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
+          HASH=$(cat Dockerfile Dockerfile.test | sha256sum | cut -c1-12)
+          if docker manifest inspect "ghcr.io/${{ github.repository }}:dockerfile-$HASH" >/dev/null 2>&1; then
+            docker pull ghcr.io/${{ github.repository }}:latest
+            docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
+          else
+            echo "base for Dockerfile $HASH is NOT published; building it from source"
+            make docker-build
+          fi
+          make docker-test-build BASE_IMAGE=trending-local-llms:latest
 
       - name: Search reachability — nvidia (HTTP 200 within 3s per query)
         run: make search-smoke BACKEND=nvidia
