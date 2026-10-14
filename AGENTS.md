@@ -180,6 +180,23 @@ retains 30 days of history.
    AGENTS.md is the rulebook (what must happen), ARCHITECTURE.md the description
    (how it works); never move a rule into the description or vice versa.
 
+6i. **Every tracked text file ends with a newline — `make lint` is the gate
+   (MANDATORY).** A file that ends without one makes git print `\ No newline at
+   end of file`, turns the next append into a spurious last-line change, and can
+   make a line-oriented tool drop that line — and this repo had NO check for it
+   (and no `.editorconfig` either) until issue #186. So: `make lint` fails closed
+   on every tracked text file that does not end with a newline, `make lint-fix`
+   appends exactly one to each (idempotent), and both are wired where they bite —
+   the FIRST step of `qa-validate`'s `validate` job, the FIRST check in
+   `scripts/fix_loop.sh` (so a bot round repairs a missing newline like any other
+   red check) and `tests/test_lint_linefeeds.py` in `make test` (rule 6d). The
+   file set is `git ls-files`, so an ignored or generated file can never fail it,
+   and a binary file (a NUL byte in its first 8000) or an empty file is never a
+   finding. `.editorconfig` carries the editor half of the same rule
+   (`insert_final_newline = true`, LF): what the editor does, `make lint-fix` can
+   repair for a file that arrived from anywhere else — a bot, an upstream paste,
+   a container write.
+
 3d. **Secrets never enter the repo — `make secret-scan` before every push.**
    No key, token, webhook URL or credential of any kind may be written into a
    tracked file (data, prompts in the `Makefile`, `skills/`, tests, workflows,
@@ -800,6 +817,7 @@ actually happened.
 | `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`) or under a PROVIDER the setup does not run (the plugin's own default `openrouter` instead of production's `typesafe`) — the mapping is `jev_provider` → `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY`, so a mismatch forwards a variable nothing reads and the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `tests/test_workflows.py` — `test_issue_bot` (rules 6e/6d) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue, the hourly sweep or owner dispatch (a PR, a comment, a push, a `workflow_run`, a label-less issue); the sweep picking an issue that already has a branch/PR instead of the oldest unhandled one; two implementers for one issue (a concurrency key not keyed by the issue number, on either path); `make implement-issue` not running `_setup` in the same container as the hermes call (measured: alias missing → `HF_TOKEN` → `HTTP 403`); the outcome comment using the owner PAT instead of the default token (`Resource not accessible by personal access token (addComment)`); a run with no implementation staying green; a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
+| `tests/test_lint_linefeeds.py` + `make lint` (rule 6i, issue #186) | a tracked text file that ends without a newline (git's `\ No newline at end of file`, which turns the next append into a spurious last-line change); `--fix` appending more than one newline or not being idempotent; a binary file (NUL in the first 8000) or an empty file being reported as a finding; an UNTRACKED file failing the lint (the set is `git ls-files`); the gate not wired into `qa-validate`, the fix loop's first check or `make test` (rule 6d); `.editorconfig` losing the editor half of the rule |
 | `tests/test_architecture.py` (rule 6h, issue #178) | an `ARCHITECTURE.md` that lost a public make target, a workflow or a script; a description still naming a target that was removed (its §3 tables are the claim, the Makefile the truth); a phantom `.github/workflows/*.yml` or `scripts/*` reference; the check not wired into `qa-validate`, the fix loop or `make test` (rule 6d); the implementer prompt no longer requiring the update |
 | `tests/test_check_openspec_tasks.py` (rule 6f, issue #172) | an ACTIVE change left with an unticked `- [ ]` box passing CI (`openspec validate` checks structure only) — the completion half of the gate; an archived change's boxes being checked; a literal `- [ ]` inside a fenced code block counted as a task; the gate not reachable from a make target CI runs (rule 6d) |
 | `tests/test_openspec_index.py` (rule 6f, issue #172) | a change directory with NO row in the root `OPENSPEC.md`, a stale row (issue/PR/spec/tasks drift), a hand-written index that disagrees with the generator, an archived change mislabelled active; `make openspec-index`/`-index-check` not wired or `openspec-check` not running the check |

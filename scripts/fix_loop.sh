@@ -33,7 +33,7 @@ MAKE="${MAKE:-make}"
 # Fast -> slow; stop at the FIRST red check (its output is what Hermes needs).
 # The full unit suite (make test, ~minutes) only runs once everything else is
 # green — it used to run before every Hermes round.
-CHECKS=(validate-search validate-mapped openspec-check architecture-check)
+CHECKS=(lint validate-search validate-mapped openspec-check architecture-check)
 # An IMPLEMENTATION run must also have recorded what it found (AGENTS.md,
 # "analysis ships issues, not code"): issue-bot sets REQUIRE_FINDINGS=1, so a
 # missing findings.md is a red check Hermes has to fix. fix-bot repairs a data
