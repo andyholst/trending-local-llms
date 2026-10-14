@@ -577,11 +577,18 @@ def test_issue_bot():
           resolve.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", resolve.get("env"))
     check("issue-bot: the PR step still uses the owner PAT (a GITHUB_TOKEN PR is held for approval)",
           PAT in str(step(impl, "Open the PR").get("env", {}).get("GH_TOKEN", "")))
-    # Sweep the existing backlog (#127): a 6-hourly run implements ONE open
-    # labelled issue that no implementer has touched yet.
+    # Sweep the existing backlog (#127): an HOURLY run implements ONE open
+    # labelled issue that no implementer has touched yet. Hourly rather than
+    # 6-hourly: the sweep takes ONE issue per run, so a backlog of N gap issues
+    # (the analysis can file several in a day) otherwise waits up to 6 h per
+    # issue, and an empty sweep is a green no-op either way. #163 sat unlabelled
+    # for 5 h with nobody to pick it up — the cadence is what bounds that.
     sched = trig.get("schedule")
-    check("issue-bot: sweeps the backlog on an off-the-hour 6-hourly cron",
-          isinstance(sched, list) and any("19 */6 * * *" in str(s.get("cron")) for s in sched), sched)
+    crons = [str(s.get("cron", "")) for s in (sched if isinstance(sched, list) else [])]
+    check("issue-bot: sweeps the backlog hourly",
+          "19 * * * *" in crons, sched)
+    check("issue-bot: the sweep never sits on the hour (GitHub delays/drops those crons)",
+          bool(crons) and all(c.split()[0] != "0" for c in crons), crons)
     pick = jobs.get("pick", {})
     check("issue-bot: the picker needs the guard", "guard" in _deps(jobs, "pick"), _deps(jobs, "pick"))
     pick_if = str(pick.get("if", ""))
