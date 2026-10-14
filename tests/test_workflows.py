@@ -233,6 +233,100 @@ def test_fix_bot_push_behaviour():
     check("fix-push: green with no changes -> exit 0, nothing pushed", rc == 0 and files == [], (rc, files, out[-200:]))
 
 
+# The remote-side rejection mirroring GitHub's own rule: a token without
+# `workflow` scope may not create or update .github/workflows/**. The text is the
+# real message measured on #120 (run 38509118147).
+GH_WORKFLOW_HOOK = """#!/bin/sh
+refusing() {
+  echo "refusing to allow a Personal Access Token to create or update workflow" >&2
+  echo "\\`.github/workflows/x.yml\\` without \\`workflow\\` scope" >&2
+  exit 1
+}
+while read -r old new ref; do
+  if git ls-tree -r --name-only "$new" 2>/dev/null | grep -q '^\\.github/workflows/'; then
+    refusing
+  fi
+done
+exit 0
+"""
+
+OTHER_REJECT_HOOK = """#!/bin/sh
+echo "error: failed to push some refs to 'origin'" >&2
+exit 1
+"""
+
+
+def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str]]:
+    """Execute the REAL issue-bot commit+push script against a REAL bare remote
+    whose pre-receive hook rejects like GitHub does. Returns (rc, output, files
+    in the pushed commit)."""
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    push = step(load("issue-bot.yml")["jobs"]["implement"], "Commit + push")
+    td = Path(tempfile.mkdtemp())
+    try:
+        def g(*a, cwd=None):
+            return subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True)
+        g("init", "-q", "--bare", str(td / "remote.git"))
+        hooks = td / "remote.git" / "hooks"
+        hooks.mkdir(parents=True, exist_ok=True)
+        (hooks / "pre-receive").write_text(hook)
+        (hooks / "pre-receive").chmod(0o755)
+        g("clone", "-q", str(td / "remote.git"), str(td / "wc"))
+        wc = td / "wc"
+        shutil.copy(ROOT / ".gitignore", wc / ".gitignore")
+        (wc / "data.json").write_text("{}\n")
+        g("add", "-A", cwd=wc)
+        g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base", cwd=wc)
+        g("push", "-q", "origin", "HEAD:refs/heads/master", cwd=wc)
+        if touch_workflow:
+            (wc / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
+            (wc / ".github" / "workflows" / "x.yml").write_text("name: x\n")
+        else:
+            (wc / "data.json").write_text('{"impl": true}\n')
+        # a scratch artifact the agent left behind (measured on #120)
+        (wc / "AGENTS_issue-120.patch").write_text("--- a\n+++ b\n")
+        bin_ = td / "bin"
+        bin_.mkdir()
+        (bin_ / "sudo").write_text('#!/bin/sh\nexec "$@"\n')
+        (bin_ / "sudo").chmod(0o755)
+        env = dict(os.environ, PATH=f"{bin_}:{os.environ['PATH']}", BRANCH="ci/data-gap-120-x",
+                   ISSUE="120", GITHUB_OUTPUT=str(td / "out"), HOME=str(td))
+        p = subprocess.run(["bash", "-e", "-c", push["run"]], cwd=wc, env=env,
+                           capture_output=True, text=True)
+        gh_out = (td / "out").read_text() if (td / "out").exists() else ""
+        pushed = g("rev-parse", "--verify", "ci/data-gap-120-x", cwd=td / "remote.git")
+        files = (g("show", "--name-only", "--format=", pushed.stdout.strip(), cwd=td / "remote.git").stdout.split()
+                 if pushed.returncode == 0 else [])
+        return p.returncode, p.stdout + p.stderr + gh_out, files
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_issue_bot_push_scope_rejection():
+    """#120 (run 38509118147): the implementation touched .github/workflows/** and
+    the push was rejected for the missing `workflow` scope — the run died at
+    `git push` with no explanation on the issue. The REAL step must instead: not
+    fail on that rejection, report it (scope_error), strip scratch artifacts, and
+    still fail on any OTHER push error."""
+    rc, out, files = _run_issue_push(GH_WORKFLOW_HOOK, touch_workflow=True)
+    check("issue-push: a workflow-scope rejection does NOT fail the step", rc == 0, out[-300:])
+    check("issue-push: it reports scope_error=true and pushed=false",
+          "scope_error=true" in out and "pushed=false" in out, out[-300:])
+    check("issue-push: nothing reached the remote", files == [], files)
+
+    rc, out, files = _run_issue_push(GH_WORKFLOW_HOOK, touch_workflow=False)
+    check("issue-push: a normal push still succeeds", rc == 0 and "pushed=true" in out, out[-200:])
+    check("issue-push: the pushed commit carries the implementation", "data.json" in files, files)
+    check("issue-push: the scratch *.patch is NOT pushed",
+          not any(f.endswith(".patch") for f in files), files)
+
+    rc, out, files = _run_issue_push(OTHER_REJECT_HOOK, touch_workflow=False)
+    check("issue-push: any OTHER push failure still fails the step", rc != 0, f"rc={rc} {out[-200:]}")
+
+
 def _deps(jobs: dict, name: str) -> set:
     """All jobs `name` depends on, transitively."""
     out, todo = set(), [name]
@@ -586,6 +680,7 @@ def main() -> int:
     test_guard_behaviour()
     test_nothing_pushes_master()
     test_auto_merge()
+    test_issue_bot_push_scope_rejection()
     test_issue_bot()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
