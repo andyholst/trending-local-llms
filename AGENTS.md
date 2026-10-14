@@ -161,6 +161,25 @@ retains 30 days of history.
    (`make data-gaps` → `make data-gap-issue`): analysis reports, an issue tracks,
    the fix is separate.
 
+6h. **`ARCHITECTURE.md` scrolls with the code (MANDATORY).** The root
+   `ARCHITECTURE.md` DESCRIBES the system — the data flow, every public `make`
+   target (grouped, with the image it runs in), every job of every pipeline and
+   its gates, the three runner images and how each content-hash tag is decided,
+   every script in `scripts/`, and the life of a change. Any change that adds,
+   renames or removes a **make target**, a **stage**, a **pipeline job** or an
+   **image** MUST update that file in the SAME change, and every implementation
+   run MUST leave it true. It is enforced, not promised:
+   `make architecture-check` (`scripts/architecture_check.py`) fails when a
+   public target, a workflow under `.github/workflows/` or a script under
+   `scripts/` is missing from the description, when the description's own target
+   tables name something the Makefile no longer has, or when it references a
+   workflow/script that does not exist. It runs in `qa-validate`'s `validate`
+   job, in the fix loop (before the network-bound `validate`) and, through
+   `tests/test_architecture.py`, in `make test` — so an agent that adds a target
+   either documents it or turns the pipeline red. The split is deliberate:
+   AGENTS.md is the rulebook (what must happen), ARCHITECTURE.md the description
+   (how it works); never move a rule into the description or vice versa.
+
 3d. **Secrets never enter the repo — `make secret-scan` before every push.**
    No key, token, webhook URL or credential of any kind may be written into a
    tracked file (data, prompts in the `Makefile`, `skills/`, tests, workflows,
@@ -781,6 +800,7 @@ actually happened.
 | `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`) or under a PROVIDER the setup does not run (the plugin's own default `openrouter` instead of production's `typesafe`) — the mapping is `jev_provider` → `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY`, so a mismatch forwards a variable nothing reads and the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `tests/test_workflows.py` — `test_issue_bot` (rules 6e/6d) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue, the hourly sweep or owner dispatch (a PR, a comment, a push, a `workflow_run`, a label-less issue); the sweep picking an issue that already has a branch/PR instead of the oldest unhandled one; two implementers for one issue (a concurrency key not keyed by the issue number, on either path); `make implement-issue` not running `_setup` in the same container as the hermes call (measured: alias missing → `HF_TOKEN` → `HTTP 403`); the outcome comment using the owner PAT instead of the default token (`Resource not accessible by personal access token (addComment)`); a run with no implementation staying green; a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
+| `tests/test_architecture.py` (rule 6h, issue #178) | an `ARCHITECTURE.md` that lost a public make target, a workflow or a script; a description still naming a target that was removed (its §3 tables are the claim, the Makefile the truth); a phantom `.github/workflows/*.yml` or `scripts/*` reference; the check not wired into `qa-validate`, the fix loop or `make test` (rule 6d); the implementer prompt no longer requiring the update |
 | `tests/test_check_openspec_tasks.py` (rule 6f, issue #172) | an ACTIVE change left with an unticked `- [ ]` box passing CI (`openspec validate` checks structure only) — the completion half of the gate; an archived change's boxes being checked; a literal `- [ ]` inside a fenced code block counted as a task; the gate not reachable from a make target CI runs (rule 6d) |
 | `tests/test_openspec_index.py` (rule 6f, issue #172) | a change directory with NO row in the root `OPENSPEC.md`, a stale row (issue/PR/spec/tasks drift), a hand-written index that disagrees with the generator, an archived change mislabelled active; `make openspec-index`/`-index-check` not wired or `openspec-check` not running the check |
 | `tests/test_file_findings.py` (rule 6g, issue #172) | an implementation run that wrote no `findings.md` passing silently; a vague finding (no Evidence/Why/Done-when) accepted; `- none` treated as an error instead of a valid "found nothing"; a finding filed twice (the signature dedup); a filing that loses its `tech-debt` label or its origin link; the `gh` create writing an EMPTY body (`--body-file -` needs stdin); `file-findings`/`findings-check` unwired, or the loop/bot not demanding the analysis |
