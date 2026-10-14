@@ -1278,6 +1278,12 @@ def main() -> int:
         if not only or name in only or label in only:
             checks.append((label, fn))
 
+    # Every check is registered here under a STAGE name; the stage must be reachable
+    # from a Makefile target CI runs (`_validate` runs them all; `_validate-data`,
+    # `_validate-mapped`, `_validate-search`, `_validate-readme`, `_validate-links`
+    # run `--only <stage>` subsets). tests/test_validate.py::test_every_check_is_wired
+    # fails on a check that no stage runs or a stage no target selects — no dead
+    # validator function may exist.
     add("no-removal guarantee", "removal", lambda: check_no_removal(store, snap_dir))
     add("additive-only (no key/value loss)", "removal", lambda: check_no_value_loss(store, snap_dir))
     add("no duplicate models", "data", lambda: check_no_duplicates(store))

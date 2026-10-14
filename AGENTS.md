@@ -93,6 +93,21 @@ retains 30 days of history.
    Verify a new guard by running it against the old file (`git show
    origin/master:<file>`) and confirming it goes red.
 
+6d. **No dead code — every Python entry point is wired to the Makefile.** A new
+   script, subcommand or validator check MUST be reachable from a `make` target
+   that CI actually runs: either **bundled** into an existing stage (a validator
+   check is registered in `scripts/validate.py`'s stage map in `main()` AND that
+   stage appears in a `_validate-*` recipe's `--only` list) or **added as its own
+   target** following the same pattern (internal `_name` host recipe + public
+   docker-wrapper target, plus the CI job that calls it). A function or script
+   nothing calls is a defect, not a spare part: the validator's registrations also
+   carry the stage->target mapping in a comment, and
+   `tests/test_validate.py::test_every_check_is_wired_to_a_stage_and_a_makefile_target`
+   fails on a `check_*` no stage registers, on a stage no `--only` list selects,
+   and proves `--only <stage>` really executes the check. Every `--only` list in
+   the Makefile is the contract; a check reachable only by accident (bundled into
+   no list, run by nothing) fails this test.
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -266,6 +281,13 @@ The README is **generated**, not hand-maintained:
   search agent writes (it was `reshares`, on every model) turns every refresh
   PR red on a schema error. Real recurring keys are declared in BOTH contracts
   (additive); stray keys are dropped and logged as `[ingest] … pruned`.
+- **Stage -> target mapping.** `make validate` (`_validate`) runs **every** stage
+  (no `--only`); `make validate-data` runs `data,removal`; `make validate-mapped`
+  runs `data,schema,mapping,removal`; `make validate-search` runs `search,mapping`;
+  `make validate-readme` runs `readme`; `make validate-links` runs `links`. Every
+  stage a check is registered under MUST appear in at least one `--only` list
+  (§2 rule 6d). CI's `qa-validate` `validate` job runs `make validate`,
+  `make validate-search`, `make validate-mapped` and `make test`.
 - **Never hand-edit the generated tables.** Fix the template or the data store
   instead, then regenerate. The "How to contribute" section points contributors
   at the store, not direct table edits.
@@ -580,6 +602,7 @@ actually happened.
 | `check_backends_cover_measurements` (validate, data stage) | a model whose measurements render in a backend table its `backends` does not list (ingest + `normalize_model` now sync it via `sync_backends`) |
 | `check_engine_aliases` (validate, data stage) | a measurement still on the aliased-away engine name; an alias target missing from the registry or with the wrong repo URL |
 | `check_no_value_loss` (validate, `removal` stage) + `tests/test_validate.py::test_no_value_loss` | a key, a measurement group, a t/s or an engagement counter that was in the previous snapshot disappearing from the store. `check_no_removal` only compares model IDS and the contract only sees a missing REQUIRED key, so `engagement.seen_posts`, the computed trend fields, a measurement's `hardware`/`quant`/counters — and 12 of bonsai-2-27b's 13 measurements — could be deleted with `make validate` green (both measured on master before this guard). Additive changes (new key, new measurement, extra backend, raised t/s or counter) must never fire it |
+| `tests/test_validate.py::test_every_check_is_wired_to_a_stage_and_a_makefile_target` (rule 6d) | a `check_*` in `scripts/validate.py` that no stage in `main()` registers, a stage that no Makefile `--only` list selects, and the `--only removal` call path itself — i.e. a validator function that exists but the CI pipeline never executes (a dead function, or a check wired into no make target) |
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |
