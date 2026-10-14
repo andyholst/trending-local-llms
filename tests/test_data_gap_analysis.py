@@ -7,8 +7,10 @@ actually stored, (c) file exactly ONE issue when the gap set changed — none wh
 did not, and (d) be wired into the Makefile and the refresh pipeline (rule 6d: no
 dead script). Every dimension it reports must also be CAPTURABLE end to end: its
 key declared OPTIONAL in BOTH contracts and merged at ingest onto an existing
-model — a dimension the store can hold but never receives is still a gap. Wired
-into `make test`.
+model — a dimension the store can hold but never receives is still a gap — and
+every value a model CARRIES must trace to a real `…/status/<id>` post: closing a
+gap by inventing a figure (or by reading one the post never gave) is the one
+failure this stage must never make. Wired into `make test`.
 
 Run:  python3 tests/test_data_gap_analysis.py    or   make test
 """
@@ -201,28 +203,67 @@ def _one_issue_per_changed_gap_set(tmp_path):
         os.environ["PATH"] = saved_path
 
 
-def test_real_store_names_the_system_ram_gap():
-    """On the REAL store + contracts: system RAM is the flagship gap — the
-    contracts now DECLARE it as an optional key (so ingest keeps it instead of
-    pruning it), every model still has no value, and at least one names the
-    figure in free text."""
+def test_real_store_dimensions_are_capturable_and_partly_filled():
+    """On the REAL store + contracts: every reported dimension is CAPTURABLE end
+    to end (declared OPTIONAL, so ingest keeps it instead of pruning it) and the
+    backfill that closes the filed gaps is REAL data — at least one model now
+    carries a structured value, a free-text mention is still never counted as a
+    stored one, and a gap dimension is still ranked.
+
+    The store used to have NO value for any of the five dimensions; asserting
+    that emptiness is what this test must not do — it would fail the moment the
+    gap actually closes (the point of the analysis)."""
 
     # Given the real store and the real contracts
     contract = G.contract_keys()
-    report = G.analyse(G.load(G.STORE), contract, raw_dir=G.RAW_DIR)
+    store = G.load(G.STORE)
+    report = G.analyse(store, contract, raw_dir=G.RAW_DIR)
+    dims = [d["key"] for d in G.DIMENSIONS]
 
-    # Then  the RAM dimension is CAPTURABLE (declared), still unfilled on every
-    #       model, and still only prose somewhere
+    # Then  each dimension is CAPTURABLE …
     check("real store: models exist", report["models"] > 0, str(report["models"]))
-    check("real store: system_ram_min is no longer a contract gap",
-          "system_ram_min" not in report["contract_gaps"], str(report["contract_gaps"]))
-    check("real store: system_ram_min missing on every model",
-          len(report["missing"]["system_ram_min"]) == report["models"])
-    check("real store: at least one free-text RAM mention",
-          bool(report["unstructured"]["system_ram_min"]), str(report["unstructured"]["system_ram_min"]))
-    check("real store: RAM is the top-ranked gap",
-          G.rank_impact(report)[0][0] in ("context_tokens", "engine_min_version", "storage_offload",
-                                          "system_ram_min", "weight_gb"), str(G.rank_impact(report)[:3]))
+    for key in dims:
+        check(f"real store: {key} is capturable (never a contract gap)",
+              key not in report["contract_gaps"], str(report["contract_gaps"]))
+
+    # … the backfill that closes the filed gaps has landed on at least one model …
+    filled = [m.get("id") for m in store["models"] if any(m.get(k) for k in dims)]
+    check("real store: at least one model carries a structured requirement dimension",
+          bool(filled), "no model has any of " + str(dims))
+
+    # … a figure that lives only in free text is still 'missing', never 'stored' …
+    check("real store: free text is never counted as a stored value",
+          all(set(report["unstructured"][k]) <= set(report["missing"][k]) for k in dims),
+          str({k: report["unstructured"][k] for k in dims}))
+
+    # … and the remaining gaps are still ranked and reported
+    check("real store: a gap dimension is still ranked",
+          bool(G.rank_impact(report)), str(G.rank_impact(report)[:3]))
+
+
+def test_structured_dimensions_trace_to_a_real_post():
+    """Every source-data dimension in the store must trace to a REAL X post.
+
+    A model that carries one of the requirement dimensions must have at least
+    one measurement whose `source_post` is a `…/status/<id>` URL: a figure
+    without a post behind it is a fabrication, and the backfill measured on the
+    store hit exactly this case (two models whose only 'source' was a placeholder
+    URL or a profile page — their values were left unset, not invented)."""
+
+    import update_trending as UT  # noqa: E402
+
+    store = G.load(G.STORE)
+    dims = [d["key"] for d in G.DIMENSIONS]
+    untraceable = [
+        f"{m.get('id')}:{k}"
+        for m in store["models"] if any(m.get(k) for k in dims)
+        for k in dims if m.get(k)
+        and not any(UT._is_post_url(str(e.get("source_post", ""))) for e in (m.get("engines") or []))
+    ]
+    check("every structured dimension traces to a real …/status/<id> post",
+          not untraceable, str(untraceable))
+    check("and at least one dimension is actually filled (the guard is not vacuous)",
+          any(m.get(k) for m in store["models"] for k in dims), "no dimension carries a value")
 
 
 def test_every_dimension_is_a_declared_optional_key():
@@ -519,7 +560,8 @@ def main() -> int:
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
-    test_real_store_names_the_system_ram_gap()
+    test_real_store_dimensions_are_capturable_and_partly_filled()
+    test_structured_dimensions_trace_to_a_real_post()
     test_every_dimension_is_a_declared_optional_key()
     test_ingest_merge_list_covers_every_declared_dimension()
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
