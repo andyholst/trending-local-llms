@@ -628,6 +628,13 @@ def test_issue_bot():
           "::error::git push failed" in push_run, "")
     check("issue-bot: scratch artifacts (*.patch/*.rej/*.orig) are never committed",
           "*.patch" in push_run and "git rm -q --cached" in push_run, "")
+    # …and when the push IS rejected, the committed work is attached so it is not
+    # thrown away with the ephemeral runner (the file itself is proven to be
+    # produced by test_issue_bot_push_scope_rejection).
+    upload = step(impl, "Upload the unpushed implementation")
+    check("issue-bot: a scope-rejected implementation is uploaded as an artifact",
+          "issue-implementation.patch" in str(upload.get("with", {}).get("path", ""))
+          and "scope_error" in str(upload.get("if", "")), upload)
     comment_run = run_text(impl)
     check("issue-bot: the issue comment explains the token scope and the fix",
           "Workflows: Read and write" in comment_run and "workflow" in comment_run, "")
