@@ -57,6 +57,9 @@ env:
   # from `scripts/ensure_image.py`, the definition consumers read too.
   IMAGE_REPO: ghcr.io/${{ github.repository }}
   TEST_IMAGE: ghcr.io/${{ github.repository }}-test:latest
+  # The OpenSpec CLI image (openspec/Dockerfile): published here so `make
+  # openspec-check` in qa-validate PULLS it instead of building Node on every PR.
+  OPENSPEC_IMAGE: ghcr.io/${{ github.repository }}-openspec:latest
 
 jobs:
   # Gate EVERY job: a scheduled run passes; a manual dispatch (or a re-run)
@@ -234,6 +237,51 @@ jobs:
         if: needs.build.outputs.test_built != 'yes'
         run: |
           echo "The published test image is built from this revision's inputs; reusing it."
+
+  # The OpenSpec CLI image (openspec/Dockerfile) — the container `make openspec-*`
+  # runs in. Published on the SAME rule as the other two: the tag names the
+  # contents it was built from (`scripts/ensure_image.py tags`), so `make
+  # openspec-check` in qa-validate pulls it for this revision instead of running
+  # `npm install` in a fresh Node image on every PR, and a merged
+  # openspec/Dockerfile becomes live by its own hash tag.
+  openspec-image:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Decide whether to publish the OpenSpec image
+        id: decide
+        run: |
+          eval "$(python3 scripts/ensure_image.py tags)"
+          echo "tag=$OPENSPEC_TAG" >> "$GITHUB_OUTPUT"
+          if docker manifest inspect "$OPENSPEC_TAG" >/dev/null 2>&1; then
+            echo "published=yes" ; echo "published=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=no"  ; echo "published=no"  >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build + push the OpenSpec image (its hash tag is not published)
+        if: steps.decide.outputs.published == 'no'
+        uses: docker/build-push-action@v6
+        with:
+          context: openspec
+          file: openspec/Dockerfile
+          push: true
+          tags: |
+            ${{ env.OPENSPEC_IMAGE }}
+            ${{ steps.decide.outputs.tag }}
+      - name: OpenSpec image already current — skip rebuild
+        if: steps.decide.outputs.published == 'yes'
+        run: echo "The published OpenSpec image is built from this revision's openspec/Dockerfile; reusing it."
 
   # Four independent searches (nvidia, metal, cpu, amd), run in parallel. Each PULLS the prebuilt image
   # (no rebuild), writes its own raw snapshot, and uploads it as an artifact.

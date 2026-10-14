@@ -4,7 +4,8 @@
 #   check -> (green? stop) -> hermes fix with the exact failure report -> re-check
 #
 # Each round runs the SAME deterministic checks qa-validate runs (make validate,
-# validate-search, validate-mapped, test) and writes their full output to
+# validate-search, validate-mapped, openspec-check, findings-check, test) and
+# writes their full output to
 # $QA_REPORT. When anything is red, `make fix` runs Hermes with that report
 # (the _fix prompt tells it to read qa-report.txt first), then the loop
 # re-checks. It stops as soon as the checks are green, and gives up after
@@ -32,7 +33,13 @@ MAKE="${MAKE:-make}"
 # Fast -> slow; stop at the FIRST red check (its output is what Hermes needs).
 # The full unit suite (make test, ~minutes) only runs once everything else is
 # green — it used to run before every Hermes round.
-CHECKS=(validate-search validate-mapped validate)
+CHECKS=(validate-search validate-mapped openspec-check)
+# An IMPLEMENTATION run must also have recorded what it found (AGENTS.md,
+# "analysis ships issues, not code"): issue-bot sets REQUIRE_FINDINGS=1, so a
+# missing findings.md is a red check Hermes has to fix. fix-bot repairs a data
+# PR nobody implemented by hand, so it does not demand the file.
+[ "${REQUIRE_FINDINGS:-0}" = "1" ] && CHECKS+=(findings-check)
+CHECKS+=(validate)
 BUDGET_SIG='reasoning consumed the entire budget|No visible answer was produced'
 
 # The report holds ONLY the failing check's output (plus the list of checks

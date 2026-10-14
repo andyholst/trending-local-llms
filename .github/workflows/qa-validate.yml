@@ -95,6 +95,13 @@ jobs:
           make validate-search
           make validate-mapped
 
+      # Every change is a TRACKED change: its capability spec validates, its task
+      # checklist is fully ticked and OPENSPEC.md (the root index of every change)
+      # is current. `make openspec-check` also ensures the CLI image — pulled by
+      # this revision's openspec/Dockerfile hash, built here when unpublished.
+      - name: OpenSpec gate (changes validate, tasks ticked, index current)
+        run: make openspec-check
+
       - name: Run unit tests (in container)
         run: make test
 

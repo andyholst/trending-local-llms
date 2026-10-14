@@ -4,8 +4,9 @@
 Both images are published to GHCR with a tag naming the inputs they were built
 from (issue #141; the base image rule came with issue #135):
 
-    base  ghcr.io/<owner>/trending-local-llms:dockerfile-<sha12>
-    test  ghcr.io/<owner>/trending-local-llms-test:test-<sha12>
+    base      ghcr.io/<owner>/trending-local-llms:dockerfile-<sha12>
+    test      ghcr.io/<owner>/trending-local-llms-test:test-<sha12>
+    openspec  ghcr.io/<owner>/trending-local-llms-openspec:openspec-<sha12>
 
 `ensure` views those tags as the source of truth: when the tag for this revision
 is published the image is PULLED (byte-identical to what CI runs, no rebuild);
@@ -19,8 +20,9 @@ plugin produced a test image the credential guard could only fail on).
 
     BASE_TAG=ghcr.io/.../trending-local-llms:dockerfile-abcdef123456
     TEST_TAG=ghcr.io/.../trending-local-llms-test:test-abcdef123456
+    OPENSPEC_TAG=ghcr.io/.../trending-local-llms-openspec:openspec-abcdef123456
 
-Usage:  ensure_image.py [ensure|ensure-base|ensure-test|tags]
+Usage:  ensure_image.py [ensure|ensure-base|ensure-test|ensure-openspec|tags]
 """
 
 from __future__ import annotations
@@ -37,10 +39,14 @@ ROOT = Path(__file__).resolve().parents[1]
 # them changes the hash, which is what makes the published tag stale.
 BASE_FILES = ("Dockerfile", "Dockerfile.test")
 TEST_FILES = ("Dockerfile.test", "requirements-test.txt")
+# The OpenSpec CLI image is independent of the base (Node, not Python), so its
+# tag hashes only its own Dockerfile.
+OPENSPEC_FILES = ("openspec/Dockerfile",)
 
 IMAGE_REPO = os.environ.get("IMAGE_REPO", "ghcr.io/andyholst/trending-local-llms")
 IMAGE = os.environ.get("IMAGE", "trending-local-llms:latest")
 TEST_IMAGE = os.environ.get("TEST_IMAGE", "trending-local-llms-test:latest")
+OPENSPEC_IMAGE = os.environ.get("OPENSPEC_IMAGE", "trending-local-llms-openspec:latest")
 
 
 def _digest(parts: tuple[str, ...]) -> str:
@@ -98,6 +104,27 @@ def base_ready() -> bool:
     ).returncode == 0
 
 
+def openspec_hash() -> str:
+    return _digest(OPENSPEC_FILES)
+
+
+def openspec_tag() -> str:
+    return f"{IMAGE_REPO}-openspec:openspec-{openspec_hash()}"
+
+
+def ensure_openspec() -> str:
+    """The OpenSpec CLI image: the one code path for `make openspec-*`."""
+    if published(openspec_tag()):
+        _run("docker", "pull", openspec_tag())
+        _run("docker", "tag", openspec_tag(), OPENSPEC_IMAGE)
+        return f"openspec: pulled {openspec_tag()} -> {OPENSPEC_IMAGE}"
+    _run("docker", "build", "-f", "openspec/Dockerfile", "-t", OPENSPEC_IMAGE, "openspec")
+    return (
+        f"openspec: {openspec_tag()} is not published; built {OPENSPEC_IMAGE} "
+        "from this revision's openspec/Dockerfile"
+    )
+
+
 def ensure_test() -> str:
     if published(test_tag()):
         _run("docker", "pull", test_tag())
@@ -116,6 +143,10 @@ def main(argv: list[str]) -> int:
     if action == "tags":
         print(f"BASE_TAG={base_tag()}")
         print(f"TEST_TAG={test_tag()}")
+        print(f"OPENSPEC_TAG={openspec_tag()}")
+        return 0
+    if action == "ensure-openspec":
+        print(ensure_openspec())
         return 0
     if action == "ensure-base":
         print(ensure_base())
@@ -127,7 +158,10 @@ def main(argv: list[str]) -> int:
         print(ensure_base())
         print(ensure_test())
         return 0
-    print("usage: ensure_image.py [ensure|ensure-base|ensure-test|tags]", file=sys.stderr)
+    print(
+        "usage: ensure_image.py [ensure|ensure-base|ensure-test|ensure-openspec|tags]",
+        file=sys.stderr,
+    )
     return 2
 
 

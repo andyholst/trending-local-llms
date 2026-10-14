@@ -121,6 +121,46 @@ retains 30 days of history.
    The agent never merges, never pushes `master`, and never invents a value to
    close a gap — an unverifiable one is reported on the issue instead.
 
+6f. **Every change is a TRACKED OpenSpec change, and the root `OPENSPEC.md`
+   index is how you find them (MANDATORY).** Work MUST start by creating the
+   change (`make openspec-new NAME=<kebab-name>`) — before any code — and the
+   change MUST carry `openspec/changes/<name>/proposal.md` (Why / What Changes /
+   Impact / what is **not** covered), at least one capability spec
+   `openspec/changes/<name>/specs/<capability>/spec.md`, and a `tasks.md`
+   `- [ ]` checklist with one box per implemented step, ticked the moment that
+   step is VERIFIED. Every Requirement states the behaviour; every
+   `#### Scenario:` has separate `Given` / `When` / `Then` lines **and** a
+   `- **Test:** <path>::<test>` line naming the test that locks it (a scenario
+   whose test does not exist is a defect, and so is a test whose scenario does
+   not). `make openspec-check` — every active change validates, no unticked box,
+   the index is current — MUST pass before the PR is ready; qa-validate runs it
+   on every PR.
+   `OPENSPEC.md` at the repository root is **generated** (`make openspec-index`)
+   and MUST list every change, active and archived, with its issue, PR,
+   capability specs and task progress: a change on disk with no row fails
+   `make openspec-index-check`, so nothing lands unlisted. The CLI runs ONLY in
+   its container image (`openspec/Dockerfile`, pulled by content hash when
+   published and built locally when not, like the base/test images): never a host
+   `npm install`, never a second implementation of the same stage.
+
+6g. **Analysis ships ISSUES, never code (MANDATORY, durable).** Every
+   implementation run MUST analyse what it touched — real gaps, technical debt,
+   and data that is no longer solid in what the crawler/ingest stores — and
+   record it in `findings.md`: one `## <title>` section per finding, each with
+   `**Evidence:**` (a file:line, a command, a data point), `**Why:**` and
+   `**Done when:**`, or the single line `- none` when the run genuinely found
+   nothing. `make findings-check` fails LOUDLY when that file is missing or a
+   finding is vague — a silent skip is the defect this rule exists to prevent.
+   `make file-findings` files ONE issue per finding (label `tech-debt`, deduped
+   by an invisible `<!-- tech-debt-signature: … -->` marker, linked back to the
+   issue and the PR it came from), and the implementer bot runs it only after its
+   fix loop is green, so a red run files nothing and a re-run cannot duplicate.
+   A finding is NEVER fixed inside the change that found it and never left as
+   prose in a PR body: file it first, then fix it in its own reviewed change with
+   its own issue and OpenSpec change. This mirrors the data-gap chain
+   (`make data-gaps` → `make data-gap-issue`): analysis reports, an issue tracks,
+   the fix is separate.
+
 3d. **Secrets never enter the repo — `make secret-scan` before every push.**
    No key, token, webhook URL or credential of any kind may be written into a
    tracked file (data, prompts in the `Makefile`, `skills/`, tests, workflows,
@@ -272,6 +312,13 @@ The README is **generated**, not hand-maintained:
   `Dockerfile.test` takes its `FROM` as a build arg, so a cached GHCR pull can
   never stand in for the revision's own base). `fix-bot.yml` still pulls.
   The GHCR image is public, so no login is needed to pull it.
+- **The OpenSpec CLI image is published the same way** (rule 6f, #172).
+  `refresh-bot.yml`'s `openspec-image` job builds `openspec/Dockerfile` and pushes
+  it as `ghcr.io/<owner>/trending-local-llms-openspec:openspec-<sha12>` whenever
+  that hash tag is not published; `make openspec-*` runs the CLI from it, pulling
+  the tag (else building it) through `scripts/ensure_image.py ensure-openspec`.
+  Local and CI therefore run the SAME CLI, and a host `npm install` is never the
+  path.
 - **Snapshots:** every refresh writes a timestamped snapshot to
   `data/snapshots/trending-<UTC>.json` (full store). This is the history that
   proves no model was ever removed and lets the README be rebuilt from any
@@ -536,13 +583,17 @@ this `AGENTS.md` and the `gather-data` skill, then:
   triggering actor, names from `env:` — a stranger's issue starts nothing), and
   `implement` needs it. It resolves the issue (must be open),
   writes it to `issue.md`, checks out `master` with the owner PAT, pulls the base
-  image, runs `make hermes-smoke`, implements through `make implement-issue` (the
-  prompt in the Makefile: implement EXACTLY that issue, additive only, never
-  fabricate a value, wire every addition to a make target per rule 6d), pushes
-  `ci/data-gap-<n>-<slug>` (resuming it on a re-run — never a force-push), opens
-  the PR against `master` with `closes #<n>`, then runs the SAME fix loop as
-  fix-bot against that PR and pushes only when green, and comments the outcome on
-  the issue. It never merges — qa-validate's `auto-merge` squash-merges.
+  image, runs `make hermes-smoke`, implements through `make implement-issue` — the
+  prompt requires, per rules 6f/6g, the TRACKED OpenSpec change (created first,
+  capability spec + task checklist, `OPENSPEC.md` refreshed, `make openspec-check`
+  green) and a `findings.md` analysis — pushes `ci/data-gap-<n>-<slug>` (resuming
+  it on a re-run — never a force-push), opens the PR against `master` with
+  `closes #<n>`, then runs the SAME fix loop as fix-bot against that PR (the job
+  sets `REQUIRE_FINDINGS=1`, so a run that skipped the analysis is RED) and pushes
+  only when green. Once the loop is green it files the findings as their OWN
+  issues (`make findings-check` + `make file-findings`, label `tech-debt`, deduped
+  by signature and linked to the issue/PR) and comments the outcome on the issue.
+  It never merges — qa-validate's `auto-merge` squash-merges.
   Two failures measured on its first real run (#124, run 38502619350) are now
   guarded by `tests/test_workflows.py::test_issue_bot`: (1) `make implement-issue`
   MUST run `_setup` in the SAME container as the hermes call — without the alias
@@ -730,6 +781,10 @@ actually happened.
 | `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`) or under a PROVIDER the setup does not run (the plugin's own default `openrouter` instead of production's `typesafe`) — the mapping is `jev_provider` → `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY`, so a mismatch forwards a variable nothing reads and the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `tests/test_workflows.py` — `test_issue_bot` (rules 6e/6d) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue, the hourly sweep or owner dispatch (a PR, a comment, a push, a `workflow_run`, a label-less issue); the sweep picking an issue that already has a branch/PR instead of the oldest unhandled one; two implementers for one issue (a concurrency key not keyed by the issue number, on either path); `make implement-issue` not running `_setup` in the same container as the hermes call (measured: alias missing → `HF_TOKEN` → `HTTP 403`); the outcome comment using the owner PAT instead of the default token (`Resource not accessible by personal access token (addComment)`); a run with no implementation staying green; a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
+| `tests/test_check_openspec_tasks.py` (rule 6f, issue #172) | an ACTIVE change left with an unticked `- [ ]` box passing CI (`openspec validate` checks structure only) — the completion half of the gate; an archived change's boxes being checked; a literal `- [ ]` inside a fenced code block counted as a task; the gate not reachable from a make target CI runs (rule 6d) |
+| `tests/test_openspec_index.py` (rule 6f, issue #172) | a change directory with NO row in the root `OPENSPEC.md`, a stale row (issue/PR/spec/tasks drift), a hand-written index that disagrees with the generator, an archived change mislabelled active; `make openspec-index`/`-index-check` not wired or `openspec-check` not running the check |
+| `tests/test_file_findings.py` (rule 6g, issue #172) | an implementation run that wrote no `findings.md` passing silently; a vague finding (no Evidence/Why/Done-when) accepted; `- none` treated as an error instead of a valid "found nothing"; a finding filed twice (the signature dedup); a filing that loses its `tech-debt` label or its origin link; the `gh` create writing an EMPTY body (`--body-file -` needs stdin); `file-findings`/`findings-check` unwired, or the loop/bot not demanding the analysis |
+| `tests/test_workflows.py` — `test_qa_validate_runs_the_openspec_gate`, `test_implement_prompt_requires_openspec_and_findings`, `test_issue_bot_files_findings_only_when_green` (rules 6f/6g, issue #172) | a PR pipeline that stopped running `make openspec-check`; an implementer prompt that dropped the OpenSpec-first/tasks/index/findings requirements (or broke the single `-z` command + `-m nous-deepseek` line); a bot that files findings on a RED loop, without the issue/PR context, with the wrong token, or that hides a filing failure (`continue-on-error` / `|| true`); a run that does not demand the analysis (`REQUIRE_FINDINGS`); the OpenSpec image not published on the same hash-tag rule as the base/test images |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_validate_readme.py` — `test_readme_generated_*` + `test_readme_generated_tests_are_clock_independent` (issue #88) | a hand-edited / stale README passing `check_readme_generated`; a test rendering the expected README from the wall clock instead of the store's `generated_utc` (the fixture aged out of the 7-day band on 2026-10-05 and master went red, run 37247105182); the AST guard rejects any `render_readme(..., now()/utcnow()/today())` under `tests/` |
