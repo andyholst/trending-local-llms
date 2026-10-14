@@ -1,0 +1,109 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "M4 Pro 64GB (Apple Silicon, Mac mini)",
+          "quant": "Qwen3.8 Flash stock serve; best public recipe also 11 t/s",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 130,
+          "comments": 16,
+          "reshares": 2,
+          "views": 16699,
+          "interactions": 16847
+        },
+        {
+          "engine": "MLX",
+          "tps": "44.6",
+          "hardware": "M4 Pro 64GB (Apple Silicon, Mac mini)",
+          "quant": "MTP depth (expert offload); 27B dense daily driver",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 130,
+          "comments": 16,
+          "reshares": 2,
+          "views": 16699,
+          "interactions": 16847
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "147",
+          "hardware": "M5 Ultra (Apple Silicon)",
+          "quant": "oMLX vs TensorFold decode comparison, independent issue #22 run, oMLX 0.3.4-era; prefill 3,300-3,600 t/s",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "39",
+          "hardware": "Apple Silicon (iOS device)",
+          "quant": "MLX with the new FoundationModels adapter; Perspective Intelligence 3.0 on iOS",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/mikedoise/status/2110198747657568407",
+          "likes": 12,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 12
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-14T11:12:52Z"
+}

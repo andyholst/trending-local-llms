@@ -1,0 +1,80 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RTX 5090 Laptop 24GB (24,463 MiB)",
+          "quant": "Unsloth Q4_K_M, q8_0 KV both K and V, -fa on, -ngl 99, --spec-type draft-mtp (n-max 3, p-min 0), 65,536 ctx; CUDA build b10052; 35.5-43.7 t/s decode, draft acceptance 0.48-0.57, prompt processing 1,150-1,190 t/s",
+          "date": "2026-08-24",
+          "source_post": "https://lightbrd.com/t0nil0/status/2091966674371006496",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 315,
+          "interactions": 318
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "RTX 3090",
+          "quant": "qwen 3.5-27b dense, flat",
+          "date": "2026-04-17",
+          "source_post": "https://lightbrd.com/sudoingX/status/2045170387265392783",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 37,
+          "views": 29859,
+          "interactions": 29903
+        }
+      ],
+      "last_seen": "2026-10-11"
+    },
+    {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B",
+      "full_name": "Gemma 4 31B (dense, instruction-tuned)",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "31B",
+      "hf": "google/gemma-4-31B-it",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "context_tokens": "128000",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17.17",
+          "hardware": "RTX 5090 24GB Laptop",
+          "quant": "q4_0 KV cache, 128k native context, thinking mode on; 15.36 t/s sustained on a 1,272-token thinking session, prompt eval 95-165 t/s",
+          "date": "2026-04-17",
+          "source_post": "https://lightbrd.com/sudoingX/status/2045170387265392783",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 37,
+          "views": 29859,
+          "interactions": 29903
+        }
+      ],
+      "last_seen": "2026-04-17"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:16:28Z"
+}
