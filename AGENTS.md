@@ -121,6 +121,28 @@ retains 30 days of history.
    The agent never merges, never pushes `master`, and never invents a value to
    close a gap — an unverifiable one is reported on the issue instead.
 
+3d. **Secrets never enter the repo — `make secret-scan` before every push.**
+   No key, token, webhook URL or credential of any kind may be written into a
+   tracked file (data, prompts in the `Makefile`, `skills/`, tests, workflows,
+   AGENTS.md, README). The rule is enforced, not assumed:
+   - `make secret-scan` runs **gitleaks** (MIT, the most widely adopted FOSS
+     secret scanner; pinned image `ghcr.io/gitleaks/gitleaks:v8.30.1`) over the
+     working tree — staged files included — with `.gitleaks.toml`. **An agent
+     MUST run it before every push, and a non-zero exit BLOCKS the push.**
+   - `make secret-scan-history` scans full git history (catches a value deleted
+     later, which a working-tree scan cannot see). It needs a real clone and
+     refuses a git worktree loudly instead of reporting a fake clean.
+   - `make secret-scan-self-test` plants a well-formed FAKE credential and
+     REQUIRES gitleaks to flag it, then requires a clean fixture to pass: a
+     scanner that silently does nothing fails this.
+   - CI runs `make secret-scan` + `make secret-scan-self-test` as the FIRST steps
+     of qa-validate's `validate` job, so a planted secret turns the PR red.
+   - A finding is fixed by **removing the value and rotating the key**, never by
+     widening `.gitleaks.toml`: an allowlist entry is for a documented
+     PLACEHOLDER (with a comment saying why) — a real value is never allowlisted.
+   - The runtime story is unchanged and separate: keys reach a process only as
+     `-e` env at run time (see §6b), never baked into an image or a config.
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -637,6 +659,7 @@ actually happened.
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
+| `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `tests/test_workflows.py` — `test_issue_bot` (rule 6e) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue (a PR, a comment, an edit, a re-open, a label-less issue); two implementers for one issue (a concurrency key not keyed by the issue number); a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
