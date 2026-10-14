@@ -26,11 +26,15 @@ name: issue-bot
 on:
   issues:
     types: [opened]
-  # Backlog sweep (issue #127): every 6 h, off the hour. GitHub delays/drops
-  # on-the-hour crons (the refresh-bot lesson), so this is :19. One run ONE
-  # issue — the oldest open data-gap issue that has no implementer yet.
+  # Backlog sweep (issue #127): hourly, off the hour. GitHub delays/drops
+  # on-the-hour crons (the refresh-bot lesson), so this is :19. Hourly rather
+  # than 6-hourly because the sweep implements ONE issue per run: a backlog of
+  # N open gap issues (the analysis can file several in a day) drains in N
+  # hours, and a sweep that finds nothing is a green no-op — so the cadence
+  # costs nothing when there is no work. One run ONE issue — the oldest open
+  # data-gap issue that has no implementer yet.
   schedule:
-    - cron: "19 */6 * * *"
+    - cron: "19 * * * *"
   workflow_dispatch:
     inputs:
       issue_number:
