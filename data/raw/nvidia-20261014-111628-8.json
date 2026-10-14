@@ -1,0 +1,62 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "108.3",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "UD-Q3_K_XL 13.1GB + DFlash 1.09GB drafter, -c 16384, n-max 7; refactor Python 101.7 t/s, extract JSON 108.3 t/s, 400-word answer 52.6 t/s, translate 41.9 t/s (no drafter 29.8 t/s). Needs llama.cpp v0.6.0",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/bountyAIhunter/status/2107870818974019995",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 121,
+          "interactions": 123
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "58",
+          "hardware": "RTX 3090",
+          "quant": "fine-tuned Qwen3.8-27B, MTP speculative decode on Turkish text (39 t/s without); llama.cpp 0.6.0",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/GlobalFeedAI/status/2107855355136876823",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 226,
+          "interactions": 227
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "90",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Q4_K_M + Z-Lab DFlash2 drafter + Unsloth UD-Q4_K_XL, patched llama.cpp, --spec-draft-n-max 4, acceptance 5.39 tokens/step; 30K ctx 87.05 t/s @22.2GB, 80K ctx 84.20 t/s @23.3GB, 110K ctx 83.35 t/s @23.96GB",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105847723660349725",
+          "likes": 4,
+          "comments": 8,
+          "reshares": 72,
+          "views": 12267,
+          "interactions": 12351
+        }
+      ],
+      "last_seen": "2026-10-11"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:16:28Z"
+}

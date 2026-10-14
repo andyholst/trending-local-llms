@@ -1,0 +1,129 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "context_tokens": "262144",
+      "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 5.95GB, MTP head grafted back on + kernel fix for gaming cards; ~50 tok/s fresh, ~22 tok/s average over a 5-hour agentic run (125K context)",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108401318540779749",
+          "likes": 4,
+          "comments": 4,
+          "reshares": 23,
+          "views": 5551,
+          "interactions": 5582
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "146",
+          "hardware": "RTX 5090",
+          "quant": "5.95GB ternary (PTQ1_0), SDK runtime",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/qvac/status/2107139441425014846",
+          "likes": 13,
+          "comments": 1,
+          "reshares": 4,
+          "views": 1555,
+          "interactions": 1573
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0, 7.21GB, ~220K context, ~1.72 bits per weight, ~550 tok/s prefill",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107064827923284104",
+          "likes": 5,
+          "comments": 14,
+          "reshares": 0,
+          "views": 8572,
+          "interactions": 8591
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "5.95GB weights, MTP head + kernel fix; 18.3 tok/s with 77K context, 131K context resident, vision on top at ~50 tok/s",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 4,
+          "comments": 5,
+          "reshares": 49,
+          "views": 17207,
+          "interactions": 17265
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "5.95GB PTQ1_0, MTP head + kernel fix; 18.3 tok/s with 77k tokens in window, vision at 131k context, still inside 12GB",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/sudoingX/status/2103560169053474905",
+          "likes": 19,
+          "comments": 10,
+          "reshares": 149,
+          "views": 30810,
+          "interactions": 30988
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "26",
+          "hardware": "RTX 3060 12GB",
+          "quant": "stock setup without the MTP head (7GB file); 50 tok/s with MTP head + kernel fix",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2103679025579221331",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 0,
+          "views": 453,
+          "interactions": 457
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "compressed 27B ternary on mlx.fast, 302.7% over frozen baseline; 237.4 tok/s decode up from ~59 at baseline",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 22,
+          "comments": 25,
+          "reshares": 340,
+          "views": 94555,
+          "interactions": 94942
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "compressed 27B ternary, 125.8% over baseline (2.26x), YukonResearch challenge run",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 7,
+          "comments": 11,
+          "reshares": 152,
+          "views": 45960,
+          "interactions": 46130
+        }
+      ],
+      "last_seen": "2026-10-12"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:16:28Z"
+}

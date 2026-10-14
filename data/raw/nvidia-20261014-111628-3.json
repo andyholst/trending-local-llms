@@ -1,0 +1,66 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "120",
+          "hardware": "RTX 5090 32GB",
+          "quant": "more than 2x the speed of llama.cpp + Qwen3.8-27B on the same card (ts-bench comparison); Strata spreads the MoE across the machine's memory hierarchy",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107391242849914934",
+          "likes": 4,
+          "comments": 11,
+          "reshares": 1,
+          "views": 2456,
+          "interactions": 2472
+        }
+      ],
+      "last_seen": "2026-10-11"
+    },
+    {
+      "id": "qwen-3.6-27b",
+      "name": "Qwen 3.6 27B",
+      "full_name": "Qwen 3.6 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "140",
+          "hardware": "RTX 5090 32GB",
+          "quant": "Qwen 3.5 35B served through LM Studio anthropic-compatible endpoint (v1/messages), 80k context, model fully in VRAM",
+          "date": "2026-07-10",
+          "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 6,
+          "views": 745,
+          "interactions": 754
+        }
+      ],
+      "last_seen": "2026-07-10"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:16:28Z"
+}

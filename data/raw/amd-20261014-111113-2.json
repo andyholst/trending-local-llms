@@ -1,0 +1,42 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-14T11:36:00Z",
+  "models": [
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3 14B Instruct",
+      "type": "GGUF",
+      "license": "Apache-2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "12-16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-09",
+      "engagement": {
+        "likes": 115,
+        "comments": 2,
+        "reshares": 0,
+        "views": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Vulkan (RADV), Q4_K_M, llama.cpp b11177; +23% over ROCm at 30k (43.7 vs 35.5 tok/s); ROCm 35.5 t/s at 30k; median of 7 runs, fixed seed, 256 tokens",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+          "likes": 115,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 117
+        }
+      ]
+    }
+  ]
+}

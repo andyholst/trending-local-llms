@@ -1,0 +1,64 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B MoE (instruction-tuned, QAT)",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "context_tokens": "250000",
+      "weight_gb": "unsloth UD-Q4_K_XL (QAT) GGUF; 18.4GB VRAM at 80k ctx, 22.0GB at 250k",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "500",
+          "hardware": "RTX 4090 24GB",
+          "quant": "QAT GGUF, q8 KV cache, single RTX 4090, 24 concurrent user slots; 500+ t/s aggregate decode",
+          "date": "2026-07-28",
+          "source_post": "https://lightbrd.com/analogalok/status/2083175063050993981",
+          "likes": 10,
+          "comments": 12,
+          "reshares": 71,
+          "views": 18638,
+          "interactions": 18731
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "406",
+          "hardware": "RTX 4090 24GB",
+          "quant": "UD-Q4_K_XL (QAT), -c 57344, -np 14, -b 2048 -ub 2048, -ngl 99, -fa on, 23.93GB VRAM, 14 concurrent slots, no KV quant / no MTP; 7,000 tokens generated + 28,000 prefill in 21s (aggregate decode throughput 406 t/s)",
+          "date": "2026-07-30",
+          "source_post": "https://lightbrd.com/analogalok/status/2082810858544169242",
+          "likes": 15,
+          "comments": 16,
+          "reshares": 137,
+          "views": 36914,
+          "interactions": 37082
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "160.35",
+          "hardware": "RTX 4090 24GB",
+          "quant": "UD-Q4_K_XL (QAT) + 1.2GB mmproj-F16 vision projector + MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on, VRAM 18.4GB, unquantized f16 KV cache; 5,004 t/s prefill",
+          "date": "2026-07-28",
+          "source_post": "https://lightbrd.com/analogalok/status/2082112688273133677",
+          "likes": 7,
+          "comments": 14,
+          "reshares": 111,
+          "views": 29506,
+          "interactions": 29638
+        }
+      ],
+      "last_seen": "2026-07-30"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:16:28Z"
+}

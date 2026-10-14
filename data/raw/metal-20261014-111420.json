@@ -1,0 +1,126 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "Qwen3.8-27B 4-bit, thinking off, same prompts/client, median of 2 runs; numbers workload 154, code 114, JSON 146, story 51; drafting off all three stacks 29-31 t/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX-Serve 26.10.1, Qwen3.8-27B 4-bit via ddalcu's build, --no-mtp to force the DFlash drafter (default MTP made this build ~2x slower), thinking off, median of 2 runs; code 115, JSON 139, story 54",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 35,
+          "views": 4148,
+          "interactions": 4190
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "67",
+          "hardware": "DGX Spark 128GB",
+          "quant": "4-bit MLX on TensorFold + MTP, thinking off, temperature 0, one DGX Spark; ~103 GB whole server; fastest decode of the three models tested; agent loop 21.0 steps/min",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
+          "likes": 10,
+          "comments": 9,
+          "reshares": 0,
+          "views": 895,
+          "interactions": 914
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-07-15",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "66",
+          "hardware": "M5 Max (Apple Silicon)",
+          "quant": "1-bit Bonsai 27B (3.9 GB, 1.125 effective bpw), ~44 tok/s on M5 Pro, ~11 tok/s on iPhone 17 Pro Max via MLX Swift; ternary Bonsai (5.9 GB) ~58 tok/s on M5 Max",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/alimamakx/status/2077482728262402109",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-14T11:14:20Z"
+}

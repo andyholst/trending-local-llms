@@ -169,6 +169,59 @@ def test_write_raw_never_overwrites():
         check("raw: backend is still the first '-' token", all(n.split("-")[0] == "metal" for n in names))
 
 
+def test_write_raw_normalizes_hf_ref():
+    """An `hf` field is a bare repo id: validate/README build the URL by
+    prefixing it themselves, so a full URL (or the doubled prefix the search
+    agent produced, 'https://huggingface.co/https://huggingface.co/X') written
+    into data/raw 404s every raw-hf link check. --write-raw, the single funnel
+    every search prompt writes through, must collapse it."""
+    check("hf: bare id unchanged", UT.normalize_hf_ref("Qwen/Qwen3-14B") == "Qwen/Qwen3-14B")
+    check("hf: full URL -> repo id",
+          UT.normalize_hf_ref("https://huggingface.co/Qwen/Qwen3-14B") == "Qwen/Qwen3-14B")
+    check("hf: doubled prefix -> repo id",
+          UT.normalize_hf_ref("https://huggingface.co/https://huggingface.co/Qwen/Qwen3.8-Flash-Next-125B")
+          == "Qwen/Qwen3.8-Flash-Next-125B")
+    check("hf: trailing slash / padding stripped",
+          UT.normalize_hf_ref("  https://huggingface.co/Qwen/Qwen3-14B/  ") == "Qwen/Qwen3-14B")
+    check("hf: non-string passes through", UT.normalize_hf_ref(None) is None)
+
+    with tempfile.TemporaryDirectory() as td:
+        saved_dir, saved_now = UT.RAW_DIR, UT.now_utc
+        UT.RAW_DIR = Path(td)
+        from datetime import datetime, timezone
+        UT.now_utc = lambda: datetime(2026, 10, 14, 11, 10, 33, tzinfo=timezone.utc)
+        try:
+            p = UT.write_raw_snapshot("amd", {
+                "backend": "amd",
+                "models": [{
+                    "id": "qwen3-14b",
+                    "hf": "https://huggingface.co/https://huggingface.co/Qwen/Qwen3-14B",
+                    "formats": [{"name": "GGUF", "hf": "https://huggingface.co/Qwen/Qwen3-14B"}],
+                }],
+            })
+            m = json.loads(p.read_text())["models"][0]
+        finally:
+            UT.RAW_DIR, UT.now_utc = saved_dir, saved_now
+        check("raw: model hf collapsed on write", m["hf"] == "Qwen/Qwen3-14B", m["hf"])
+        check("raw: format hf collapsed on write", m["formats"][0]["hf"] == "Qwen/Qwen3-14B", m["formats"])
+
+
+def test_normalize_model_collapses_hf():
+    """Defense in depth: a raw model ingested through normalize_model (a slug
+    that did not go through --write-raw) must not land a URL in the store."""
+    store = {"models": [], "engines": {"llama.cpp": {"url": "https://github.com/ggml-org/llama.cpp",
+                                                     "backend": "CUDA"}}}
+    m = UT.normalize_model({
+        "id": "qwen3-14b", "name": "Qwen3-14B",
+        "hf": "https://huggingface.co/https://huggingface.co/Qwen/Qwen3-14B",
+        "formats": [{"name": "GGUF", "hf": "https://huggingface.co/Qwen/Qwen3-14B"}],
+        "engines": [{"engine": "llama.cpp", "tps": "40", "date": "2026-10-14",
+                     "source_post": "https://lightbrd.com/u/status/1"}],
+    }, store)
+    check("normalize_model: model hf collapsed", m["hf"] == "Qwen/Qwen3-14B", m["hf"])
+    check("normalize_model: format hf collapsed", m["formats"][0]["hf"] == "Qwen/Qwen3-14B", m["formats"])
+
+
 def main() -> int:
     print("search-leg budget guards (issue #64)")
     test_makefile_budget_settings()
@@ -177,6 +230,8 @@ def main() -> int:
     test_model_caps_evaluate()
     test_model_caps_cli()
     test_write_raw_never_overwrites()
+    test_write_raw_normalizes_hf_ref()
+    test_normalize_model_collapses_hf()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
