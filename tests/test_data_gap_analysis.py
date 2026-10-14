@@ -265,16 +265,31 @@ def test_analysis_is_wired_to_make_and_the_refresh_pipeline():
     makefile = (ROOT / "Makefile").read_text()
     workflow = (ROOT / ".github/workflows/refresh-bot.yml").read_text()
 
-    # Then  the targets exist, follow the internal-`_name` + public-wrapper pattern,
-    #       and the pipeline runs both the report and the issue step
-    for target in ("_data-gaps", "data-gaps", "_data-gap-issue", "data-gap-issue"):
+    # Then  the report follows the internal-`_name` + public-wrapper pattern and
+    #       runs in the image (it needs no `gh`) …
+    for target in ("_data-gaps", "data-gaps", "data-gap-issue"):
         check(f"Makefile defines {target}", f"{target}:" in makefile)
     check("public target runs the container wrapper", "$(TEST_RUN) make _data-gaps" in makefile)
     check("the script is called from the Makefile", "scripts/data_gap_analysis.py" in makefile)
+
+    # … and the FILER runs on the HOST, because the test image has no `gh`
+    # (measured: the step died with FileNotFoundError: 'gh', issue #150).
+    filer = makefile.split("data-gap-issue:", 1)[1].split("\n\n", 1)[0]
+    check("filer target does NOT run in the image (no `gh` there)",
+          "$(TEST_RUN)" not in filer and "python3 scripts/data_gap_analysis.py --issue" in filer,
+          filer)
+    check("no dead internal wrapper target is left behind (rule 6d)",
+          "_data-gap-issue:" not in makefile, "")
     check("refresh pipeline runs the report", "make data-gaps" in workflow)
     check("refresh pipeline files the issue", "make data-gap-issue" in workflow)
-    check("issue step uses the owner PAT, never the default token",
-          "FIXBOT_DISPATCH_TOKEN" in workflow.split("make data-gap-issue")[0][-400:])
+    # The step's own comment promises the filer never blocks the data PR; that
+    # promise is only kept with continue-on-error (measured: the job went red and
+    # the PR step was skipped, run 38549751388).
+    step = workflow.split("- name: File a data-gap issue", 1)[1].split("\n      - name:", 1)[0]
+    check("filer step uses the owner PAT, never the default token",
+          "FIXBOT_DISPATCH_TOKEN" in step, step)
+    check("the filer step is report-only, as documented",
+          "continue-on-error: true" in step, step)
 
 
 def main() -> int:

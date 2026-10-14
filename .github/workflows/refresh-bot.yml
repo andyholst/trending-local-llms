@@ -360,8 +360,13 @@ jobs:
         run: make data-gaps
 
       - name: File a data-gap issue when the gap set changed (issue #115)
-        # Report-only: a failure here never fails the data PR.
+        # Report-only: a failure here never fails the data PR. That promise needs
+        # continue-on-error — without it the job went red and the PR step was
+        # skipped (run 38549751388, issue #150). It still shows as a failed step.
+        continue-on-error: true
         env:
+          # `gh` + the repo live on the runner, not in the test image, so
+          # `make data-gap-issue` runs here (issue #150).
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
         run: make data-gap-issue
         # The baseline (data/gap_baseline.json) is written by `make data-gap-issue`
