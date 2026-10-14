@@ -1,0 +1,342 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        },
+        {
+          "name": "MLX",
+          "hf": "Vontra/Qwen3.8-27B-MLX-4bit"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "128K",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Dense 27B that the Mac community keeps pushing: 87.9 tok/s median via custom MTP heads on mlx.fast, and 352 tok/s against vLLM on the same 5090 in a cross-engine duel.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "87.9",
+          "hardware": "Mac Studio M5 Max (mlx.fast verifier)",
+          "quant": "4-bit MLX, custom MTP heads drafting ~3.9 tokens/round; median of 8 prompts, 26 -> 87.9 over 7 days; prefill ~971.8 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/0xkydo/status/2090894947335750142",
+          "likes": 24,
+          "comments": 30,
+          "reshares": 344,
+          "views": 33086,
+          "interactions": 33484
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "352.28",
+          "hardware": "Mac M5 Max 256GB (Nicolas/? local-ai-10-apps bench)",
+          "quant": "MLX 4-bit; two-sided duel vs vLLM 0.27.1 NVFP4 on RTX 5090 32GB (75.43 tok/s, TTFT 20.39s cold); mlx-serve TTFT 30.01s cold / 0.84s warm",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2106445239615463431",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "40",
+          "hardware": "Mac M3 Max 96GB",
+          "quant": "MLX 4-bit + z-lab DFlash2 8-bit drafter; same weights/drafter across 5 engines, 3 prose + 3 code prompts, t=0 and t=1, thinking off",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 0,
+          "views": 797,
+          "interactions": 806
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "38",
+          "hardware": "Mac M3 Max 96GB",
+          "quant": "MLX 4-bit + DFlash2 8-bit drafter; 38.0 prose / 44.6 code; caps drafts at 5 per round on M3",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 0,
+          "views": 797,
+          "interactions": 806
+        },
+        {
+          "engine": "oMLX",
+          "tps": "35.3",
+          "hardware": "Mac M3 Max 96GB",
+          "quant": "MLX 4-bit + DFlash2 8-bit drafter; 35.3 prose / 37.5 code",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 0,
+          "views": 797,
+          "interactions": 806
+        },
+        {
+          "engine": "MLX",
+          "tps": "25.3",
+          "hardware": "Mac M4 Pro (mlx-dspark, 4-bit)",
+          "quant": "4-bit MLX via mlx-dspark block-diffusion drafter; 14.5 -> 25.3 tok/s at 4-bit, 8-bit hits 2.45x decode / 3.00x on math",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2089065776351441193",
+          "likes": 30,
+          "comments": 34,
+          "reshares": 469,
+          "views": 50491,
+          "interactions": 51024
+        },
+        {
+          "engine": "MLX",
+          "tps": "73",
+          "hardware": "Mac M5 Max",
+          "quant": "4-bit MLX, peak decode 'current ceiling' per the M-chip survey",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2089065776351441193",
+          "likes": 30,
+          "comments": 34,
+          "reshares": 469,
+          "views": 50491,
+          "interactions": 51024
+        },
+        {
+          "engine": "MLX",
+          "tps": "47",
+          "hardware": "Mac M4 Max",
+          "quant": "4-bit MLX with the 239MB split build that ships the MTP head separately; 47 prose / 56 code",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2089065776351441193",
+          "likes": 30,
+          "comments": 34,
+          "reshares": 469,
+          "views": 50491,
+          "interactions": 51024
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "mlx-community/Qwen3.8-Flash-Next-4bit"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B total",
+      "hf": "mlx-community/Qwen3.8-Flash-Next-4bit",
+      "vram_tier": "128GB",
+      "vram_min": "64GB",
+      "context_tokens": "64K",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Flash-Next is where Apple Silicon MoE decode and prefill both moved: 80 tok/s at 64K on an M5 Ultra and ~97 tok/s on an M3 Ultra through OMP.",
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "80",
+          "hardware": "Mac Studio M5 Ultra (256GB)",
+          "quant": "4-bit MLX + MTP, measured at 64K context; prefill 2,574 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100630175260045820",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "97.1",
+          "hardware": "Mac Studio M3 Ultra",
+          "quant": "4-bit MLX + MTP build via OMP, 23K context; ~1,131 tok/s uncached prefill",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099312823025496405",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "laya-mlx-decision-models",
+      "name": "Laya (MLX decision models)",
+      "full_name": "laya-mlx 421M English / 322M multilingual decision models",
+      "type": "Decision LLM (MLX port)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Layr-Labs/laya-mlx"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "421M / 322M",
+      "hf": "Layr-Labs/laya-mlx",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "943.6 MiB peak MLX memory (421M) / 687.6 MiB (322M)",
+      "context_tokens": "512-1024",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Tiny MLX decision layer that offloads routing/urgency/jailbreak/tool-choice calls from a big LLM to millisecond local latency (P50 7.39-13.42 ms on an M3 Max).",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "19",
+          "hardware": "Mac M3 Max",
+          "quant": "MLX decision models, P50 13.42 ms (421M) / 7.39 ms (322M); 75.4 moves/second over 2,400 Snake demo moves; Apple Silicon only, macOS 14+",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976",
+          "likes": 4,
+          "comments": 4,
+          "reshares": 13,
+          "views": 2351,
+          "interactions": 2372
+        }
+      ]
+    },
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Lightning 30B-A3B",
+      "full_name": "Nemotron Lightning",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "nvidia/Nemotron-Lightning-30B-A3B"
+        }
+      ],
+      "license": "NVIDIA Open Model License",
+      "params": "30B total / 3B active",
+      "hf": "nvidia/Nemotron-Lightning-30B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Lightning MoE that showcases TensorFold's parallel-lane decoding on Apple Silicon (188-206 tok/s in MLX 4-bit).",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "206",
+          "hardware": "Apple Silicon (MLX 4-bit)",
+          "quant": "MLX 4-bit, TensorFold draft-parallel-lanes decode; 188-206 tok/s reported range",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash (320B/18B active MoE)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "zai-org/GLM-5.3-Flash"
+        }
+      ],
+      "license": "MIT",
+      "params": "320B total / 18B active",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "M5 Ultra with ~244GB usable",
+      "weight_gb": "~306GB at FP8",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "320B MoE that Mac stacks now serve: Rapid-MLX reaches 27.8 tok/s on a Mac Studio through speculative decoding, 4x Apple's own MLX library on the same chip.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "27.8",
+          "hardware": "Mac Studio (M-series)",
+          "quant": "Rapid-MLX with speculative decoding, ~4x Apple MLX on the same chip; weights ~306GB at FP8",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b-mlx",
+      "name": "Bonsai 2 27B (MLX)",
+      "full_name": "Ternary-Bonsai-2-27B MLX pack",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Ternary 27B on the Mac: MLX-Serve 26.10.1 lists Bonsai 2 among the models it sped up, and MTPLX drives its MTP head through custom Metal kernels.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "19",
+          "hardware": "Apple Silicon (MLX-Serve 26.10.1)",
+          "quant": "Bonsai 2 among the models improved by the 26.10.1 MLX engine release; outputs byte-identical to 26.9.6 across 18 models",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-14T21:03:54Z"
+}

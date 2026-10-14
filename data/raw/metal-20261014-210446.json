@@ -1,0 +1,87 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB",
+      "context_tokens": "125K",
+      "engine_min_version": "MTP head build (1.4-2.2x on llama.cpp); MTPLX drives the MTP head through MLX with custom Metal kernels",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-02",
+      "why": "Ternary 27B squeezed into 5.95GB: a 5-hour agentic coding session on a 12GB card at ~22 tok/s average, and one of the models MLX-Serve 26.10.1 sped up.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "19",
+          "hardware": "Apple Silicon (MLX-Serve 26.10.1)",
+          "quant": "Bonsai 2 among the models MLX-Serve 26.10.1 improves; byte-identical outputs to 26.9.6 across 18 models",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "orbin-1.5-35b-moe",
+      "name": "Orbin 1.5 35B MoE",
+      "full_name": "Orbin 1.5 35B MoE (Apple Silicon)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Layr-Labs/orbin-1.5-35b-moe-mlx"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B total",
+      "hf": "Layr-Labs/orbin-1.5-35b-moe-mlx",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "35B MoE reported running at roughly 80 tok/s on Mac Studio M5 Ultra / M5 Max 128GB configs when the model fits comfortably.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "80",
+          "hardware": "Mac Studio M5 Ultra 256GB / M5 Max 128GB",
+          "quant": "MLX, noted as running 'at easy 80 tok/s with massive concurrency' where the fit is comfortable (est for the smaller 128GB config)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-14T21:04:46Z"
+}
