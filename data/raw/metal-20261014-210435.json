@@ -1,0 +1,147 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "unsloth/Qwen3.6-27B-GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "unsloth/Qwen3.6-27B-GGUF",
+      "vram_tier": "18GB",
+      "vram_min": "18GB",
+      "engine_min_version": "llama.cpp + flash-attention + kv-cache q4_0; MTP needs the unsloth MTP GGUF",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-07-15",
+      "why": "Qwen3.6-27B is the model the Mac-vs-GPU bakeoffs are run on: 38 tok/s on an M4 Max 128GB, 58 on an M3 Ultra 256GB, all via llama.cpp.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "58",
+          "hardware": "Mac Studio M3 Ultra 256GB",
+          "quant": "Q4_K_M (16.8GB weights), + flash-attention + kv-cache q4_0; 30 tok/s at 70B Q4",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2070234634684715492",
+          "likes": 4,
+          "comments": 8,
+          "reshares": 45,
+          "views": 6189,
+          "interactions": 6246
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "38",
+          "hardware": "Mac Studio M4 Max 128GB",
+          "quant": "Q4_K_M, + flash-attention + kv-cache q4_0; 20 tok/s at 70B Q4, 12 at 70B Q8",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2070234634684715492",
+          "likes": 4,
+          "comments": 8,
+          "reshares": 45,
+          "views": 6189,
+          "interactions": 6246
+        },
+        {
+          "engine": "MLX",
+          "tps": "17",
+          "hardware": "Mac mini M4 Pro 48GB",
+          "quant": "Qwen3.6 27B at Q4 via MLX (~32 tok/s with MTP); the same box runs Qwen3.6 35B-A3B continuously for crons",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "unsloth/Qwen3.6-35B-A3B-GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "unsloth/Qwen3.6-35B-A3B-GGUF",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-07-15",
+      "why": "Runs 24/7 as the Mac mini agent-fleet box and served ~2,000 tok/s of prefill when Ollama swapped to Apple's MLX backend (1,154 -> 1,810 tok/s on M5, 35B model).",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "19",
+          "hardware": "Mac M5 (Ollama MLX backend)",
+          "quant": "35B model; prompt processing jumped ~57% (1,154 -> 1,810 tok/s) when Ollama swapped its engine to Apple's MLX framework",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/BennyLam/status/2089620773119926380",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 271,
+          "interactions": 271
+        }
+      ]
+    },
+    {
+      "id": "qwen2-vl-72b-instruct",
+      "name": "Qwen2-VL-72B-Instruct",
+      "full_name": "Qwen2-VL-72B-Instruct (mlx-community 4-bit)",
+      "type": "VLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "mlx-community/Qwen2-VL-72B-Instruct-4bit"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "72B",
+      "hf": "mlx-community/Qwen2-VL-72B-Instruct-4bit",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "system_ram_min": "64GB",
+      "weight_gb": "~36GB at 4-bit (weights alone)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-08-18",
+      "why": "A 72B vision model loaded on a 64GB M4 Pro Mac mini, which could not fit inside a 24GB GPU's VRAM; ~49GB of unified memory occupied during document extraction.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "19",
+          "hardware": "Mac mini M4 Pro 14-core CPU / 20-core GPU / 64GB",
+          "quant": "mlx-community 4-bit weights (~36GB); ~49GB unified memory occupied; High Power mode, CPU near 99%; clip shows successful inference, no tokens-per-second benchmark",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/0xGrimmer_/status/2089773960753815764",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 9,
+          "views": 583,
+          "interactions": 595
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-14T21:04:35Z"
+}
