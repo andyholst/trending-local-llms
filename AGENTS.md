@@ -520,7 +520,10 @@ this `AGENTS.md` and the `gather-data` skill, then:
   implementation edits `.github/workflows/**` and the PAT lacks `Workflows: R/W`;
   the bot now detects that, reports the missing permission on the issue and stays
   red on purpose, and it strips scratch artifacts (`*.patch`, `*.rej`, `*.orig`)
-  — a change written into a patch file is not an implementation.
+  — a change written into a patch file is not an implementation. A rejected push
+  also uploads the committed work as the `issue-implementation-patch` artifact
+  (`git am` it once the permission is granted), so 30 minutes of agent work are
+  never thrown away with the ephemeral runner.
 
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
