@@ -104,6 +104,67 @@ def test_tags_are_the_hash_of_this_revisions_inputs():
           f"{out.get('TEST_TAG')} vs {test_hash}")
 
 
+def test_openspec_image_is_hash_tagged_and_pulled_or_built():
+    """The OpenSpec CLI image follows the SAME rule as the other two (issue #172).
+
+    `make openspec-*` must pull the tag naming this revision's
+    openspec/Dockerfile when it is published, and build it here when it is not —
+    with no host `npm install` anywhere, so CI and a developer run the same CLI.
+    """
+    # Given the CLI image's own input (its Dockerfile alone — it is Node, not Python)
+    ospec_hash = _expected_hash(["openspec/Dockerfile"])
+    ospec_tag = f"{IMAGE_REPO}-openspec:openspec-{ospec_hash}"
+
+    # When  the tags are printed
+    proc = subprocess.run([sys.executable, str(SCRIPT), "tags"],
+                          cwd=ROOT, capture_output=True, text=True)
+    out = dict(l.split("=", 1) for l in proc.stdout.splitlines() if "=" in l)
+
+    # Then  the tag names this revision's openspec/Dockerfile
+    check("tags: OPENSPEC_TAG is sha12(openspec/Dockerfile)",
+          out.get("OPENSPEC_TAG") == ospec_tag, f"{out.get('OPENSPEC_TAG')} vs {ospec_tag}")
+
+    # Given a registry without that tag
+    rc, calls, log = _run(["ensure-openspec"], available=[])
+
+    # Then  the CLI image is built here from its own Dockerfile
+    check("ensure-openspec (unpublished): exit 0", rc == 0, log)
+    check("ensure-openspec (unpublished): builds from openspec/Dockerfile",
+          ["build", "-f", "openspec/Dockerfile", "-t", "trending-local-llms-openspec:latest", "openspec"] in calls,
+          str(calls))
+    check("ensure-openspec (unpublished): never pulls", not any(c[:1] == ["pull"] for c in calls), str(calls))
+
+    # Given the tag IS published
+    rc, calls, log = _run(["ensure-openspec"], available=[ospec_tag])
+
+    # Then  it is pulled and tagged locally, never rebuilt
+    check("ensure-openspec (published): exit 0", rc == 0, log)
+    check("ensure-openspec (published): pulls the published tag", ["pull", ospec_tag] in calls, str(calls))
+    check("ensure-openspec (published): tags it locally",
+          ["tag", ospec_tag, "trending-local-llms-openspec:latest"] in calls, str(calls))
+    check("ensure-openspec (published): never rebuilds", not any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # And there is exactly ONE way to run the CLI: no host npm install anywhere.
+    # Only places a COMMAND can run: the Makefile, the shell scripts, the
+    # workflows. A markdown/docstring sentence that says "no host npm install"
+    # (the README template lives in update_trending.py) is not a second path.
+    npm_hits = []
+    for p in (
+        list(ROOT.glob("Makefile"))
+        + [f for f in (ROOT / "scripts").glob("*.sh") if f.is_file()]
+        + list((ROOT / ".github" / "workflows").glob("*.yml"))
+    ):
+        for line in p.read_text(errors="ignore").splitlines():
+            # Comments (Makefile `#`, YAML `#`) may SAY "no host npm install";
+            # only a line that would RUN it counts.
+            if line.lstrip().startswith("#"):
+                continue
+            if "npm install" in line:
+                npm_hits.append(f"{p.relative_to(ROOT)}: {line.strip()}")
+    check("openspec: no host npm install for the CLI (the image is the one path)",
+          not npm_hits, str(npm_hits))
+
+
 def test_ensure_base_builds_only_when_the_tag_is_not_published():
     """Not published -> build from this revision's Dockerfile. Published -> pull."""
     base_tag = f"{IMAGE_REPO}:dockerfile-{_expected_hash(['Dockerfile', 'Dockerfile.test'])}"
@@ -205,6 +266,7 @@ def test_wired_into_make_test():
 def main() -> int:
     print("runner-image decision (scripts/ensure_image.py)")
     test_tags_are_the_hash_of_this_revisions_inputs()
+    test_openspec_image_is_hash_tagged_and_pulled_or_built()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()
     test_wired_into_make_test()

@@ -158,6 +158,10 @@ jobs:
       # only, as `-e TYPESAFE_API_KEY` in the Makefile run wrappers.
       TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
       FIX_ROUNDS: "3"
+      # This IS an implementation run: the fix loop demands the analysis file the
+      # prompt must write (scripts/fix_loop.sh adds `make findings-check`), so a
+      # run that skips it never reaches "green/pushed".
+      REQUIRE_FINDINGS: "1"
     steps:
       - name: Resolve the issue (open, labelled, one branch per issue)
         id: iss
@@ -236,7 +240,7 @@ jobs:
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "The implementation produced no file changes - nothing to push."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
@@ -286,9 +290,18 @@ jobs:
           cat > pr-body.md <<'BODY'
           Implements the filed data-gap issue from the post-refresh analysis.
 
+          Spec-tracked: the change lives in `openspec/changes/` (proposal +
+          capability spec in Given/When/Then + a tasks checklist with every box
+          ticked), is listed in the root `OPENSPEC.md` index, and passes
+          `make openspec-check`.
+
           Additive only: no existing key is removed or narrowed and no value is
           shrunk; a new key is OPTIONAL. Any value that could not be traced to a
           real source is left unset and called out in this body.
+
+          Analysis ships issues: whatever the implementation noticed but did not
+          fix is filed as its own `tech-debt` issue (linked to this PR) instead
+          of being folded into this change.
 
           Auto-merged (squash, branch deleted) by qa-validate once `validate` and
           `live-smoke` are green on the head commit.
@@ -311,6 +324,28 @@ jobs:
           rc=$?
           if [ "$rc" = "0" ]; then echo "green=true" >> "$GITHUB_OUTPUT"; else echo "green=false" >> "$GITHUB_OUTPUT"; fi
           exit 0
+
+      # ANALYSIS SHIPS ISSUES, NEVER CODE (AGENTS.md): the implementation recorded
+      # what it touched in `findings.md`. `make findings-check` fails LOUDLY when
+      # that analysis is missing (`- none` is the honest "found nothing"), and
+      # `make file-findings` opens ONE issue per finding — label `tech-debt`,
+      # deduped by signature, linked to #ISSUE and the PR — so a gap the change
+      # noticed becomes its own tracked work item instead of being folded in.
+      # Gated on the GREEN loop: a red run files nothing, and a re-run cannot
+      # duplicate (the filing is idempotent).
+      - name: File the gaps the implementation surfaced (its own issues)
+        id: findings
+        if: steps.loop.outputs.green == 'true'
+        env:
+          # Filing uses the default token: this job declares `issues: write`,
+          # while the owner PAT is scoped to Actions/Contents/Pull-requests only.
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+        run: |
+          PR_NUM=$(basename "${PR_URL:-unknown}")
+          make findings-check
+          make file-findings ISSUE="$ISSUE" PR="$PR_NUM"
 
       - name: Upload the QA report (what the loop saw)
         if: always() && steps.iss.outputs.implement == 'true'
@@ -344,7 +379,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           sudo chown -R "$(id -u):$(id -g)" .
           git add -A
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Pipeline green with no extra changes."
             exit 0

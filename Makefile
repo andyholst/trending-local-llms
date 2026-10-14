@@ -130,6 +130,63 @@ image-ensure-base:
 image-ensure-test:
 	python3 scripts/ensure_image.py ensure-test
 
+# ---- OpenSpec (spec-driven change tracking; Dockerized CLI) ------------------
+# Every change is a TRACKED change: openspec/changes/<name>/ holds proposal.md,
+# specs/<capability>/spec.md and tasks.md, created BEFORE the code is written and
+# validated before the PR. `OPENSPEC.md` at the root is the generated index of
+# every change (active + archived) — the one file that references them all.
+#
+# The CLI runs in its own image (openspec/Dockerfile), pulled by content hash or
+# built here: ONE code path, identical locally and in CI, no host npm install
+# (AGENTS.md: no fallback implementations).
+OPENSPEC_VERSION := 1.10.0
+OPENSPEC_IMAGE := trending-local-llms-openspec:latest
+# Runs as the invoking user, so the change dirs the CLI creates are owned by the
+# repo's owner and not by root (measured: `openspec new change` as root left a
+# root-owned change directory the working tree could not write to).
+OS_OPTS := --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE)
+
+.PHONY: openspec-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-check file-findings findings-check
+openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
+	python3 scripts/ensure_image.py ensure-openspec
+
+openspec-new: openspec-image ## openspec new change <NAME>
+	@test -n "$(NAME)" || { echo "Usage: make openspec-new NAME=<kebab-name>"; exit 1; }
+	docker run $(OS_OPTS) openspec new change $(NAME)
+
+openspec-validate: openspec-image ## openspec validate <NAME> (fail-closed gate)
+	@test -n "$(NAME)" || { echo "Usage: make openspec-validate NAME=<change>"; exit 1; }
+	docker run $(OS_OPTS) openspec validate $(NAME)
+
+openspec-status: openspec-image ## openspec status (every change and its progress)
+	docker run $(OS_OPTS) openspec status
+
+openspec-archive: openspec-image ## Move a completed change to openspec/changes/archive/<NAME>
+	@test -n "$(NAME)" || { echo "Usage: make openspec-archive NAME=<change>"; exit 1; }
+	docker run $(OS_OPTS) openspec archive $(NAME) -y
+
+openspec-shell: openspec-image ## Interactive shell into the repo with the openspec CLI
+	docker run --rm -it -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE) /bin/sh
+
+openspec-tasks-check: ## Fail when an ACTIVE change still has an unticked `- [ ]` task (NAME=<change> for one)
+	python3 scripts/check_openspec_tasks.py $(NAME)
+
+openspec-index: ## Regenerate the root OPENSPEC.md index from openspec/changes/**
+	python3 scripts/openspec_index.py --write
+
+openspec-index-check: ## Fail when OPENSPEC.md is stale, or a change on disk has no row
+	python3 scripts/openspec_index.py --check
+
+openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI gate: every active change validates, every task ticked, the index current
+	docker run $(OS_OPTS) openspec validate --changes
+	@echo "[openspec-check] OK: active changes validate, their tasks are ticked, OPENSPEC.md is current"
+
+file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh + the repo)
+	python3 scripts/file_findings.py --file $(if $(PR),--pr $(PR)) $(if $(ISSUE),--issue $(ISSUE))
+
+findings-check: ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
+	python3 scripts/file_findings.py --check
+
 ## ---------------------------------------------------------------------------
 ## Internal recipes (host commands) — wrapped by the docker public targets
 ## ---------------------------------------------------------------------------
@@ -305,7 +362,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py)
 
 
 .PHONY: _requirements-test
@@ -516,7 +573,7 @@ secret-scan-self-test:
 # exactly that issue, additive only, with everything wired to a make target.
 .PHONY: _implement-issue
 _implement-issue:
-	hermes -z "Load AGENTS.md for rules. The data-gap issue you must implement is in issue.md at the repo root - read it FIRST and implement exactly its acceptance criteria; do not widen the scope and do not implement a different finding. HARD RULES: (1) ADDITIVE ONLY - never remove or rename an existing key and never shrink an existing value in data/models.json, data/raw/*.json, data/snapshots/*.json or the contracts; a new key is OPTIONAL and must NOT be added to a contract's required list (AGENTS.md rules 3b and 6b). (2) NEVER fabricate data: every value must trace to a real X post or to a verified upstream source, or be marked (est); if you cannot verify it, leave the key unset and say so in your summary. (3) WIRE EVERYTHING: any script, subcommand or validator check you add must be reachable from a make target CI runs - bundle it into an existing stage or add an internal _name recipe plus its public wrapper (AGENTS.md rule 6d) - and update that stage's tests in the same change (rule 6b). (4) If the data changed, regenerate README.md with python3 scripts/update_trending.py; if a stage or guard changed, update AGENTS.md including its section 8 row. (5) Edit the files themselves - NEVER add scratch artifacts: no *.patch, no *.rej, no report dumps, no backup copies; a change written into a patch file instead of the file is not an implementation. (6) Run make validate, make validate-mapped and make test and fix what they report. Do not push, do not merge, do not touch master." \
+	hermes -z "Load AGENTS.md for rules. The issue you must implement is in issue.md at the repo root - read it FIRST and implement exactly its acceptance criteria; do not widen the scope and do not implement a different finding. HARD RULES: (0) OPENSPEC FIRST, and it is the checklist of record: create the tracked change with make openspec-new NAME=<kebab-slug-of-this-issue> BEFORE you write any code, then write openspec/changes/<name>/proposal.md (Why / What Changes / what is Not covered), openspec/changes/<name>/specs/<capability>/spec.md (one Requirement per behaviour, each Scenario in Given/When/Then lines and each Scenario ending with a '- **Test:** tests/test_x.py::test_y' line naming the test that locks it) and openspec/changes/<name>/tasks.md (a - [ ] checklist, one task per implemented step). Tick each task the moment it is verified. The change must also list itself in the root index: run make openspec-index at the end. make openspec-check must pass before you finish. (1) ADDITIVE ONLY - never remove or rename an existing key and never shrink an existing value in data/models.json, data/raw/*.json, data/snapshots/*.json or the contracts; a new key is OPTIONAL and must NOT be added to a contract's required list (AGENTS.md rules 3b and 6b). (2) NEVER fabricate data: every value must trace to a real X post or to a verified upstream source, or be marked (est); if you cannot verify it, leave the key unset and say so in your summary. (3) WIRE EVERYTHING: any script, subcommand or validator check you add must be reachable from a make target CI runs - bundle it into an existing stage or add an internal _name recipe plus its public wrapper (AGENTS.md rule 6d) - and update that stage's tests in the same change (rule 6b). (4) If the data changed, regenerate README.md with python3 scripts/update_trending.py; if a stage or guard changed, update AGENTS.md including its section 8 row. (5) Edit the files themselves - NEVER add scratch artifacts: no *.patch, no *.rej, no report dumps, no backup copies; a change written into a patch file instead of the file is not an implementation. findings.md is the ONE working file you write (it is gitignored). (6) ANALYSIS SHIPS ISSUES, NEVER CODE: after implementing, write findings.md at the repo root with one '## <title>' section per real gap or piece of technical debt you found while working (each with Evidence: file:line or command output, Why, Done when), or the single line '- none' when you genuinely found nothing; NEVER fix a finding in this change and never fold one into it - each becomes its own tracked issue. Run make findings-check (it must pass). (7) Run make validate, make validate-mapped, make test and make openspec-check and fix what they report. Do not push, do not merge, do not touch master." \
 		-m nous-deepseek --reasoning $(HERMES_FIX_REASONING) --yolo
 
 .PHONY: implement-issue

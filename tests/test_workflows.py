@@ -813,6 +813,102 @@ def test_every_job_prepares_the_images_it_uses():
           "make data-gaps" in aggregate, "")
 
 
+def test_qa_validate_runs_the_openspec_gate():
+    """A PR runs the OpenSpec gate, so a spec-less or stale change cannot merge.
+
+    Issue #172: every change is a TRACKED change — its capability spec validates,
+    every `tasks.md` box is ticked and the root OPENSPEC.md index is current.
+    Without this step the whole mechanism is advisory prose.
+    """
+    wf = load("qa-validate.yml")
+    validate = wf["jobs"]["validate"]
+
+    # Given the PR pipeline's validate job
+    # When  its steps are read
+    # Then  one of them runs the whole OpenSpec gate
+    check("qa-validate: the validate job runs `make openspec-check`",
+          "make openspec-check" in run_text(validate), run_text(validate)[:400])
+
+
+def test_implement_prompt_requires_openspec_and_findings():
+    """The implementer prompt demands the tracked change and the findings analysis.
+
+    Issue #172: an implementation run must (a) create the OpenSpec change BEFORE
+    the code, tick its tasks, refresh the root index and pass the gate, and
+    (b) record what it noticed in `findings.md` — filed as its own issues, never
+    fixed inside the change. The prompt is the only place that binds the agent.
+    """
+    mk = (ROOT / "Makefile").read_text()
+    recipe = re.search(r"\n_implement-issue:\n((?:\t[^\n]*\n)+)", mk)
+    prompt = recipe.group(1) if recipe else ""
+
+    # Given the implementer prompt
+    # When  it is read
+    # Then  the OpenSpec-first rules and the findings rules are all in it
+    check("prompt: requires the tracked change before the code",
+          "make openspec-new" in prompt and "BEFORE you write any code" in prompt, prompt[:400])
+    check("prompt: requires the tasks checklist and the gate",
+          "tasks.md" in prompt and "make openspec-check" in prompt, prompt[:400])
+    check("prompt: requires the root index refresh",
+          "make openspec-index" in prompt, prompt[:400])
+    check("prompt: requires findings.md and its check",
+          "findings.md" in prompt and "make findings-check" in prompt, prompt[:400])
+    check("prompt: forbids fixing a finding inside the change",
+          "NEVER fix a finding in this change" in prompt, prompt[:400])
+    # And the prompt is still ONE shell command (the alias must stay on the
+    # continued line, or hermes auto-routes to whatever provider key is in env).
+    check("prompt: the recipe keeps the `-z` line and the model flags on one command",
+          prompt.count("-z \"") == 1 and "-m nous-deepseek" in prompt and prompt.rstrip().endswith("--yolo"),
+          prompt[-200:])
+
+
+def test_issue_bot_files_findings_only_when_green():
+    """The bot files the findings — and only after its loop went green.
+
+    Issue #172: a red run files nothing (the work is not landed, so its analysis
+    is not a verdict yet), a re-run cannot duplicate (the filing is idempotent),
+    and an implementation run DEMANDS the analysis file, so "green" cannot mean
+    "implemented and forgot to analyse".
+    """
+    wf = load("issue-bot.yml")
+    impl = wf["jobs"]["implement"]
+    findings_step = step(impl, "File the gaps the implementation surfaced")
+
+    # Given the implementer job
+    # When  the findings step and its gates are read
+    # Then  it files with the issue/PR context, only on a green loop, with the default token
+    check("findings: the bot files them through make", "make file-findings" in findings_step.get("run", ""),
+          findings_step)
+    check("findings: the analysis is checked first (a missing one fails loudly)",
+          "make findings-check" in findings_step.get("run", ""), findings_step)
+    check("findings: filing is gated on the GREEN fix loop",
+          "steps.loop.outputs.green == 'true'" in str(findings_step.get("if", "")),
+          findings_step.get("if"))
+    check("findings: it passes the issue and PR numbers",
+          findings_step.get("env", {}).get("ISSUE") == "${{ steps.iss.outputs.issue }}"
+          and "steps.pr.outputs.pr_url" in str(findings_step.get("env", {}).get("PR_URL", "")),
+          findings_step.get("env"))
+    check("findings: it files with the default token (issues: write)",
+          findings_step.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", findings_step.get("env"))
+    check("findings: an implementation run demands the analysis (REQUIRE_FINDINGS)",
+          str(impl.get("env", {}).get("REQUIRE_FINDINGS")) == "1", impl.get("env"))
+    # A gap that cannot become an issue must be LOUD: the step may not swallow a
+    # failure (no continue-on-error, no `|| true`), or a run would report the work
+    # as done while the finding evaporated as prose (the defect rule 6e names).
+    check("findings: the filing step is not allowed to fail silently",
+          findings_step.get("continue-on-error") in (None, False)
+          and "|| true" not in findings_step.get("run", ""), findings_step)
+    # And the CLI image `make openspec-check` runs in is published like the others.
+    refresh = load("refresh-bot.yml")
+    ospec = refresh["jobs"].get("openspec-image", {})
+    check("openspec image: refresh-bot publishes it on the same hash-tag rule",
+          "make openspec-check" in (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
+          and "OPENSPEC_IMAGE" in str(refresh.get("env", {})), refresh.get("env"))
+    check("openspec image: the build uses openspec/Dockerfile and pushes the hash tag",
+          str(ospec.get("steps", "")) .find("openspec/Dockerfile") >= 0
+          and "decide.outputs.tag" in str(ospec.get("steps", "")), ospec.get("steps"))
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -827,6 +923,9 @@ def main() -> int:
     test_every_job_prepares_the_images_it_uses()
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
+    test_qa_validate_runs_the_openspec_gate()
+    test_implement_prompt_requires_openspec_and_findings()
+    test_issue_bot_files_findings_only_when_green()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

@@ -2,6 +2,9 @@ scripts/__pycache__/
 __pycache__/
 qa-report.txt
 comment.md
-# issue-bot working files: the issue text it implements and the PR body it opens
+# issue-bot working files: the issue text it implements, the PR body it opens,
+# and the finding list `make file-findings` turns into issues (AGENTS.md: every
+# implementation run analyses what it touched and files what it found).
 issue.md
 pr-body.md
+findings.md

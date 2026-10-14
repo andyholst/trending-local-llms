@@ -78,7 +78,8 @@ esac
 """
 
 
-def run(red: int, rounds: int = 3, fix_exit: int = 0, test_red: int = 0, budget_burn: int = 0, vs_red: int = 0):
+def run(red: int, rounds: int = 3, fix_exit: int = 0, test_red: int = 0, budget_burn: int = 0,
+        vs_red: int = 0, require_findings: int = 0):
     td = Path(tempfile.mkdtemp())
     rec = td / "make"
     rec.write_text(RECORDER)
@@ -87,7 +88,8 @@ def run(red: int, rounds: int = 3, fix_exit: int = 0, test_red: int = 0, budget_
     (td / "calls.log").write_text("")
     env = dict(os.environ, MAKE=str(rec), FIX_ROUNDS=str(rounds),
                QA_REPORT=str(td / "qa-report.txt"), FIX_EXIT=str(fix_exit), TEST_RED=str(test_red),
-               BUDGET_BURN=str(budget_burn), VS_RED=str(vs_red))
+               BUDGET_BURN=str(budget_burn), VS_RED=str(vs_red),
+               REQUIRE_FINDINGS=str(require_findings))
     p = subprocess.run(["bash", str(LOOP)], env=env, capture_output=True, text=True, timeout=60)
     calls = [c.split("+")[0] for c in (td / "calls.log").read_text().split()]
     raw_calls = (td / "calls.log").read_text().split()
@@ -101,8 +103,11 @@ def test_green_on_entry():
     rc, calls, _, _ = run(red=0)
     check("green: exit 0", rc == 0, rc)
     check("green: no hermes fix call", "fix" not in calls, calls)
-    check("green: checks fast -> slow, unit suite last",
-          calls == ["validate-search", "validate-mapped", "validate", "test"], calls)
+    # issue #172: the OpenSpec gate runs BEFORE the network-bound `validate` (so
+    # a stale index / unticked task is reported without paying for link checks),
+    # and the unit suite still runs last.
+    check("green: checks fast -> slow, openspec gate before validate, unit suite last",
+          calls == ["validate-search", "validate-mapped", "openspec-check", "validate", "test"], calls)
 
 
 def test_fixed_in_round_one():
@@ -131,7 +136,30 @@ def test_stops_at_first_red_and_skips_unit_suite():
     rc, calls, report, out = run(red=99, rounds=1)
     check("speed: 'make test' never runs while a validate check is red", "test" not in calls, calls)
     check("speed: nothing after the first red check in a round",
-          calls[:3] == ["validate-search", "validate-mapped", "validate"] and calls[3] == "fix", calls)
+          calls[:4] == ["validate-search", "validate-mapped", "openspec-check", "validate"]
+          and calls[4] == "fix", calls)
+
+
+def test_findings_check_only_for_implementation_runs():
+    """`make findings-check` is demanded of an IMPLEMENTATION run, not of fix-bot.
+
+    Issue #172 (rule 6g): issue-bot sets REQUIRE_FINDINGS=1, so a run that skipped
+    the analysis is RED and Hermes has to write it; fix-bot repairs a data PR
+    nobody implemented by hand, so it must NOT demand a findings file that never
+    had a reason to exist.
+    """
+    # Given a green fix-bot run (no implementation flag)
+    rc, calls, _, _ = run(red=0)
+
+    # Then  the data-repair loop never demands the analysis file
+    check("findings: fix-bot's loop does not run findings-check", "findings-check" not in calls, calls)
+
+    # Given an implementation run (issue-bot sets REQUIRE_FINDINGS=1)
+    rc, calls, _, _ = run(red=0, require_findings=1)
+
+    # Then  the analysis check runs as part of the loop
+    check("findings: an implementation run runs findings-check before validate",
+          "findings-check" in calls and calls.index("findings-check") < calls.index("validate"), calls)
 
 
 def test_unit_suite_failure_is_red():
@@ -193,6 +221,7 @@ def main() -> int:
     test_fix_crash_does_not_abort_loop()
     test_round_cap_respected()
     test_stops_at_first_red_and_skips_unit_suite()
+    test_findings_check_only_for_implementation_runs()
     test_unit_suite_failure_is_red()
     test_summary_drops_fixture_noise()
     test_budget_burn_retries_with_reasoning_off()
