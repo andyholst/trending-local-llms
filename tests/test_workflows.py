@@ -735,8 +735,11 @@ def test_images_follow_their_inputs():
         check(f"{name}: prepares the images through `make image-ensure`",
               text.count("make image-ensure") >= 1 and "docker build -f Dockerfile.test" not in text,
               text.count("make image-ensure"))
-    check("refresh-bot: the jobs that only run the image use `make image-ensure-base`",
-          rb.count("run: make image-ensure-base") == 2, rb.count("run: make image-ensure-base"))
+    # Only the search jobs run the base image alone; the aggregate job runs
+    # test-image targets too (`make data-gaps`, `make test`) and prepares both
+    # (issue #145).
+    check("refresh-bot: the search jobs use `make image-ensure-base`",
+          rb.count("run: make image-ensure-base") == 1, rb.count("run: make image-ensure-base"))
     check("no workflow pulls or tags the image inline any more",
           not any("docker pull ghcr.io" in (WF / n).read_text() or "docker tag" in (WF / n).read_text()
                   for n in ("qa-validate.yml", "fix-bot.yml", "issue-bot.yml", "refresh-bot.yml")), "")
@@ -747,6 +750,60 @@ def test_images_follow_their_inputs():
     guard = (ROOT / "scripts" / "nerve_key_check.py").read_text()
     check("nerve guard: a missing plugin is a finding, never a SKIP note",
           "SKIP:" not in guard and "may not degrade to a note" in guard, "")
+
+
+def test_every_job_prepares_the_images_it_uses():
+    """Issue #145: a job ran a TEST_RUN target while preparing only the BASE
+    image, so `make data-gaps` died with "Unable to find image
+    'trending-local-llms-test:latest'" (run 38542951338, job aggregate). The
+    images a job runs are derived from the Makefile, not from memory."""
+    mk = (ROOT / "Makefile").read_text()
+    lines = mk.splitlines()
+
+    # Given the public targets whose recipe executes in the TEST image
+    test_targets = set()
+    for i, line in enumerate(lines):
+        m = re.match(r"^([a-z0-9][a-z0-9_-]*):$", line)
+        if not m:
+            continue
+        j = i + 1
+        while j < len(lines) and (lines[j].startswith("\t") or not lines[j].strip()):
+            if "$(TEST_RUN)" in lines[j]:
+                test_targets.add(m.group(1))
+                break
+            j += 1
+    check("make: the TEST_RUN targets are discoverable",
+          {"data-gaps", "test"} <= test_targets, sorted(test_targets))
+
+    # When  each workflow job is read
+    problems = []
+    for wf in sorted(WF.glob("*.yml")):
+        doc = yaml.safe_load(wf.read_text()) or {}
+        for job, body in (doc.get("jobs") or {}).items():
+            if not isinstance(body, dict):
+                continue
+            runs = [s.get("run", "") for s in (body.get("steps") or []) if isinstance(s, dict)]
+            used = {t for r in runs for t in test_targets
+                    if re.search(rf"(?m)(^|\s)make\s+{re.escape(t)}\b", r)}
+            if not used:
+                continue
+            prep = "\n".join(runs)
+
+            # Then  the job prepares that image — `make image-ensure` (both) or
+            # `make image-ensure-test`. NOT `image-ensure-base`, which only looks
+            # like it matches (this is the mistake the guard exists for).
+            if not re.search(r"make image-ensure(?![-a-z])", prep) \
+                    and not re.search(r"make image-ensure-test\b", prep):
+                problems.append(f"{wf.name}:{job} runs {sorted(used)} without preparing the test image")
+    check("ci: every job prepares the test image it uses", not problems, problems)
+
+    # …and the refresh aggregate job (the measured failure) prepares both
+    rb = (WF / "refresh-bot.yml").read_text()
+    aggregate = rb.split("\n  aggregate:", 1)[1]
+    check("refresh-bot: aggregate prepares both images",
+          "run: make image-ensure\n" in aggregate, aggregate[:200])
+    check("refresh-bot: its data-gap step is the TEST_RUN one it needs",
+          "make data-gaps" in aggregate, "")
 
 
 def main() -> int:
@@ -760,6 +817,7 @@ def main() -> int:
     test_nothing_pushes_master()
     test_auto_merge()
     test_images_follow_their_inputs()
+    test_every_job_prepares_the_images_it_uses()
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
     test_unit_tests_really_run()

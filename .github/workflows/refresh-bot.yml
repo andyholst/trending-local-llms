@@ -321,8 +321,11 @@ jobs:
         with:
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
-      - name: Prepare the base image (published for this revision, else build)
-        run: make image-ensure-base
+      # BOTH images: this job's steps run test-image targets (`make data-gaps`,
+      # `make test`), and preparing only the base left `data-gaps` dying with
+      # "Unable to find image 'trending-local-llms-test:latest'" (issue #145).
+      - name: Prepare the runner images (published for this revision, else build)
+        run: make image-ensure
 
       - name: Download raw snapshots
         continue-on-error: true
