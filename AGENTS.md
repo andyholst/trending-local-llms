@@ -108,9 +108,20 @@ retains 30 days of history.
    the Makefile is the contract; a check reachable only by accident (bundled into
    no list, run by nothing) fails this test.
 
-6e. **An agent-implemented issue ends in a monitored, green, squashed PR.** An
-   issue filed by the analysis (`data-gap-analysis`) is implemented by
-   `issue-bot.yml`: the agent works on a feature branch cut from `master` with
+6e. **An agent-implemented issue ends in a monitored, green, squashed PR — and
+   it announces its window before it implements (issue #179).** An issue filed by
+   the analysis (`data-gap-analysis`) is implemented by `issue-bot.yml`: **before
+   `make implement-issue` it posts ONE start comment on the issue**
+   (`<!-- issue-bot-start: <ISO8601Z> -->`, the branch and the run URL, with the
+   default `github.token` — the owner PAT cannot comment), on BOTH entry paths
+   (`issues: [opened]` and the hourly sweep), because the run reads the body ONCE
+   at its start and the reviewer must never rewrite the text it already read. Its
+   `pick` also DEFERS to a live review: an issue carrying a reviewer marker
+   (`<!-- issue-review: … run=<id> -->`) younger than `REVIEW_GAP_HOURS` is
+   skipped for the next candidate — the two bots partition the queue by state AND
+   by time. The `review-in-progress` label the reviewer also sets is advisory
+   (it is removed at the end of every run): a label carries no timestamp, so a
+   label left by a cancelled run must never hold an issue for ever. The agent works on a feature branch cut from `master` with
    the tests and the AGENTS.md row in the same branch, **opens the PR**
    (`closes #<issue>`, owner PAT so CI really runs), then **monitors the
    pipeline that PR triggered and fixes it until every check is green** — one
@@ -157,7 +168,11 @@ retains 30 days of history.
    fix loop is green, so a red run files nothing and a re-run cannot duplicate.
    A finding is NEVER fixed inside the change that found it and never left as
    prose in a PR body: file it first, then fix it in its own reviewed change with
-   its own issue and OpenSpec change. This mirrors the data-gap chain
+   its own issue and OpenSpec change. A **review**'s findings are filed the same
+   way (issue #179): the issue reviewer runs the same `make findings-check` +
+   `make file-findings`, so a gap it notices while reviewing becomes its own
+   `tech-debt` issue even when the issue's body is off-limits — a review never
+   implements, and never fixes what it finds. This mirrors the data-gap chain
    (`make data-gaps` → `make data-gap-issue`): analysis reports, an issue tracks,
    the fix is separate.
 
@@ -557,7 +572,7 @@ this `AGENTS.md` and the `gather-data` skill, then:
    and `gh pr create` — never the default `GITHUB_TOKEN` (see §6b). It never
    pushes to or merges `master` itself.
 
-## 6b. Three pipelines (refresh → validate → fix)
+## 6b. Four pipelines (refresh → validate → fix → implement → review)
 
 - **`refresh-bot.yml`** — the **bot** pipeline. Scheduled (daily, 06:00 UTC +
   a 17:43 UTC backup slot — GitHub delays/drops on-the-hour crons) + manual
@@ -619,7 +634,10 @@ this `AGENTS.md` and the `gather-data` skill, then:
   triggering actor, names from `env:` — a stranger's issue starts nothing), and
   `implement` needs it. It resolves the issue (must be open),
   writes it to `issue.md`, checks out `master` with the owner PAT, pulls the base
-  image, runs `make hermes-smoke`, implements through `make implement-issue` — the
+  image, runs `make hermes-smoke`, **announces its window** (ONE start comment
+  `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted
+  with the default token BEFORE anything reads the body — the signal the reviewer
+  defers to), implements through `make implement-issue` — the
   prompt requires, per rules 6f/6g, the TRACKED OpenSpec change (created first,
   capability spec + task checklist, `OPENSPEC.md` refreshed, `make openspec-check`
   green) and a `findings.md` analysis — pushes `ci/data-gap-<n>-<slug>` (resuming
@@ -648,6 +666,42 @@ this `AGENTS.md` and the `gather-data` skill, then:
   (`git am` it once the permission is granted), so 30 minutes of agent work are
   never thrown away with the ephemeral runner.
 
+- **`issue-review-bot.yml`** — the **reviewer** pipeline (issue #179): the
+  counterpart of the implementer, and the only bot that reads an issue's thread.
+  Trigger surface is an hourly `schedule: cron '41 * * * *'` (off the hour, and a
+  different offset from the implementer's `19`) plus an owner `workflow_dispatch`
+  (an issue number, or empty for the queue's head candidate). It has NO `issues:`
+  trigger — a review must not fire on every issue event — and `permissions:
+  issues: write, contents: read`: it never pushes, never opens a branch, never
+  merges and never writes `data/**`. Its `pick` reads the SAME queue as the
+  implementer (`make issue-queue` → `scripts/issue_queue.py`, one implementation,
+  rule 6d) and takes ONE issue whose implementer window is closed
+  (`make review-issue-pick`). **The window is `REVIEW_GAP_HOURS` (3) on both sides
+  of an implementer start** — a run in flight, implementer activity younger than
+  the gap, or the issue within the implementer's next 3 hourly sweeps — because
+  the implementer reads the body once, at the start of its run. The reviewer
+  opens its own window before writing anything (`review-in-progress` label +
+  `<!-- issue-review: <ISO8601Z> run=<id> -->`, so a run never blocks its own
+  guard re-check), re-checks it (`make review-issue-guard`, the TOCTOU guard),
+  and then takes one of two paths:
+  - **`body`** (no implementer started): Hermes refines the body into
+    `issue-body.md`; `make review-issue-check-markers` proves every invisible
+    dedup marker survived (a dropped one re-files an existing issue, #184/#185);
+    the workflow publishes the body only when it actually changed and posts ONE
+    summary comment (the workflow applies/clears `needs-refinement`; the container
+    has no `gh`, so labels are never the agent's job). `tech-debt` and
+    `data-gap-analysis` are never touched.
+  - **`window`** (an implementer has STARTED): the body is OFF-LIMITS — the
+    workflow PROVES it is unchanged (`make review-issue-body-hash` against the
+    hash taken at the mark; a written `issue-body.md` is a loud failure) — and
+    the run posts ONE bounded reply (at most 5 evidence-carrying bullets)
+    carrying the marker, never a second reply in the same window.
+  Both paths file what the review found as its OWN `tech-debt` issues
+  (`make findings-check` + `make file-findings`, rule 6g) and close the reviewer
+  window (`make review-issue-finish`, `always()`). A run that produced no
+  `comment.md` is made RED by a named final step: a silent review is
+  indistinguishable from a review that never ran.
+
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
   the workflows enforce it themselves too, so it never depends on a setting:
@@ -663,6 +717,10 @@ this `AGENTS.md` and the `gather-data` skill, then:
     cancel-in-progress: false` queues overlapping runs.
   - fix-bot: the same guard is its FIRST step, before any secret is read.
     qa-validate dispatches it with the owner PAT, so the auto-fix loop runs.
+  - issue-bot / issue-review-bot: the same `guard` job (owner, or a
+    write/maintain/admin collaborator — actor AND triggering actor), before any
+    secret is read. The reviewer's `review` job needs it and holds `issues:
+    write` only: no PAT, no push path.
   - Guard scripts read names from `env:`, never inline `${{ }}` (injection).
   The real guard scripts are executed in `tests/test_workflows.py` against a
   stub `gh` for every caller type.
@@ -689,8 +747,11 @@ on the issue instead of dying at `git push`. Issue reads and comments use the
 default `github.token` with `permissions: issues: write` (the PAT has no Issues
 scope). It is used for (1) the
 refresh PR push + creation, (2) qa-validate's fix-bot dispatch, (3) fix-bot's
-checkout, push and PR comment. The default `GITHUB_TOKEN` cannot do any of
-these usefully: a PR it creates is authored by `github-actions[bot]` and every
+checkout, push and PR comment. The **reviewer** (`issue-review-bot.yml`) uses the default token for everything
+it does — it comments on and edits issues and files findings, which is exactly
+what `github.token` with `permissions: issues: write` can do;
+`FIXBOT_DISPATCH_TOKEN` is never present in that workflow. The default
+`GITHUB_TOKEN` cannot do any of these usefully: a PR it creates is authored by `github-actions[bot]` and every
 `pull_request` run on it waits for approval; a push it makes starts no
 workflows; and it gets `HTTP 403 Resource not accessible by integration` when
 dispatching another workflow (no run is created, so there is nothing to
@@ -817,6 +878,7 @@ actually happened.
 | `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`) or under a PROVIDER the setup does not run (the plugin's own default `openrouter` instead of production's `typesafe`) — the mapping is `jev_provider` → `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY`, so a mismatch forwards a variable nothing reads and the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `tests/test_workflows.py` — `test_issue_bot` (rules 6e/6d) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue, the hourly sweep or owner dispatch (a PR, a comment, a push, a `workflow_run`, a label-less issue); the sweep picking an issue that already has a branch/PR instead of the oldest unhandled one; two implementers for one issue (a concurrency key not keyed by the issue number, on either path); `make implement-issue` not running `_setup` in the same container as the hermes call (measured: alias missing → `HF_TOKEN` → `HTTP 403`); the outcome comment using the owner PAT instead of the default token (`Resource not accessible by personal access token (addComment)`); a run with no implementation staying green; a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
+| `tests/test_issue_review.py` + `tests/test_workflows.py` — `test_issue_review_bot`, `test_issue_bot_announces_its_window`, `test_the_queue_rule_has_one_implementation`, `test_the_reviewer_never_edits_an_issue_inside_a_window` (rules 6c/6d, issue #179) | two bots writing one issue: a reviewer that refines a body an implementer's run has already read — the 3 h window (a run in flight, implementer activity younger than `REVIEW_GAP_HOURS`, or the issue within the implementer's next 3 hourly sweeps); a boundary read from the wall clock instead of an injected one (2 h 59 m must defer, 3 h 01 m must review); the queue rule kept twice (shell in `issue-bot`, Python in the reviewer) instead of one `make issue-queue`; an implementer `pick` that ignores a live reviewer marker; a start comment posted after the body is read, on one path only, or with the owner PAT (which cannot comment); a reviewer that rewrites the body on the window path (the hash proof), replies twice in one window, or edits a body inside one; a rewrite that drops a `data-gap-signature`/`tech-debt-signature` marker (the dedup key another bot searches for); a marker a run wrote blocking its OWN guard re-check; a reviewer that pushes, opens a branch or merges; a silent review (no `comment.md`) reported as green |
 | `tests/test_lint_linefeeds.py` + `make lint` (rule 6i, issue #186) | a tracked text file that ends without a newline (git's `\ No newline at end of file`, which turns the next append into a spurious last-line change); `--fix` appending more than one newline or not being idempotent; a binary file (NUL in the first 8000) or an empty file being reported as a finding; an UNTRACKED file failing the lint (the set is `git ls-files`); the gate not wired into `qa-validate`, the fix loop's first check or `make test` (rule 6d); `.editorconfig` losing the editor half of the rule |
 | `tests/test_architecture.py` (rule 6h, issue #178) | an `ARCHITECTURE.md` that lost a public make target, a workflow or a script; a description still naming a target that was removed (its §3 tables are the claim, the Makefile the truth); a phantom `.github/workflows/*.yml` or `scripts/*` reference; the check not wired into `qa-validate`, the fix loop or `make test` (rule 6d); the implementer prompt no longer requiring the update |
 | `tests/test_check_openspec_tasks.py` (rule 6f, issue #172) | an ACTIVE change left with an unticked `- [ ]` box passing CI (`openspec validate` checks structure only) — the completion half of the gate; an archived change's boxes being checked; a literal `- [ ]` inside a fenced code block counted as a task; the gate not reachable from a make target CI runs (rule 6d) |

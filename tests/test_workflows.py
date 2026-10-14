@@ -600,10 +600,15 @@ def test_issue_bot():
           bool(sweep_branches) and all("needs.pick.outputs.issue != ''" in p for p in sweep_branches),
           sweep_branches)
     pick_run = run_text(pick)
-    check("issue-bot: the picker lists OPEN labelled issues oldest-first",
-          "issue list" in pick_run and "data-gap-analysis" in pick_run and "sort_by(.createdAt)" in pick_run, "")
-    check("issue-bot: the picker skips an issue that already has a branch or an open PR",
-          "matching-refs" in pick_run and "startswith(" in pick_run, "")
+    # The RULE (oldest open labelled issue, no implementer, no live reviewer
+    # window) has ONE home now — scripts/issue_queue.py, read by both bots — so
+    # this test asserts the WIRING and tests/test_issue_review.py asserts the rule
+    # itself (rule 6d: a second copy is the defect, not a second assertion).
+    check("issue-bot: the picker reads the shared queue instead of its own copy",
+          "make issue-queue" in pick_run and "issue list" not in pick_run and "matching-refs" not in pick_run,
+          pick_run[:300])
+    check("issue-bot: the queue's own test file runs in the suite",
+          "python3 tests/test_issue_review.py" in (ROOT / "Makefile").read_text(), "")
     check("issue-bot: an empty backlog is a green run that implements nothing",
           'issue=' in pick_run and "backlog empty" in pick_run, "")
     check("issue-bot: the picker exposes the chosen issue number",
@@ -909,6 +914,187 @@ def test_issue_bot_files_findings_only_when_green():
           and "decide.outputs.tag" in str(ospec.get("steps", "")), ospec.get("steps"))
 
 
+def test_issue_bot_announces_its_window():
+    """The implementer posts the start comment the reviewer defers to (#179)."""
+
+    # Given the implementer pipeline and its steps, in order
+    wf = load("issue-bot.yml")
+    impl = wf["jobs"]["implement"]
+    names = [s.get("name", "") for s in steps(impl)]
+    announce = next((s for s in steps(impl) if "Announce the window" in s.get("name", "")), {})
+    announce_at = next((i for i, n in enumerate(names) if "Announce the window" in n), None)
+    implement_at = next((i for i, n in enumerate(names) if n.startswith("Implement the issue")), None)
+
+    # Then  it exists, is posted BEFORE the implementation, and carries the marker
+    check("issue-bot: a start comment announces the implementer window", bool(announce), names)
+    check("issue-bot: the window opens BEFORE the body is implemented",
+          announce_at is not None and implement_at is not None and announce_at < implement_at,
+          f"announce={announce_at} implement={implement_at}")
+    body = announce.get("run", "")
+    check("issue-bot: the marker is the one the reviewer reads",
+          "<!-- issue-bot-start:" in body, body[:200])
+    check("issue-bot: the start comment names the branch and the run",
+          "BRANCH" in body and "GITHUB_RUN_ID" in body, body[:200])
+    # Comments need `issues: write` on the DEFAULT token: the owner PAT is scoped
+    # to Actions/Contents/Pull-requests and cannot comment (#124, measured).
+    check("issue-bot: the announcement uses the default token, not the PAT",
+          announce.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", announce.get("env"))
+    # Both entry paths (an opened issue and the hourly sweep) announce a window.
+    check("issue-bot: the announcement is not gated to one trigger path",
+          announce.get("if") == "steps.iss.outputs.implement == 'true'", announce.get("if"))
+    # The window must not be announced before the issue resolved, and must be a
+    # working file rather than a commit: the scratch reset names it.
+    check("issue-bot: the start comment file can never be committed",
+          "start.md" in (ROOT / ".gitignore").read_text(), "")
+
+
+def test_the_queue_rule_has_one_implementation():
+    """Both bots read `make issue-queue`; neither pastes the rule again (#179)."""
+
+    # Given the two pipelines and the Makefile
+    bot = load("issue-bot.yml")
+    review = load("issue-review-bot.yml")
+    makefile = (ROOT / "Makefile").read_text()
+    pick_run = run_text(bot["jobs"]["pick"])
+
+    # Then  the implementer picks through the shared target
+    check("queue: issue-bot's pick runs `make issue-queue`", "make issue-queue" in pick_run, pick_run[:400])
+    check("queue: issue-bot's pick no longer pastes the branch/PR rule inline",
+          "matching-refs" not in pick_run and "gh pr list" not in pick_run, pick_run[:400])
+    check("queue: the reviewer picks through the shared target",
+          "make review-issue-pick" in run_text(review["jobs"]["pick"]), "")
+    check("queue: the pick job checks out the repo it runs its own target from",
+          any("actions/checkout" in str(s.get("uses", "")) for s in steps(bot["jobs"]["pick"])), "")
+    check("queue: the gap is ONE variable in the Makefile",
+          "REVIEW_GAP_HOURS := 3" in makefile, "")
+
+
+def test_issue_review_bot():
+    """The reviewer's wiring (issue #179): one issue, two paths, no code, no merge."""
+
+    # Given the reviewer pipeline
+    wf = load("issue-review-bot.yml")
+    triggers = wf["on"]
+    guard = wf["jobs"]["guard"]
+    pick = wf["jobs"]["pick"]
+    review = wf["jobs"]["review"]
+    all_run = "\n".join(run_text(j) for j in wf["jobs"].values())
+
+    # Then  it reacts to the hourly cron and an owner dispatch ONLY — a review
+    # must not fire on every issue event (an edit or a comment is not a review).
+    check("review: trigger surface is schedule + workflow_dispatch only",
+          set(triggers) == {"schedule", "workflow_dispatch"}, list(triggers))
+    crons = [c["cron"] for c in triggers["schedule"]]
+    check("review: hourly and OFF the hour (GitHub drops on-the-hour crons)",
+          crons == ["41 * * * *"], crons)
+    check("review: the offset is not the implementer's sweep",
+          "19 * * * *" not in crons, crons)
+    check("review: a re-run is owner-gated before any secret",
+          "guard" in review.get("needs", []) and bool(steps(guard)), review.get("needs"))
+    check("review: the guard refuses anyone but the owner / a write collaborator",
+          "collaborators/$u/permission" in run_text(guard), "")
+
+    # The picker decides the run: one issue, and every candidate inside a window
+    # is a green no-op instead of a body rewrite.
+    check("review: the review job is skipped when nothing is reviewable",
+          "needs.pick.outputs.action != 'none'" in str(review.get("if", "")), review.get("if"))
+    check("review: one reviewer per issue (per-issue concurrency)",
+          "issue-review-issue-" in str(review.get("concurrency", {}).get("group", "")),
+          review.get("concurrency"))
+    check("review: runs only when the picked issue is not empty",
+          "needs.pick.outputs.issue != ''" in str(review.get("if", "")), review.get("if"))
+
+    # The window is re-checked BEFORE anything is written (the implementer may
+    # have started while the run prepared), and the body's rewrite is verified.
+    check("review: the TOCTOU guard re-checks the window before writing",
+          "review-issue-guard ISSUE=\"$ISSUE\" PATH=body" in all_run, "")
+    check("review: the refined body must keep every invisible marker",
+          "review-issue-check-markers" in all_run, "")
+    check("review: the window path PROVES the body was not edited",
+          "review-issue-body-hash" in all_run and "the window path wrote issue-body.md" in all_run, "")
+    check("review: one reply per window (guarded, not hoped for)",
+          "review-issue-guard ISSUE=\"$ISSUE\" PATH=window" in all_run, "")
+    check("review: it replies on the issue, never by editing it in the window path",
+          "gh issue edit" not in str(step(review, "Reply once").get("run", "")), "")
+    check("review: the window reply carries the marker the next run reads",
+          "<!-- issue-review: window" in all_run and "GITHUB_RUN_ID" in all_run, "")
+
+    # Analysis ships issues: the filing is the implementer's OWN path (dedup,
+    # label verification, origin link) and is never allowed to fail silently.
+    findings = step(review, "File the gaps")
+    check("review: findings are filed through the shared filing path",
+          "make findings-check" in findings.get("run", "") and "make file-findings" in findings.get("run", ""),
+          findings.get("run", "")[:200])
+    check("review: a filing failure is loud (no continue-on-error, no `|| true`)",
+          findings.get("continue-on-error") in (None, False) and "|| true" not in findings.get("run", ""), findings)
+
+    # The reviewer refines issues; it never ships code — no push, no branch, no
+    # merge, and no write permission beyond issues.
+    check("review: no push, branch or merge anywhere",
+          all(k not in all_run for k in ("git push", "git checkout -b", "gh pr create",
+                                         "gh pr merge", "--admin")), "")
+    check("review: permissions are issues: write + contents: read only",
+          wf["permissions"] == {"contents": "read", "issues": "write"}, wf["permissions"])
+    check("review: the owner PAT is never used (it cannot comment, #124)",
+          PAT not in all_run and "secrets.FIXBOT_DISPATCH_TOKEN" not in str(wf), "")
+
+    # Every repo-logic command is a make target; only gh/git orchestration is inline.
+    check("review: no raw script invocation in the workflow",
+          "python3 scripts/" not in all_run and "scripts/issue_" not in all_run, "")
+    check("review: the reviewer's own steps go through make",
+          all(target in all_run for target in ("make review-issue-pick", "make review-issue-mark",
+                                               "make review-issue-finish", "make review-issue")), "")
+
+    # A run that produced nothing to read is a defect, not a green no-op.
+    loud = step(review, "Fail loudly")
+    check("review: a silent review is a loud failure",
+          "produced no comment.md" in loud.get("run", "") and loud.get("continue-on-error") in (None, False), loud)
+    check("review: the reviewer window is closed even when a step failed",
+          "always()" in str(step(review, "Close the reviewer window").get("if", "")), "")
+
+
+def test_the_reviewer_never_edits_an_issue_inside_a_window():
+    """The two paths are wired to the exact way they touch an issue (#179)."""
+
+    # Given the reviewer pipeline and the two prompt recipes it calls
+    wf = load("issue-review-bot.yml")
+    review = wf["jobs"]["review"]
+    makefile = (ROOT / "Makefile").read_text()
+    all_run = "\n".join(run_text(j) for j in wf["jobs"].values())
+
+    # Then  the body path publishes only through the guarded route, and the
+    # window path has no body write at all.
+    publish = step(review, "Publish the refined body")
+    check("paths: the body is published only on the `body` route",
+          publish.get("if") == "steps.route.outputs.path == 'body'", publish.get("if"))
+    refine = step(review, "Refine the issue")
+    check("paths: the refinement runs only on the `body` route",
+          refine.get("if") == "steps.route.outputs.path == 'body'", refine.get("if"))
+    reply = step(review, "Review as a reply")
+    check("paths: the reply runs only on the `window` route",
+          reply.get("if") == "steps.route.outputs.path == 'window'", reply.get("if"))
+
+    # The two prompts state the hard rule of their path.
+    body_prompt = makefile.split("_review-issue:")[1].split(".PHONY: review-issue")[0]
+    window_prompt = makefile.split("_review-issue-window:")[1].split(".PHONY: review-issue-window")[0]
+    check("prompt(body): it must never implement the issue",
+          "NEVER implement" in body_prompt, body_prompt[:200])
+    check("prompt(body): the markers are byte-identical or the run is wrong",
+          "byte-identical" in body_prompt, "")
+    check("prompt(window): the body is declared off-limits",
+          "OFF-LIMITS" in window_prompt and "issue-body.md" in window_prompt, window_prompt[:200])
+    check("prompt(window): the reply is bounded and must carry evidence",
+          "at most 5 bullets" in window_prompt and "evidence" in window_prompt, "")
+    # The container has no gh (measured: the base image carries none), so every
+    # comment/label write is the workflow's, and the prompts must say so.
+    check("prompt: the container has no gh, so the prompts forbid running it",
+          "NO gh CLI" in body_prompt and "NO gh CLI" in window_prompt, "")
+    check("review: the refinement clears `needs-refinement` from the workflow, not the agent",
+          "remove-label needs-refinement" in all_run, "")
+    check("prompt: both prompts ship their findings as issues",
+          "findings.md" in body_prompt and "findings.md" in window_prompt, "")
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -926,6 +1112,10 @@ def main() -> int:
     test_qa_validate_runs_the_openspec_gate()
     test_implement_prompt_requires_openspec_and_findings()
     test_issue_bot_files_findings_only_when_green()
+    test_issue_bot_announces_its_window()
+    test_the_queue_rule_has_one_implementation()
+    test_issue_review_bot()
+    test_the_reviewer_never_edits_an_issue_inside_a_window()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
