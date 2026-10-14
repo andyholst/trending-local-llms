@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "system_ram_min": "60GB",
+      "context_tokens": "32768",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2",
+          "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
+          "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 252,
+          "interactions": 257
+        }
+      ],
+      "last_seen": "2026-09-24",
+      "engine_min_version": "llama.cpp (hikicoder fork, dsv41-ada-medvram) --moe-stream"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:41:36Z"
+}
