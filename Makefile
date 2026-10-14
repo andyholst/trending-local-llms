@@ -50,6 +50,10 @@ DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 # to validate the README tables) never depend on the base image's Sunday-only
 # rebuild. `make test` / `make validate` run inside THIS image in CI.
 TEST_IMAGE := trending-local-llms-test:latest
+# What Dockerfile.test layers on. Defaults to the PUBLISHED base (CI pulls it);
+# pass `BASE_IMAGE=$(IMAGE)` to layer on the base just built here — the path CI
+# takes when the published base was not built from this Dockerfile (issue #135).
+BASE_IMAGE ?= ghcr.io/andyholst/trending-local-llms:latest
 TEST_REQUIREMENTS := requirements-test.txt
 TEST_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(TEST_IMAGE)
@@ -97,7 +101,7 @@ docker-build:
 # The test image is FROM the base, so build the base first when it is missing.
 .PHONY: docker-test-build
 docker-test-build:
-	docker build -f Dockerfile.test -t $(TEST_IMAGE) .
+	docker build -f Dockerfile.test --build-arg BASE_IMAGE=$(BASE_IMAGE) -t $(TEST_IMAGE) .
 
 ## ---------------------------------------------------------------------------
 ## Internal recipes (host commands) — wrapped by the docker public targets

@@ -28,6 +28,14 @@ on:
     - cron: "0 6 * * *"
     - cron: "43 17 * * *"
   workflow_dispatch:
+    inputs:
+      # Owner-only (the guard checks the actor): republish the base image even
+      # when its Dockerfile hash tag already exists — for the case where a
+      # merged Dockerfile change must reach the bots NOW instead of on Sunday.
+      force_rebuild:
+        description: "Rebuild + publish the base image even if it is current"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -42,6 +50,10 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
+  # The published tag that carries the Dockerfile hash the image was built from
+  # (`dockerfile-<hash>`). A Dockerfile change is inert until the base is
+  # rebuilt [#135], so the hash tag — not the Sunday cadence — decides it.
+  IMAGE_REPO: ghcr.io/${{ github.repository }}
 
 jobs:
   # Gate EVERY job: a scheduled run passes; a manual dispatch (or a re-run)
@@ -107,10 +119,21 @@ jobs:
         id: decide
         run: |
           DOW=$(date +%u)
+          # The Dockerfile(s) define the base image's contents — including the
+          # pinned plugins the runtime needs. Each build publishes a tag naming
+          # that hash, so "the Dockerfile changed" is a rebuild reason by itself:
+          # without it a merged Dockerfile change stays inert until the next
+          # Sunday, and the bots keep running the old runtime [#135].
+          HASH=$(cat Dockerfile Dockerfile.test | sha256sum | cut -c1-12)
+          HASH_TAG="${IMAGE_REPO}:dockerfile-${HASH}"
           if docker manifest inspect "${{ env.IMAGE }}" >/dev/null 2>&1; then
             EXISTS=1; else EXISTS=0; fi
-          echo "DOW=$DOW exists=$EXISTS"
-          if [ "$DOW" = "7" ] || [ "$EXISTS" = "0" ]; then
+          if docker manifest inspect "$HASH_TAG" >/dev/null 2>&1; then
+            HASHED=1; else HASHED=0; fi
+          FORCE="${{ inputs.force_rebuild }}"
+          echo "DOW=$DOW exists=$EXISTS hash=$HASH hash_tag_published=$HASHED force=$FORCE"
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+          if [ "$DOW" = "7" ] || [ "$EXISTS" = "0" ] || [ "$HASHED" = "0" ] || [ "$FORCE" = "true" ]; then
             echo "built=yes"
             echo "built=yes" >> "$GITHUB_OUTPUT"
           else
@@ -124,19 +147,24 @@ jobs:
           key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
           restore-keys: |
             docker-${{ runner.os }}-
-      - name: Build + push image (only if missing or Sunday)
+      - name: Build + push image (missing, Dockerfile changed, Sunday, or forced)
         if: steps.decide.outputs.built == 'yes'
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE }}
+          # `latest` for consumers + the hash tag that records WHICH Dockerfile
+          # this image was built from, so the next run can tell whether the
+          # merged Dockerfile is already live.
+          tags: |
+            ${{ env.IMAGE }}
+            ${{ env.IMAGE_REPO }}:dockerfile-${{ steps.decide.outputs.hash }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
       - name: Image already current — skip rebuild
         if: steps.decide.outputs.built != 'yes'
         run: |
-          echo "GHCR image exists and today is not Sunday; reusing existing image."
+          echo "GHCR image exists and is built from this Dockerfile (hash tag published); reusing it."
 
   # Four independent searches (nvidia, metal, cpu, amd), run in parallel. Each PULLS the prebuilt image
   # (no rebuild), writes its own raw snapshot, and uploads it as an artifact.
