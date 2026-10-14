@@ -55,7 +55,14 @@ TEST_IMAGE := trending-local-llms-test:latest
 # takes when the published base was not built from this Dockerfile (issue #135).
 BASE_IMAGE ?= ghcr.io/andyholst/trending-local-llms:latest
 TEST_REQUIREMENTS := requirements-test.txt
-TEST_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
+# A git WORKTREE's gitdir lives OUTSIDE $PWD, so a container mounting only the
+# worktree cannot answer `git ls-files` (measured: `fatal: not a git repository:
+# .../worktrees/<name>` — it made the trailing-newline lint test red in a worktree
+# and green in a clone). Mount the common git dir at its host path so the
+# in-container suite sees exactly the tracked-file set the host does. Empty (no
+# extra mount) when the directory is not a git checkout at all.
+GIT_COMMON_DIR := $(shell cd "$$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd)
+TEST_RUN := docker run --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(TEST_IMAGE)
 
 
@@ -189,6 +196,18 @@ findings-check: ## Fail when findings.md is missing or a finding lacks evidence 
 
 architecture-check: ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script (rule 6h)
 	python3 scripts/architecture_check.py
+
+# ---- linefeeds: every tracked text file ends with a newline (issue #186) -----
+# A file without a final newline makes git print `\ No newline at end of file`
+# and turns the next append into a spurious last-line change. `make lint` is the
+# gate (a `qa-validate` step, the first check in the fix loop), `make lint-fix`
+# the repair. Pure python, so host and container agree.
+.PHONY: lint lint-fix
+lint: ## Fail when a tracked text file does not end with a newline
+	python3 scripts/lint_linefeeds.py
+
+lint-fix: ## Append the missing final newline to every tracked text file that lacks one
+	python3 scripts/lint_linefeeds.py --fix
 
 ## ---------------------------------------------------------------------------
 ## Internal recipes (host commands) — wrapped by the docker public targets
@@ -365,7 +384,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py)
 
 
 .PHONY: _requirements-test

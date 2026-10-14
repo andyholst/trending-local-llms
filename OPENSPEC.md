@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **2** · archived: **0**
+Active changes: **3** · archived: **0**
 
 ## Active changes
 
@@ -16,6 +16,7 @@ Active changes: **2** · archived: **0**
 |---|---|---|---|---|---|---|
 | `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
+| `lint-trailing-newlines` | active | #186 | #189 | [lint-linefeeds](openspec/changes/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/lint-trailing-newlines/proposal.md) |
 
 ## Archived changes
 

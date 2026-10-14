@@ -175,6 +175,13 @@ hold the host command. `$(DOCKER_RUN)` runs the **base image**
 |---|---|
 | `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) |
 
+### Lint
+
+| Target | What it does |
+|---|---|
+| `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`, `git ls-files` as the file set). The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
+| `lint-fix` | Append exactly one newline to each offending file (idempotent) — the repair half, with `.editorconfig` as the editor-side rule |
+
 ### Secrets / credentials
 
 | Target | What it does |
@@ -284,6 +291,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) |
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
+| `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation |
 | `scripts/hf_id.py` | One HF-identifier definition (a URL-shaped `hf` is reduced to `owner/repo`) |
 | `scripts/qa_report.sh` | Runs the aggregate's QA targets; a *finding* is reported, a target that could not run fails the run |

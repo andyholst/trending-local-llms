@@ -61,6 +61,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Cheapest gate first, and it needs no image: every tracked text file ends
+      # with a newline (issue #186). A file stripped of its final newline turns
+      # the next append into a spurious last-line change — git says
+      # `\ No newline at end of file` — so the diff stops being honest.
+      - name: Lint (every tracked text file ends with a newline)
+        run: make lint
+
       # The base image carries the pinned plugins (Dockerfile). Pull the PUBLISHED
       # base only when it was built from THIS revision's Dockerfile — the
       # published tag names the Dockerfile hash. Otherwise build from source, so a
