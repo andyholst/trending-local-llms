@@ -221,7 +221,7 @@ _validate-mapped:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py)
 
 
 .PHONY: _requirements-test
@@ -363,6 +363,27 @@ validate-links:
 .PHONY: validate-mapped
 validate-mapped:
 	$(TEST_RUN) make _validate-mapped
+
+# ---- post-refresh data-gap analysis (issue #115) -----------------------------
+# Every refresh asks what the acquired data still does NOT capture (system RAM
+# first: the store has vram_tier/vram_min and nothing else) and files it as ONE
+# issue (label data-gap-analysis) when the gap set changed vs data/gap_baseline.json.
+# Report only: it never fails the data PR.
+.PHONY: _data-gaps
+_data-gaps:
+	python3 scripts/data_gap_analysis.py
+
+.PHONY: _data-gap-issue
+_data-gap-issue:
+	python3 scripts/data_gap_analysis.py --issue
+
+.PHONY: data-gaps
+data-gaps:
+	$(TEST_RUN) make _data-gaps
+
+.PHONY: data-gap-issue
+data-gap-issue:
+	$(TEST_RUN) make _data-gap-issue
 
 .PHONY: test
 test:

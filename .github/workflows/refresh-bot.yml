@@ -256,6 +256,17 @@ jobs:
           make test || echo "[aggregate] _test reported failures (see above)"
           echo "QA findings reported above; data landed for review."
 
+      - name: Data-gap analysis (report only)
+        run: make data-gaps
+
+      - name: File a data-gap issue when the gap set changed (issue #115)
+        # Report-only: a failure here never fails the data PR.
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+        run: make data-gap-issue
+        # The baseline (data/gap_baseline.json) is written by `make data-gap-issue`
+        # when it files, so a day with the same gap set files nothing.
+
       - name: Commit + open PR if changed
         id: pr
         env:

@@ -288,6 +288,23 @@ The README is **generated**, not hand-maintained:
   stage a check is registered under MUST appear in at least one `--only` list
   (§2 rule 6d). CI's `qa-validate` `validate` job runs `make validate`,
   `make validate-search`, `make validate-mapped` and `make test`.
+- **Post-refresh data-gap analysis (issue #115).** Every refresh also asks what
+  the acquired data still does NOT capture and files it as a tracked issue:
+  `make data-gaps` prints the report, `make data-gap-issue` files **one** issue
+  (label `data-gap-analysis`) when the gap set changed vs `data/gap_baseline.json`
+  — a day with the same gaps files nothing. Report-only: it never fails the data
+  PR. The flagship gap is memory that is not VRAM: the store has `vram_tier` /
+  `vram_min` and nothing else, while the CPU and Metal tables are RAM-bound
+  (Apple Silicon is unified memory), llama.cpp partial offload keeps the
+  un-offloaded layers + KV cache in system RAM, and MoE offload (Strata) splits
+  experts across GPU/RAM/SSD — and `skills/gather-data.md` already asks the search
+  agent for "VRAM / RAM", a figure the contract (`additionalProperties: false`)
+  prunes. A dimension the contract cannot hold is reported as a **contract gap**
+  (add the key OPTIONALLY, never as `required`, per §6b); a figure that exists
+  only as free text inside `quant`/`why`/`hardware` is reported as
+  **unstructured**, never as captured. `scripts/data_gap_analysis.py`, wired into
+  `refresh-bot.yml`'s `aggregate` job and tested by
+  `tests/test_data_gap_analysis.py`.
 - **Never hand-edit the generated tables.** Fix the template or the data store
   instead, then regenerate. The "How to contribute" section points contributors
   at the store, not direct table edits.
@@ -602,6 +619,7 @@ actually happened.
 | `check_backends_cover_measurements` (validate, data stage) | a model whose measurements render in a backend table its `backends` does not list (ingest + `normalize_model` now sync it via `sync_backends`) |
 | `check_engine_aliases` (validate, data stage) | a measurement still on the aliased-away engine name; an alias target missing from the registry or with the wrong repo URL |
 | `check_no_value_loss` (validate, `removal` stage) + `tests/test_validate.py::test_no_value_loss` | a key, a measurement group, a t/s or an engagement counter that was in the previous snapshot disappearing from the store. `check_no_removal` only compares model IDS and the contract only sees a missing REQUIRED key, so `engagement.seen_posts`, the computed trend fields, a measurement's `hardware`/`quant`/counters — and 12 of bonsai-2-27b's 13 measurements — could be deleted with `make validate` green (both measured on master before this guard). Additive changes (new key, new measurement, extra backend, raised t/s or counter) must never fire it |
+| `tests/test_data_gap_analysis.py` (issue #115) | the analysis not running from `make data-gaps` / `make data-gap-issue` or the `aggregate` job (rule 6d — a script no target calls); a dimension the contract cannot hold not reported as a contract gap; free text (`quant: "1432 MB peak RAM"`, on the model OR a measurement) counted as stored data instead of unstructured; a second issue filed for an unchanged gap set; a volatile item (an `(est)` figure, an empty raw leg) changing the issue-triggering signature; the report failing a data PR |
 | `tests/test_validate.py::test_every_check_is_wired_to_a_stage_and_a_makefile_target` (rule 6d) | a `check_*` in `scripts/validate.py` that no stage in `main()` registers, a stage that no Makefile `--only` list selects, and the `--only removal` call path itself — i.e. a validator function that exists but the CI pipeline never executes (a dead function, or a check wired into no make target) |
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
