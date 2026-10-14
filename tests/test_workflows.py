@@ -389,9 +389,14 @@ def test_issue_bot():
     jobs = wf["jobs"]
 
     check("issue-bot: triggers on issues opened", (trig.get("issues") or {}).get("types") == ["opened"], trig.get("issues"))
-    check("issue-bot: no PR/comment/schedule/workflow_run trigger",
-          not ({"pull_request", "pull_request_target", "issue_comment", "workflow_run", "schedule", "push"} & set(trig)),
+    # The surface is `issues: [opened]` + the backlog sweep + owner dispatch —
+    # never a PR, a comment, a push or a workflow_run (workflow_run double-fired
+    # and was suppressed before, and a PR/comment is not an issue to implement).
+    check("issue-bot: no PR/comment/push/workflow_run trigger",
+          not ({"pull_request", "pull_request_target", "issue_comment", "workflow_run", "push"} & set(trig)),
           list(trig))
+    check("issue-bot: its only event triggers are issues, schedule and dispatch",
+          set(trig) == {"issues", "schedule", "workflow_dispatch"}, list(trig))
     check("issue-bot: owner dispatch takes an issue number",
           "issue_number" in str(trig.get("workflow_dispatch", {})), trig.get("workflow_dispatch"))
 
@@ -472,6 +477,36 @@ def test_issue_bot():
           resolve.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", resolve.get("env"))
     check("issue-bot: the PR step still uses the owner PAT (a GITHUB_TOKEN PR is held for approval)",
           PAT in str(step(impl, "Open the PR").get("env", {}).get("GH_TOKEN", "")))
+    # Sweep the existing backlog (#127): a 6-hourly run implements ONE open
+    # labelled issue that no implementer has touched yet.
+    sched = trig.get("schedule")
+    check("issue-bot: sweeps the backlog on an off-the-hour 6-hourly cron",
+          isinstance(sched, list) and any("19 */6 * * *" in str(s.get("cron")) for s in sched), sched)
+    pick = jobs.get("pick", {})
+    check("issue-bot: the picker needs the guard", "guard" in _deps(jobs, "pick"), _deps(jobs, "pick"))
+    check("issue-bot: the picker runs only for the schedule",
+          str(pick.get("if", "")) == "github.event_name == 'schedule'", pick.get("if"))
+    pick_run = run_text(pick)
+    check("issue-bot: the picker lists OPEN labelled issues oldest-first",
+          "issue list" in pick_run and "data-gap-analysis" in pick_run and "sort_by(.createdAt)" in pick_run, "")
+    check("issue-bot: the picker skips an issue that already has a branch or an open PR",
+          "matching-refs" in pick_run and "startswith(" in pick_run, "")
+    check("issue-bot: an empty backlog is a green run that implements nothing",
+          'issue=' in pick_run and "backlog empty" in pick_run, "")
+    check("issue-bot: the picker exposes the chosen issue number",
+          "issue" in pick.get("outputs", {}), pick.get("outputs"))
+    check("issue-bot: implement needs the picker and honours a skipped pick",
+          "pick" in _deps(jobs, "implement") and "always()" in cond, cond)
+    check("issue-bot: schedule path also requires a picked issue",
+          "needs.pick.outputs.issue != ''" in cond, cond)
+    job_conc = impl.get("concurrency", {})
+    check("issue-bot: ONE implementer per issue across paths (job-level group keyed by the issue)",
+          "issue-bot-issue-" in str(job_conc.get("group"))
+          and "needs.pick.outputs.issue" in str(job_conc.get("group"))
+          and job_conc.get("cancel-in-progress") is False, job_conc)
+    check("issue-bot: the sweep reuses the ONE implement job (no second implementation path)",
+          sum(1 for j in jobs.values() if "make implement-issue" in run_text(j)) == 1, "")
+
     fail_step = step(impl, "Fail loudly")
     check("issue-bot: a missing implementation makes the RUN red at a named step",
           "implemented != 'true'" in str(fail_step.get("if", ""))

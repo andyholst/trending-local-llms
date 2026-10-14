@@ -26,11 +26,16 @@ name: issue-bot
 on:
   issues:
     types: [opened]
+  # Backlog sweep (issue #127): every 6 h, off the hour. GitHub delays/drops
+  # on-the-hour crons (the refresh-bot lesson), so this is :19. One run ONE
+  # issue — the oldest open data-gap issue that has no implementer yet.
+  schedule:
+    - cron: "19 */6 * * *"
   workflow_dispatch:
     inputs:
       issue_number:
-        description: "Issue number to implement (owner only)"
-        required: true
+        description: "Issue number to implement (owner only; empty = sweep the backlog)"
+        required: false
         default: ""
 
 permissions:
@@ -39,7 +44,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: issue-bot-${{ github.event.issue.number || inputs.issue_number }}
+  group: issue-bot-${{ github.event.issue.number || inputs.issue_number || 'sweep' }}
   cancel-in-progress: false
 
 jobs:
@@ -72,14 +77,67 @@ jobs:
           done
           echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
 
-  implement:
+  # The sweep's picker (issue #127): schedule only. Chooses ONE issue — the
+  # oldest open data-gap issue WITHOUT an implementer yet (no ci/data-gap-<n>-*
+  # branch, no open PR from such a branch). An empty backlog is a green run that
+  # implements nothing. No checkout: the checks are API calls.
+  pick:
     needs: guard
-    # ONE issue, ONE implementer: an issue EVENT only for a newly-created
-    # data-gap issue (never a comment/edit/re-open, never a label-less issue).
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      issue: ${{ steps.pick.outputs.issue }}
+    steps:
+      - name: Pick the oldest unhandled data-gap issue
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          PICK=""
+          CANDIDATES=$(gh issue list --repo "$REPO" --label data-gap-analysis --state open \
+            --limit 100 --json number,createdAt --jq 'sort_by(.createdAt) | .[].number')
+          for N in $CANDIDATES; do
+            BRANCHES=$(gh api "repos/$REPO/git/matching-refs/heads/ci/data-gap-${N}-" --jq 'length' 2>/dev/null || echo 0)
+            PRS=$(gh pr list --repo "$REPO" --state open --json headRefName \
+              --jq "[.[] | select(.headRefName | startswith(\"ci/data-gap-${N}-\"))] | length")
+            if [ "$BRANCHES" != "0" ] || [ "$PRS" != "0" ]; then
+              echo "#$N already has an implementer (branches=$BRANCHES prs=$PRS) - next candidate"
+              continue
+            fi
+            PICK="$N"
+            break
+          done
+          if [ -z "$PICK" ]; then
+            echo "data-gap backlog empty: every open labelled issue has an implementer."
+            echo "issue=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Sweeping #$PICK"
+            echo "issue=$PICK" >> "$GITHUB_OUTPUT"
+          fi
+
+  implement:
+    # `always()` so a SKIPPED pick (the issue/push paths) does not skip this job;
+    # the guard and the per-path conditions below still gate it.
+    needs: [guard, pick]
     if: >-
-      github.event_name == 'workflow_dispatch'
-      || (github.event.action == 'opened'
-          && contains(github.event.issue.labels.*.name, 'data-gap-analysis'))
+      always()
+      && needs.guard.result == 'success'
+      && (
+        (github.event_name == 'workflow_dispatch' && inputs.issue_number != '')
+        || (github.event_name == 'issues'
+            && github.event.action == 'opened'
+            && contains(github.event.issue.labels.*.name, 'data-gap-analysis'))
+        || (github.event_name == 'schedule' && needs.pick.outputs.issue != '')
+        || (github.event_name == 'workflow_dispatch' && inputs.issue_number == '')
+      )
+    # ONE implementer per issue ACROSS paths: an `issues: opened` event and a
+    # sweep that picked the same issue share this group and queue instead of
+    # racing. Evaluated when the job starts, so it can use the picked number.
+    concurrency:
+      group: issue-bot-issue-${{ needs.pick.outputs.issue || github.event.issue.number || inputs.issue_number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -98,7 +156,7 @@ jobs:
           # access token (addComment)` on the first run, #124).
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          ISSUE: ${{ github.event.issue.number || inputs.issue_number }}
+          ISSUE: ${{ needs.pick.outputs.issue || github.event.issue.number || inputs.issue_number }}
         run: |
           STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq .state 2>/dev/null || echo "missing")
           if [ "$STATE" != "open" ]; then
