@@ -36,6 +36,25 @@ RUN bash /tmp/hermes-install.sh \
     && export PATH="/root/.local/bin:$PATH" \
     && hermes --version
 
+# Install the nerve supervision plugin (Hermes plugin catalog:
+# https://github.com/keeltrace/hermes-nerve) as CODE ONLY, pinned — like the
+# catalog — to an exact 40-character commit.
+#
+# The plugin's credential is NEVER part of this image: it reaches the process
+# only as a `-e` env var at run time (Makefile DOCKER_RUN / TEST_RUN), and the
+# plugin resolves it by NAME through the Hermes secret scope. Measured at the
+# pinned revision, hermes_nerve/client.py::PROVIDER_API_KEY_ENV:
+#   openrouter (the default jev_provider) -> OPENROUTER_API_KEY
+#   typesafe                              -> TYPESAFE_API_KEY
+#   opencode                              -> OPENCODE_API_KEY
+# There is no JEV_KEY upstream, so wiring that name would be a key nothing
+# reads; the pipeline wires the verified name (AGENTS.md rule 3e). No ENV, no
+# COPYed config.yaml, no literal — a key in an image layer is readable by anyone
+# who pulls the public GHCR image.
+ARG NERVE_PLUGIN_REF=3de7d94982b7a2cb87c829e4b2366ced927d8fed
+RUN export PATH="/root/.local/bin:$PATH" \
+    && hermes plugins install keeltrace/hermes-nerve --ref "$NERVE_PLUGIN_REF" --yes-deps
+
 # Then the rest of the repo (invalidates only when source changes)
 COPY . .
 
