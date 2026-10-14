@@ -63,6 +63,17 @@ jobs:
           docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
           docker build -f Dockerfile.test -t trending-local-llms-test:latest .
 
+      # FIRST: no credential may reach the repo. A finding here turns the PR red
+      # (the same gate fix-bot repairs) — remove the value and rotate the key,
+      # never allowlist a real value (AGENTS.md rule 3d).
+      - name: Secret scan (working tree) — gitleaks
+        run: make secret-scan
+
+      # …and prove the scanner itself works (a planted fake credential MUST be
+      # caught): a scanner that silently does nothing is a false green.
+      - name: Secret scan self-test (the planted credential is detected)
+        run: make secret-scan-self-test
+
       - name: Validate data store + README + contracts (deterministic, in container)
         run: |
           make validate

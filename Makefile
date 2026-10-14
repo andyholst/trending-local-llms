@@ -221,7 +221,7 @@ _validate-mapped:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py)
 
 
 .PHONY: _requirements-test
@@ -384,6 +384,45 @@ data-gaps:
 .PHONY: data-gap-issue
 data-gap-issue:
 	$(TEST_RUN) make _data-gap-issue
+
+# ---- secret scan: no credential may reach the repo (issue #122) --------------
+# gitleaks (MIT, the most widely adopted FOSS secret scanner) runs in ITS OWN
+# container image, pinned by tag: the pipeline image has no docker inside, so the
+# scanner cannot live in it. `make secret-scan` scans the working tree (staged
+# files included) — run it BEFORE every push; CI runs it on every PR.
+GITLEAKS_IMAGE := ghcr.io/gitleaks/gitleaks:v8.30.1
+GITLEAKS_RUN := docker run --rm -v "$$PWD":/repo -w /repo $(GITLEAKS_IMAGE)
+
+.PHONY: _secret-scan
+_secret-scan:
+	$(GITLEAKS_RUN) dir /repo --config /repo/.gitleaks.toml --redact --no-banner --exit-code 1
+
+.PHONY: secret-scan
+secret-scan:
+	@$(MAKE) _secret-scan || { \
+		echo "SECRET SCAN FAILED: a credential shape is present in the working tree."; \
+		echo "Remove the value, rotate the key in the provider + in the GitHub secret, and only"; \
+		echo "then push. Never add it to .gitleaks.toml to make the scan pass — an allowlist is"; \
+		echo "for a documented PLACEHOLDER, never for a real value."; \
+		exit 1; }
+
+.PHONY: _secret-scan-history
+_secret-scan-history:
+	@if [ -f .git ]; then \
+		echo "SECRET SCAN (history) needs a real clone: this checkout is a git worktree (.git is a file)."; \
+		echo "Run it in the primary checkout or in CI."; \
+		exit 1; \
+	fi
+	$(GITLEAKS_RUN) git /repo --config /repo/.gitleaks.toml --redact --no-banner --exit-code 1
+
+.PHONY: secret-scan-history
+secret-scan-history:
+	@$(MAKE) _secret-scan-history
+
+# Prove the scan is not a false green: a planted fake credential MUST be caught.
+.PHONY: secret-scan-self-test
+secret-scan-self-test:
+	python3 scripts/secret_scan_self_test.py
 
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
