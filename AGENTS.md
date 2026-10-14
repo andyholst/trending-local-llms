@@ -143,6 +143,26 @@ retains 30 days of history.
    - The runtime story is unchanged and separate: keys reach a process only as
      `-e` env at run time (see §6b), never baked into an image or a config.
 
+3e. **A credential reaches Hermes by NAME only, under the name the consumer
+   actually reads.** Every key arrives as `-e <ENV_NAME>` on the `docker run`
+   (`DOCKER_RUN` / `TEST_RUN`), and the only thing written to configuration is a
+   name (`key_env`) or a non-secret setting — never a value: no `ENV`/`ARG` in an
+   image layer, no `COPY`ed `config.yaml`/`.env`, no literal in a
+   `hermes config set` argument. For a PLUGIN's credential, the name is the one
+   its **pinned source resolves**, never a name we guessed: `hermes plugins
+   install <owner>/<repo> --ref <commit>` (pinned, like the catalog), then wire
+   that name. Measured for the nerve plugin (`keeltrace/hermes-nerve`,
+   `hermes_nerve/client.py`): `PROVIDER_API_KEY_ENV = {openrouter:
+   OPENROUTER_API_KEY, typesafe: TYPESAFE_API_KEY, opencode: OPENCODE_API_KEY}`
+   and the provider comes from `plugins.entries.nerve.settings.jev_provider` /
+   `HERMES_NERVE_PROVIDER` — **there is no `JEV_KEY`**, so wiring one registers a
+   variable nothing reads and the plugin keeps failing with its real name
+   missing. A run without the key must fail **loudly** (the plugin raises), never
+   degrade to another provider — that is how an HF 403 once hid a broken alias
+   (§4/§6b). `make nerve-check` (`scripts/nerve_key_check.py`, guarded by
+   `tests/test_nerve_key_wiring.py`) proves the pin, the name and the absence of
+   any literal, and runs in `qa-validate`'s `validate` job (rule 6d).
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -691,6 +711,7 @@ actually happened.
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
+| `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`, which resolves `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY` by `jev_provider`) — a variable nothing reads, so the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `tests/test_workflows.py` — `test_issue_bot` (rules 6e/6d) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue, the 6-hourly sweep or owner dispatch (a PR, a comment, a push, a `workflow_run`, a label-less issue); the sweep picking an issue that already has a branch/PR instead of the oldest unhandled one; two implementers for one issue (a concurrency key not keyed by the issue number, on either path); `make implement-issue` not running `_setup` in the same container as the hermes call (measured: alias missing → `HF_TOKEN` → `HTTP 403`); the outcome comment using the owner PAT instead of the default token (`Resource not accessible by personal access token (addComment)`); a run with no implementation staying green; a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
