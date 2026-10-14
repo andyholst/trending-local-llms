@@ -611,6 +611,21 @@ def test_issue_bot():
           "python3 tests/test_issue_review.py" in (ROOT / "Makefile").read_text(), "")
     check("issue-bot: an empty backlog is a green run that implements nothing",
           'issue=' in pick_run and "backlog empty" in pick_run, "")
+    # The reviewer's verdict is a HOLD, and the sweep says so on the issue
+    # (issue #200): when the pick came back empty it runs `make issue-skip-note`
+    # with the default token (the owner PAT cannot comment), and it edits no label
+    # — the verdict belongs to the reviewer.
+    verdict_step = step(pick, "Note a fresh reviewer verdict")
+    check("issue-bot: a fresh verdict is noted on the issue (make issue-skip-note)",
+          "make issue-skip-note" in verdict_step.get("run", ""), verdict_step)
+    check("issue-bot: the note runs only when the pick found nothing",
+          "steps.pick.outputs.issue == ''" in str(verdict_step.get("if", "")), verdict_step.get("if"))
+    check("issue-bot: the note uses the default token (the PAT cannot comment)",
+          verdict_step.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", verdict_step.get("env"))
+    check("issue-bot: the note never edits a label",
+          not re.search(r"gh (issue )?edit|\blabel\b", verdict_step.get("run", "")), verdict_step.get("run"))
+    check("issue-bot: the verdict step is part of the ONE pick job",
+          verdict_step in steps(pick), "")
     check("issue-bot: the picker exposes the chosen issue number",
           "issue" in pick.get("outputs", {}), pick.get("outputs"))
     check("issue-bot: implement needs the picker and honours a skipped pick",

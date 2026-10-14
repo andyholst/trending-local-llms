@@ -37,6 +37,19 @@ What it prints (one line per candidate, in pick order — oldest first):
     per hour.
   * `review_recent` — the reviewer touched this issue within the gap: its own
     cooldown, so the same issue is not re-refined every hour.
+  * `verdict` / `verdict_since` / `verdict_fresh` — the reviewer's VERDICT label
+    (issue #200) and whether it is still fresh. A label carries no timestamp, so
+    freshness comes from the newest reviewer marker comment on the issue: a
+    verdict younger than VERDICT_TTL_HOURS (24) HOLDS the implementer
+    (`impl_skip=1`, `reason=verdict-fresh`); an older one — e.g. a label left by
+    a cancelled run — releases it (which is why the label alone was advisory
+    before). With no reviewer marker at all the label is only reported.
+
+`--skip-note` posts the ONE comment that says the implementer skipped an issue
+because of a fresh verdict — idempotent per review round (the marker carries
+`since=<the reviewer's timestamp>`, so a second sweep in the same round says
+nothing), because the reviewer's judgement must be visible on the issue rather
+than only in a bot's log.
 
 Usage:
     python3 scripts/issue_queue.py [--repo OWNER/NAME] [--now ISO8601] [--gap-hours 3]
@@ -60,6 +73,15 @@ WINDOW_REPLY_MARKER = "<!-- issue-review: window"
 RUN_ID_RE = re.compile(r"run=([A-Za-z0-9_-]+)")
 REVIEW_LABEL = "review-in-progress"
 START_TS_RE = re.compile(r"issue-bot-start:\s*([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9:.]+Z?)")
+# The reviewer's VERDICT labels (issue #200): it looks at an issue and says what
+# it is. The implementer must act on that judgement before it implements — an
+# issue the reviewer called "not ready" is not implemented, and the sweep says so
+# on the issue instead. `obsolete` / `duplicate` / `already-fixed` are expected to
+# be closed by the reviewer WITH evidence; the hold is the safety net for the case
+# where a verdict label outlives the run that set it.
+VERDICT_LABELS = ("needs-refinement", "obsolete", "duplicate", "already-fixed")
+SKIP_MARKER = "<!-- issue-bot-skip:"
+SKIP_SINCE_RE = re.compile(r"issue-bot-skip:.*?since=([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9:.]+Z?)")
 
 
 def _gh(args: list[str], check: bool = True) -> str:
@@ -172,7 +194,7 @@ def marker_run_id(body: str) -> str | None:
 
 
 def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
-          run: str | None = None) -> list[dict]:
+          run: str | None = None, verdict_ttl_hours: int = 24) -> list[dict]:
     """Every review candidate, in pick order, with its implementer window.
 
     `run` is THIS run's id: a reviewer marker this same run wrote is not a
@@ -237,9 +259,21 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
         # ever; the timestamped marker is what proves a review is live (the
         # workflow removes the label at the end of every run, `always()`).
         reviewer_recent = fresh(review_ts)
-        impl_skip = reviewer_recent
+        # The reviewer's VERDICT (issue #200): a label carries no timestamp, so
+        # freshness comes from the newest reviewer marker comment on this issue —
+        # and an older verdict (a label left by a cancelled run) releases the
+        # issue instead of stalling it for ever. Nothing here reads or writes a
+        # label: the reviewer (or a human) owns those.
+        verdict_label = next((name for name in VERDICT_LABELS if name in labels), None)
+        verdict_ts = newest([review_ts, reply_ts])
+        verdict_fresh = bool(verdict_label) and bool(verdict_ts) and (
+            (now - verdict_ts) < dt.timedelta(hours=verdict_ttl_hours)
+        )
+        impl_skip = reviewer_recent or verdict_fresh
         next_sweep = (not impl_skip) and position < gap_hours
-        if impl_skip:
+        if verdict_fresh:
+            reason = "verdict-fresh"
+        elif impl_skip:
             reason = "reviewer-working"
         elif in_flight or started_recently:
             reason = "run-in-flight"
@@ -264,6 +298,9 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
             "review_recent": 1 if reviewer_recent else 0,
             "impl_skip": 1 if impl_skip else 0,
             "reviewer_label": 1 if label_row else 0,
+            "verdict": verdict_label or "-",
+            "verdict_since": verdict_ts.strftime("%Y-%m-%dT%H:%M:%SZ") if verdict_ts and verdict_label else "none",
+            "verdict_fresh": 1 if verdict_fresh else 0,
             "branch": branch or "",
         })
         if not impl_skip:
@@ -278,9 +315,54 @@ def render(rows: list[dict]) -> str:
             f"issue={r['issue']} position={r['position']} has_implementer={r['has_implementer']} "
             f"last_implementer_activity={r['last_implementer_activity']} window={r['window']} "
             f"reason={r['reason']} started={r['started']} reply_recent={r['reply_recent']} "
-            f"review_recent={r['review_recent']} impl_skip={r['impl_skip']}"
+            f"review_recent={r['review_recent']} impl_skip={r['impl_skip']} "
+            f"verdict={r['verdict']} verdict_since={r['verdict_since']} "
+            f"verdict_fresh={r['verdict_fresh']}"
         )
     return "\n".join(lines)
+
+
+def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int,
+                   now: dt.datetime, run: str | None) -> int:
+    """Say on the issue that the implementer skipped it for a FRESH VERDICT.
+
+    One comment per review round: the marker carries `since=<the reviewer's
+    newest timestamp>`, so a later sweep in the same round finds it and says
+    nothing (the same idempotence the filing path uses for its dedup markers).
+    A comment, never a label: the verdict belongs to the reviewer.
+    """
+    rows = build(repo, label, gap_hours, now, run, verdict_ttl_hours)
+    held = sorted((r for r in rows if r["verdict_fresh"] == 1), key=lambda r: r["issue"])
+    if not held:
+        print("[issue-queue] no fresh verdict holds the queue — nothing to note")
+        return 0
+
+    row = held[0]
+    number, since = row["issue"], row["verdict_since"]
+    for comment in _comments(repo, number):
+        body = comment.get("body") or ""
+        found = SKIP_SINCE_RE.search(body)
+        if SKIP_MARKER in body and found and found.group(1).rstrip("Z") == since.rstrip("Z"):
+            print(f"[issue-queue] #{number} already noted for verdict_since={since} — no duplicate comment")
+            return 0
+
+    text = "\n".join([
+        f"<!-- issue-bot-skip: {now.strftime('%Y-%m-%dT%H:%M:%SZ')} "
+        f"verdict={row['verdict']} since={since} -->",
+        f"**Not picked by the implementer: the reviewer holds this issue "
+        f"(`{row['verdict']}`).**",
+        "",
+        f"- verdict: `{row['verdict']}` — the issue reviewer judged this issue not "
+        f"ready to implement",
+        f"- since: {since} (the reviewer's newest marker on this issue; a verdict is "
+        f"fresh for {verdict_ttl_hours} h)",
+        "",
+        "The hourly sweep will take this issue again once the verdict is stale, or as",
+        "soon as the reviewer (or a human) clears the label. Nothing was implemented.",
+    ])
+    _gh(["issue", "comment", str(number), "--repo", repo, "--body", text])
+    print(f"[issue-queue] #{number}: skip note posted (verdict={row['verdict']} since={since})")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -288,13 +370,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=None)
     ap.add_argument("--label", default="data-gap-analysis")
     ap.add_argument("--gap-hours", type=int, default=int(os.environ.get("REVIEW_GAP_HOURS", "3")))
+    ap.add_argument("--verdict-ttl-hours", type=int,
+                    default=int(os.environ.get("VERDICT_TTL_HOURS", "24")))
+    ap.add_argument("--skip-note", action="store_true",
+                    help="post the ONE 'skipped: the reviewer holds this issue' comment (issue #200)")
     ap.add_argument("--now", default=None)
     ap.add_argument("--run", default=None, help="this run's id (a run never blocks itself)")
     args = ap.parse_args(argv)
 
     repo = resolve_repo(args.repo)
     now = now_utc(args.now)
-    rows = build(repo, args.label, args.gap_hours, now, args.run or current_run())
+    run = args.run or current_run()
+    if args.skip_note:
+        return post_skip_note(repo, args.label, args.gap_hours, args.verdict_ttl_hours, now, run)
+    rows = build(repo, args.label, args.gap_hours, now, run, args.verdict_ttl_hours)
     text = render(rows)
     if text:
         print(text)

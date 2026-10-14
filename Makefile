@@ -621,8 +621,17 @@ implement-issue:
 REVIEW_GAP_HOURS := 3
 
 .PHONY: issue-queue
-issue-queue: ## Print the implementer's queue (oldest first) with each issue's window
+issue-queue: ## Print the implementer's queue (oldest first) with each issue's window and its reviewer verdict hold
 	python3 scripts/issue_queue.py --gap-hours $(REVIEW_GAP_HOURS)
+
+# The reviewer's VERDICT is a hold, not advice (issue #200): while a verdict label
+# (`needs-refinement`, and the obsolete/duplicate/already-fixed family) is FRESH —
+# younger than VERDICT_TTL_HOURS, measured from the reviewer's newest marker
+# comment, because a label carries no timestamp — the sweep takes another issue,
+# and this target says so ON the held issue (one comment per review round). A
+# comment, never a label: the verdict belongs to the reviewer or a human.
+issue-skip-note: ## Say on the held issue why the sweep skipped it (one comment per review round)
+	python3 scripts/issue_queue.py --skip-note --gap-hours $(REVIEW_GAP_HOURS)
 
 .PHONY: review-issue-pick
 review-issue-pick: ## Choose the ONE issue this review run works (action=/issue=/path=)

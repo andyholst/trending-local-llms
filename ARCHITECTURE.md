@@ -173,7 +173,8 @@ hold the host command. `$(DOCKER_RUN)` runs the **base image**
 
 | Target | What it does |
 |---|---|
-| `issue-queue` | Print the implementer's queue (oldest first) with each candidate's window — the ONE rule both bots read (`scripts/issue_queue.py`) |
+| `issue-queue` | Print the implementer's queue (oldest first) with each candidate's window **and its reviewer-verdict hold** — the ONE rule both bots read (`scripts/issue_queue.py`) |
+| `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `review-issue-pick` | Choose the ONE issue a review run works: `action=`, `issue=`, `path=`, `reason=` |
 | `review-issue-mark` (`ISSUE=` `PATH=`) | Open the reviewer's window: the `review-in-progress` label (+ the marker comment on the `body` path); prints `marker_iso=` and `body_sha=` |
 | `review-issue-guard` (`ISSUE=` `PATH=`) | The TOCTOU re-check before any write: exit 0 only while the window still allows that path |
@@ -261,7 +262,8 @@ same issue queue instead of racing).
 | Job | Does |
 |---|---|
 | `guard` | The same owner/collaborator guard as refresh-bot, before any secret |
-| `pick` | Sweep only: `make issue-queue` (`scripts/issue_queue.py`) — the OLDEST open `data-gap-analysis` issue with **no** `ci/data-gap-<n>-*` branch, no open PR from one and no live reviewer marker (a fresh `<!-- issue-review: … run=<id> -->`; the `review-in-progress` label is advisory) (the queue rule has ONE implementation; the reviewer reads the same target). An empty backlog is a green run that implements nothing |
+| `pick` | Sweep only: `make issue-queue` (`scripts/issue_queue.py`) — the OLDEST open `data-gap-analysis` issue with **no** `ci/data-gap-<n>-*` branch, no open PR from one, no live reviewer marker (a fresh `<!-- issue-review: … run=<id> -->`) and **no fresh reviewer VERDICT** (`needs-refinement` / `obsolete` / `duplicate` / `already-fixed`, held while younger than `VERDICT_TTL_HOURS`=24 h *measured from the reviewer's newest marker comment* — a label carries no timestamp, so an old one from a cancelled run releases the issue again; the `review-in-progress` label is likewise advisory) (the queue rule has ONE implementation; the reviewer reads the same target). An empty backlog is a green run that implements nothing |
+| `pick` → verdict note | When the pick is empty, `make issue-skip-note` (`scripts/issue_queue.py --skip-note`, default token — the owner PAT cannot comment) posts ONE comment on the held issue carrying `<!-- issue-bot-skip: <ISO8601Z> verdict=<label> since=<reviewer ts> -->`, so "why is nobody implementing this?" is answered where the issue lives, once per review round. It writes NO label and edits NO body — the verdict belongs to the reviewer or a human (issue #200) |
 | `implement` | Resolve the issue (must be open) → `issue.md`; checkout `master` (PAT); `make image-ensure`; `make hermes-smoke`; **announce the window** (one start comment `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted with the default token BEFORE the body is read — the signal the reviewer defers to); `make implement-issue`; commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
 
 **Tokens.** `FIXBOT_DISPATCH_TOKEN` (fine-grained PAT: Actions, Contents, Pull

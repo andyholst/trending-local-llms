@@ -493,6 +493,127 @@ def test_the_clock_is_injected_never_read_from_the_wall_clock():
           bool(row) and "reason=implementer-recent" in row[0], proc.stdout)
 
 
+REVIEW_MARKER = "<!-- issue-review:"
+
+def _verdict_fixture(td: Path, hours: float | None, label: str = "needs-refinement"):
+    """Issues #163 (oldest, labelled + reviewed) and #174 (next), with the marker."""
+    comments = {}
+    if hours is not None:
+        comments["163"] = [{"createdAt": hours_ago(hours),
+                            "body": f"{REVIEW_MARKER} {hours_ago(hours)} run=1 -->\nReviewed: needs refinement."}]
+    return env_for(td, issues=[candidate(163, labels=[label]), candidate(174)], comments=comments)
+
+
+def test_a_fresh_verdict_holds_the_implementer():
+    """A `needs-refinement` verdict younger than the TTL holds the sweep off that issue."""
+
+    # Given the oldest issue carries a verdict label and a reviewer marker 2 h old
+    with tempfile.TemporaryDirectory() as td:
+        env = _verdict_fixture(Path(td), 2.0)
+
+        # When  the shared queue is built at the injected instant
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        rows = {line.split()[0]: line for line in proc.stdout.splitlines() if line.startswith("issue=")}
+
+    # Then  the held issue is out of the pick order and marked as such
+    held = rows.get("issue=163", "")
+    check("fresh verdict: the issue is held", "impl_skip=1" in held, held)
+    check("fresh verdict: the reason names the verdict", "reason=verdict-fresh" in held, held)
+    check("fresh verdict: it is out of the pick order", "position=-1" in held, held)
+    check("fresh verdict: the verdict and its timestamp are reported",
+          "verdict=needs-refinement" in held and f"verdict_since={hours_ago(2.0)}" in held, held)
+    check("fresh verdict: verdict_fresh is 1", "verdict_fresh=1" in held, held)
+    check("fresh verdict: the NEXT issue is what the sweep takes",
+          rows.get("issue=174", "").split()[1] == "position=0", rows.get("issue=174", ""))
+
+
+def test_a_stale_verdict_releases_the_issue():
+    """The same label with a marker older than the TTL does NOT hold for ever."""
+
+    # Given the verdict marker is 25 h old (a label left by a cancelled run)
+    with tempfile.TemporaryDirectory() as td:
+        env = _verdict_fixture(Path(td), 25.0)
+
+        # When  the queue is built
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        held = [l for l in proc.stdout.splitlines() if l.startswith("issue=163 ")]
+
+    # Then  the issue is back in the queue, with the verdict still reported
+    check("stale verdict: the issue is in the pick order", held and "position=0" in held[0], str(held))
+    check("stale verdict: it is not skipped", held and "impl_skip=0" in held[0], str(held))
+    check("stale verdict: verdict_fresh is 0", held and "verdict_fresh=0" in held[0], str(held))
+    check("stale verdict: the verdict is still visible", held and "verdict=needs-refinement" in held[0], str(held))
+
+
+def test_a_label_without_any_reviewer_marker_never_holds():
+    """A label with no reviewer marker at all has no timestamp, so it cannot hold."""
+
+    # Given the label is present but the issue has no reviewer comment
+    with tempfile.TemporaryDirectory() as td:
+        env = _verdict_fixture(Path(td), None)
+
+        # When  the queue is built
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        row = [l for l in proc.stdout.splitlines() if l.startswith("issue=163 ")]
+
+    # Then  it is reported but never a hold
+    check("label only: the verdict is reported", row and "verdict=needs-refinement" in row[0], str(row))
+    check("label only: since is none", row and "verdict_since=none" in row[0], str(row))
+    check("label only: never a hold", row and "impl_skip=0" in row[0] and "verdict_fresh=0" in row[0], str(row))
+
+
+def test_skip_note_is_posted_once_per_review_round():
+    """`--skip-note` says it ON the issue, once per reviewer timestamp, and edits no label."""
+
+    # Given a held issue with no skip note yet
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = _verdict_fixture(fixture, 2.0)
+
+        # When  the note runs
+        first = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        posted = [json.loads(l) for l in (fixture / "comments-posted.jsonl").read_text().splitlines()]
+        calls = [json.loads(l) for l in (fixture / "calls.log").read_text().splitlines()]
+        # … and the SAME round runs again (the note is now on the issue)
+        comments = json.loads((fixture / "comments.json").read_text())
+        comments.setdefault("163", []).append({"createdAt": NOW, "body": posted[0]["body"]})
+        (fixture / "comments.json").write_text(json.dumps(comments))
+        second = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        calls_after = [json.loads(l) for l in (fixture / "calls.log").read_text().splitlines()]
+
+    # Then  one comment carries the marker (verdict + the reviewer's timestamp)…
+    check("skip note: exactly one comment posted", len(posted) == 1, str(posted))
+    check("skip note: it is the held issue", posted and posted[0]["issue"] == "163", str(posted))
+    check("skip note: the marker carries the verdict and its since", posted and
+          "issue-bot-skip:" in posted[0]["body"] and "verdict=needs-refinement" in posted[0]["body"]
+          and f"since={hours_ago(2.0)}" in posted[0]["body"], str(posted))
+    check("skip note: it says nothing was implemented", posted and "Nothing was implemented" in posted[0]["body"],
+          str(posted))
+    # … and it is idempotent per round
+    check("skip note: the second run posts nothing", "already noted" in second.stdout, second.stdout)
+    check("skip note: still exactly one comment", len([c for c in calls_after if c[:2] == ["issue", "comment"]]) == 1,
+          str(calls_after))
+
+
+def test_the_implementer_never_edits_a_label_or_a_body_when_it_skips():
+    """Skipping is a COMMENT: no label write, no body edit, ever."""
+
+    # Given a held issue
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = _verdict_fixture(fixture, 2.0)
+
+        # When  the skip note runs
+        run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        calls = [json.loads(l) for l in (fixture / "calls.log").read_text().splitlines()]
+
+    # Then  the only write is a comment
+    check("skip: no `issue edit`", not any(c[:2] == ["issue", "edit"] for c in calls), str(calls))
+    check("skip: no label write", not any(c[0] == "label" for c in calls), str(calls))
+    check("skip: the write is exactly one comment",
+          [c[:2] for c in calls if c[:2] == ["issue", "comment"]] == [["issue", "comment"]], str(calls))
+
+
 def main() -> int:
     print("issue reviewer: one queue, one 3 h window, two bots (issue #179)")
     test_the_window_opens_and_closes_at_the_three_hour_boundary()
@@ -507,6 +628,11 @@ def main() -> int:
     test_body_hash_and_finish_are_the_write_proof_and_the_cleanup()
     test_the_reviewer_reads_the_one_queue_the_implementer_reads()
     test_the_clock_is_injected_never_read_from_the_wall_clock()
+    test_a_fresh_verdict_holds_the_implementer()
+    test_a_stale_verdict_releases_the_issue()
+    test_a_label_without_any_reviewer_marker_never_holds()
+    test_skip_note_is_posted_once_per_review_round()
+    test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
