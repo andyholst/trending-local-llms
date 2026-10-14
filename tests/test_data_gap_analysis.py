@@ -291,6 +291,31 @@ def test_analysis_is_wired_to_make_and_the_refresh_pipeline():
     check("the filer step is report-only, as documented",
           "continue-on-error: true" in step, step)
 
+    # Given the baseline the filer writes, derived from the script (not restated)
+    baseline_rel = str(G.DEFAULT_BASELINE.relative_to(ROOT))
+    check("the filer's baseline path is derived from the script",
+          baseline_rel == "data/gap_baseline.json", baseline_rel)
+
+    # When  the commit step that runs right AFTER the filer decides and stages
+    commit = workflow.split("- name: Commit + open PR if changed", 1)[1]
+    commit_head = commit.split("\n      - name:", 1)[0]
+
+    # Then  its change test AND its git add include the baseline, or the new
+    # baseline is discarded and the same gap issue is filed on every run (#152)
+    diff_line = [l for l in commit_head.splitlines() if "git diff --quiet" in l]
+    add_line = [l for l in commit_head.splitlines() if l.strip().startswith("git add ")]
+    check("commit step: the change test includes the baseline",
+          bool(diff_line) and baseline_rel in diff_line[0], str(diff_line))
+    check("commit step: the baseline is staged",
+          bool(add_line) and baseline_rel in add_line[0], str(add_line))
+
+    # Then  the filer runs BEFORE that commit step: the file must exist when the
+    # commit decides, and a baseline-only change must not print "No data changes"
+    i_filer = workflow.index("run: make data-gap-issue")
+    i_commit = workflow.index("- name: Commit + open PR if changed")
+    check("ordering: the filer runs before the commit step", i_filer < i_commit,
+          f"{i_filer} < {i_commit}")
+
 
 def main() -> int:
     print("data-gap analysis: unit tests")
