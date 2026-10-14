@@ -29,6 +29,25 @@ retains 30 days of history.
    it stays in the data store and the README — it just sorts **further down**.
    Only remove a model with an explicit human decision (e.g. confirmed dead
    repo / wrong model).
+3b. **Additive only — never remove a key or a value.** In `data/models.json`,
+   `data/raw/*.json`, `data/snapshots/*.json` and the contract files an
+   existing key is never removed or renamed, and no existing value is ever
+   shrunk, by any automation: keys may only be ADDED (optional — never added to
+   a contract's `required`), a measurement's t/s may only be RAISED, the
+   engagement counters may only GROW, and `backends` / `supported_engines` /
+   `formats` may only gain members. Loss is a defect, not a simplification: a
+   field the search asks for but the contract refuses (its `additionalProperties:
+   false` prunes it) is dropped SILENTLY, so widening a contract additively —
+   with the tests, rule 6b — is the fix, never a deletion. A genuine removal is
+   a human decision; for a contract it is a new `data/*_contract.vN.json` (§6b),
+   never an edit in place. Enforced by
+   `scripts/validate.py::check_no_value_loss` (`make validate`,
+   `make validate-data`).
+3c. **An issue that changes this file's behaviour must say so.** If a filed
+   issue requires AGENTS.md to change (a new stage, a new rule, a changed
+   pipeline contract), the issue MUST carry a comment stating exactly which
+   section changes and why, and that part of the work is review-required — a
+   reviewer signs off on the AGENTS.md diff before the implementation merges.
 4. **Engagement-first, t/s second.** In the "most loved" rank: models are
    ranked by 7-day X engagement (likes/comments/views/interactions), with
    highest t/s as the tie-breaker **within** a rank. Do not reorder the whole
@@ -183,6 +202,9 @@ The README is **generated**, not hand-maintained:
   `data/raw/*.json` search snapshots, and `README.md`, HEAD/GET-checked; a
   404/410 or connection error fails CI (403/429/5xx are indeterminate), and a
   known-good engine repo URL that was wrong is auto-corrected in the store.
+  `check_no_value_loss` additionally fails any key, measurement, t/s or counter
+  that existed in the newest snapshot and is gone from the store (additive
+  only — §2.3b), which the JSON Schema alone cannot see.
   `check_readme_tables_wellformed` + `check_links_resolve` are registered in the
   `make validate` stages so a malformed table or a dead/wrong link in any new
   raw snapshot, the store, or the README fails CI. This is a **validation**
@@ -494,6 +516,11 @@ is additive → edit in place. If any existing record would now fail, it is
 breaking → new `*.vN.json` contract + validator/test routing. Never silently
 re-validate old data against a changed contract.
 
+This is the same rule §2.3b states for the DATA: an additive contract change
+makes a new optional key survive ingest, and `check_no_value_loss` (validate,
+`removal` stage) then keeps it — a key or a value that was in the previous
+snapshot can never disappear from the store again, whatever the contract says.
+
 Flow: bot refreshes + opens PR (PAT) → qa-validate (`validate` + `live-smoke`)
 → if `validate` is red, qa-validate dispatches fix-bot → fix-bot loops until
 green (≤3 Hermes rounds) and pushes (PAT) → qa-validate re-runs → green →
@@ -552,6 +579,7 @@ actually happened.
 | `tests/test_amd_backend.py` (issue #76) | AMD hardware falling to the CUDA default or CPU (`Ryzen 5 7600 + RX 7800 XT`, Strata/vLLM on a Radeon); bare `amd` / `hip` / `vulkan` read as AMD; `RX 7900 XTX 24GB` read as 189,600 GB (`xtx` as a multiplier); a host CPU read as an RX card; Instinct earning speed / Strix Halo not; a Radeon row merged with a Ryzen CPU row; ROCm table / most-loved column / matrix cell missing; validator skipping an unsorted, missing or misplaced ROCm table; an existing model gaining an AMD figure without `ROCm` in `backends`; an AMD-only engine registered as CUDA; contract enums drifting from `BACKENDS` / `join_backends`; the amd leg missing from the Makefile, either workflow, the smoke, the contract or self-correct (one list: `SEARCH_LEGS`) |
 | `check_backends_cover_measurements` (validate, data stage) | a model whose measurements render in a backend table its `backends` does not list (ingest + `normalize_model` now sync it via `sync_backends`) |
 | `check_engine_aliases` (validate, data stage) | a measurement still on the aliased-away engine name; an alias target missing from the registry or with the wrong repo URL |
+| `check_no_value_loss` (validate, `removal` stage) + `tests/test_validate.py::test_no_value_loss` | a key, a measurement group, a t/s or an engagement counter that was in the previous snapshot disappearing from the store. `check_no_removal` only compares model IDS and the contract only sees a missing REQUIRED key, so `engagement.seen_posts`, the computed trend fields, a measurement's `hardware`/`quant`/counters — and 12 of bonsai-2-27b's 13 measurements — could be deleted with `make validate` green (both measured on master before this guard). Additive changes (new key, new measurement, extra backend, raised t/s or counter) must never fire it |
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |

@@ -12,12 +12,15 @@ catching a broken validator in CI. Covers:
   - search_contract.json pass/fail
   - raw -> models.json mapping + collision
   - no-removal vs snapshot
+  - additive-only (no key/value loss vs snapshot)
   - newline terminators
 
 Run:  python3 tests/test_validate.py     or   make test
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -282,6 +285,113 @@ def test_no_removal():
         check("no-removal: catches removed model", len(V.FAILURES) == 1 and "removed" in V.FAILURES[0])
 
 
+def _snap_with_posts(store: dict) -> dict:
+    """Snapshot fixture carrying the optional engagement keys (`seen_posts`, the
+    computed trend fields) and per-measurement counters, so the additive-only
+    check has something to lose."""
+    s = json.loads(json.dumps(store))
+    m = s["models"][0]
+    m["engagement"].update({"seen_posts": [
+        {"url": "https://lightbrd.com/x/status/1", "date": "2026-09-27", "engine": "llama.cpp",
+         "tps": "80", "likes": 3, "views": 10},
+    ], "posts_7d": 1, "buzz_7d": 1.5, "score_7d": 1.5, "speed_bonus": 2.0, "trend_score": 3.5})
+    m["engines"][0].update({"likes": 10, "comments": 4, "views": 100})
+    m["formats"].append({"name": "MLX", "hf": "a/m1-mlx"})
+    return s
+
+
+def _run_value_loss(snapshot: dict, current: dict):
+    with tempfile.TemporaryDirectory() as td:
+        snap_dir = Path(td)
+        (snap_dir / "trending-001.json").write_text(json.dumps(snapshot))
+        reset()
+        V.check_no_value_loss(current, snap_dir)
+        return list(V.FAILURES)
+
+
+def test_no_value_loss():
+    """The additive-only guarantee: nothing that existed in the newest snapshot
+    may lose a key, a measurement, a t/s or a counter — while adding is fine."""
+    snap = _snap_with_posts(good_store())
+
+    # unchanged store -> nothing lost
+    fails = _run_value_loss(snap, json.loads(json.dumps(snap)))
+    check("value-loss: unchanged store passes", len(fails) == 0, str(fails))
+
+    # ADDITIVE changes must never be reported (a new key, a new measurement, a
+    # new backend, a raised counter, a grown supported_engines list)
+    grown = json.loads(json.dumps(snap))
+    m = grown["models"][0]
+    m["system_ram_min"] = "16GB"                       # new optional key
+    m["backends"].append("CPU")
+    m["supported_engines"].append("MLX")
+    m["engines"].append({"engine": "vLLM", "tps": "120", "hardware": "RTX 4070",
+                         "date": "2026-09-28", "source_post": "https://lightbrd.com/n"})
+    m["engines"][0]["likes"] = 99                      # counter rose
+    fails = _run_value_loss(snap, grown)
+    check("value-loss: additive-only changes pass", len(fails) == 0, str(fails))
+
+    # an OPTIONAL engagement key removed -> caught (the schema cannot see it)
+    lost_key = json.loads(json.dumps(snap))
+    lost_key["models"][0]["engagement"].pop("seen_posts")
+    fails = _run_value_loss(snap, lost_key)
+    check("value-loss: catches removed optional key",
+          len(fails) == 1 and "engagement.seen_posts" in fails[0], str(fails))
+
+    # a required key removed -> caught too
+    lost_req = json.loads(json.dumps(snap))
+    lost_req["models"][0]["engagement"].pop("views")
+    fails = _run_value_loss(snap, lost_req)
+    check("value-loss: catches removed engagement key",
+          len(fails) == 1 and "engagement.views" in fails[0], str(fails))
+
+    # a whole (engine, GPU size) measurement group gone -> caught
+    lost_meas = json.loads(json.dumps(snap))
+    lost_meas["models"][0]["engines"] = [
+        e for e in lost_meas["models"][0]["engines"] if e["engine"] != "llama.cpp"]
+    fails = _run_value_loss(snap, lost_meas)
+    # the dropped row also carried the per-measurement counters, so the loss is
+    # reported both as a missing measurement group and as lost keys
+    check("value-loss: catches a lost measurement group",
+          any("measurement llama.cpp" in f for f in fails)
+          and any("engines.likes" in f for f in fails), str(fails))
+
+    # a t/s figure can only be raised, never lowered
+    lowered = json.loads(json.dumps(snap))
+    lowered["models"][0]["engines"][0]["tps"] = "20"
+    fails = _run_value_loss(snap, lowered)
+    check("value-loss: catches a lowered t/s",
+          len(fails) == 1 and "t/s lowered" in fails[0], str(fails))
+
+    # engagement counters may only grow
+    counter = json.loads(json.dumps(snap))
+    counter["models"][0]["engines"][0]["likes"] = 1
+    fails = _run_value_loss(snap, counter)
+    check("value-loss: catches a lowered counter",
+          len(fails) == 1 and "likes lowered" in fails[0], str(fails))
+
+    # a scalar list that lost a member -> caught
+    lost_backend = json.loads(json.dumps(snap))
+    lost_backend["models"][0]["backends"] = ["CUDA"]
+    fails = _run_value_loss(snap, lost_backend)
+    check("value-loss: catches a backend dropped from backends",
+          len(fails) == 1 and "backends lost" in fails[0], str(fails))
+
+    # a removed MODEL is check_no_removal's failure, not double-reported here
+    fails = _run_value_loss(snap, {"models": []})
+    check("value-loss: a removed model is not reported twice", len(fails) == 0, str(fails))
+
+    # no snapshot -> nothing to compare, and it SAYS so (never a silent pass)
+    with tempfile.TemporaryDirectory() as td:
+        out = io.StringIO()
+        reset()
+        with contextlib.redirect_stdout(out):
+            V.check_no_value_loss(good_store(), Path(td))
+        check("value-loss: no snapshot passes as 'nothing to compare'",
+              len(V.FAILURES) == 0 and "nothing to compare" in out.getvalue(),
+              out.getvalue())
+
+
 def test_newline_terminators():
     with tempfile.TemporaryDirectory() as td:
         # build a tiny fake git repo with one file
@@ -387,6 +497,7 @@ def main() -> int:
     test_schema_pass_fail()
     test_search_contract_pass_fail()
     test_no_removal()
+    test_no_value_loss()
     test_newline_terminators()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
