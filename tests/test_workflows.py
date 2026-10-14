@@ -687,46 +687,60 @@ def test_unit_tests_really_run():
               "raise SystemExit(main())" in src or "sys.exit(main())" in src, "")
 
 
-def test_base_image_follows_the_dockerfile():
-    """Issue #135: a merged Dockerfile change must not stay inert in the image
-    every bot and the validate job run until the next Sunday."""
+def test_images_follow_their_inputs():
+    """Issues #135 and #141: a merged Dockerfile/Dockerfile.test change must not
+    stay inert until Sunday, the test image is published like the base image,
+    and ONE path prepares the images for every job."""
     rb = (WF / "refresh-bot.yml").read_text()
-    decide = rb.split("- name: Decide whether to rebuild image", 1)[1].split("\n      - name:", 1)[0]
+    decide = rb.split("- name: Decide whether to rebuild the images", 1)[1].split("\n      - name:", 1)[0]
+    tags = (ROOT / "scripts" / "ensure_image.py").read_text()
 
-    # Given refresh-bot's rebuild decision
-    # Then  it hashes the Dockerfiles the image is built from
-    check("refresh-bot: the rebuild decision hashes Dockerfile + Dockerfile.test",
-          "cat Dockerfile Dockerfile.test | sha256sum" in decide, decide[:160])
-    # Then  a Dockerfile whose hash tag is not published forces a rebuild
-    check("refresh-bot: an unpublished Dockerfile hash rebuilds the image",
-          'dockerfile-${HASH}' in decide and 'HASHED=0' in decide
-          and '[ "$HASHED" = "0" ]' in decide, decide)
-    # Then  each build publishes the tag naming that hash
-    check("refresh-bot: the build publishes the Dockerfile hash tag",
-          "dockerfile-${{ steps.decide.outputs.hash }}" in rb, "")
-    # Then  the owner can republish without waiting for Sunday
+    # Given ONE definition of "built from this revision" (the tags the publisher
+    # and the consumers both read)
+    # Then  the decision takes the tags from that script, never inline hashing
+    check("images: the tags come from scripts/ensure_image.py",
+          'eval "$(python3 scripts/ensure_image.py tags)"' in decide
+          and "cat Dockerfile Dockerfile.test | sha256sum" not in decide, decide[:160])
+    check("images: the definition covers base AND test inputs",
+          'BASE_FILES = ("Dockerfile", "Dockerfile.test")' in tags
+          and 'TEST_FILES = ("Dockerfile.test", "requirements-test.txt")' in tags
+          and "base={base_hash()}" in tags, tags[:200])
+    # Then  an unpublished tag forces a rebuild of that image
+    check("refresh-bot: an unpublished base tag rebuilds the base",
+          'HASHED=0' in decide and '[ "$HASHED" = "0" ]' in decide, decide)
+    check("refresh-bot: an unpublished test tag rebuilds the test image",
+          'TEST_HASHED=0' in decide and '[ "$TEST_HASHED" = "0" ]' in decide, decide)
+    # Then  each build publishes the tag naming those inputs
+    check("refresh-bot: the base build publishes its tag",
+          "${{ steps.decide.outputs.base_tag }}" in rb, "")
+    check("refresh-bot: the test build publishes its tag",
+          "${{ needs.build.outputs.test_tag }}" in rb
+          and "file: Dockerfile.test" in rb, "")
+    # Then  the owner can republish both images without waiting for Sunday
     check("refresh-bot: `force_rebuild` republishes on demand",
-          "inputs.force_rebuild" in decide and '[ "$FORCE" = "true" ]' in decide, decide)
+          "inputs.force_rebuild" in decide
+          and decide.count('[ "$FORCE" = "true" ]') == 2, decide.count('[ "$FORCE" = "true" ]'))
+    check("refresh-bot: the dispatch input exists",
+          "force_rebuild:" in rb and "type: boolean" in rb, "")
 
-    # Given qa-validate's base-image step (both jobs)
-    qa = (WF / "qa-validate.yml").read_text()
-    check("qa-validate: both jobs decide the base by the Dockerfile hash",
-          qa.count('dockerfile-$HASH') == 2, qa.count('dockerfile-$HASH'))
-    # Then  a published hash pulls, an unpublished one builds from source
-    check("qa-validate: an unpublished hash builds the base from source",
-          "base for Dockerfile $HASH is NOT published; building it from source" in qa
-          and qa.count("make docker-build") == 3, qa.count("make docker-build"))
-    check("qa-validate: a published hash pulls it instead",
-          qa.count("is published; pulling it") == 1, qa.count("is published; pulling it"))
-    # Then  the test image layers on that base EXPLICITLY (Dockerfile.test
-    # defaults to the GHCR ref, which a cached pull would resolve to the old one)
-    check("qa-validate: the test image layers on the local base explicitly",
-          qa.count("make docker-test-build BASE_IMAGE=trending-local-llms:latest") == 2,
-          qa.count("make docker-test-build BASE_IMAGE=trending-local-llms:latest"))
+    # Given every job that needs the images
+    # Then  ONE make target prepares them (no inline pull/build left)
     mk = (ROOT / "Makefile").read_text()
-    check("make: the test image takes the base as a build arg",
-          "--build-arg BASE_IMAGE=$(BASE_IMAGE)" in mk and "BASE_IMAGE ?=" in mk, "")
-    check("dockerfile.test: its FROM is that build arg",
+    check("make: `image-ensure` exists and calls the script",
+          "image-ensure:\n\tpython3 scripts/ensure_image.py ensure" in mk, "")
+    check("make: `image-ensure-base` exists for image-only jobs",
+          "image-ensure-base:\n\tpython3 scripts/ensure_image.py ensure-base" in mk, "")
+    for name in ("qa-validate.yml", "fix-bot.yml", "issue-bot.yml"):
+        text = (WF / name).read_text()
+        check(f"{name}: prepares the images through `make image-ensure`",
+              text.count("make image-ensure") >= 1 and "docker build -f Dockerfile.test" not in text,
+              text.count("make image-ensure"))
+    check("refresh-bot: the jobs that only run the image use `make image-ensure-base`",
+          rb.count("run: make image-ensure-base") == 2, rb.count("run: make image-ensure-base"))
+    check("no workflow pulls or tags the image inline any more",
+          not any("docker pull ghcr.io" in (WF / n).read_text() or "docker tag" in (WF / n).read_text()
+                  for n in ("qa-validate.yml", "fix-bot.yml", "issue-bot.yml", "refresh-bot.yml")), "")
+    check("dockerfile.test: its FROM is a build arg",
           "FROM ${BASE_IMAGE}" in (ROOT / "Dockerfile.test").read_text(), "")
 
     # Then  the guard may not report PASSED while its plugin assertion degraded
@@ -745,7 +759,7 @@ def main() -> int:
     test_guard_behaviour()
     test_nothing_pushes_master()
     test_auto_merge()
-    test_base_image_follows_the_dockerfile()
+    test_images_follow_their_inputs()
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
     test_unit_tests_really_run()

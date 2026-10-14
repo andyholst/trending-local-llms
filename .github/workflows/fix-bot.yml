@@ -122,12 +122,11 @@ jobs:
 
       # Pull the prebuilt base (never rebuild it here) + build the TEST image
       # (base + current requirements-test.txt).
-      - name: Pull base image from GHCR + build test image
+      # ONE path for both images: pull the published base/test image when they
+      # were built from this revision, else build them here (issue #141).
+      - name: Prepare runner images (published for this revision, else build)
         if: steps.pr.outputs.has_pr == 'true'
-        run: |
-          docker pull ghcr.io/${{ github.repository }}:latest
-          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
+        run: make image-ensure
 
       # Fail in seconds, not after a 20-minute fix: one real Hermes call through
       # the exact alias `make fix` uses, with every key the container gets.
