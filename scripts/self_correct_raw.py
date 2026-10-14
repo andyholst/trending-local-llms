@@ -12,7 +12,9 @@ Fill rules (per missing field, uses only data already present in the payload):
   - full_name   -> name (if missing)
   - license     -> "Unknown" (only when absent; never guesses a specific one)
   - params      -> "unknown" (only when absent)
-  - hf          -> left as-is (cannot derive; must come from search) -> flagged
+  - hf          -> reduced to an `owner/repo` id (a full huggingface.co/hf.co
+                   link is unwrapped); a value that cannot be reduced
+                   counts as missing -> flagged for re-search
   - vram_tier   -> derive from smallest vram_min-style value present, else leave
   - vram_min    -> derive from vram_tier if present, else leave
   - backends    -> derive from engine registry backend of the engines present,
@@ -31,10 +33,13 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition)
 # Allow tests to run against a small fixture in a temp dir.
 RAW_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data"))) / "raw"
 
@@ -64,7 +69,6 @@ _LEG_OF = {"CUDA": "nvidia", "Metal": "metal", "CPU": "cpu", "ROCm": "amd"}
 
 
 def _is_amd_gpu(hw: str) -> bool:
-    import sys
     sys.path.insert(0, str(ROOT / "scripts"))
     try:
         import update_trending as ut
@@ -155,8 +159,20 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
     # detect fields we cannot derive
     cannot = []
     for m in data.get("models", []):
-        if not m.get("hf"):
+        raw_hf = m.get("hf") or ""
+        hf = normalise_hf(raw_hf)
+        if hf != raw_hf:
+            m["hf"] = hf
+            notes.append(f"{path.name}/{m.get('id')}: hf <- {hf or 'MISSING'} "
+                         f"(was {raw_hf[:60]!r})")
+        if not hf:
             cannot.append(f"{m.get('id')}: hf missing (cannot derive)")
+        for f in m.get("formats", []) or []:
+            raw_f = f.get("hf") or ""
+            f_hf = normalise_hf(raw_f)
+            if f_hf != raw_f:
+                f["hf"] = f_hf
+                notes.append(f"{path.name}/{m.get('id')}: format hf <- {f_hf or 'MISSING'}")
         for e in m.get("engines", []):
             if not e.get("source_post"):
                 cannot.append(f"{m.get('id')}/{e.get('engine')}: source_post missing (cannot derive)")

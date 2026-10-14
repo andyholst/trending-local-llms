@@ -24,6 +24,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition)
 # Allow tests to run the make targets against a small fixture in a temp dir
 # instead of the real data/ tree. When set, all data paths resolve under it.
 _DATA_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
@@ -633,7 +635,9 @@ def render_readme(store: dict, today: datetime) -> str:
         return f"[{name}]({url})" if url else name
 
     def hf_url(m: dict) -> str:
-        return f"https://huggingface.co/{m.get('hf', '')}"
+        # The id is an `owner/repo`; a URL-shaped value would otherwise be
+        # prefixed again (measured: issue #165), so normalise before building.
+        return f"https://huggingface.co/{normalise_hf(m.get('hf', ''))}"
 
     def detail(e: dict) -> str:
         bits = [_cell(x) for x in (e.get("hardware"), e.get("quant")) if x]
