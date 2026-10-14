@@ -117,12 +117,29 @@ jobs:
           # The head of the pick order (position=0) is the issue this sweep takes.
           PICK=$(printf '%s\n' "$QUEUE" | sed -n 's/^issue=\([0-9][0-9]*\) position=0 .*/\1/p' | head -1)
           if [ -z "$PICK" ]; then
-            echo "data-gap backlog empty: every open labelled issue has an implementer."
+            echo "data-gap backlog empty: every open labelled issue has an implementer, or a fresh reviewer verdict holds it."
             echo "issue=" >> "$GITHUB_OUTPUT"
           else
             echo "Sweeping #$PICK (oldest with no implementer, and no reviewer holding it)"
             echo "issue=$PICK" >> "$GITHUB_OUTPUT"
           fi
+
+      # The reviewer's VERDICT is a hold, not advice (issue #200): a fresh
+      # `needs-refinement` (or obsolete/duplicate/already-fixed) keeps the sweep
+      # off an issue the reviewer judged not ready. When nothing was picked for
+      # that reason, SAY SO ON THE ISSUE — one comment per review round, carrying
+      # the reviewer's own timestamp — so "why is nobody working on this?" is
+      # answered where the issue lives. A comment, never a label: the verdict
+      # belongs to the reviewer (or a human), and this job never edits one.
+      - name: Note a fresh reviewer verdict on the issue it holds
+        id: verdict
+        if: steps.pick.outputs.issue == ''
+        env:
+          # The default token has `issues: write`; the owner PAT is scoped to
+          # Actions/Contents/Pull-requests and cannot comment (measured on #124).
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: make issue-skip-note
 
   implement:
     # `always()` so a SKIPPED pick (the issue/push paths) does not skip this job;
