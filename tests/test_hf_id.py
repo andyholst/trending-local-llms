@@ -131,6 +131,46 @@ def test_correct_raw_reduces_a_url_shaped_hf():
               proc.stdout[-300:])
 
 
+def test_the_link_checker_builds_links_with_the_same_definition():
+    """`_extract_links` is where the doubled link SURFACED (issue #165): it built
+    the URL with a bare prefix, so a URL-shaped `hf` produced
+    `https://huggingface.co/https://…`. It must use the one definition too."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import validate as V  # noqa: E402
+
+    # Given a store and a raw snapshot whose `hf` is a full URL (the measured shape)
+    url = "https://huggingface.co/Qwen/Qwen3.6-35B-A3B"
+    store = {"engines": {}, "models": [{
+        "id": "qwen3.6-35b-a3b", "hf": url,
+        "formats": [{"name": "GGUF", "hf": url}], "engines": [],
+    }]}
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "amd-1.json").write_text(json.dumps(
+            {"backend": "amd", "generated_utc": "2026-10-14T11:10:33Z",
+             "models": [{"id": "qwen3.6-35b-a3b", "hf": url, "engines": []}]}))
+        saved = V.RAW_DIR
+        V.RAW_DIR = raw
+        try:
+            links = V._extract_links(store)
+        finally:
+            V.RAW_DIR = saved
+
+    # Then  every HF link is built ONCE, from the id
+    hf_links = [(kind, u) for kind, _, u in links if kind.endswith("hf")]
+    check("extract_links: HF links exist", bool(hf_links), str(links))
+    check("extract_links: no doubled URL is produced",
+          all("huggingface.co/https" not in u for _, u in hf_links), str(hf_links))
+    check("extract_links: every HF link is the canonical one",
+          all(u == url for _, u in hf_links), str(hf_links))
+
+    # Then  the checker itself uses the one definition
+    src = (ROOT / "scripts" / "validate.py").read_text()
+    check("validate: builds HF links through the normaliser",
+          src.count("normalise_hf(") >= 5, str(src.count("normalise_hf(")))
+
+
 def test_the_link_builders_use_the_same_definition():
     """One definition: the README builder and the corrector must import it, so a
     URL-shaped value cannot be prefixed twice anywhere (issue #165)."""
@@ -149,6 +189,7 @@ def main() -> int:
     print("HF identifier (one definition) + raw-snapshot correction")
     test_normalise_accepts_every_shape_the_search_emits()
     test_correct_raw_reduces_a_url_shaped_hf()
+    test_the_link_checker_builds_links_with_the_same_definition()
     test_the_link_builders_use_the_same_definition()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

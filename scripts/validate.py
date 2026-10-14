@@ -33,6 +33,9 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition)
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))  # import update_trending helpers
 # Allow tests to run the make targets against a small fixture in a temp dir.
@@ -1145,10 +1148,12 @@ def _extract_links(store: dict) -> list[tuple[str, str, str]]:
     for m in store.get("models", []):
         mid = m.get("id", "?")
         if m.get("hf"):
-            out.append(("model-hf", mid, "https://huggingface.co/" + m["hf"]))
+            out.append(("model-hf", mid,
+                        "https://huggingface.co/" + normalise_hf(m["hf"])))
         for f in m.get("formats", []):
             if f.get("hf"):
-                out.append(("format-hf", mid, "https://huggingface.co/" + f["hf"]))
+                out.append(("format-hf", mid,
+                        "https://huggingface.co/" + normalise_hf(f["hf"])))
         for e in m.get("engines", []):
             if e.get("source_post"):
                 out.append(("source_post", mid, e["source_post"]))
@@ -1164,7 +1169,8 @@ def _extract_links(store: dict) -> list[tuple[str, str, str]]:
             for m in data.get("models", []):
                 mid = m.get("id", "?")
                 if m.get("hf"):
-                    out.append(("raw-hf", f"{rp.name}/{mid}", "https://huggingface.co/" + m["hf"]))
+                    out.append(("raw-hf", f"{rp.name}/{mid}",
+                            "https://huggingface.co/" + normalise_hf(m["hf"])))
                 for e in m.get("engines", []):
                     if e.get("source_post"):
                         out.append(("raw-source_post", f"{rp.name}/{mid}", e["source_post"]))
@@ -1234,7 +1240,7 @@ def check_links_resolve(store: dict) -> None:
         elif kind in ("model-hf", "format-hf"):
             canonical_id = _lookup_hf_id(owner)
             if canonical_id:
-                canonical = "https://huggingface.co/" + canonical_id
+                canonical = "https://huggingface.co/" + normalise_hf(canonical_id)
         if canonical and url != canonical:
             strict = kind in _STRICT_KINDS
             if not _link_ok(canonical, strict=strict) and strict and _unverified(canonical):
@@ -1252,7 +1258,7 @@ def check_links_resolve(store: dict) -> None:
                                 m["hf"] = canonical_id
                             else:
                                 for f in m.get("formats", []):
-                                    if f.get("hf") and "https://huggingface.co/" + f["hf"] == url:
+                                    if f.get("hf") and "https://huggingface.co/" + normalise_hf(f["hf"]) == url:
                                         f["hf"] = canonical_id
                 fixed += 1
                 print(f"  FIXED: {owner} {kind} {url} -> {canonical}")
