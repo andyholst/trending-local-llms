@@ -83,7 +83,12 @@ jobs:
   # implements nothing. No checkout: the checks are API calls.
   pick:
     needs: guard
-    if: github.event_name == 'schedule'
+    # A sweep is EITHER the cron OR an owner dispatch with NO issue number
+    # (measured: dispatching with an empty number skipped the picker and ran the
+    # implement job with an empty issue — nothing picked, nothing done).
+    if: >-
+      github.event_name == 'schedule'
+      || (github.event_name == 'workflow_dispatch' && inputs.issue_number == '')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -129,8 +134,9 @@ jobs:
         || (github.event_name == 'issues'
             && github.event.action == 'opened'
             && contains(github.event.issue.labels.*.name, 'data-gap-analysis'))
-        || (github.event_name == 'schedule' && needs.pick.outputs.issue != '')
-        || (github.event_name == 'workflow_dispatch' && inputs.issue_number == '')
+        || ((github.event_name == 'schedule'
+             || (github.event_name == 'workflow_dispatch' && inputs.issue_number == ''))
+            && needs.pick.outputs.issue != '')
       )
     # ONE implementer per issue ACROSS paths: an `issues: opened` event and a
     # sweep that picked the same issue share this group and queue instead of
