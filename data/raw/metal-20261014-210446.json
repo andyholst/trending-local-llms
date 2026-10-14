@@ -47,18 +47,18 @@
     },
     {
       "id": "orbin-1.5-35b-moe",
-      "name": "Orbin 1.5 35B MoE",
-      "full_name": "Orbin 1.5 35B MoE (Apple Silicon)",
+      "name": "Ornith 1.5 35B-A3B",
+      "full_name": "Ornith 1.5 35B-A3B (Apple Silicon)",
       "type": "MoE LLM",
       "formats": [
         {
           "name": "MLX",
-          "hf": "Layr-Labs/orbin-1.5-35b-moe-mlx"
+          "hf": "ornith-ai/Ornith-1.5-35B-A3B"
         }
       ],
       "license": "Apache 2.0",
       "params": "35B total",
-      "hf": "Layr-Labs/orbin-1.5-35b-moe-mlx",
+      "hf": "ornith-ai/Ornith-1.5-35B-A3B",
       "vram_tier": "48GB",
       "vram_min": "48GB",
       "backends": [
@@ -73,7 +73,7 @@
           "hardware": "Mac Studio M5 Ultra 256GB / M5 Max 128GB",
           "quant": "MLX, noted as running 'at easy 80 tok/s with massive concurrency' where the fit is comfortable (est for the smaller 128GB config)",
           "date": "2026-10-14",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2092767101039898681",
           "likes": 0,
           "comments": 0,
           "reshares": 0,

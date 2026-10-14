@@ -193,12 +193,12 @@
       "formats": [
         {
           "name": "MLX",
-          "hf": "Layr-Labs/laya-mlx"
+          "hf": "aac6fef/laya-mlx"
         }
       ],
       "license": "Apache 2.0",
       "params": "421M / 322M",
-      "hf": "Layr-Labs/laya-mlx",
+      "hf": "aac6fef/laya-mlx",
       "vram_tier": "8GB",
       "vram_min": "8GB",
       "system_ram_min": "943.6 MiB peak MLX memory (421M) / 687.6 MiB (322M)",
@@ -232,12 +232,12 @@
       "formats": [
         {
           "name": "MLX",
-          "hf": "nvidia/Nemotron-Lightning-30B-A3B"
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
         }
       ],
       "license": "NVIDIA Open Model License",
       "params": "30B total / 3B active",
-      "hf": "nvidia/Nemotron-Lightning-30B-A3B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
       "vram_tier": "16GB",
       "vram_min": "16GB",
       "backends": [

@@ -155,12 +155,12 @@
       "formats": [
         {
           "name": "MLX",
-          "hf": "aosama/ornith-1.5-mlx-4bit"
+          "hf": "ornith-ai/Ornith-1.5-9B"
         }
       ],
       "license": "Apache 2.0",
-      "params": "35B",
-      "hf": "aosama/ornith-1.5-mlx-4bit",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
       "vram_tier": "48GB",
       "vram_min": "48GB",
       "backends": [
