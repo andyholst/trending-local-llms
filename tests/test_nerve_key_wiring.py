@@ -270,8 +270,8 @@ def test_wired_to_make_and_ci():
           "tests/test_nerve_key_wiring.py" in mk.split("_test:\n", 1)[-1].split("\n\n", 1)[0])
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
     check("ci: qa-validate runs `make nerve-check`", "run: make nerve-check" in qa)
-    check("ci: it runs after the test image is built",
-          qa.index("make nerve-check") > qa.index("Dockerfile.test"))
+    check("ci: it runs after the images are prepared",
+          qa.index("make nerve-check") > qa.index("make image-ensure"))
     wf_text = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text()
     check("ci: the refresh pipeline exports the secret for the `-e` to resolve",
           "TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}" in wf_text)

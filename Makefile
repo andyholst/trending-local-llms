@@ -103,6 +103,28 @@ docker-build:
 docker-test-build:
 	docker build -f Dockerfile.test --build-arg BASE_IMAGE=$(BASE_IMAGE) -t $(TEST_IMAGE) .
 
+# ---- runner images: pulled when published for THIS revision, else built -------
+# The single code path every workflow and developer uses (issue #141). The
+# publisher (refresh-bot) pushes the tags this decides on:
+#   ghcr.io/<owner>/trending-local-llms:dockerfile-<sha12>       (base)
+#   ghcr.io/<owner>/trending-local-llms-test:test-<sha12>        (test image)
+IMAGE_REPO ?= ghcr.io/andyholst/trending-local-llms
+
+.PHONY: image-tags image-ensure image-ensure-base image-ensure-test
+image-tags:
+	python3 scripts/ensure_image.py tags
+
+# Both images (base + test): what a job that runs the suite needs.
+image-ensure:
+	python3 scripts/ensure_image.py ensure
+
+# The base alone: what a job that only runs the image needs.
+image-ensure-base:
+	python3 scripts/ensure_image.py ensure-base
+
+image-ensure-test:
+	python3 scripts/ensure_image.py ensure-test
+
 ## ---------------------------------------------------------------------------
 ## Internal recipes (host commands) — wrapped by the docker public targets
 ## ---------------------------------------------------------------------------

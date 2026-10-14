@@ -189,12 +189,10 @@ jobs:
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
       # Pull the prebuilt base (never rebuild it here) + build the TEST image.
-      - name: Pull base image from GHCR + build test image
+      # ONE path for both images (issue #141).
+      - name: Prepare runner images (published for this revision, else build)
         if: steps.iss.outputs.implement == 'true'
-        run: |
-          docker pull ghcr.io/${{ github.repository }}:latest
-          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
+        run: make image-ensure
 
       # Fail in seconds, not after 20 minutes of implementing: one real Hermes
       # call through the alias the implementation uses.

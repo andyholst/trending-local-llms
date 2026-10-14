@@ -52,8 +52,11 @@ env:
   IMAGE: ghcr.io/${{ github.repository }}:latest
   # The published tag that carries the Dockerfile hash the image was built from
   # (`dockerfile-<hash>`). A Dockerfile change is inert until the base is
-  # rebuilt [#135], so the hash tag — not the Sunday cadence — decides it.
+  # rebuilt [#135], so the hash tag — not the Sunday cadence — decides it. The
+  # same idea publishes the test image under `test-<hash>` [#141]; both tags come
+  # from `scripts/ensure_image.py`, the definition consumers read too.
   IMAGE_REPO: ghcr.io/${{ github.repository }}
+  TEST_IMAGE: ghcr.io/${{ github.repository }}-test:latest
 
 jobs:
   # Gate EVERY job: a scheduled run passes; a manual dispatch (or a re-run)
@@ -99,6 +102,8 @@ jobs:
     timeout-minutes: 20
     outputs:
       built: ${{ steps.decide.outputs.built }}
+      test_built: ${{ steps.decide.outputs.test_built }}
+      test_tag: ${{ steps.decide.outputs.test_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -110,35 +115,50 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Decide whether to rebuild: only when the image does NOT exist yet, or
-      # when it is SUNDAY (weekly cadence — the Dockerfile bakes a real Hermes
-      # update via `make update-hermes` on that rebuild). Any other day reuses
+      # Decide whether to rebuild: when the image does NOT exist yet, when the
+      # tag naming its inputs (`scripts/ensure_image.py`) is not published, when
+      # it is SUNDAY (weekly cadence — the Dockerfile bakes a real Hermes
+      # update via `make update-hermes` on that rebuild), or when a dispatch
+      # forces it. Any other day reuses
       # the existing GHCR image, so the Hermes install/update runs at most once
       # per week instead of on every run.
-      - name: Decide whether to rebuild image
+      - name: Decide whether to rebuild the images
         id: decide
         run: |
           DOW=$(date +%u)
-          # The Dockerfile(s) define the base image's contents — including the
-          # pinned plugins the runtime needs. Each build publishes a tag naming
-          # that hash, so "the Dockerfile changed" is a rebuild reason by itself:
-          # without it a merged Dockerfile change stays inert until the next
-          # Sunday, and the bots keep running the old runtime [#135].
-          HASH=$(cat Dockerfile Dockerfile.test | sha256sum | cut -c1-12)
-          HASH_TAG="${IMAGE_REPO}:dockerfile-${HASH}"
+          # ONE definition of "built from this revision": the tags come from
+          # `scripts/ensure_image.py`, the same script `make image-ensure` reads,
+          # so publisher and consumer can never disagree. The Dockerfile(s)
+          # define the base image's contents — including the pinned plugins — and
+          # "that hash is not published" is a rebuild reason by itself: without
+          # it a merged Dockerfile change stays inert until the next Sunday and
+          # the bots keep running the old runtime [#135]. The test image carries
+          # its own tag (Dockerfile.test + requirements-test.txt + the base hash)
+          # so it is rebuilt and published by the SAME rules [#141].
+          eval "$(python3 scripts/ensure_image.py tags)"
+          FORCE="${{ inputs.force_rebuild }}"
           if docker manifest inspect "${{ env.IMAGE }}" >/dev/null 2>&1; then
             EXISTS=1; else EXISTS=0; fi
-          if docker manifest inspect "$HASH_TAG" >/dev/null 2>&1; then
+          if docker manifest inspect "$BASE_TAG" >/dev/null 2>&1; then
             HASHED=1; else HASHED=0; fi
-          FORCE="${{ inputs.force_rebuild }}"
-          echo "DOW=$DOW exists=$EXISTS hash=$HASH hash_tag_published=$HASHED force=$FORCE"
-          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+          if docker manifest inspect "$TEST_TAG" >/dev/null 2>&1; then
+            TEST_HASHED=1; else TEST_HASHED=0; fi
+          echo "DOW=$DOW exists=$EXISTS base=$BASE_TAG base_published=$HASHED test=$TEST_TAG test_published=$TEST_HASHED force=$FORCE"
+          echo "base_tag=$BASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "test_tag=$TEST_TAG" >> "$GITHUB_OUTPUT"
           if [ "$DOW" = "7" ] || [ "$EXISTS" = "0" ] || [ "$HASHED" = "0" ] || [ "$FORCE" = "true" ]; then
             echo "built=yes"
             echo "built=yes" >> "$GITHUB_OUTPUT"
           else
             echo "built=no"
             echo "built=no" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$DOW" = "7" ] || [ "$TEST_HASHED" = "0" ] || [ "$FORCE" = "true" ]; then
+            echo "test_built=yes"
+            echo "test_built=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "test_built=no"
+            echo "test_built=no" >> "$GITHUB_OUTPUT"
           fi
       - name: Cache Docker layers
         uses: actions/cache@v4
@@ -155,16 +175,65 @@ jobs:
           push: true
           # `latest` for consumers + the hash tag that records WHICH Dockerfile
           # this image was built from, so the next run can tell whether the
-          # merged Dockerfile is already live.
+          # merged Dockerfile is already live. The tag comes from
+          # `scripts/ensure_image.py` (the consumer's own definition).
           tags: |
             ${{ env.IMAGE }}
-            ${{ env.IMAGE_REPO }}:dockerfile-${{ steps.decide.outputs.hash }}
+            ${{ steps.decide.outputs.base_tag }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
       - name: Image already current — skip rebuild
         if: steps.decide.outputs.built != 'yes'
         run: |
           echo "GHCR image exists and is built from this Dockerfile (hash tag published); reusing it."
+
+  # The TEST image is an image of its own: it layers the current
+  # requirements-test.txt on the base and was previously built inline by every
+  # job that needed it (four implementations of one stage, issue #141). It is
+  # published under a tag naming THIS revision's inputs, on the same rules as
+  # the base (missing tag / Sunday / forced), so runs pull it instead of
+  # rebuilding it.
+  test-image:
+    needs: [guard, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache Docker layers (test image)
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache-test
+          key: docker-test-${{ runner.os }}-${{ hashFiles('Dockerfile.test', 'requirements-test.txt') }}
+          restore-keys: |
+            docker-test-${{ runner.os }}-
+      # Built FROM the published base: the `build` job above has just published
+      # this revision's base (or reused it when the hash tag already matched).
+      - name: Build + push the test image (missing, changed, Sunday, or forced)
+        if: needs.build.outputs.test_built == 'yes'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.test
+          push: true
+          build-args: BASE_IMAGE=${{ env.IMAGE }}
+          tags: |
+            ${{ env.TEST_IMAGE }}
+            ${{ needs.build.outputs.test_tag }}
+          cache-from: type=local,src=/tmp/.buildx-cache-test
+          cache-to: type=local,dest=/tmp/.buildx-cache-test,mode=max
+      - name: Test image already current — skip rebuild
+        if: needs.build.outputs.test_built != 'yes'
+        run: |
+          echo "The published test image is built from this revision's inputs; reusing it."
 
   # Four independent searches (nvidia, metal, cpu, amd), run in parallel. Each PULLS the prebuilt image
   # (no rebuild), writes its own raw snapshot, and uploads it as an artifact.
@@ -186,10 +255,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pull prebuilt image
-        run: |
-          docker pull ${{ env.IMAGE }}
-          docker tag ${{ env.IMAGE }} trending-local-llms:latest
+      - name: Prepare the base image (published for this revision, else build)
+        run: make image-ensure-base
 
       - name: Reachability smoke (${{ matrix.backend }}) — HTTP 200 within 3s
         run: |
@@ -254,10 +321,8 @@ jobs:
         with:
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
-      - name: Pull prebuilt image
-        run: |
-          docker pull ${{ env.IMAGE }}
-          docker tag ${{ env.IMAGE }} trending-local-llms:latest
+      - name: Prepare the base image (published for this revision, else build)
+        run: make image-ensure-base
 
       - name: Download raw snapshots
         continue-on-error: true

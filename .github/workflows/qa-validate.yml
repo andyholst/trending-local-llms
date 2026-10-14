@@ -67,18 +67,10 @@ jobs:
       # Dockerfile change is exercised by its own CI run instead of silently
       # validating the previous base (issue #135: the guard's plugin-presence
       # assertion used to degrade to a note on a stale base).
-      - name: Base image — published for this Dockerfile, else build from source
-        run: |
-          HASH=$(cat Dockerfile Dockerfile.test | sha256sum | cut -c1-12)
-          if docker manifest inspect "ghcr.io/${{ github.repository }}:dockerfile-$HASH" >/dev/null 2>&1; then
-            echo "base for Dockerfile $HASH is published; pulling it"
-            docker pull ghcr.io/${{ github.repository }}:latest
-            docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-          else
-            echo "base for Dockerfile $HASH is NOT published; building it from source"
-            make docker-build
-          fi
-          make docker-test-build BASE_IMAGE=trending-local-llms:latest
+      # ONE path for both images: pull each one when the tag naming this
+      # revision's inputs is published, else build it here (issues #135/#141).
+      - name: Prepare runner images (published for this revision, else build)
+        run: make image-ensure
 
       # FIRST: no credential may reach the repo. A finding here turns the PR red
       # (the same gate fix-bot repairs) — remove the value and rotate the key,
@@ -114,17 +106,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Base image — published for this Dockerfile, else build from source
-        run: |
-          HASH=$(cat Dockerfile Dockerfile.test | sha256sum | cut -c1-12)
-          if docker manifest inspect "ghcr.io/${{ github.repository }}:dockerfile-$HASH" >/dev/null 2>&1; then
-            docker pull ghcr.io/${{ github.repository }}:latest
-            docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
-          else
-            echo "base for Dockerfile $HASH is NOT published; building it from source"
-            make docker-build
-          fi
-          make docker-test-build BASE_IMAGE=trending-local-llms:latest
+      - name: Prepare runner images (published for this revision, else build)
+        run: make image-ensure
 
       - name: Search reachability — nvidia (HTTP 200 within 3s per query)
         run: make search-smoke BACKEND=nvidia
