@@ -1,6 +1,7 @@
 # Proposal: lint-trailing-newlines
 
 Issue: #186
+PR: #189
 
 ## Why
 
