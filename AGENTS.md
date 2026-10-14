@@ -515,7 +515,12 @@ this `AGENTS.md` and the `gather-data` skill, then:
   `permissions: issues: write`, because the owner PAT is scoped to
   Actions/Contents/Pull-requests only (`Resource not accessible by personal access
   token (addComment)`). A run whose implementation did not happen is made RED by a
-  named final step — never a green run with nothing to review.
+  named final step — never a green run with nothing to review. A THIRD measured
+  failure (#120, run 38509118147): the branch push was rejected because the
+  implementation edits `.github/workflows/**` and the PAT lacks `Workflows: R/W`;
+  the bot now detects that, reports the missing permission on the issue and stays
+  red on purpose, and it strips scratch artifacts (`*.patch`, `*.rej`, `*.orig`)
+  — a change written into a patch file is not an implementation.
 
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
@@ -548,7 +553,15 @@ this `AGENTS.md` and the `gather-data` skill, then:
   `ci/trending-refresh-*` branches.
 
 **Tokens.** `FIXBOT_DISPATCH_TOKEN` is a fine-grained PAT scoped to this repo
-only: Actions R/W, Contents R/W, Pull requests R/W. It is used for (1) the
+only: Actions R/W, Contents R/W, Pull requests R/W, **Workflows R/W**. The last
+one is not optional: an issue-bot implementation may legitimately edit
+`.github/workflows/**` (rule 6d wiring), and a PAT without it has its push
+rejected — `refusing to allow a Personal Access Token to create or update workflow
+… without \`workflow\` scope` (measured on #120, run 38509118147). The bot detects
+that rejection, leaves the run RED on purpose and explains the missing permission
+on the issue instead of dying at `git push`. Issue reads and comments use the
+default `github.token` with `permissions: issues: write` (the PAT has no Issues
+scope). It is used for (1) the
 refresh PR push + creation, (2) qa-validate's fix-bot dispatch, (3) fix-bot's
 checkout, push and PR comment. The default `GITHUB_TOKEN` cannot do any of
 these usefully: a PR it creates is authored by `github-actions[bot]` and every
