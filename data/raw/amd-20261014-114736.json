@@ -1,0 +1,141 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-14T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3-14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "30720",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Q4_K_M, Vulkan (RADV) vs ROCm b11177; Vulkan +9% at 1k ctx to +23% at 30k (35.5 tok/s ROCm); median of 7 runs, fixed seed, 256 tokens",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+          "likes": 117,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 119
+        }
+      ],
+      "last_seen": "2026-10-09"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan, 256k context 8-bit KV cache, short and long generation decode (community run)",
+          "date": "2026-08-17",
+          "source_post": "https://lightbrd.com/Mayhem4Markets/status/2089147394680111348",
+          "likes": 53,
+          "comments": 4,
+          "reshares": 16,
+          "views": 17628,
+          "interactions": 17648
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "51.8",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan backend, MTP=2, Windows; AMD official pre-validation (vendor figure)",
+          "date": "2026-09-06",
+          "source_post": "https://lightbrd.com/xfxjapan/status/2096715285923520644",
+          "likes": 37,
+          "comments": 0,
+          "reshares": 2,
+          "views": 4264,
+          "interactions": 4268
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.11",
+          "hardware": "Radeon 8060S / Strix Halo",
+          "quant": "Vulkan, Qwen3.8-27B UD-Q4_K_XL + DFlash2 Q8_0 drafter (llama.cpp PR #27342), 32K context; 10.54 tok/s without DFlash2",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 25,
+          "comments": 2,
+          "reshares": 5,
+          "views": 2562,
+          "interactions": 2569
+        }
+      ],
+      "last_seen": "2026-09-06"
+    },
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP speculative decode 97% draft acceptance, N=5 warmup discarded, card power capped 291W",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 120
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "129",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP off baseline, N=5 warmup discarded",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 120
+        }
+      ],
+      "last_seen": "2026-07-11"
+    }
+  ]
+}

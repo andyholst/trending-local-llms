@@ -1,0 +1,140 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "full_name": "openai/gpt-oss-120b",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "120B (MoE)",
+      "hf": "openai/gpt-oss-120b",
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "weight_gb": "60GB",
+      "storage_offload": "flash storage (phone), experts streamed per token",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.2",
+          "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+          "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule); expert streaming vs 0.09 tok/s with mmap; 14x faster",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "engine_repo": "https://github.com/ggml-org/llama.cpp",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1494,
+          "interactions": 1523
+        }
+      ],
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen/Qwen3-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "storage_offload": "flash storage (phone), experts streamed per token",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5.2",
+          "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+          "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "engine_repo": "https://github.com/ggml-org/llama.cpp",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1494,
+          "interactions": 1523
+        }
+      ],
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "gemma-4-26b",
+      "name": "Gemma 4 26B",
+      "full_name": "google/gemma-4-26B-A4B-it",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "storage_offload": "flash storage (phone), experts streamed per token",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.1",
+          "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+          "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "engine_repo": "https://github.com/ggml-org/llama.cpp",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1494,
+          "interactions": 1523
+        }
+      ],
+      "last_seen": "2026-08-13"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen/Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache-2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "14.6GB IQ4_XS",
+      "context_tokens": "65536",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop (25 GPU layers, rest CPU/RAM), Intel i7-12700H, 16GB dual-channel DDR4, PCIe 4",
+          "quant": "Unsloth IQ4_XS (~14.6GB); Q4_0 KV cache, native MTP draft, 64K context; ~150 tok/s prefill",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "engine_repo": "https://github.com/ggml-org/llama.cpp",
+          "likes": 10,
+          "comments": 15,
+          "reshares": 132,
+          "views": 15055,
+          "interactions": 15212
+        }
+      ],
+      "last_seen": "2026-09-16"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:42:27Z"
+}

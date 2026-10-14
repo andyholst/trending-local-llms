@@ -1,0 +1,35 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB NVIDIA GPU",
+          "quant": "MoE, whole-machine memory (2-4x faster than Ollama)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-09-27"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:46:04Z"
+}

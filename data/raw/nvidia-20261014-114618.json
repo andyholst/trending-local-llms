@@ -1,0 +1,59 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "140.6",
+          "hardware": "RTX 6000 24GB",
+          "quant": "DFlash2 spec-decode 56% acceptance; baseline 47.4, MTP 114.7 (52%), DFlash 99.3 (34%) t/s",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109108033091465404",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 2,
+          "views": 2970
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "108.3",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "UD-Q3_K_XL 13.1GB + DFlash drafter 1.09GB, -c 16384, n-max 7; no drafter 29.8 t/s",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/bountyAIhunter/status/2107870818974019995",
+          "likes": 121,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB",
+          "quant": "Unsloth IQ4_XS 14.6GB, 64K context, native MTP, 25 layers offloaded; ~150 t/s prefill",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108017506484887639",
+          "likes": 9,
+          "comments": 1,
+          "reshares": 2,
+          "views": 1286
+        }
+      ],
+      "last_seen": "2026-10-11"
+    }
+  ],
+  "generated_utc": "2026-10-14T11:46:18Z"
+}

@@ -10,6 +10,14 @@ The aggregate job ran merge + validate and died on two real bugs:
   2. check_backend_sort FAILED on correctly-sorted tables because it parsed the
      WHOLE row for numbers — picking up Params ("125B"->125) and VRAM ("12GB")
      as if they were t/s, so a valid table looked unsorted.
+  3. check_search_contract FAILED again on the 2026-10-14 refresh: the amd leg
+     wrote a bare NUMBER for a dimension the contract declares as a string
+     ("context_tokens": 131072 / 235520 / 30720 / 262144) and one model also
+     carried an undeclared 'interface_ram_gb'. make validate-search stopped on
+     those 4 snapshots. self_correct_raw now coerces a numeric value for any
+     contract-string key (model AND engine level — the rule ingest already
+     applies to context_tokens) and folds a known one-off stray model key onto
+     the declared key that captures the same dimension.
 
 Run:  python3 tests/test_aggregate_recovery.py   or   make test
 """
@@ -202,10 +210,93 @@ def test_correct_raw_fixes_extra_fields_and_missing_last_seen():
         check("corrected snapshot validates against search_contract.json", valid)
 
 
+def _dimension_snapshot() -> dict:
+    """The 2026-10-14 amd leg's shape: a bare NUMBER for a contract-string
+    dimension, plus a stray 'interface_ram_gb' on the model (its value equals
+    that model's own system_ram_min — the Strix Halo 96GB box)."""
+    return {
+        "backend": "amd",
+        "generated_utc": "2026-10-14T11:48:21Z",
+        "models": [
+            {
+                "id": "qwen3.8-flash-next-125b", "name": "Qwen3.8-Flash-Next 125B",
+                "full_name": "Qwen3.8-Flash-Next-125B", "type": "LLM (MoE)",
+                "license": "Apache 2.0", "params": "125B (MoE)",
+                "hf": "Qwen/Qwen3.8-Flash-Next", "vram_tier": "96GB", "vram_min": "16GB",
+                "system_ram_min": "96GB", "interface_ram_gb": "96GB",
+                "context_tokens": 262144,  # bare number: the exact failure
+                "backends": ["ROCm"], "last_seen": "2026-10-12",
+                "engines": [{"engine": "Strata", "tps": 58,  # bare number too
+                             "hardware": "Radeon 8060S / Strix Halo 96GB",
+                             "quant": "Unsloth Q4", "date": "2026-10-07",
+                             "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941"}],
+            },
+            {
+                "id": "qwen3.8-27b", "name": "Qwen3.8-27B", "full_name": "Qwen3.8-27B",
+                "type": "LLM", "license": "Apache 2.0", "params": "27B",
+                "hf": "Qwen/Qwen3.8-27B", "vram_tier": "128GB", "vram_min": "128GB",
+                "system_ram_min": "128GB",  # already declared: never overwritten
+                "interface_ram_gb": "96GB",
+                "backends": ["ROCm"], "last_seen": "2026-10-12",
+                "engines": [{"engine": "llama.cpp", "tps": "64.4",
+                             "hardware": "Radeon 8060S / Strix Halo 128GB",
+                             "quant": "Q4", "date": "2026-10-12",
+                             "source_post": "https://lightbrd.com/dextune/status/2109530059765858549"}],
+            },
+        ],
+    }
+
+
+def test_correct_raw_coerces_numeric_dimensions_and_stray_ram_key():
+    """Bug 3: the 2026-10-14 amd leg failed check_search_contract on 4 snapshots
+    — '131072 is not of type string' (context_tokens) and 'Additional properties
+    are not allowed (interface_ram_gb)'. correct-raw must repair both so
+    `make validate-search` is green, without widening the contract for a
+    one-off key and without dropping the RAM figure the post gave."""
+    import self_correct_raw as scr
+    import jsonschema
+
+    store = {"engines": {"llama.cpp": {"backend": "ROCm"}, "Strata": {"backend": "ROCm"}}}
+    schema = json.loads((ROOT / "data" / "search_contract.json").read_text())
+
+    with tempfile.TemporaryDirectory() as td:
+        rdir = Path(td)
+        f = rdir / "amd-20261014-114821.json"
+        f.write_text(json.dumps(_dimension_snapshot()))
+        saved = scr.RAW_DIR
+        scr.RAW_DIR = rdir
+        try:
+            notes = scr.correct_snapshot(f, store)
+            scr.correct_snapshot(f, store)  # idempotent: second pass must be clean
+        finally:
+            scr.RAW_DIR = saved
+        out = json.loads(f.read_text())
+
+    m1, m2 = out["models"][0], out["models"][1]
+    check("numeric context_tokens coerced to its text form",
+          m1["context_tokens"] == "262144", json.dumps(m1.get("context_tokens")))
+    check("stray interface_ram_gb key removed (duplicate of system_ram_min)",
+          "interface_ram_gb" not in m1 and "interface_ram_gb" not in m2, json.dumps(sorted(m1)))
+    check("stray key's figure folded onto system_ram_min when that was absent",
+          m1["system_ram_min"] == "96GB", json.dumps(m1.get("system_ram_min")))
+    check("a declared value already present is never overwritten by the fold",
+          m2["system_ram_min"] == "128GB", json.dumps(m2.get("system_ram_min")))
+    check("numeric engine tps coerced to its text form",
+          m1["engines"][0]["tps"] == "58", json.dumps(m1["engines"][0].get("tps")))
+    check("correct-raw reported what it repaired", any("context_tokens" in n for n in notes), str(notes))
+    try:
+        jsonschema.validate(out, schema)
+        valid = True
+    except Exception:  # noqa: BLE001
+        valid = False
+    check("corrected snapshot validates against search_contract.json", valid)
+
+
 def main() -> int:
     print("refresh aggregation recovery (search contract extras + backend sort)")
     test_self_correct_prunes_extra_top_level_keys()
     test_correct_raw_fixes_extra_fields_and_missing_last_seen()
+    test_correct_raw_coerces_numeric_dimensions_and_stray_ram_key()
     test_backend_sort_uses_tps_column_not_params()
     test_backend_sort_still_catches_unsorted_tps()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

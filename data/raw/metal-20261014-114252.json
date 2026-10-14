@@ -1,0 +1,48 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-14T11:45:00Z",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "formats": [
+        {
+          "name": "LiteRT-LM",
+          "hf": "litert-community/gemma-4-E2B-it-litert-lm"
+        }
+      ],
+      "why": "Google's compact Gemma 4 edge model; runs on-device, 39 tok/s decode on Apple Silicon via MLX with the Foundation Models adapter.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "39",
+          "hardware": "Apple Silicon (iOS, Perspective Intelligence 3.0)",
+          "quant": "MLX via Apple Foundation Models adapter",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/mikedoise/status/2110198747657568407",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0
+      }
+    }
+  ]
+}

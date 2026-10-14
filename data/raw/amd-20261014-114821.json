@@ -1,0 +1,179 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-14T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "96GB",
+      "vram_min": "16GB",
+      "system_ram_min": "96GB",
+      "context_tokens": "262144",
+      "storage_offload": "1M context window supported by Strata's experimental Strix Halo build",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "Radeon 8060S / Strix Halo 96GB (Bosgame M5)",
+          "quant": "Unsloth Q4 / GSQ-RCO weights, 140W Performance mode, pegged reference frames; 1400-1500 t/s prefill",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 533,
+          "comments": 16,
+          "reshares": 8,
+          "views": 0,
+          "interactions": 557
+        },
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "Radeon 8060S / Strix Halo 96GB laptop (16GB VRAM tier)",
+          "quant": "real-work load on Unsloth Q4 weights, decode at 168k-262k context; Linux-only experimental Strix Halo build",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 533,
+          "comments": 16,
+          "reshares": 8,
+          "views": 0,
+          "interactions": 557
+        }
+      ],
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (LaurentZuijdwijk fork)",
+          "tps": "65",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "adaptive speculation fork build, up to 50% faster token generation vs mainline 44 t/s; 440 t/s prefill",
+          "date": "2026-08-25",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2092215141144162519",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 352,
+          "interactions": 357
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "64.4",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "Q4 Qwen3.8-27B, Q8 DFlash2 draft, 131k context (reported comparison figure alongside R9700 eGPU iPad run)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dextune/status/2109530059765858549",
+          "likes": 150,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 152
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "33",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtek Evo-X2)",
+          "quant": "Q3_K_XL, 64K context, vision enabled, portable 'Vulcan' build; ~33 tok/s total shared across four concurrent lanes",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099665294285299780",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 2,
+          "views": 714,
+          "interactions": 718
+        }
+      ],
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB",
+      "weight_gb": "~100GB at ~Q3",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395)",
+          "quant": "~Q3 weights, GPU uses up to ~96-110GB of the unified LPDDR5X pool; Vulkan often edges ROCm for generation (community range 14-17 tok/s)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 195,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 197
+        }
+      ],
+      "last_seen": "2026-10-14"
+    },
+    {
+      "id": "ornith-1.5",
+      "name": "Ornith 1.5",
+      "full_name": "Ornith1.5-Ciru-Halo-Agent",
+      "type": "LLM (MoE)",
+      "license": "see HF repo",
+      "params": "175B",
+      "hf": "jcbtc/Ornith1.5-Ciru-Halo-Agent-vllm-strix-halo",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "40",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "vLLM strix-halo build, cybersecurity-tuned uncensored variant; 1000 t/s prefill, 256k context",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/ciruai/status/2100442075485351975",
+          "likes": 137,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 141
+        }
+      ],
+      "last_seen": "2026-09-17"
+    }
+  ]
+}

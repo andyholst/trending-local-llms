@@ -1,0 +1,74 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-14T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "80",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "ROCm 7.15 HIP, W4A16 INT4 weights bf16 activations, DFlash2 drafter depth 4, native Windows, single-stream decode (981 t/s prefill, 169 t/s aggregate at concurrency 32)",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/Italianclownz/status/2098163624124592594",
+          "likes": 280,
+          "comments": 4,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 284
+        }
+      ],
+      "last_seen": "2026-09-10"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "system_ram_min": "90GB",
+      "storage_offload": "NVMe (102GB BF16 n-gram table streamed)",
+      "weight_gb": "EXL3 5.05 bpw",
+      "context_tokens": "235520",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "Radeon 32GB",
+          "quant": "EXL3 5.05 bpw, Q8 KV cache, patched ExLlamaV3 ROCm fork; 112 experts/layer on GPU, 400 on CPU RAM, n-gram table streamed from NVMe (863 t/s prefill)",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 2,
+          "views": 1605,
+          "interactions": 1609
+        }
+      ],
+      "last_seen": "2026-10-04"
+    }
+  ]
+}

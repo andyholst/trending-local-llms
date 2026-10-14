@@ -1,0 +1,142 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-14T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "system_ram_min": "32GB",
+      "weight_gb": "37.6GB Q2_0 / 39.2GB IQ2_XS / 54.8GB IQ3_S",
+      "context_tokens": "131072",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Strata Q2_0 2-3 bit MoE, 32GB RAM, 12GB+ VRAM; HIP on Linux",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 880,
+          "comments": 64,
+          "reshares": 52,
+          "views": 121837,
+          "interactions": 996
+        },
+        {
+          "engine": "Strata",
+          "tps": "52",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Strata IQ3_S 54.8GB, 32GB RAM; HIP on Linux",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 880,
+          "comments": 64,
+          "reshares": 52,
+          "views": 121837,
+          "interactions": 996
+        },
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Strata output t/s, k8v4 INT8 KV cache, HIP (AMD Linux)",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 511,
+          "comments": 58,
+          "reshares": 43,
+          "views": 40950,
+          "interactions": 612
+        }
+      ],
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP speculative decode 97% draft acceptance, N=5 warmup discarded, card power capped 291W",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 120
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "129",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP off baseline, N=5 warmup discarded",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 120
+        }
+      ],
+      "last_seen": "2026-07-11"
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "96",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm 7.2, vLLM production stack (continuous batching, PagedAttention)",
+          "date": "2026-07-06",
+          "source_post": "https://lightbrd.com/IdleProtocol/status/2074186476779078137",
+          "likes": 67,
+          "comments": 16,
+          "reshares": 6,
+          "views": 3561,
+          "interactions": 89
+        }
+      ],
+      "last_seen": "2026-07-06"
+    }
+  ]
+}

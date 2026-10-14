@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-14T12:11:59Z",
+  "generated_utc": "2026-10-14T17:36:44Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -169,6 +169,19 @@
       ],
       "engines": [
         {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "HyperQwen requant (TQ3_4S-v2) + DFlash2 spec-decode + context lookup, up to 16-token verification blocks, prefix caching; ~133 t/s on ordinary chat prompts",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+          "likes": 134,
+          "comments": 7,
+          "reshares": 14,
+          "views": 12018,
+          "interactions": 0
+        },
+        {
           "engine": "DFlash2",
           "tps": "158.5",
           "hardware": "Radeon AI PRO R9700 eGPU",
@@ -180,6 +193,19 @@
           "reshares": 0,
           "views": 0,
           "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "64.4",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "Q4 Qwen3.8-27B, Q8 DFlash2 draft, 131k context (reported comparison figure alongside R9700 eGPU iPad run)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dextune/status/2109530059765858549",
+          "likes": 150,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 152
         },
         {
           "engine": "mlx-serve",
@@ -197,28 +223,41 @@
         {
           "engine": "llama.cpp",
           "tps": "23.8",
-          "hardware": "RTX 3090 + RTX 3060 12GB",
-          "quant": "Q4, 262,144 context",
+          "hardware": "RTX 3090 24GB + RTX 3060 12GB",
+          "quant": "q4, 262,144 context",
           "date": "2026-10-11",
           "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
-          "likes": 0,
-          "comments": 1,
-          "reshares": 2,
-          "views": 218,
-          "interactions": 221
+          "likes": 218,
+          "comments": 2,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 0
         },
         {
           "engine": "DFlash2",
           "tps": "140.6",
-          "hardware": "RTX 6000",
-          "quant": "DFlash2 spec decode, 16 candidates, 56% acceptance, 2.97x baseline (47.4 t/s)",
+          "hardware": "RTX 6000 24GB",
+          "quant": "DFlash2 spec-decode 56% acceptance; baseline 47.4, MTP 114.7 (52%), DFlash 99.3 (34%) t/s",
           "date": "2026-10-11",
           "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109108033091465404",
           "likes": 4,
           "comments": 1,
           "reshares": 2,
           "views": 2970,
-          "interactions": 2977
+          "interactions": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "60",
+          "hardware": "2x RTX 3090 24GB",
+          "quant": "agentic run: 687 steps, 87.9M input / 822K output tokens, 5h11m",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109104665031836070",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 3,
+          "views": 2189,
+          "interactions": 0
         },
         {
           "engine": "vLLM",
@@ -284,19 +323,6 @@
           "reshares": 2,
           "views": 16699,
           "interactions": 16847
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "5",
-          "hardware": "RTX 4060 8GB",
-          "quant": "Unsloth IQ4_XS, 14.6GB on disk, 64K context, native MTP, 25 layers offloaded, ~150 tok/s prefill",
-          "date": "2026-10-08",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108017506484887639",
-          "likes": 8,
-          "comments": 1,
-          "reshares": 2,
-          "views": 981,
-          "interactions": 0
         },
         {
           "engine": "omlx-exl3",
@@ -426,6 +452,19 @@
           "comments": 1,
           "reshares": 0,
           "views": 163,
+          "interactions": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "75.43",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4, vLLM 0.27.1, TTFT 20.39s (prefix cache off)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2106445239615463431",
+          "likes": 73,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
           "interactions": 0
         },
         {
@@ -585,30 +624,43 @@
           "interactions": 0
         },
         {
-          "engine": "vLLM",
-          "tps": "381",
-          "hardware": "RTX 3090 24GB @250W",
-          "quant": "DFlash2 speculative decoding + lookup-augmented drafting, prefix caching, 16-token verification blocks, quantized KV/heads/activations; 82 t/s single-user, 114 t/s optimized MTP, 138 t/s DFlash2 + lookup",
-          "date": "2026-09-20",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101461617871393182",
-          "likes": 1,
-          "comments": 3,
-          "reshares": 12,
-          "views": 2282,
-          "interactions": 2298
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop (25 GPU layers, rest CPU/RAM), Intel i7-12700H, 16GB dual-channel DDR4, PCIe 4",
+          "quant": "Unsloth IQ4_XS (~14.6GB); Q4_0 KV cache, native MTP draft, 64K context; ~150 tok/s prefill",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 10,
+          "comments": 15,
+          "reshares": 132,
+          "views": 15055,
+          "interactions": 15212
         },
         {
           "engine": "llama.cpp",
           "tps": "33",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtek Evo-X2)",
+          "quant": "Q3_K_XL, 64K context, vision enabled, portable 'Vulcan' build; ~33 tok/s total shared across four concurrent lanes",
           "date": "2026-09-15",
-          "hardware": "Strix Halo (Ryzen AI Max APU) 128GB",
-          "quant": "Q3_K_XL, 64K ctx, vision, Nathanw1014 Vulcan llama.cpp fork; ~33 tok/s total across 4 lanes",
           "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099665294285299780",
           "likes": 0,
-          "comments": 0,
+          "comments": 2,
+          "reshares": 2,
+          "views": 714,
+          "interactions": 718
+        },
+        {
+          "engine": "vLLM",
+          "tps": "80",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "ROCm 7.15 HIP, W4A16 INT4 weights bf16 activations, DFlash2 drafter depth 4, native Windows, single-stream decode (981 t/s prefill, 169 t/s aggregate at concurrency 32)",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/Italianclownz/status/2098163624124592594",
+          "likes": 280,
+          "comments": 4,
           "reshares": 0,
           "views": 0,
-          "interactions": 0
+          "interactions": 284
         },
         {
           "engine": "llama.cpp",
@@ -626,15 +678,15 @@
         {
           "engine": "llama.cpp (LaurentZuijdwijk fork)",
           "tps": "65",
-          "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
-          "quant": "adaptive speculation (llama.cpp fork), decode t/s; 440 t/s prefill; up from 44 t/s on mainline",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "adaptive speculation fork build, up to 50% faster token generation vs mainline 44 t/s; 440 t/s prefill",
           "date": "2026-08-25",
           "source_post": "https://lightbrd.com/laurent_zw/status/2092215141144162519",
           "likes": 4,
           "comments": 1,
           "reshares": 1,
           "views": 352,
-          "interactions": 358
+          "interactions": 357
         },
         {
           "engine": "llama.cpp",
@@ -661,6 +713,19 @@
           "reshares": 2,
           "views": 2557,
           "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.11",
+          "hardware": "Radeon 8060S / Strix Halo",
+          "quant": "Vulkan, Qwen3.8-27B UD-Q4_K_XL + DFlash2 Q8_0 drafter (llama.cpp PR #27342), 32K context; 10.54 tok/s without DFlash2",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 25,
+          "comments": 2,
+          "reshares": 5,
+          "views": 2562,
+          "interactions": 2569
         },
         {
           "engine": "llama.cpp",
@@ -694,7 +759,7 @@
         "likes": 4120,
         "comments": 890,
         "views": 384000,
-        "last_7d_likes": 22,
+        "last_7d_likes": 23,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
@@ -771,12 +836,12 @@
             "date": "2026-09-15",
             "engine": "llama.cpp",
             "tps": "33",
-            "hardware": "Strix Halo 128GB (GMKtec Evo-X2)",
-            "quant": "Q3_K_XL, 64K ctx, vision; ~33 tok/s total across four concurrent lanes; portable 'Vulcan' fork by Nathanw1014",
+            "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtek Evo-X2)",
+            "quant": "Q3_K_XL, 64K context, vision enabled, portable 'Vulcan' build; ~33 tok/s total shared across four concurrent lanes",
             "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
+            "comments": 2,
+            "reshares": 2,
+            "views": 714
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
@@ -952,11 +1017,11 @@
             "engine": "llama.cpp",
             "tps": "5",
             "hardware": "RTX 4060 8GB",
-            "quant": "Unsloth IQ4_XS, 14.6GB on disk, 64K context, native MTP, 25 layers offloaded, ~150 tok/s prefill",
-            "likes": 8,
+            "quant": "Unsloth IQ4_XS 14.6GB, 64K context, native MTP, 25 layers offloaded; ~150 t/s prefill",
+            "likes": 9,
             "comments": 1,
             "reshares": 2,
-            "views": 981
+            "views": 1286
           },
           {
             "url": "https://lightbrd.com/fluxlesss/status/2108133917706575880",
@@ -1045,11 +1110,11 @@
           {
             "url": "https://lightbrd.com/dextune/status/2109530059765858549",
             "date": "2026-10-12",
-            "engine": "DFlash2",
-            "tps": "158.5",
-            "hardware": "Radeon AI PRO R9700 eGPU",
-            "quant": "Q8 DFlash2 draft, 131k context, Qwen3.8-27B Q4",
-            "likes": 104,
+            "engine": "llama.cpp",
+            "tps": "64.4",
+            "hardware": "Radeon 8060S / Strix Halo 128GB",
+            "quant": "Q4 Qwen3.8-27B, Q8 DFlash2 draft, 131k context (reported comparison figure alongside R9700 eGPU iPad run)",
+            "likes": 150,
             "comments": 1,
             "reshares": 0,
             "views": 0
@@ -1095,12 +1160,12 @@
             "date": "2026-10-11",
             "engine": "llama.cpp",
             "tps": "23.8",
-            "hardware": "RTX 3090 + RTX 3060 12GB",
-            "quant": "Q4, 262,144 context",
-            "likes": 0,
-            "comments": 1,
-            "reshares": 2,
-            "views": 218
+            "hardware": "RTX 3090 24GB + RTX 3060 12GB",
+            "quant": "q4, 262,144 context",
+            "likes": 218,
+            "comments": 2,
+            "reshares": 1,
+            "views": 0
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2109108033091465404",
@@ -1161,13 +1226,49 @@
             "comments": 3,
             "reshares": 12,
             "views": 2282
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+            "date": "2026-09-16",
+            "engine": "llama.cpp",
+            "tps": "5",
+            "hardware": "RTX 4060 8GB laptop (25 GPU layers, rest CPU/RAM), Intel i7-12700H, 16GB dual-channel DDR4, PCIe 4",
+            "quant": "Unsloth IQ4_XS (~14.6GB); Q4_0 KV cache, native MTP draft, 64K context; ~150 tok/s prefill",
+            "likes": 10,
+            "comments": 15,
+            "reshares": 132,
+            "views": 15055
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2109104665031836070",
+            "date": "2026-10-11",
+            "engine": "vLLM",
+            "tps": "60",
+            "hardware": "2x RTX 3090 24GB",
+            "quant": "agentic run: 687 steps, 87.9M input / 822K output tokens, 5h11m",
+            "likes": 8,
+            "comments": 5,
+            "reshares": 3,
+            "views": 2189
+          },
+          {
+            "url": "https://lightbrd.com/niklaslenz_ai/status/2106445239615463431",
+            "date": "2026-10-03",
+            "engine": "vLLM",
+            "tps": "75.43",
+            "hardware": "RTX 5090 32GB",
+            "quant": "NVFP4, vLLM 0.27.1, TTFT 20.39s (prefix cache off)",
+            "likes": 73,
+            "comments": 2,
+            "reshares": 0,
+            "views": 0
           }
         ],
-        "posts_7d": 22,
-        "score_7d": 100.0,
-        "buzz_7d": 100.0,
+        "posts_7d": 23,
+        "score_7d": 106.3,
+        "buzz_7d": 106.3,
         "speed_bonus": 5.7,
-        "trend_score": 105.7
+        "trend_score": 112.0
       },
       "last_seen": "2026-10-13",
       "supported_engines": [
@@ -1177,7 +1278,8 @@
       "vram_min": "12GB",
       "context_tokens": "262144 (262K ctx; 1M via YaRN)",
       "weight_gb": "13.1GB (UD-Q3_K_XL)",
-      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0"
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "system_ram_min": "128GB"
     },
     {
       "id": "qwen3.8-flash-next-125b",
@@ -1355,15 +1457,15 @@
         {
           "engine": "Strata",
           "tps": "58",
-          "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
-          "quant": "ROCm, experimental Strata Strix Halo support; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context, 1M ctx (generation)",
+          "hardware": "Radeon 8060S / Strix Halo 96GB (Bosgame M5)",
+          "quant": "Unsloth Q4 / GSQ-RCO weights, 140W Performance mode, pegged reference frames; 1400-1500 t/s prefill",
           "date": "2026-10-07",
           "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
-          "likes": 255,
-          "comments": 8,
-          "reshares": 17,
+          "likes": 533,
+          "comments": 16,
+          "reshares": 8,
           "views": 0,
-          "interactions": 0
+          "interactions": 557
         },
         {
           "engine": "TensorFold",
@@ -1377,6 +1479,19 @@
           "reshares": 1969,
           "views": 0,
           "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "Radeon 8060S / Strix Halo 96GB laptop (16GB VRAM tier)",
+          "quant": "real-work load on Unsloth Q4 weights, decode at 168k-262k context; Linux-only experimental Strix Halo build",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 533,
+          "comments": 16,
+          "reshares": 8,
+          "views": 0,
+          "interactions": 557
         },
         {
           "engine": "Strata",
@@ -1496,6 +1611,19 @@
           "interactions": 0
         },
         {
+          "engine": "Strata",
+          "tps": "52",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Strata IQ3_S 54.8GB, 32GB RAM; HIP on Linux",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 880,
+          "comments": 64,
+          "reshares": 52,
+          "views": 121837,
+          "interactions": 996
+        },
+        {
           "engine": "llama.cpp",
           "tps": "21",
           "hardware": "RTX 4090 24GB",
@@ -1532,6 +1660,19 @@
           "comments": 18,
           "reshares": 4,
           "views": 9992,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "80",
+          "hardware": "RTX 5090 32GB + 128GB DDR4-3200",
+          "quant": "MoE, prefill ~3,000 t/s",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105849239439843345",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
           "interactions": 0
         },
         {
@@ -1810,11 +1951,11 @@
             "date": "2026-10-07",
             "engine": "Strata",
             "tps": "58",
-            "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
-            "quant": "ROCm, experimental Strata Strix Halo support; 55-58 t/s decode @140W Performance, 27 t/s @168k-262k deep context, 1M ctx (generation)",
-            "likes": 255,
-            "comments": 8,
-            "reshares": 17,
+            "hardware": "Radeon 8060S / Strix Halo 96GB (Bosgame M5)",
+            "quant": "Unsloth Q4 / GSQ-RCO weights, 140W Performance mode, pegged reference frames; 1400-1500 t/s prefill",
+            "likes": 533,
+            "comments": 16,
+            "reshares": 8,
             "views": 0
           },
           {
@@ -1972,13 +2113,25 @@
             "comments": 11,
             "reshares": 1,
             "views": 2456
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2105849239439843345",
+            "date": "2026-10-02",
+            "engine": "Strata",
+            "tps": "80",
+            "hardware": "RTX 5090 32GB + 128GB DDR4-3200",
+            "quant": "MoE, prefill ~3,000 t/s",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
           }
         ],
         "posts_7d": 12,
-        "score_7d": 55.3,
-        "buzz_7d": 55.3,
+        "score_7d": 55.7,
+        "buzz_7d": 55.7,
         "speed_bonus": 5.0,
-        "trend_score": 60.3
+        "trend_score": 60.7
       },
       "system_ram_min": "32GB",
       "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
@@ -2018,15 +2171,15 @@
         {
           "engine": "glm-flash-lite",
           "tps": "20",
-          "hardware": "RTX 3090",
-          "quant": "MoE offload (GPU+RAM+SSD)",
+          "hardware": "RTX 3090 24GB",
+          "quant": "125GB MoE, 12,096 experts (8 per layer active); hot experts on GPU, rest streamed from RAM/SSD",
           "date": "2026-10-10",
           "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
-          "likes": 6,
+          "likes": 7,
           "comments": 1,
           "reshares": 3,
-          "views": 294,
-          "interactions": 304
+          "views": 400,
+          "interactions": 0
         },
         {
           "engine": "ExLlamaV3",
@@ -2113,12 +2266,12 @@
             "date": "2026-10-10",
             "engine": "glm-flash-lite",
             "tps": "20",
-            "hardware": "RTX 3090",
-            "quant": "MoE offload (GPU+RAM+SSD)",
-            "likes": 6,
+            "hardware": "RTX 3090 24GB",
+            "quant": "125GB MoE, 12,096 experts (8 per layer active); hot experts on GPU, rest streamed from RAM/SSD",
+            "likes": 7,
             "comments": 1,
             "reshares": 3,
-            "views": 294
+            "views": 400
           },
           {
             "url": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
@@ -2146,10 +2299,10 @@
           }
         ],
         "posts_7d": 4,
-        "buzz_7d": 18.4,
-        "score_7d": 18.4,
+        "buzz_7d": 18.5,
+        "score_7d": 18.5,
         "speed_bonus": 2.2,
-        "trend_score": 20.6
+        "trend_score": 20.7
       },
       "system_ram_min": "50GB",
       "storage_offload": "100GB NVMe, MoE experts on SSD"
@@ -3419,6 +3572,75 @@
       "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU"
     },
     {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB",
+      "weight_gb": "~100GB at ~Q3",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395)",
+          "quant": "~Q3 weights, GPU uses up to ~96-110GB of the unified LPDDR5X pool; Vulkan often edges ROCm for generation (community range 14-17 tok/s)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 195,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 197
+        }
+      ],
+      "last_seen": "2026-10-14",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "Qwen3-235B-A22B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3-235B-A22B",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+            "date": "2026-10-14",
+            "engine": "llama.cpp",
+            "tps": "17",
+            "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395)",
+            "quant": "~Q3 weights, GPU uses up to ~96-110GB of the unified LPDDR5X pool; Vulkan often edges ROCm for generation (community range 14-17 tok/s)",
+            "likes": 195,
+            "comments": 2,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 4.8,
+        "score_7d": 4.8,
+        "speed_bonus": 1.4,
+        "trend_score": 6.2
+      }
+    },
+    {
       "id": "qwen3-30b-a3b",
       "name": "Qwen3-30B-A3B",
       "full_name": "Qwen3-30B-A3B-Instruct",
@@ -3455,7 +3677,7 @@
         },
         {
           "engine": "llama.cpp",
-          "tps": "5",
+          "tps": "5.2",
           "hardware": "Android phone CPU (arm64, KleidiAI), no GPU",
           "quant": "UD-Q2_K_XL, 11.8 GB; MoE 128 experts/layer, 8 active (~3B params of work per token) with cold experts left on flash and re-read on router change",
           "date": "2026-09-29",
@@ -3766,7 +3988,8 @@
       "vram_tier": "48GB",
       "vram_min": "16GB",
       "backends": [
-        "Metal"
+        "Metal",
+        "ROCm"
       ],
       "last_seen": "2026-09-29",
       "engines": [
@@ -3782,6 +4005,19 @@
           "reshares": 0,
           "views": 47,
           "interactions": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "40",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "vLLM strix-halo build, cybersecurity-tuned uncensored variant; 1000 t/s prefill, 256k context",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/ciruai/status/2100442075485351975",
+          "likes": 137,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 141
         }
       ],
       "supported_engines": [
@@ -3811,6 +4047,18 @@
             "comments": 0,
             "reshares": 0,
             "views": 47
+          },
+          {
+            "url": "https://lightbrd.com/ciruai/status/2100442075485351975",
+            "date": "2026-09-17",
+            "engine": "vLLM",
+            "tps": "40",
+            "hardware": "Radeon 8060S / Strix Halo 128GB",
+            "quant": "vLLM strix-halo build, cybersecurity-tuned uncensored variant; 1000 t/s prefill, 256k context",
+            "likes": 137,
+            "comments": 2,
+            "reshares": 2,
+            "views": 0
           }
         ],
         "posts_7d": 0,
@@ -3818,7 +4066,9 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "system_ram_min": "128GB",
+      "context_tokens": "262144"
     },
     {
       "id": "ravenx-conjecture-qwen3-8b-mlx",
@@ -3952,6 +4202,75 @@
       "weight_gb": "~2.5GB (Q4_K_M)",
       "system_ram_min": "6GB",
       "storage_offload": "weights mmap'd on flash (no GPU backend)"
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "system_ram_min": "60GB",
+      "context_tokens": "32768",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2",
+          "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
+          "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 252,
+          "interactions": 257
+        }
+      ],
+      "last_seen": "2026-09-24",
+      "engine_min_version": "llama.cpp (hikicoder fork, dsv41-ada-medvram) --moe-stream",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "deepseek-ai/DeepSeek-V4.1-Flash — see source posts.",
+      "formats": [
+        {
+          "name": "DeepSeek-V4.1-Flash",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+            "date": "2026-09-24",
+            "engine": "llama.cpp",
+            "tps": "2",
+            "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
+            "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
+            "likes": 2,
+            "comments": 3,
+            "reshares": 0,
+            "views": 252
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
     },
     {
       "id": "gemma-4-26b-a4b",
@@ -4090,6 +4409,73 @@
         "llama.cpp"
       ],
       "vram_min": "24GB"
+    },
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP speculative decode 97% draft acceptance, N=5 warmup discarded, card power capped 291W",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 120
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "129",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP off baseline, N=5 warmup discarded",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 120
+        }
+      ],
+      "last_seen": "2026-07-11",
+      "supported_engines": [
+        "llama.cpp",
+        "llama.cpp"
+      ],
+      "why": "Qwopus3.6-35B-A3B-Coder-MTP — see source posts.",
+      "formats": [
+        {
+          "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+          "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
     },
     {
       "id": "qwen-3.6-27b",
@@ -4312,6 +4698,60 @@
       }
     },
     {
+      "id": "gemma-4-26b",
+      "name": "Gemma 4 26B",
+      "full_name": "google/gemma-4-26B-A4B-it",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "storage_offload": "flash storage (phone), experts streamed per token",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.1",
+          "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+          "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1494,
+          "interactions": 1523
+        }
+      ],
+      "last_seen": "2026-08-13",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "google/gemma-4-26B-A4B-it — see source posts.",
+      "formats": [
+        {
+          "name": "Gemma 4 26B",
+          "hf": "google/gemma-4-26B-A4B-it"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
       "id": "deepseek-r1-1.5b",
       "name": "DeepSeek R1 1.5B",
       "full_name": "DeepSeek-R1-Distill-Qwen-1.5B",
@@ -4363,6 +4803,61 @@
         "Ollama"
       ],
       "system_ram_min": "2GB"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "full_name": "openai/gpt-oss-120b",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "120B (MoE)",
+      "hf": "openai/gpt-oss-120b",
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "weight_gb": "60GB",
+      "storage_offload": "flash storage (phone), experts streamed per token",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.2",
+          "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+          "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule); expert streaming vs 0.09 tok/s with mmap; 14x faster",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 3,
+          "comments": 10,
+          "reshares": 16,
+          "views": 1494,
+          "interactions": 1523
+        }
+      ],
+      "last_seen": "2026-08-13",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "openai/gpt-oss-120b — see source posts.",
+      "formats": [
+        {
+          "name": "gpt-oss-120b",
+          "hf": "openai/gpt-oss-120b"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
     }
   ]
 }
