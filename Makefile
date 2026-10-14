@@ -216,7 +216,7 @@ _validate-links:
 
 .PHONY: _validate-mapped
 _validate-mapped:
-	python3 scripts/validate.py --only data,schema,mapping
+	python3 scripts/validate.py --only data,schema,mapping,removal
 	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_engagement_contract.py && python3 tests/test_amd_backend.py
 
 .PHONY: _test

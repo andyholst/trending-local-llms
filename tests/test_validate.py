@@ -13,16 +13,19 @@ catching a broken validator in CI. Covers:
   - raw -> models.json mapping + collision
   - no-removal vs snapshot
   - additive-only (no key/value loss vs snapshot)
+  - every check wired to a stage + a Makefile `--only` target (no dead validator function)
   - newline terminators
 
 Run:  python3 tests/test_validate.py     or   make test
 """
 from __future__ import annotations
 
+import ast
 import contextlib
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -392,6 +395,54 @@ def test_no_value_loss():
               out.getvalue())
 
 
+def _validator_ast() -> "ast.Module":
+    return ast.parse((ROOT / "scripts" / "validate.py").read_text())
+
+
+def test_every_check_is_wired_to_a_stage_and_a_makefile_target():
+    """No dead validator function: every `check_*` in scripts/validate.py must be
+    registered in main() under a STAGE, every stage must be selected by an explicit
+    `--only` list in the Makefile, and `--only <stage>` must really execute it."""
+    tree = _validator_ast()
+
+    # Given every check function defined in the validator
+    defined = {n.name for n in tree.body if isinstance(n, ast.FunctionDef) and n.name.startswith("check_")}
+    check("wiring: the validator defines check_* functions", len(defined) > 5, str(len(defined)))
+
+    # When  main()'s registrations are read
+    main_fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    registered: dict[str, str] = {}
+    for node in ast.walk(main_fn):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "add"):
+            continue
+        if not (isinstance(node.args[0], ast.Constant) and isinstance(node.args[1], ast.Constant)):
+            continue
+        stage = str(node.args[1].value)
+        registered[stage] = registered.get(stage, "") + " " + ast.unparse(node.args[2])
+
+    # Then  every check is registered by name (a check nobody calls is a defect)
+    for name in sorted(defined):
+        check(f"wiring: {name} is registered in main()", name in " ".join(registered.values()),
+              "not referenced by any add(...)")
+
+    # And  every stage is explicitly selected by a Makefile target
+    makefile = (ROOT / "Makefile").read_text()
+    selected: set[str] = set()
+    for only in re.findall(r"--only\s+([\w,]+)", makefile):
+        selected.update(s.strip() for s in only.split(",") if s.strip())
+    for stage in sorted(registered):
+        check(f"wiring: stage '{stage}' is selected by a Makefile --only list",
+              stage in selected, f"--only stages: {sorted(selected)}")
+
+    # And  `--only removal` really runs the additive-only check (the actual call path)
+    out = subprocess.run([sys.executable, str(ROOT / "scripts" / "validate.py"), "--only", "removal"],
+                         capture_output=True, text=True, cwd=ROOT)
+    check("wiring: --only removal executes the additive-only check",
+          "additive-only (no key/value loss)" in out.stdout, out.stdout[-200:])
+    check("wiring: the full `make validate` path runs every stage without --only",
+          re.search(r"^_validate:\n\tpython3 scripts/validate\.py\s*$", makefile, re.M) is not None)
+
+
 def test_newline_terminators():
     with tempfile.TemporaryDirectory() as td:
         # build a tiny fake git repo with one file
@@ -498,6 +549,7 @@ def main() -> int:
     test_search_contract_pass_fail()
     test_no_removal()
     test_no_value_loss()
+    test_every_check_is_wired_to_a_stage_and_a_makefile_target()
     test_newline_terminators()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
