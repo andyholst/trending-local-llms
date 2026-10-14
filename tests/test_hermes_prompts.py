@@ -106,6 +106,38 @@ def test_make_dry_run_single_hermes_command():
         check(f"make -n {t}: no detached model-flag command", not stray, [c[:60] for c in stray])
 
 
+def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():
+    """Issue #167: the dimension ask was four byte-identical copies buried in the
+    legs' prompts, and the latest refresh emitted ZERO of the five values while the
+    posts named them (the analysis reports 5/25 models with a free-text RAM figure).
+    No value can be stored unless the gathering step actually asks for it."""
+    mk = (ROOT / "Makefile").read_text()
+
+    # Given ONE shared definition
+    check("make: DIM_ASK is defined exactly once", mk.count("DIM_ASK :=") == 1, mk.count("DIM_ASK :="))
+    definition = mk.split("DIM_ASK :=", 1)[1].split("\n", 1)[0]
+
+    # Then  it names every dimension the store and the search contract can hold
+    for dim in ("system_ram_min", "weight_gb", "context_tokens", "storage_offload",
+                "engine_min_version"):
+        check(f"dimension ask: names {dim}", dim in definition, definition[:90])
+
+    # Then  it says WHERE the figure goes and forbids inventing one
+    check("dimension ask: a stated figure belongs in its field, not only in prose",
+          "belongs in its field" in definition and "NOT only" in definition, definition[-120:])
+    check("dimension ask: never guess, derive or invent",
+          "never guess" in definition and "invent one" in definition, definition[-120:])
+    check("dimension ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
+          '"' not in definition, definition[:60])
+
+    # Then  every leg references it and keeps no divergent copy of the old sentence
+    for leg in ("nvidia", "metal", "cpu", "amd"):
+        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
+        check(f"{leg}: takes the ask from $(DIM_ASK)", "$(DIM_ASK)" in recipe, recipe[-140:])
+        check(f"{leg}: carries no second copy of the buried sentence",
+              "also record the optional model fields" not in recipe, "")
+
+
 def test_prompt_permutations():
     """DATA-DRIVEN: correct prompt bodies pass; every broken form (unescaped
     quote, malformed -z, missing quotes) is rejected."""
@@ -139,6 +171,7 @@ def main() -> int:
     test_makefile_prompts_valid()
     test_makefile_prompts_cap_reasoning()
     test_make_dry_run_single_hermes_command()
+    test_every_search_leg_asks_for_the_model_dimensions_from_one_definition()
     test_prompt_permutations()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
