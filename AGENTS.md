@@ -485,13 +485,20 @@ this `AGENTS.md` and the `gather-data` skill, then:
   as 'pushed'. `qa-report.txt` is uploaded as a run artifact. A pushed fix
   re-runs qa-validate, which auto-merges if green; still red → a human.
 
-- **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issue #113). Trigger
-  surface is `issues: [opened]` carrying the `data-gap-analysis` label (what
-  `make data-gap-issue` files) plus an owner `workflow_dispatch` with an issue
-  number. Its `guard` job runs FIRST (owner / write collaborator, actor AND
+- **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issues #113 / #127).
+  Trigger surface is `issues: [opened]` carrying the `data-gap-analysis` label
+  (what `make data-gap-issue` files), a **backlog sweep** (`schedule: cron
+  '19 */6 * * *'` — every 6 h, off the hour), and an owner `workflow_dispatch`
+  (an issue number, or empty to sweep). The `pick` job (schedule only) chooses the
+  OLDEST open labelled issue with **no implementer yet** — no
+  `ci/data-gap-<n>-*` branch and no open PR from one — and an empty backlog is a
+  green run that implements nothing. The `implement` job serves all paths
+  (`needs: [guard, pick]`, `always()` + `needs.guard.result == 'success'`) with a
+  **job-level** `concurrency: issue-bot-issue-<n>`, so a sweep and an
+  `issues: opened` event for the SAME issue queue instead of racing: one
+  implementer per issue, across paths. Its `guard` job runs FIRST (owner / write collaborator, actor AND
   triggering actor, names from `env:` — a stranger's issue starts nothing), and
-  `implement` needs it. One implementer per issue:
-  `concurrency: issue-bot-<issue number>`. It resolves the issue (must be open),
+  `implement` needs it. It resolves the issue (must be open),
   writes it to `issue.md`, checks out `master` with the owner PAT, pulls the base
   image, runs `make hermes-smoke`, implements through `make implement-issue` (the
   prompt in the Makefile: implement EXACTLY that issue, additive only, never
@@ -669,7 +676,7 @@ actually happened.
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
-| `tests/test_workflows.py` — `test_issue_bot` (rule 6e) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue (a PR, a comment, an edit, a re-open, a label-less issue); two implementers for one issue (a concurrency key not keyed by the issue number); a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
+| `tests/test_workflows.py` — `test_issue_bot` (rules 6e/6d) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue, the 6-hourly sweep or owner dispatch (a PR, a comment, a push, a `workflow_run`, a label-less issue); the sweep picking an issue that already has a branch/PR instead of the oldest unhandled one; two implementers for one issue (a concurrency key not keyed by the issue number, on either path); `make implement-issue` not running `_setup` in the same container as the hermes call (measured: alias missing → `HF_TOKEN` → `HTTP 403`); the outcome comment using the owner PAT instead of the default token (`Resource not accessible by personal access token (addComment)`); a run with no implementation staying green; a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_validate_readme.py` — `test_readme_generated_*` + `test_readme_generated_tests_are_clock_independent` (issue #88) | a hand-edited / stale README passing `check_readme_generated`; a test rendering the expected README from the wall clock instead of the store's `generated_utc` (the fixture aged out of the 7-day band on 2026-10-05 and master went red, run 37247105182); the AST guard rejects any `render_readme(..., now()/utcnow()/today())` under `tests/` |
