@@ -9,7 +9,7 @@
       "type": "LLM",
       "license": "Apache-2.0",
       "params": "125B MoE",
-      "hf": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "32-48GB",
       "vram_min": "32GB",
       "backends": [

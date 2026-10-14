@@ -827,6 +827,25 @@ def write_snapshot(store: dict) -> Path:
     path.write_text(json.dumps(store, indent=2, ensure_ascii=False) + "\n")
     return path
 
+_HF_URL_PREFIX = "https://huggingface.co/"
+
+
+def normalize_hf_ref(value):
+    """Collapse a Hugging Face URL written where a bare repo id belongs back to
+    the repo id: 'https://huggingface.co/Qwen/Qwen3-14B' -> 'Qwen/Qwen3-14B'.
+    A DOUBLED prefix is collapsed too — the search agent pastes the whole URL
+    the README builds, and 'https://huggingface.co/https://huggingface.co/X'
+    made every raw-hf link 404 (validate builds the URL by prefixing the field
+    itself, so the raw snapshot carried the prefix twice). Non-strings and
+    already-bare ids pass through unchanged."""
+    if not isinstance(value, str):
+        return value
+    v = value.strip()
+    while v.startswith(_HF_URL_PREFIX):
+        v = v[len(_HF_URL_PREFIX):]
+    return v.strip("/")
+
+
 def write_raw_snapshot(backend: str, payload: dict) -> Path:
     """Write one backend's raw search findings to data/raw/<backend>-<UTC>.json.
     Each of the four Hermes search prompts (NVIDIA, Metal, CPU, AMD) writes its own
@@ -843,6 +862,17 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
         path = RAW_DIR / f"{safe}-{ts}-{n}.json"
         n += 1
     payload = dict(payload)
+    # an `hf` field is a bare repo id (validate/README build the URL by
+    # prefixing it) — collapse a full URL / doubled prefix BEFORE it lands in
+    # data/raw, so a pasted URL can never 404 the raw-hf link check again.
+    for _m in payload.get("models") or []:
+        if not isinstance(_m, dict):
+            continue
+        if _m.get("hf"):
+            _m["hf"] = normalize_hf_ref(_m["hf"])
+        for _f in _m.get("formats") or []:
+            if isinstance(_f, dict) and _f.get("hf"):
+                _f["hf"] = normalize_hf_ref(_f["hf"])
     payload.setdefault("generated_utc", now_utc().strftime("%Y-%m-%dT%H:%M:%SZ"))
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return path
@@ -1158,6 +1188,14 @@ def normalize_model(m: dict, store: dict) -> dict:
     derived fields (e.g. full_name, license, vram_min, backends) cannot crash
     render_readme or produce a schema-non-conforming store."""
     m = dict(m)
+    # `hf` is a bare repo id everywhere (README/validate prefix it themselves):
+    # collapse a pasted URL / doubled prefix so a slug that skipped --write-raw
+    # can never land a broken link in the store.
+    if m.get("hf"):
+        m["hf"] = normalize_hf_ref(m["hf"])
+    for _f in m.get("formats") or []:
+        if isinstance(_f, dict) and _f.get("hf"):
+            _f["hf"] = normalize_hf_ref(_f["hf"])
     m.setdefault("id", _slug(m.get("name", "")))
     m.setdefault("full_name", m.get("name", ""))
     m.setdefault("license", "Unknown")

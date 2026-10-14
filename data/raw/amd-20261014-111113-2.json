@@ -9,7 +9,7 @@
       "type": "GGUF",
       "license": "Apache-2.0",
       "params": "14B",
-      "hf": "https://huggingface.co/Qwen/Qwen3-14B",
+      "hf": "Qwen/Qwen3-14B",
       "vram_tier": "12-16GB",
       "vram_min": "16GB",
       "backends": [

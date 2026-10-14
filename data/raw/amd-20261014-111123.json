@@ -9,7 +9,7 @@
       "type": "LLM",
       "license": "Apache-2.0",
       "params": "125B MoE",
-      "hf": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "8-12GB (MoE offload)",
       "vram_min": "8GB",
       "backends": [
@@ -58,7 +58,7 @@
       "type": "GGUF",
       "license": "Apache-2.0",
       "params": "27B",
-      "hf": "https://huggingface.co/Qwen/Qwen3.8-27B",
+      "hf": "Qwen/Qwen3.8-27B",
       "vram_tier": "16-24GB",
       "vram_min": "16GB",
       "backends": [
@@ -94,7 +94,7 @@
       "type": "LLM",
       "license": "Apache-2.0",
       "params": "80B-A3B",
-      "hf": "https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
       "vram_tier": "48-64GB unified",
       "vram_min": "48GB",
       "backends": [

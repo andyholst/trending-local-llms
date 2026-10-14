@@ -9,7 +9,7 @@
       "type": "GGUF",
       "license": "Apache-2.0",
       "params": "35B-A3B",
-      "hf": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
       "vram_tier": "16-24GB",
       "vram_min": "24GB",
       "backends": [
@@ -45,7 +45,7 @@
       "type": "LLM",
       "license": "Llama 3.1 Community",
       "params": "8B",
-      "hf": "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct",
+      "hf": "meta-llama/Llama-3.1-8B-Instruct",
       "vram_tier": "8-16GB",
       "vram_min": "8GB",
       "backends": [
@@ -81,7 +81,7 @@
       "type": "LLM",
       "license": "Apache-2.0",
       "params": "125B MoE",
-      "hf": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "8-12GB (MoE offload)",
       "vram_min": "8GB",
       "backends": [
