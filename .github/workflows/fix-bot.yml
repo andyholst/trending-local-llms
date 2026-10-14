@@ -53,8 +53,8 @@ jobs:
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       # The nerve plugin's Jev provider credential (issue #120): forwarded by NAME
-      # only, as `-e OPENROUTER_API_KEY` in the Makefile run wrappers.
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      # only, as `-e TYPESAFE_API_KEY` in the Makefile run wrappers.
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
       FIX_ROUNDS: "3"
     steps:
       # Before anything touches a secret: only the owner or a collaborator

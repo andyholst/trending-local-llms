@@ -46,10 +46,10 @@ env:
   FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
   HF_TOKEN: ${{ secrets.HF_TOKEN }}
   # The nerve plugin's Jev provider credential (issue #120). Only the NAME the
-  # plugin resolves is wired (`-e OPENROUTER_API_KEY` in the Makefile run
+  # plugin resolves is wired (`-e TYPESAFE_API_KEY` in the Makefile run
   # wrappers, AGENTS.md rule 3e) — an unset secret simply leaves the plugin
   # reporting its key missing, loudly, never a different provider.
-  OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+  TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 
 jobs:
   validate:

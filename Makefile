@@ -24,16 +24,22 @@ SHELL := /bin/bash
 # Hermes plugin catalog commit) and is the ONLY consumer of this credential. The
 # NAME below is the one the plugin actually resolves — measured at the pinned
 # revision, hermes_nerve/client.py::PROVIDER_API_KEY_ENV:
-#   openrouter (the default jev_provider) -> OPENROUTER_API_KEY
-#   typesafe                              -> TYPESAFE_API_KEY
-#   opencode                              -> OPENCODE_API_KEY
-# There is NO `JEV_KEY` upstream (plugin source and the Hermes plugin catalog
-# entry that pins it both say so), so wiring that name would register a variable
-# nothing reads and the plugin would keep reporting its key missing — the silent
-# failure AGENTS.md rule 3e forbids. The key itself is never written anywhere:
-# it reaches the container only as `-e $(NERVE_KEY_ENV)` at run time.
-NERVE_PROVIDER := openrouter
-NERVE_KEY_ENV  := OPENROUTER_API_KEY
+#   openrouter -> OPENROUTER_API_KEY   (the plugin's own default jev_provider)
+#   typesafe   -> TYPESAFE_API_KEY     <- PRODUCTION runs this provider
+#   opencode   -> OPENCODE_API_KEY
+# The provider is NOT the plugin's default: it is the one this setup runs, read
+# from the host Hermes that mirrors this pipeline
+# (`plugins.entries.nerve.settings.jev_provider = typesafe`, `typesafe_model =
+# jev-latest`, `TYPESAFE_API_KEY` in the profile env). Wiring the default
+# (`openrouter`) forwards a name production never sets, so the plugin fails on
+# `TYPESAFE_API_KEY is not configured` — the silent failure AGENTS.md rule 3e
+# forbids. There is NO `JEV_KEY` upstream (plugin source and the Hermes plugin
+# catalog entry that pins it both say so), so that name would register a variable
+# nothing reads. The key itself is never written anywhere: it reaches the
+# container only as `-e $(NERVE_KEY_ENV)` at run time.
+NERVE_PROVIDER := typesafe
+NERVE_KEY_ENV  := TYPESAFE_API_KEY
+NERVE_MODEL    := jev-latest
 
 IMAGE := trending-local-llms:latest
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
@@ -118,8 +124,9 @@ _setup:
 	@# ($(NERVE_KEY_ENV)) from the environment, which the run wrappers inject
 	@# with `-e $(NERVE_KEY_ENV)` (AGENTS.md rule 3e).
 	@if hermes plugins list 2>/dev/null | grep -qi 'nerve'; then \
-		echo "== nerve plugin present; pinning its Jev provider ($(NERVE_PROVIDER)) — the key stays in the env =="; \
+		echo "== nerve plugin present; pinning its Jev provider ($(NERVE_PROVIDER), model $(NERVE_MODEL)) — the key stays in the env =="; \
 		hermes config set plugins.entries.nerve.settings.jev_provider $(NERVE_PROVIDER); \
+		hermes config set plugins.entries.nerve.settings.typesafe_model $(NERVE_MODEL); \
 	else \
 		echo "== nerve plugin NOT installed in this image; \`make nerve-check\` fails until it is =="; \
 	fi

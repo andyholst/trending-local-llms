@@ -5,7 +5,8 @@ The issue asked for the nerve plugin's key to reach Hermes ONLY as a `-e` env va
 — never baked into the image, never written into a file, never committed — while
 explicitly leaving the *name* "to be confirmed against the plugin's expected env
 var". Confirmed at the catalog-pinned revision: the plugin resolves
-`OPENROUTER_API_KEY` (default provider), `TYPESAFE_API_KEY`, `OPENCODE_API_KEY`
+`TYPESAFE_API_KEY` (the provider PRODUCTION runs), `OPENROUTER_API_KEY` and
+`OPENCODE_API_KEY` (the plugin's other providers)
 from `hermes_nerve/client.py::PROVIDER_API_KEY_ENV`. There is no `JEV_KEY`
 upstream, so wiring that name would register a variable nothing reads and the
 plugin would keep reporting its key missing — silently, which is the failure the
@@ -62,7 +63,7 @@ def wf(**exported) -> str:
     return "\n".join(lines) + "\n"
 
 
-ALL_WF = {n: wf(OPENROUTER_API_KEY="OPENROUTER_API_KEY") for n in NK.CONTAINER_WORKFLOWS}
+ALL_WF = {n: wf(TYPESAFE_API_KEY="TYPESAFE_API_KEY") for n in NK.CONTAINER_WORKFLOWS}
 
 
 def test_detector_catches_every_forbidden_shape():
@@ -71,7 +72,7 @@ def test_detector_catches_every_forbidden_shape():
     # Given the forbidden Dockerfile shapes
     # Then  each is reported
     check("docker: `ENV <KEY>=<value>` is a finding",
-          NK.check_dockerfile(f"ENV OPENROUTER_API_KEY={_FAKE}\n") != [])
+          NK.check_dockerfile(f"ENV TYPESAFE_API_KEY={_FAKE}\n") != [])
     check("docker: `ENV JEV_KEY=<value>` is a finding",
           NK.check_dockerfile("ENV JEV_KEY=whatever\n") != [])
     check("docker: a COPYed config.yaml is a finding",
@@ -98,6 +99,27 @@ def test_detector_catches_every_forbidden_shape():
           NK.check_makefile(
               "DOCKER_RUN := docker run --rm $(IMAGE)\nTEST_RUN := docker run --rm $(TEST_IMAGE)\n"
               "NERVE_KEY_ENV  := OPENROUTER_API_KEY\n") != [])
+
+    # Given the real mistake this guard was written after: a SELF-CONSISTENT
+    # provider/key pair that is the plugin's own default, not production's
+    wrong_provider = (
+        "NERVE_PROVIDER := openrouter\n"
+        "NERVE_KEY_ENV  := OPENROUTER_API_KEY\n"
+        "DOCKER_RUN := docker run --rm -e $(NERVE_KEY_ENV) $(IMAGE)\n"
+        "TEST_RUN := docker run --rm -e $(NERVE_KEY_ENV) $(TEST_IMAGE)\n"
+    )
+
+    # When  the guard checks it
+    findings = NK.check_makefile(wrong_provider)
+
+    # Then  the wrong provider is a finding even though the pair is consistent
+    check("make: a consistent pair on the wrong provider is a finding",
+          any("is not the provider the setup runs" in f for f in findings), findings)
+    check("make: the guard's provider is the one production runs",
+          NK.DEFAULT_PROVIDER == "typesafe", NK.DEFAULT_PROVIDER)
+    check("make: that provider's key name is the one production sets",
+          NK.PROVIDER_KEY_ENV[NK.DEFAULT_PROVIDER] == "TYPESAFE_API_KEY",
+          NK.PROVIDER_KEY_ENV[NK.DEFAULT_PROVIDER])
     check("make: a literal key in `config set` is a finding",
           any("literal credential" in f for f in NK.check_makefile(
               _MAKE_WIRING + "_setup:\n\thermes config set plugins.entries.nerve.settings.reflex_laya_token "
@@ -127,8 +149,8 @@ def test_detector_catches_every_forbidden_shape():
 
 
 _MAKE_WIRING = (
-    "NERVE_PROVIDER := openrouter\n"
-    "NERVE_KEY_ENV  := OPENROUTER_API_KEY\n"
+    "NERVE_PROVIDER := typesafe\n"
+    "NERVE_KEY_ENV  := TYPESAFE_API_KEY\n"
     "DOCKER_RUN := docker run --rm -e $(NERVE_KEY_ENV) $(IMAGE)\n"
     "TEST_RUN := docker run --rm -e $(NERVE_KEY_ENV) $(TEST_IMAGE)\n"
 )
@@ -245,7 +267,7 @@ def test_wired_to_make_and_ci():
           qa.index("make nerve-check") > qa.index("Dockerfile.test"))
     wf_text = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text()
     check("ci: the refresh pipeline exports the secret for the `-e` to resolve",
-          "OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}" in wf_text)
+          "TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}" in wf_text)
 
 
 def main() -> int:
