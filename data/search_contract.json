@@ -92,6 +92,26 @@
             "type": "string",
             "description": "Least required VRAM (community-reported / from X or HF quant size)."
           },
+          "system_ram_min": {
+            "type": "string",
+            "description": "OPTIONAL. System RAM / unified-memory requirement the post states (e.g. '16GB'). Never derived from VRAM and never invented: copy only a figure the post gives."
+          },
+          "weight_gb": {
+            "type": "string",
+            "description": "OPTIONAL. Weight footprint per format + quant the post states (e.g. '5.95GB Q4_K_M'). Copy only a figure the post gives."
+          },
+          "context_tokens": {
+            "type": "string",
+            "description": "OPTIONAL. Context window the post states (e.g. '131072', '128K'). Copy only a figure the post gives."
+          },
+          "storage_offload": {
+            "type": "string",
+            "description": "OPTIONAL. Storage-offload requirement the post states (e.g. '640GB NVMe, experts on SSD'). Copy only a figure the post gives."
+          },
+          "engine_min_version": {
+            "type": "string",
+            "description": "OPTIONAL. Engine minimum version / required flags the post states (e.g. 'llama.cpp b6xxx, --n-gpu-layers 99'). Copy only a version or flag the post gives."
+          },
           "backends": {
             "type": "array",
             "minItems": 1,

@@ -5,7 +5,10 @@ The analysis must (a) report a requirement dimension the CONTRACT cannot hold as
 contract gap, (b) separate a value that exists only as free text from one that is
 actually stored, (c) file exactly ONE issue when the gap set changed — none when it
 did not, and (d) be wired into the Makefile and the refresh pipeline (rule 6d: no
-dead script). Wired into `make test`.
+dead script). Every dimension it reports must also be CAPTURABLE end to end: its
+key declared OPTIONAL in BOTH contracts and merged at ingest onto an existing
+model — a dimension the store can hold but never receives is still a gap. Wired
+into `make test`.
 
 Run:  python3 tests/test_data_gap_analysis.py    or   make test
 """
@@ -193,16 +196,20 @@ def _one_issue_per_changed_gap_set(tmp_path):
 
 
 def test_real_store_names_the_system_ram_gap():
-    """On the REAL store + contracts: system RAM is the flagship gap — the contract
-    cannot hold it, every model lacks it, and at least one names it in free text."""
+    """On the REAL store + contracts: system RAM is the flagship gap — the
+    contracts now DECLARE it as an optional key (so ingest keeps it instead of
+    pruning it), every model still has no value, and at least one names the
+    figure in free text."""
 
     # Given the real store and the real contracts
     contract = G.contract_keys()
     report = G.analyse(G.load(G.STORE), contract, raw_dir=G.RAW_DIR)
 
-    # Then  the RAM dimension is a contract gap and every model is missing it
-    check("real store: system_ram_min is a contract gap", "system_ram_min" in report["contract_gaps"])
+    # Then  the RAM dimension is CAPTURABLE (declared), still unfilled on every
+    #       model, and still only prose somewhere
     check("real store: models exist", report["models"] > 0, str(report["models"]))
+    check("real store: system_ram_min is no longer a contract gap",
+          "system_ram_min" not in report["contract_gaps"], str(report["contract_gaps"]))
     check("real store: system_ram_min missing on every model",
           len(report["missing"]["system_ram_min"]) == report["models"])
     check("real store: at least one free-text RAM mention",
@@ -210,6 +217,44 @@ def test_real_store_names_the_system_ram_gap():
     check("real store: RAM is the top-ranked gap",
           G.rank_impact(report)[0][0] in ("context_tokens", "engine_min_version", "storage_offload",
                                           "system_ram_min", "weight_gb"), str(G.rank_impact(report)[:3]))
+
+
+def test_every_dimension_is_a_declared_optional_key():
+    """Every dimension the analysis reports must be CAPTURABLE, or the gap can
+    never close: its key is declared in BOTH contracts (the search snapshot and
+    the store), OPTIONAL in both (never added to `required` — AGENTS.md §2.3b),
+    visible to the analysis, and merged at ingest onto an existing model."""
+
+    # Given both real contracts and the ingest merge list
+    mc = json.loads((ROOT / "data" / "model_contract.json").read_text())
+    sc = json.loads((ROOT / "data" / "search_contract.json").read_text())
+    m_items = mc["properties"]["models"]["items"]
+    s_items = sc["properties"]["models"]["items"]
+    import update_trending as UT  # noqa: E402  (sys.path already carries scripts/)
+
+    # Then  every reported dimension is representable end to end
+    declared = G.contract_keys()
+    for dim in G.DIMENSIONS:
+        key = dim["key"]
+        check(f"{key}: declared in model_contract.json", key in m_items["properties"], str(key))
+        check(f"{key}: declared in search_contract.json", key in s_items["properties"], str(key))
+        check(f"{key}: OPTIONAL in both contracts (never in required)",
+              key not in m_items.get("required", []) and key not in s_items.get("required", []))
+        check(f"{key}: the analysis sees it as declared",
+              key in declared["model"] or key in declared["measurement"] or key in declared["search_model"])
+        check(f"{key}: merged at ingest for an EXISTING model",
+              key in UT._ADDITIVE_MODEL_FIELDS, str(UT._ADDITIVE_MODEL_FIELDS))
+
+
+def test_ingest_merge_list_covers_every_declared_dimension():
+    """The ingest merge list and the reported dimensions are one set — a new
+    dimension cannot be added to the analysis without ingest support (and a
+    declared dimension cannot be reported as unfixable)."""
+
+    import update_trending as UT  # noqa: E402
+    check("ingest merge list == reported dimensions",
+          set(UT._ADDITIVE_MODEL_FIELDS) == {d["key"] for d in G.DIMENSIONS},
+          str(sorted(set(UT._ADDITIVE_MODEL_FIELDS) ^ {d["key"] for d in G.DIMENSIONS})))
 
 
 def test_analysis_is_wired_to_make_and_the_refresh_pipeline():
@@ -240,6 +285,8 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
     test_real_store_names_the_system_ram_gap()
+    test_every_dimension_is_a_declared_optional_key()
+    test_ingest_merge_list_covers_every_declared_dimension()
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

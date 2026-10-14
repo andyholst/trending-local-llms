@@ -110,6 +110,19 @@ For each model, capture:
 - **License**
 - **HF link** (verify — see step 5)
 - **VRAM / RAM** required
+- **System RAM / unified memory** the post states (e.g. a Raspberry Pi / laptop
+  figure) — record it as the OPTIONAL model field `system_ram_min`, never
+  derived from the VRAM number: the CPU and Metal tables are RAM-bound (Apple
+  Silicon is unified memory) and partial offload keeps the un-offloaded layers
+  plus the KV cache in system RAM.
+- Also optional, and ONLY when the post states the figure — never guessed:
+  `weight_gb` (weight footprint per format + quant, e.g. `5.95GB Q4_K_M`),
+  `context_tokens` (context window, e.g. `131072` / `128K`),
+  `storage_offload` (experts streamed from storage, e.g. `640GB NVMe`),
+  `engine_min_version` (the engine build or flags the figure needs, e.g.
+  `llama.cpp b6xxx --n-gpu-layers 99`). Leave a field out entirely rather than
+  inventing a value — an absent field is reported as a gap, a wrong one is a
+  fabrication.
 - **Measured t/s** + the **hardware** it was measured on
 - **Inference engine** (the one that runs it best) — **with its repo URL**
   (e.g. `https://github.com/ggml-org/llama.cpp`). Store the engine `url` in
