@@ -513,6 +513,27 @@ def test_issue_bot():
     check("issue-bot: the sweep reuses the ONE implement job (no second implementation path)",
           sum(1 for j in jobs.values() if "make implement-issue" in run_text(j)) == 1, "")
 
+    # Measured on #120 (run 38509118147): the implementation touched
+    # .github/workflows/** and the push was rejected —
+    # "refusing to allow a Personal Access Token to create or update workflow …
+    # without `workflow` scope". That is a TOKEN problem: it must be detected,
+    # explained on the issue, and made red ON PURPOSE (not die at `git push`).
+    push_step = step(impl, "Commit + push")
+    push_run = push_step.get("run", "")
+    check("issue-bot: the push detects the workflow-scope rejection",
+          "refusing to allow a Personal Access Token" in push_run and "scope_error=true" in push_run, "")
+    check("issue-bot: a scope rejection does not die at git push (it is reported)",
+          "exit 0" in push_run.split("scope_error=true")[1][:200], push_run[-200:])
+    check("issue-bot: any OTHER push failure still fails the step",
+          "::error::git push failed" in push_run, "")
+    check("issue-bot: scratch artifacts (*.patch/*.rej/*.orig) are never committed",
+          "*.patch" in push_run and "git rm -q --cached" in push_run, "")
+    comment_run = run_text(impl)
+    check("issue-bot: the issue comment explains the token scope and the fix",
+          "Workflows: Read and write" in comment_run and "workflow" in comment_run, "")
+    check("issue-bot: the prompt forbids scratch artifacts (no *.patch 'implementation')",
+          "NEVER add scratch artifacts" in (ROOT / "Makefile").read_text(), "")
+
     fail_step = step(impl, "Fail loudly")
     check("issue-bot: a missing implementation makes the RUN red at a named step",
           "implemented != 'true'" in str(fail_step.get("if", ""))
