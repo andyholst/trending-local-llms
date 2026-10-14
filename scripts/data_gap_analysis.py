@@ -298,6 +298,34 @@ def already_filed(sig: str) -> str | None:
         if item.get("state") == "OPEN":
             return str(item.get("url") or item.get("number"))
     return None
+def ensure_label(number: str) -> None:
+    """Make the filed issue carry LABEL, or fail loudly (issue #161).
+
+    The label is the trigger of the downstream chain: `issue-bot.yml` reacts to
+    newly opened issues, its sweep picks open `data-gap-analysis` ones — one
+    implementer per issue. Measured: the CLI created the issue and returned 0
+    while applying NO label (the label exists and is appliable to that issue), so
+    the filing was invisible to both bots and nothing was red.
+    """
+    def labels() -> set[str]:
+        out = subprocess.run(["gh", "issue", "view", number, "--json", "labels"],
+                             text=True, capture_output=True)
+        if out.returncode != 0:
+            raise SystemExit(f"[data-gaps] gh issue view {number} failed: {out.stderr.strip()}")
+        try:
+            return {str(l.get("name", "")) for l in json.loads(out.stdout or "{}").get("labels", [])}
+        except json.JSONDecodeError:
+            return set()
+
+    if LABEL in labels():
+        return
+    subprocess.run(["gh", "issue", "edit", number, "--add-label", LABEL],
+                   text=True, capture_output=True)
+    if LABEL not in labels():
+        raise SystemExit(
+            f"[data-gaps] issue {number} does not carry `{LABEL}` after re-applying it — the "
+            f"bot chain triggers on that label, so this filing would be invisible; failing "
+            f"instead of reporting it")
 
 
 def file_issue(report: dict, previous: dict | None) -> str:
@@ -331,7 +359,11 @@ def file_issue(report: dict, previous: dict | None) -> str:
         input="\n".join(body), text=True, capture_output=True)
     if out.returncode != 0:
         raise SystemExit(f"[data-gaps] gh issue create failed: {out.stderr.strip()}")
-    return out.stdout.strip()
+    url = out.stdout.strip()
+    # The label is what the downstream bot chain triggers on; a create that
+    # returns 0 without it files an issue nothing will ever implement (#161).
+    ensure_label(url.rstrip("/").split("/")[-1])
+    return url
 
 
 def main(argv: list[str] | None = None) -> int:

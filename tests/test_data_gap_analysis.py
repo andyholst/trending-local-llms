@@ -157,8 +157,14 @@ def _one_issue_per_changed_gap_set(tmp_path):
     bindir.mkdir()
     log = tmp_path / "gh.log"
     gh = bindir / "gh"
-    gh.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> {log}\ncat >> {log}\n"
-                  "printf '%s\\n' 'https://github.com/andyholst/trending-local-llms/issues/999'\n")
+    # `issue view` answers the label verification (issue #161): the filer now
+    # checks that the issue it filed carries the label the bots trigger on.
+    gh.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> {log}\n"
+                  "case \"$1 $2\" in\n"
+                  "  'issue view') printf '%s\\n' '{\"labels\":[{\"name\":\"data-gap-analysis\"}]}' ;;\n"
+                  f"  *) cat >> {log}\n"
+                  "     printf '%s\\n' 'https://github.com/andyholst/trending-local-llms/issues/999' ;;\n"
+                  "esac\n")
     gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
 
     store = tmp_path / "models.json"
@@ -339,8 +345,10 @@ case "$1 $2" in
     sig=$(printf '%s' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | head -1)
     n=$(grep -c . "$FAKE_GH_STORE" 2>/dev/null || true)
     n=$(( ${n:-0} + 1 ))
-    printf '%s|%s|OPEN\\n' "$sig" "$n" >> "$FAKE_GH_STORE"
-    printf 'https://example.test/issues/%s\\n' "$n" ;;
+    printf '%s|%s|OPEN\n' "$sig" "$n" >> "$FAKE_GH_STORE"
+    printf 'https://example.test/issues/%s\n' "$n" ;;
+  "issue view")
+    printf '{"labels":[{"name":"data-gap-analysis"}]}\n' ;;
 esac
 exit 0
 """
@@ -410,6 +418,100 @@ def test_a_gap_set_is_filed_once():
         check("third run: it files again", "filed https://example.test" in third.stderr, third.stderr)
 
 
+# The same fake `gh`, extended for issue #161: `issue create` can silently DROP
+# the label (measured in CI), `issue view` reports what the store holds, and
+# `issue edit --add-label` can be made to fail as well.
+_GH_STUB_LABELS = """#!/bin/sh
+echo "$@" >> "$FAKE_GH_LOG"
+case "$1 $2" in
+  "issue list")
+    sig=""
+    for a in "$@"; do case "$a" in *" in:body") sig="${a% in:body}";; esac; done
+    line=$(grep "^${sig}|" "$FAKE_GH_STORE" 2>/dev/null | head -1)
+    if [ -n "$line" ]; then
+      n=$(printf '%s' "$line" | cut -d'|' -f2)
+      st=$(printf '%s' "$line" | cut -d'|' -f3)
+      printf '[{"number":%s,"state":"%s","url":"https://example.test/issues/%s"}]\\n' "$n" "$st" "$n"
+    else
+      printf '[]\\n'
+    fi ;;
+  "issue create")
+    body=$(cat)
+    sig=$(printf '%s' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | head -1)
+    n=$(grep -c . "$FAKE_GH_STORE" 2>/dev/null || true)
+    n=$(( ${n:-0} + 1 ))
+    labels=""
+    [ "${FAKE_GH_DROP_LABEL:-0}" = "1" ] || labels="data-gap-analysis"
+    printf '%s|%s|OPEN|%s\\n' "$sig" "$n" "$labels" >> "$FAKE_GH_STORE"
+    printf 'https://example.test/issues/%s\\n' "$n" ;;
+  "issue view")
+    line=$(cut -d'|' -f2,4 "$FAKE_GH_STORE" | grep "^${3}|" | head -1)
+    labels=$(printf '%s' "$line" | cut -d'|' -f2)
+    if [ -n "$labels" ]; then
+      printf '{"labels":[{"name":"%s"}]}\\n' "$labels"
+    else
+      printf '{"labels":[]}\\n'
+    fi ;;
+  "issue edit")
+    if [ "${FAKE_GH_EDIT_LABEL_FAILS:-0}" = "1" ]; then exit 0; fi
+    n=""
+    for a in "$@"; do case "$a" in [0-9]*) [ -z "$n" ] && n="$a";; esac; done
+    awk -F'|' -v n="$n" 'BEGIN{OFS="|"} $2==n {$4="data-gap-analysis"} 1' \\
+      "$FAKE_GH_STORE" > "$FAKE_GH_STORE.tmp" && mv "$FAKE_GH_STORE.tmp" "$FAKE_GH_STORE" ;;
+esac
+exit 0
+"""
+
+
+def _run_filer_env(baseline_text, td, extra_env=None):
+    baseline = td / "baseline.json"
+    baseline.write_text(baseline_text)
+    env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
+           "FAKE_GH_LOG": str(td / "gh.log"), "FAKE_GH_STORE": str(td / "issues.txt"),
+           **(extra_env or {})}
+    return subprocess.run(
+        [sys.executable, "scripts/data_gap_analysis.py", "--issue", "--baseline", str(baseline)],
+        cwd=ROOT, capture_output=True, text=True, env=env)
+
+
+def test_a_filed_issue_carries_the_label_the_bots_trigger_on():
+    """Issue #161: the CLI created the issue with NO label while returning 0, and
+    the label is exactly what issue-bot / its sweep key on — an unlabelled filing
+    is invisible to both. The filer must verify, repair, or fail."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "gh"
+        stub.write_text(_GH_STUB_LABELS)
+        stub.chmod(0o755)
+        (td / "gh.log").write_text("")
+        (td / "issues.txt").write_text("")
+        stale = json.dumps({"as_of": "2026-01-01T00:00:00Z", "signature": ["stale"]})
+
+        # Given a create that returns 0 but applies no label
+        dropped = _run_filer_env(stale, td, {"FAKE_GH_DROP_LABEL": "1"})
+
+        # Then  the filed issue carries the label (re-applied), and it is a success
+        check("label dropped: the run still exits 0", dropped.returncode == 0, dropped.stderr)
+        check("label dropped: the issue ends up labelled",
+              "data-gap-analysis" in (td / "issues.txt").read_text().splitlines()[0],
+              (td / "issues.txt").read_text()[:80])
+        check("label dropped: it re-applied the label with gh issue edit",
+              any(l.startswith("issue edit") for l in (td / "gh.log").read_text().splitlines()),
+              (td / "gh.log").read_text())
+
+        # Given a create that drops the label AND an edit that cannot apply it
+        (td / "issues.txt").write_text("")
+        (td / "gh.log").write_text("")
+        broken = _run_filer_env(stale, td, {"FAKE_GH_DROP_LABEL": "1",
+                                            "FAKE_GH_EDIT_LABEL_FAILS": "1"})
+
+        # Then  the filer FAILS LOUDLY instead of reporting an invisible filing
+        check("label unappliable: the run fails", broken.returncode != 0, broken.stderr)
+        check("label unappliable: it names the label and why it matters",
+              "does not carry" in broken.stderr and "data-gap-analysis" in broken.stderr,
+              broken.stderr)
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -422,6 +524,7 @@ def main() -> int:
     test_ingest_merge_list_covers_every_declared_dimension()
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
     test_a_gap_set_is_filed_once()
+    test_a_filed_issue_carries_the_label_the_bots_trigger_on()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
