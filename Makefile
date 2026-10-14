@@ -19,9 +19,25 @@
 
 SHELL := /bin/bash
 
+# ---- nerve supervision plugin credential (issue #120) ------------------------
+# The nerve plugin is baked into the image as CODE (Dockerfile, pinned to the
+# Hermes plugin catalog commit) and is the ONLY consumer of this credential. The
+# NAME below is the one the plugin actually resolves — measured at the pinned
+# revision, hermes_nerve/client.py::PROVIDER_API_KEY_ENV:
+#   openrouter (the default jev_provider) -> OPENROUTER_API_KEY
+#   typesafe                              -> TYPESAFE_API_KEY
+#   opencode                              -> OPENCODE_API_KEY
+# There is NO `JEV_KEY` upstream (plugin source and the Hermes plugin catalog
+# entry that pins it both say so), so wiring that name would register a variable
+# nothing reads and the plugin would keep reporting its key missing — the silent
+# failure AGENTS.md rule 3e forbids. The key itself is never written anywhere:
+# it reaches the container only as `-e $(NERVE_KEY_ENV)` at run time.
+NERVE_PROVIDER := openrouter
+NERVE_KEY_ENV  := OPENROUTER_API_KEY
+
 IMAGE := trending-local-llms:latest
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN $(IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(IMAGE)
 
 # The TEST image layers the CURRENT requirements-test.txt on top of the base
 # image at build time, so unit/QA tests (which need markdown-it-py + tabulate
@@ -30,7 +46,7 @@ DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 TEST_IMAGE := trending-local-llms-test:latest
 TEST_REQUIREMENTS := requirements-test.txt
 TEST_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN $(TEST_IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(TEST_IMAGE)
 
 
 HERMES_MODEL := deepseek/deepseek-v4.1-flash
@@ -96,6 +112,17 @@ _setup:
 	hermes config set model.aliases.nous-deepseek.key_env NOUS_API_KEY
 	hermes config set model.aliases.nous-deepseek.max_tokens $(HERMES_MAX_TOKENS)
 	hermes config set model.aliases.nous-deepseek.context_window $(HERMES_CONTEXT_WINDOW)
+	@# The nerve plugin is baked into this image as code (Dockerfile). Only its
+	@# NON-SECRET setting is written to config.yaml — the credential itself is
+	@# never here: the plugin resolves it by NAME
+	@# ($(NERVE_KEY_ENV)) from the environment, which the run wrappers inject
+	@# with `-e $(NERVE_KEY_ENV)` (AGENTS.md rule 3e).
+	@if hermes plugins list 2>/dev/null | grep -qi 'nerve'; then \
+		echo "== nerve plugin present; pinning its Jev provider ($(NERVE_PROVIDER)) — the key stays in the env =="; \
+		hermes config set plugins.entries.nerve.settings.jev_provider $(NERVE_PROVIDER); \
+	else \
+		echo "== nerve plugin NOT installed in this image; \`make nerve-check\` fails until it is =="; \
+	fi
 
 .PHONY: _search-nvidia
 _search-nvidia:
@@ -199,6 +226,14 @@ _validate-schema:
 _engine-check:
 	python3 scripts/engine_registry.py --check-raw data/raw
 
+.PHONY: _nerve-check
+_nerve-check:
+	python3 scripts/nerve_key_check.py
+
+.PHONY: nerve-check
+nerve-check:
+	$(TEST_RUN) make _nerve-check
+
 .PHONY: _validate-search
 _validate-search:
 	python3 scripts/validate.py --only search,mapping
@@ -221,7 +256,7 @@ _validate-mapped:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py)
 
 
 .PHONY: _requirements-test
