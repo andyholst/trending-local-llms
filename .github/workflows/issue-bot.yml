@@ -402,6 +402,9 @@ jobs:
         env:
           RC: ${{ steps.impl.outputs.rc }}
           SCOPE_ERROR: ${{ steps.push.outputs.scope_error }}
+          # without it the message reads "the push of the # branch" (measured on
+          # run 38517245659)
+          ISSUE: ${{ steps.iss.outputs.issue }}
         run: |
           if [ "${SCOPE_ERROR:-}" = "true" ]; then
             echo "::error::token scope: the push of the #$ISSUE branch was rejected because it edits"

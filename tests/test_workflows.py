@@ -645,6 +645,10 @@ def test_issue_bot():
     check("issue-bot: a missing implementation makes the RUN red at a named step",
           "implemented != 'true'" in str(fail_step.get("if", ""))
           and "exit 1" in fail_step.get("run", ""), fail_step.get("if"))
+    # Measured on run 38517245659: the message read "the push of the # branch"
+    # because this step lost the issue number.
+    check("issue-bot: the fail-loud message knows WHICH issue it failed for",
+          "steps.iss.outputs.issue" in str(fail_step.get("env", {}).get("ISSUE", "")), fail_step.get("env"))
 
 
 def test_unit_tests_really_run():
