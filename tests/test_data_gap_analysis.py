@@ -317,6 +317,99 @@ def test_analysis_is_wired_to_make_and_the_refresh_pipeline():
           f"{i_filer} < {i_commit}")
 
 
+# A fake `gh` on PATH: `issue list` answers from a store file, `issue create`
+# records the signature marker from the body it receives on stdin and appends it
+# to that store. The product code (the filer) runs for real; only the CLI is faked.
+_GH_STUB = """#!/bin/sh
+echo "$@" >> "$FAKE_GH_LOG"
+case "$1 $2" in
+  "issue list")
+    sig=""
+    for a in "$@"; do case "$a" in *" in:body") sig="${a% in:body}";; esac; done
+    line=$(grep "^${sig}|" "$FAKE_GH_STORE" 2>/dev/null | head -1)
+    if [ -n "$line" ]; then
+      n=$(printf '%s' "$line" | cut -d'|' -f2)
+      st=$(printf '%s' "$line" | cut -d'|' -f3)
+      printf '[{"number":%s,"state":"%s","url":"https://example.test/issues/%s"}]\\n' "$n" "$st" "$n"
+    else
+      printf '[]\\n'
+    fi ;;
+  "issue create")
+    body=$(cat)
+    sig=$(printf '%s' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | head -1)
+    n=$(grep -c . "$FAKE_GH_STORE" 2>/dev/null || true)
+    n=$(( ${n:-0} + 1 ))
+    printf '%s|%s|OPEN\\n' "$sig" "$n" >> "$FAKE_GH_STORE"
+    printf 'https://example.test/issues/%s\\n' "$n" ;;
+esac
+exit 0
+"""
+
+
+def _run_filer(baseline_text, td):
+    """Run `--issue` once with a stale baseline (a fresh checkout of master)."""
+    baseline = td / "baseline.json"
+    baseline.write_text(baseline_text)
+    env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
+           "FAKE_GH_LOG": str(td / "gh.log"), "FAKE_GH_STORE": str(td / "issues.txt")}
+    return subprocess.run(
+        [sys.executable, "scripts/data_gap_analysis.py", "--issue", "--baseline", str(baseline)],
+        cwd=ROOT, capture_output=True, text=True, env=env)
+
+
+def test_a_gap_set_is_filed_once():
+    """Issue #157: the baseline reaches master only through the refresh PR, so two
+    runs before that merge see the same change. The second must file nothing."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "gh"
+        stub.write_text(_GH_STUB)
+        stub.chmod(0o755)
+        (td / "gh.log").write_text("")
+        (td / "issues.txt").write_text("")
+        # A baseline whose signature differs from the store's = the stale master
+        # state while the previous run's PR is still open.
+        stale = json.dumps({"as_of": "2026-01-01T00:00:00Z", "signature": ["stale"]})
+
+        # Given a refresh run that sees a changed gap set
+        first = _run_filer(stale, td)
+
+        # Then  it files exactly one issue, carrying the signature marker
+        creates = [l for l in (td / "gh.log").read_text().splitlines() if l.startswith("issue create")]
+        check("first run: files one issue", len(creates) == 1, str(creates))
+        filed_sig = (td / "issues.txt").read_text().strip().split("|")[0]
+        check("first run: the body carries the signature marker",
+              len(filed_sig) == 12 and all(c in "0123456789abcdef" for c in filed_sig),
+              (td / "issues.txt").read_text()[:80])
+        # …and the baseline FILE is updated to this run's signature (the message
+        # for that is only printed for the explicit `--write-baseline` flag)
+        baseline_sig = json.loads((td / "baseline.json").read_text())["signature"]
+        check("first run: the baseline is written",
+              baseline_sig != ["stale"] and len(baseline_sig) > 1, str(baseline_sig)[:80])
+
+        # When  the next run starts from master again (the baseline in the repo is
+        # still the old one, because the first run's PR is not merged yet)
+        second = _run_filer(stale, td)
+
+        # Then  it recognises the gap set and files NO duplicate
+        creates = [l for l in (td / "gh.log").read_text().splitlines() if l.startswith("issue create")]
+        check("second run: no duplicate issue", len(creates) == 1, str(creates))
+        check("second run: it says the gap set is already filed",
+              "already filed" in second.stderr, second.stderr)
+
+        # Given the previous issue was CLOSED (the work was done or dropped)
+        store = (td / "issues.txt").read_text().replace("|OPEN", "|CLOSED")
+        (td / "issues.txt").write_text(store)
+
+        # When  the gap set is seen again
+        third = _run_filer(stale, td)
+
+        # Then  a closed issue does not block the new work
+        creates = [l for l in (td / "gh.log").read_text().splitlines() if l.startswith("issue create")]
+        check("third run: a CLOSED issue does not suppress a new one", len(creates) == 2, str(creates))
+        check("third run: it files again", "filed https://example.test" in third.stderr, third.stderr)
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -328,6 +421,7 @@ def main() -> int:
     test_every_dimension_is_a_declared_optional_key()
     test_ingest_merge_list_covers_every_declared_dimension()
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
+    test_a_gap_set_is_filed_once()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

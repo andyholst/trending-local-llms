@@ -28,6 +28,7 @@ Report only by default: it never fails the data PR. Stdlib only.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -263,6 +264,42 @@ def write_baseline(report: dict, path: Path) -> None:
                                indent=2, sort_keys=True) + "\n")
 
 
+def signature_id(report: dict) -> str:
+    """A stable id for the gap SET (the issue marker), independent of `as_of`."""
+    return hashlib.sha256("\n".join(report["signature"]).encode()).hexdigest()[:12]
+
+
+def marker(sig: str) -> str:
+    """The invisible marker carried in the issue body, searched for on the next run."""
+    return f"<!-- data-gap-signature: {sig} -->"
+
+
+def already_filed(sig: str) -> str | None:
+    """The URL of an OPEN issue already carrying this gap signature, or None.
+
+    The baseline only reaches the repository through the refresh PR, so between
+    filing and that merge every run computes "changed" from the same old baseline
+    and would file the same issue again (two crons a day can both do it) — and a
+    refresh PR closed without merging would re-file it forever. A CLOSED issue
+    does not block: a closed gap-issue means the work was done or dropped, so the
+    gap set re-appearing later is new information, not a duplicate (#157).
+    """
+    out = subprocess.run(
+        ["gh", "issue", "list", "--state", "all", "--label", LABEL,
+         "--search", f"{sig} in:body", "--json", "number,state,url"],
+        text=True, capture_output=True)
+    if out.returncode != 0:
+        raise SystemExit(f"[data-gaps] gh issue list failed: {out.stderr.strip()}")
+    try:
+        items = json.loads(out.stdout or "[]")
+    except json.JSONDecodeError:
+        items = []
+    for item in items:
+        if item.get("state") == "OPEN":
+            return str(item.get("url") or item.get("number"))
+    return None
+
+
 def file_issue(report: dict, previous: dict | None) -> str:
     """One issue per changed gap set. The body is the report + the ranked gaps."""
     added = sorted(set(report["signature"]) - set((previous or {}).get("signature", [])))
@@ -284,6 +321,9 @@ def file_issue(report: dict, previous: dict | None) -> str:
     if added:
         body += ["", "## New since the last analysis", ""] + [f"- `{a}`" for a in added[:40]]
     body += ["", "## Full report", "", "```", render(report).strip(), "```"]
+    # The marker lets the NEXT run recognise this gap set (issue #157). Invisible
+    # in the rendered issue, searchable in the body.
+    body += ["", marker(signature_id(report))]
     title = (f"data-gap: {ranked[0][0]} ({ranked[0][1]} models)" if ranked else "data-gap: refresh analysis")
     out = subprocess.run(
         ["gh", "issue", "create", "--title", f"{title} ({report['as_of']})",
@@ -326,9 +366,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[data-gaps] baseline written to {baseline_path} ({len(report['signature'])} entries)",
               file=sys.stderr)
     if a.issue and is_changed:
-        url = file_issue(report, previous)
-        print(f"[data-gaps] filed {url}", file=sys.stderr)
-        write_baseline(report, baseline_path)
+        sig = signature_id(report)
+        existing = already_filed(sig)
+        if existing:
+            # The baseline reaches master only through the refresh PR, so a second
+            # run before that merge (or after a PR was closed) sees the same change:
+            # report it, file nothing (issue #157).
+            print(f"[data-gaps] gap set {sig} is already filed: {existing} — no duplicate",
+                  file=sys.stderr)
+        else:
+            url = file_issue(report, previous)
+            print(f"[data-gaps] filed {url}", file=sys.stderr)
+            write_baseline(report, baseline_path)
     elif a.issue:
         print("[data-gaps] no new gap set — no issue filed", file=sys.stderr)
     if a.check and is_changed:
