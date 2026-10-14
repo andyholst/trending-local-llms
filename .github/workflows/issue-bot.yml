@@ -253,6 +253,12 @@ jobs:
           PUSH_OUT=$(git push -u origin "$BRANCH" 2>&1) || PUSH_RC=$?
           echo "$PUSH_OUT"
           if [ -n "$PUSH_OUT" ] && echo "$PUSH_OUT" | grep -qiE "refusing to allow a Personal Access Token|workflow.*scope"; then
+            # Do NOT lose the implementation: the commit exists locally even
+            # though GitHub refused the push. Hand it over as a patch artifact
+            # (apply with `git am`) instead of re-running the agent (30 min) once
+            # the token can push workflow files.
+            git format-patch HEAD~1 --stdout > issue-implementation.patch 2>/dev/null || true
+            ls -l issue-implementation.patch 2>/dev/null || echo "no patch produced"
             echo "pushed=false" >> "$GITHUB_OUTPUT"
             echo "scope_error=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -310,6 +316,19 @@ jobs:
           path: qa-report.txt
           if-no-files-found: ignore
 
+      # A scope-rejected push must not throw the agent's work away: the commit is
+      # attached so the owner can `git am` it the moment the token can push
+      # .github/workflows/** (measured on #120, run 38509118147 — the work was
+      # lost with the ephemeral runner).
+      - name: Upload the unpushed implementation as a patch
+        if: always() && steps.push.outputs.scope_error == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-implementation-patch
+          path: issue-implementation.patch
+          if-no-files-found: ignore
+
       - name: Push the fixes (only when the loop is green)
         if: steps.loop.outputs.green == 'true'
         env:
@@ -356,8 +375,12 @@ jobs:
               echo 'The implementation touches `.github/workflows/**` and the pushing token cannot do that:'
               echo '`FIXBOT_DISPATCH_TOKEN` needs the **Workflows: Read and write** permission'
               echo '(classic PAT: the `workflow` scope). Until that is granted, an issue whose'
-              echo 'implementation edits a workflow cannot be delivered by the bot - it is re-picked'
-              echo 'by the next sweep once the scope is there.'
+              echo 'implementation edits a workflow cannot be delivered by the bot.'
+              echo ''
+              echo 'The implementation is NOT lost: this run uploaded it as the artifact'
+              echo '`issue-implementation-patch` (apply with `git am issue-implementation.patch`'
+              echo 'after granting the permission), and the next sweep re-picks the issue if the'
+              echo 'artifact is not used.'
             fi
             echo ""
             echo "Additive only (no existing key removed or narrowed, no value shrunk)."

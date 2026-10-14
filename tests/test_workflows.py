@@ -300,6 +300,9 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
         pushed = g("rev-parse", "--verify", "ci/data-gap-120-x", cwd=td / "remote.git")
         files = (g("show", "--name-only", "--format=", pushed.stdout.strip(), cwd=td / "remote.git").stdout.split()
                  if pushed.returncode == 0 else [])
+        patch = wc / "issue-implementation.patch"
+        if patch.exists():
+            files.append(f"PATCH:{patch.read_text().count('diff --git')}")
         return p.returncode, p.stdout + p.stderr + gh_out, files
     finally:
         shutil.rmtree(td, ignore_errors=True)
@@ -315,7 +318,10 @@ def test_issue_bot_push_scope_rejection():
     check("issue-push: a workflow-scope rejection does NOT fail the step", rc == 0, out[-300:])
     check("issue-push: it reports scope_error=true and pushed=false",
           "scope_error=true" in out and "pushed=false" in out, out[-300:])
-    check("issue-push: nothing reached the remote", files == [], files)
+    check("issue-push: nothing reached the remote",
+          not [f for f in files if not f.startswith("PATCH:")], files)
+    check("issue-push: the unpushed implementation is preserved as a patch artifact",
+          any(f.startswith("PATCH:") and int(f.split(":")[1]) >= 1 for f in files), files)
 
     rc, out, files = _run_issue_push(GH_WORKFLOW_HOOK, touch_workflow=False)
     check("issue-push: a normal push still succeeds", rc == 0 and "pushed=true" in out, out[-200:])
