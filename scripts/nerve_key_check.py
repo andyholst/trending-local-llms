@@ -13,9 +13,9 @@ env var". Measured at the pinned revision, the plugin resolves its provider key
 by NAME in `hermes_nerve/client.py::PROVIDER_API_KEY_ENV` via the Hermes secret
 scope / process env:
 
-    openrouter (the default jev_provider) -> OPENROUTER_API_KEY
-    typesafe                              -> TYPESAFE_API_KEY
-    opencode                              -> OPENCODE_API_KEY
+    openrouter -> OPENROUTER_API_KEY   (the plugin's own default jev_provider)
+    typesafe   -> TYPESAFE_API_KEY     <- PRODUCTION: the provider this setup runs
+    opencode   -> OPENCODE_API_KEY
 
 There is no `JEV_KEY` anywhere in the plugin (or in the Hermes plugin catalog
 entry that pins it), so wiring that name would register a variable nothing
@@ -62,15 +62,25 @@ PLUGIN_SOURCE = "keeltrace/hermes-nerve"
 PLUGIN_REF = "3de7d94982b7a2cb87c829e4b2366ced927d8fed"
 
 # The verified credential NAME per provider, from the plugin's client at the pin
-# (hermes_nev/client.py::PROVIDER_API_KEY_ENV). The pipeline selects the default
-# provider, so it forwards its name; the alternates are listed for the guard and
-# documented in AGENTS.md, never wired as well.
+# (hermes_nev/client.py::PROVIDER_API_KEY_ENV). The pipeline pins the provider
+# PRODUCTION uses (never the plugin's own default), so it forwards THAT name; the
+# alternates are listed for the guard and documented in AGENTS.md, never wired as
+# well.
 PROVIDER_KEY_ENV = {
     "openrouter": "OPENROUTER_API_KEY",
     "typesafe": "TYPESAFE_API_KEY",
     "opencode": "OPENCODE_API_KEY",
 }
-DEFAULT_PROVIDER = "openrouter"
+# PRODUCTION's provider, measured on the host Hermes that this pipeline mirrors:
+# `plugins.entries.nerve.settings.jev_provider = typesafe` (and
+# `typesafe_model = jev-latest`), with `TYPESAFE_API_KEY` in the profile env.
+# Wiring the plugin's own default (`openrouter`) would forward a name production
+# never sets, so the plugin would fail on `TYPESAFE_API_KEY is not configured`.
+DEFAULT_PROVIDER = "typesafe"
+
+# ANY provider's credential name — echoing must be caught whichever one a file
+# happens to use, not only the provider this pipeline pins.
+ANY_KEY_RE = "(?:" + "|".join(re.escape(v) for v in sorted(PROVIDER_KEY_ENV.values())) + ")"
 
 # Workflows that run a container target (and therefore need the `-e` to resolve).
 CONTAINER_WORKFLOWS = ("refresh-bot.yml", "fix-bot.yml", "qa-validate.yml", "issue-bot.yml")
@@ -179,6 +189,18 @@ def check_makefile(text: str) -> list[str]:
         want = PROVIDER_KEY_ENV.get(prov.group(1), "") if prov is not None else ""
         if want and name != want:
             out.append(f"Makefile: NERVE_PROVIDER={prov.group(1) if prov else '?'} resolves {want}, not {name}")
+        # A CONSISTENT pair is not enough: the provider must be the one the setup
+        # runs. `openrouter` + `OPENROUTER_API_KEY` is self-consistent and still
+        # wrong — production sets TYPESAFE_API_KEY, so the plugin would be
+        # configured for a provider whose key is not in the env at all (the
+        # mistake this guard was written after).
+        if prov is None:
+            out.append(f"Makefile: NERVE_PROVIDER is not defined (the setup runs {DEFAULT_PROVIDER})")
+        elif prov.group(1) != DEFAULT_PROVIDER:
+            out.append(f"Makefile: NERVE_PROVIDER={prov.group(1)} is not the provider the setup runs "
+                       f"({DEFAULT_PROVIDER}) — the plugin would be pointed at a provider whose key "
+                       f"is not in the env, so it fails on {PROVIDER_KEY_ENV[DEFAULT_PROVIDER]} "
+                       f"is not configured")
     if re.search(r"-e\s+JEV_KEY\b", text):
         out.append("Makefile: forwards -e JEV_KEY, which the pinned plugin never reads")
     # `_setup` writes SETTINGS, never a key value
@@ -188,7 +210,7 @@ def check_makefile(text: str) -> list[str]:
         if _credential_path(path) and _literal_value(value):
             out.append(f"Makefile: _setup writes a literal credential into config.yaml "
                        f"(`config set {path} …{value[-4:] if len(value) > 4 else ''}`)")
-    if re.search(r"(?im)^.*echo\s+.*\$\(NERVE_KEY_ENV\)|^.*echo\s+.*\$\{?OPENROUTER_API_KEY", body):
+    if re.search(rf"(?im)^.*echo\s+.*\$\(NERVE_KEY_ENV\)|^.*echo\s+.*\$\{{?{ANY_KEY_RE}\b", body):
         out.append("Makefile: _setup echoes the credential")
     return out
 
@@ -196,20 +218,21 @@ def check_makefile(text: str) -> list[str]:
 def check_workflows(texts: dict[str, str]) -> list[str]:
     """Every workflow that runs the container must let the `-e` resolve."""
     out = []
+    key = PROVIDER_KEY_ENV[DEFAULT_PROVIDER]
     for name in CONTAINER_WORKFLOWS:
         text = texts.get(name, "")
         if not text:
             out.append(f"{name}: missing")
             continue
         exported = {n: s for n, s in _ENV_EXPORT.findall(text)}
-        if "OPENROUTER_API_KEY" not in exported:
+        if key not in exported:
             out.append(f"{name}: does not pass the credential via `env: … ${{{{ secrets.… }}}}` "
                        f"(the `-e` flag would resolve to nothing)")
-        elif exported["OPENROUTER_API_KEY"] != "OPENROUTER_API_KEY":
-            out.append(f"{name}: exports secrets.{exported['OPENROUTER_API_KEY']} as "
-                       f"OPENROUTER_API_KEY — the name the plugin resolves must be the env name")
+        elif exported[key] != key:
+            out.append(f"{name}: exports secrets.{exported[key]} as "
+                       f"{key} — the name the plugin resolves must be the env name")
         for line in text.splitlines():
-            if re.search(r"\becho\b.*\$\{?\s*OPENROUTER_API_KEY", line):
+            if re.search(rf"\becho\b.*\$\{{?\s*{ANY_KEY_RE}\b", line):
                 out.append(f"{name}: echoes the credential")
     return out
 
@@ -244,21 +267,28 @@ def runtime_proof(directory: Path | None) -> tuple[bool | None, str]:
         "    print('LOUD:', e); sys.exit(3)\n"
         "print('NO-ERROR')\n"
     )
+    # Every provider key is stripped, then PRODUCTION's provider is SELECTED
+    # explicitly: `HERMES_NERVE_PROVIDER` decides which name the plugin reads, so
+    # a bare run would test the plugin's own default instead of the setup's.
+    # With the provider selected and no key, the plugin must name THAT key as
+    # missing; with a placeholder under that name it must construct.
+    key = PROVIDER_KEY_ENV[DEFAULT_PROVIDER]
     env = {k: v for k, v in os.environ.items()
            if k not in set(PROVIDER_KEY_ENV.values())}
-    env.pop("HERMES_NERVE_PROVIDER", None)
+    env["HERMES_NERVE_PROVIDER"] = DEFAULT_PROVIDER
     absent = subprocess.run([sys.executable, "-c", code, str(directory)],
                             capture_output=True, text=True, env=env, timeout=60)
-    if absent.returncode != 3 or "is not configured" not in absent.stdout:
-        return False, (f"plugin did not fail loudly without the key "
+    if absent.returncode != 3 or f"{key} is not configured" not in absent.stdout:
+        return False, (f"plugin did not fail loudly without the key, naming {key} "
                        f"(rc={absent.returncode}, out={absent.stdout.strip()[:120]!r}, "
                        f"err={absent.stderr.strip()[-160:]!r})")
     with_key = subprocess.run([sys.executable, "-c", code, str(directory)],
                               capture_output=True, text=True, timeout=60,
-                              env={**env, PROVIDER_KEY_ENV[DEFAULT_PROVIDER]: "placeholder-not-a-key"})
+                              env={**env, key: "placeholder-not-a-key"})
     if with_key.returncode == 3:
-        return False, "plugin still reports the key missing when it IS present in the environment"
-    return True, (f"loud without the key ({PROVIDER_KEY_ENV[DEFAULT_PROVIDER]} is not configured), "
+        return False, (f"plugin still reports {key} missing when it IS present in the "
+                       f"environment (provider {DEFAULT_PROVIDER})")
+    return True, (f"loud without the key ({key} is not configured, provider {DEFAULT_PROVIDER}), "
                   f"silent-with-key proof ok")
 
 
