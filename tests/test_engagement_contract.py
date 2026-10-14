@@ -13,6 +13,7 @@ refresh PR went red on:
   - test_stray_keys_pruned_and_counters_coerced    undeclared keys dropped
   - test_existing_model_path_also_pruned           update path, not only add
   - test_contract_keys_cover_search_contract       store accepts what search declares
+  - test_optional_dimension_fields_survive_ingest  declared OPTIONAL dimensions kept
 
 Run:  python3 tests/test_engagement_contract.py   or   make test
 """
@@ -141,6 +142,58 @@ def test_contract_keys_cover_search_contract():
           UT._engagement_keys() == frozenset(store_keys), str(sorted(UT._engagement_keys())))
 
 
+def test_optional_dimension_fields_survive_ingest():
+    """A declared OPTIONAL model key (system_ram_min & co, the data-gap
+    dimensions) must survive ingest on BOTH paths — a new model keeps it and an
+    EXISTING model gains it — while a value already in the store is never
+    overwritten (additive only, AGENTS.md §2.3b). The update path used to drop
+    these keys entirely, so the gap could never close on an existing model."""
+
+    # Given a raw model that states a system-RAM requirement (and a context
+    # window the agent wrote as a bare NUMBER, as it naturally would)
+    raw = raw_model("zz-ram-new", {"likes": 1})
+    raw["system_ram_min"] = "16GB"
+    raw["context_tokens"] = 131072
+
+    # When  it is ingested as a NEW model
+    store = ingest(base_store(), {"nvidia-1.json": {
+        "backend": "nvidia", "generated_utc": "2026-10-01T00:00:00Z", "models": [raw]}})
+    new = next(m for m in store["models"] if m["id"] == "zz-ram-new")
+
+    # Then  the optional keys are stored, and the store still conforms
+    check("new model: system_ram_min stored", new.get("system_ram_min") == "16GB", json.dumps(new)[:200])
+    check("new model: a numeric context_tokens is stored as text (schema-safe)",
+          new.get("context_tokens") == "131072", json.dumps(new)[:200])
+    check("new model: store validates against model_contract", not schema_errors(store),
+          "; ".join(schema_errors(store)[:3]))
+
+    # And  for an EXISTING model the keys are filled, never overwritten
+    store2 = base_store()
+    target = store2["models"][0]
+    target.pop("system_ram_min", None)
+    target["weight_gb"] = "42GB"  # already in the store: must be KEPT
+    raw2 = raw_model(target["id"], {"likes": 1})
+    raw2["name"], raw2["hf"] = target["name"], target.get("hf", "")
+    raw2["system_ram_min"] = "16GB"
+    raw2["weight_gb"] = "1GB"
+    ingest(store2, {"nvidia-1.json": {
+        "backend": "nvidia", "generated_utc": "2026-10-01T00:00:00Z", "models": [raw2]}})
+    updated = next(m for m in store2["models"] if m["id"] == target["id"])
+    check("existing model: an absent optional key is filled",
+          updated.get("system_ram_min") == "16GB", json.dumps(updated)[:200])
+    check("existing model: a stored value is never shrunk or overwritten",
+          updated.get("weight_gb") == "42GB", json.dumps(updated)[:200])
+    check("existing model: store validates against model_contract", not schema_errors(store2),
+          "; ".join(schema_errors(store2)[:3]))
+
+    # And  the merge list is exactly the declared optional dimensions
+    mc_props = MODEL_CONTRACT["properties"]["models"]["items"]["properties"]
+    check("every merged key is declared in model_contract.json",
+          all(k in mc_props for k in UT._ADDITIVE_MODEL_FIELDS), str(UT._ADDITIVE_MODEL_FIELDS))
+    check("no merged key is a REQUIRED field", not (
+        set(UT._ADDITIVE_MODEL_FIELDS) & set(MODEL_CONTRACT["properties"]["models"]["items"]["required"])))
+
+
 def main() -> int:
     print("model-level engagement: raw -> ingest -> store contract")
     test_real_pr50_snapshot_ingests_schema_clean()
@@ -148,6 +201,7 @@ def main() -> int:
     test_stray_keys_pruned_and_counters_coerced()
     test_existing_model_path_also_pruned()
     test_contract_keys_cover_search_contract()
+    test_optional_dimension_fields_survive_ingest()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

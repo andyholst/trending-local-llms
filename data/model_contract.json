@@ -141,6 +141,26 @@
             "type": "string",
             "description": "LEAST required VRAM to run (e.g. '8GB')"
           },
+          "system_ram_min": {
+            "type": "string",
+            "description": "OPTIONAL. System RAM / unified-memory requirement the post states (e.g. '16GB'). The CPU and Metal tables are RAM-bound (Apple Silicon is unified memory) and partial offload keeps the un-offloaded layers + KV cache in system RAM. Only ever a figure the source post gives; never derived from VRAM."
+          },
+          "weight_gb": {
+            "type": "string",
+            "description": "OPTIONAL. Weight footprint per format + quant the post states (e.g. '5.95GB Q4_K_M'). The budget a run needs before any context is allocated."
+          },
+          "context_tokens": {
+            "type": "string",
+            "description": "OPTIONAL. Context window the post states (e.g. '131072', '128K'). The KV cache scales with it and consumes RAM and VRAM alike."
+          },
+          "storage_offload": {
+            "type": "string",
+            "description": "OPTIONAL. Storage-offload requirement the post states (e.g. '640GB NVMe, experts on SSD'). MoE engines (Strata) run big models by streaming experts from storage."
+          },
+          "engine_min_version": {
+            "type": "string",
+            "description": "OPTIONAL. Engine minimum version / required flags the post states (e.g. 'llama.cpp b6xxx, --n-gpu-layers 99'); many figures only reproduce on a specific engine build."
+          },
           "backends": {
             "type": "array",
             "minItems": 1,

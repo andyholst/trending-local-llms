@@ -11,7 +11,10 @@ runs the REAL ingest_raw_snapshots + normalize_model path, and asserts:
   2. Every MANDATORY field from data/model_contract.json is present and
      non-empty on every model.
   3. Every OPTIONAL field is present (filled by normalization) where the
-     contract declares it.
+     contract declares it — EXCEPT engine_aliases and the source-data
+     requirement dimensions (system_ram_min, weight_gb, context_tokens,
+     storage_offload, engine_min_version), whose absence is meaningful and which
+     ingest must never invent.
   4. The store validates against data/model_contract.json (JSON Schema).
 
 This is the "expected test data is true" guarantee: the fixture encodes the
@@ -123,17 +126,30 @@ def test_optional_fields_filled():
     contract = json.loads(CONTRACT.read_text())
     items = contract["properties"]["models"]["items"]
     required = items["required"]
-    # Sparse per-model overrides: absence is meaningful ("no override"), so
-    # ingest must NOT fill them. engine_aliases maps a posted engine name to a
-    # registered fork only for models that need one (e.g. Bonsai 2 -> PrismML
-    # llama.cpp fork); every other model has none.
-    sparse = {"engine_aliases"}
+    # Absence is MEANINGFUL for two kinds of optional key, so ingest must NOT
+    # fill them:
+    #  - engine_aliases maps a posted engine name to a registered fork only for
+    #    models that need one (e.g. Bonsai 2 -> PrismML llama.cpp fork); every
+    #    other model has none.
+    #  - the source-data requirement dimensions (update_trending's
+    #    _ADDITIVE_MODEL_FIELDS: system_ram_min, weight_gb, context_tokens,
+    #    storage_offload, engine_min_version) exist only when a source post
+    #    states the figure — an absent one is a reported data gap, and inventing
+    #    one would be a fabrication (AGENTS.md §2 rule 2). Read from ingest so a
+    #    new dimension is covered without editing this test.
+    sparse = {"engine_aliases"} | set(UT._ADDITIVE_MODEL_FIELDS)
     optional = [k for k in items["properties"] if k not in required and k not in sparse]
     store = run_ingest(base_store())
     for m in store["models"]:
         for field in optional:
             check(f"{m['id']}: optional field '{field}' present after ingest",
                   field in m, f"missing {field}")
+    # And  the source-data dimensions are NEVER invented by normalization: the
+    #      fixture's raw snapshot states none of them, so none may appear.
+    for m in store["models"]:
+        for field in sorted(UT._ADDITIVE_MODEL_FIELDS):
+            check(f"{m['id']}: source-data '{field}' not invented by ingest",
+                  m.get(field) is None, repr(m.get(field)))
     # engine optional fields
     eng_opt = [k for k in items["properties"]["engines"]["items"]["properties"]
                if k not in items["properties"]["engines"]["items"]["required"]]

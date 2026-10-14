@@ -903,6 +903,11 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
                 existing["engines"] = merge_engines(existing.get("engines", []), incoming)
                 apply_engine_aliases(existing)
                 sync_backends(existing, store.get("engines", {}))
+                # additive optional metadata (system_ram_min, weight_gb, ...):
+                # fill only what is absent, never overwrite — the update path
+                # used to drop these entirely, so a gap the contract had just
+                # gained room for could never close on an existing model.
+                merge_additive_fields(existing, m)
                 existing["last_seen"] = now_utc().strftime("%Y-%m-%d")
                 # merge post-granularity engagement, deduped by source_post URL
                 eng = existing.setdefault("engagement", {})
@@ -1103,6 +1108,48 @@ def _slug(name: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
     return s or "unknown"
 
+
+# Model-level OPTIONAL metadata the contracts declare on a model (never in a
+# contract's `required`), merged from a raw snapshot onto an EXISTING store row.
+# Without this the update path silently drops them: it merged only engines /
+# last_seen / engagement, so a dimension the contracts had just gained room for
+# (system_ram_min, weight_gb, context_tokens, storage_offload,
+# engine_min_version) could only ever land on a brand-new model — the data-gap
+# analysis would keep reporting it as missing forever. Declared here (not read
+# from the contract) because these are the only fields with this merge order;
+# tests/test_data_gap_analysis.py asserts every one is declared in BOTH
+# contracts, so the contract can never fall behind this list.
+_ADDITIVE_MODEL_FIELDS = (
+    "system_ram_min", "weight_gb", "context_tokens", "storage_offload", "engine_min_version")
+
+
+def coerce_additive(v):
+    """A dimension value is stored as the text the post gave. A bare number the
+    search agent wrote (`"context_tokens": 131072`) is kept as its string form
+    rather than failing the schema: the contracts declare these keys as strings,
+    and a schema rejection is a red refresh PR no value should cost."""
+    if isinstance(v, bool):
+        return str(v).lower()
+    if isinstance(v, (int, float)):
+        return f"{v:g}"
+    return v
+
+
+def merge_additive_fields(existing: dict, incoming: dict) -> list[str]:
+    """Fill the model-level optional metadata keys an incoming raw model carries
+    onto `existing`, WITHOUT overwriting: an absent key is filled, a key that
+    already holds a value is kept (additive only — AGENTS.md §2.3b; a value is
+    never shrunk, blanked or renamed). Returns the keys that were filled."""
+    filled = []
+    for k in _ADDITIVE_MODEL_FIELDS:
+        v = incoming.get(k)
+        if v in (None, "", [], {}):
+            continue
+        if existing.get(k) in (None, "", [], {}):
+            existing[k] = coerce_additive(v)
+            filled.append(k)
+    return filled
+
 def normalize_model(m: dict, store: dict) -> dict:
     """Fill contract-required fields on a model taken from a raw search snapshot,
     using only data already present (never invents t/s figures). Mirror of
@@ -1158,6 +1205,13 @@ def normalize_model(m: dict, store: dict) -> dict:
     m["engagement"] = prune_engagement(eng, m.get("id", "?"))
     # scrub incomplete engine rows (missing tps or engine identity) so schema passes
     m["engines"] = [e for e in engs if all(e.get(f) is not None for f in _REQ_ENGINE_FIELDS)]
+    # source-data dimensions: keep whatever the post stated (never invented),
+    # coerced to text so a numeric context_tokens does not fail the schema
+    for k in _ADDITIVE_MODEL_FIELDS:
+        if m.get(k) not in (None, "", [], {}):
+            m[k] = coerce_additive(m[k])
+        else:
+            m.pop(k, None)
     return m
 
 def main() -> int:

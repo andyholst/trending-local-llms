@@ -78,6 +78,11 @@ Each entry in `models` has exactly this shape:
 | `hf` | yes | Primary Hugging Face repo id → `https://huggingface.co/<hf>`. |
 | `vram_tier` | yes | VRAM category (8GB, 12GB, 16GB, 24GB, 32GB, 48GB). |
 | `vram_min` | yes | **LEAST required VRAM** needed to run the model (e.g. 8GB). Community-reported from the X measurement posts; cross-checked against the smallest usable quant file size on Hugging Face (HF does not expose a VRAM field — see note below). |
+| `system_ram_min` | no | **System RAM / unified-memory requirement**, only when a source post states it (e.g. `16GB`). The CPU and Metal tables are RAM-bound (Apple Silicon is unified memory) and partial offload keeps the un-offloaded layers + KV cache in system RAM. Never derived from `vram_min` and never invented — an absent value is a reported data gap. |
+| `weight_gb` | no | **Weight footprint per format + quant** as stated by the post (e.g. `5.95GB Q4_K_M`) — the budget a run needs before any context is allocated. |
+| `context_tokens` | no | **Context window** as stated by the post (e.g. `131072`, `128K`). The KV cache scales with it and consumes RAM and VRAM alike. |
+| `storage_offload` | no | **Storage-offload requirement** as stated by the post (e.g. `640GB NVMe, experts on SSD`) — MoE engines (Strata) run big models by streaming experts from storage. |
+| `engine_min_version` | no | **Engine minimum version / required flags** as stated by the post (e.g. `llama.cpp b6xxx, --n-gpu-layers 99`); many figures only reproduce on a specific build. |
 | `backends` | yes | Backends it runs on (CUDA, Metal, CPU, ROCm = AMD GPUs). Must include every backend its measurements render in — ingest adds it (`sync_backends`); AMD hardware (Radeon / RX / Strix Halo / ROCm) is ROCm whatever the engine. |
 | `supported_engines` | yes | **List of engines the model is supported by.** Each must have a measurement in `engines`. |
 | `engines` | yes | **Per-engine t/s measurements** — the core data. One entry per (engine, date). |
