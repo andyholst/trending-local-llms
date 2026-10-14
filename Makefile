@@ -452,17 +452,19 @@ validate-mapped:
 _data-gaps:
 	python3 scripts/data_gap_analysis.py
 
-.PHONY: _data-gap-issue
-_data-gap-issue:
-	python3 scripts/data_gap_analysis.py --issue
-
 .PHONY: data-gaps
 data-gaps:
 	$(TEST_RUN) make _data-gaps
 
+# HOST-side on purpose (issue #150): filing needs the `gh` CLI + the repo, and
+# the test image carries neither (measured: `command -v gh` -> not found, so the
+# step died with FileNotFoundError: 'gh' and the whole refresh job went red with
+# the data PR skipped). The script is stdlib-only, so the runner runs it as-is.
+# `data-gaps` (the report) needs no `gh` and stays in the image — hence no
+# internal `_data-gap-issue` wrapper here (rule 6d: no target without a caller).
 .PHONY: data-gap-issue
 data-gap-issue:
-	$(TEST_RUN) make _data-gap-issue
+	python3 scripts/data_gap_analysis.py --issue
 
 # ---- secret scan: no credential may reach the repo (issue #122) --------------
 # gitleaks (MIT, the most widely adopted FOSS secret scanner) runs in ITS OWN
