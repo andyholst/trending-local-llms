@@ -1174,7 +1174,10 @@
         "TensorFold",
         "llama.cpp"
       ],
-      "vram_min": "12GB"
+      "vram_min": "12GB",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0"
     },
     {
       "id": "qwen3.8-flash-next-125b",
@@ -1976,7 +1979,12 @@
         "buzz_7d": 55.3,
         "speed_bonus": 5.0,
         "trend_score": 60.3
-      }
+      },
+      "system_ram_min": "32GB",
+      "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
+      "context_tokens": "250K",
+      "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7"
     },
     {
       "id": "glm-5.3-flash",
@@ -2142,7 +2150,9 @@
         "score_7d": 18.4,
         "speed_bonus": 2.2,
         "trend_score": 20.6
-      }
+      },
+      "system_ram_min": "50GB",
+      "storage_offload": "100GB NVMe, MoE experts on SSD"
     },
     {
       "id": "bonsai-2-27b",
@@ -2589,7 +2599,8 @@
         "llama.cpp": "llama.cpp (PrismML fork)"
       },
       "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
-      "context_tokens": "262144"
+      "context_tokens": "262144",
+      "engine_min_version": "llama.cpp (PrismML fork) + bonsai-ada-surgery serve patch"
     },
     {
       "id": "qwen3.6-35b-a3b",
@@ -2732,7 +2743,8 @@
         "score_7d": 7.5,
         "speed_bonus": 4.6,
         "trend_score": 12.1
-      }
+      },
+      "system_ram_min": "32GB"
     },
     {
       "id": "nemotron-3.5-lightning-30b-a3b",
@@ -2834,7 +2846,8 @@
         "score_7d": 7.3,
         "speed_bonus": 4.7,
         "trend_score": 12.0
-      }
+      },
+      "engine_min_version": "Rapid-MLX 0.15.7"
     },
     {
       "id": "qwen3-4b",
@@ -2939,7 +2952,8 @@
       },
       "supported_engines": [
         "MLX"
-      ]
+      ],
+      "weight_gb": "2.1GB (MLX 4-bit)"
     },
     {
       "id": "lfm2.5-24b-a2b",
@@ -3009,7 +3023,8 @@
       "supported_engines": [
         "MLX"
       ],
-      "why": "LFM2.5-24B-A2B — see source posts."
+      "why": "LFM2.5-24B-A2B — see source posts.",
+      "context_tokens": "131K"
     },
     {
       "id": "cyber-frost-3.8-mlx",
@@ -3076,7 +3091,9 @@
       },
       "supported_engines": [
         "TensorFold"
-      ]
+      ],
+      "context_tokens": "26k",
+      "engine_min_version": "TensorFold 0.6.5"
     },
     {
       "id": "qwen3-14b",
@@ -3169,7 +3186,9 @@
       "supported_engines": [
         "Ollama"
       ],
-      "vram_min": "8GB"
+      "vram_min": "8GB",
+      "context_tokens": "30k",
+      "engine_min_version": "llama.cpp b11177"
     },
     {
       "id": "qwen2.5-1.5b-instruct",
@@ -3246,7 +3265,9 @@
           "name": "Qwen2.5-1.5B-Instruct",
           "hf": "Qwen/Qwen2.5-1.5B-Instruct"
         }
-      ]
+      ],
+      "system_ram_min": "8GB",
+      "weight_gb": "~1GB"
     },
     {
       "id": "kolibri-1",
@@ -3324,7 +3345,10 @@
         "score_7d": 6.4,
         "speed_bonus": 1.3,
         "trend_score": 7.7
-      }
+      },
+      "system_ram_min": "128GB",
+      "weight_gb": "47.5GB (Q4_K_M)",
+      "engine_min_version": "patched llama.cpp build (community GGUF Q4_K_M)"
     },
     {
       "id": "qwen3.8-35b-a3b",
@@ -3389,7 +3413,10 @@
         "score_7d": 4.5,
         "speed_bonus": 2.6,
         "trend_score": 7.1
-      }
+      },
+      "system_ram_min": "16GB",
+      "context_tokens": "262K",
+      "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU"
     },
     {
       "id": "qwen3-30b-a3b",
@@ -3479,7 +3506,10 @@
         "score_7d": 3.7,
         "speed_bonus": 2.1,
         "trend_score": 5.8
-      }
+      },
+      "weight_gb": "11.8GB (UD-Q2_K_XL)",
+      "system_ram_min": "12GB",
+      "storage_offload": "cold experts left on flash, re-read on router change"
     },
     {
       "id": "qwen3-next-80b-a3b",
@@ -3558,7 +3588,10 @@
         "score_7d": 3.7,
         "speed_bonus": 2.1,
         "trend_score": 5.8
-      }
+      },
+      "weight_gb": "48GB (80B-A3B file)",
+      "system_ram_min": "32GB",
+      "storage_offload": "experts streamed from NVMe SSD"
     },
     {
       "id": "gemma-4-e2b",
@@ -3637,7 +3670,8 @@
       "last_seen": "2026-10-14",
       "supported_engines": [
         "LiteRT"
-      ]
+      ],
+      "system_ram_min": "1432MB peak RAM"
     },
     {
       "id": "gemma-4-12b",
@@ -3914,7 +3948,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "weight_gb": "~2.5GB (Q4_K_M)",
+      "system_ram_min": "6GB",
+      "storage_offload": "weights mmap'd on flash (no GPU backend)"
     },
     {
       "id": "gemma-4-26b-a4b",
@@ -4324,7 +4361,8 @@
       "last_seen": "2026-06-25",
       "supported_engines": [
         "Ollama"
-      ]
+      ],
+      "system_ram_min": "2GB"
     }
   ]
 }
