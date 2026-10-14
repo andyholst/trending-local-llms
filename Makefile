@@ -435,7 +435,14 @@ _implement-issue:
 
 .PHONY: implement-issue
 implement-issue:
-	$(DOCKER_RUN) make _implement-issue
+	# `_setup` MUST run in the SAME container as the hermes call, exactly like
+	# every other public hermes target (`search-*`, `fix`, `hermes-smoke`): it is
+	# what writes `model.aliases.nous-deepseek.*` into that container's
+	# ~/.hermes/config.yaml. Without it Hermes starts with NO alias and
+	# auto-routes to whatever provider key is in the env — measured on the first
+	# issue-bot run (#124, run 38502619350): `HF_TOKEN` -> Hugging Face ->
+	# `HTTP 403 ... does not have sufficient permissions to call Inference Providers`.
+	$(DOCKER_RUN) sh -c "make _setup && make _implement-issue"
 
 .PHONY: test
 test:

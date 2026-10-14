@@ -500,6 +500,15 @@ this `AGENTS.md` and the `gather-data` skill, then:
   the PR against `master` with `closes #<n>`, then runs the SAME fix loop as
   fix-bot against that PR and pushes only when green, and comments the outcome on
   the issue. It never merges — qa-validate's `auto-merge` squash-merges.
+  Two failures measured on its first real run (#124, run 38502619350) are now
+  guarded by `tests/test_workflows.py::test_issue_bot`: (1) `make implement-issue`
+  MUST run `_setup` in the SAME container as the hermes call — without the alias
+  Hermes auto-routes to whatever key is in the env (`HF_TOKEN` -> Hugging Face ->
+  `HTTP 403`); (2) the outcome comment MUST use the default `github.token` with
+  `permissions: issues: write`, because the owner PAT is scoped to
+  Actions/Contents/Pull-requests only (`Resource not accessible by personal access
+  token (addComment)`). A run whose implementation did not happen is made RED by a
+  named final step — never a green run with nothing to review.
 
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
