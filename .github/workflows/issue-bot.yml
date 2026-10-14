@@ -1,0 +1,263 @@
+name: issue-bot
+
+# ISSUE-BOT pipeline — implements ONE newly-created data-gap issue (issue #113).
+#
+# Trigger surface is deliberately NARROW: `issues: [opened]` carrying the
+# `data-gap-analysis` label (exactly what `make data-gap-issue` files), plus
+# `workflow_dispatch` for the owner. It never reacts to a PR, a comment, an edit,
+# a re-open or a label-less issue — and ONE issue gets ONE implementer:
+# `concurrency: issue-bot-<issue number>` queues a second event instead of
+# launching a parallel run for the same objective.
+#
+# Flow (all of it, or the run is a defect):
+#   guard (owner/collaborator, BEFORE any secret is read)
+#   -> resolve the issue (must be OPEN) into issue.md + branch slug
+#   -> implement it with Hermes ON A FEATURE BRANCH, via `make implement-issue`
+#   -> commit + push, open the PR (`closes #<n>`, owner PAT so CI really runs)
+#   -> run the SAME fix loop as fix-bot against that PR until its pipeline is
+#      green (scripts/fix_loop.sh: check -> report -> `make fix`, FIX_ROUNDS)
+#   -> push the fixes (PAT) so qa-validate re-runs and its auto-merge job
+#      squash-merges the PR with a proper commit message.
+#
+# The bot NEVER merges, never pushes master, and never invents data: a gap it
+# cannot satisfy with a traceable value is reported on the issue instead
+# (AGENTS.md rule 2, additive-only rule 3b, contract rule 6b, wiring rule 6d).
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to implement (owner only)"
+        required: true
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: issue-bot-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  # Before anything touches a secret: only the owner or a collaborator with
+  # write access may run issue-bot (it spends the Nous key and pushes with the
+  # owner PAT). A stranger's issue can never start an implementation.
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Owner, or a collaborator with write/maintain/admin, for BOTH the
+          # actor and the triggering actor (covers re-runs). Anything else -
+          # including an API error - is refused.
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  implement:
+    needs: guard
+    # ONE issue, ONE implementer: an issue EVENT only for a newly-created
+    # data-gap issue (never a comment/edit/re-open, never a label-less issue).
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.action == 'opened'
+          && contains(github.event.issue.labels.*.name, 'data-gap-analysis'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      FIX_ROUNDS: "3"
+    steps:
+      - name: Resolve the issue (open, labelled, one branch per issue)
+        id: iss
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number || inputs.issue_number }}
+        run: |
+          STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq .state 2>/dev/null || echo "missing")
+          if [ "$STATE" != "open" ]; then
+            echo "Issue #$ISSUE is '$STATE' - nothing to implement."
+            echo "implement=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          gh api "repos/$REPO/issues/$ISSUE" --jq '.title, "", .body' > issue.md
+          SLUG=$(gh api "repos/$REPO/issues/$ISSUE" --jq .title \
+            | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40)
+          BRANCH="ci/data-gap-${ISSUE}-${SLUG}"
+          echo "implement=true" >> "$GITHUB_OUTPUT"
+          echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Implementing #$ISSUE on $BRANCH"
+
+      - name: Checkout master (PAT, so its push re-triggers CI)
+        if: steps.iss.outputs.implement == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+
+      # Pull the prebuilt base (never rebuild it here) + build the TEST image.
+      - name: Pull base image from GHCR + build test image
+        if: steps.iss.outputs.implement == 'true'
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:latest
+          docker tag ghcr.io/${{ github.repository }}:latest trending-local-llms:latest
+          docker build -f Dockerfile.test -t trending-local-llms-test:latest .
+
+      # Fail in seconds, not after 20 minutes of implementing: one real Hermes
+      # call through the alias the implementation uses.
+      - name: Hermes routing smoke
+        if: steps.iss.outputs.implement == 'true'
+        run: make hermes-smoke
+
+      - name: Implement the issue (Hermes, through make)
+        id: impl
+        if: steps.iss.outputs.implement == 'true'
+        run: |
+          set +e
+          make implement-issue
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" != "0" ]; then echo "implemented=false" >> "$GITHUB_OUTPUT"; else echo "implemented=true" >> "$GITHUB_OUTPUT"; fi
+          exit 0
+
+      - name: Commit + push the branch
+        id: push
+        if: steps.iss.outputs.implement == 'true' && steps.impl.outputs.implemented == 'true'
+        env:
+          BRANCH: ${{ steps.iss.outputs.branch }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The container writes files as root; make them committable.
+          sudo chown -R "$(id -u):$(id -g)" .
+          # One branch per issue: a re-run RESUMES the issue's branch instead of
+          # failing on an existing one (never force-pushes).
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git checkout "$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+          git add -A
+          # ignored reporting artifacts, never named in the pathspec (git exits 1
+          # on an ignored path under bash -e and the work would be lost)
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "The implementation produced no file changes - nothing to push."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "feat(data-gap): implement #$ISSUE from the post-refresh gap analysis"
+          git push -u origin "$BRANCH"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open the PR (closes the issue, owner PAT)
+        id: pr
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          BRANCH: ${{ steps.iss.outputs.branch }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+          REPO: ${{ github.repository }}
+        run: |
+          cat > pr-body.md <<'BODY'
+          Implements the filed data-gap issue from the post-refresh analysis.
+
+          Additive only: no existing key is removed or narrowed and no value is
+          shrunk; a new key is OPTIONAL. Any value that could not be traced to a
+          real source is left unset and called out in this body.
+
+          Auto-merged (squash, branch deleted) by qa-validate once `validate` and
+          `live-smoke` are green on the head commit.
+          BODY
+          printf '\ncloses #%s\n' "$ISSUE" >> pr-body.md
+          URL=$(gh pr create --base master --head "$BRANCH" \
+            --title "feat(data-gap): implement the #$ISSUE gap analysis item" \
+            --body-file pr-body.md 2>/dev/null)
+          echo "pr_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Opened $URL"
+
+      # The bot owns ITS OWN PR's pipeline: run the same loop fix-bot runs
+      # (check -> report -> make fix, at most FIX_ROUNDS) and push only when green.
+      - name: Fix loop against the PR branch
+        id: loop
+        if: steps.pr.outputs.pr_url != ''
+        run: |
+          set +e
+          scripts/fix_loop.sh
+          rc=$?
+          if [ "$rc" = "0" ]; then echo "green=true" >> "$GITHUB_OUTPUT"; else echo "green=false" >> "$GITHUB_OUTPUT"; fi
+          exit 0
+
+      - name: Upload the QA report (what the loop saw)
+        if: always() && steps.iss.outputs.implement == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-bot-qa-report
+          path: qa-report.txt
+          if-no-files-found: ignore
+
+      - name: Push the fixes (only when the loop is green)
+        if: steps.loop.outputs.green == 'true'
+        env:
+          BRANCH: ${{ steps.iss.outputs.branch }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          sudo chown -R "$(id -u):$(id -g)" .
+          git add -A
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Pipeline green with no extra changes."
+            exit 0
+          fi
+          git commit -m "fix(issue-bot): drive the pipeline green for #$ISSUE"
+          git push origin "$BRANCH"
+
+      - name: Report the outcome on the issue
+        if: always() && steps.iss.outputs.implement == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+          BRANCH: ${{ steps.iss.outputs.branch }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+          GREEN: ${{ steps.loop.outputs.green }}
+          IMPLEMENTED: ${{ steps.impl.outputs.implemented }}
+        run: |
+          {
+            echo "issue-bot ran for this issue (one implementer per issue)."
+            echo ""
+            echo "- branch: \`$BRANCH\`"
+            echo "- implementation: ${IMPLEMENTED:-not started}"
+            echo "- PR: ${PR_URL:-none opened}"
+            echo "- own pipeline green: ${GREEN:-no}"
+            echo ""
+            echo "Additive only (no existing key removed or narrowed, no value shrunk)."
+            echo "Any value that could not be traced to a real source was left unset"
+            echo "and is listed in this run's report artifact."
+          } > comment.md
+          gh issue comment "$ISSUE" --body-file comment.md

@@ -2,3 +2,6 @@ scripts/__pycache__/
 __pycache__/
 qa-report.txt
 comment.md
+# issue-bot working files: the issue text it implements and the PR body it opens
+issue.md
+pr-body.md

@@ -108,6 +108,19 @@ retains 30 days of history.
    the Makefile is the contract; a check reachable only by accident (bundled into
    no list, run by nothing) fails this test.
 
+6e. **An agent-implemented issue ends in a monitored, green, squashed PR.** An
+   issue filed by the analysis (`data-gap-analysis`) is implemented by
+   `issue-bot.yml`: the agent works on a feature branch cut from `master` with
+   the tests and the AGENTS.md row in the same branch, **opens the PR**
+   (`closes #<issue>`, owner PAT so CI really runs), then **monitors the
+   pipeline that PR triggered and fixes it until every check is green** — one
+   implementer per issue (`concurrency: issue-bot-<n>`), never a parallel run for
+   the same objective. The merge is a **squash merge with a proper Conventional
+   Commit message** (qa-validate's `auto-merge` job performs it once `validate`
+   and `live-smoke` are green); a run that stops at "branch pushed" is a defect.
+   The agent never merges, never pushes `master`, and never invents a value to
+   close a gap — an unverifiable one is reported on the issue instead.
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -450,6 +463,22 @@ this `AGENTS.md` and the `gather-data` skill, then:
   as 'pushed'. `qa-report.txt` is uploaded as a run artifact. A pushed fix
   re-runs qa-validate, which auto-merges if green; still red → a human.
 
+- **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issue #113). Trigger
+  surface is `issues: [opened]` carrying the `data-gap-analysis` label (what
+  `make data-gap-issue` files) plus an owner `workflow_dispatch` with an issue
+  number. Its `guard` job runs FIRST (owner / write collaborator, actor AND
+  triggering actor, names from `env:` — a stranger's issue starts nothing), and
+  `implement` needs it. One implementer per issue:
+  `concurrency: issue-bot-<issue number>`. It resolves the issue (must be open),
+  writes it to `issue.md`, checks out `master` with the owner PAT, pulls the base
+  image, runs `make hermes-smoke`, implements through `make implement-issue` (the
+  prompt in the Makefile: implement EXACTLY that issue, additive only, never
+  fabricate a value, wire every addition to a make target per rule 6d), pushes
+  `ci/data-gap-<n>-<slug>` (resuming it on a re-run — never a force-push), opens
+  the PR against `master` with `closes #<n>`, then runs the SAME fix loop as
+  fix-bot against that PR and pushes only when green, and comments the outcome on
+  the issue. It never merges — qa-validate's `auto-merge` squash-merges.
+
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
   the workflows enforce it themselves too, so it never depends on a setting:
@@ -608,6 +637,7 @@ actually happened.
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
+| `tests/test_workflows.py` — `test_issue_bot` (rule 6e) | the implementer bot reacting to anything but a NEWLY-created `data-gap-analysis` issue (a PR, a comment, an edit, a re-open, a label-less issue); two implementers for one issue (a concurrency key not keyed by the issue number); a raw `hermes` call in the workflow instead of `make implement-issue`; a PR opened with `GITHUB_TOKEN` (held for approval) or against the wrong base; a missing `closes #<issue>`; the bot merging a PR itself; implementing a CLOSED issue; a re-run that force-pushes instead of resuming the issue's branch; the fix loop missing or the fix push not gated on green; no outcome comment on the issue |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_validate_readme.py` — `test_readme_generated_*` + `test_readme_generated_tests_are_clock_independent` (issue #88) | a hand-edited / stale README passing `check_readme_generated`; a test rendering the expected README from the wall clock instead of the store's `generated_utc` (the fixture aged out of the 7-day band on 2026-10-05 and master went red, run 37247105182); the AST guard rejects any `render_readme(..., now()/utcnow()/today())` under `tests/` |

@@ -329,11 +329,11 @@ def test_guard_behaviour():
         ("workflow_dispatch", "stranger", "stranger", 1, "non-collaborator (API 404)"),
         ("workflow_dispatch", "andyholst", "stranger", 1, "stranger re-running an owner run"),
     ]
-    for wf_name, job in (("refresh-bot.yml", "guard"), ("fix-bot.yml", "fix")):
+    for wf_name, job in (("refresh-bot.yml", "guard"), ("fix-bot.yml", "fix"), ("issue-bot.yml", "guard")):
         step = _guard_step(wf_name, job)
         for event, actor, trigger, want, label in cases:
-            if wf_name == "fix-bot.yml" and event == "schedule":
-                continue  # fix-bot has no schedule trigger
+            if event == "schedule" and wf_name != "refresh-bot.yml":
+                continue  # only refresh-bot has a schedule trigger
             rc, out = _run_guard(step, event, actor, trigger, perms)
             verdict = "allowed" if want == 0 else "refused"
             check(f"guard {wf_name}: {label} -> {verdict}", (rc == 0) == (want == 0), f"rc={rc} {out.strip()[-120:]}")
@@ -377,6 +377,78 @@ def test_auto_merge():
           "--match-head-commit" in run and "pull_request.head.sha" in str(st.get("env", {})), run)
     check("auto-merge: never --admin (bypasses checks)", "--admin" not in run, run)
     check("auto-merge: one merge attempt per PR at a time", bool(am.get("concurrency")), am.get("concurrency"))
+
+
+def test_issue_bot():
+    """#113: the implementer bot reacts ONLY to a newly-created data-gap issue,
+    ONE implementer per issue, and it owns its own PR's pipeline: implement ->
+    push -> PR (closes the issue) -> fix loop -> push when green. It never merges
+    and never pushes master (the pipeline that created the PR must go green)."""
+    wf = load("issue-bot.yml")
+    trig = wf.get("on") or wf.get(True) or {}
+    jobs = wf["jobs"]
+
+    check("issue-bot: triggers on issues opened", (trig.get("issues") or {}).get("types") == ["opened"], trig.get("issues"))
+    check("issue-bot: no PR/comment/schedule/workflow_run trigger",
+          not ({"pull_request", "pull_request_target", "issue_comment", "workflow_run", "schedule", "push"} & set(trig)),
+          list(trig))
+    check("issue-bot: owner dispatch takes an issue number",
+          "issue_number" in str(trig.get("workflow_dispatch", {})), trig.get("workflow_dispatch"))
+
+    g = jobs.get("guard", {})
+    gstep = (steps(g) or [{}])[0]
+    check("issue-bot: has a guard job whose FIRST step is the trigger guard",
+          bool(g) and "guard" in gstep.get("name", "").lower(), gstep.get("name"))
+    check("issue-bot: guard checks actor AND triggering_actor: owner or write+ collaborator",
+          "github.actor" in str(gstep.get("env", {}).get("ACTOR"))
+          and "github.triggering_actor" in str(gstep.get("env", {}).get("TRIGGER"))
+          and _guard_ok(gstep.get("run", "")), gstep.get("env"))
+    check("issue-bot: guard uses env, not inline ${{ }} (no injection)",
+          "${" + "{" not in gstep.get("run", ""))
+    check("issue-bot: implement depends on guard", "guard" in _deps(jobs, "implement"), _deps(jobs, "implement"))
+
+    impl = jobs["implement"]
+    cond = str(impl.get("if", ""))
+    check("issue-bot: reacts only to a NEWLY-created issue (action == opened)", "action == 'opened'" in cond, cond)
+    check("issue-bot: ignores an issue without the analysis label",
+          "data-gap-analysis" in cond and "labels" in cond, cond)
+    check("issue-bot: the owner may dispatch it", "workflow_dispatch" in cond, cond)
+    secret_steps = [i for i, st in enumerate(steps(impl)) if "secrets." in str(st)]
+    check("issue-bot: every secret-using step is AFTER the guard job (guard is a separate job)",
+          bool(g) and all("secrets." not in str(st) for st in steps(g)), secret_steps)
+
+    conc = wf.get("concurrency", {})
+    check("issue-bot: one implementer per issue (concurrency keyed by the issue number)",
+          "issue.number" in str(conc.get("group")) and conc.get("cancel-in-progress") is False, conc)
+
+    body = run_text(impl)
+    check("issue-bot: implements through make (never a raw hermes invocation in the workflow)",
+          "make implement-issue" in body and "hermes -z" not in body, "")
+    check("issue-bot: checks the issue is still OPEN before implementing", ".state" in body, "")
+    check("issue-bot: one branch per issue (ci/data-gap-<n>-<slug>)", "ci/data-gap-" in body, "")
+    check("issue-bot: resumes the issue's branch on a re-run (no force-push)",
+          "ls-remote" in body and "--force" not in body, "")
+    check("issue-bot: commits + pushes the implementation", "git commit" in body and "git push -u origin" in body, "")
+
+    pr = step(impl, "Open the PR")
+    pr_run = pr.get("run", "")
+    check("issue-bot: opens the PR against master", "--base master" in pr_run, pr_run[:200])
+    check("issue-bot: the PR closes the issue", "closes #" in pr_run, pr_run[:200])
+    check("issue-bot: opens the PR with the owner PAT (a GITHUB_TOKEN PR is held for approval)",
+          PAT in str(pr.get("env", {}).get("GH_TOKEN", "")), pr.get("env"))
+    check("issue-bot: never merges a PR itself", "gh pr merge" not in body, "")
+
+    loop = step(impl, "Fix loop")
+    check("issue-bot: monitors the pipeline it created (the real fix loop)",
+          "scripts/fix_loop.sh" in loop.get("run", ""), loop.get("run", "")[:200])
+    push = step(impl, "Push the fixes")
+    check("issue-bot: pushing the fixes is gated on the loop being green",
+          "green == 'true'" in str(push.get("if", "")), push.get("if"))
+    check("issue-bot: reports the outcome on the issue (branch, PR, green)",
+          "issue comment" in run_text(impl), "")
+
+    check("issue-bot: guard job runs before any secret-bearing job",
+          "guard" in _deps(jobs, "implement"), _deps(jobs, "implement"))
 
 
 def test_unit_tests_really_run():
@@ -425,6 +497,7 @@ def main() -> int:
     test_guard_behaviour()
     test_nothing_pushes_master()
     test_auto_merge()
+    test_issue_bot()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
