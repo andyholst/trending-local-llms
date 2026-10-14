@@ -8,7 +8,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 Ties go to more posts, then the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
-> Last generated: 2026-10-14 19:18 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-10-14 20:20 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
@@ -223,6 +223,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 - **Spec-tracked changes (OpenSpec):** every change starts as a tracked change — `make openspec-new NAME=<kebab-name>` creates `openspec/changes/<name>/`, you write `proposal.md` (Why / What Changes / what is **not** covered), a capability spec `specs/<capability>/spec.md` (each Requirement with a Given/When/Then Scenario and a `- **Test:**` line naming the test that locks it) and `tasks.md` (a `- [ ]` checklist, ticked as each step is verified). `make openspec-check` is the gate — every active change validates (`make openspec-validate NAME=…` for one), no box is unticked (`make openspec-tasks-check`) and the index below is current — and CI runs it on every PR. `make openspec-status` shows every change; `make openspec-archive NAME=…` moves a finished one to `openspec/changes/archive/`.
 - **The index — `OPENSPEC.md`:** the one file at the repo root that references every change this repo has made (active and archived: issue, PR, capability specs, `ticked/total` tasks). It is **generated**: `make openspec-index` rewrites it, `make openspec-index-check` fails when it is stale or a change on disk has no row, so a change cannot land unlisted.
 - **Analysis ships issues, never code:** an implementation run records what it noticed in `findings.md` (one `## <title>` section per finding with `Evidence:` / `Why:` / `Done when:`, or `- none`) — `make findings-check` fails loudly when that analysis is missing, and `make file-findings` files one issue per finding (label `tech-debt`, deduped by an invisible signature, linked to the issue and PR it came from). Findings are never fixed inside the change that found them: they get their own issue, OpenSpec change and review.
+- **The description — `ARCHITECTURE.md`:** how this repo works — the data flow, every `make` target (with the image it runs in), every job of every pipeline and its gates, the three runner images and their content-hash tags, every script, and the life of a change. It is part of the change (AGENTS.md rule 6h): a change that adds, renames or removes a target, a pipeline job, an image or a script MUST update it in the same change, and `make architecture-check` (CI) fails when the file and the repository disagree.
 - **QA before a refresh lands:** `make qa-report` runs the aggregate job's QA targets — a *finding* (data quality) is reported, but a target that **could not run** (no image / no such command) fails the run, so a green refresh means the checks actually ran.
 - All changes go through a **feature branch + PR**; automation never pushes to `master`. A PR is auto-merged (squash, branch deleted) only when CI (`validate` + `live-smoke`) is green.
 

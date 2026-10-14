@@ -102,6 +102,12 @@ jobs:
       - name: OpenSpec gate (changes validate, tasks ticked, index current)
         run: make openspec-check
 
+      # The description is part of the change (rule 6h): every public make
+      # target, workflow and script must be in ARCHITECTURE.md, and nothing it
+      # names may be gone from the repository.
+      - name: Architecture description (rule 6h)
+        run: make architecture-check
+
       - name: Run unit tests (in container)
         run: make test
 
