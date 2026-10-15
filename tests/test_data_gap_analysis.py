@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -553,6 +554,96 @@ def test_a_filed_issue_carries_the_label_the_bots_trigger_on():
               broken.stderr)
 
 
+# ---- the backfill that closes the filed `engine_min_version` gap (issue #163) --
+#
+# A structured requirement dimension is only ever the SOURCE POST's own
+# statement. The post is captured in data/raw/*.json, so the evidence for a
+# value is the model's captured text there: a value whose version-like tokens
+# (and at least one distinctive token) do not appear in it has no post behind it
+# and is a fabrication — the one failure this stage must never make.
+
+def _captured_text(store_models: set[str] | None = None) -> dict[str, str]:
+    """Per model id, the free text the search captured in data/raw/*.json (the
+    record of the real `…/status/<id>` post): the model's own prose plus every
+    measurement's `quant` / `hardware`."""
+    out: dict[str, list[str]] = {}
+    for f in sorted(G.RAW_DIR.glob("*.json")):
+        d = G.load(f, {}) or {}
+        for m in d.get("models", []):
+            mid = m.get("id")
+            if not mid or (store_models is not None and mid not in store_models):
+                continue
+            parts = [m[k] for k in ("quant", "hardware", "why") if isinstance(m.get(k), str)]
+            for e in m.get("engines", []) or []:
+                parts += [e[k] for k in ("quant", "hardware") if isinstance(e.get(k), str)]
+            out.setdefault(mid, []).append(" ".join(parts))
+    return {k: " ".join(v) for k, v in out.items()}
+
+
+def _engine_min_version_is_evidenced(value: str, captured: str) -> bool:
+    """True when the captured source text supports the value: every version-like
+    token of it appears in the text, and at least one distinctive token does."""
+    hay = captured.lower()
+    tokens = [t for t in re.split(r"[^A-Za-z0-9.]+", value or "") if len(t) >= 4]
+    if not tokens or not any(t.lower() in hay for t in tokens):
+        return False
+    versioned = [t for t in tokens if re.search(r"\d+\.\d+", t) or re.fullmatch(r"b\d{3,}", t)]
+    return all(t.lower() in hay for t in versioned)
+
+
+def test_engine_min_version_backfill_traces_to_the_captured_source_text():
+    """Issue #163's top-ranked gap closes with REAL data only: every structured
+    `engine_min_version` in the store must be the source post's own statement of
+    the build / required flags, i.e. its wording is present in the text the
+    search captured for that model (`data/raw/*.json`) — and the post it came
+    from is a real `…/status/<id>` URL."""
+
+    import update_trending as UT  # noqa: E402
+
+    store = G.load(G.STORE)
+    captured = _captured_text()
+    carried = [m for m in store["models"] if m.get("engine_min_version")]
+
+    # Then  the guard is not vacuous …
+    check("engine_min_version: at least one model carries a structured value",
+          bool(carried), "no model carries engine_min_version")
+
+    # … every value is evidenced by the captured text of a real post …
+    unevidenced = [m.get("id") for m in carried
+                   if not _engine_min_version_is_evidenced(m["engine_min_version"],
+                                                           captured.get(m.get("id"), ""))]
+    check("engine_min_version: every value is present in the model's captured source text",
+          not unevidenced, str(unevidenced))
+
+    # … and each such model has a real `…/status/<id>` post behind it
+    untraceable = [m.get("id") for m in carried
+                   if not any(UT._is_post_url(str(e.get("source_post", "")))
+                              for e in (m.get("engines") or []))]
+    check("engine_min_version: every value traces to a real …/status/<id> post",
+          not untraceable, str(untraceable))
+
+    # And  an invented value — one no captured snapshot mentions — is refused
+    check("engine_min_version: an unsupported value fails the evidence rule",
+          not _engine_min_version_is_evidenced("llama.cpp b999999, --invented-flag 7.7.7",
+                                               captured.get(carried[0].get("id"), "")))
+
+
+def test_engine_min_version_coverage_can_never_shrink():
+    """The closed gap must not silently reopen. The dimension is carried by a
+    floor of models, and the analysis reports fewer models missing it than the
+    29/30 the filed issue (#163) recorded."""
+
+    store = G.load(G.STORE)
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    n = sum(1 for m in store["models"] if m.get("engine_min_version"))
+    missing = len(report["missing"]["engine_min_version"])
+
+    check("engine_min_version: coverage floor holds (>= 25 models)",
+          n >= 25, f"{n} models carry it")
+    check("engine_min_version: fewer models are missing it than the filed issue's 29/30",
+          missing < 29, f"{missing} still missing")
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -567,6 +658,8 @@ def main() -> int:
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
     test_a_gap_set_is_filed_once()
     test_a_filed_issue_carries_the_label_the_bots_trigger_on()
+    test_engine_min_version_backfill_traces_to_the_captured_source_text()
+    test_engine_min_version_coverage_can_never_shrink()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
