@@ -49,8 +49,12 @@ def check(name, cond, detail=""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
-def _run(args, available=()):
-    """Run the real script with the docker CLI faked; return (rc, calls, out)."""
+def _run(args, available=(), env_extra=None):
+    """Run the real script with the docker CLI faked; return (rc, calls, out).
+
+    `env_extra` lets a caller add the seams a mode needs (issue #206's push probe
+    points `IMAGE_REGISTRY_HOST` at a local server); everything else is unchanged.
+    """
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         stub = td / "docker"
@@ -66,6 +70,7 @@ def _run(args, available=()):
             "FAKE_DOCKER_LOG": str(log),
             "FAKE_DOCKER_AVAILABLE": str(avail),
             "IMAGE_REPO": IMAGE_REPO,
+            **(env_extra or {}),
         }
         proc = subprocess.run([sys.executable, str(SCRIPT), *args],
                               cwd=ROOT, capture_output=True, text=True, env=env)

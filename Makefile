@@ -149,6 +149,23 @@ image-ensure-base:
 image-ensure-test:
 	python3 scripts/ensure_image.py ensure-test
 
+# ---- the agent image: publishing is a deliberate, guarded act (issue #206) ----
+# The base image IS the agent image — it bakes the Hermes CLI and the pinned nerve
+# plugin, and every bot job runs inside it — so publishing it is privileged, not a
+# side effect of a data refresh. `.github/workflows/publish-agent-image.yml` runs
+# these three, in this order: the owner/collaborator guard, the push probe, the
+# publish. Publishing is what makes the hash tag exist, so every later `image-ensure`
+# PULLS the toolchain instead of rebuilding it (measured on #220: a PR that did not
+# touch the Dockerfile still paid a nine-minute build).
+agent-image-ref: ## Print the GHCR refs of the agent image for this revision's Dockerfile
+	python3 scripts/ensure_image.py ref
+
+agent-image-push-check: ## CI: prove the ambient credential can PUSH the agent image, before the build
+	python3 scripts/ensure_image.py push-check
+
+publish-agent-image: ## Build + push the agent image when its hash tag is absent (FORCE=1 rebuilds the same inputs)
+	python3 scripts/ensure_image.py publish $(if $(FORCE),--force,)
+
 # ---- OpenSpec (spec-driven change tracking; Dockerized CLI) ------------------
 # Every change is a TRACKED change: openspec/changes/<name>/ holds proposal.md,
 # specs/<capability>/spec.md and tasks.md, created BEFORE the code is written and
@@ -423,7 +440,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py)
 
 
 .PHONY: _requirements-test

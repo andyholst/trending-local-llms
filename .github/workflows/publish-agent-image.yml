@@ -1,0 +1,117 @@
+name: publish-agent-image
+
+# PUBLISH THE AGENT IMAGE (issue #206) — deliberately, by hand, only by someone
+# with write access.
+#
+# Why a pipeline of its own: the base image IS the agent image. It bakes the
+# Hermes CLI and the pinned `keeltrace/hermes-nerve` plugin, and every bot job
+# (`hermes-smoke`, `implement-issue`, `review-issue`, the fix loop) runs inside
+# it — so publishing it is a PRIVILEGED act over the toolchain the whole fleet
+# trusts, not a side effect of a data refresh. Until now the only publisher was
+# refresh-bot's `build` job, so "republish the toolchain" and "refresh the data"
+# were one switch (`force_rebuild`), and nothing proved the credential before the
+# ten-minute build.
+#
+# Measured cost of the gap (#220): a PR that did NOT touch the Dockerfile still
+# ran `docker build -t trending-local-llms:latest .` in its `validate` job,
+# because no run had published this revision's `dockerfile-<sha12>` tag — that
+# build was the bulk of the job's 9m31s and it re-downloads Hermes every time.
+#
+# Guard model (defence in depth, the same shape the bots use):
+#   1. `workflow_dispatch` only — no `schedule`, no `pull_request`, no `push`, no
+#     `workflow_run`: a data refresh can never trigger a publish, and a publish can
+#     never be triggered by a PR.
+#   2. The `guard` job runs FIRST and re-checks the actor AND the triggering actor
+#     against the collaborator API BEFORE any secret is read. GitHub's own gate
+#     decides who SEES the button; this decides who may drive it.
+#   3. GHCR login uses the DEFAULT `GITHUB_TOKEN` with `packages: write`, not a PAT:
+#     llgenie measured that a PAT which is not an org member is refused
+#     `permission_denied: create_package` for a brand-new package while the
+#     repository's own token creates it (their PR #267) — and this repo's base and
+#     test packages were created by its own workflows' default token the same way.
+#   4. `make agent-image-push-check` PROVES the credential can write the package
+#     before the build, printing the registry's own refusal when it cannot.
+#   5. `make publish-agent-image` is a no-op when this revision's hash tag is
+#     already published, so a re-run costs seconds instead of ten minutes.
+#
+# It never merges, never pushes a branch, never touches master.
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild + push even when this revision's hash tag is already published"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+  packages: write
+
+# One publish at a time; a second dispatch queues instead of racing the first.
+concurrency:
+  group: publish-agent-image
+  cancel-in-progress: false
+
+jobs:
+  # Before anything touches a secret: only the owner or a collaborator with
+  # write/maintain/admin may publish the image the bots trust. Same guard shape as
+  # refresh-bot / issue-bot / fix-bot.
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  publish:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      IMAGE_REPO: ghcr.io/${{ github.repository }}
+      IMAGE: trending-local-llms:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: This revision's refs
+        run: make agent-image-ref
+      # The default token: the credential that CAN create this package (see the
+      # header). Username is the triggering actor, never the organisation.
+      - name: Log in to GHCR with the default token
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Prove this credential can push (fail in seconds, not after the build)
+        run: make agent-image-push-check
+      - name: Build + push the agent image (no-op if this revision is already published)
+        env:
+          FORCE_INPUT: ${{ inputs.force }}
+        run: |
+          if [ "$FORCE_INPUT" = "true" ]; then
+            echo "== force: rebuilding this revision's inputs =="
+            make publish-agent-image FORCE=1
+          else
+            make publish-agent-image
+          fi
+      - name: Print what the fleet will pull
+        run: make agent-image-ref
