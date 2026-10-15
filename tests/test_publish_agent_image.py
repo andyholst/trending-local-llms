@@ -310,6 +310,36 @@ def test_the_push_check_runs_before_the_build():
           publish_job.count("make agent-image-ref") >= 1, "")
 
 
+def test_the_probe_step_hands_over_the_token_the_script_reads():
+    """The script reads the credential from the ENVIRONMENT — not from `docker login`.
+
+    Measured on the first real dispatch of this pipeline (run 38679326521): the
+    step logged in with `docker login` and then failed with
+    `[push-check] FAIL: no credential in the environment (GITHUB_TOKEN or GH_TOKEN)`,
+    so the probe could not probe and the build was skipped — the publish path could
+    not have run. The PR's CI was green throughout, because a `workflow_dispatch`
+    workflow is never executed by the pull_request pipeline: its runtime is only
+    exercised when it is dispatched. So the shape is asserted here.
+    """
+
+    # Given the workflow's probe step and the script that runs in it
+    text = _wf()
+    parts = text.split("- name: Prove this credential can push", 1)
+    step = parts[1].split("- name:", 1)[0] if len(parts) > 1 else ""
+    script = (ROOT / "scripts" / "ensure_image.py").read_text()
+
+    # When  the step's env and the script's credential source are compared
+    # Then  the step exports exactly the variable the script reads
+    check("wf: the probe step exists", step != "", parts and parts[0][-60:])
+    check("wf: the script reads GITHUB_TOKEN from the environment",
+          'os.environ.get("GITHUB_TOKEN"' in script, "")
+    check("wf: the probe step exports GITHUB_TOKEN (what the script reads)",
+          re.search(r"GITHUB_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}", step) is not None,
+          step)
+    check("wf: it is the default token, not a secret",
+          "secrets." not in step, step)
+
+
 def test_the_pipeline_never_merges_and_never_pushes_a_branch():
     """It publishes an image; it does not land changes."""
 
@@ -352,6 +382,7 @@ def main() -> int:
     test_the_guard_runs_first_and_before_any_secret()
     test_publishing_uses_the_default_token_not_a_pat()
     test_the_push_check_runs_before_the_build()
+    test_the_probe_step_hands_over_the_token_the_script_reads()
     test_the_pipeline_never_merges_and_never_pushes_a_branch()
     test_everything_is_wired_where_ci_and_the_suite_look()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
