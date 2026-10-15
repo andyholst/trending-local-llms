@@ -201,6 +201,7 @@ keep it honest (issue #207):
 | `issue-queue` | Print the implementer's queue (oldest first) with each candidate's window, its reviewer-verdict hold **and its decided hold** (`agent:refined`/`agent:closed`, applied by `make issue-verdict`, no TTL — a human clears the label) — the ONE rule both bots read (`scripts/issue_queue.py`) |
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
+| `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
 | `issue-verdict` (`ISSUE=` `TRIAGE_FILE=`) | Apply the implementer's TRIAGE verdict DETERMINISTICALLY (issue #210): `implement` touches nothing (the run continues to its PR), `refine` posts ONE restatement + `agent:refined`, `close` posts the reason with its cited EVIDENCE, closes and applies `agent:closed`. A close with no EVIDENCE, a refine with no restatement and an unknown verdict exit 2 with no write at all |
 | `review-issue-pick` | Choose the ONE issue a review run works: `action=`, `issue=`, `path=`, `reason=` |
 | `review-issue-mark` (`ISSUE=` `PATH=`) | Open the reviewer's window: the `review-in-progress` label (+ the marker comment on the `body` path); prints `marker_iso=` and `body_sha=` |
@@ -249,10 +250,11 @@ keep it honest (issue #207):
 
 ## 4. The pipelines
 
-Five workflows in `.github/workflows/`. Three have a cron: **`refresh-bot.yml`**
-(daily), **`issue-bot.yml`** (hourly, `19`) and **`issue-review-bot.yml`**
-(hourly, `41`). GitHub delays and sometimes **drops**
-on-the-hour crons, hence the odd minutes (:19, :41, 17:43).
+Six workflows in `.github/workflows/`. Four have a cron: **`refresh-bot.yml`**
+(daily), **`issue-bot.yml`** (hourly, `19`), **`issue-review-bot.yml`**
+(hourly, `41`) and **`queued-alarm.yml`** (twice an hour, `7,37`). GitHub delays
+and sometimes **drops** on-the-hour crons, hence the odd minutes (:19, :41,
+:07/:37, 17:43).
 
 ### `.github/workflows/refresh-bot.yml` — the crawler (schedule + owner dispatch)
 
@@ -298,6 +300,17 @@ credential must be proven before the ten-minute build.
 Triggers are `workflow_dispatch` only — no `schedule`, no `pull_request`, no
 `push`, no `workflow_run` — so a refresh can never publish the toolchain and a PR
 can never trigger a publish copy. It never merges and never pushes a branch.
+
+### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
+
+`concurrency: queued-alarm` (queued, never cancelled). A job whose runner label matches nothing
+does not fail — it stays `queued` forever, so the run never concludes and every PR's checks sit at
+"pending" (issue #252). Deterministic, no model.
+
+| Job | Does |
+|---|---|
+| `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
+| `alarm` | `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`): list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run. Exit 1 when a job is stuck, so the scheduled run goes red. It never edits code, never opens a PR, never merges |
 
 ### `.github/workflows/issue-bot.yml` — the implementer (hourly sweep + owner dispatch)
 
