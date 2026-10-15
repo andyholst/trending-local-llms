@@ -287,7 +287,7 @@ competing PRs over the same generated files).
 
 | Job | Does |
 |---|---|
-| `fix` | Guard first (before any secret), resolve the PR (refuses `master`/`main`), checkout the branch with the PAT, `make hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks → green? stop → else write `qa-report.txt` (only the failing check's output) and `make fix`, at most `FIX_ROUNDS` (3) rounds. It commits (`fix-bot: …`) and pushes **only when the loop ends green**; still red → nothing pushed, the failing lines are commented on the PR. `qa-report.txt` is uploaded as an artifact. It never merges |
+| `fix` | Guard first (before any secret), resolve the PR (refuses `master`/`main`), then announce the repair window ON the PR (`<!-- fix-bot-start: <ISO8601Z> run=<id> -->` + branch + run URL, default `github.token`, body on stdin — so it lands BEFORE the branch is read, and no scratch file exists for `git add -A` to commit), checkout the branch with the PAT, `make hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks → green? stop → else write `qa-report.txt` (only the failing check's output) and `make fix`, at most `FIX_ROUNDS` (3) rounds. It commits (`fix-bot: …`) and pushes **only when the loop ends green**; still red → nothing pushed, the failing lines are commented on the PR. `qa-report.txt` is uploaded as an artifact. It never merges |
 
 ### `.github/workflows/publish-agent-image.yml` — the agent image (`workflow_dispatch` only)
 

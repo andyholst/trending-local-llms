@@ -38,6 +38,11 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # The window announcement uses the DEFAULT `github.token`, so it needs the
+  # Issues scope: the owner PAT is scoped to Actions/Contents/Pull-requests and
+  # cannot comment (measured: `Resource not accessible by personal access token
+  # (addComment)` on #124). issue #198.
+  issues: write
 
 # One fix-bot at a time per PR; a second dispatch queues instead of racing.
 concurrency:
@@ -115,6 +120,29 @@ jobs:
           echo "pr_num=$PR_NUM" >> "$GITHUB_OUTPUT"
           echo "branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
 
+      # Announce the window on the PR BEFORE anything reads the branch (issue #198).
+      # The loop reads the branch and then pushes to it, so a reader in between - a
+      # human, the reviewer, the next qa-validate run - saw a state that was about to
+      # change with nothing on the PR saying a repair was in flight. The timestamp is
+      # what makes it readable: "is fix-bot working on this PR right now?" was
+      # answerable only from the Actions API, which the PR page cannot show.
+      # Body arrives on STDIN (`--body-file -`), so no scratch file is written that a
+      # later `git add -A` in the push step could ever commit.
+      - name: Announce the window on the PR
+        if: steps.pr.outputs.has_pr == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUM: ${{ steps.pr.outputs.pr_num }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          printf '%s\n' \
+            "<!-- fix-bot-start: $(date -u +%Y-%m-%dT%H:%M:%SZ) run=${GITHUB_RUN_ID} -->" \
+            "fix-bot is repairing this PR **now**: it reads the branch, runs the check → fix → re-check loop (up to ${FIX_ROUNDS} Hermes round(s)), and pushes only when the loop ends green. It never merges — qa-validate's auto-merge does, once this PR is green again." \
+            "" \
+            "Branch: \`${BRANCH}\` · Run: ${RUN_URL}" \
+          | gh pr comment "$PR_NUM" --body-file -
+
       - name: Checkout PR branch (PAT, so the push re-triggers qa-validate)
         if: steps.pr.outputs.has_pr == 'true'
         uses: actions/checkout@v4
@@ -191,6 +219,10 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
+            # Close the window this run opened (#198): `if: always()`, so a loop that
+            # died mid-way still ends with a timestamp and the PR never shows a repair
+            # as permanently in flight.
+            echo "<!-- fix-bot-end: $(date -u +%Y-%m-%dT%H:%M:%SZ) run=${GITHUB_RUN_ID} -->"
             if [ "$GREEN" = "true" ] && [ "$PUSH_OUTCOME" != "success" ]; then
               echo "fix-bot: local checks went **green**, but committing/pushing the fix **failed** — nothing reached the PR. See the run log; manual review needed."
             elif [ "$GREEN" = "true" ] && [ "$PUSHED" = "yes" ]; then

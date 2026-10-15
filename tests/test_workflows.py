@@ -287,6 +287,50 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
         shutil.rmtree(td, ignore_errors=True)
 
 
+def test_fix_bot_announces_its_window():
+    """fix-bot announces its repair window on the PR BEFORE it reads the branch (issue #198)."""
+
+    # Given the fix pipeline and its steps, in order
+    wf = load("fix-bot.yml")
+    job = wf["jobs"]["fix"]
+    names = [s.get("name", "") for s in steps(job)]
+    announce = step(job, "announce the window")
+    announce_at = next((i for i, n in enumerate(names) if "announce the window" in n.lower()), None)
+    # The first step that READS the branch is the checkout.
+    checkout_at = next((i for i, n in enumerate(names) if n.lower().startswith("checkout")), None)
+
+    # Then  it exists, is posted BEFORE the branch is read, and carries the marker
+    check("fix: a start comment announces the repair window", bool(announce), names)
+    check("fix: the window opens BEFORE the branch is read",
+          announce_at is not None and checkout_at is not None and announce_at < checkout_at,
+          f"announce={announce_at} checkout={checkout_at}")
+    body = announce.get("run", "")
+    check("fix: the marker is the one the shared registry defines",
+          "<!-- fix-bot-start:" in body, body[:200])
+    check("fix: the start comment names the branch and the run",
+          "BRANCH" in body and "GITHUB_RUN_ID" in body, body[:200])
+    # The DEFAULT token: the owner PAT is scoped to Actions/Contents/Pull-requests and
+    # cannot comment (measured: `Resource not accessible by personal access token
+    # (addComment)` on #124).
+    check("fix: the announcement uses the default token, not the PAT",
+          announce.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", announce.get("env"))
+    check("fix: the default token is granted the Issues scope it needs",
+          (wf.get("permissions") or {}).get("issues") == "write", wf.get("permissions"))
+    # The body arrives on stdin, so no scratch file exists that the push step's
+    # `git add -A` could commit.
+    check("fix: the announcement writes no file a push could commit",
+          "--body-file -" in body and ".md" not in body, body[:300])
+
+    # And the window CLOSES on every path: the outcome comment is `always()` and
+    # carries the end marker, so a loop that died mid-way still ends with a stamp.
+    rep = step(job, "report result")
+    check("fix: the window is closed in the always() outcome comment",
+          "always()" in str(rep.get("if", "")) and "<!-- fix-bot-end:" in rep.get("run", ""),
+          rep.get("if"))
+    check("fix: the end marker carries the run id too",
+          "GITHUB_RUN_ID" in rep.get("run", ""), rep.get("run", "")[:200])
+
+
 def test_fix_bot_push_behaviour():
     """PR #80: the loop went green, then `git add -A -- . ':!qa-report.txt'`
     exited 1 ('paths are ignored by one of your .gitignore files') under
@@ -1274,6 +1318,7 @@ def main() -> int:
     test_the_rebuild_decision_is_one_tested_unit()
     test_qa_validate()
     test_fix_bot()
+    test_fix_bot_announces_its_window()
     test_fix_bot_push_behaviour()
     test_owner_guards()
     test_guard_behaviour()

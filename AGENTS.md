@@ -750,7 +750,19 @@ this `AGENTS.md` and the `gather-data` skill, then:
 - **`fix-bot.yml`** — the **fix** pipeline. `workflow_dispatch` ONLY (no
   `workflow_run`: it double-fired with the dispatch and was suppressed for bot
   PRs). One run per PR (`concurrency`). Resolves the PR (refuses
-  `master`/`main`), checks out the branch with the PAT, runs `make
+  `master`/`main`), then **announces its window ON THE PR**
+  (`<!-- fix-bot-start: <ISO8601Z> run=<id> -->`, with the branch and the run
+  URL, posted with the default `github.token` — the owner PAT cannot comment,
+  #124) **BEFORE it checks out the branch**: the loop reads the branch and then
+  pushes to it, so anyone reading the PR in between — a human, the reviewer, the
+  next qa-validate run — must see the repair in flight as a timestamp instead of
+  only through the Actions API. The body arrives on stdin
+  (`gh pr comment … --body-file -`), so no scratch file exists that the push
+  step's `git add -A` could ever commit, and the window CLOSES on EVERY path:
+  the existing `always()` outcome comment begins with
+  `<!-- fix-bot-end: <ISO8601Z> run=<id> -->`, so a run that died mid-way still
+  ends with a stamp rather than showing a repair as permanently in flight
+  (issue #198). Then it checks out the branch with the PAT, runs `make
   hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks →
   green? stop → else write `qa-report.txt` (ONLY the failing check's output +
   the list of checks that passed) and `make fix` (the `_fix` prompt reads that
@@ -1021,6 +1033,7 @@ actually happened.
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
+| `tests/test_workflows.py` — `test_fix_bot_announces_its_window` (issue #198) | a repair that reads (and then pushes to) a PR branch with nothing on the PR saying a repair is in flight: the window announcement missing, posted AFTER the checkout (so a reader of the branch never saw it), carrying a marker that is not the registered `<!-- fix-bot-start:` one, or posted with the owner PAT (which cannot comment — `Resource not accessible by personal access token (addComment)`, measured #124); an announcement that writes a scratch file the push step's `git add -A` could commit (the body must arrive on stdin); a window that never closes — the closing `<!-- fix-bot-end:` marker missing from the `always()` outcome comment, so a run that died mid-way leaves the PR showing a repair as permanently in flight |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
 | `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`) or under a PROVIDER the setup does not run (the plugin's own default `openrouter` instead of production's `typesafe`) — the mapping is `jev_provider` → `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY`, so a mismatch forwards a variable nothing reads and the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
