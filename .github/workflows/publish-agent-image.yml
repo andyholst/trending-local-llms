@@ -101,7 +101,15 @@ jobs:
       # header). Username is the triggering actor, never the organisation.
       - name: Log in to GHCR with the default token
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      # The probe reads the credential from the ENVIRONMENT (that is what
+      # `ensure_image.py push-check` inspects), so the job must hand it over
+      # explicitly — `docker login` alone proves nothing to the probe. Measured on
+      # the first real dispatch of this pipeline (run 38679326521): the probe
+      # failed with `no credential in the environment` and skipped the build,
+      # which is the probe working, but the publish path could not have run.
       - name: Prove this credential can push (fail in seconds, not after the build)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: make agent-image-push-check
       - name: Build + push the agent image (no-op if this revision is already published)
         env:
