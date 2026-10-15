@@ -28,6 +28,8 @@ comment.
 - **`make queued-alarm`** (`REPO=`, `MINUTES=`, `COMMENT=`) — the workflow's one command.
 - **`tests/test_queued_run_alarm.py`** — wired into `make _test`: the decision, the marker dedup,
   and the workflow wiring, over the REAL code with a fake `gh` on PATH.
+- **`AGENTS.md`** - rule 6l (a job stuck in `queued` is an ALARM, never a silent pending) plus
+  the section-8 guard row for `tests/test_queued_run_alarm.py`.
 - README + `ARCHITECTURE.md`.
 
 ## Impact

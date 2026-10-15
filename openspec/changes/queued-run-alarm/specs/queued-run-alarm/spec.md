@@ -58,3 +58,17 @@ The workflow's `alarm` job SHALL run `make queued-alarm` (never a `scripts/*.py`
 - **THEN** it runs `scripts/queued_run_alarm.py` with `--repo`, `--minutes` and `--comment`.
 
 - **Test:** `tests/test_queued_run_alarm.py::test_the_make_target_passes_its_variables_through`
+
+#### Scenario: the one comment uses the default token
+
+- **Given** the alarm workflow, whose single comment is posted through the issues API
+- **When** the alarm job's `GH_TOKEN` is read
+- **Then** it is the default `github.token` and no secret is interpolated (rule 6e: the owner PAT cannot comment)
+- **Test:** `tests/test_queued_run_alarm.py::test_the_workflow_guards_first_and_calls_the_make_target`
+
+#### Scenario: AGENTS.md carries the rule and the guard row
+
+- **Given** AGENTS.md, where this repo's rules live
+- **When** its rule list and its section-8 guard table are read
+- **Then** rule 6l documents a job stuck in `queued` and names `make queued-alarm`, and the section-8 row names `tests/test_queued_run_alarm.py`
+- **Test:** `tests/test_queued_run_alarm.py::test_agents_md_carries_the_rule_and_the_guard_row`

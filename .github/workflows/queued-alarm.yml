@@ -73,9 +73,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Report jobs queued far too long, and comment once per affected run
         env:
-          # The owner PAT: it can read the collaborator API and comment; a run is commented via
-          # the issues API, which needs `issues: write` (held by the job, too).
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          # The DEFAULT token, not the owner PAT: the run/job queries need `actions: read` and
+          # the one comment needs `issues: write` (both held by this job), and AGENTS.md rule 6e
+          # is explicit that the owner PAT CANNOT comment.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           make queued-alarm REPO="${{ github.repository }}" \

@@ -31,7 +31,7 @@ Active changes: **19** · archived: **0**
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |
 | `lint-trailing-newlines` | active | #186 | #189 | [lint-linefeeds](openspec/changes/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
-| `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
+| `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 
 ## Archived changes
