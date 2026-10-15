@@ -91,6 +91,56 @@ jobs:
           bad == [], str(bad))
 
 
+def test_githubs_own_token_in_a_run_block_is_a_violation():
+    """Issue #241: `${{ github.token }}` is a credential too, so the rule's claim is equally true of
+    it. Every spelling GitHub accepts must be caught, and the failure must NAME the expression it
+    found — a guard that says only "a secret" leaves the reader searching the file."""
+    for spelling in ("${{ github.token }}", "${{ github['token'] }}", '${{ github["token"] }}'):
+        for shape, body in (("block", "      - run: |\n"
+                                       f"          echo \"{spelling}\" | docker login ghcr.io -u x --password-stdin\n"),
+                            ("inline", f"      - run: echo \"{spelling}\" | docker login ghcr.io -u x --password-stdin\n")):
+            with tempfile.TemporaryDirectory() as td:
+                root = _tree(Path(td), {".github/workflows/a.yml":
+                    "name: a\non:\n  workflow_dispatch:\njobs:\n  a:\n    steps:\n" + body})
+                bad = cso.violations(root)
+            check(f"secrets-in-run-block: `{spelling}` in a {shape} `run:` is a violation",
+                  len(bad) == 1 and "secrets-in-run-block" in bad[0] and "github" in bad[0], str(bad))
+
+
+def test_a_secret_in_an_inline_run_is_a_violation():
+    """The inline shape (`- run: <cmd>`) is the most common one, and the collector used to skip it
+    although its docstring promised "scalar or `|`": the sandbox test is the same secret, so it has
+    to be the same rule."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/a.yml":
+            "name: a\non:\n  workflow_dispatch:\njobs:\n  a:\n    steps:\n"
+            "      - run: curl -H \"Authorization: Bearer ${{ secrets.HF_TOKEN }}\" https://example.invalid\n"})
+        bad = cso.violations(root)
+    check("secrets-in-run-block: an inline `- run: <cmd>` is scanned too",
+          len(bad) == 1 and "secrets-in-run-block" in bad[0], str(bad))
+
+
+def test_githubs_own_token_through_env_is_not_a_violation():
+    """The fix the rule asks for: the same token as a webhook/workflow `env:` entry is fine."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/a.yml":
+            "name: a\non:\n  workflow_dispatch:\njobs:\n  a:\n    steps:\n"
+            "      - run: docker login ghcr.io -u x --password-stdin\n"
+            "        env:\n          GHCR_TOKEN: ${{ github.token }}\n"})
+        bad = cso.violations(root)
+    check("secrets-in-run-block: `${{ github.token }}` passed through `env:` is not a violation",
+          bad == [], str(bad))
+
+
+def test_the_run_block_rule_only_applies_to_workflows():
+    """A shell script that mentions the expression is not a `run:` block — the rule is about YAML
+    interpolation, and a rule that fires outside its scope gets muted (measured for `key-shaped`)."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"scripts/x.sh": "echo \"${{ github.token }}\" | docker login\n"})
+        bad = cso.violations(root)
+    check("secrets-in-run-block: a non-workflow file is out of scope", bad == [], str(bad))
+
+
 # ---------------------------------------------------------------------------
 # rule: prints-secret-value
 # ---------------------------------------------------------------------------
@@ -283,6 +333,10 @@ def main() -> int:
     test_passing_the_name_only_is_not_a_violation()
     test_a_secret_expression_on_the_command_line_is_a_violation()
     test_a_bare_environment_dump_is_a_violation()
+    test_githubs_own_token_in_a_run_block_is_a_violation()
+    test_a_secret_in_an_inline_run_is_a_violation()
+    test_githubs_own_token_through_env_is_not_a_violation()
+    test_the_run_block_rule_only_applies_to_workflows()
     test_python_reading_os_environ_is_not_a_violation()
     test_a_credential_shaped_literal_is_a_violation()
     test_a_fixture_name_that_merely_starts_like_a_token_is_not_a_violation()

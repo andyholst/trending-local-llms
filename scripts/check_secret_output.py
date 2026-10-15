@@ -16,8 +16,9 @@ What the rule is really about:
 
 Checks (each one is a rule with a name, so a failure says what to do):
 
-    secrets-in-run-block   `${{ secrets.X }}` interpolated inside a `run:` block: it becomes part of
-                           the script text and of its output — pass it through `env:` instead
+    secrets-in-run-block   `${{ secrets.X }}` — or GitHub's own `${{ github.token }}` /
+                           `${{ github['token'] }}` — interpolated inside a `run:` block: it becomes
+                           part of the script text and of its output — pass it through `env:` instead
     prints-secret-value    a printing command that expands a secret-shaped variable's value
                            (`echo "$HF_TOKEN"`, `printf '%s' "$NOUS_API_KEY"`)
     xtrace-with-secrets    `set -x` in a file that also reads a secret: xtrace prints every expansion
@@ -78,6 +79,12 @@ ENV_DUMP = re.compile(r"(?:^|[|;&(]\s*)(?:sudo\s+)?(?:env|printenv)\s*(?:$|[|>])
 FILE_REDIRECT = re.compile(r">>?\s*['\"]?[^\s|&>]+")
 #: `${{ secrets.X }}` (any name) sitting inside a `run:` block.
 RUN_SECRET_EXPR = re.compile(r"\$\{\{\s*secrets\.([A-Za-z0-9_]+)")
+#: GitHub's OWN credential (issue #241): `${{ github.token }}` and the bracketed
+#: `${{ github['token'] }}` / `${{ github["token"] }}` are the same secret as
+#: `secrets.GITHUB_TOKEN`, and interpolating one into a `run:` block leaks it the same way — the
+#: script text, `ps`, and any `--debug` output. `secrets-in-run-block` therefore matches both sources;
+#: the expression that was found is named in the failure so there is nothing to guess.
+RUN_GITHUB_TOKEN = re.compile(r"\$\{\{\s*github\s*(?:\.\s*token\b|\[\s*['\"]token['\"]\s*\])")
 
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".pytest_cache"}
 #: Files that legitimately CONTAIN the patterns (this guard and its tests) — the only exemption,
@@ -105,7 +112,16 @@ def _run_blocks(text: str) -> list[tuple[int, str]]:
     block_indent: int | None = None
     for n, line in enumerate(lines, 1):
         s = line.strip()
-        if re.match(r"^(?:- )?run:\s*[|>]?\s*$", s):
+        m = re.match(r"^(?:- )?run:\s*(.*)$", s)
+        if m:
+            rest = m.group(1).strip()
+            if rest not in ("", "|", ">", "|-", ">-", "|+", ">+"):
+                # An INLINE run: the command is on the `- run: <cmd>` line itself, so that line is
+                # the script text — the form this collector used to skip although its docstring
+                # promised "scalar or `|`" (found by issue #241's tests).
+                out.append((n, line))
+                block_indent = None
+                continue
             block_indent = len(line) - len(line.lstrip())
             continue
         if block_indent is not None:
@@ -150,6 +166,10 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
                 for m in RUN_SECRET_EXPR.finditer(line):
                     bad.append(f"{rel}:{n}: secrets-in-run-block — `${{{{ secrets.{m.group(1)} }}}}` "
                                f"inside `run:` becomes script text and output; pass it through `env:`")
+                for m in RUN_GITHUB_TOKEN.finditer(line):
+                    bad.append(f"{rel}:{n}: secrets-in-run-block — `{m.group(0)}` inside `run:` becomes "
+                               f"script text and output; pass it through `env:` (`github.token` is the "
+                               f"same credential as `secrets.GITHUB_TOKEN`)")
 
         for n, line in enumerate(lines, 1):
             s = line.strip()
