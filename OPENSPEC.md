@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **18** · archived: **0**
+Active changes: **17** · archived: **0**
 
 ## Active changes
 
@@ -22,7 +22,6 @@ Active changes: **18** · archived: **0**
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
 | `fix-publish-agent-image-push-check` | active | #229 | — | [agent-image-publish](openspec/changes/fix-publish-agent-image-push-check/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/fix-publish-agent-image-push-check/proposal.md) |
-| `fix-publish-ghcr-owner-pat` | active | #248 | — | [agent-image-publish](openspec/changes/fix-publish-ghcr-owner-pat/specs/agent-image-publish/spec.md) | 10/10 | [proposal.md](openspec/changes/fix-publish-ghcr-owner-pat/proposal.md) |
 | `fix-publish-latest-tag` | active | #232 | — | [agent-image-publish](openspec/changes/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/fix-publish-latest-tag/proposal.md) |
 | `fix-publish-login-token-by-name` | active | #240 | — | [agent-image-publish](openspec/changes/fix-publish-login-token-by-name/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-publish-login-token-by-name/proposal.md) |
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |

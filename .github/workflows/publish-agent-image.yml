@@ -24,10 +24,11 @@ name: publish-agent-image
 #   2. The `guard` job runs FIRST and re-checks the actor AND the triggering actor
 #     against the collaborator API BEFORE any secret is read. GitHub's own gate
 #     decides who SEES the button; this decides who may drive it.
-#   3. GHCR login uses the owner PAT `FIXBOT_DISPATCH_TOKEN`: one long-lived
-#     credential that can push this package and carries the scopes the rest of the
-#     fleet uses (the `guard` job above still runs FIRST, before any secret is
-#     read).
+#   3. GHCR login uses the DEFAULT `GITHUB_TOKEN` with `packages: write`, not a PAT:
+#     llgenie measured that a PAT which is not an org member is refused
+#     `permission_denied: create_package` for a brand-new package while the
+#     repository's own token creates it (their PR #267) — and this repo's base and
+#     test packages were created by its own workflows' default token the same way.
 #   4. `make agent-image-push-check` PROVES the credential can write the package
 #     before the build, printing the registry's own refusal when it cannot.
 #   5. `make publish-agent-image` is a no-op when this revision's hash tag is
@@ -97,15 +98,15 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: This revision's refs
         run: make agent-image-ref
-      # The owner PAT (`FIXBOT_DISPATCH_TOKEN`) is the GHCR credential (see the
+      # The default token: the credential that CAN create this package (see the
       # header). Username is the triggering actor, never the organisation. The
-      # token reaches the shell by NAME only (rule 3e) — `${{ secrets.… }}` is
+      # token reaches the shell by NAME only (rule 3e) — `${{ github.token }}` is
       # never interpolated into the `run:` text, where it would sit in the script
       # and in any `ps`/`--debug` output; `echo "$GHCR_TOKEN"` expands it at run
       # time instead.
-      - name: Log in to GHCR with the owner PAT
+      - name: Log in to GHCR with the default token
         env:
-          GHCR_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          GHCR_TOKEN: ${{ github.token }}
           GHCR_USER: ${{ github.actor }}
         run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
       # The probe reads the credential from the ENVIRONMENT (that is what
@@ -116,7 +117,7 @@ jobs:
       # which is the probe working, but the publish path could not have run.
       - name: Prove this credential can push (fail in seconds, not after the build)
         env:
-          GITHUB_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: make agent-image-push-check
       - name: Build + push the agent image (no-op if this revision is already published)
         env:
