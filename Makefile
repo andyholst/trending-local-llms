@@ -450,7 +450,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py)
 
 
 .PHONY: _requirements-test
@@ -736,6 +736,15 @@ issue-verdict: ## Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<
 # request was implemented wrongly.
 issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>)
 	python3 scripts/issue_thread.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(REPO),--repo $(REPO),)
+
+# The queued-run alarm (issue #252): a job whose runner label matches nothing does not fail —
+# it stays `queued` forever, so the run never concludes and every PR's checks sit at "pending".
+# The DECISION lives in scripts/queued_run_alarm.py (rule 6d); the workflow calls this target.
+# Exit 1 when a job is stuck, so the scheduled run goes red.
+.PHONY: queued-alarm
+queued-alarm: ## Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1)
+	@test -n "$(REPO)" || { echo "Usage: make queued-alarm REPO=<owner/repo> [MINUTES=30] [COMMENT=1]"; exit 1; }
+	python3 scripts/queued_run_alarm.py --repo "$(REPO)" --minutes "$(if $(MINUTES),$(MINUTES),30)" $(if $(COMMENT),--comment,)
 
 .PHONY: review-issue-pick
 review-issue-pick: ## Choose the ONE issue this review run works (action=/issue=/path=)
