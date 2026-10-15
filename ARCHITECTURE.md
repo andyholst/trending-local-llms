@@ -121,6 +121,9 @@ keep it honest (issue #207):
 | `image-ensure` | Ensure **both** the base and the test image: pull the published tag for this revision, else build |
 | `image-ensure-base` | The base alone (a job that only runs the image needs this) |
 | `image-ensure-test` | The test image alone (builds the base first when it is missing) |
+| `agent-image-ref` | Print this revision's `dockerfile-<sha12>` tag + the `:latest` ref the bots pull (`ensure_image.py ref`) |
+| `agent-image-push-check` | Prove the ambient credential can WRITE the package before the build: one empty blob-upload POST, answered with the registry's own refusal when it cannot (`ensure_image.py push-check`) |
+| `publish-agent-image` | Build + push the agent image **only when its hash tag is absent**; pushes both the hash tag and `:latest`. `FORCE=1` rebuilds the same inputs. Run by `publish-agent-image.yml`, guarded to owner/collaborators (issue #206) |
 | `setup` | Install/refresh the Hermes CLI **inside the container** — through the ONE seam (`scripts/install_hermes_ci.sh`, the same file the image build runs) — and write the alias (`model.aliases.$(HERMES_ALIAS).*`) from the Makefile's own pins |
 | `hermes-alias-check` | Prove the container carries the agent it claims: read every `model.aliases.$(HERMES_ALIAS).*` field back and fail loudly on a mismatch (the image build runs the same `_hermes-alias-check`, so a broken pin never reaches a bot run) |
 | `update-hermes` | Re-run the Hermes installer in the container (what the Sunday base rebuild relies on) |
@@ -277,6 +280,22 @@ competing PRs over the same generated files).
 |---|---|
 | `fix` | Guard first (before any secret), resolve the PR (refuses `master`/`main`), checkout the branch with the PAT, `make hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks → green? stop → else write `qa-report.txt` (only the failing check's output) and `make fix`, at most `FIX_ROUNDS` (3) rounds. It commits (`fix-bot: …`) and pushes **only when the loop ends green**; still red → nothing pushed, the failing lines are commented on the PR. `qa-report.txt` is uploaded as an artifact. It never merges |
 
+### `.github/workflows/publish-agent-image.yml` — the agent image (`workflow_dispatch` only)
+
+Publishing the agent image is a **privileged, deliberate act** (issue #206): the
+base image bakes the Hermes CLI and the packed nerve plugin, and every bot job
+runs inside it, so it must not be a side effect of a data refresh and the
+credential must be proven before the ten-minute build.
+
+| Job | Does |
+|---|---|
+| `guard` | FIRST, before any secret: `github.actor` **and** `github.triggering_actor` must be the owner or a collaborator with `admin`/`maintain`/`write` (`gh api …/collaborators/<u>/permission`); anyone else dies here |
+| `publish` | `needs: guard`. Checkout → buildx → `make agent-image-ref` → GHCR login with the **default `GITHUB_TOKEN`** as the triggering actor (a PAT that is not an org member is refused `permission_denied: create_package`; measured again here: the `gh` OAuth token is refused `invalid token` by the registry API) → `make agent-image-push-check` (**before** the build: it starts an empty blob upload, so a credential that cannot write fails in seconds with the registry's own words) → `make publish-agent-image` (no-op when this revision's `dockerfile-<sha12>` tag is already published; `FORCE=1` rebuilds the same inputs) → print the refs |
+
+Triggers are `workflow_dispatch` only — no `schedule`, no `pull_request`, no
+`push`, no `workflow_run` — so a refresh can never publish the toolchain and a PR
+can never trigger a publish copy. It never merges and never pushes a branch.
+
 ### `.github/workflows/issue-bot.yml` — the implementer (hourly sweep + owner dispatch)
 
 `concurrency: issue-bot-<issue|sweep>` (a sweep and an `issues` event for the
@@ -319,7 +338,7 @@ implementer's next 3 hourly sweeps all keep the body off-limits.
 
 | Image | Built from | Tag on GHCR | Who publishes | Consumers |
 |---|---|---|---|---|
-| base `trending-local-llms:latest` | `Dockerfile` (+ `Dockerfile.test` in the hash) | `…/trending-local-llms:dockerfile-<sha12>` | `refresh-bot.yml` `build` | every `$(DOCKER_RUN)` target, the search legs, `aggregate` |
+| base `trending-local-llms:latest` | `Dockerfile` (+ `Dockerfile.test` in the hash) | `…/trending-local-llms:dockerfile-<sha12>` | `refresh-bot.yml` `build` **and** `publish-agent-image.yml` (the deliberate path, issue #206) | every `$(DOCKER_RUN)` target, the search legs, `aggregate` |
 | test `trending-local-llms-test:latest` | `Dockerfile.test` on the base + `requirements-test.txt` | `…-test:test-<sha12>` | `refresh-bot.yml` `test-image` | every `$(TEST_RUN)` target (`validate*`, `test`, `data-gaps`, `nerve-check`) |
 | openspec `trending-local-llms-openspec:latest` | `openspec/Dockerfile` (Node + pinned `@fission-ai/openspec`) | `…-openspec:openspec-<sha12>` | `refresh-bot.yml` `openspec-image` | every `openspec-*` target (`make openspec-check` in CI) |
 
@@ -349,7 +368,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |
 | `scripts/issue_queue.py` | The implementer's queue, computed once for both bots: pick order, each candidate's implementer window (`window`/`reason`/`started`), the reviewer's markers and run ids |
 | `scripts/issue_review.py` | The reviewer's deterministic core (issue #179): `--pick` (one issue, `body`/`window`/`none`), `--mark`/`--finish` (the `review-in-progress` label + the run-stamped marker), `--guard` (the TOCTOU re-check before a write), `--body-hash` (the proof the window path edited nothing) and `--check-markers` (a rewrite may not drop an invisible dedup marker). It imports `issue_queue` — the queue rule has one implementation |
-| `scripts/ensure_image.py` | The single pull-vs-build decision for all three images |
+| `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (issue #206) |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation |
