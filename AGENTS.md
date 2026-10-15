@@ -241,6 +241,41 @@ retains 30 days of history.
    (`key_env=NOUS_API_KEY`) and the key arrives at run time (rule 3e, wired per
    rule 6d).
 
+6m. **ONE path: business logic goes through the Makefile, every target that does real work is
+   wired to the CI pipelines, and NO test replaces the system under test (MANDATORY).** Three
+   properties, one rule, because each is a way to be green while proving nothing:
+
+   - **Through the Makefile — always.** No workflow `run:` step, no bot, no script and no CI job
+     may reach into `scripts/*.py` or call a test runner directly (`python3 scripts/…`,
+     `bash scripts/…`, a bare `pytest`). A `make <target>` is the ONLY entry point to the product,
+     so the command a bot runs and the command you can run locally are byte-identical — which is
+     what makes a red pipeline reproducible and a local green meaningful. A workflow that reaches
+     past the Makefile duplicates a decision the Makefile owns and drifts from it silently.
+   - **A target CI runs — always.** Every `make` target that performs a verification, a
+     generation or a publish MUST be called by a workflow (or by a `_test`/`_validate-*` recipe a
+     workflow calls). Rule 6d already requires the reverse direction — a script must be reachable
+     from a target CI runs; this closes the loop, so a target cannot be added, documented in
+     `ARCHITECTURE.md`, and then be green because nothing ever executes it. A target nothing runs
+     is not a spare part, it is a defect. A workflow calling a target that was renamed away is the
+     same defect from the other side.
+   - **No mocks in business logic — always.** A test that claims to lock business logic RUNS that
+     logic. It must never replace the system under test with a stub, fake, spy or monkeypatch:
+     such a test passes because the stand-in returned the answer the assertion wanted, and it locks
+     nothing — the real function may be deleted and the suite stays green. The only permitted
+     stand-in is an **EXTERNAL** system, and only when the test is not end-to-end: a git remote may
+     be a real local repository the real `git` talks to, an HTTP API may be a real local server or
+     a recorded fixture file the real client reads, and a stub CLI on `PATH` may stand in for the
+     network. In every case the production code that builds the request still runs, and the test
+     asserts on that request and on the files the product writes. The test is the contract; a mock
+     is the contract talking to itself.
+
+   Enforced by `tests/test_makefile_only.py` (wired into `make test`, rule 6d): it fails on a test
+   that patches, rebinds or fakes a symbol defined under `scripts/`, on a workflow step that
+   reaches the product without `make`, on a `make <target>` a workflow calls that the Makefile does
+   not define, and on any of the CI gate targets (`test`, `validate`, `lint`, `openspec-check`,
+   `architecture-check`) going uncalled by every workflow. A new target therefore needs both its
+   `ARCHITECTURE.md` row (rule 6h) AND a caller in the pipeline.
+
 6h. **`ARCHITECTURE.md` scrolls with the code (MANDATORY).** The root
    `ARCHITECTURE.md` DESCRIBES the system — the data flow, every public `make`
    target (grouped, with the image it runs in), every job of every pipeline and
@@ -983,6 +1018,7 @@ actually happened.
 | `tests/test_workflows.py` — `test_qa_validate_runs_the_openspec_gate`, `test_implement_prompt_requires_openspec_and_findings`, `test_issue_bot_files_findings_only_when_green` (rules 6f/6g, issue #172) | a PR pipeline that stopped running `make openspec-check`; an implementer prompt that dropped the OpenSpec-first/tasks/index/findings requirements (or broke the single `-z` command + `-m nous-deepseek` line); a bot that files findings on a RED loop, without the issue/PR context, with the wrong token, or that hides a filing failure (`continue-on-error` / `|| true`); a run that does not demand the analysis (`REQUIRE_FINDINGS`); the OpenSpec image not published on the same hash-tag rule as the base/test images |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
 | `tests/test_bot_markers.py` (rule 6j, issue #197) | the bot marker registry rotting: a marker a reader parses no longer round-tripping writer → parser; `issue-review` and `issue-review: window` confused for each other (the old reader matched `<!-- issue-review:` as a SUBSTRING, which is a PREFIX of the window marker, so "any reviewer activity" worked only by accident); a marker whose stamp is a placeholder (`x`) accepted as real — a reader then finds a "timestamp" that is not a time; a marker registered as written that NO file in the tree writes (a promise with no producer); AGENTS.md rule 6j's table and `scripts/bot_markers.py` drifting apart (the human table and the machine registry must name the same markers); the registry or its test unwired (rule 6d) |
+| `tests/test_makefile_only.py` (rule 6m, issue #262) | a test that replaces the system under test: a `patch`/`setattr` targeting a `scripts.<module>.<symbol>` path, or a product symbol rebound to a `MagicMock`/`Mock` — it passes because the stand-in returned the wanted answer and the real function could be deleted with the suite still green; a workflow `run:` that reaches into `scripts/`/`tests/` or calls a bare `pytest` instead of a `make` target (CI then executes a command you cannot reproduce locally, bypassing the target that owns the repo's decisions); a `make <target>` a workflow calls that the Makefile does not define (a rename lands red only when that job happens to run); a CI gate target (`test`, `validate`, `lint`, `openspec-check`, `architecture-check`) that NO workflow calls — a target green by never executing; the guard or its `main()` runner unwired (rule 6d) |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_validate_readme.py` — `test_readme_generated_*` + `test_readme_generated_tests_are_clock_independent` (issue #88) | a hand-edited / stale README passing `check_readme_generated`; a test rendering the expected README from the wall clock instead of the store's `generated_utc` (the fixture aged out of the 7-day band on 2026-10-05 and master went red, run 37247105182); the AST guard rejects any `render_readme(..., now()/utcnow()/today())` under `tests/` |
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |
