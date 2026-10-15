@@ -20,8 +20,10 @@ Two halves are locked here:
        refusal (llgenie's measured `permission_denied: create_package`) instead of
        starting a build that cannot push.
 2. `.github/workflows/publish-agent-image.yml`'s shape: dispatch-only, the
-   owner/collaborator guard FIRST and before any secret, the default token (not a
-   PAT), the push check before the build, and no merge anywhere.
+   owner/collaborator guard FIRST and before any secret (so its own token is the
+   default token), the GHCR credential is the owner PAT `FIXBOT_DISPATCH_TOKEN`
+   (passed by NAME, never in the `run:` text), the push check before the build,
+   and no merge anywhere.
 
 Run:  python3 tests/test_publish_agent_image.py   or   make test
 """
@@ -287,27 +289,29 @@ def test_the_guard_runs_first_and_before_any_secret():
           "TRIGGER: ${{ github.triggering_actor }}" in text, "")
     check("wf: only admin|maintain|write passes",
           "admin|maintain|write" in text, "")
+    # The guard MUST run before any secret is read, so its own token is the default
+    # token — never a secret (a secret here would be read BEFORE the guard decides).
+    check("wf: the guard's own token is the default token, not a secret",
+          "GH_TOKEN: ${{ github.token }}" in text.split("  publish:", 1)[0], "")
     check("wf: the guard refuses everyone else",
           "exit 1" in text.split("publish:", 1)[0], "")
 
 
-def test_publishing_uses_the_default_token_not_a_pat():
-    """Measured upstream: a PAT that is not an org member cannot create the package."""
+def test_publishing_uses_the_owner_pat_for_ghcr():
+    """The GHCR credential is the owner PAT `FIXBOT_DISPATCH_TOKEN` (the fleet's token)."""
 
     # Given the workflow and its GHCR login step
     text = _wf()
-    parts = text.split("- name: Log in to GHCR with the default token", 1)
+    parts = text.split("- name: Log in to GHCR with the owner PAT", 1)
     login = parts[1].split("- name:", 1)[0] if len(parts) > 1 else ""
 
     # When  its credential use is read
-    # Then  the login is the default token as the triggering actor, passed by NAME
-    #       (rule 3e: a credential never sits in the `run:` text), and no PAT appears
-    check("wf: GHCR login uses the default token",
-          "GHCR_TOKEN: ${{ github.token }}" in login, login)
+    # Then  the login is the owner PAT as the triggering actor, passed by NAME
+    #       (rule 3e: a credential never sits in the `run:` text)
+    check("wf: GHCR login uses the owner PAT",
+          "GHCR_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}" in login, login)
     check("wf: the token reaches the shell by NAME, never in the run text (rule 3e)",
           "run:" in login and "${{" not in login.split("run:", 1)[1], login)
-    check("wf: no PAT secret is referenced",
-          "secrets." not in text, "")
     check("wf: it asks for packages: write", "packages: write" in text, "")
     check("wf: it asks only for contents: read", "contents: read" in text, "")
 
@@ -360,10 +364,9 @@ def test_the_probe_step_hands_over_the_token_the_script_reads():
     check("wf: the script reads GITHUB_TOKEN from the environment",
           'os.environ.get("GITHUB_TOKEN"' in script, "")
     check("wf: the probe step exports GITHUB_TOKEN (what the script reads)",
-          re.search(r"GITHUB_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}", step) is not None,
+          re.search(r"GITHUB_TOKEN:\s*\$\{\{\s*secrets\.FIXBOT_DISPATCH_TOKEN\s*\}\}",
+                    step) is not None,
           step)
-    check("wf: it is the default token, not a secret",
-          "secrets." not in step, step)
 
 
 def test_the_pipeline_never_merges_and_never_pushes_a_branch():
@@ -406,7 +409,7 @@ def main() -> int:
     test_push_check_proves_the_credential_before_the_build()
     test_the_pipeline_is_dispatch_only()
     test_the_guard_runs_first_and_before_any_secret()
-    test_publishing_uses_the_default_token_not_a_pat()
+    test_publishing_uses_the_owner_pat_for_ghcr()
     test_the_push_check_runs_before_the_build()
     test_the_probe_step_hands_over_the_token_the_script_reads()
     test_the_pipeline_never_merges_and_never_pushes_a_branch()
