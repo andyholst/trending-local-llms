@@ -68,15 +68,22 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 BRANCH_PREFIX = "ci/data-gap-"
-START_MARKER = "<!-- issue-bot-start:"
+# Every bot marker is defined ONCE in scripts/bot_markers.py (issue #197): this module READS the
+# shapes it does not own, so a renamed or reworded marker can never leave this reader silently
+# concluding "no implementer has started" (rule 6d). The sibling is found the same way
+# scripts/issue_review.py finds this module.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import bot_markers as bm  # noqa: E402
+
+#: The implementer's OUTCOME comment is still matched by prose (issue #197 flags it). It is pinned
+#: to the writer's sentence by `tests/test_bot_markers.py`, so a copy edit turns CI red instead of
+#: silently stopping this reader's 3 h clock.
 OUTCOME_TEXT = "issue-bot ran for this issue"
-REVIEW_MARKER = "<!-- issue-review:"
-WINDOW_REPLY_MARKER = "<!-- issue-review: window"
-RUN_ID_RE = re.compile(r"run=([A-Za-z0-9_-]+)")
 REVIEW_LABEL = "review-in-progress"
-START_TS_RE = re.compile(r"issue-bot-start:\s*([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9:.]+Z?)")
 # The reviewer's VERDICT labels (issue #200): it looks at an issue and says what
 # it is. The implementer must act on that judgement before it implements — an
 # issue the reviewer called "not ready" is not implemented, and the sweep says so
@@ -91,8 +98,10 @@ VERDICT_LABELS = ("needs-refinement", "obsolete", "duplicate", "already-fixed")
 # a human clearing the label is the release, because the verdict is a person's or
 # the bot's deliberate statement, not a clock.
 DECIDED_LABELS = ("agent:refined", "agent:closed")
-SKIP_MARKER = "<!-- issue-bot-skip:"
-SKIP_SINCE_RE = re.compile(r"issue-bot-skip:.*?since=([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9:.]+Z?)")
+#: The skip note's `since=` ATTRIBUTE (not a marker name): the reviewer's verdict timestamp,
+#: which decides whether the note is idempotent for this review round. The marker itself is read
+#: through the registry.
+SKIP_SINCE_RE = re.compile(r"since=(" + bm.TS + ")")
 
 
 def _gh(args: list[str], check: bool = True) -> str:
@@ -200,8 +209,10 @@ def newest(timestamps: list[dt.datetime | None]) -> dt.datetime | None:
 
 def marker_run_id(body: str) -> str | None:
     """The run that wrote a reviewer marker (a run must not block itself)."""
-    match = RUN_ID_RE.search(body or "")
-    return match.group(1) if match else None
+    for m in bm.parse_markers(body or ""):
+        if m.get("run"):
+            return m["run"]
+    return None
 
 
 def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
@@ -233,16 +244,23 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
 
         comments = _comments(repo, number)
         start_ts = newest([parse_ts(c.get("createdAt")) for c in comments
-                           if START_MARKER in (c.get("body") or "")])
-        start_marker_ts = newest([parse_ts(m.group(1)) for c in comments
-                                  for m in [START_TS_RE.search(c.get("body") or "")] if m])
+                           if bm.read_marker(c.get("body") or "", "issue-bot", "start")])
+        start_marker_ts = newest([bm.ts_of(c.get("body") or "", "issue-bot", "start")
+                                  for c in comments])
         outcome_ts = newest([parse_ts(c.get("createdAt")) for c in comments
                              if OUTCOME_TEXT in (c.get("body") or "")])
+        # A reviewer's window is live work: BOTH its start marker and its window marker count
+        # (the pre-#197 substring reader matched both by accident — `<!-- issue-review:` is a
+        # prefix of `<!-- issue-review: window`). Expressed explicitly here, never by accident.
+        def _review_marker(body: str) -> bool:
+            return bool(bm.read_marker(body, "issue-review-bot", "start")
+                        or bm.read_marker(body, "issue-review-bot", "window"))
+
         review_ts = newest([parse_ts(c.get("createdAt")) for c in comments
-                            if REVIEW_MARKER in (c.get("body") or "")
+                            if _review_marker(c.get("body") or "")
                             and marker_run_id(c.get("body") or "") != run])
         reply_ts = newest([parse_ts(c.get("createdAt")) for c in comments
-                           if WINDOW_REPLY_MARKER in (c.get("body") or "")
+                           if bm.read_marker(c.get("body") or "", "issue-review-bot", "window")
                            and marker_run_id(c.get("body") or "") != run])
         reviewer_label = REVIEW_LABEL in labels  # advisory; reported, never a hold
         branch_ts = _branch_commit_ts(repo, branch) if branch else None
@@ -357,12 +375,13 @@ def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int
     for comment in _comments(repo, number):
         body = comment.get("body") or ""
         found = SKIP_SINCE_RE.search(body)
-        if SKIP_MARKER in body and found and found.group(1).rstrip("Z") == since.rstrip("Z"):
+        if (bm.read_marker(body, "issue-bot", "skip") and found
+                and found.group(1).rstrip("Z") == since.rstrip("Z")):
             print(f"[issue-queue] #{number} already noted for verdict_since={since} — no duplicate comment")
             return 0
 
     text = "\n".join([
-        f"<!-- issue-bot-skip: {now.strftime('%Y-%m-%dT%H:%M:%SZ')} "
+        f"<!-- {bm.marker_name('issue-bot', 'skip')}: {now.strftime('%Y-%m-%dT%H:%M:%SZ')} "
         f"verdict={row['verdict']} since={since} -->",
         f"**Not picked by the implementer: the reviewer holds this issue "
         f"(`{row['verdict']}`).**",

@@ -196,7 +196,23 @@ retains 30 days of history.
    `<!-- issue-bot-skip: <ISO8601Z> verdict=<label> since=<reviewer ts> -->`, one
    comment per review round) instead of only in its log. The implementer NEVER
    writes a label and never edits a body: a verdict is the reviewer's or a
-   human's, and the answer to one is a comment. All three pipelines carry the
+   human's, and the answer to one is a comment. The marker NAMES and SHAPES live
+   in ONE place — `scripts/bot_markers.py` (rule 6d) — and no reader may re-spell
+   them; a reader that keeps its own copy of a marker string drifts silently,
+   because a renamed marker raises nothing and simply reads as "no bot has
+   started" (the collision the window exists to prevent). This is that table:
+
+   | bot | artifact it announces on | marker(s) |
+   |---|---|---|
+   | `issue-bot` | the issue, BEFORE `make implement-issue` reads it | `issue-bot-start`, `issue-bot-skip` |
+   | `issue-review-bot` | the issue, before its first write | `issue-review`, `issue-review: window` |
+   | `fix-bot` | the PR it repairs | `fix-bot-start`, `fix-bot-end` |
+   | `refresh-bot` | the PR (and the gap issue) it opens | `refresh-bot-run` |
+   | `qa-validate` | the PR, immediately before it merges | `bot-merge` |
+
+   `tests/test_bot_markers.py` fails when this table and that registry disagree,
+   when a registered marker has no writer in the tree, and when a marker whose
+   stamp is a placeholder (`x`) is accepted as a marker. All three pipelines carry the
    same owner/collaborator `guard` as their FIRST job, checked BEFORE any secret
    and requiring BOTH `github.actor` and `github.triggering_actor` to be the
    owner, a collaborator with write access, or `github-actions[bot]` (the bot
@@ -966,6 +982,7 @@ actually happened.
 | `tests/test_file_findings.py` (rule 6g, issue #172) | an implementation run that wrote no `findings.md` passing silently; a vague finding (no Evidence/Why/Done-when) accepted; `- none` treated as an error instead of a valid "found nothing"; a finding filed twice (the signature dedup); a filing that loses its `tech-debt` label or its origin link; the `gh` create writing an EMPTY body (`--body-file -` needs stdin); `file-findings`/`findings-check` unwired, or the loop/bot not demanding the analysis |
 | `tests/test_workflows.py` — `test_qa_validate_runs_the_openspec_gate`, `test_implement_prompt_requires_openspec_and_findings`, `test_issue_bot_files_findings_only_when_green` (rules 6f/6g, issue #172) | a PR pipeline that stopped running `make openspec-check`; an implementer prompt that dropped the OpenSpec-first/tasks/index/findings requirements (or broke the single `-z` command + `-m nous-deepseek` line); a bot that files findings on a RED loop, without the issue/PR context, with the wrong token, or that hides a filing failure (`continue-on-error` / `|| true`); a run that does not demand the analysis (`REQUIRE_FINDINGS`); the OpenSpec image not published on the same hash-tag rule as the base/test images |
 | `tests/test_workflows.py` — trigger guards | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule |
+| `tests/test_bot_markers.py` (rule 6j, issue #197) | the bot marker registry rotting: a marker a reader parses no longer round-tripping writer → parser; `issue-review` and `issue-review: window` confused for each other (the old reader matched `<!-- issue-review:` as a SUBSTRING, which is a PREFIX of the window marker, so "any reviewer activity" worked only by accident); a marker whose stamp is a placeholder (`x`) accepted as real — a reader then finds a "timestamp" that is not a time; a marker registered as written that NO file in the tree writes (a promise with no producer); AGENTS.md rule 6j's table and `scripts/bot_markers.py` drifting apart (the human table and the machine registry must name the same markers); the registry or its test unwired (rule 6d) |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts |
 | `tests/test_validate_readme.py` — `test_readme_generated_*` + `test_readme_generated_tests_are_clock_independent` (issue #88) | a hand-edited / stale README passing `check_readme_generated`; a test rendering the expected README from the wall clock instead of the store's `generated_utc` (the fixture aged out of the 7-day band on 2026-10-05 and master went red, run 37247105182); the AST guard rejects any `render_readme(..., now()/utcnow()/today())` under `tests/` |
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |
