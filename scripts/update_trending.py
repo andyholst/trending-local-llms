@@ -84,6 +84,77 @@ SEARCH_GROUPS = {
 # both workflows, smoke, search contract, self-correct) carries exactly these.
 SEARCH_LEGS = {"nvidia": "CUDA", "metal": "Metal", "cpu": "CPU", "amd": "ROCm"}
 USER_AGENT = "trending-local-llms-bot/1.0 (research-index)"
+
+# --- query coverage (issue #264) --------------------------------------------
+# The searches were a fixed keyword list that named no model: of 24 queries the
+# ONE model-specific one named qwen3.8-27b, and none named Strata. So every
+# figure for the model topping the trend list arrived incidentally — a generic
+# card query happened to surface a post mentioning it — and the pipeline could
+# not tell "no such measurement exists" from "we never looked", so a higher one
+# upstream could never enter. The trending models are therefore added to the
+# query set FROM THE STORE, and `query_names_model()` decides whether any query
+# names a model: ONE implementation (rule 6d), read by the search prompts, the
+# coverage guard and its tests, so they can never disagree.
+QUERY_TOP_N = 10
+MODEL_QUERY_SUFFIX = "tokens per second"
+
+
+def _query_key(text) -> str:
+    """Comparison form: lowercased, every run of non-alphanumerics collapsed to
+    '-'. So 'Qwen3.8-Flash-Next 125B' and 'qwen3.8-flash-next-125b' compare
+    equal, and a SIBLING ('qwen3.8-27b') can never match by accident."""
+    return re.sub(r"[^a-z0-9]+", "-", str(text or "").lower()).strip("-")
+
+
+def model_query(m: dict) -> str:
+    """The query that names ONE model, built from the model's own id."""
+    return f"{m.get('id', '')} {MODEL_QUERY_SUFFIX}"
+
+
+def query_names_model(query: str, m: dict) -> bool:
+    """True when `query` names THIS model — by its own id, never a sibling's.
+
+    A model with no usable id is named by nothing (an empty key must never
+    match every query): that is the case the coverage guard turns red."""
+    key = _query_key(m.get("id"))
+    return bool(key) and key in _query_key(query)
+
+
+def trending_models(store: dict, today: datetime | None = None) -> list[dict]:
+    """The store's trending band in the store's own rank order, so 'top N'
+    means the same thing here as it does in the README."""
+    today = today or now_utc()
+    band = [m for m in (store.get("models") or []) if model_band(m, today) == 0]
+    return sorted(band, key=lambda m: (
+        -(m.get("engagement") or {}).get("trend_score", 0),
+        -(m.get("engagement") or {}).get("posts_7d", 0),
+        -peak_tps(m),
+        str(m.get("name", "")).lower(),
+    ))
+
+
+def derived_queries(store: dict, top_n: int = QUERY_TOP_N) -> list[str]:
+    """One query naming each of the top-N trending models."""
+    return [model_query(m) for m in trending_models(store)[:max(0, int(top_n))]]
+
+
+def all_search_queries(store: dict, top_n: int = QUERY_TOP_N) -> dict[str, list[str]]:
+    """The curated SEARCH_GROUPS with the derived model queries appended to
+    EVERY leg — a model's figure can be measured on any backend and the legs run
+    in parallel, so each leg asks for the ranked models as well as its hardware
+    keywords. The curated base is kept, never replaced."""
+    derived = derived_queries(store, top_n)
+    return {backend: list(queries) + derived for backend, queries in SEARCH_GROUPS.items()}
+
+
+def uncovered_models(store: dict, top_n: int = QUERY_TOP_N) -> list[dict]:
+    """The top-N trending models that NO query in the set names — the gap the
+    coverage guard makes loud, separable from a query that ran and found
+    nothing. Empty when the derivation works; non-empty when it does not."""
+    queries = [q for queries in all_search_queries(store, top_n).values() for q in queries]
+    return [m for m in trending_models(store)[:max(0, int(top_n))]
+            if not any(query_names_model(q, m) for q in queries)]
+
 STRICT = os.environ.get("STRICT") == "1"
 
 def now_utc() -> datetime:
@@ -820,6 +891,7 @@ Best measured t/s per model on each engine ({legend}). Only engines with at leas
 - **Analysis ships issues, never code:** an implementation run records what it noticed in `findings.md` (one `## <title>` section per finding with `Evidence:` / `Why:` / `Done when:`, or `- none`) — `make findings-check` fails loudly when that analysis is missing, and `make file-findings` files one issue per finding (label `tech-debt`, deduped by an invisible signature, linked to the issue and PR it came from). Findings are never fixed inside the change that found them: they get their own issue, OpenSpec change and review.
 - **Two bots, one queue — and a quiet window (issue #179):** `issue-bot` implements ONE open `data-gap-analysis` issue per hour (the oldest with no implementer) and **announces its window** with a start comment before it reads the body. The issue reviewer (`issue-review-bot.yml`, hourly at `41`) reads the SAME queue (`make issue-queue`) and refines the issues nobody has started: it will not touch a body inside `REVIEW_GAP_HOURS` (3 h) around an implementer start — 3 hourly sweeps before it, a run in flight, or a start within the last 3 h. When an implementer HAS started, the body stays off-limits: the reviewer posts ONE bounded reply with the reminders its review found and files what it found as its own `tech-debt` issues (`make findings-check` + `make file-findings`). A **verdict is a hold, not advice**: while the reviewer's own verdict label (`needs-refinement`, or the `obsolete`/`duplicate`/`already-fixed` family) is younger than `VERDICT_TTL_HOURS` (24 h) — measured from the reviewer's newest marker comment, because a label carries no timestamp — the sweep takes another issue and says so ON the held one (`make issue-skip-note`, one comment per review round). It writes no label and edits no body: the answer to a verdict is a comment. Drive it by hand with `make issue-queue` (the shared queue), `make issue-skip-note` (the verdict hold), `make review-issue-pick`, `make review-issue` (refine) / `make review-issue-window` (reply) and `make review-issue-finish`. **The implementer reads the WHOLE thread** (`make issue-thread`: body + every comment with author and timestamp) and decides first: `make issue-verdict` applies its verdict — `refine` posts one restatement and labels the issue `agent:refined`, `close` posts the reason with its cited evidence, closes and labels it `agent:closed` (a close without evidence is refused and the run fails), and only `implement` continues to a PR. A decided issue is skipped by the sweep through the shared queue rule.
 - **A stuck `queued` job is loud (issue #252):** a job whose runner label matches nothing does **not** fail — GitHub leaves it `queued` forever, so the run never concludes and every PR's checks sit at "pending" with no signal. `queued-alarm.yml` (twice an hour at `:07`/`:37`, dispatch too) runs `make queued-alarm`: `scripts/queued_run_alarm.py` lists the jobs still `queued` past `MINUTES` (default 30), prints a table naming the runner label and the age, and with `COMMENT=1` leaves ONE marker-deduplicated note on each affected run. It exits 1 when a job is stuck, so the scheduled run goes red. Deterministic, no model; it never edits code, opens a PR or merges.
+- **The searches ask for the models we rank (issue #264):** the refresh's queries used to be a fixed keyword list that named no model — of 24 queries the ONE model-specific one named `qwen3.8-27b`, and none named `Strata` — so every figure for the model topping this list arrived incidentally, and a higher one upstream could never enter. Now each of the top `QUERY_TOP_N` (10) trending models gets a query naming it by its own id, derived from the store by ONE implementation (`scripts/update_trending.py`, rule 6d) and appended to every search leg as `$(MODEL_QUERIES)`; the hand-curated queries are kept. `make query-coverage` prints which models the curated set alone reaches vs the full set, and **fails** when a trending model is named by no query, so the gap is loud instead of looking like "the query ran and found nothing". Today the curated set alone names 1 of the top 10; the full set names all 10.
 - **A code-review bot reads the tree and the pipelines and files what is wrong (issue #253):** `code-review-bot.yml` (weekly Monday `07:23`, dispatch too) runs `make code-review-scan` then `make code-review-file` (`scripts/code_review.py`). Every check is **deterministic** (no model), so a scan is free and cannot invent a finding: a `run:` that reaches into `scripts/` instead of calling a `make` target, a workflow reading a `secrets.X` the repo does not define, a workflow that has never run, a `workflow_call` file nothing references, two fixed crons in one minute+hour slot. It files ONE issue per new finding, deduped by an invisible `<!-- code-review:<key> -->` marker and capped per run; a re-run on an unchanged tree is silent. Analysis, never implementation: it never edits a file, never opens a PR, never merges, never comments on anyone's PR.
 - **The description — `ARCHITECTURE.md`:** how this repo works — the data flow, every `make` target (with the image it runs in), every job of every pipeline and its gates, the three runner images and their content-hash tags, every script, and the life of a change. It is part of the change (AGENTS.md rule 6h): a change that adds, renames or removes a target, a pipeline job, an image or a script MUST update it in the same change, and `make architecture-check` (CI) fails when the file and the repository disagree.
 - **Linefeeds:** every tracked text file ends with a newline — `make lint` is the gate (the first step of the PR's `validate` job and the first check in the fix loop) and `make lint-fix` appends what is missing; `.editorconfig` carries the same rule for your editor. A file without a final newline makes git print `\ No newline at end of file` and turns the next append into a spurious last-line change.

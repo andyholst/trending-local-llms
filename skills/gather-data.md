@@ -102,6 +102,20 @@ verified against the lightbrd.com mirror.
 > already capture every model; an unfiltered general query produced a payload
 > too large for the model's output cap and was removed.
 
+> **Trending-model queries (issue #264).** The lists above are fixed and name no
+> model: of the 24 queries the ONE model-specific one names `qwen3.8-27b`, and
+> none names `Strata`, so every figure for the model at the top of the README
+> arrived incidentally and a higher one upstream could never be found. So each
+> search leg ALSO runs the **trending-model queries** — one per model in the top
+> `QUERY_TOP_N` (10) of `data/models.json`, naming that model by its own id
+> (`<id> tokens per second`). They are derived from the store by
+> `scripts/update_trending.py` (ONE implementation, rule 6d) and reach the
+> prompts as `$(MODEL_QUERIES)`; `python3 scripts/query_coverage.py --queries`
+> prints exactly what a prompt sends. `make query-coverage` reports which of the
+> top models the curated lists alone reach (today: 1 of 10) against the full set
+> (10 of 10) and **FAILS** when a model is named by no query — so when you add a
+> model, the pipeline says so instead of silently capping what we know.
+
 ## 3. Extract per model
 
 For each model, capture:

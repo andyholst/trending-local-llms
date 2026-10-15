@@ -385,6 +385,25 @@ retains 30 days of history.
    comment). Its `guard` is the FIRST job (rule 6j, issue #238) and a `schedule`
    trigger passes it by design.
 
+6m. **The searches must ask for the models we rank — a model no query names is a
+   LOUD gap (MANDATORY).** The query set was a fixed, hand-maintained keyword
+   list: of its 24 queries the ONE model-specific one named `qwen3.8-27b` and
+   none named `Strata`, so every figure for the model topping the trend list
+   arrived incidentally — a generic card query happened to surface a post that
+   mentioned it — and the pipeline could not tell "no such measurement exists"
+   from "we never looked", so a higher figure upstream could never enter (issue
+   #264). So: the trending models are read FROM THE STORE and each gets a query
+   naming it by its own id (`scripts/update_trending.py`: `QUERY_TOP_N` = 10,
+   `query_names_model()`), the hand-curated `SEARCH_GROUPS` is KEPT and the
+   derived queries are appended to EVERY leg (the four `_search-<backend>`
+   prompts carry them as `$(MODEL_QUERIES)`), and `make query-coverage` FAILS
+   when a top-N trending model is named by no query — in `_validate-search`, so
+   a stale or broken derivation cannot pass silently. Which query names which
+   model has exactly ONE implementation, so the prompts, the guard and its tests
+   can never disagree (rule 6d). A model with no usable id is named by nothing:
+   an empty key must never match every query, or the guard is vacuous, and
+   `--top 0` (a run that checks nothing) is refused.
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -991,6 +1010,7 @@ actually happened.
 
 | Guard | Catches |
 |---|---|
+| `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
 | `tests/test_queued_run_alarm.py` — the queued-run alarm | a job stuck in `queued` reported without its runner label; a second sweep commenting again (marker dedup broken); a run counted twice because both the `queued` and `in_progress` queries return it; the sweep still green while a job is stuck |
 | `tests/test_hermes_prompts.py` — prompt shell strings | an unescaped `"` in a `-z` prompt closing the string early (every search dies) |
 | `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |

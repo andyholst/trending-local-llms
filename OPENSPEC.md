@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **21** · archived: **0**
+Active changes: **22** · archived: **0**
 
 ## Active changes
 
@@ -33,6 +33,7 @@ Active changes: **21** · archived: **0**
 | `lint-trailing-newlines` | active | #186 | #189 | [lint-linefeeds](openspec/changes/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
+| `query-coverage-guard` | active | — | — | [query-coverage](openspec/changes/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/query-coverage-guard/proposal.md) |
 | `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 
