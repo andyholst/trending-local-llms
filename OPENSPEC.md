@@ -14,6 +14,7 @@ Active changes: **6** · archived: **0**
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
 | `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |

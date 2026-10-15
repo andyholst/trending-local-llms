@@ -68,6 +68,18 @@ TEST_RUN := docker run --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(G
 
 HERMES_MODEL := deepseek/deepseek-v4.1-flash
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
+# The ONE name of the model alias every hermes call passes with `-m` (issue #207):
+# `_setup` writes `model.aliases.$(HERMES_ALIAS).*` and `_hermes-alias-check` reads
+# the same name back, so the two can never drift.
+HERMES_ALIAS := nous-deepseek
+# The Hermes install pin, used by the ONE installer seam
+# (`scripts/install_hermes_ci.sh`) that both `make _setup` and the image build go
+# through. Override on the command line to point at a mirror or a pinned release:
+#   make setup HERMES_INSTALL_URL=https://…/install.sh
+# `tests/test_install_hermes_ci.py` asserts these defaults match the Dockerfile's
+# ARG defaults, so the image and the host path install from the same place.
+HERMES_INSTALL_URL ?= https://hermes-agent.nousresearch.com/install.sh
+HERMES_PACKAGE     ?= hermes-agent
 # Raise the per-reply output cap. The deepseek model was truncating its reply
 # mid-search (hit the default max_tokens), dropping the incomplete action and
 # failing `make refresh`. At 8000 the heavier Metal search still
@@ -215,19 +227,18 @@ lint-fix: ## Append the missing final newline to every tracked text file that la
 
 .PHONY: _setup
 _setup:
-	@if command -v hermes >/dev/null 2>&1; then \
-		echo "== hermes present; using image build (no per-run update) =="; \
-	else \
-		echo "== installing hermes =="; \
-		curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash; \
-	fi
+	@# ONE installer path (issue #207): the same seam the image build runs —
+	@# already installed -> HERMES_INSTALL_URL -> `uv tool install`, else FAIL
+	@# loudly. There is no second, curl-pipe-bash implementation to drift from it.
+	@HERMES_INSTALL_URL=$(HERMES_INSTALL_URL) HERMES_PACKAGE=$(HERMES_PACKAGE) \
+		scripts/install_hermes_ci.sh
 	hermes --version
-	hermes config set model.aliases.nous-deepseek.model $(HERMES_MODEL)
-	hermes config set model.aliases.nous-deepseek.provider custom
-	hermes config set model.aliases.nous-deepseek.base_url $(NOUS_BASE)
-	hermes config set model.aliases.nous-deepseek.key_env NOUS_API_KEY
-	hermes config set model.aliases.nous-deepseek.max_tokens $(HERMES_MAX_TOKENS)
-	hermes config set model.aliases.nous-deepseek.context_window $(HERMES_CONTEXT_WINDOW)
+	hermes config set model.aliases.$(HERMES_ALIAS).model $(HERMES_MODEL)
+	hermes config set model.aliases.$(HERMES_ALIAS).provider custom
+	hermes config set model.aliases.$(HERMES_ALIAS).base_url $(NOUS_BASE)
+	hermes config set model.aliases.$(HERMES_ALIAS).key_env NOUS_API_KEY
+	hermes config set model.aliases.$(HERMES_ALIAS).max_tokens $(HERMES_MAX_TOKENS)
+	hermes config set model.aliases.$(HERMES_ALIAS).context_window $(HERMES_CONTEXT_WINDOW)
 	@# The nerve plugin is baked into this image as code (Dockerfile). Only its
 	@# NON-SECRET setting is written to config.yaml — the credential itself is
 	@# never here: the plugin resolves it by NAME
@@ -240,6 +251,34 @@ _setup:
 	else \
 		echo "== nerve plugin NOT installed in this image; \`make nerve-check\` fails until it is =="; \
 	fi
+
+# Prove the image carries the agent it claims to carry (issue #207). `_setup` is
+# the ONE writer of the alias — from HERMES_ALIAS / HERMES_MODEL / NOUS_BASE, the
+# same variables this check reads — and the IMAGE BUILD runs this right after it,
+# so a wrong model pin, a provider that is not `custom` or a `key_env` that is not
+# NOUS_API_KEY fails the BUILD instead of a bot run (measured on #124: with no
+# alias Hermes auto-routed to HF_TOKEN and died with `HTTP 403`).
+# It reports EVERY mismatch, not just the first, and never prints a credential.
+.PHONY: _hermes-alias-check
+_hermes-alias-check:
+	@fail=0; \
+	for want in "model=$(HERMES_MODEL)" "provider=custom" "base_url=$(NOUS_BASE)" \
+	            "key_env=NOUS_API_KEY" "max_tokens=$(HERMES_MAX_TOKENS)" \
+	            "context_window=$(HERMES_CONTEXT_WINDOW)"; do \
+		key="$${want%%=*}"; expect="$${want#*=}"; \
+		got="$$(hermes config get "model.aliases.$(HERMES_ALIAS).$$key" 2>/dev/null || true)"; \
+		if [ "$$got" = "$$expect" ]; then \
+			echo "[hermes-alias] ok: $(HERMES_ALIAS).$$key = $$got"; \
+		else \
+			echo "[hermes-alias] FAIL: $(HERMES_ALIAS).$$key is '$${got:-<unset>}', expected '$$expect'"; \
+			fail=1; \
+		fi; \
+	done; \
+	if [ "$$fail" != "0" ]; then \
+		echo "[hermes-alias] the image does not carry the alias the bots call with -m $(HERMES_ALIAS) — refusing"; \
+		exit 1; \
+	fi; \
+	echo "[hermes-alias] OK: alias $(HERMES_ALIAS) matches the Makefile pin (the key itself arrives at run time)"
 
 .PHONY: _search-nvidia
 _search-nvidia:
@@ -384,7 +423,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_issue_review.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py)
 
 
 .PHONY: _requirements-test
@@ -437,6 +476,13 @@ update-hermes:
 .PHONY: setup
 setup:
 	$(DOCKER_RUN) make _setup
+
+# `hermes-alias-check`: run `_hermes-alias-check` against the image the bots use,
+# on demand (the image build runs the same recipe, so a broken pin cannot be
+# published even if nobody runs this).
+.PHONY: hermes-alias-check
+hermes-alias-check:
+	$(DOCKER_RUN) sh -c "make _setup >/dev/null && make _hermes-alias-check"
 
 .PHONY: search-nvidia
 search-nvidia:
