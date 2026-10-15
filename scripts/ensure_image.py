@@ -279,7 +279,7 @@ def publish(force: bool = False) -> str:
     if published(tag) and not force:
         return (f"publish: {tag} is already published — nothing to do "
                 "(pass --force to rebuild the same inputs)")
-    _run("docker", "build", "-t", IMAGE, "-t", tag, ".")
+    _run("docker", "build", "-t", IMAGE, "-t", tag, "-t", latest_tag(), ".")
     _run("docker", "push", tag)
     _run("docker", "push", latest_tag())
     return f"publish: pushed {tag} and {latest_tag()}"

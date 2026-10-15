@@ -26,14 +26,29 @@ IMAGE_REPO = "ghcr.io/andyholst/trending-local-llms"
 _PASS = 0
 _FAIL = 0
 
-# One `docker` stub per test run: records every call, and answers `manifest
+# One `docker` stub per test run: records every call, answers `manifest
 # inspect <ref>` / `image inspect <ref>` by looking <ref> up in a file of
-# "published/available" refs. Any other subcommand succeeds (build/tag/pull).
+# "published/available" refs. It ALSO records every tag a `build -t` / `tag`
+# creates and REFUSES to `push` a ref that was never tagged — real docker prints
+# `tag does not exist` for that (measured on run 38683713224), and a stub that
+# accepted the push hid exactly that publish bug.
 _DOCKER_STUB = """#!/bin/sh
 echo "$@" >> "$FAKE_DOCKER_LOG"
-case "$1 $2" in
-  "manifest inspect"|"image inspect")
-    if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0; else exit 1; fi ;;
+case "$1" in
+  build)
+    prev=""
+    for arg in "$@"; do
+      [ "$prev" = "-t" ] && echo "$arg" >> "$FAKE_DOCKER_TAGS"
+      prev="$arg"
+    done ;;
+  tag) echo "$3" >> "$FAKE_DOCKER_TAGS" ;;
+  manifest|image)
+    case "$2" in
+      inspect)
+        if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0; else exit 1; fi ;;
+    esac ;;
+  push)
+    if grep -qxF "$2" "$FAKE_DOCKER_TAGS" 2>/dev/null; then exit 0; else echo "tag does not exist: $2" >&2; exit 1; fi ;;
 esac
 exit 0
 """
@@ -64,11 +79,14 @@ def _run(args, available=(), env_extra=None):
         log.write_text("")
         avail = td / "available.txt"
         avail.write_text("\n".join(available) + "\n")
+        tags = td / "tags.txt"
+        tags.write_text("")
         env = {
             **os.environ,
             "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
             "FAKE_DOCKER_LOG": str(log),
             "FAKE_DOCKER_AVAILABLE": str(avail),
+            "FAKE_DOCKER_TAGS": str(tags),
             "IMAGE_REPO": IMAGE_REPO,
             **(env_extra or {}),
         }
