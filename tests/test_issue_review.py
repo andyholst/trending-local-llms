@@ -321,8 +321,8 @@ def test_guard_blocks_the_write_when_the_implementer_starts_mid_review():
     # And the reply path is refused once a reply already exists
     with tempfile.TemporaryDirectory() as td:
         replied = env_for(Path(td), issues=four_issues(),
-                          comments={"176": [{"createdAt": hours_ago(0.1), "body": "<!-- issue-bot-start: x -->"},
-                                            {"createdAt": hours_ago(0.05), "body": "<!-- issue-review: window x -->"}]})
+                          comments={"176": [{"createdAt": hours_ago(0.1), "body": "<!-- issue-bot-start: " + hours_ago(0.1) + " -->"},
+                                            {"createdAt": hours_ago(0.05), "body": "<!-- issue-review: window " + hours_ago(0.05) + " -->"}]})
         again = run(REVIEW, "--guard", "176", "--for", "window", "--repo", "o/r", "--now", NOW, env=replied)
 
     check("guard(window): blocked when the window was already answered",
@@ -465,7 +465,7 @@ def test_a_run_never_blocks_its_own_guard_but_another_run_does():
     with tempfile.TemporaryDirectory() as td:
         env = env_for(Path(td), issues=four_issues(),
                       comments={"176": [{"createdAt": hours_ago(0.08),
-                                         "body": "<!-- issue-review: x run=otherrun -->"}]})
+                                         "body": "<!-- issue-review: " + hours_ago(0.08) + " run=otherrun -->"}]})
 
         # When  the queue is read as the implementer's pick reads it
         proc = run(QUEUE, "--repo", "o/r", "--now", NOW, "--run", "testrun", env=env)
