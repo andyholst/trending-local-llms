@@ -202,6 +202,8 @@ keep it honest (issue #207):
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
+| `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
+| `code-review-file` (`REPO=` `CAP=3` `DRY=1`) | File ONE issue per NEW finding, marker-deduped and capped per run (`scripts/code_review.py file`). Its whole output is issues — it never edits code, never merges. Run by `code-review-bot.yml` |
 | `issue-verdict` (`ISSUE=` `TRIAGE_FILE=`) | Apply the implementer's TRIAGE verdict DETERMINISTICALLY (issue #210): `implement` touches nothing (the run continues to its PR), `refine` posts ONE restatement + `agent:refined`, `close` posts the reason with its cited EVIDENCE, closes and applies `agent:closed`. A close with no EVIDENCE, a refine with no restatement and an unknown verdict exit 2 with no write at all |
 | `review-issue-pick` | Choose the ONE issue a review run works: `action=`, `issue=`, `path=`, `reason=` |
 | `review-issue-mark` (`ISSUE=` `PATH=`) | Open the reviewer's window: the `review-in-progress` label (+ the marker comment on the `body` path); prints `marker_iso=` and `body_sha=` |
@@ -250,11 +252,12 @@ keep it honest (issue #207):
 
 ## 4. The pipelines
 
-Six workflows in `.github/workflows/`. Four have a cron: **`refresh-bot.yml`**
+Seven workflows in `.github/workflows/`. Five have a cron: **`refresh-bot.yml`**
 (daily), **`issue-bot.yml`** (hourly, `19`), **`issue-review-bot.yml`**
-(hourly, `41`) and **`queued-alarm.yml`** (twice an hour, `7,37`). GitHub delays
+(hourly, `41`), **`queued-alarm.yml`** (twice an hour, `7,37`) and
+**`code-review-bot.yml`** (weekly Monday `23 7`, its own slot). GitHub delays
 and sometimes **drops** on-the-hour crons, hence the odd minutes (:19, :41,
-:07/:37, 17:43).
+:07/:37, 17:43, 07:23).
 
 ### `.github/workflows/refresh-bot.yml` — the crawler (schedule + owner dispatch)
 
@@ -311,6 +314,17 @@ does not fail — it stays `queued` forever, so the run never concludes and ever
 |---|---|
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
 | `alarm` | `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`): list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run. Exit 1 when a job is stuck, so the scheduled run goes red. It never edits code, never opens a PR, never merges |
+
+### `.github/workflows/code-review-bot.yml` — the tree/pipeline reviewer (weekly + dispatch)
+
+`concurrency: code-review-bot` (queued, never cancelled). It reads the TREE and the PIPELINES and
+files ONE issue per real finding (issue #253, mirrors llgenie's #269). **No model anywhere**: every
+check is deterministic, so a scan is free and cannot invent a finding.
+
+| Job | Does |
+|---|---|
+| `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
+| `review` | `make code-review-scan` (the checks read the real tree + workflows; writes nothing) → `make code-review-file` (`scripts/code_review.py`: ONE issue per NEW finding, `<!-- code-review:<key> -->` marker dedup, capped per run). It never edits code, never opens a PR, never merges, never comments on anyone's PR |
 
 ### `.github/workflows/issue-bot.yml` — the implementer (hourly sweep + owner dispatch)
 
