@@ -138,14 +138,28 @@ def test_force_rebuilds_the_same_inputs_on_demand():
 # --------------------------------------------------------- the push probe -----
 
 class _Registry(BaseHTTPRequestHandler):
-    """A local stand-in for the registry's blob-upload endpoint."""
+    """A local stand-in for the registry's token + blob-upload endpoints."""
 
     status = 202
     body = b'{"errors":[{"code":"DENIED","message":"permission_denied: create_package"}]}'
-    seen: list[tuple[str, str]] = []
+    seen: list[tuple[str, str, str]] = []      # (method, path, Authorization)
+    SCOPED = "scoped-stub-token"
+
+    def _record(self):
+        type(self).seen.append(
+            (self.command, self.path, self.headers.get("Authorization", "")))
+
+    def do_GET(self):  # the token endpoint: Basic auth in, a push-scoped token out
+        self._record()
+        payload = json.dumps({"token": type(self).SCOPED}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def do_POST(self):  # noqa: N802 (BaseHTTPRequestHandler's name)
-        type(self).seen.append((self.path, self.headers.get("Authorization", "")))
+        self._record()
         self.send_response(type(self).status)
         self.send_header("Content-Type", "application/json")
         payload = b"" if type(self).status < 400 else type(self).body
@@ -189,13 +203,21 @@ def test_push_check_proves_the_credential_before_the_build():
     })
 
     # Then  it starts an upload session for the package and says the build may proceed
-    path, auth = _Registry.seen[0] if _Registry.seen else ("", "")
+    posts = [s for s in _Registry.seen if s[0] == "POST"]
+    gets = [s for s in _Registry.seen if s[0] == "GET"]
     httpd.shutdown()
+    get = gets[0] if gets else ("", "", "")
+    post = posts[0] if posts else ("", "", "")
     check("push-check(accepted): exit 0", rc == 0, out)
+    check("push-check(accepted): it asks for a push-scoped token FIRST",
+          "/token" in get[1]
+          and "scope=repository:andyholst/trending-local-llms:pull,push" in get[1], get)
+    check("push-check(accepted): the token request carries Basic auth",
+          get[2].startswith("Basic "), get[2])
     check("push-check(accepted): it POSTs the blob-upload endpoint",
-          path == "/v2/andyholst/trending-local-llms/blobs/uploads/", path)
-    check("push-check(accepted): it carries the ambient credential",
-          auth == "Bearer stub-token", auth)
+          post[1] == "/v2/andyholst/trending-local-llms/blobs/uploads/", post[1])
+    check("push-check(accepted): the upload carries the SCOPED token, not the raw one",
+          post[2] == f"Bearer {_Registry.SCOPED}", post[2])
     check("push-check(accepted): it says the build may proceed",
           "may proceed" in out, out)
 
