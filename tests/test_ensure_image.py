@@ -268,9 +268,126 @@ def test_wired_into_make_test():
           "image-ensure:\n\tpython3 scripts/ensure_image.py ensure" in mk, "")
 
 
+
+# ------------------------------------------------- the rebuild decision (#208) --
+
+def _base_tag():
+    rc, _, out = _run(["tags"])
+    return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["BASE_TAG"]
+
+
+def _test_tag():
+    rc, _, out = _run(["tags"])
+    return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["TEST_TAG"]
+
+
+def _openspec_tag():
+    rc, _, out = _run(["tags"])
+    return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["OPENSPEC_TAG"]
+
+
+def _decide(available, dow="1", force="false"):
+    rc, _, out = _run(["decide", "--dow", str(dow), "--force", str(force)], available=available)
+    return rc, dict(l.split("=", 1) for l in out.splitlines() if "=" in l), out
+
+
+def test_the_rebuild_decision_is_data_not_workflow_shell():
+    """Issue #208: every branch of "when do we rebuild" must be testable."""
+
+    # Given every ref this revision publishes is on the registry, and it is not Sunday
+    all_refs = [_base_tag(), _test_tag(), _openspec_tag(),
+                f"{IMAGE_REPO}:latest"]
+
+    # When  the decision runs
+    rc, out, raw = _decide(all_refs, dow="1")
+
+    # Then  nothing is rebuilt and each reason says why
+    check("decide: exit 0", rc == 0, raw)
+    check("decide: current -> built=no", out.get("built") == "no", raw)
+    check("decide: current -> test_built=no", out.get("test_built") == "no", raw)
+    check("decide: current -> publish_openspec=no", out.get("publish_openspec") == "no", raw)
+    check("decide: current -> reason=current", out.get("reason") == "current", raw)
+    check("decide: it reports the tags the workflow builds with",
+          out.get("base_tag") == all_refs[0] and out.get("test_tag") == all_refs[1]
+          and out.get("openspec_tag") == all_refs[2], raw)
+
+    # Given this revision's tags are NOT published (a merged Dockerfile change)
+    rc, out, raw = _decide([], dow="1")
+
+    # Then  both images rebuild and the openspec image publishes, each naming the reason
+    check("decide: missing tags -> built=yes", out.get("built") == "yes", raw)
+    check("decide: missing tags -> the base reason names the tag",
+          "base-tag-missing" in out.get("reason", ""), raw)
+    check("decide: missing tags -> test_built=yes", out.get("test_built") == "yes", raw)
+    check("decide: missing tags -> the test reason names the tag",
+          "test-tag-missing" in out.get("test_reason", ""), raw)
+    check("decide: missing tags -> the openspec image publishes",
+          out.get("publish_openspec") == "yes"
+          and "openspec-tag-missing" in out.get("openspec_reason", ""), raw)
+
+    # Given only the consumer `:latest` ref is missing (#135's failure mode)
+    rc, out, raw = _decide([_base_tag(), _test_tag(), _openspec_tag()], dow="1")
+
+    # Then  the base rebuilds (a job would pull a stale `:latest`) and the test image does not
+    check("decide: latest missing -> built=yes", out.get("built") == "yes", raw)
+    check("decide: latest missing -> the reason names it",
+          "latest-missing" in out.get("reason", ""), raw)
+    check("decide: latest missing -> test_built=no", out.get("test_built") == "no", raw)
+
+    # Given Sunday, with everything published (the weekly Hermes refresh)
+    rc, out, raw = _decide(all_refs, dow="7")
+
+    # Then  both images rebuild, reason=sunday, and the openspec image is untouched
+    check("decide: Sunday -> built=yes", out.get("built") == "yes", raw)
+    check("decide: Sunday -> the reason is sunday", out.get("reason") == "sunday", raw)
+    check("decide: Sunday -> test_built=yes", out.get("test_built") == "yes", raw)
+    check("decide: Sunday -> the openspec image is NOT rebuilt",
+          out.get("publish_openspec") == "no", raw)
+
+    # Given a forced rebuild with everything published
+    rc, out, raw = _decide(all_refs, dow="1", force="true")
+
+    # Then  the two code images rebuild, and the openspec image still does not
+    check("decide: forced -> built=yes", out.get("built") == "yes", raw)
+    check("decide: forced -> the reason is forced", "forced" in out.get("reason", ""), raw)
+    check("decide: forced -> publish_openspec=no (unchanged behaviour)",
+          out.get("publish_openspec") == "no", raw)
+
+
+def test_force_is_parsed_strictly_so_zero_means_off():
+    """Issue #227's class: an "off" value must not take the destructive branch."""
+
+    # Given every ref is published and it is not Sunday
+    all_refs = [_base_tag(), _test_tag(), _openspec_tag(), f"{IMAGE_REPO}:latest"]
+
+    # When  FORCE is the string a caller writes to mean "off"
+    for off in ("0", "false", "no", "", "off"):
+        rc, out, raw = _decide(all_refs, dow="1", force=off)
+
+        # Then  nothing is rebuilt
+        check(f"decide: FORCE={off!r} means OFF", out.get("built") == "no", raw)
+
+    # When  FORCE is an on value
+    for on in ("1", "true", "yes"):
+        rc, out, raw = _decide(all_refs, dow="1", force=on)
+
+        # Then  the base rebuilds
+        check(f"decide: FORCE={on!r} means ON", out.get("built") == "yes", raw)
+
+    # When  FORCE is something that is neither
+    rc, out, raw = _decide(all_refs, dow="1", force="maybe")
+
+    # Then  it fails loudly instead of guessing
+    check("decide: an unreadable FORCE fails", rc != 0, raw)
+    check("decide: it says what it could not read",
+          "cannot read" in raw and "boolean" in raw, raw)
+
+
 def main() -> int:
     print("runner-image decision (scripts/ensure_image.py)")
     test_tags_are_the_hash_of_this_revisions_inputs()
+    test_the_rebuild_decision_is_data_not_workflow_shell()
+    test_force_is_parsed_strictly_so_zero_means_off()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()

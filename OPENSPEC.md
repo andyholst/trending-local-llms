@@ -26,6 +26,7 @@ Active changes: **12** · archived: **0**
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
 | `lint-trailing-newlines` | active | #186 | #189 | [lint-linefeeds](openspec/changes/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
+| `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 
 ## Archived changes
 
