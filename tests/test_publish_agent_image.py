@@ -294,14 +294,18 @@ def test_the_guard_runs_first_and_before_any_secret():
 def test_publishing_uses_the_default_token_not_a_pat():
     """Measured upstream: a PAT that is not an org member cannot create the package."""
 
-    # Given the workflow
+    # Given the workflow and its GHCR login step
     text = _wf()
+    parts = text.split("- name: Log in to GHCR with the default token", 1)
+    login = parts[1].split("- name:", 1)[0] if len(parts) > 1 else ""
 
     # When  its credential use is read
-    # Then  the login is the default token as the triggering actor, and no PAT appears
+    # Then  the login is the default token as the triggering actor, passed by NAME
+    #       (rule 3e: a credential never sits in the `run:` text), and no PAT appears
     check("wf: GHCR login uses the default token",
-          'echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}"' in text,
-          "")
+          "GHCR_TOKEN: ${{ github.token }}" in login, login)
+    check("wf: the token reaches the shell by NAME, never in the run text (rule 3e)",
+          "run:" in login and "${{" not in login.split("run:", 1)[1], login)
     check("wf: no PAT secret is referenced",
           "secrets." not in text, "")
     check("wf: it asks for packages: write", "packages: write" in text, "")

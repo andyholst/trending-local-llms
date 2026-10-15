@@ -99,9 +99,16 @@ jobs:
       - name: This revision's refs
         run: make agent-image-ref
       # The default token: the credential that CAN create this package (see the
-      # header). Username is the triggering actor, never the organisation.
+      # header). Username is the triggering actor, never the organisation. The
+      # token reaches the shell by NAME only (rule 3e) — `${{ github.token }}` is
+      # never interpolated into the `run:` text, where it would sit in the script
+      # and in any `ps`/`--debug` output; `echo "$GHCR_TOKEN"` expands it at run
+      # time instead.
       - name: Log in to GHCR with the default token
-        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USER: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
       # The probe reads the credential from the ENVIRONMENT (that is what
       # `ensure_image.py push-check` inspects), so the job must hand it over
       # explicitly — `docker login` alone proves nothing to the probe. Measured on

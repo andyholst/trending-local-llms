@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **16** · archived: **0**
+Active changes: **17** · archived: **0**
 
 ## Active changes
 
@@ -23,6 +23,7 @@ Active changes: **16** · archived: **0**
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
 | `fix-publish-agent-image-push-check` | active | #229 | — | [agent-image-publish](openspec/changes/fix-publish-agent-image-push-check/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/fix-publish-agent-image-push-check/proposal.md) |
 | `fix-publish-latest-tag` | active | #232 | — | [agent-image-publish](openspec/changes/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/fix-publish-latest-tag/proposal.md) |
+| `fix-publish-login-token-by-name` | active | #240 | — | [agent-image-publish](openspec/changes/fix-publish-login-token-by-name/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-publish-login-token-by-name/proposal.md) |
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
