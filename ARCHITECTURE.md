@@ -137,6 +137,7 @@ keep it honest (issue #207):
 |---|---|
 | `search-nvidia` / `search-metal` / `search-cpu` / `search-amd` | One backend each: `_setup` then the Hermes search prompt for that leg, writing `data/raw/<backend>-<UTC>.json` per query. `HERMES_REASONING=none` (mechanical work). |
 | `search` | All four legs in sequence |
+| `query-coverage` (`TOP=<n>`) | Report which of the top-N trending models the search queries name — the hand-curated set vs the full set (curated + derived), one line per model — and **FAIL** when one is named by none, so a stale or broken derivation is loud and separable from "the query ran and found nothing" (issue #264). Runs in `_validate-search` |
 | `search-smoke` (`BACKEND=<b>`) | Live reachability: the exact Firecrawl → lightbrd scrape of every query for one backend, 3 s cap per query, one retry on timeout/429/5xx (`scripts/smoke_search.py`) |
 | `model-caps` | Live: the pinned model is served, `HERMES_MAX_TOKENS` fits its real cap, `reasoning` is accepted (`scripts/model_caps_check.py`). With no `NOUS_API_KEY` it **FAILS loudly** (issue #209) — the endpoint cannot be read, so a green pre-flight would prove nothing |
 | `hermes-smoke` | Live: one real Hermes call through the `nous-deepseek` alias (`scripts/hermes_smoke.sh`) — proves the key/alias/routing before a 20-minute search. With no `NOUS_API_KEY` it **FAILS loudly** (issue #209), naming the variable and the alias it could not prove |
@@ -414,6 +415,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
 | `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal |
+| `scripts/query_coverage.py` | CLI over the query-coverage rule: `--queries` prints the derived model queries the four search prompts append as `$(MODEL_QUERIES)`; the default run prints the coverage report and exits 1 when a top-N trending model is named by no query. The rule itself — which query names which model — has ONE implementation in `scripts/update_trending.py` (rule 6d), so the prompts, the guard and its tests can never disagree (issue #264) |
 | `scripts/smoke_search.py` | The per-query reachability smoke with its retry policy |
 
 ---

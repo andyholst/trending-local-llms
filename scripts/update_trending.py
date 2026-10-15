@@ -84,6 +84,77 @@ SEARCH_GROUPS = {
 # both workflows, smoke, search contract, self-correct) carries exactly these.
 SEARCH_LEGS = {"nvidia": "CUDA", "metal": "Metal", "cpu": "CPU", "amd": "ROCm"}
 USER_AGENT = "trending-local-llms-bot/1.0 (research-index)"
+
+# --- query coverage (issue #264) --------------------------------------------
+# The searches were a fixed keyword list that named no model: of 24 queries the
+# ONE model-specific one named qwen3.8-27b, and none named Strata. So every
+# figure for the model topping the trend list arrived incidentally — a generic
+# card query happened to surface a post mentioning it — and the pipeline could
+# not tell "no such measurement exists" from "we never looked", so a higher one
+# upstream could never enter. The trending models are therefore added to the
+# query set FROM THE STORE, and `query_names_model()` decides whether any query
+# names a model: ONE implementation (rule 6d), read by the search prompts, the
+# coverage guard and its tests, so they can never disagree.
+QUERY_TOP_N = 10
+MODEL_QUERY_SUFFIX = "tokens per second"
+
+
+def _query_key(text) -> str:
+    """Comparison form: lowercased, every run of non-alphanumerics collapsed to
+    '-'. So 'Qwen3.8-Flash-Next 125B' and 'qwen3.8-flash-next-125b' compare
+    equal, and a SIBLING ('qwen3.8-27b') can never match by accident."""
+    return re.sub(r"[^a-z0-9]+", "-", str(text or "").lower()).strip("-")
+
+
+def model_query(m: dict) -> str:
+    """The query that names ONE model, built from the model's own id."""
+    return f"{m.get('id', '')} {MODEL_QUERY_SUFFIX}"
+
+
+def query_names_model(query: str, m: dict) -> bool:
+    """True when `query` names THIS model — by its own id, never a sibling's.
+
+    A model with no usable id is named by nothing (an empty key must never
+    match every query): that is the case the coverage guard turns red."""
+    key = _query_key(m.get("id"))
+    return bool(key) and key in _query_key(query)
+
+
+def trending_models(store: dict, today: datetime | None = None) -> list[dict]:
+    """The store's trending band in the store's own rank order, so 'top N'
+    means the same thing here as it does in the README."""
+    today = today or now_utc()
+    band = [m for m in (store.get("models") or []) if model_band(m, today) == 0]
+    return sorted(band, key=lambda m: (
+        -(m.get("engagement") or {}).get("trend_score", 0),
+        -(m.get("engagement") or {}).get("posts_7d", 0),
+        -peak_tps(m),
+        str(m.get("name", "")).lower(),
+    ))
+
+
+def derived_queries(store: dict, top_n: int = QUERY_TOP_N) -> list[str]:
+    """One query naming each of the top-N trending models."""
+    return [model_query(m) for m in trending_models(store)[:max(0, int(top_n))]]
+
+
+def all_search_queries(store: dict, top_n: int = QUERY_TOP_N) -> dict[str, list[str]]:
+    """The curated SEARCH_GROUPS with the derived model queries appended to
+    EVERY leg — a model's figure can be measured on any backend and the legs run
+    in parallel, so each leg asks for the ranked models as well as its hardware
+    keywords. The curated base is kept, never replaced."""
+    derived = derived_queries(store, top_n)
+    return {backend: list(queries) + derived for backend, queries in SEARCH_GROUPS.items()}
+
+
+def uncovered_models(store: dict, top_n: int = QUERY_TOP_N) -> list[dict]:
+    """The top-N trending models that NO query in the set names — the gap the
+    coverage guard makes loud, separable from a query that ran and found
+    nothing. Empty when the derivation works; non-empty when it does not."""
+    queries = [q for queries in all_search_queries(store, top_n).values() for q in queries]
+    return [m for m in trending_models(store)[:max(0, int(top_n))]
+            if not any(query_names_model(q, m) for q in queries)]
+
 STRICT = os.environ.get("STRICT") == "1"
 
 def now_utc() -> datetime:
