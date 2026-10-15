@@ -1,0 +1,92 @@
+# Code-review bot (issue #253, mirrors asimov-agent/llgenie's #269).
+#
+# It reads the TREE and the PIPELINES and files ONE issue per real finding. Analysis, never
+# implementation: it never edits a file, never opens a PR, never merges, never comments on
+# anyone's PR — its whole output is issues, each carrying the evidence the finding came from.
+#
+# No model is involved anywhere: every check in scripts/code_review.py is deterministic, so a
+# scan is free and cannot invent a finding. The checks that read the GitHub API (a workflow
+# reading a secret the repo does not define; a workflow that never ran) degrade loudly when the
+# token cannot answer them instead of turning a refusal into a silent clean run.
+#
+# No conditional job anywhere: the DECISION lives in the script, and the workflow calls it
+# through `make code-review-scan` / `make code-review-file`.
+name: code-review-bot
+
+on:
+  schedule:
+    - cron: "23 7 * * 1"   # Monday 07:23 UTC — its own slot, no other bot's minute (issue #238)
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: "Preview the issues it would file (owner only)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: code-review-bot
+  cancel-in-progress: false
+
+jobs:
+  # Before anything reads a secret: owner, a write+ collaborator, or the bot itself; a scheduled
+  # run passes (rule 6j, issue #238).
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            echo "Scheduled run - allowed."
+            exit 0
+          fi
+          # Owner, the bot itself (github-actions[bot], a bot-to-bot dispatch), or a collaborator
+          # with write/maintain/admin, for BOTH the actor and the triggering actor (covers
+          # re-runs). Anything else - including an API error - is refused.
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            if [ "$u" = "github-actions[bot]" ]; then echo "The bot itself ($u) - allowed."; continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner, the bot, or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  review:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan the tree and the pipelines
+        env:
+          # The owner PAT: `gh secret list` needs admin, which the default job token lacks; the
+          # script degrades LOUDLY when the read is refused rather than reporting a clean run.
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+        run: make code-review-scan REPO="${{ github.repository }}"
+      - name: File one issue per new finding
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+        run: make code-review-file REPO="${{ github.repository }}" ${{ inputs.dry == 'true' && 'DRY=1' || '' }}
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo "### code-review-bot"
+            echo ""
+            echo "Findings: see the scan step; issues filed: see the filer step."
+            echo "The bot never edits code, never opens a PR and never merges."
+          } >> "$GITHUB_STEP_SUMMARY"
