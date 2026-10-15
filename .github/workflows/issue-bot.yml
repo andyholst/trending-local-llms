@@ -221,6 +221,14 @@ jobs:
           ref: master
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
+      # The base is FETCHED and ASSERTED before anything is implemented (issue #271,
+      # rule 6n). A fresh `actions/checkout` is the latest `origin/master` only by
+      # accident of the runner; an implementation started from an old base is green
+      # locally and red on master, so this refuses to run rather than assume.
+      - name: Assert the base is the freshly fetched origin/master
+        if: steps.iss.outputs.implement == 'true'
+        run: make base-check
+
       # Pull the prebuilt base (never rebuild it here) + build the TEST image.
       # ONE path for both images (issue #141).
       - name: Prepare runner images (published for this revision, else build)
@@ -310,11 +318,17 @@ jobs:
           # The container writes files as root; make them committable.
           sudo chown -R "$(id -u):$(id -g)" .
           # One branch per issue: a re-run RESUMES the issue's branch instead of
-          # failing on an existing one (never force-pushes).
+          # failing on an existing one (never force-pushes). Both paths go through the
+          # Makefile's ONE implementation of the rule (issue #271, rule 6n): `checkout
+          # -b` here asserted nothing, and the resume could not work at all — the clone
+          # held ONE ref (`actions/checkout` + `ref: master`), so `git checkout
+          # "$BRANCH"` died with `pathspec ... did not match any file(s) known to git`.
+          # `worktree-resume` fetches the branch first; `worktree-new` asserts this
+          # checkout is still the fetched base tip before it cuts the branch from it.
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git checkout "$BRANCH"
+            make worktree-resume BRANCH="$BRANCH" IN_PLACE=1
           else
-            git checkout -b "$BRANCH"
+            make worktree-new BRANCH="$BRANCH" IN_PLACE=1
           fi
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1

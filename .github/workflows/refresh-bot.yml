@@ -342,6 +342,14 @@ jobs:
         with:
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
 
+      # This job cuts `ci/trending-refresh-<UTC>` off master and pushes it as a PR:
+      # the base it cuts from is FETCHED and ASSERTED first (issue #271, rule 6n).
+      # A fresh `actions/checkout` is the latest `origin/master` only by accident of
+      # the runner, and a PR built on an old base is the overlapping-PR conflict in
+      # reverse: it validates a tree that has already moved.
+      - name: Assert the base is the freshly fetched origin/master
+        run: make base-check
+
       # BOTH images: this job's steps run test-image targets (`make data-gaps`,
       # `make test`), and preparing only the base left `data-gaps` dying with
       # "Unable to find image 'trending-local-llms-test:latest'" (issue #145).
