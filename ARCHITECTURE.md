@@ -225,6 +225,8 @@ keep it honest (issue #207):
 | `secret-scan` | gitleaks over the working tree incl. staged files (pinned image + `.gitleaks.toml`); non-zero blocks a push |
 | `secret-scan-history` | The same over full git history (needs a real clone; refuses a worktree) |
 | `secret-scan-self-test` | Plant a fake credential and require gitleaks to catch it (`scripts/secret_scan_self_test.py`) — a scanner that silently does nothing fails |
+| `check-secret-output` | Fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal (`scripts/check_secret_output.py`) — the run-time leak shapes gitleaks cannot see |
+| `secret-output-report` | Show which files name a secret-shaped variable, and whether any prints it (`scripts/check_secret_output.py report`) |
 | `nerve-check` | Prove the nerve plugin's credential is wired by NAME only, that the plugin is pinned, and that a run without the key fails loudly (`scripts/nerve_key_check.py`) |
 
 ### Bots / tests / full runs
@@ -264,7 +266,7 @@ competing PRs over the same generated files).
 
 | Job | Does |
 |---|---|
-| `validate` | `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
+| `validate` | `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
 | `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
 | `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides |
@@ -359,6 +361,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/model_caps_check.py` | The live model-capability check (`make model-caps`) |
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
+| `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal |
 | `scripts/smoke_search.py` | The per-query reachability smoke with its retry policy |
 
 ---

@@ -850,6 +850,42 @@ def test_qa_validate_runs_the_openspec_gate():
           "make openspec-check" in run_text(validate), run_text(validate)[:400])
 
 
+def test_secret_output_guard_wired_into_qa_validate():
+    """A PR runs the no-secret-VALUE guard, wired so a regression cannot merge.
+
+    Issue #219: `make secret-scan` (gitleaks) only catches a committed
+    credential VALUE. This guard catches the run-time leak shapes llgenie's
+    #283 guards — a printed value, a `-e KEY=$KEY`, a `${{ secrets.X }}` in a
+    `run:` block, an xtrace, an env dump, a committed credential-shaped literal.
+    A guard the PR pipeline does not run is advisory prose (rule 6d).
+    """
+    wf = load("qa-validate.yml")
+    validate = wf["jobs"]["validate"]
+    v = run_text(validate)
+
+    # Given the PR pipeline's validate job and the Makefile's gates
+    # When  they are read
+    # Then  the value-leak guard runs on every PR, beside the committed-value scan
+    check("qa-validate: the validate job runs `make check-secret-output`",
+          "make check-secret-output" in v, v[:400])
+    check("qa-validate: the value guard runs in the same job as the committed-value scan",
+          "make secret-scan" in v and "make check-secret-output" in v, v[:400])
+
+    mk = (ROOT / "Makefile").read_text()
+    check("make: `check-secret-output` and `secret-output-report` targets exist",
+          "check-secret-output:" in mk and "secret-output-report:" in mk, "")
+    check("make: the guard script is a `make` target (rule 6d)",
+          "check_secret_output.py check" in mk, "")
+    check("make: the guard's test is wired into `make test`'s `_test` chain",
+          "test_secret_output.py" in mk, "")
+
+    # And the guard genuinely passes on THIS repo (a rule the repo violates is not a rule)
+    import subprocess, sys
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/check_secret_output.py"), "check"],
+                       capture_output=True, text=True)
+    check("guard: passes on this repository", r.returncode == 0, (r.stdout + r.stderr)[:400])
+
+
 def test_implement_prompt_requires_openspec_and_findings():
     """The implementer prompt demands the tracked change and the findings analysis.
 
@@ -1125,6 +1161,7 @@ def main() -> int:
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
     test_qa_validate_runs_the_openspec_gate()
+    test_secret_output_guard_wired_into_qa_validate()
     test_implement_prompt_requires_openspec_and_findings()
     test_issue_bot_files_findings_only_when_green()
     test_issue_bot_announces_its_window()

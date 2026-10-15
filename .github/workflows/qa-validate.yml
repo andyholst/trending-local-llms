@@ -90,6 +90,13 @@ jobs:
       - name: Secret scan self-test (the planted credential is detected)
         run: make secret-scan-self-test
 
+      # gitleaks only catches a committed credential VALUE. This guard catches
+      # the run-time leak shapes — a printed value, a `-e KEY=$KEY`, a
+      # `${{ secrets.X }}` in a `run:` block, an xtrace, an env dump, a committed
+      # credential-shaped literal (issue #219).
+      - name: No secret VALUE reaches a log/argv/env (check_secret_output)
+        run: make check-secret-output
+
       # The nerve credential reaches the container only as `-e` under the NAME
       # the plugin actually resolves — pinned plugin, no literal, and a loud
       # failure when the key is absent (issue #120, AGENTS.md rule 3e).
