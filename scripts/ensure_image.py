@@ -41,7 +41,9 @@ Usage:  ensure_image.py
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -172,6 +174,24 @@ def package_path() -> str:
     return IMAGE_REPO.split("/", 1)[1] if "/" in IMAGE_REPO else IMAGE_REPO
 
 
+def _docker_user(host: str) -> str:
+    """The username `docker login` recorded for `host`, or '' when there is none.
+
+    The workflow logs in with `docker login ghcr.io -u <actor>`, so the docker
+    config names the account. GHCR's token endpoint ignores the username (it
+    validates only the token) but requires it to be non-empty, so this is the
+    most truthful value to send; `GITHUB_ACTOR` is the fallback.
+    """
+    cfg = Path.home() / ".docker" / "config.json"
+    try:
+        entry = (json.loads(cfg.read_text()).get("auths") or {}).get(host) or {}
+        if entry.get("auth"):
+            return base64.b64decode(entry["auth"]).decode().partition(":")[0]
+    except (OSError, ValueError, KeyError):
+        pass
+    return ""
+
+
 def push_check(host: str = "", scheme: str = "", token: str = "") -> str:
     """Prove the AMBIENT credential can create/write this package, before a build.
 
@@ -198,9 +218,34 @@ def push_check(host: str = "", scheme: str = "", token: str = "") -> str:
             f"{host}/{package_path()} — the workflow supplies the default GITHUB_TOKEN.\n"
             "  The image build was NOT started."
         )
-    url = f"{scheme}://{host}/v2/{package_path()}/blobs/uploads/"
+    path = package_path()
+    # GHCR does NOT accept the raw token as a Bearer (measured: HTTP 403
+    # `invalid token`); the Docker Registry v2 flow exchanges it for a
+    # push-scoped token at the registry's token endpoint first. The Basic-auth
+    # username is not validated by GHCR (only the token is) but it must be
+    # non-empty (measured: an empty username is HTTP 401 `authentication
+    # required`), so use the login's own username when it is available.
+    scope = f"repository:{path}:pull,push"
+    user = _docker_user(host) or os.environ.get("GITHUB_ACTOR", "") or "token"
+    basic = base64.b64encode(f"{user}:{token}".encode()).decode()
+    token_url = f"{scheme}://{host}/token?scope={scope}&service={host}"
+    try:
+        tok_req = urllib.request.Request(
+            token_url, headers={"Authorization": f"Basic {basic}"})
+        with urllib.request.urlopen(tok_req, timeout=PUSH_TIMEOUT) as tok_resp:
+            scoped = json.loads(tok_resp.read().decode())["token"]
+    except urllib.error.HTTPError as e:  # the registry's own refusal, verbatim
+        body = e.read().decode("utf-8", "replace").strip()[:300]
+        raise SystemExit(
+            f"[push-check] FAIL: the credential was refused a push token by {host}: "
+            f"HTTP {e.code} {body}\n  The image build was NOT started."
+        ) from None
+    except urllib.error.URLError as e:
+        raise SystemExit(f"[push-check] FAIL: {host} is unreachable: {e.reason}") from None
+    url = f"{scheme}://{host}/v2/{path}/blobs/uploads/"
     req = urllib.request.Request(url, method="POST", data=b"",
-                                headers={"Authorization": f"Bearer {token}"})
+                                headers={"Authorization": f"Bearer {scoped}",
+                                         "Content-Length": "0"})
     try:
         with urllib.request.urlopen(req, timeout=PUSH_TIMEOUT) as resp:
             status = resp.status
