@@ -42,6 +42,7 @@ Usage:  ensure_image.py
 from __future__ import annotations
 
 import base64
+import datetime as dt
 import hashlib
 import json
 import os
@@ -285,6 +286,91 @@ def publish(force: bool = False) -> str:
     return f"publish: pushed {tag} and {latest_tag()}"
 
 
+def decide(force: bool, dow: int) -> dict:
+    """When to rebuild each image, as DATA (issue #208).
+
+    The rule the fleet depends on, now in one testable place instead of inline
+    shell in `refresh-bot.yml`:
+
+      base  — rebuild on SUNDAY (the weekly Hermes refresh baked into the
+              Dockerfile), when either ref a consumer reads is missing (`:latest`,
+              which every job pulls, or this revision's `dockerfile-<sha12>` tag),
+              or when forced. A missing hash tag is a rebuild reason by itself:
+              without it a merged Dockerfile change stays inert and the bots keep
+              running the old runtime (#135).
+      test  — rebuild on Sunday, when ITS hash tag is missing, or when forced
+              (#141).
+      openspec — publish when its own hash tag is missing.
+
+    `published()` goes through the `docker` CLI, so a test fakes it exactly as the
+    other ensure paths do, and the day is an argument — never `date +%u` inline in
+    a workflow.
+    """
+    latest_ok = published(latest_tag())
+    base_ok = published(base_tag())
+    test_ok = published(test_tag())
+    openspec_ok = published(openspec_tag())
+    sunday = dow == 7
+
+    def _reasons(extra: list[str]) -> str:
+        return ",".join(extra) or "current"
+
+    base_reasons = []
+    if force:
+        base_reasons.append("forced")
+    if sunday:
+        base_reasons.append("sunday")
+    if not latest_ok:
+        base_reasons.append("latest-missing")
+    if not base_ok:
+        base_reasons.append("base-tag-missing")
+
+    test_reasons = []
+    if force:
+        test_reasons.append("forced")
+    if sunday:
+        test_reasons.append("sunday")
+    if not test_ok:
+        test_reasons.append("test-tag-missing")
+
+    openspec_reasons = []
+    if not openspec_ok:
+        openspec_reasons.append("openspec-tag-missing")
+
+    return {
+        "built": "yes" if base_reasons else "no",
+        "test_built": "yes" if test_reasons else "no",
+        "publish_openspec": "yes" if openspec_reasons else "no",
+        "base_tag": base_tag(),
+        "test_tag": test_tag(),
+        "openspec_tag": openspec_tag(),
+        "reason": _reasons(base_reasons),
+        "test_reason": _reasons(test_reasons),
+        "openspec_reason": _reasons(openspec_reasons),
+        "latest_published": "yes" if latest_ok else "no",
+        "base_published": "yes" if base_ok else "no",
+        "test_published": "yes" if test_ok else "no",
+        "openspec_published": "yes" if openspec_ok else "no",
+    }
+
+
+def parse_bool(raw: str) -> bool:
+    """Strict, because `FORCE=0`/`FORCE=false` must mean OFF (issue #227's class).
+
+    `$(if $(FORCE),…)` in make treats any non-empty value as on, so the caller's
+    "off" value can take the destructive branch. Here `true/1/yes/on` are on,
+    `false/0/no/off/""` are off, anything else is an error — silence is never a
+    decision.
+    """
+    value = (raw or "").strip().lower()
+    if value in ("1", "true", "yes", "on"):
+        return True
+    if value in ("", "0", "false", "no", "off"):
+        return False
+    raise SystemExit(f"[decide] FAIL: cannot read {raw!r} as a boolean "
+                     "(use 1/0, true/false, yes/no)")
+
+
 def main(argv: list[str]) -> int:
     action = argv[1] if len(argv) > 1 else "ensure"
     if action == "tags":
@@ -316,9 +402,19 @@ def main(argv: list[str]) -> int:
     if action == "publish":
         print(publish(force="--force" in argv[2:]))
         return 0
+    # ---- the rebuild decision, as data (issue #208) ----
+    if action == "decide":
+        def opt(name: str, default: str = "") -> str:
+            return argv[argv.index(name) + 1] if name in argv[2:] else default
+        force = parse_bool(opt("--force", "false"))
+        dow = int(opt("--dow", str(dt.datetime.now().isoweekday())))
+        for key, value in decide(force, dow).items():
+            print(f"{key}={value}")
+        return 0
     print(
         "usage: ensure_image.py "
-        "[ensure|ensure-base|ensure-test|ensure-openspec|tags|ref|push-check|publish [--force]]",
+        "[ensure|ensure-base|ensure-test|ensure-openspec|tags|ref|push-check|"
+        "publish [--force]|decide [--force <bool>] [--dow <1-7>]]",
         file=sys.stderr,
     )
     return 2

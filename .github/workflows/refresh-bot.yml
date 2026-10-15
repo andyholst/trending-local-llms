@@ -125,44 +125,20 @@ jobs:
       # forces it. Any other day reuses
       # the existing GHCR image, so the Hermes install/update runs at most once
       # per week instead of on every run.
-      - name: Decide whether to rebuild the images
+      # The rebuild decision is DATA, computed by one tested unit (issue #208):
+      # `make rebuild-decision` prints built/test_built/publish_openspec plus the
+      # tags and the reasons, so every branch is covered by tests instead of being
+      # observable only by running this pipeline. The day comes from the Makefile
+      # (one `date +%u` call site in the repo), and `FORCE` is parsed strictly —
+      # FORCE=0/false is OFF.
+      - name: Decide whether to rebuild the images (make rebuild-decision)
         id: decide
         run: |
-          DOW=$(date +%u)
-          # ONE definition of "built from this revision": the tags come from
-          # `scripts/ensure_image.py`, the same script `make image-ensure` reads,
-          # so publisher and consumer can never disagree. The Dockerfile(s)
-          # define the base image's contents — including the pinned plugins — and
-          # "that hash is not published" is a rebuild reason by itself: without
-          # it a merged Dockerfile change stays inert until the next Sunday and
-          # the bots keep running the old runtime [#135]. The test image carries
-          # its own tag (Dockerfile.test + requirements-test.txt + the base hash)
-          # so it is rebuilt and published by the SAME rules [#141].
-          eval "$(python3 scripts/ensure_image.py tags)"
-          FORCE="${{ inputs.force_rebuild }}"
-          if docker manifest inspect "${{ env.IMAGE }}" >/dev/null 2>&1; then
-            EXISTS=1; else EXISTS=0; fi
-          if docker manifest inspect "$BASE_TAG" >/dev/null 2>&1; then
-            HASHED=1; else HASHED=0; fi
-          if docker manifest inspect "$TEST_TAG" >/dev/null 2>&1; then
-            TEST_HASHED=1; else TEST_HASHED=0; fi
-          echo "DOW=$DOW exists=$EXISTS base=$BASE_TAG base_published=$HASHED test=$TEST_TAG test_published=$TEST_HASHED force=$FORCE"
-          echo "base_tag=$BASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "test_tag=$TEST_TAG" >> "$GITHUB_OUTPUT"
-          if [ "$DOW" = "7" ] || [ "$EXISTS" = "0" ] || [ "$HASHED" = "0" ] || [ "$FORCE" = "true" ]; then
-            echo "built=yes"
-            echo "built=yes" >> "$GITHUB_OUTPUT"
-          else
-            echo "built=no"
-            echo "built=no" >> "$GITHUB_OUTPUT"
-          fi
-          if [ "$DOW" = "7" ] || [ "$TEST_HASHED" = "0" ] || [ "$FORCE" = "true" ]; then
-            echo "test_built=yes"
-            echo "test_built=yes" >> "$GITHUB_OUTPUT"
-          else
-            echo "test_built=no"
-            echo "test_built=no" >> "$GITHUB_OUTPUT"
-          fi
+          # pipefail: without it the step reports tee's status, so a failed
+          # decision would be green with EMPTY outputs and every build below
+          # would be skipped — the toolchain would silently stop rebuilding.
+          set -o pipefail
+          make rebuild-decision FORCE="${{ inputs.force_rebuild }}" | tee /dev/stderr >> "$GITHUB_OUTPUT"
       - name: Cache Docker layers
         uses: actions/cache@v4
         with:
@@ -259,18 +235,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Decide whether to publish the OpenSpec image
+      - name: Decide whether to publish the OpenSpec image (make rebuild-decision)
         id: decide
         run: |
-          eval "$(python3 scripts/ensure_image.py tags)"
-          echo "tag=$OPENSPEC_TAG" >> "$GITHUB_OUTPUT"
-          if docker manifest inspect "$OPENSPEC_TAG" >/dev/null 2>&1; then
-            echo "published=yes" ; echo "published=yes" >> "$GITHUB_OUTPUT"
-          else
-            echo "published=no"  ; echo "published=no"  >> "$GITHUB_OUTPUT"
-          fi
+          set -o pipefail   # see the images decision above: tee must not hide a failure
+          make rebuild-decision | tee /dev/stderr >> "$GITHUB_OUTPUT"
       - name: Build + push the OpenSpec image (its hash tag is not published)
-        if: steps.decide.outputs.published == 'no'
+        if: steps.decide.outputs.publish_openspec == 'no'
         uses: docker/build-push-action@v6
         with:
           context: openspec
@@ -278,9 +249,9 @@ jobs:
           push: true
           tags: |
             ${{ env.OPENSPEC_IMAGE }}
-            ${{ steps.decide.outputs.tag }}
+            ${{ steps.decide.outputs.openspec_tag }}
       - name: OpenSpec image already current — skip rebuild
-        if: steps.decide.outputs.published == 'yes'
+        if: steps.decide.outputs.publish_openspec == 'yes'
         run: echo "The published OpenSpec image is built from this revision's openspec/Dockerfile; reusing it."
 
   # Four independent searches (nvidia, metal, cpu, amd), run in parallel. Each PULLS the prebuilt image

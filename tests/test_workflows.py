@@ -110,6 +110,74 @@ def test_refresh_bot():
           any(c.split()[0] not in ("0", "00", "*") for c in crons if c), crons)
 
 
+
+def test_the_rebuild_decision_is_one_tested_unit():
+    """Issue #208: `refresh-bot` reads the decision, it does not compute it.
+
+    The rule ("Sunday, or a missing tag, or forced") used to be inline shell in
+    TWO steps of this workflow, where no test could reach it — and the class has
+    already cost this repo a silent stale toolchain (#135). It now comes from
+    `make rebuild-decision` -> `scripts/ensure_image.py decide`, driven branch by
+    branch in `tests/test_ensure_image.py`.
+    """
+
+    # Given the workflow and the script that owns the rule
+    text = (WF / "refresh-bot.yml").read_text()
+    script = (ROOT / "scripts" / "ensure_image.py").read_text()
+    make = (ROOT / "Makefile").read_text()
+    code_lines = [l for l in text.splitlines() if not l.lstrip().startswith("#")]
+
+    # When  its decision steps are read
+    wf_doc = load("refresh-bot.yml")
+    all_steps = [s for j in wf_doc["jobs"].values() for s in j.get("steps", [])]
+    decision_steps = [s for s in all_steps if "make rebuild-decision" in str(s.get("run", ""))]
+    consumed = sorted(set(re.findall(r"steps\.decide\.outputs\.([a-z_]+)", text)))
+
+    # Then  the decision is one target, with no probe left inline…
+    check("refresh: both decision steps run `make rebuild-decision`",
+          len(decision_steps) == 2, [s.get("name", "") for s in decision_steps])
+    check("refresh: no inline `docker manifest inspect` remains",
+          not any("docker manifest inspect" in l for l in code_lines),
+          [l for l in code_lines if "docker manifest inspect" in l])
+    check("refresh: no inline `date +%u` remains (the Makefile owns the clock)",
+          not any("date +%u" in l for l in code_lines),
+          [l for l in code_lines if "date +%u" in l])
+    check("make: the target exists and calls the one script",
+          re.search(r"^rebuild-decision:", make, re.M) is not None
+          and "ensure_image.py decide" in make, "")
+    make_code = [l for l in make.splitlines() if not l.lstrip().startswith("#")]
+    # A `cmd | tee` step reports tee's status to GitHub's `bash -e` (no pipefail by
+    # default), so a failed decision would be a GREEN step whose $GITHUB_OUTPUT is
+    # empty — every build below is gated on those outputs, so the toolchain would
+    # silently stop rebuilding. Measured: GitHub logs `shell: /usr/bin/bash -e {0}`.
+    check("refresh: every piped decision step sets pipefail",
+          len(decision_steps) == 2
+          and all("set -o pipefail" in s.get("run", "") for s in decision_steps),
+          [s.get("run", "")[:80] for s in decision_steps])
+
+    check("make: the clock is read once, in the Makefile (never in a workflow)",
+          sum("date +%u" in l for l in make_code) == 1,
+          [l for l in make_code if "date +%u" in l])
+
+    # …and every output the workflow CONSUMES is one the script PRINTS (this is the
+    # cross-check that catches a renamed key: `tag` vs `openspec_tag`).
+    printed = sorted(set(re.findall(r'^\s+"([a-z_]+)":', script, re.M)))
+    missing = [o for o in consumed if o not in printed]
+    check("refresh: every consumed decide output is printed by the script",
+          missing == [], f"consumed={consumed} missing={missing}")
+
+    # And the decision reaches the jobs that act on it.
+    wf = load("refresh-bot.yml")
+    check("refresh: the build job consumes built/test_built/base_tag/test_tag",
+          {"built", "test_built", "base_tag", "test_tag"} <= set(consumed), consumed)
+    check("refresh: the openspec job consumes publish_openspec and openspec_tag",
+          {"publish_openspec", "openspec_tag"} <= set(consumed), consumed)
+    check("refresh: the openspec build is gated on publish_openspec",
+          "steps.decide.outputs.publish_openspec == 'no'" in text, "")
+    check("refresh: the base build is gated on built",
+          "steps.decide.outputs.built == 'yes'" in text, "")
+
+
 def test_qa_validate():
     wf = load("qa-validate.yml")
     jobs = wf["jobs"]
@@ -725,18 +793,23 @@ def test_images_follow_their_inputs():
     # Given ONE definition of "built from this revision" (the tags the publisher
     # and the consumers both read)
     # Then  the decision takes the tags from that script, never inline hashing
+    # The decision DELEGATES (issue #208): the step runs the one tested target, and
+    # the rule itself is driven branch by branch in tests/test_ensure_image.py.
     check("images: the tags come from scripts/ensure_image.py",
-          'eval "$(python3 scripts/ensure_image.py tags)"' in decide
-          and "cat Dockerfile Dockerfile.test | sha256sum" not in decide, decide[:160])
+          "ensure_image.py" in tags and "sha256" in tags
+          and 'eval "$(python3 scripts/ensure_image.py tags)"' not in decide
+          and "make rebuild-decision" in decide, decide[:200])
     check("images: the definition covers base AND test inputs",
           'BASE_FILES = ("Dockerfile", "Dockerfile.test")' in tags
           and 'TEST_FILES = ("Dockerfile.test", "requirements-test.txt")' in tags
           and "base={base_hash()}" in tags, tags[:200])
     # Then  an unpublished tag forces a rebuild of that image
     check("refresh-bot: an unpublished base tag rebuilds the base",
-          'HASHED=0' in decide and '[ "$HASHED" = "0" ]' in decide, decide)
+          "make rebuild-decision" in decide
+          and "steps.decide.outputs.built == 'yes'" in rb, decide)
     check("refresh-bot: an unpublished test tag rebuilds the test image",
-          'TEST_HASHED=0' in decide and '[ "$TEST_HASHED" = "0" ]' in decide, decide)
+          "make rebuild-decision" in decide
+          and "needs.build.outputs.test_built == 'yes'" in rb, decide)
     # Then  each build publishes the tag naming those inputs
     check("refresh-bot: the base build publishes its tag",
           "${{ steps.decide.outputs.base_tag }}" in rb, "")
@@ -744,9 +817,11 @@ def test_images_follow_their_inputs():
           "${{ needs.build.outputs.test_tag }}" in rb
           and "file: Dockerfile.test" in rb, "")
     # Then  the owner can republish both images without waiting for Sunday
-    check("refresh-bot: `force_rebuild` republishes on demand",
-          "inputs.force_rebuild" in decide
-          and decide.count('[ "$FORCE" = "true" ]') == 2, decide.count('[ "$FORCE" = "true" ]'))
+    # The force value is handed to the decision (which parses it STRICTLY: FORCE=0
+    # is OFF — see tests/test_ensure_image.py::test_force_is_parsed_strictly_so_zero_means_off).
+    check("refresh-bot: `force_rebuild` reaches the decision",
+          'FORCE="${{ inputs.force_rebuild }}"' in decide
+          and "[ \"$FORCE\" = \"true\" ]" not in decide, decide)
     check("refresh-bot: the dispatch input exists",
           "force_rebuild:" in rb and "type: boolean" in rb, "")
 
@@ -962,7 +1037,11 @@ def test_issue_bot_files_findings_only_when_green():
           and "OPENSPEC_IMAGE" in str(refresh.get("env", {})), refresh.get("env"))
     check("openspec image: the build uses openspec/Dockerfile and pushes the hash tag",
           str(ospec.get("steps", "")) .find("openspec/Dockerfile") >= 0
-          and "decide.outputs.tag" in str(ospec.get("steps", "")), ospec.get("steps"))
+          and "decide.outputs.openspec_tag" in str(ospec.get("steps", "")), ospec.get("steps"))
+    check("openspec image: its decision is the same one tested unit (issue #208)",
+          "make rebuild-decision" in str(ospec.get("steps", ""))
+          and "decide.outputs.publish_openspec == 'no'" in str(ospec.get("steps", "")),
+          ospec.get("steps"))
 
 
 def test_issue_bot_announces_its_window():
@@ -1149,6 +1228,7 @@ def test_the_reviewer_never_edits_an_issue_inside_a_window():
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
+    test_the_rebuild_decision_is_one_tested_unit()
     test_qa_validate()
     test_fix_bot()
     test_fix_bot_push_behaviour()

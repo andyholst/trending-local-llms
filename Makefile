@@ -166,6 +166,16 @@ agent-image-push-check: ## CI: prove the ambient credential can PUSH the agent i
 publish-agent-image: ## Build + push the agent image when its hash tag is absent (FORCE=1 rebuilds the same inputs)
 	python3 scripts/ensure_image.py publish $(if $(FORCE),--force,)
 
+# ---- the rebuild decision, as data (issue #208) ------------------------------
+# `refresh-bot`'s `build` and `openspec-image` jobs read this instead of computing
+# the rule inline. The day comes from HERE (`date +%u`, one call site in the repo),
+# the published-tag probes go through the same `docker` seam the tests fake, and
+# `scripts/ensure_image.py decide` owns the rule — so every branch is tested
+# instead of being observable only by running the pipeline (#135, #141).
+# `FORCE` is parsed strictly in the script: FORCE=0/false means OFF.
+rebuild-decision: ## Print built/test_built/publish_openspec + tags + reasons (FORCE=<bool>, DOW=<1-7>)
+	@python3 scripts/ensure_image.py decide --force "$(if $(FORCE),$(FORCE),false)" --dow "$(if $(DOW),$(DOW),$$(date +%u))"
+
 # ---- OpenSpec (spec-driven change tracking; Dockerized CLI) ------------------
 # Every change is a TRACKED change: openspec/changes/<name>/ holds proposal.md,
 # specs/<capability>/spec.md and tasks.md, created BEFORE the code is written and

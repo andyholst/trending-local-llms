@@ -121,6 +121,7 @@ keep it honest (issue #207):
 | `image-ensure` | Ensure **both** the base and the test image: pull the published tag for this revision, else build |
 | `image-ensure-base` | The base alone (a job that only runs the image needs this) |
 | `image-ensure-test` | The test image alone (builds the base first when it is missing) |
+| `rebuild-decision` | Print the rebuild decision as data — `built`/`test_built`/`publish_openspec` + the tags and the `reason` — so `refresh-bot` reads a tested unit instead of computing the rule inline (issue #208). The day comes from here (`date +%u`, the repo's one call site); `FORCE=` is parsed strictly (`0`/`false` = OFF) |
 | `agent-image-ref` | Print this revision's `dockerfile-<sha12>` tag + the `:latest` ref the bots pull (`ensure_image.py ref`) |
 | `agent-image-push-check` | Prove the ambient credential can WRITE the package before the build: one empty blob-upload POST, answered with the registry's own refusal when it cannot (`ensure_image.py push-check`) |
 | `publish-agent-image` | Build + push the agent image **only when its hash tag is absent**; pushes both the hash tag and `:latest`. `FORCE=1` rebuilds the same inputs. Run by `publish-agent-image.yml`, guarded to owner/collaborators (issue #206) |
@@ -259,9 +260,9 @@ competing PRs over the same generated files).
 | Job | Does |
 |---|---|
 | `guard` | Owner / write-collaborator only, for **both** `github.actor` and `github.triggering_actor`; a `schedule` passes. Every other job needs it, and `aggregate` requires `needs.guard.result == 'success'` |
-| `build` | Decide (`scripts/ensure_image.py tags`) whether the **base** must be rebuilt — missing, hash tag unpublished, Sunday, or `force_rebuild` — and push `:latest` + `:dockerfile-<hash>` |
-| `test-image` | Same decision for the **test** image → `…-test:latest` + `:test-<hash>` |
-| `openspec-image` | Same decision for the **OpenSpec CLI** image → `…-openspec:latest` + `:openspec-<hash>` |
+| `build` | Decide through the ONE tested unit (`make rebuild-decision` → `scripts/ensure_image.py decide`, issue #208) whether the **base** must be rebuilt — `:latest` missing, hash tag unpublished, Sunday, or `force_rebuild` — and push `:latest` + `:dockerfile-<hash>` |
+| `test-image` | Same decision (`make rebuild-decision`) for the **test** image → `…-test:latest` + `:test-<hash>` |
+| `openspec-image` | Same decision (`make rebuild-decision`, output `publish_openspec`) for the **OpenSpec CLI** image → `…-openspec:latest` + `:openspec-<hash>` |
 | `search` | Matrix `[nvidia, metal, cpu, amd]`, `fail-fast: false`: prepare the base image, `_search-smoke`, `model-caps`, `hermes-smoke`, then the Hermes search. Each leg uploads its raw snapshots as artifacts |
 | `aggregate` | Runs even when a leg failed: collect the artifacts, `merge-fetch`, `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data. It never merges: `qa-validate`'s `auto-merge` does |
 
@@ -368,7 +369,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |
 | `scripts/issue_queue.py` | The implementer's queue, computed once for both bots: pick order, each candidate's implementer window (`window`/`reason`/`started`), the reviewer's markers and run ids |
 | `scripts/issue_review.py` | The reviewer's deterministic core (issue #179): `--pick` (one issue, `body`/`window`/`none`), `--mark`/`--finish` (the `review-in-progress` label + the run-stamped marker), `--guard` (the TOCTOU re-check before a write), `--body-hash` (the proof the window path edited nothing) and `--check-markers` (a rewrite may not drop an invisible dedup marker). It imports `issue_queue` — the queue rule has one implementation |
-| `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (issue #206) |
+| `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (#206); `decide` returns the rebuild rule as data (#208) |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation |
