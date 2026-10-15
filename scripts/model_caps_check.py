@@ -8,7 +8,15 @@ Reads the endpoint's /v1/models and FAILS (exit 1) when:
     a 65,536 cap until a search burned it),
   - the model does not accept a `reasoning` parameter (then --reasoning none
     cannot turn thinking off and the budget burns again).
-Exit 0 when everything fits; SKIP (exit 0) when NOUS_API_KEY is unset.
+Exit 0 when everything fits.
+
+NO SILENT SKIP (issue #209): with no NOUS_API_KEY this used to print
+`SKIP: NOUS_API_KEY not set` and exit 0 — a green pre-flight that had checked
+nothing, on the step that guards the same 20-minute leg as `make hermes-smoke`
+(AGENTS.md: "a skipped test is a loud FAILURE, never a silent skip"). It now FAILS,
+naming the variable and what could not be checked. A caller that knowingly runs
+without a key may ask for the old behaviour with LIVE_CHECK_ALLOW_UNCONFIGURED=1,
+which reports NOT CONFIGURED instead; CI never sets it.
 
 Usage: python3 scripts/model_caps_check.py --base URL --model ID --max-tokens N
 """
@@ -56,8 +64,18 @@ def main() -> int:
     else:
         key = os.environ.get("NOUS_API_KEY", "").strip()
         if not key:
-            print("[model-caps] SKIP: NOUS_API_KEY not set")
-            return 0
+            # The explicit, non-default opt-out (see the module docstring).
+            if os.environ.get("LIVE_CHECK_ALLOW_UNCONFIGURED", "") == "1":
+                print("[model-caps] NOT CONFIGURED: NOUS_API_KEY is unset, so the endpoint cannot be read.")
+                print("[model-caps] LIVE_CHECK_ALLOW_UNCONFIGURED=1 was set deliberately — this check did NOT run.")
+                return 0
+            print("[model-caps] FAIL: NOUS_API_KEY is not set.")
+            print("[model-caps]   Without it the endpoint cannot be read, so the model id, its real")
+            print("[model-caps]   max_completion_tokens and its `reasoning` support are all unverified —")
+            print("[model-caps]   a green pre-flight here would tell you nothing.")
+            print("[model-caps] Set NOUS_API_KEY, or run with LIVE_CHECK_ALLOW_UNCONFIGURED=1 to skip the")
+            print("[model-caps] live check deliberately (CI never sets that flag).")
+            return 1
         try:
             catalog = fetch(args.base, key)
         except Exception as e:  # noqa: BLE001
