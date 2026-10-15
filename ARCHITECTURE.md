@@ -259,7 +259,7 @@ competing PRs over the same generated files).
 
 | Job | Does |
 |---|---|
-| `guard` | Owner / write-collaborator only, for **both** `github.actor` and `github.triggering_actor`; a `schedule` passes. Every other job needs it, and `aggregate` requires `needs.guard.result == 'success'` |
+| `guard` | The owner, a collaborator with `admin`/`maintain`/`write`, or `github-actions[bot]` (the bot itself) — for **both** `github.actor` and `github.triggering_actor`; a `schedule` passes. Every other job needs it, and `aggregate` requires `needs.guard.result == 'success'` |
 | `build` | Decide through the ONE tested unit (`make rebuild-decision` → `scripts/ensure_image.py decide`, issue #208) whether the **base** must be rebuilt — `:latest` missing, hash tag unpublished, Sunday, or `force_rebuild` — and push `:latest` + `:dockerfile-<hash>` |
 | `test-image` | Same decision (`make rebuild-decision`) for the **test** image → `…-test:latest` + `:test-<hash>` |
 | `openspec-image` | Same decision (`make rebuild-decision`, output `publish_openspec`) for the **OpenSpec CLI** image → `…-openspec:latest` + `:openspec-<hash>` |
@@ -290,7 +290,7 @@ credential must be proven before the ten-minute build.
 
 | Job | Does |
 |---|---|
-| `guard` | FIRST, before any secret: `github.actor` **and** `github.triggering_actor` must be the owner or a collaborator with `admin`/`maintain`/`write` (`gh api …/collaborators/<u>/permission`); anyone else dies here |
+| `guard` | FIRST, before any secret: `github.actor` **and** `github.triggering_actor` must be the owner, a collaborator with `admin`/`maintain`/`write` (`gh api …/collaborators/<u>/permission`), or `github-actions[bot]` (the bot itself); anyone else dies here |
 | `publish` | `needs: guard`. Checkout → buildx → `make agent-image-ref` → GHCR login with the **default `GITHUB_TOKEN`** as the triggering actor (a PAT that is not an org member is refused `permission_denied: create_package`; measured again here: the `gh` OAuth token is refused `invalid token` by the registry API) → `make agent-image-push-check` (**before** the build: it starts an empty blob upload, so a credential that cannot write fails in seconds with the registry's own words) → `make publish-agent-image` (no-op when this revision's `dockerfile-<sha12>` tag is already published; `FORCE=1` rebuilds the same inputs) → print the refs |
 
 Triggers are `workflow_dispatch` only — no `schedule`, no `pull_request`, no
@@ -304,7 +304,7 @@ same issue queue instead of racing).
 
 | Job | Does |
 |---|---|
-| `guard` | The same owner/collaborator guard as refresh-bot, before any secret |
+| `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
 | `pick` | Sweep only: `make issue-queue` (`scripts/issue_queue.py`) — the OLDEST open `data-gap-analysis` issue with **no** `ci/data-gap-<n>-*` branch, no open PR from one, no live reviewer marker (a fresh `<!-- issue-review: … run=<id> -->`) and **no fresh reviewer VERDICT** (`needs-refinement` / `obsolete` / `duplicate` / `already-fixed`, held while younger than `VERDICT_TTL_HOURS`=24 h *measured from the reviewer's newest marker comment* — a label carries no timestamp, so an old one from a cancelled run releases the issue again; the `review-in-progress` label is likewise advisory) (the queue rule has ONE implementation; the reviewer reads the same target). An empty backlog is a green run that implements nothing |
 | `pick` → verdict note | When the pick is empty, `make issue-skip-note` (`scripts/issue_queue.py --skip-note`, default token — the owner PAT cannot comment) posts ONE comment on the held issue carrying `<!-- issue-bot-skip: <ISO8601Z> verdict=<label> since=<reviewer ts> -->`, so "why is nobody implementing this?" is answered where the issue lives, once per review round. It writes NO label and edits NO body — the verdict belongs to the reviewer or a human (issue #200) |
 | `implement` | Resolve the issue (must be open) → `issue.md`; checkout `master` (PAT); `make image-ensure`; `make hermes-smoke`; **announce the window** (one start comment `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted with the default token BEFORE the body is read — the signal the reviewer defers to); `make implement-issue`; commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
@@ -322,7 +322,7 @@ findings filing — the PAT cannot comment. No workflow pushes `master`; only
 
 | Job | Does |
 |---|---|
-| `guard` | The same owner/collaborator guard as the other pipelines, before any secret |
+| `guard` | The same owner/collaborator/bot guard as the other pipelines, plus the `schedule` bypass, before any secret |
 | `pick` | `make review-issue-pick`: ONE issue per run — the oldest candidate whose implementer window is CLOSED (`action=review path=body`), else the oldest started issue the reviewer has not answered (`action=window`), else `action=none` (a green no-op). A forced dispatch re-uses the guard to choose the path |
 | `review` | Resolve the issue (must be open); checkout `master`; `make image-ensure`; `make hermes-smoke`; write `issue.md` (`gh issue view --comments`); **open the window** (`make review-issue-mark` → `review-in-progress` label + `<!-- issue-review: <ISO8601Z> run=<id> -->`); **re-check it** (`make review-issue-guard`, the TOCTOU guard) and route: **`body`** → `make review-issue` (Hermes refinines `issue-body.md`), `make review-issue-check-markers` (no invisible dedup marker may vanish), publish the body only when it changed (clearing `needs-refinement`) + ONE summary comment; **`window`** → `make review-issue-window` (the body is OFF-LIMITS), PROVE the body hash is unchanged, then post ONE bounded reply carrying the marker. Both paths: file the findings as their own `tech-debt` issues (`make findings-check` + `make file-findings`) and close the window (`make review-issue-finish`, `always()`). No `comment.md` → the run is RED |
 
