@@ -10,7 +10,9 @@ runs; only the GitHub API is a stand-in):
   2. the report names the runner label and the age;
   3. `--comment` posts ONE comment per run and never a second (the marker dedup);
   4. the workflow guards first (owner/collaborator/bot, schedule bypass) and calls `make queued-alarm`;
-  5. the make target is real and passes REPO/MINUTES/COMMENT through.
+  5. the make target is real and passes REPO/MINUTES/COMMENT through;
+  6. the one comment uses the DEFAULT token (rule 6e: the owner PAT cannot comment);
+  7. AGENTS.md carries the alarm's rule and its section-8 guard row.
 
 Run standalone: python3 tests/test_queued_run_alarm.py   or   make test
 """
@@ -141,6 +143,10 @@ def test_the_workflow_guards_first_and_calls_the_make_target():
     check("wf: it never runs a repo script directly",
           not re.search(r"^\s*python3 scripts/", text, re.M))
     check("wf: it has its own concurrency group", "group: queued-alarm" in text)
+    # And its one comment uses the DEFAULT token, never the owner PAT
+    check("wf: the comment uses github.token, not the owner PAT",
+          "GH_TOKEN: ${{ github.token }}" in text
+          and "secrets.FIXBOT_DISPATCH_TOKEN" not in text)
 
 
 def test_the_make_target_passes_its_variables_through():
@@ -154,12 +160,31 @@ def test_the_make_target_passes_its_variables_through():
     check("make: queued-alarm honours COMMENT", "--comment" in out, out[-200:])
 
 
+def test_agents_md_carries_the_rule_and_the_guard_row():
+    # Given AGENTS.md, where this repo's rules live
+    text = (ROOT / "AGENTS.md").read_text()
+
+    # Then the alarm has its own rule, naming the make target the workflow calls, pinned to the
+    # default token ...
+    check("agents: rule 6l documents a stuck queued job",
+          "6l. **A job stuck in `queued` is an ALARM" in text)
+    check("agents: the rule names the make target the workflow calls",
+          "make queued-alarm" in text)
+    check("agents: the rule keeps the comment on the default token (rule 6e)",
+          "rule 6e: the owner PAT cannot" in text)
+
+    # ... and its section-8 guard row names this very test
+    check("agents: the section-8 row names this test",
+          "tests/test_queued_run_alarm.py" in text)
+
+
 def main() -> int:
     test_a_long_queued_job_is_reported()
     test_a_short_queue_is_not_reported()
     test_comment_is_posted_once_per_run()
     test_the_workflow_guards_first_and_calls_the_make_target()
     test_the_make_target_passes_its_variables_through()
+    test_agents_md_carries_the_rule_and_the_guard_row()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

@@ -313,6 +313,27 @@ retains 30 days of history.
    `tests/test_nerve_key_wiring.py`) proves the pin, the name and the absence of
    any literal, and runs in `qa-validate`'s `validate` job (rule 6d).
 
+6l. **A job stuck in `queued` is an ALARM, never a silent pending (MANDATORY).**
+   A runner label that matches nothing — an offline or never-registered
+   self-hosted runner, or a hosted runner whose minutes or spending limit is
+   exhausted — does not FAIL the job: GitHub leaves it `queued` for ever, so the
+   run never concludes, `mergeStateStatus` stays `BLOCKED`, and every check on
+   every PR sits at "pending" with no signal anywhere that anything is wrong.
+   `queued-alarm.yml` (cron `7,37 * * * *`, plus a `minutes` dispatch input)
+   makes that state loud through `make queued-alarm`
+   (`scripts/queued_run_alarm.py`, where the DECISION lives — rule 6d): it lists
+   the repo's `queued` AND `in_progress` runs (a run whose jobs are ALL queued
+   reports `queued`, not `in_progress` — the exact state this exists for), flags
+   every job queued longer than `MINUTES` (default 30), prints the runner label
+   and the age (the label decides WHICH machine is missing) and exits 1, so the
+   scheduled run goes RED instead of staying silent. It also posts ONE
+   marker-deduplicated comment per affected run (`<!-- queued-run-alarm -->`), so
+   a twice-an-hour sweep never spams the thread. It is read-only apart from that
+   one comment, holds `contents: read`, `actions: read` and `issues: write`, and
+   its comment uses the DEFAULT `github.token` (rule 6e: the owner PAT cannot
+   comment). Its `guard` is the FIRST job (rule 6j, issue #238) and a `schedule`
+   trigger passes it by design.
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -919,6 +940,7 @@ actually happened.
 
 | Guard | Catches |
 |---|---|
+| `tests/test_queued_run_alarm.py` — the queued-run alarm | a job stuck in `queued` reported without its runner label; a second sweep commenting again (marker dedup broken); a run counted twice because both the `queued` and `in_progress` queries return it; the sweep still green while a job is stuck |
 | `tests/test_hermes_prompts.py` — prompt shell strings | an unescaped `"` in a `-z` prompt closing the string early (every search dies) |
 | `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |
 | `tests/test_hermes_prompts.py` — `--reasoning` on every call | a search burning its whole output budget on reasoning and writing no snapshot |
