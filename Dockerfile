@@ -28,13 +28,19 @@ WORKDIR /workspace
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install the Hermes CLI into the image (downloaded at build time).
-# Cache-friendly: only re-runs when the install script hash changes.
-ADD https://hermes-agent.nousresearch.com/install.sh /tmp/hermes-install.sh
-RUN bash /tmp/hermes-install.sh \
-    && rm -f /tmp/hermes-install.sh \
-    && export PATH="/root/.local/bin:$PATH" \
-    && hermes --version
+# Install the Hermes CLI into the image — through the SEAM (issue #207), not an
+# `ADD <url>`: the pin is a build arg, so a maintainer can point the build at a
+# mirror or a pinned release without editing this file, and the script refuses to
+# continue when it cannot produce a working CLI (already installed ->
+# HERMES_INSTALL_URL -> `uv tool install`, else FAIL — an agent image without an
+# agent must not build).
+#   --build-arg HERMES_INSTALL_URL=... --build-arg HERMES_PACKAGE=...
+ARG HERMES_INSTALL_URL="https://hermes-agent.nousresearch.com/install.sh"
+ARG HERMES_PACKAGE="hermes-agent"
+COPY scripts/install_hermes_ci.sh /usr/local/bin/install_hermes_ci.sh
+ENV HERMES_INSTALL_URL=${HERMES_INSTALL_URL} HERMES_PACKAGE=${HERMES_PACKAGE}
+RUN chmod +x /usr/local/bin/install_hermes_ci.sh \
+    && /usr/local/bin/install_hermes_ci.sh
 
 # Install the nerve supervision plugin (Hermes plugin catalog:
 # https://github.com/keeltrace/hermes-nerve) as CODE ONLY, pinned — like the
@@ -65,6 +71,18 @@ COPY . .
 # so this keeps Hermes fresh exactly weekly without re-downloading it on
 # every daily run.
 RUN export PATH="/root/.local/bin:$PATH" && make _update-hermes
+
+# Prove the image carries the agent the bots will call (issue #207). `make _setup`
+# writes the model alias from the Makefile's OWN pins (model, provider, base_url,
+# key_env) and `make _hermes-alias-check` then fails the BUILD when the alias does
+# not match them: without this, a wrong model pin or a provider that is not
+# `custom` was only discovered inside a bot run (measured on #124: no alias ->
+# Hermes auto-routed to HF_TOKEN -> `HTTP 403`).
+# Only the NAME of the key is written here (key_env=NOUS_API_KEY); the key itself
+# arrives at run time as `-e NOUS_API_KEY` (AGENTS.md rule 3e).
+RUN export PATH="/root/.local/bin:$PATH" \
+    && make _setup \
+    && make _hermes-alias-check
 
 # Make hermes available on PATH for every RUN/CMD
 ENV PATH="/root/.local/bin:$PATH"

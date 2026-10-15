@@ -93,15 +93,36 @@ hold the host command. `$(DOCKER_RUN)` runs the **base image**
 
 ### Images / setup
 
+The base image **is** the agent image: it bakes the Hermes CLI and the pinned
+`keeltrace/hermes-nerve` plugin, and every bot job runs inside it. Two properties
+keep it honest (issue #207):
+
+- **one installer seam** — the Dockerfile installs the CLI through
+  `scripts/install_hermes_ci.sh` (`ARG HERMES_INSTALL_URL` / `ARG HERMES_PACKAGE`
+  carry the pin, so a mirror or a pinned release needs no Dockerfile edit; the
+  script tries an existing `hermes` → the URL → `uv tool install`, and **fails the
+  build** when none works, because an agent image without an agent is worse than
+  none). `make _setup` runs the same seam, so there is no second
+  curl-pipe-bash installer to drift from it.
+- **a build-time alias assertion** — after copying the repo the build runs
+  `make _setup` (which writes the alias from `HERMES_ALIAS` / `HERMES_MODEL` /
+  `NOUS_BASE`) and then `make _hermes-alias-check`, which reads every field back
+  and fails the BUILD on a mismatch (a wrong model, a provider that is not
+  `custom`, a `key_env` that is not `NOUS_API_KEY`). Measured on #124: without the
+  alias Hermes auto-routed to `HF_TOKEN` and died with `HTTP 403` — inside a bot
+  run, after the image was published. Only the NAME of the key is written; the key
+  arrives at run time (`-e NOUS_API_KEY`, rule 3e).
+
 | Target | What it does |
 |---|---|
-| `docker-build` | `docker build -t trending-local-llms:latest .` — build the base image unconditionally |
+| `docker-build` | `docker build -t trending-local-llms:latest .` — build the base image unconditionally, which also runs the seam and the alias assertion |
 | `docker-test-build` | Build the test image (`Dockerfile.test`) on `$(BASE_IMAGE)` (defaults to the published base) |
 | `image-tags` | Print `BASE_TAG` / `TEST_TAG` / `OPENSPEC_TAG` — the content-hash tags the pull-vs-build decision reads (`scripts/ensure_image.py tags`) |
 | `image-ensure` | Ensure **both** the base and the test image: pull the published tag for this revision, else build |
 | `image-ensure-base` | The base alone (a job that only runs the image needs this) |
 | `image-ensure-test` | The test image alone (builds the base first when it is missing) |
-| `setup` | Install/refresh the Hermes CLI **inside the container** and write the `nous-deepseek` alias (`model.aliases.nous-deepseek.*`) |
+| `setup` | Install/refresh the Hermes CLI **inside the container** — through the ONE seam (`scripts/install_hermes_ci.sh`, the same file the image build runs) — and write the alias (`model.aliases.$(HERMES_ALIAS).*`) from the Makefile's own pins |
+| `hermes-alias-check` | Prove the container carries the agent it claims: read every `model.aliases.$(HERMES_ALIAS).*` field back and fail loudly on a mismatch (the image build runs the same `_hermes-alias-check`, so a broken pin never reaches a bot run) |
 | `update-hermes` | Re-run the Hermes installer in the container (what the Sunday base rebuild relies on) |
 | `requirements` | Compile `requirements.in` → `requirements.txt` with `pip-compile` |
 | `generate-requirements` | Same for every `*.in` (runtime + test) — the compiled files are never hand-edited |
