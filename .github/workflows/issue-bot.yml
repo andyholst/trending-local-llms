@@ -201,7 +201,11 @@ jobs:
             echo "Issue #$ISSUE is '$STATE' - nothing to implement."
             echo "implement=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          gh api "repos/$REPO/issues/$ISSUE" --jq '.title, "", .body' > issue.md
+          # The WHOLE thread, not just the body (issue #210): the comments carry
+          # part of the specification (a scope narrowing, a superseding PR), and
+          # the renderer appends the decision instruction the implementer answers
+          # with in triage.md. One implementation, tested.
+          make issue-thread REPO="$REPO" ISSUE="$ISSUE" > issue.md
           SLUG=$(gh api "repos/$REPO/issues/$ISSUE" --jq .title \
             | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40)
           BRANCH="ci/data-gap-${ISSUE}-${SLUG}"
@@ -270,9 +274,33 @@ jobs:
           if [ "$rc" != "0" ]; then echo "implemented=false" >> "$GITHUB_OUTPUT"; else echo "implemented=true" >> "$GITHUB_OUTPUT"; fi
           exit 0
 
+      # The implementer's verdict, applied DETERMINISTICALLY (issue #210). The
+      # prompt requires `triage.md`; `make issue-verdict` is the only thing that
+      # acts on it: `implement` does nothing (the run continues to its PR),
+      # `refine` posts ONE restatement + `agent:refined`, `close` posts the reason
+      # with its cited EVIDENCE, closes the issue and applies `agent:closed`. A
+      # close with no EVIDENCE, or an unreadable verdict, exits 2 and fails this
+      # step loudly — a verdict nobody understands must not be guessed at.
+      # `set -o pipefail`: without it the step reports tee's status and a refused
+      # verdict would look green.
+      - name: Apply the implementer's verdict (make issue-verdict)
+        id: verdict
+        if: steps.iss.outputs.implement == 'true'
+        env:
+          # Comments/labels/closes use the default token (`permissions: issues: write`);
+          # the owner PAT cannot comment on an issue (measured on #124).
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+        run: |
+          set -o pipefail
+          make issue-verdict | tee /dev/stderr >> "$GITHUB_OUTPUT"
+
       - name: Commit + push the branch
         id: push
-        if: steps.iss.outputs.implement == 'true' && steps.impl.outputs.implemented == 'true'
+        if: >-
+          steps.iss.outputs.implement == 'true' && steps.impl.outputs.implemented == 'true'
+          && steps.verdict.outputs.verdict == 'implement'
         env:
           BRANCH: ${{ steps.iss.outputs.branch }}
           ISSUE: ${{ steps.iss.outputs.issue }}
@@ -291,7 +319,7 @@ jobs:
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md start.md issue-body.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "The implementation produced no file changes - nothing to push."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
@@ -430,7 +458,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           sudo chown -R "$(id -u):$(id -g)" .
           git add -A
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md start.md issue-body.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Pipeline green with no extra changes."
             exit 0
@@ -439,7 +467,9 @@ jobs:
           git push origin "$BRANCH"
 
       - name: Report the outcome on the issue
-        if: always() && steps.iss.outputs.implement == 'true'
+        # Only an `implement` run has an implementation to report: a refine or a
+        # close already said everything in the verdict step's own comment.
+        if: always() && steps.iss.outputs.implement == 'true' && steps.verdict.outputs.verdict == 'implement'
         env:
           # default token + `permissions: issues: write` (the PAT cannot comment)
           GH_TOKEN: ${{ github.token }}
@@ -487,8 +517,12 @@ jobs:
       - name: Fail loudly when the implementation did not happen
         # Red when there is nothing to review: no implementation at all, OR an
         # implementation whose branch could not be pushed (token scope).
+        # RED only when the run SAID `implement` and produced nothing: a refine or a
+        # close is a complete outcome (the verdict step commented and labelled), so
+        # it must not be reported as a failed implementation.
         if: >-
           always() && steps.iss.outputs.implement == 'true'
+          && steps.verdict.outputs.verdict == 'implement'
           && (steps.impl.outputs.implemented != 'true' || steps.push.outputs.scope_error == 'true')
         env:
           RC: ${{ steps.impl.outputs.rc }}

@@ -670,8 +670,16 @@ def test_issue_bot():
     body = recipe.group(1) if recipe else ""
     check("issue-bot: `make implement-issue` runs `_setup` in the SAME container as the hermes call",
           "_setup" in body and "_implement-issue" in body, body[:200])
-    check("issue-bot: the hermes recipe is the alias-using one (`-m nous-deepseek` on the continued line)",
-          "-m nous-deepseek" in mk.split("_implement-issue:")[1][:4000], "")
+    # Structural, not a character window: the flag must be in the `_implement-issue`
+    # RECIPE itself. The old check sliced 4000 chars after the first mention of
+    # `_implement-issue:` (which also appears in `implement-issue`'s comment), so a
+    # longer prompt pushed the flag out of the window and went red with the alias
+    # perfectly intact — a guard that measured the file's LENGTH, not the alias.
+    import re as _re
+    hermes_recipe = _re.search(r"\n_implement-issue:\n((?:\t[^\n]*\n)+)", mk)
+    hermes_body = hermes_recipe.group(1) if hermes_recipe else ""
+    check("issue-bot: the `_implement-issue` recipe is the alias-using one",
+          "-m nous-deepseek" in hermes_body, hermes_body[:300])
     comment = step(impl, "Report the outcome")
     check("issue-bot: the outcome comment uses the default token (the PAT has no Issues write)",
           comment.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", comment.get("env"))

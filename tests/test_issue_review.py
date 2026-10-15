@@ -595,6 +595,29 @@ def test_skip_note_is_posted_once_per_review_round():
           str(calls_after))
 
 
+
+def test_a_decided_issue_is_skipped_by_the_shared_queue():
+    """Issue #210: once the implementer has SAID what an issue is, the sweep must
+    not re-litigate the verdict every hour."""
+
+    # Given the oldest issue carries the implementer's own verdict label
+    for label in ("agent:refined", "agent:closed"):
+        with tempfile.TemporaryDirectory() as td:
+            env = env_for(Path(td), issues=[candidate(163, labels=[label]), candidate(174)])
+
+            # When  the shared queue is built
+            proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+            row = [l for l in proc.stdout.splitlines() if l.startswith("issue=163 ")][0]
+            nxt = [l for l in proc.stdout.splitlines() if l.startswith("issue=174 ")][0]
+
+        # Then  the decided issue is held (out of the pick order) and the next one is taken
+        check(f"{label}: the issue is skipped", "impl_skip=1" in row, row)
+        check(f"{label}: the reason names the verdict", f"reason=decided:{label}" in row, row)
+        check(f"{label}: it is out of the pick order", "position=-1" in row, row)
+        check(f"{label}: the label is reported", f"decided={label}" in row, row)
+        check(f"{label}: the NEXT issue is what the sweep takes",
+              nxt.split()[1] == "position=0", nxt)
+
 def test_the_implementer_never_edits_a_label_or_a_body_when_it_skips():
     """Skipping is a COMMENT: no label write, no body edit, ever."""
 
@@ -633,6 +656,7 @@ def main() -> int:
     test_a_label_without_any_reviewer_marker_never_holds()
     test_skip_note_is_posted_once_per_review_round()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
+    test_a_decided_issue_is_skipped_by_the_shared_queue()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

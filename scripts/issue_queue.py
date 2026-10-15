@@ -44,6 +44,10 @@ What it prints (one line per candidate, in pick order — oldest first):
     (`impl_skip=1`, `reason=verdict-fresh`); an older one — e.g. a label left by
     a cancelled run — releases it (which is why the label alone was advisory
     before). With no reviewer marker at all the label is only reported.
+  * ``decided`` — the implementer already SAID what this issue is (issue #210):
+    ``agent:refined`` or ``agent:closed``, applied by ``scripts/issue_verdict.py``.
+    A decided issue is held with no TTL — a human clearing the label releases it —
+    because a verdict is a deliberate statement, not a clock.
 
 `--skip-note` posts the ONE comment that says the implementer skipped an issue
 because of a fresh verdict — idempotent per review round (the marker carries
@@ -80,6 +84,13 @@ START_TS_RE = re.compile(r"issue-bot-start:\s*([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-
 # be closed by the reviewer WITH evidence; the hold is the safety net for the case
 # where a verdict label outlives the run that set it.
 VERDICT_LABELS = ("needs-refinement", "obsolete", "duplicate", "already-fixed")
+# The implementer's own triage outcome (issue #210): once it has SAID what an
+# issue is — refined, or closed with evidence — the sweep must not re-litigate the
+# verdict every hour. `scripts/issue_verdict.py` applies one of these; the pick
+# skips the issue while it carries one. Decided is a HOLD with no TTL on purpose:
+# a human clearing the label is the release, because the verdict is a person's or
+# the bot's deliberate statement, not a clock.
+DECIDED_LABELS = ("agent:refined", "agent:closed")
 SKIP_MARKER = "<!-- issue-bot-skip:"
 SKIP_SINCE_RE = re.compile(r"issue-bot-skip:.*?since=([0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9:.]+Z?)")
 
@@ -264,14 +275,17 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
         # and an older verdict (a label left by a cancelled run) releases the
         # issue instead of stalling it for ever. Nothing here reads or writes a
         # label: the reviewer (or a human) owns those.
+        decided_label = next((name for name in DECIDED_LABELS if name in labels), None)
         verdict_label = next((name for name in VERDICT_LABELS if name in labels), None)
         verdict_ts = newest([review_ts, reply_ts])
         verdict_fresh = bool(verdict_label) and bool(verdict_ts) and (
             (now - verdict_ts) < dt.timedelta(hours=verdict_ttl_hours)
         )
-        impl_skip = reviewer_recent or verdict_fresh
+        impl_skip = reviewer_recent or verdict_fresh or bool(decided_label)
         next_sweep = (not impl_skip) and position < gap_hours
-        if verdict_fresh:
+        if decided_label:
+            reason = f"decided:{decided_label}"
+        elif verdict_fresh:
             reason = "verdict-fresh"
         elif impl_skip:
             reason = "reviewer-working"
@@ -301,6 +315,7 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
             "verdict": verdict_label or "-",
             "verdict_since": verdict_ts.strftime("%Y-%m-%dT%H:%M:%SZ") if verdict_ts and verdict_label else "none",
             "verdict_fresh": 1 if verdict_fresh else 0,
+            "decided": decided_label or "-",
             "branch": branch or "",
         })
         if not impl_skip:
@@ -317,7 +332,7 @@ def render(rows: list[dict]) -> str:
             f"reason={r['reason']} started={r['started']} reply_recent={r['reply_recent']} "
             f"review_recent={r['review_recent']} impl_skip={r['impl_skip']} "
             f"verdict={r['verdict']} verdict_since={r['verdict_since']} "
-            f"verdict_fresh={r['verdict_fresh']}"
+            f"verdict_fresh={r['verdict_fresh']} decided={r['decided']}"
         )
     return "\n".join(lines)
 
