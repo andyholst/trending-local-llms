@@ -293,7 +293,7 @@ credential must be proven before the ten-minute build.
 | Job | Does |
 |---|---|
 | `guard` | FIRST, before any secret: `github.actor` **and** `github.triggering_actor` must be the owner, a collaborator with `admin`/`maintain`/`write` (`gh api …/collaborators/<u>/permission`), or `github-actions[bot]` (the bot itself); anyone else dies here |
-| `publish` | `needs: guard`. Checkout → buildx → `make agent-image-ref` → GHCR login with the **default `GITHUB_TOKEN`** as the triggering actor (a PAT that is not an org member is refused `permission_denied: create_package`; measured again here: the `gh` OAuth token is refused `invalid token` by the registry API) → `make agent-image-push-check` (**before** the build: it starts an empty blob upload, so a credential that cannot write fails in seconds with the registry's own words) → `make publish-agent-image` (no-op when this revision's `dockerfile-<sha12>` tag is already published; `FORCE=1` rebuilds the same inputs) → print the refs |
+| `publish` | `needs: guard`. Checkout → buildx → `make agent-image-ref` → GHCR login with the **owner PAT `FIXBOT_DISPATCH_TOKEN`** as the triggering actor, passed by NAME (the token reaches the shell through `env:`, never interpolated into the `run:` text — AGENTS.md rule 3e) → `make agent-image-push-check` (**before** the build: it starts an empty blob upload, so a credential that cannot write fails in seconds with the registry's own words) → `make publish-agent-image` (no-op when this revision's `dockerfile-<sha12>` tag is already published; `FORCE=1` rebuilds the same inputs) → print the refs |
 
 Triggers are `workflow_dispatch` only — no `schedule`, no `pull_request`, no
 `push`, no `workflow_run` — so a refresh can never publish the toolchain and a PR
@@ -311,11 +311,17 @@ same issue queue instead of racing).
 | `pick` → verdict note | When the pick is empty, `make issue-skip-note` (`scripts/issue_queue.py --skip-note`, default token — the owner PAT cannot comment) posts ONE comment on the held issue carrying `<!-- issue-bot-skip: <ISO8601Z> verdict=<label> since=<reviewer ts> -->`, so "why is nobody implementing this?" is answered where the issue lives, once per review round. It writes NO label and edits NO body — the verdict belongs to the reviewer or a human (issue #200) |
 | `implement` | Resolve the issue (must be open) → `issue.md` = the WHOLE thread (`make issue-thread`, issue #210); checkout `master` (PAT); `make image-ensure`; `make hermes-smoke`; **announce the window** (one start comment `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted with the default token BEFORE the body is read — the signal the reviewer defers to); `make implement-issue`; **apply its verdict** (`make issue-verdict`: `implement` continues, `refine` posts ONE restatement + `agent:refined`, `close` posts the reason with its evidence + `agent:closed` — both end the run GREEN with no PR, and the sweep skips a decided issue through the shared queue rule); then, for `implement` only: commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
 
-**Tokens.** `FIXBOT_DISPATCH_TOKEN` (fine-grained PAT: Actions, Contents, Pull
-requests R/W) is used where a push or a dispatch must re-trigger CI; the default
-`github.token` is used for issue reads/comments (`issues: write`) and for the
-findings filing — the PAT cannot comment. No workflow pushes `master`; only
-`auto-merge` merges, and only through a green PR.
+**Tokens.** `FIXBOT_DISPATCH_TOKEN` (owner fine-grained PAT: Actions, Contents,
+Pull requests, **Packages** and **Workflows** R/W) is used where a push or a
+dispatch must re-trigger CI, where a PR whose diff edits `.github/workflows/*`
+must be merged (a credential without the `workflow` scope is refused
+`refusing to allow a Personal Access Token to create or update workflow … without
+workflow scope` — measured on PR #242), and for the GHCR login of
+`publish-agent-image`. The default `github.token` is used for issue
+reads/comments (`issues: write`), for the findings filing, and for the publish
+`guard` job (which must run BEFORE any secret is read) — the PAT cannot comment.
+No workflow pushes `master`; only `auto-merge` merges, and only through a green
+PR.
 
 ### `.github/workflows/issue-review-bot.yml` — the reviewer (hourly sweep + owner dispatch)
 
