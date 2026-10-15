@@ -124,7 +124,7 @@ def test_model_caps_evaluate():
                       MODEL, 10**6) == [])
 
 
-def _cli(cat, mt, key=None):
+def _cli(cat, mt, key=None, allow_unconfigured=None):
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump(cat, f)
     args = [sys.executable, str(ROOT / "scripts" / "model_caps_check.py"), "--base", "http://x/v1",
@@ -133,8 +133,11 @@ def _cli(cat, mt, key=None):
         args += ["--catalog", f.name]
     env = dict(os.environ)
     env.pop("NOUS_API_KEY", None)
+    env.pop("LIVE_CHECK_ALLOW_UNCONFIGURED", None)
     if key:
         env["NOUS_API_KEY"] = key
+    if allow_unconfigured is not None:
+        env["LIVE_CHECK_ALLOW_UNCONFIGURED"] = allow_unconfigured
     p = subprocess.run(args, capture_output=True, text=True, env=env, timeout=30)
     os.unlink(f.name)
     return p.returncode, p.stdout
@@ -145,8 +148,23 @@ def test_model_caps_cli():
     check("cli: fits -> exit 0", rc == 0 and "OK" in out, out)
     rc, out = _cli(catalog(), 384000)
     check("cli: overrun -> exit 1", rc == 1 and "FAIL" in out, out)
+    # Issue #209: the live pre-flight must not go green having checked nothing.
+    # Given no key and no catalog
     rc, out = _cli(None, 1000)
-    check("cli: no key, no catalog -> SKIP exit 0", rc == 0 and "SKIP" in out, out)
+
+    # When  the caps check runs
+    # Then  it FAILS, naming the variable and what stayed unverified — not a SKIP
+    check("cli: no key, no catalog -> non-zero", rc != 0, out)
+    check("cli: no key -> it names the missing variable", "NOUS_API_KEY is not set" in out, out)
+    check("cli: no key -> it says what could not be checked",
+          "cannot be read" in out and "unverified" in out, out)
+    check("cli: no key -> it is not a SKIP", "SKIP" not in out, out)
+
+    # Given the same, with the explicit opt-out
+    rc, out = _cli(None, 1000, allow_unconfigured="1")
+
+    # Then  it reports NOT CONFIGURED and exits 0
+    check("cli: opt-out -> exit 0", rc == 0 and "NOT CONFIGURED" in out, out)
 
 
 def test_write_raw_never_overwrites():

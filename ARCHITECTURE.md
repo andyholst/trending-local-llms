@@ -134,9 +134,9 @@ keep it honest (issue #207):
 | `search-nvidia` / `search-metal` / `search-cpu` / `search-amd` | One backend each: `_setup` then the Hermes search prompt for that leg, writing `data/raw/<backend>-<UTC>.json` per query. `HERMES_REASONING=none` (mechanical work). |
 | `search` | All four legs in sequence |
 | `search-smoke` (`BACKEND=<b>`) | Live reachability: the exact Firecrawl → lightbrd scrape of every query for one backend, 3 s cap per query, one retry on timeout/429/5xx (`scripts/smoke_search.py`) |
-| `model-caps` | Live: the pinned model is served, `HERMES_MAX_TOKENS` fits its real cap, `reasoning` is accepted (`scripts/model_caps_check.py`) |
-| `hermes-smoke` | Live: one real Hermes call through the `nous-deepseek` alias (`scripts/hermes_smoke.sh`) — proves the key/alias/routing before a 20-minute search |
-| `pipeline-smoke` | `search-smoke` + `model-caps` + `hermes-smoke` in one go |
+| `model-caps` | Live: the pinned model is served, `HERMES_MAX_TOKENS` fits its real cap, `reasoning` is accepted (`scripts/model_caps_check.py`). With no `NOUS_API_KEY` it **FAILS loudly** (issue #209) — the endpoint cannot be read, so a green pre-flight would prove nothing |
+| `hermes-smoke` | Live: one real Hermes call through the `nous-deepseek` alias (`scripts/hermes_smoke.sh`) — proves the key/alias/routing before a 20-minute search. With no `NOUS_API_KEY` it **FAILS loudly** (issue #209), naming the variable and the alias it could not prove |
+| `pipeline-smoke` | `search-smoke` + `model-caps` + `hermes-smoke` in one go. Both live checks need the key: without it they fail rather than skip, so a green `pipeline-smoke` always means the live path really answered. A developer deliberately running without one sets `LIVE_CHECK_ALLOW_UNCONFIGURED=1`, which turns each check into `NOT CONFIGURED` + exit 0 — **no workflow sets it** (guarded in `tests/test_hermes_smoke.py`) |
 
 ### Merge / ingest
 

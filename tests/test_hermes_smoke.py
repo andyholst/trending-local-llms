@@ -13,7 +13,9 @@ kills real work. A stub `hermes` plays scripted replies.
   - empty reply / reasoning burned budget  -> FAIL
   - first attempt fails, second answers    -> OK on attempt 2
   - hang past the timeout                  -> FAIL (timeout)
-  - NOUS_API_KEY unset                     -> SKIP, exit 0
+  - NOUS_API_KEY unset                     -> FAIL loudly (issue #209), unless
+                                              LIVE_CHECK_ALLOW_UNCONFIGURED=1
+                                              asks for NOT CONFIGURED + exit 0
   - Makefile _hermes-smoke delegates to the script (one implementation)
 
 Run:  python3 tests/test_hermes_smoke.py   or   make test
@@ -46,7 +48,7 @@ def check(name, cond, detail: object = ""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
-def run(replies, key="sk-test", timeout="5", sleep=0):
+def run(replies, key="sk-test", timeout="5", sleep=0, allow_unconfigured=None):
     """replies: list of (stdout, exit_code) consumed one per hermes call."""
     td = Path(tempfile.mkdtemp())
     for i, (out, rc) in enumerate(replies):
@@ -62,8 +64,11 @@ cat "$d/out$n" 2>/dev/null; exit $(cat "$d/rc$n" 2>/dev/null || echo 0)
     stub.chmod(0o755)
     env = dict(os.environ, HERMES=str(stub), HERMES_SMOKE_TIMEOUT=timeout)
     env.pop("NOUS_API_KEY", None)
+    env.pop("LIVE_CHECK_ALLOW_UNCONFIGURED", None)
     if key:
         env["NOUS_API_KEY"] = key
+    if allow_unconfigured is not None:
+        env["LIVE_CHECK_ALLOW_UNCONFIGURED"] = allow_unconfigured
     p = subprocess.run(["bash", str(SMOKE)], env=env, capture_output=True, text=True, timeout=60)
     calls = int((td / "n").read_text())
     shutil.rmtree(td)
@@ -105,9 +110,42 @@ def test_timeout_fails():
     check("hang past timeout -> FAIL (timeout)", rc == 1 and "timeout" in out, out[-200:])
 
 
-def test_skip_without_key():
+def test_no_key_fails_loudly():
+    """Issue #209: a green smoke that proved nothing is worse than a red one."""
+
+    # Given no NOUS_API_KEY
     rc, out, calls = run([(REFUSAL, 0)], key="")
-    check("no NOUS_API_KEY -> SKIP exit 0, hermes never called", rc == 0 and "SKIP" in out and calls == 0, out)
+
+    # When  the smoke runs
+    # Then  it FAILS, names the variable and the alias it could not prove, and never calls hermes
+    check("no NOUS_API_KEY -> non-zero", rc != 0, out)
+    check("no NOUS_API_KEY -> it names the missing variable", "NOUS_API_KEY is not set" in out, out)
+    check("no NOUS_API_KEY -> it says what could not be proven",
+          "cannot be proven" in out and "nous-deepseek" in out, out)
+    check("no NOUS_API_KEY -> it is not a SKIP", "SKIP" not in out, out)
+    check("no NOUS_API_KEY -> hermes was never called", calls == 0, calls)
+
+    # Given the same, with the explicit opt-out (a caller that knows it has no key)
+    rc, out, calls = run([(REFUSAL, 0)], key="", allow_unconfigured="1")
+
+    # Then  it reports NOT CONFIGURED and exits 0 — the one non-default path
+    check("opt-out -> exit 0", rc == 0, out)
+    check("opt-out -> it says the check did NOT run",
+          "NOT CONFIGURED" in out and "did NOT run" in out, out)
+    check("opt-out -> hermes was never called", calls == 0, calls)
+
+
+def test_ci_never_opts_out_of_the_live_checks():
+    """The opt-out must never reach a pipeline: CI has keys, so CI always proves."""
+
+    # Given every workflow
+    wf = ROOT / ".github" / "workflows"
+    offenders = [p.name for p in sorted(wf.glob("*.yml"))
+                 if "LIVE_CHECK_ALLOW_UNCONFIGURED" in p.read_text()]
+
+    # When  they are read for the opt-out
+    # Then  none of them carries it
+    check("no workflow sets LIVE_CHECK_ALLOW_UNCONFIGURED", offenders == [], offenders)
 
 
 def test_makefile_delegates():
@@ -128,7 +166,8 @@ def main() -> int:
     test_empty_and_budget_burn_fail()
     test_retry_recovers()
     test_timeout_fails()
-    test_skip_without_key()
+    test_no_key_fails_loudly()
+    test_ci_never_opts_out_of_the_live_checks()
     test_makefile_delegates()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
