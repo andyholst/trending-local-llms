@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **13** · archived: **0**
+Active changes: **15** · archived: **0**
 
 ## Active changes
 
@@ -18,6 +18,7 @@ Active changes: **13** · archived: **0**
 | `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
 | `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
+| `bot-guards-allow-the-bot` | active | — | — | [bot-guards-allow-the-bot](openspec/changes/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-guards-allow-the-bot/proposal.md) |
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
 | `fix-publish-agent-image-push-check` | active | #229 | — | [agent-image-publish](openspec/changes/fix-publish-agent-image-push-check/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/fix-publish-agent-image-push-check/proposal.md) |

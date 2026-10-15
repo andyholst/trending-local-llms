@@ -199,8 +199,12 @@ retains 30 days of history.
    human's, and the answer to one is a comment. All three pipelines carry the
    same owner/collaborator `guard` as their FIRST job, checked BEFORE any secret
    and requiring BOTH `github.actor` and `github.triggering_actor` to be the
-   owner or a collaborator, so a manual start is a collaborator's act and a
-   stranger's dispatch or re-run dies at step one (rule 6d, issue #200).
+   owner, a collaborator with write access, or `github-actions[bot]` (the bot
+   itself, so a bot-to-bot dispatch with the default token passes), so a manual
+   start is a collaborator's act and a stranger's dispatch or re-run dies at step
+   one (rule 6d, issue #200). A bot pipeline with a cron also carries the
+   `schedule` bypass, so its scheduled run does not depend on which identity
+   GitHub attributes the cron to (issue #238).
 
 6k. **The agent image installs its agent through ONE seam and proves the alias at
    BUILD time (MANDATORY).** The base `Dockerfile` **is** the Hermes container every

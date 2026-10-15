@@ -483,28 +483,63 @@ def test_owner_guards():
     check("access: no fix-bot step uses a secret before the guard", min(secret_steps or [99]) > 0, secret_steps)
 
 
+#: Every bot pipeline's guard, and the job whose guard step it is (issue #238).
+BOT_GUARDS = (
+    ("refresh-bot.yml", "guard"),
+    ("fix-bot.yml", "fix"),
+    ("issue-bot.yml", "guard"),
+    ("issue-review-bot.yml", "guard"),
+    ("publish-agent-image.yml", "guard"),
+)
+
+#: The caller classes every bot guard must decide the same way (issue #238). The
+#: bot itself is a bot-to-bot dispatch with the default token; it MUST be allowed.
+GUARD_CALLERS = (
+    ("workflow_dispatch", "andyholst", "andyholst", 0, "owner dispatch"),
+    ("workflow_dispatch", "alice", "alice", 0, "write collaborator"),
+    ("workflow_dispatch", "bob", "bob", 0, "maintain collaborator"),
+    ("workflow_dispatch", "carol", "andyholst", 0, "admin collaborator re-run of owner run"),
+    ("workflow_dispatch", "github-actions[bot]", "github-actions[bot]", 0, "the bot itself"),
+    ("workflow_dispatch", "eve", "eve", 1, "read-only collaborator"),
+    ("workflow_dispatch", "mallory", "mallory", 1, "triage collaborator"),
+    ("workflow_dispatch", "stranger", "stranger", 1, "non-collaborator (API 404)"),
+    ("workflow_dispatch", "andyholst", "stranger", 1, "stranger re-running an owner run"),
+)
+
+GUARD_PERMS = {"alice": "write", "bob": "maintain", "carol": "admin", "eve": "read", "mallory": "triage"}
+
+
+def _has_cron(wf_name: str) -> bool:
+    """Whether the workflow declares an `on.schedule` cron."""
+    return re.search(r"^\s{2}schedule:\s*$", (WF / wf_name).read_text(), re.M) is not None
+
+
 def test_guard_behaviour():
-    """Run the real guard scripts (refresh-bot + fix-bot) for every kind of caller."""
-    perms = {"alice": "write", "bob": "maintain", "carol": "admin", "eve": "read", "mallory": "triage"}
-    cases = [
-        ("schedule", "github-actions[bot]", "github-actions[bot]", 0, "scheduled run"),
-        ("workflow_dispatch", "andyholst", "andyholst", 0, "owner dispatch"),
-        ("workflow_dispatch", "alice", "alice", 0, "write collaborator"),
-        ("workflow_dispatch", "bob", "bob", 0, "maintain collaborator"),
-        ("workflow_dispatch", "carol", "andyholst", 0, "admin collaborator re-run of owner run"),
-        ("workflow_dispatch", "eve", "eve", 1, "read-only collaborator"),
-        ("workflow_dispatch", "mallory", "mallory", 1, "triage collaborator"),
-        ("workflow_dispatch", "stranger", "stranger", 1, "non-collaborator (API 404)"),
-        ("workflow_dispatch", "andyholst", "stranger", 1, "stranger re-running an owner run"),
-    ]
-    for wf_name, job in (("refresh-bot.yml", "guard"), ("fix-bot.yml", "fix"), ("issue-bot.yml", "guard")):
+    """Run the REAL guard scripts of EVERY bot pipeline for every caller class
+    (issue #238): the owner, a write+ collaborator AND github-actions[bot] (the bot
+    itself) are allowed; a read/triage collaborator, a non-collaborator and a
+    stranger re-running an owner run are refused."""
+    for wf_name, job in BOT_GUARDS:
         step = _guard_step(wf_name, job)
-        for event, actor, trigger, want, label in cases:
-            if event == "schedule" and wf_name != "refresh-bot.yml":
-                continue  # only refresh-bot has a schedule trigger
-            rc, out = _run_guard(step, event, actor, trigger, perms)
+        for event, actor, trigger, want, label in GUARD_CALLERS:
+            rc, out = _run_guard(step, event, actor, trigger, GUARD_PERMS)
             verdict = "allowed" if want == 0 else "refused"
-            check(f"guard {wf_name}: {label} -> {verdict}", (rc == 0) == (want == 0), f"rc={rc} {out.strip()[-120:]}")
+            check(f"guard {wf_name}: {label} -> {verdict}", (rc == 0) == (want == 0),
+                  f"rc={rc} {out.strip()[-120:]}")
+
+
+def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
+    """A cron bot's scheduled run must not depend on which identity GitHub
+    attributes it to (issue #238): its guard carries the schedule bypass, and a
+    scheduled run attributed to github-actions[bot] is allowed."""
+    for wf_name, job in BOT_GUARDS:
+        if not _has_cron(wf_name):
+            continue
+        step = _guard_step(wf_name, job)
+        check(f"guard {wf_name}: a cron bot carries the schedule bypass",
+              '"schedule"' in step["run"], step["run"][:80])
+        rc, out = _run_guard(step, "schedule", "github-actions[bot]", "github-actions[bot]", GUARD_PERMS)
+        check(f"guard {wf_name}: a scheduled run is allowed", rc == 0, out.strip()[-120:])
 
 
 def test_nothing_pushes_master():
@@ -1234,6 +1269,7 @@ def main() -> int:
     test_fix_bot_push_behaviour()
     test_owner_guards()
     test_guard_behaviour()
+    test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
     test_nothing_pushes_master()
     test_auto_merge()
     test_images_follow_their_inputs()

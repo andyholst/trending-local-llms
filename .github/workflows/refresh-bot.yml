@@ -83,15 +83,17 @@ jobs:
             echo "Scheduled run - allowed."
             exit 0
           fi
-          # Owner, or a collaborator with write/maintain/admin, for BOTH the
-          # actor and the triggering actor (covers re-runs). Anything else -
-          # including an API error - is refused.
+          # Owner, the bot itself (github-actions[bot], a bot-to-bot dispatch), or
+          # a collaborator with write/maintain/admin, for BOTH the actor and the
+          # triggering actor (covers re-runs). Anything else - including an API
+          # error - is refused.
           for u in "$ACTOR" "$TRIGGER"; do
             if [ "$u" = "$OWNER" ]; then continue; fi
+            if [ "$u" = "github-actions[bot]" ]; then echo "The bot itself ($u) - allowed."; continue; fi
             perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
             case "$perm" in
               admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
-              *) echo "Refused: $u is not the owner or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+              *) echo "Refused: $u is not the owner, the bot, or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
             esac
           done
           echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
