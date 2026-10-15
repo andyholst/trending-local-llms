@@ -3957,7 +3957,8 @@
         "score_7d": 4.7,
         "speed_bonus": 1.5,
         "trend_score": 6.2
-      }
+      },
+      "engine_min_version": "MLX, Apple Silicon only, macOS 14+"
     },
     {
       "id": "qwen3-235b-a22b",
@@ -4119,7 +4120,8 @@
       },
       "weight_gb": "11.8GB (UD-Q2_K_XL)",
       "system_ram_min": "12GB",
-      "storage_offload": "cold experts left on flash, re-read on router change"
+      "storage_offload": "cold experts left on flash, re-read on router change",
+      "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge, cold experts left on flash"
     },
     {
       "id": "qwen3-next-80b-a3b",
@@ -4201,7 +4203,8 @@
       },
       "weight_gb": "48GB (80B-A3B file)",
       "system_ram_min": "32GB",
-      "storage_offload": "experts streamed from NVMe SSD"
+      "storage_offload": "experts streamed from NVMe SSD",
+      "engine_min_version": "Janas draft block; llama.cpp cpu-moe Q4_K_M baseline"
     },
     {
       "id": "gemma-4-e2b",
@@ -4281,7 +4284,8 @@
       "supported_engines": [
         "LiteRT"
       ],
-      "system_ram_min": "1432MB peak RAM"
+      "system_ram_min": "1432MB peak RAM",
+      "engine_min_version": "MLX with the Apple Foundation Models adapter"
     },
     {
       "id": "orbin-1.5-35b-moe",
@@ -4411,7 +4415,8 @@
         "score_7d": 1.0,
         "speed_bonus": 1.5,
         "trend_score": 2.5
-      }
+      },
+      "engine_min_version": "MLX-Serve 26.10.1, MTPLX drives the MTP head through custom Metal kernels"
     },
     {
       "id": "qwen3.8-27b-swift",
@@ -4476,7 +4481,8 @@
         "score_7d": 1.0,
         "speed_bonus": 1.5,
         "trend_score": 2.5
-      }
+      },
+      "engine_min_version": "Metal 4-bit MLX build with the Swift 1.5 adapter"
     },
     {
       "id": "gemma-4-12b",
@@ -4651,7 +4657,8 @@
         "trend_score": 0.0
       },
       "system_ram_min": "128GB",
-      "context_tokens": "262144"
+      "context_tokens": "262144",
+      "engine_min_version": "MLX 4-bit with the Astronomical 0.2.59 CLI"
     },
     {
       "id": "ravenx-conjecture-qwen3-8b-mlx",
@@ -4784,7 +4791,8 @@
       },
       "weight_gb": "~2.5GB (Q4_K_M)",
       "system_ram_min": "6GB",
-      "storage_offload": "weights mmap'd on flash (no GPU backend)"
+      "storage_offload": "weights mmap'd on flash (no GPU backend)",
+      "engine_min_version": "llama.cpp CPU-only, mmap GGUF, arm64 KleidiAI, no GPU backend"
     },
     {
       "id": "deepseek-v4.1-flash",
@@ -4935,7 +4943,8 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "engine_min_version": "llama.cpp MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on"
     },
     {
       "id": "muse-glimmer-30b",
@@ -5058,7 +5067,8 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "engine_min_version": "llama.cpp b9292 (Vulkan), MTP speculative decode N=5"
     },
     {
       "id": "qwen-3.6-27b",
@@ -5225,7 +5235,8 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "engine_min_version": "vLLM on ROCm 7.2 (continuous batching, PagedAttention)"
     },
     {
       "id": "qwen3.6-27b",
@@ -5413,7 +5424,8 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "engine_min_version": "llama.cpp with q4_0 KV cache, thinking mode on"
     },
     {
       "id": "gemma-4-26b",
@@ -5467,7 +5479,8 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge, experts streamed from flash"
     },
     {
       "id": "deepseek-r1-1.5b",
@@ -5575,7 +5588,8 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge expert streaming"
     }
   ]
 }
