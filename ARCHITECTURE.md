@@ -232,7 +232,7 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`, `git ls-files` as the file set). The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
+| `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`) or a tracked Python module raises a `SyntaxWarning` on compile (`scripts/lint_syntax.py`); both use `git ls-files` as the file set. The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
 | `lint-fix` | Append exactly one newline to each offending file (idempotent) — the repair half, with `.editorconfig` as the editor-side rule |
 
 ### Where work starts — the base is fetched and asserted (rule 6n, issue #271)
@@ -422,6 +422,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (#206); `decide` returns the rebuild rule as data (#208) |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
+| `scripts/lint_syntax.py` | The syntax-warning lint (`make lint`, issue #190): every tracked `*.py` module must compile without a `SyntaxWarning`; compiled from source so no import side effect runs, the tracked-file set so an untracked module is never a finding |
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation |
 | `scripts/hf_id.py` | One HF-identifier definition (a URL-shaped `hf` is reduced to `owner/repo`) |
 | `scripts/qa_report.sh` | Runs the aggregate's QA targets; a *finding* is reported, a target that could not run fails the run |
