@@ -670,6 +670,19 @@ data-gaps:
 data-gap-issue:
 	python3 scripts/data_gap_analysis.py --issue
 
+# The filer's repair half (issue #174). `--issue` writes the baseline only when
+# it FILES, so the "record the gap signature without filing" path had no target
+# and no workflow: the flag was dead (rule 6d) and the ability to re-record a
+# baseline lost by a rebase or a refresh PR closed without merging could not be
+# exercised — so it could not be tested either. HOST-side like `data-gap-issue`
+# (it writes data/gap_baseline.json as the caller, never as root through the
+# container mount), and deliberately NOT in the refresh pipeline: run there it
+# would set the baseline to the current gap set on every refresh and silently
+# stop the analysis filing anything.
+.PHONY: data-gap-baseline
+data-gap-baseline:
+	python3 scripts/data_gap_analysis.py --write-baseline
+
 # The refresh run's window as a machine-readable block (issue #199): the REAL job
 # timestamps read from the API (never a wall clock at PR-open time), with the marker
 # line written by the shared helper (scripts/bot_markers.py, #197). The PR `aggregate`

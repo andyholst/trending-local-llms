@@ -173,6 +173,7 @@ keep it honest (issue #207):
 | `data-gaps` | Report what the store still does not capture (missing/unsctructured requirement dimensions, contract gaps), ranked (`scripts/data_gap_analysis.py`) |
 | `refresh-run-block` | Print the current refresh run's WINDOW (issue #199): the marker line + `started=` + each leg's start + `aggregate=`, all from the run's REAL job timestamps read via `gh api` (`scripts/refresh_run_block.py`). Host-run, like `data-gap-issue`: `gh` lives on the runner, not in the image (#150). `aggregate` embeds it as the PR body; `make data-gap-issue` embeds it in the gap issue |
 | `data-gap-issue` | File **one** issue (label `data-gap-analysis`) when the gap set changed vs `data/gap_baseline.json`; writes the new baseline. Host-side: filing needs `gh` (issue #150) |
+| `data-gap-baseline` | The filer's REPAIR half (issue #174): record the current gap signature as `data/gap_baseline.json` **without** filing an issue — the fix for a baseline write lost to a rebase or a refresh PR closed before it merged. Host-side, like `data-gap-issue` (it writes the file as the caller, never as root through the mount), and deliberately NOT in the refresh pipeline: run there it would set the baseline to the current set every run and silently stop the analysis filing anything |
 
 ### OpenSpec (spec-tracked changes)
 
