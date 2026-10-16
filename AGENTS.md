@@ -123,8 +123,14 @@ retains 30 days of history.
    (it is removed at the end of every run): a label carries no timestamp, so a
    label left by a cancelled run must never hold an issue for ever. The agent works on a feature branch cut from `master` with
    the tests and the AGENTS.md row in the same branch, **opens the PR**
-   (`closes #<issue>`, owner PAT so CI really runs), then **monitors the
-   pipeline that PR triggered and fixes it until every check is green** — one
+   (`closes #<issue>`, owner PAT so CI really runs) — **ready for review, NEVER
+   `--draft`**: `auto-merge` requires `pull_request.draft == false`, so a draft
+   is valid, green and permanently unmergeable, and the run then reports success
+   over a change no job can land (measured: an implementation parked PR #272 as a
+   draft for a rule-3c review). Holding a change for review is the reviewable PR
+   plus the required checks, never a draft flag (issue #276) — then it
+   **monitors the pipeline that PR triggered and fixes it until every check is
+   green** — one
    implementer per issue (`concurrency: issue-bot-<n>`), never a parallel run for
    the same objective. The merge is a **squash merge with a proper Conventional
    Commit message** (qa-validate's `auto-merge` job performs it once `validate`
@@ -403,6 +409,39 @@ retains 30 days of history.
    can never disagree (rule 6d). A model with no usable id is named by nothing:
    an empty key must never match every query, or the guard is vacuous, and
    `--top 0` (a run that checks nothing) is refused.
+
+6n. **Every implementation starts in its own worktree, cut from the freshly
+   fetched base — and the base is VERIFIED, never assumed (MANDATORY).** The
+   working copy is not a detail: an implementation that starts from an old base
+   is green locally and red on `master`, and a branch cut by hand from whatever
+   `master` happens to point at is indistinguishable in the log from one cut
+   from the fetched tip (issue #271).
+   - **Never edit the user's checkout.** Leave it on the branch they left there:
+     one agent, one worktree, one feature branch. A second agent uses a second
+     worktree. Do not reuse another agent's worktree and never `git switch` the
+     feature branch in the user's clone.
+   - **Start with `make worktree-new BRANCH=<kebab>`** — a worktree at
+     `../<repo>-wt/<kebab>`, cut from `refs/remotes/origin/master` after a
+     `git fetch`, with the fetched tip asserted. The seam NEVER checks out
+     `master`: the base branch is refused as a target, the worktree is created
+     from the remote-tracking ref, and the caller's HEAD, its branch and the
+     local `master` are proved untouched. An existing branch is refused rather
+     than re-cut (that discards commits).
+   - **Resume with `make worktree-resume BRANCH=<kebab>`**: it FETCHES the branch
+     first — a bare `git checkout <branch>` in a clone that fetched one ref dies
+     with `pathspec … did not match any file(s) known to git` — reuses the
+     worktree that already holds that branch, reports how far behind the base it
+     is (`behind_base=`), and refuses to reset a branch carrying commits that are
+     not on `origin`. Bring a behind branch up to date before you push.
+   - **CI asserts its own checkout instead**: a fresh `actions/checkout` is the
+     latest `origin/master` only by accident of the runner, so every job that
+     cuts a branch runs `make base-check` first (`--in-place` is the CI shape of
+     `worktree-new`/`worktree-resume`), and refuses to cut anything when the
+     checkout is not the fetched tip.
+   - The fetch, the assertion and the refusal have exactly ONE implementation
+     (`scripts/worktree_base.py`), reached only through those `make` targets
+     (rules 6d/6m); `tests/test_worktree_base.py` drives it against real git
+     repositories and `AGENTS.md`'s own wording is pinned by that suite.
 
 ## 3. Data source & collection
 
@@ -1023,6 +1062,7 @@ actually happened.
 | Guard | Catches |
 |---|---|
 | `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
+| `tests/test_worktree_base.py` (rule 6n, issue #271) | work starting from an unverified base: a checkout that is behind the fetched tip passing `make base-check`, an unfetchable base passing at all; a worktree cut from the clone's own stale tip (so the fetch never happened) or created INSIDE the repository where `git add -A` would commit it; an existing branch silently RE-CUT (`worktree-new`) instead of resumed; the caller's checkout being switched or the local `master` moved by the seam that is supposed to leave it alone; the base branch itself becoming a worktree target; a resume that cannot work in a one-ref clone (the measured #271 `pathspec … did not match`, while a bare `git checkout` still fails on the same fixture); a resumed branch resetting local-only commits (`-B`) instead of reporting drift; the rule missing from AGENTS.md's own wording, the three targets missing from the Makefile, or the guard unwired from `make _test` (rule 6d) |
 | `tests/test_queued_run_alarm.py` — the queued-run alarm | a job stuck in `queued` reported without its runner label; a second sweep commenting again (marker dedup broken); a run counted twice because both the `queued` and `in_progress` queries return it; the sweep still green while a job is stuck |
 | `tests/test_hermes_prompts.py` — prompt shell strings | an unescaped `"` in a `-z` prompt closing the string early (every search dies) |
 | `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |
@@ -1031,7 +1071,7 @@ actually happened.
 | `tests/test_engine_registry.py` (offline: `tests/fixtures/github_meta.json` = real GitHub metadata of every registered engine; `ENGINE_REGISTRY_META_FILE` switches `fetch_repo_meta` to it) | the classifier refusing ANY registered engine (it refused MLX-fast); a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting |
 | `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary |
-| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
+| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; **a pipeline OPENING a draft PR** (`--draft`) — valid, green and permanently unmergeable, since `auto-merge` requires `draft == false` (rule 6e, issue #276); refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
 | `tests/test_workflows.py` — `test_fix_bot_announces_its_window` (issue #198) | a repair that reads (and then pushes to) a PR branch with nothing on the PR saying a repair is in flight: the window announcement missing, posted AFTER the checkout (so a reader of the branch never saw it), carrying a marker that is not the registered `<!-- fix-bot-start:` one, or posted with the owner PAT (which cannot comment — `Resource not accessible by personal access token (addComment)`, measured #124); an announcement that writes a scratch file the push step's `git add -A` could commit (the body must arrive on stdin); a window that never closes — the closing `<!-- fix-bot-end:` marker missing from the `always()` outcome comment, so a run that died mid-way leaves the PR showing a repair as permanently in flight |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |

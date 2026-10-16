@@ -404,6 +404,20 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
         bin_.mkdir()
         (bin_ / "sudo").write_text('#!/bin/sh\nexec "$@"\n')
         (bin_ / "sudo").chmod(0o755)
+        # The step's ONE make call is the branch seam (rule 6n, issue #271). Run the REAL
+        # implementation from the repo rather than a stand-in for it: the temp clone is a
+        # real clone of a real remote, so `new --in-place` really cuts the branch there.
+        (bin_ / "make").write_text(
+            "#!/bin/sh\n"
+            "# stub `make`: only the branch seam, mapping the target to the real script.\n"
+            'case "$1" in\n'
+            '  worktree-new|worktree-resume)\n'
+            f'    exec python3 "{ROOT / "scripts" / "worktree_base.py"}" "${{1#worktree-}}"'
+            ' --branch "$BRANCH" --in-place ;;\n'
+            '  *)\n'
+            '    echo "stub make: the push step called an unexpected target: $1" >&2; exit 2 ;;\n'
+            "esac\n")
+        (bin_ / "make").chmod(0o755)
         env = dict(os.environ, PATH=f"{bin_}:{os.environ['PATH']}", BRANCH="ci/data-gap-120-x",
                    ISSUE="120", GITHUB_OUTPUT=str(td / "out"), HOME=str(td))
         p = subprocess.run(["bash", "-e", "-c", push["run"]], cwd=wc, env=env,
@@ -680,6 +694,9 @@ def test_issue_bot():
     check("issue-bot: one branch per issue (ci/data-gap-<n>-<slug>)", "ci/data-gap-" in body, "")
     check("issue-bot: resumes the issue's branch on a re-run (no force-push)",
           "ls-remote" in body and "--force" not in body, "")
+    check("issue-bot: both branch paths go through the Makefile seam, never a bare checkout",
+          "make worktree-new" in body and "make worktree-resume" in body
+          and 'git checkout "$BRANCH"' not in body and 'git checkout -b "$BRANCH"' not in body, "")
     check("issue-bot: commits + pushes the implementation", "git commit" in body and "git push -u origin" in body, "")
 
     pr = step(impl, "Open the PR")
@@ -1312,6 +1329,67 @@ def test_the_reviewer_never_edits_an_issue_inside_a_window():
           "findings.md" in body_prompt and "findings.md" in window_prompt, "")
 
 
+def test_no_pipeline_opens_a_draft_pr() -> None:
+    """Issue #276 / AGENTS.md rule 6e: a run opens a REVIEWABLE PR, never a draft.
+
+    `auto-merge` requires `github.event.pull_request.draft == false`, so a draft is valid,
+    green and permanently unmergeable — the run reports success while the only mechanism
+    that could land the change is disabled by a flag. The merge side is asserted
+    (`auto-merge: never a draft PR`); this is the other half: nothing may OPEN one.
+    """
+    print("\nissue #276 — a pipeline opens a reviewable PR, never a draft")
+    offenders = []
+    for path in sorted(WF.glob("*.yml")):
+        for run in re.findall(r"gh pr create[^\n]*", path.read_text(encoding="utf-8")):
+            if "--draft" in run:
+                offenders.append(f"{path.name}: {run.strip()[:80]}")
+    check("no `gh pr create` anywhere passes --draft", not offenders, offenders)
+
+    agg = step(load("refresh-bot.yml")["jobs"]["aggregate"], "Commit + open PR if changed")
+    check("refresh-bot: its data PR is created ready for review",
+          "gh pr create" in agg.get("run", "") and "--draft" not in agg.get("run", ""), agg.get("run", "")[:120])
+    impl = load("issue-bot.yml")["jobs"]["implement"]
+    pr = step(impl, "Open the PR")
+    check("issue-bot: its implementation PR is created ready for review",
+          "gh pr create" in pr.get("run", "") and "--draft" not in pr.get("run", ""), pr.get("run", "")[:120])
+    cond = str(load("qa-validate.yml")["jobs"]["auto-merge"].get("if", ""))
+    check("qa-validate: the merge gate still refuses a draft (the reason for the rule)",
+          "draft == false" in cond, cond)
+
+
+def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
+    """Issue #271 / AGENTS.md rule 6n: a branch is cut from the FETCHED base, asserted.
+
+    The old resume path was `git checkout "$BRANCH"` in a clone holding ONE ref
+    (`actions/checkout` + `ref: master`), so it died with `pathspec ... did not match any
+    file(s) known to git` — and the marker-word assertion on it stayed green. The base a
+    fresh runner clone starts from is only `origin/master` by accident, so it is asserted
+    before anything is implemented, and both branch paths go through the one Makefile seam.
+    """
+    print("\nissue #271 — the base is fetched and asserted before a branch is cut")
+    ib = load("issue-bot.yml")
+    impl = ib["jobs"]["implement"]
+    impl_steps = steps(impl)
+    names = [str(st.get("name", "")) for st in impl_steps]
+    base = next((st for st in impl_steps if "make base-check" in str(st.get("run", ""))), None)
+    check("issue-bot: asserts the base it cuts from (make base-check)", base is not None, names)
+    check("issue-bot: the assertion is a step of the implement job, run only when implementing",
+          base is not None and "implement == 'true'" in str(base.get("if", "")), base and base.get("if"))
+    check("issue-bot: it runs BEFORE anything is implemented",
+          base is not None
+          and names.index(str(base.get("name"))) < names.index("Implement the issue (Hermes, through make)"),
+          names)
+    body = run_text(impl)
+    check("issue-bot: the fresh branch goes through `make worktree-new` (IN_PLACE=1)",
+          "make worktree-new" in body and "IN_PLACE=1" in body, "")
+    check("issue-bot: the re-run goes through `make worktree-resume` (IN_PLACE=1)",
+          "make worktree-resume" in body, "")
+    rb = load("refresh-bot.yml")
+    agg = [st for st in steps(rb["jobs"]["aggregate"]) if "make base-check" in str(st.get("run", ""))]
+    check("refresh-bot: the job that cuts ci/trending-refresh-* asserts its base too",
+          bool(agg) and "origin/master" in str(agg[0].get("name", "")), "")
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -1329,6 +1407,8 @@ def main() -> int:
     test_every_job_prepares_the_images_it_uses()
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
+    test_issue_bot_asserts_the_base_it_cuts_from()
+    test_no_pipeline_opens_a_draft_pr()
     test_qa_validate_runs_the_openspec_gate()
     test_secret_output_guard_wired_into_qa_validate()
     test_implement_prompt_requires_openspec_and_findings()

@@ -228,6 +228,14 @@ keep it honest (issue #207):
 | `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`, `git ls-files` as the file set). The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
 | `lint-fix` | Append exactly one newline to each offending file (idempotent) — the repair half, with `.editorconfig` as the editor-side rule |
 
+### Where work starts — the base is fetched and asserted (rule 6n, issue #271)
+
+| Target | What it does |
+|---|---|
+| `base-check` (`BASE=<branch>`) | Fetch `origin/<base>` and **FAIL** unless this checkout IS the fetched tip — a fresh `actions/checkout` is the latest `origin/master` only by accident of the runner, and a stale base is otherwise indistinguishable from a fresh one (`scripts/worktree_base.py check`). Host target: git and its credentials live on the runner, not in a container that would write into the shared `.git`. Runs as the first step of `issue-bot`'s `implement` job and of `refresh-bot`'s `aggregate` — the two jobs that cut a branch |
+| `worktree-new` (`BRANCH=<kebab> [BASE=master] [IN_PLACE=1] [DIR=<path>]`) | Start a NEW branch at the fetched tip, in a **worktree** at `../<repo>-wt/<kebab>` (default) or in place (`IN_PLACE=1`, the CI shape — a fresh runner checkout IS the working copy). Refuses an existing branch rather than re-cutting it, refuses a worktree inside the repository (the pipelines stage with `git add -A`), refuses the base branch as a target, and proves the caller's HEAD, branch and local base branch are untouched (`scripts/worktree_base.py new`) |
+| `worktree-resume` (`BRANCH=<kebab> [BASE=master] [IN_PLACE=1] [DIR=<path>]`) | Resume an existing branch (a re-run): **fetch it first**, then attach. A bare `git checkout <branch>` cannot work in a clone that fetched one ref (`pathspec … did not match any file(s) known to git` — the measured #271 failure). Reuses the worktree that already holds the branch, reports `behind_base=`, and refuses to reset a branch carrying commits that are not on the remote (never `-B` on the worktree path) (`scripts/worktree_base.py resume`) |
+
 ### Secrets / credentials
 
 | Target | What it does |
@@ -272,7 +280,7 @@ competing PRs over the same generated files).
 | `test-image` | Same decision (`make rebuild-decision`) for the **test** image → `…-test:latest` + `:test-<hash>` |
 | `openspec-image` | Same decision (`make rebuild-decision`, output `publish_openspec`) for the **OpenSpec CLI** image → `…-openspec:latest` + `:openspec-<hash>` |
 | `search` | Matrix `[nvidia, metal, cpu, amd]`, `fail-fast: false`: prepare the base image, `_search-smoke`, `model-caps`, `hermes-smoke`, then the Hermes search. Each leg uploads its raw snapshots as artifacts |
-| `aggregate` | Runs even when a leg failed: collect the artifacts, `merge-fetch`, `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data. It never merges: `qa-validate`'s `auto-merge` does |
+| `aggregate` | Runs even when a leg failed: collect the artifacts, `make base-check` (the base `ci/trending-refresh-<UTC>` is cut from is FETCHED and asserted, rule 6n), `merge-fetch`, `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data. It never merges: `qa-validate`'s `auto-merge` does |
 
 ### `.github/workflows/qa-validate.yml` — PR CI (every PR, push to master, dispatch)
 
@@ -337,7 +345,7 @@ same issue queue instead of racing).
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
 | `pick` | Sweep only: `make issue-queue` (`scripts/issue_queue.py`) — the OLDEST open `data-gap-analysis` issue with **no** `ci/data-gap-<n>-*` branch, no open PR from one, no live reviewer marker (a fresh `<!-- issue-review: … run=<id> -->`) and **no fresh reviewer VERDICT** (`needs-refinement` / `obsolete` / `duplicate` / `already-fixed`, held while younger than `VERDICT_TTL_HOURS`=24 h *measured from the reviewer's newest marker comment* — a label carries no timestamp, so an old one from a cancelled run releases the issue again; the `review-in-progress` label is likewise advisory) (the queue rule has ONE implementation; the reviewer reads the same target). An empty backlog is a green run that implements nothing |
 | `pick` → verdict note | When the pick is empty, `make issue-skip-note` (`scripts/issue_queue.py --skip-note`, default token — the owner PAT cannot comment) posts ONE comment on the held issue carrying `<!-- issue-bot-skip: <ISO8601Z> verdict=<label> since=<reviewer ts> -->`, so "why is nobody implementing this?" is answered where the issue lives, once per review round. It writes NO label and edits NO body — the verdict belongs to the reviewer or a human (issue #200) |
-| `implement` | Resolve the issue (must be open) → `issue.md` = the WHOLE thread (`make issue-thread`, issue #210); checkout `master` (PAT); `make image-ensure`; `make hermes-smoke`; **announce the window** (one start comment `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted with the default token BEFORE the body is read — the signal the reviewer defers to); `make implement-issue`; **apply its verdict** (`make issue-verdict`: `implement` continues, `refine` posts ONE restatement + `agent:refined`, `close` posts the reason with its evidence + `agent:closed` — both end the run GREEN with no PR, and the sweep skips a decided issue through the shared queue rule); then, for `implement` only: commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
+| `implement` | Resolve the issue (must be open) → `issue.md` = the WHOLE thread (`make issue-thread`, issue #210); checkout `master` (PAT); **assert the base it will cut from** (`make base-check`, rule 6n — a fresh `actions/checkout` is the latest `origin/master` only by accident of the runner); `make image-ensure`; `make hermes-smoke`; **announce the window** (one start comment `<!-- issue-bot-start: <ISO8601Z> -->` naming the branch and the run, posted with the default token BEFORE the body is read — the signal the reviewer defers to); `make implement-issue`; **apply its verdict** (`make issue-verdict`: `implement` continues, `refine` posts ONE restatement + `agent:refined`, `close` posts the reason with its evidence + `agent:closed` — both end the run GREEN with no PR, and the sweep skips a decided issue through the shared queue rule); then, for `implement` only: commit + push `ci/data-gap-<n>-<slug>` (resuming on a re-run, never force-push); **open the PR** (`closes #<n>`, owner PAT so CI runs); run the same fix loop with `REQUIRE_FINDINGS=1`; **file the findings** as their own `tech-debt` issues (`make findings-check` + `make file-findings`, only when the loop is green); comment the outcome on the issue. A run with no implementation is made RED by a named final step |
 
 **Tokens.** `FIXBOT_DISPATCH_TOKEN` (fine-grained PAT: Actions, Contents, Pull
 requests R/W) is used where a push or a dispatch must re-trigger CI; the default
@@ -415,6 +423,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
 | `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal |
+| `scripts/worktree_base.py` | Where work starts (rule 6n, issue #271): `check` fetches the base and fails unless this checkout IS the fetched tip; `new` starts a branch at that tip in a worktree (`../<repo>-wt/<kebab>`) or in place, refusing an existing branch, a worktree inside the repo, and the base branch as a target; `resume` fetches an existing branch before attaching, reuses its worktree, reports `behind_base=`, and never resets a branch with commits that are not on the remote. Every path proves the caller's HEAD, branch and local base branch are untouched. Reached only through `make base-check` / `worktree-new` / `worktree-resume` (rules 6d/6m) |
 | `scripts/query_coverage.py` | CLI over the query-coverage rule: `--queries` prints the derived model queries the four search prompts append as `$(MODEL_QUERIES)`; the default run prints the coverage report and exits 1 when a top-N trending model is named by no query. The rule itself — which query names which model — has ONE implementation in `scripts/update_trending.py` (rule 6d), so the prompts, the guard and its tests can never disagree (issue #264) |
 | `scripts/smoke_search.py` | The per-query reachability smoke with its retry policy |
 
@@ -438,7 +447,10 @@ the spec/architecture/index rules by `tests/test_check_openspec_tasks.py`,
 ## 8. The life of a change
 
 ```
-GitHub issue  →  feature branch (+ worktree off latest master)
+GitHub issue  →  its own worktree, cut off the freshly fetched origin/master
+                 (`make worktree-new BRANCH=<kebab>` → ../<repo>-wt/<kebab>;
+                  `make base-check` asserts the base — rule 6n; never the user's
+                  checkout, never `master` itself, never a re-cut branch)
               →  OpenSpec change  openspec/changes/<name>/  (proposal · spec with
                  Given/When/Then scenarios, each with a - **Test:** line · tasks)
               →  code + tests (+ ARCHITECTURE.md, AGENTS.md §8, README via its template)

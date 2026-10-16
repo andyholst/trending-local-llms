@@ -236,6 +236,23 @@ findings-check: ## Fail when findings.md is missing or a finding lacks evidence 
 architecture-check: ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script (rule 6h)
 	python3 scripts/architecture_check.py
 
+# ---- where work starts: a worktree off the freshly fetched base (rule 6n) ----
+# ONE implementation (scripts/worktree_base.py) of the fetch, the assertion and the
+# refusal, shared by CI (`make base-check` before a branch is cut, `IN_PLACE=1` when the
+# fresh checkout IS the working copy) and by a human locally (`make worktree-new`). Host
+# targets on purpose: git and its credentials live here, not in a container that would
+# write root-owned objects into the shared .git (issue #271).
+base-check: ## Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch)
+	python3 scripts/worktree_base.py check $(if $(BASE),--base $(BASE),)
+
+worktree-new: ## Start a new branch off the freshly fetched base, in a worktree (IN_PLACE=1 for the CI checkout)
+	@test -n "$(BRANCH)" || { echo "Usage: make worktree-new BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>]"; exit 1; }
+	python3 scripts/worktree_base.py new --branch "$(BRANCH)" $(if $(BASE),--base $(BASE),) $(if $(IN_PLACE),--in-place,) $(if $(DIR),--dir "$(DIR)",)
+
+worktree-resume: ## Resume an existing branch — fetched first, so a re-run of a one-ref checkout works
+	@test -n "$(BRANCH)" || { echo "Usage: make worktree-resume BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>]"; exit 1; }
+	python3 scripts/worktree_base.py resume --branch "$(BRANCH)" $(if $(BASE),--base $(BASE),) $(if $(IN_PLACE),--in-place,) $(if $(DIR),--dir "$(DIR)",)
+
 # ---- linefeeds: every tracked text file ends with a newline (issue #186) -----
 # A file without a final newline makes git print `\ No newline at end of file`
 # and turns the next append into a spurious last-line change. `make lint` is the
@@ -467,7 +484,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_worktree_base.py)
 
 
 .PHONY: _requirements-test
