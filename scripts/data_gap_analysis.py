@@ -19,9 +19,15 @@ why it survives only as free text inside `quant` / `why` / notes.
 
   data_gap_analysis.py                  # report to stdout
   data_gap_analysis.py --out report.md
-  data_gap_analysis.py --baseline FILE  # write the gap signature, report changed?
+  data_gap_analysis.py --baseline FILE  # set the baseline path (default data/gap_baseline.json)
   data_gap_analysis.py --issue          # file ONE issue when the signature changed
+  data_gap_analysis.py --write-baseline # record the signature as the baseline, filing nothing
   data_gap_analysis.py --check          # exit 1 when the gap set changed (CI-visible)
+
+The baseline is written on TWO paths: `--issue` records it when it files (so a
+day with the same gap set files nothing), and `--write-baseline` records it
+WITHOUT filing — the repair for a baseline write lost to a rebase or a refresh
+PR closed before it merged, reachable as `make data-gap-baseline`.
 
 Report only by default: it never fails the data PR. Stdlib only.
 """

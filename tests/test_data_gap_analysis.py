@@ -205,6 +205,53 @@ def _one_issue_per_changed_gap_set(tmp_path):
         os.environ["PATH"] = saved_path
 
 
+def test_write_baseline_records_the_signature_without_filing(tmp_path=None):
+    """Issue #174: `--write-baseline` records the CURRENT gap signature as the
+    baseline and files NOTHING — the repair for a baseline write lost to a rebase
+    or a refresh PR closed before it merged. The file it writes is the contract
+    `changed()` reads on the next run, so it must equal `analyse(store)`'s
+    signature exactly, and a run against it must then see "unchanged"."""
+    if tmp_path is None:
+        with tempfile.TemporaryDirectory() as td:
+            return _write_baseline_records_the_signature_without_filing(Path(td))
+    return _write_baseline_records_the_signature_without_filing(Path(tmp_path))
+
+
+def _write_baseline_records_the_signature_without_filing(tmp_path):
+    # Given a store and an ABSENT baseline
+    store = tmp_path / "models.json"
+    store.write_text(json.dumps(store_with([model("m1"), model("m2")])))
+    baseline = tmp_path / "gap_baseline.json"
+    saved_store, saved_contract = G.STORE, G.CONTRACT
+    G.STORE, G.CONTRACT = store, tmp_path / "absent-contract.json"
+    try:
+        # When  `--write-baseline` runs — with NO `gh` on PATH, so a run that
+        # tried to file would have raised instead of returning 0
+        first = G.main(["--baseline", str(baseline), "--write-baseline",
+                        "--out", str(tmp_path / "report.md")])
+
+        # Then  it exits 0 and writes the baseline …
+        check("--write-baseline exits 0", first == 0, str(first))
+        check("--write-baseline writes the baseline file", baseline.exists())
+
+        # … the written signature IS `analyse(store)` — the contract `changed()` reads …
+        expected = G.analyse(G.load(store), G.contract_keys())["signature"]
+        written = json.loads(baseline.read_text())["signature"]
+        check("the written signature equals analyse(store)", written == expected,
+              f"{written[:3]} != {expected[:3]}")
+
+        # … and the next run sees NO change: `--check` is a green no-op against it
+        check("a run against the fresh baseline sees no change",
+              G.main(["--baseline", str(baseline), "--check",
+                      "--out", str(tmp_path / "report2.md")]) == 0)
+
+        # And  it filed nothing: the second run's baseline is still the one it wrote
+        check("nothing re-filed or re-written by the check run",
+              json.loads(baseline.read_text())["signature"] == written)
+    finally:
+        G.STORE, G.CONTRACT = saved_store, saved_contract
+
+
 def test_real_store_dimensions_are_capturable_and_partly_filled():
     """On the REAL store + contracts: every reported dimension is CAPTURABLE end
     to end (declared OPTIONAL, so ingest keeps it instead of pruning it) and the
@@ -316,10 +363,22 @@ def test_analysis_is_wired_to_make_and_the_refresh_pipeline():
 
     # Then  the report follows the internal-`_name` + public-wrapper pattern and
     #       runs in the image (it needs no `gh`) …
-    for target in ("_data-gaps", "data-gaps", "data-gap-issue"):
+    for target in ("_data-gaps", "data-gaps", "data-gap-issue", "data-gap-baseline"):
         check(f"Makefile defines {target}", f"{target}:" in makefile)
     check("public target runs the container wrapper", "$(TEST_RUN) make _data-gaps" in makefile)
     check("the script is called from the Makefile", "scripts/data_gap_analysis.py" in makefile)
+
+    # … and the filer's REPAIR half is reachable too (issue #174): `--write-baseline`
+    # ran nowhere — no target, no workflow — so the "re-record the baseline without
+    # filing" path was dead code (rule 6d) and could not be exercised or tested.
+    baseline_t = (makefile.split("data-gap-baseline:", 1)[1].split("\n\n", 1)[0]
+                  if "data-gap-baseline:" in makefile else "")
+    check("data-gap-baseline records the baseline without filing",
+          "python3 scripts/data_gap_analysis.py --write-baseline" in baseline_t, baseline_t)
+    check("data-gap-baseline is HOST-side (writes the file as the caller, not as root)",
+          "$(TEST_RUN)" not in baseline_t, baseline_t)
+    check("no dead internal wrapper target is left behind (rule 6d)",
+          "_data-gap-baseline:" not in makefile, "")
 
     # … and the FILER runs on the HOST, because the test image has no `gh`
     # (measured: the step died with FileNotFoundError: 'gh', issue #150).
@@ -736,6 +795,8 @@ def main() -> int:
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
+    with tempfile.TemporaryDirectory() as td:
+        test_write_baseline_records_the_signature_without_filing(Path(td))
     test_real_store_dimensions_are_capturable_and_partly_filled()
     test_structured_dimensions_trace_to_a_real_post()
     test_every_dimension_is_a_declared_optional_key()
