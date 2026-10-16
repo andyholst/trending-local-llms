@@ -154,6 +154,62 @@ def render() -> str:
     return "\n".join(lines)
 
 
+def _listed(text: str) -> set[str]:
+    """The change names that have a row in `text`."""
+    return set(re.findall(r"^\| `([^`]+)` \|", text, re.MULTILINE))
+
+
+def _rows_by_name(text: str) -> dict[str, str]:
+    """`{change name: its table row}` — the row is the unit of a stale index."""
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        m = re.match(r"^\| `([^`]+)` \|", line)
+        if m:
+            out[m.group(1)] = line
+    return out
+
+
+def _count_line(text: str) -> str:
+    """The `Active changes: **N** · archived: **M**` line, verbatim."""
+    m = re.search(r"^Active changes: .*$", text, re.MULTILINE)
+    return m.group(0) if m else ""
+
+
+def _why_stale(current: str, text: str, active, archived) -> list[str]:
+    """Name what actually differs, instead of blaming a generic field set.
+
+    The one-line drift measured on master 9b3e34c was the COUNT LINE (the rows
+    were all present and identical); the old message said "rows exist but their
+    data changed (issue/PR/specs/tasks)", which points a reader at the rows and
+    at three fields that had not moved. A diagnosis that names the wrong cause is
+    the same defect as a red check that blames the mirror (issue #293).
+    """
+    lines: list[str] = []
+    listed = _listed(current)
+    names = [n for n, _ in active + archived]
+    missing = [n for n in names if n not in listed]
+    extra = sorted(listed - set(names))
+    if missing:
+        lines.append(f"changes on disk with no row: {', '.join(missing)}")
+    if extra:
+        lines.append(f"rows for changes that no longer exist: {', '.join(extra)}")
+
+    old_count, new_count = _count_line(current), _count_line(text)
+    if old_count != new_count:
+        lines.append(f"the count line says '{old_count or '(missing)'}', disk needs '{new_count}'")
+
+    old_rows, new_rows = _rows_by_name(current), _rows_by_name(text)
+    changed = sorted(n for n in set(old_rows) & set(new_rows) if old_rows[n] != new_rows[n])
+    if changed:
+        lines.append(f"rows whose data changed: {', '.join(changed)}")
+
+    if not lines:
+        # Rows and counts agree, yet the bytes differ: the prose or the header moved.
+        lines.append("the file differs outside the rows and the count line — "
+                     "regenerate it rather than editing it")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Generate/verify the root OpenSpec index")
     ap.add_argument("--write", action="store_true", help="rewrite OPENSPEC.md from openspec/changes/**")
@@ -184,15 +240,8 @@ def main(argv: list[str] | None = None) -> int:
         f"({len(active)} active, {len(archived)} archived on disk) — run `make openspec-index`",
         file=sys.stderr,
     )
-    listed = set(re.findall(r"^\| `([^`]+)` \|", current, re.MULTILINE))
-    missing = [n for n, _ in active + archived if n not in listed]
-    extra = sorted(listed - {n for n, _ in active + archived})
-    if missing:
-        print(f"[openspec-index]   changes on disk with no row: {', '.join(missing)}", file=sys.stderr)
-    if extra:
-        print(f"[openspec-index]   rows for changes that no longer exist: {', '.join(extra)}", file=sys.stderr)
-    if not missing and not extra:
-        print("[openspec-index]   rows exist but their data changed (issue/PR/specs/tasks)", file=sys.stderr)
+    for reason in _why_stale(current, text, active, archived):
+        print(f"[openspec-index]   {reason}", file=sys.stderr)
     return 1
 
 
