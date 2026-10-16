@@ -466,7 +466,7 @@ jobs:
             {
               make refresh-run-block
               echo
-              echo "Hermes CLI refresh (deepseek-v4.1-flash via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Closes #1"
+              echo "Hermes CLI refresh (deepseek-v4.1-flash via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Refs #1"
             } > "$PR_BODY"
             PR_URL=$(gh pr create --base master --head "$BRANCH" \
               --title "chore: Hermes refresh of trending LLM data" \

@@ -128,7 +128,16 @@ retains 30 days of history.
    is valid, green and permanently unmergeable, and the run then reports success
    over a change no job can land (measured: an implementation parked PR #272 as a
    draft for a rule-3c review). Holding a change for review is the reviewable PR
-   plus the required checks, never a draft flag (issue #276) — then it
+   plus the required checks, never a draft flag (issue #276) — and its body
+   **closes the issue it implements**, with ONE closing keyword bound to THAT
+   issue. GitHub links a keyword to the single reference that follows it, so
+   `Closes #271 and #276` closes #271 and leaves #276 open after the merge
+   (measured on PR #272: the change landed, the issue stayed open, and the
+   shared bot queue would have offered it again); and a PR whose branch
+   implements no issue closes NONE — the refresh PR *references* its tracking
+   issue (its `Closes #1` named the long-closed meta issue). `make pr-closure`
+   refuses both shapes on every PR, so a merged PR always closes what it says it
+   does (issue #284) — then it
    **monitors the pipeline that PR triggered and fixes it until every check is
    green** — one
    implementer per issue (`concurrency: issue-bot-<n>`), never a parallel run for
@@ -1138,6 +1147,7 @@ actually happened.
 | Guard | Catches |
 |---|---|
 | `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
+| `make pr-closure` + `tests/test_pr_closure.py` (rule 6e, issue #284) | a merged PR that does NOT close the issue it implements: a chained reference (`Closes #271 and #276` closes only #271 — the measured PR #272, where the change landed and the issue stayed open), a branch that implements an issue whose body carries no closing keyword for it, a PR that closes an issue it does not implement (the refresh PR's `Closes #1` — the long-closed meta issue), and the checker not running on every PR (rule 6d) |
 | `tests/test_worktree_base.py` (rule 6n, issue #271) | work starting from an unverified base: a checkout that is behind the fetched tip passing `make base-check`, an unfetchable base passing at all; a worktree cut from the clone's own stale tip (so the fetch never happened) or created INSIDE the repository where `git add -A` would commit it; an existing branch silently RE-CUT (`worktree-new`) instead of resumed; the caller's checkout being switched or the local `master` moved by the seam that is supposed to leave it alone; the base branch itself becoming a worktree target; a resume that cannot work in a one-ref clone (the measured #271 `pathspec … did not match`, while a bare `git checkout` still fails on the same fixture); a resumed branch resetting local-only commits (`-B`) instead of reporting drift; the rule missing from AGENTS.md's own wording, the three targets missing from the Makefile, or the guard unwired from `make _test` (rule 6d) |
 | `tests/test_workflows.py::test_bot_verification_protocol_is_documented_and_guarded` (rules 6d/6j) | the one-bot-at-a-time protocol leaving AGENTS.md (the order, the fix-PR-carries-its-guard contract, the `auto-merge`-only merge rule, the post-merge verification pass); a guard no longer being the FIRST step of the job that carries it in a pipeline `BOT_GUARDS` names — the reorder that silently invalidates every claim the protocol makes about who may start a bot |
 | `tests/test_queued_run_alarm.py` — the queued-run alarm | a job stuck in `queued` reported without its runner label; a second sweep commenting again (marker dedup broken); a run counted twice because both the `queued` and `in_progress` queries return it; the sweep still green while a job is stuck |

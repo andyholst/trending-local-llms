@@ -222,6 +222,12 @@ keep it honest (issue #207):
 |---|---|
 | `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) |
 
+### PR lifecycle (rule 6e)
+
+| Target | What it does |
+|---|---|
+| `pr-closure` (`PR_EVENT=<event json>` · or `BRANCH=<head> BODY_FILE=<pr body>`) | Fail when the PR does not close the issue its branch implements (`scripts/pr_closure.py`, issue #284): a closing keyword whose clause chains a second reference is refused (`Closes #1 and #2` would close only #1), a branch issue with no keyword bound to it is refused, and a PR whose branch implements no issue must not close one (the refresh PR references its tracking issue). In CI the default reads `$GITHUB_EVENT_PATH` by PATH — nothing is interpolated into a `run:` block. A non-PR event is a green no-op. Runs in `qa-validate`'s `validate` job |
+
 ### Lint
 
 | Target | What it does |
@@ -288,7 +294,7 @@ competing PRs over the same generated files).
 | Job | Does |
 |---|---|
 | `guard` | FIRST job (issue #279): owner / write+ collaborator / `github-actions[bot]` for BOTH actor and triggering actor; a `pull_request`/`push` run is admitted outright (GitHub starts it for the repository itself, and a PR must be validated whatever its author). The 30-minute network-bound DISPATCH is what this guards |
-| `validate` | `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
+| `validate` | `make lint`, `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
 | `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
 | `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides |
@@ -426,6 +432,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
 | `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal |
+| `scripts/pr_closure.py` | Does this PR close the issue it implements (rule 6e, issue #284)? Reads the head branch and the body from the webhook payload by PATH (never interpolated into a `run:` block), derives the issue the branch implements (`ci/data-gap-<n>-<slug>`; a `ci/trending-refresh-*` branch implements none), and refuses a closing keyword that chains a second reference, a branch issue with no keyword bound to it, or a closing keyword on a PR that implements no issue. Code is not a claim — a keyword inside a fenced block or an inline code span is ignored, because GitHub links nothing there (measured: this change's own PR). Reached only through `make pr-closure` (rules 6d/6m) |
 | `scripts/worktree_base.py` | Where work starts (rule 6n, issue #271): `check` fetches the base and fails unless this checkout IS the fetched tip; `new` starts a branch at that tip in a worktree (`../<repo>-wt/<kebab>`) or in place, refusing an existing branch, a worktree inside the repo, and the base branch as a target; `resume` fetches an existing branch before attaching, reuses its worktree, reports `behind_base=`, and never resets a branch with commits that are not on the remote. Every path proves the caller's HEAD, branch and local base branch are untouched. Reached only through `make base-check` / `worktree-new` / `worktree-resume` (rules 6d/6m) |
 | `scripts/query_coverage.py` | CLI over the query-coverage rule: `--queries` prints the derived model queries the four search prompts append as `$(MODEL_QUERIES)`; the default run prints the coverage report and exits 1 when a top-N trending model is named by no query. The rule itself — which query names which model — has ONE implementation in `scripts/update_trending.py` (rule 6d), so the prompts, the guard and its tests can never disagree (issue #264) |
 | `scripts/smoke_search.py` | The per-query reachability smoke with its retry policy |
