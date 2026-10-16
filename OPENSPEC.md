@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **44** · archived: **0**
+Active changes: **45** · archived: **0**
 
 ## Active changes
 
@@ -39,6 +39,7 @@ Active changes: **44** · archived: **0**
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
+| `ingest-new-snapshots-only` | active | #175 | — | [ingest-boundary](openspec/changes/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/ingest-new-snapshots-only/proposal.md) |
 | `issue-bot-checks-out-before-make` | active | — | — | [issue-bot-checks-out-before-make](openspec/changes/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/issue-bot-checks-out-before-make/proposal.md) |
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |

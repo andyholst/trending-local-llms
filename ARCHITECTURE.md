@@ -147,7 +147,7 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `merge` | `scripts/update_trending.py`: ingest `data/raw/*` into the store, sort, regenerate `README.md`, write a snapshot |
+| `merge` | `scripts/update_trending.py`: ingest the `data/raw/*` snapshots **newer than the store's `generated_utc`** into the store — an older snapshot is already folded in, so it is skipped, and one this code cannot date is always merged (issue #175, `--since <ISO8601Z>` overrides the derived boundary) — sort, regenerate `README.md`, write a snapshot |
 | `merge-fetch` | The same **plus** a direct Firecrawl→lightbrd fetch (`--fetch`) — used by the refresh aggregate |
 | `correct-raw` | `scripts/self_correct_raw.py`: prune stray keys / fill `last_seen` in `data/raw/*` so validation sees contract-conforming data |
 | `engine-check` | Report every engine mentioned in the raw snapshots that is not registered, and the decision ingest will make (`scripts/engine_registry.py`) |
@@ -410,7 +410,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 
 | Script | Role |
 |---|---|
-| `scripts/update_trending.py` | The engine of the repo: `ingest_raw_snapshots`, `normalize_model`, `merge_engines`, `sort_models`, `recompute_7d_engagement`, `render_readme` (the README template lives here), `write_snapshot`; CLI `--fetch`, `--dry-run`, `--write-raw <backend>`, `--require-hits` |
+| `scripts/update_trending.py` | The engine of the repo: `ingest_raw_snapshots` (merges only the snapshots newer than the `since` boundary `main()` derives from the store's `generated_utc`; `raw_snapshot_stamp`/`parse_utc_stamp` are the one definition of a snapshot's capture instant, issue #175), `normalize_model`, `merge_engines`, `sort_models`, `recompute_7d_engagement`, `render_readme` (the README template lives here), `write_snapshot`; CLI `--fetch`, `--dry-run`, `--write-raw <backend>`, `--require-hits`, `--since <ISO8601Z>` |
 | `scripts/validate.py` | The QA stages: `data`, `schema`, `mapping`, `removal`, `readme`, `links`, plus report-only checks (post-signal coverage). Every `check_*` is registered in a stage, and every stage appears in a Makefile `--only` list (rule 6d) |
 | `scripts/engine_registry.py` | Engine classification + auto-registration at ingest (`classify_repo`, `register_new_engines`), non-engine lists, `KNOWN_ENGINE_URLS` |
 | `scripts/data_gap_analysis.py` | The post-refresh gap analysis (§3) — `analyse`, `rank_impact`, `render`, `file_issue`, `ensure_label`. The issue body LEADS with the refresh run's window block (#199) |
@@ -427,7 +427,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
 | `scripts/lint_syntax.py` | The syntax-warning lint (`make lint`, issue #190): every tracked `*.py` module must compile without a `SyntaxWarning`; compiled from source so no import side effect runs, the tracked-file set so an untracked module is never a finding |
-| `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation |
+| `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation. Writes a snapshot only when it actually changed it and then refreshes its `generated_utc`, so a corrected snapshot is re-merged by the next `make merge` instead of being skipped as old (issue #175) |
 | `scripts/hf_id.py` | One HF-identifier definition (a URL-shaped `hf` is reduced to `owner/repo`) |
 | `scripts/qa_report.sh` | Runs the aggregate's QA targets; a *finding* is reported, a target that could not run fails the run |
 | `scripts/fix_loop.sh` | The fix loop's control flow (check → report → `make fix`, ≤ `FIX_ROUNDS`, reasoning-budget retry). `REQUIRE_FINDINGS=1` makes it demand the analysis file |
