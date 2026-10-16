@@ -1,0 +1,122 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "document-reproduction workload (25K-token doc), 16-token verification blocks, ~15/16 acceptance; ordinary chat ~133 t/s; prior DFlash2 ~260 t/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "82",
+          "hardware": "RTX 3090 24GB",
+          "quant": "baseline setup before MTP/DFlash2 optimization; progression 82 -> MTP 114 -> DFlash2 138 -> optimized lookup 381 t/s",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "60",
+          "hardware": "2x RTX 3090",
+          "quant": "FPS-game agent run: 687 steps, 87.9M input + 822K output tokens, 5h11m model runtime",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110148507071885606"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "23.8",
+          "hardware": "RTX 3090 + RTX 3060 12GB",
+          "quant": "Q4, 262144 context",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 245
+        }
+      ],
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B MoE",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "2-bit (~12GB resident in Mac unified memory)",
+      "context_tokens": "200000",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "80",
+          "hardware": "RTX 3090 + M4 Mac mini 16GB unified memory (USB-C, tinygrad-based)",
+          "quant": "2-bit, 200K-token KV cache, ~12GB Mac memory",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109443345835491366",
+          "likes": 23,
+          "comments": 4,
+          "reshares": 2,
+          "views": 5163
+        }
+      ],
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "125B-class MoE",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "weight_gb": "125GB",
+      "storage_offload": "experts stream from RAM and SSD",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "glm-flash-lite",
+          "tps": "20",
+          "hardware": "RTX 3090 24GB",
+          "quant": "125GB MoE, 8 of 12,096 experts active per layer; hot experts on GPU, rest stream from RAM/SSD",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+          "likes": 7,
+          "comments": 1,
+          "reshares": 3,
+          "views": 414
+        }
+      ],
+      "last_seen": "2026-10-10"
+    }
+  ],
+  "generated_utc": "2026-10-16T00:00:00Z"
+}

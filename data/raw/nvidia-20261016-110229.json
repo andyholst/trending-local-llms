@@ -1,0 +1,105 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B (MoE)",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "26B total / A4B active (MoE)",
+      "hf": "google/gemma-4-26b-a4b",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "400",
+          "hardware": "RTX 4090 24GB",
+          "quant": "23.93GB VRAM, concurrency 14, continuous batching, CUDA 13, Ubuntu 22; 400+ t/s total throughput",
+          "date": "2026-07-30",
+          "source_post": "https://lightbrd.com/analogalok/status/2082810858544169242",
+          "likes": 137,
+          "comments": 16,
+          "reshares": 15,
+          "views": 36919
+        }
+      ],
+      "last_seen": "2026-07-30"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "weight_gb": "17.1GB Q4_K_M; 13.4GB UD-Q3_K_XL",
+      "context_tokens": "131072",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2x RTX 4090",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, 128K context, 8 concurrent sessions; 300+ t/s combined",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 8,
+          "comments": 2,
+          "reshares": 5,
+          "views": 1186
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "48",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Q4_K_M 17.1GB",
+          "date": "2026-09-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2098579036037390358"
+        }
+      ],
+      "last_seen": "2026-10-10"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B MoE",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "system_ram_min": "32GB",
+      "storage_offload": "80GB disk, 70GB download",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB",
+          "quant": "consumer GPU setup, 32GB RAM, 80GB disk",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/ethanwalkerman/status/2106988896529920109",
+          "likes": 210,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-05"
+    }
+  ],
+  "generated_utc": "2026-10-16T00:00:00Z"
+}

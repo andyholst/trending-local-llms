@@ -1,0 +1,64 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "11.3",
+          "hardware": "NVIDIA Jetson 8GB, 15W power mode",
+          "quant": "Q4_K_M, all layers on GPU, llama-bench; prefill 414 tok/s",
+          "date": "2026-09-02",
+          "source_post": "https://lightbrd.com/aryan559552/status/2095267836025348183",
+          "likes": 8,
+          "comments": 1,
+          "reshares": 0,
+          "views": 1301
+        }
+      ],
+      "last_seen": "2026-09-02"
+    },
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "full_name": "Qwen3.6 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "TensorRT-LLM",
+          "tps": "52.33",
+          "hardware": "NVIDIA Jetson AGX Thor dev kit (130W)",
+          "quant": "TensorRT Edge-LLM, NVFP4 weights + FP8 KV cache; MLPerf Inference v6.1 Edge Agentic, 6.4x over llama.cpp reference, TTFT 247ms median",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/StragglerLiu/status/2100741492386181210",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 218
+        }
+      ],
+      "last_seen": "2026-09-18"
+    }
+  ],
+  "generated_utc": "2026-10-16T00:00:00Z"
+}
