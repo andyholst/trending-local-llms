@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **39** · archived: **0**
+Active changes: **40** · archived: **0**
 
 ## Active changes
 
@@ -30,6 +30,7 @@ Active changes: **39** · archived: **0**
 | `data-gap-filer-labels-its-issue` | active | — | — | [data-gap-filer-labels-its-issue](openspec/changes/data-gap-filer-labels-its-issue/specs/data-gap-filer-labels-its-issue/spec.md) | 11/11 | [proposal.md](openspec/changes/data-gap-filer-labels-its-issue/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `fix-bot-announces-its-window` | active | — | — | [bot-coordination](openspec/changes/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-bot-announces-its-window/proposal.md) |
+| `fix-bot-guard-own-job` | active | — | — | [bot-dispatch-guards](openspec/changes/fix-bot-guard-own-job/specs/bot-dispatch-guards/spec.md) | 10/10 | [proposal.md](openspec/changes/fix-bot-guard-own-job/proposal.md) |
 | `fix-publish-agent-image-push-check` | active | #229 | — | [agent-image-publish](openspec/changes/fix-publish-agent-image-push-check/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/fix-publish-agent-image-push-check/proposal.md) |
 | `fix-publish-latest-tag` | active | #232 | — | [agent-image-publish](openspec/changes/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/fix-publish-latest-tag/proposal.md) |
 | `fix-publish-login-token-by-name` | active | #240 | — | [agent-image-publish](openspec/changes/fix-publish-login-token-by-name/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-publish-login-token-by-name/proposal.md) |
