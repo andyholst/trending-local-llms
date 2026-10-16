@@ -108,6 +108,15 @@ jobs:
       - name: Lint (every tracked text file ends with a newline)
         run: make lint
 
+      # A merged PR must CLOSE the issue it implements (rule 6e). The body is the only
+      # artifact with no guard on its content, and GitHub binds a closing keyword to ONE
+      # reference: `Closes #1 and #2` closes #1 and leaves #2 open after the merge
+      # (measured: PR #272 left issue #276 open). The check reads the webhook payload by
+      # PATH ($GITHUB_EVENT_PATH) — nothing is interpolated into this run block, and it
+      # needs no image, so it sits with the other cheap gates.
+      - name: The PR closes the issue its branch implements (rule 6e)
+        run: make pr-closure
+
       # The base image carries the pinned plugins (Dockerfile). Pull the PUBLISHED
       # base only when it was built from THIS revision's Dockerfile — the
       # published tag names the Dockerfile hash. Otherwise build from source, so a
