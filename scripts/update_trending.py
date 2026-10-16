@@ -368,37 +368,52 @@ def zero_hit_verdict(stats: dict) -> tuple[str, int, list[str]]:
       was found: the query set (`SEARCH_GROUPS` + the derived model queries) is
       what to look at. Still red, and it says so rather than blaming the mirror.
 
-    A PARTIAL outage stays `quiet` on purpose: an outage is only excused when
-    every query is one, so a half-answering mirror cannot slip a real regression
-    through as infrastructure noise."""
+    A PARTIAL outage stays `quiet` on purpose: an outage is only excused when every
+    query that could be CLASSIFIED is one, so a half-answering mirror cannot slip a
+    real regression through as infrastructure noise. A query we could not classify
+    at all (`failed` — a transport error, e.g. `Connection refused`) is NOT evidence
+    the mirror is healthy: with 23 of 24 queries proving the target's own error page,
+    one unclassifiable query must not flip the verdict back to `quiet` and re-block
+    every open PR (issue #296)."""
     queries = int(stats.get("queries") or 0)
     outage = int(stats.get("outage") or 0)
     refused = int(stats.get("refused") or 0)
     failed = int(stats.get("failed") or 0)
+    with_hits = int(stats.get("with_hits") or 0)
+    # Queries that returned a REAL page (neither the target's error page, nor a
+    # refusal, nor a transport failure). Any of these means the mirror ANSWERED,
+    # so an outage can no longer be excused.
     answered = queries - outage - refused - failed
     first_outage = (stats.get("outage_status") or [""])[0]
     first_reason = (stats.get("reasons") or [""])[0]
 
-    if queries and outage == queries:
-        return "outage", 0, [
-            f"[outage] the lightbrd mirror is DOWN: all {queries} queries came back as the "
-            f"target's own error page ({first_outage})",
-            "[outage] 0 model hits is EXPECTED here — this is NOT a quiet search (the mirror "
-            "answered, with an error) and NOT a broken key (Firecrawl answered success:true)",
-            "[outage] NOT blocking: the live check stays green so an upstream outage cannot stop "
-            "every open PR (issue #291). Re-run when the mirror recovers.",
-        ]
+    # A refusal is OUR configuration (credits/key/target) and always wins.
     if refused:
         return "refused", 1, [
             f"[error] Firecrawl REFUSED the scrape for {refused}/{queries} querie(s): {first_reason}",
             "[error] the mirror was never reached — fix the credential/quota, not the query set",
+        ]
+    # The outage is excused when the target's own error page is what every query we
+    # could CLASSIFY got, nothing was refused, nothing was found, and no query returned
+    # a real page. `failed` queries do not disqualify: they prove nothing about the
+    # mirror (issue #296), and they are named rather than hidden.
+    if queries and outage and not with_hits and not answered:
+        return "outage", 0, [
+            f"[outage] the lightbrd mirror is DOWN: {outage}/{queries} queries came back as the "
+            f"target's own error page ({first_outage})",
+            "[outage] 0 model hits is EXPECTED here — this is NOT a quiet search (the mirror "
+            "answered, with an error) and NOT a broken key (Firecrawl answered success:true)",
+            *([f"[outage] {failed} further querie(s) failed for another reason ({first_reason}) — "
+               "not counted against the mirror, but reported"] if failed else []),
+            "[outage] NOT blocking: the live check stays green so an upstream outage cannot stop "
+            "every open PR (issues #291, #296). Re-run when the mirror recovers.",
         ]
     return "quiet", 1, [
         f"[error] the mirror answered {answered}/{queries} queries with NO upstream error and "
         "0 model hits — a QUIET SEARCH on a reachable mirror: check the query set "
         "(SEARCH_GROUPS and the derived model queries)",
         *([f"[error] {outage + failed} querie(s) did not answer normally; an outage is only "
-           "excused when EVERY query is one (issue #291)"] if outage + failed else []),
+           "excused when EVERY query that answered is one (issue #291)"] if outage + failed else []),
     ]
 
 
