@@ -298,20 +298,33 @@ def _gh(gh: str, args: list[str]) -> str:
     return r.stdout
 
 
-def _gh_soft(gh: str, args: list[str]) -> str | None:
-    """`gh` output, or None when the call is refused — a check that needs admin degrades loudly."""
+def _gh_soft(gh: str, args: list[str], *, skips: str | None = "that check") -> str | None:
+    """`gh` output, or None when the call is refused — a refusal degrades LOUDLY.
+
+    `skips` names what the refusal costs, and is `None` when it costs no check at all. The
+    distinction is not cosmetic: after #278 the secrets read is refused on EVERY production run
+    (it needs admin) while the secrets check still runs, off the repo's declared contract — so
+    the old blanket "— that check is SKIPPED this run" was printed one line above an INFO
+    saying the opposite. A message that names a consequence it did not have is the same defect
+    class as a red check that blames the mirror (#292/#293) and #278 itself.
+    """
     r = subprocess.run([gh, *args], capture_output=True, text=True)
     if r.returncode != 0:
+        cost = f" — {skips} IS SKIPPED this run" if skips else " — no check is skipped by this refusal"
         print(f"[code-review] WARNING: 'gh {' '.join(args)}' was refused ({r.returncode}): "
-              f"{r.stderr.strip().splitlines()[:1]} — that check is SKIPPED this run",
+              f"{r.stderr.strip().splitlines()[:1]}{cost}",
               file=sys.stderr)
         return None
     return r.stdout
 
 
 def defined_secrets(gh: str, repo: str) -> set[str] | None:
-    """The repo's secret names, or None when the token cannot read them (needs admin)."""
-    out = _gh_soft(gh, ["secret", "list", "--repo", repo, "--json", "name"])
+    """The repo's LIVE secret names, or None when the token cannot read them (needs admin).
+
+    A refusal here costs NO check: the secrets check runs off `DECLARED_SECRETS` regardless,
+    and this read only unions in extra names (issue #278).
+    """
+    out = _gh_soft(gh, ["secret", "list", "--repo", repo, "--json", "name"], skips=None)
     if out is None:
         return None
     return {s.get("name") for s in (json.loads(out or "[]") or []) if s.get("name")}
