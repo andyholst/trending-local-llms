@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **30** · archived: **0**
+Active changes: **32** · archived: **0**
 
 ## Active changes
 
@@ -20,6 +20,7 @@ Active changes: **30** · archived: **0**
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
 | `bot-guards-allow-the-bot` | active | — | — | [bot-guards-allow-the-bot](openspec/changes/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-guards-allow-the-bot/proposal.md) |
 | `bot-marker-registry` | active | — | — | [bot-markers](openspec/changes/bot-marker-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-marker-registry/proposal.md) |
+| `bot-verification-protocol` | active | — | — | [bot-verification-protocol](openspec/changes/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/bot-verification-protocol/proposal.md) |
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
 | `code-review-bot` | active | — | — | [code-review](openspec/changes/code-review-bot/specs/code-review/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-bot/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |

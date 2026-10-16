@@ -977,6 +977,27 @@ this `AGENTS.md` and the `gather-data` skill, then:
   read-only token; `dispatch-fixbot` only acts on same-repo
   `ci/trending-refresh-*` branches.
 
+**Bot verification protocol — one bot at a time.** Every dispatcher in the four
+pipelines above is exercised in sequence, ONE bot per cycle, never several at
+once. For each bot: dispatch it through its own `workflow_dispatch`, watch the
+run, and when a defect surfaces, fix it on a branch where the new logic is
+proved the way every other change is — the pipelines are wired to the Makefile
+and every business-logic target is tested with NO mocks by the unit tests
+`ci.yaml` runs — so the PR carries the fix AND the regression guard that would
+have caught the defect (`tests/test_workflows.py`, `tests/test_bot_markers.py`,
+or the target's own test module; rule 2/§8). A PR is ready only when its `guard`
+and `validate` jobs are green; only then does the next bot get its cycle. Once
+every bot has its PR open and fixed, the merge waits: each PR lands only through
+qa-validate's `auto-merge` job — NEVER `--admin`, NEVER a hand merge — and no PR
+is "verified" until it is MERGED. Verification is the last pass and it too runs
+one at a time: re-dispatch each merged bot on its own and confirm the fix holds
+in production before starting the next. Every start — the dispatch, the re-run,
+the verification — is guarded (rules 6d/6j): each pipeline's FIRST job admits
+only the repository owner, a collaborator with `write`/`maintain`/`admin`, or
+`github-actions[bot]`, checked via the collaborator-permission API on BOTH
+`github.actor` and `github.triggering_actor`, so a stranger's dispatch or re-run
+dies at step one and a scheduled run does not depend on the cron's identity.
+
 **Tokens.** `FIXBOT_DISPATCH_TOKEN` is a fine-grained PAT scoped to this repo
 only: Actions R/W, Contents R/W, Pull requests R/W, **Workflows R/W**. The last
 one is not optional: an issue-bot implementation may legitimately edit
@@ -1111,6 +1132,7 @@ actually happened.
 |---|---|
 | `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
 | `tests/test_worktree_base.py` (rule 6n, issue #271) | work starting from an unverified base: a checkout that is behind the fetched tip passing `make base-check`, an unfetchable base passing at all; a worktree cut from the clone's own stale tip (so the fetch never happened) or created INSIDE the repository where `git add -A` would commit it; an existing branch silently RE-CUT (`worktree-new`) instead of resumed; the caller's checkout being switched or the local `master` moved by the seam that is supposed to leave it alone; the base branch itself becoming a worktree target; a resume that cannot work in a one-ref clone (the measured #271 `pathspec … did not match`, while a bare `git checkout` still fails on the same fixture); a resumed branch resetting local-only commits (`-B`) instead of reporting drift; the rule missing from AGENTS.md's own wording, the three targets missing from the Makefile, or the guard unwired from `make _test` (rule 6d) |
+| `tests/test_workflows.py::test_bot_verification_protocol_is_documented_and_guarded` (rules 6d/6j) | the one-bot-at-a-time protocol leaving AGENTS.md (the order, the fix-PR-carries-its-guard contract, the `auto-merge`-only merge rule, the post-merge verification pass); a guard no longer being the FIRST step of the job that carries it in a pipeline `BOT_GUARDS` names — the reorder that silently invalidates every claim the protocol makes about who may start a bot |
 | `tests/test_queued_run_alarm.py` — the queued-run alarm | a job stuck in `queued` reported without its runner label; a second sweep commenting again (marker dedup broken); a run counted twice because both the `queued` and `in_progress` queries return it; the sweep still green while a job is stuck |
 | `tests/test_hermes_prompts.py` — prompt shell strings | an unescaped `"` in a `-z` prompt closing the string early (every search dies) |
 | `tests/test_hermes_prompts.py` — trailing `\` + `make -n` | a `hermes -z` recipe whose `-m nous-deepseek …` line runs as a separate command (Hermes without alias → HF 403) |
