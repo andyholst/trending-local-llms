@@ -45,6 +45,8 @@ SEARCH_CONTRACT = DATA / "search_contract.json"
 RAW_DIR = DATA / "raw"
 DEFAULT_BASELINE = DATA / "gap_baseline.json"
 LABEL = "data-gap-analysis"
+LABEL_COLOR = "5319e7"
+LABEL_DESCRIPTION = "Post-refresh data-gap analysis (missing requirement dimensions in the store)"
 
 # Requirement dimensions the index SHOULD carry. `key` is the structured key the
 # contract must declare for the dimension to be representable at all; `text` is
@@ -298,6 +300,43 @@ def already_filed(sig: str) -> str | None:
         if item.get("state") == "OPEN":
             return str(item.get("url") or item.get("number"))
     return None
+
+
+def label_exists() -> bool:
+    """Does the repo already carry LABEL?"""
+    out = subprocess.run(["gh", "label", "list", "--search", LABEL, "--json", "name"],
+                         text=True, capture_output=True)
+    if out.returncode != 0:
+        raise SystemExit(f"[data-gaps] gh label list failed: {out.stderr.strip()}")
+    try:
+        return LABEL in {str(l.get("name", "")) for l in json.loads(out.stdout or "[]")}
+    except json.JSONDecodeError:
+        return False
+
+
+def ensure_label_exists() -> None:
+    """Create LABEL when the repo does not have it yet, or fail loudly.
+
+    GitHub IGNORES a label it does not know instead of refusing the create, so a
+    filing made before the label exists lands UNLABELLED while `gh issue create`
+    still returns 0 — and `gh issue edit --add-label` then refuses it, which is
+    the shape measured on master (issue #277, the same shape #161 recorded): the
+    filed issue carried nothing, the step was `continue-on-error`, and BOTH bot
+    queues stayed empty while every run reported green. Creating the label first
+    is what makes the label land instead of being dropped.
+    """
+    if label_exists():
+        return
+    out = subprocess.run(["gh", "label", "create", LABEL, "--color", LABEL_COLOR,
+                          "--description", LABEL_DESCRIPTION], text=True, capture_output=True)
+    if not label_exists():
+        why = (out.stderr or out.stdout or "").strip() or f"gh exited {out.returncode} without a message"
+        raise SystemExit(
+            f"[data-gaps] the repo does not carry `{LABEL}` and it could not be created — the "
+            f"bot chain triggers on that label, so every filing would be invisible; failing "
+            f"instead of reporting it. gh said: {why}")
+
+
 def ensure_label(number: str) -> None:
     """Make the filed issue carry LABEL, or fail loudly (issue #161).
 
@@ -319,13 +358,21 @@ def ensure_label(number: str) -> None:
 
     if LABEL in labels():
         return
-    subprocess.run(["gh", "issue", "edit", number, "--add-label", LABEL],
-                   text=True, capture_output=True)
+    # The label must EXIST before an edit can apply it: GitHub ignores a label it
+    # does not know, which is how a filing lands unlabelled while `gh` returns 0.
+    ensure_label_exists()
+    edit = subprocess.run(["gh", "issue", "edit", number, "--add-label", LABEL],
+                          text=True, capture_output=True)
     if LABEL not in labels():
+        # `gh`'s OWN diagnosis is the actionable half: measured (issue #277), the
+        # refusal is `Resource not accessible by personal access token` because the
+        # step ran with a PAT that declares no Issues scope. Swallowing it left
+        # "the label did not stick" with no cause and no fix.
+        why = (edit.stderr or edit.stdout or "").strip() or f"gh exited {edit.returncode} without a message"
         raise SystemExit(
             f"[data-gaps] issue {number} does not carry `{LABEL}` after re-applying it — the "
             f"bot chain triggers on that label, so this filing would be invisible; failing "
-            f"instead of reporting it")
+            f"instead of reporting it. gh said: {why}")
 
 
 def file_issue(report: dict, previous: dict | None) -> str:
@@ -353,6 +400,10 @@ def file_issue(report: dict, previous: dict | None) -> str:
     # in the rendered issue, searchable in the body.
     body += ["", marker(signature_id(report))]
     title = (f"data-gap: {ranked[0][0]} ({ranked[0][1]} models)" if ranked else "data-gap: refresh analysis")
+    # The label must exist BEFORE the create: GitHub silently ignores an unknown
+    # label, so `--label` below would be dropped and the filing would be invisible
+    # to both bots while `gh` still exits 0 (issue #277).
+    ensure_label_exists()
     out = subprocess.run(
         ["gh", "issue", "create", "--title", f"{title} ({report['as_of']})",
          "--body-file", "-", "--label", LABEL],

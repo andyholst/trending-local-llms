@@ -1390,6 +1390,76 @@ def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
           bool(agg) and "origin/master" in str(agg[0].get("name", "")), "")
 
 
+#: Steps whose `run` WRITES an issue — creates one, or labels / comments on one.
+#: AGENTS.md §6b states the rule for exactly this class of write: "issue reads and
+#: comments use the default `github.token` with `permissions: issues: write` (the
+#: PAT has no Issues scope)". Measured twice now: the PAT was refused a comment
+#: (#124) and the data-gap filing lost its label while `gh` returned 0 (#277).
+_ISSUE_WRITE = re.compile(
+    r"gh\s+issue\s+(?:create|edit|comment|close|reopen)"
+    r"|make\s+(?:data-gap-issue|file-findings|issue-skip-note|issue-verdict|code-review-file|queued-alarm)\b")
+
+
+def _job_can_write_issues(wf: dict, job: dict) -> bool:
+    """`issues: write` for the token a step of this job uses.
+
+    A JOB-level `permissions:` block REPLACES the workflow-level one, so the job's
+    own block is the answer when it has one.
+    """
+    job_perm = job.get("permissions")
+    if isinstance(job_perm, str):
+        return job_perm == "write-all"
+    if isinstance(job_perm, dict):
+        return str(job_perm.get("issues", "")).lower() == "write"
+    wf_perm = wf.get("permissions")
+    if isinstance(wf_perm, str):
+        return wf_perm == "write-all"
+    if isinstance(wf_perm, dict):
+        return str(wf_perm.get("issues", "")).lower() == "write"
+    return True  # absent `permissions:` means the default token's default scopes
+
+
+def test_issue_writes_use_the_default_token():
+    """Issue #277: an issue write made with the owner PAT is refused or silently
+    dropped — the PAT declares Actions/Contents/Pull-requests/Workflows and NO
+    Issues scope. The measured failure is not a 403: `gh issue create --label
+    data-gap-analysis` returned 0 having applied NO label, `gh issue edit
+    --add-label` then could not repair it, the step was `continue-on-error`, and
+    BOTH bot queues stayed empty (`make issue-queue` -> `candidates=0`,
+    `make review-issue-pick` -> `action=none`) while every run reported green.
+    This is the class rule, not the site: EVERY step that writes an issue must use
+    the token that can write one.
+    """
+    problems: list[str] = []
+    checked = 0
+    for f in sorted(WF.glob("*.yml")):
+        wf = load(f.name)
+        for job_name, job in (wf.get("jobs") or {}).items():
+            if not isinstance(job, dict):
+                continue
+            for st in steps(job):
+                run = str(st.get("run", "") or "")
+                if not _ISSUE_WRITE.search(run):
+                    continue
+                checked += 1
+                token = str((st.get("env") or {}).get("GH_TOKEN", ""))
+                where = f"{f.name}:{job_name}:{st.get('name')}"
+                if "github.token" not in token:
+                    problems.append(f"{where} writes an issue without the default token ({token or 'no GH_TOKEN'})")
+                elif not _job_can_write_issues(wf, job):
+                    problems.append(f"{where} writes an issue but its job does not declare `issues: write`")
+    check("ci: issue-writing steps are discovered (the guard is not vacuous)", checked >= 5, checked)
+    check("ci: every issue write uses the token that can write issues", not problems, problems)
+
+    # …and the measured case, named so the fix cannot be reverted quietly
+    agg = load("refresh-bot.yml")["jobs"]["aggregate"]
+    filer = next((s for s in steps(agg) if "make data-gap-issue" in str(s.get("run", ""))), {})
+    check("refresh-bot: the data-gap filer uses the default token",
+          "github.token" in str((filer.get("env") or {}).get("GH_TOKEN", "")), filer.get("env"))
+    check("refresh-bot: the aggregate job asks for `issues: write`",
+          str((agg.get("permissions") or {}).get("issues", "")).lower() == "write", agg.get("permissions"))
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -1417,6 +1487,7 @@ def main() -> int:
     test_the_queue_rule_has_one_implementation()
     test_issue_review_bot()
     test_the_reviewer_never_edits_an_issue_inside_a_window()
+    test_issue_writes_use_the_default_token()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
