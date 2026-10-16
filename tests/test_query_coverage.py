@@ -193,7 +193,9 @@ def test_the_rule_is_documented():
     skill = (ROOT / "skills" / "gather-data.md").read_text()
 
     # Then  the rule, its guard row and the navigation are all there
-    check("docs: AGENTS.md carries rule 6m", "6m. **The searches must ask for the models we rank" in agents)
+    # Renumbered 6m -> 6o by issue #270: 6m was already the "ONE path through the
+    # Makefile" rule, and this assertion pinned the number as well as the text.
+    check("docs: AGENTS.md carries rule 6o", "6o. **The searches must ask for the models we rank" in agents)
     check("docs: AGENTS.md names the make target the rule is driven by",
           "make query-coverage" in agents)
     check("docs: the section-8 row names this test",
