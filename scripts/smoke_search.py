@@ -79,7 +79,14 @@ def _arm_budget(seconds: float) -> None:
 
 def scrape(keyword: str, api_key: str, budget: float):
     """One Firecrawl scrape of the Makefile-exact lightbrd URL, bounded by budget.
-    Returns (http_status, firecrawl_success, elapsed)."""
+
+    Returns a dict: `status` (Firecrawl's own HTTP status), `ok` (its `success`
+    flag), `upstream` (the status the TARGET answered with — Firecrawl answers
+    200 of its own and reports the page's real status in
+    `data.metadata.statusCode`) and `elapsed`. The upstream status is what makes
+    a DOWN MIRROR visible: without it a 502 lightbrd looks exactly like a
+    healthy 200, which is how this check stayed green for hours while every PR's
+    `live-smoke` was red (issue #291)."""
     body = json.dumps({
         "url": lightbrd_url(keyword),
         "formats": ["markdown"],
@@ -96,18 +103,30 @@ def scrape(keyword: str, api_key: str, budget: float):
     try:
         with urllib.request.urlopen(req, timeout=max(budget, 120)) as resp:
             raw = resp.read().decode("utf-8", "replace")
-            ok = None
+            ok: object = None
+            upstream: object = None
             try:
-                ok = json.loads(raw).get("success")
+                payload: object = json.loads(raw)
             except json.JSONDecodeError:
-                pass
-            return resp.status, ok, time.time() - t0
+                payload = None
+            if isinstance(payload, dict):
+                ok = payload.get("success")
+                raw_data = payload.get("data")
+                data: dict = raw_data if isinstance(raw_data, dict) else {}
+                raw_meta = data.get("metadata")
+                meta: dict = raw_meta if isinstance(raw_meta, dict) else {}
+                for value in (meta.get("statusCode"), data.get("statusCode")):
+                    if isinstance(value, (int, str)) and str(value).strip().isdigit():
+                        upstream = int(value)
+                        break
+            return {"status": resp.status, "ok": ok, "upstream": upstream,
+                    "elapsed": time.time() - t0}
     except _Budget:
-        return 0, None, time.time() - t0  # signal = timed out, no HTTP status
+        return {"status": 0, "ok": None, "upstream": None, "elapsed": time.time() - t0}
     except urllib.error.HTTPError as e:
-        return e.code, False, time.time() - t0
+        return {"status": e.code, "ok": False, "upstream": None, "elapsed": time.time() - t0}
     except Exception as e:  # noqa: BLE001 -- network/transport errors
-        return 0, False, time.time() - t0
+        return {"status": 0, "ok": False, "upstream": None, "elapsed": time.time() - t0}
     finally:
         signal.alarm(0)
 
@@ -122,17 +141,34 @@ RETRYABLE = {0, 408, 429, 500, 502, 503, 504}
 def probe(keyword: str, api_key: str, budget: float, retries: int = 1,
           retry_wait: float = 2.0, scrape_fn=None, sleep_fn=time.sleep):
     """Scrape one query, retrying a transient failure up to `retries` times.
-    EVERY attempt is still capped at `budget` seconds. Returns
-    (label, status, success, elapsed_of_last_attempt, attempts)."""
+    EVERY attempt is still capped at `budget` seconds.
+
+    Returns a dict: `label` (`OK` / `OUTAGE` / `FAIL` / `TIMEOUT`), `status`,
+    `ok`, `upstream`, `elapsed` (of the last attempt) and `attempts`. `OUTAGE`
+    is its own label because it is the one outcome that belongs to the TARGET:
+    Firecrawl answered 200 + `success: true` for a page the MIRROR served as an
+    error, so it is not retried (retrying a down mirror is noise) and it is not a
+    smoke failure (issue #291)."""
     scrape_fn = scrape_fn or scrape
     attempts = 0
     while True:
         attempts += 1
-        status, ok, elapsed = scrape_fn(keyword, api_key, budget)
+        res = dict(scrape_fn(keyword, api_key, budget))
+        status, ok = res["status"], res["ok"]
+        upstream = res.get("upstream")
+        res["attempts"] = attempts
         if status == 200 and ok:
-            return "OK", status, ok, elapsed, attempts
+            if isinstance(upstream, int) and upstream >= 500:
+                res["label"] = "OUTAGE"
+                return res
+            if isinstance(upstream, int) and upstream >= 400:
+                res["label"] = "FAIL"
+                return res
+            res["label"] = "OK"
+            return res
         if attempts > retries or status not in RETRYABLE:
-            return ("TIMEOUT" if status == 0 else "FAIL"), status, ok, elapsed, attempts
+            res["label"] = "TIMEOUT" if status == 0 else "FAIL"
+            return res
         sleep_fn(retry_wait)
 
 
@@ -167,18 +203,31 @@ def main() -> int:
 
     backends = [args.backend] if args.backend else list(BACKEND_KEYWORDS)
     fails = 0
+    outages = 0
     for b in backends:
         for k in BACKEND_KEYWORDS[b]:
-            label, status, ok, elapsed, attempts = probe(
-                k, args.key, args.budget, args.retries, args.retry_wait)
-            tries = f" (attempt {attempts})" if attempts > 1 else ""
-            print(f"[{b}] {label} http={status} success={ok} {elapsed:.1f}s{tries}  {lightbrd_url(k)}")
-            if label != "OK":
+            res = probe(k, args.key, args.budget, args.retries, args.retry_wait)
+            tries = f" (attempt {res['attempts']})" if res["attempts"] > 1 else ""
+            print(f"[{b}] {res['label']} http={res['status']} success={res['ok']} "
+                  f"upstream={res['upstream']} {res['elapsed']:.1f}s{tries}  {lightbrd_url(k)}")
+            if res["label"] == "OUTAGE":
+                outages += 1
+            elif res["label"] != "OK":
                 fails += 1
     if fails:
         print(f"\n[smoke] {fails} request(s) did NOT return HTTP 200 within {args.budget}s "
               f"after {args.retries + 1} attempt(s).")
         return 2
+    if outages:
+        # The mirror is down and Firecrawl is faithfully reporting it. That is
+        # the TARGET's outage, not our smoke result, and it must be LOUD without
+        # blocking every open PR (issue #291) — the old check called this state
+        # "all backends returned HTTP 200", which is how a 502 mirror looked
+        # green here while every PR's live-smoke was red.
+        print(f"\n[smoke] OUTAGE: {outages} querie(s) came back as the TARGET's own error page "
+              f"(upstream >= 500). The lightbrd mirror is DOWN — not a smoke failure, not a "
+              f"blocked PR (issue #291). Re-run when it recovers.")
+        return 0
     print(f"\n[smoke] all backends returned HTTP 200 within {args.budget}s")
     return 0
 

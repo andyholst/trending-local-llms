@@ -175,9 +175,80 @@ def fetch_lightbrd(query: str) -> str:
         return resp.read().decode("utf-8", "replace")
 
 
+#: Firecrawl's scrape endpoint. Overridable so a test can point the REAL client
+#: at a REAL local server (`ENGINE_REGISTRY_META_FILE` is the same seam), never a
+#: stub of this function — the request we build is what the test asserts on.
+DEFAULT_FIRECRAWL_SCRAPE_URL = "https://api.firecrawl.dev/v1/scrape"
+
+
+def firecrawl_scrape_url() -> str:
+    return (os.environ.get("FIRECRAWL_SCRAPE_URL", "").strip()
+            or DEFAULT_FIRECRAWL_SCRAPE_URL)
+
+
+class FirecrawlError(RuntimeError):
+    """The fetch did not come back with a usable page. Base class, so `gather_x`
+    can tell a fetch failure apart from an unrelated bug."""
+
+
+class FirecrawlRefusal(FirecrawlError):
+    """Firecrawl ANSWERED and refused: no credits, a bad key, a banned target, a
+    `success: false` payload, a body that is not a scrape result, or a bot wall.
+    The mirror was never reached — OUR configuration/quota, so the live check
+    must keep failing until it is fixed."""
+
+
+class UpstreamOutage(FirecrawlError):
+    """Firecrawl scraped fine and the page IS an error page FROM THE TARGET
+    (`metadata.statusCode >= 500`, Cloudflare's "Error code 502"). The MIRROR is
+    down: nothing about our key, our queries or our code is wrong, and the live
+    check must say so instead of blocking every open PR (issue #291)."""
+
+
+#: Cloudflare's own error-page wording and its 5xx landing link, in the markdown
+#: Firecrawl hands back. Measured on 2026-10-16, when lightbrd.com was 502:
+#: `# Bad gatewayError code 502 … Visit [cloudflare.com](…/5xx-error-landing…)`.
+_UPSTREAM_ERROR_PAGE = re.compile(r"Error code 5\d\d|/5xx-error-landing", re.I)
+
+
+def _upstream_status(data: dict, body: dict) -> int | None:
+    """The HTTP status the TARGET answered with, as Firecrawl reports it.
+
+    Firecrawl answers HTTP 200 ITSELF and wraps the fetched page's real status in
+    `data.metadata.statusCode` — which is exactly how a 502 mirror looks like a
+    successful scrape.
+    """
+    raw_meta = data.get("metadata")
+    meta: dict = raw_meta if isinstance(raw_meta, dict) else {}
+    for value in (meta.get("statusCode"), data.get("statusCode"), body.get("statusCode")):
+        if isinstance(value, (int, str)) and str(value).strip().isdigit():
+            return int(value)
+    return None
+
+
 def fetch_via_firecrawl(url: str, api_key: str) -> str:
     """Fetch a page through Firecrawl's scrape API (renders JS, passes
-    Cloudflare, which raw urllib cannot)."""
+    Cloudflare, which raw urllib cannot). Raises when the scrape did not
+    actually return a page — the caller's `gather_x` turns that into a
+    `[warn]` per query.
+
+    Three outcomes, deliberately distinct (they demand OPPOSITE responses):
+
+    * a REFUSAL — HTTP 200 with `{"success": false, "error": …}` (no credits, a
+      banned target, an invalid key), no page at all, or a non-JSON body. The
+      mirror was never reached: fix the credential/quota (`FirecrawlRefusal`);
+    * an UPSTREAM OUTAGE — the scrape succeeded and the page is the TARGET's own
+      error page (Cloudflare 502 `Error code 502` / `metadata.statusCode >= 500`).
+      The mirror is down; nothing of ours is wrong (`UpstreamOutage`);
+    * the page.
+
+    Returning a refusal *as if it were a page* made every query "succeed" with
+    zero known models, printed no warning at all, and reported `0 model hits` — a
+    quiet-search diagnosis for a refused fetch. Collapsing the outage into the
+    same silence did the same on every PR for hours (measured 2026-10-16: the
+    whole live check finished in 6 s, no `[warn]`, because Firecrawl answered
+    `success: true` with the mirror's 502 error page).
+    """
     import urllib.request as _ur
 
     payload = json.dumps({
@@ -186,15 +257,43 @@ def fetch_via_firecrawl(url: str, api_key: str) -> str:
         "onlyMainContent": False,
     }).encode("utf-8")
     req = _ur.Request(
-        "https://api.firecrawl.dev/v1/scrape",
+        firecrawl_scrape_url(),
         data=payload,
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
         method="POST",
     )
     with _ur.urlopen(req, timeout=60) as resp:
-        body = json.loads(resp.read().decode("utf-8", "replace"))
-    # Firecrawl returns {success, data:{markdown}} — fall back to raw html if present
-    return body.get("data", {}).get("markdown") or json.dumps(body)
+        raw = resp.read().decode("utf-8", "replace")
+    try:
+        body = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise FirecrawlRefusal(f"Firecrawl returned non-JSON ({raw[:200]!r})") from e
+    if not isinstance(body, dict):
+        raise FirecrawlRefusal(f"Firecrawl returned {raw[:200]!r}, not a scrape result")
+    data = body.get("data")
+    if not isinstance(data, dict):
+        data = {}
+    page = data.get("markdown") or data.get("html")
+    if body.get("success") is False or not page:
+        raise FirecrawlRefusal(
+            "Firecrawl refused the scrape: "
+            f"{body.get('error') or body.get('details') or raw[:200]!r}")
+    # A page that came back is not automatically a page we can read: the target
+    # itself may have answered with an error. Firecrawl reports that in
+    # metadata.statusCode while answering 200 of its own.
+    status = _upstream_status(data, body)
+    if status is not None and status >= 500:
+        raw_meta = data.get("metadata")
+        title = raw_meta.get("title") if isinstance(raw_meta, dict) else ""
+        raise UpstreamOutage(
+            f"the target answered HTTP {status} ({title or 'error page'})")
+    if _UPSTREAM_ERROR_PAGE.search(page):
+        raise UpstreamOutage(
+            f"the target answered a Cloudflare error page (HTTP {status or '5xx'})")
+    if status is not None and status >= 400:
+        raise FirecrawlRefusal(
+            f"the target answered HTTP {status} — a bot wall Firecrawl's scrape did not pass")
+    return page
 
 
 def extract_models_seen(html: str) -> list[str]:
@@ -206,24 +305,101 @@ def extract_models_seen(html: str) -> list[str]:
     return [m for m in known if m.strip()]
 
 
-def gather_x(store: dict) -> dict:
+def gather_x(store: dict, stats: dict | None = None) -> dict:
     """Collect engagement signals per backend group from the lightbrd mirror.
     Returns {backend: [model_tokens_seen]}. Fetches are best-effort; a failed
-    query is skipped with a warning and never wipes data."""
+    query is skipped with a warning and never wipes data.
+
+    `stats`, when passed, is filled with this run's fetch OUTCOMES — how many
+    queries there were, how many found a model, and how many failed and WHY
+    (`outage` = the target answered an error page, `refused` = Firecrawl did not
+    return a page, `failed` = anything else). The caller needs the split: with
+    only the hit count, an upstream outage, a broken key and a quiet search are
+    the same three words, `0 model hits` (issue #293)."""
+    counts = {"queries": 0, "with_hits": 0, "outage": 0, "refused": 0, "failed": 0,
+              "outage_status": [], "reasons": []}
     known_names = [m["name"].lower() for m in store["models"]]
     per_backend: dict[str, list[str]] = {}
     for backend, queries in SEARCH_GROUPS.items():
         seen: list[str] = []
         for q in queries:
+            counts["queries"] += 1
             try:
                 html = fetch_lightbrd(q)
                 tokens = extract_models_seen(html)
                 # keep only tokens that match a known model (signal, not noise)
-                seen += [t for t in tokens if t.lower() in known_names or any(n in t.lower() for n in known_names)]
-            except Exception as e:  # noqa: BLE001
+                hits = [t for t in tokens if t.lower() in known_names or any(n in t.lower() for n in known_names)]
+            except UpstreamOutage as e:
+                counts["outage"] += 1
+                counts["outage_status"].append(str(e))
                 print(f"[warn] {backend} fetch failed for '{q}': {e}")
+            except FirecrawlRefusal as e:
+                counts["refused"] += 1
+                counts["reasons"].append(str(e))
+                print(f"[warn] {backend} fetch failed for '{q}': {e}")
+            except Exception as e:  # noqa: BLE001
+                counts["failed"] += 1
+                counts["reasons"].append(str(e))
+                print(f"[warn] {backend} fetch failed for '{q}': {e}")
+            else:
+                if hits:
+                    counts["with_hits"] += 1
+                seen += hits
         per_backend[backend] = seen
+    if stats is not None:
+        stats.update(counts)
     return per_backend
+
+
+def zero_hit_verdict(stats: dict) -> tuple[str, int, list[str]]:
+    """Classify a live search that found NO model hits.
+
+    Returns `(kind, exit_code, lines)` where kind is `outage`, `refused` or
+    `quiet` — three failures that look identical in a hit count and demand
+    OPPOSITE responses:
+
+    * `outage` — EVERY query came back as the target's own error page. The mirror
+      is down; nothing of ours is wrong. Loud, and NOT a blocked PR (issue #291:
+      `live-smoke` gates `auto-merge`, so an upstream outage used to stop every
+      open PR at once).
+    * `refused` — Firecrawl did not return a page at all (credits, key, target).
+      OUR configuration: still red.
+    * `quiet` — the mirror answered and there is no upstream error, yet no model
+      was found: the query set (`SEARCH_GROUPS` + the derived model queries) is
+      what to look at. Still red, and it says so rather than blaming the mirror.
+
+    A PARTIAL outage stays `quiet` on purpose: an outage is only excused when
+    every query is one, so a half-answering mirror cannot slip a real regression
+    through as infrastructure noise."""
+    queries = int(stats.get("queries") or 0)
+    outage = int(stats.get("outage") or 0)
+    refused = int(stats.get("refused") or 0)
+    failed = int(stats.get("failed") or 0)
+    answered = queries - outage - refused - failed
+    first_outage = (stats.get("outage_status") or [""])[0]
+    first_reason = (stats.get("reasons") or [""])[0]
+
+    if queries and outage == queries:
+        return "outage", 0, [
+            f"[outage] the lightbrd mirror is DOWN: all {queries} queries came back as the "
+            f"target's own error page ({first_outage})",
+            "[outage] 0 model hits is EXPECTED here — this is NOT a quiet search (the mirror "
+            "answered, with an error) and NOT a broken key (Firecrawl answered success:true)",
+            "[outage] NOT blocking: the live check stays green so an upstream outage cannot stop "
+            "every open PR (issue #291). Re-run when the mirror recovers.",
+        ]
+    if refused:
+        return "refused", 1, [
+            f"[error] Firecrawl REFUSED the scrape for {refused}/{queries} querie(s): {first_reason}",
+            "[error] the mirror was never reached — fix the credential/quota, not the query set",
+        ]
+    return "quiet", 1, [
+        f"[error] the mirror answered {answered}/{queries} queries with NO upstream error and "
+        "0 model hits — a QUIET SEARCH on a reachable mirror: check the query set "
+        "(SEARCH_GROUPS and the derived model queries)",
+        *([f"[error] {outage + failed} querie(s) did not answer normally; an outage is only "
+           "excused when EVERY query is one (issue #291)"] if outage + failed else []),
+    ]
 
 
 # Search window vs trending window. The three Hermes search prompts fetch a
@@ -1346,7 +1522,9 @@ def main() -> int:
                     help="fetch lightbrd.com search results directly (default: re-sort/re-render "
                          "from the store only; the Hermes CLI does the live fetch via web_extract)")
     ap.add_argument("--require-hits", action="store_true",
-                    help="with --fetch, exit non-zero if the search returns 0 model hits")
+                    help="with --fetch, exit non-zero if the search returns 0 model hits — EXCEPT "
+                         "when every query came back as the target's own error page (an upstream "
+                         "mirror outage, reported loudly and not blocking; issue #291)")
     ap.add_argument("--write-raw", metavar="BACKEND",
                     help="write a per-backend raw snapshot to data/raw/<backend>-<UTC>.json "
                          "(payload read from stdin JSON) and exit")
@@ -1366,12 +1544,21 @@ def main() -> int:
     today = now_utc()
 
     if args.fetch:
-        per_backend = gather_x(store)
+        stats: dict = {}
+        per_backend = gather_x(store, stats)
         all_seen = [t for grp in per_backend.values() for t in grp]
         print(f"[info] X model-hits this run: {len(all_seen)} across {list(per_backend.keys())}")
+        # Name the outcome of every query, not just the hits: the same "0 model
+        # hits" is an outage, a bad key or a quiet search (issue #293).
+        print(f"[info] fetch outcomes: queries={stats['queries']} with-hits={stats['with_hits']} "
+              f"outage={stats['outage']} refused={stats['refused']} failed={stats['failed']}")
         if args.require_hits and not all_seen:
-            print("[error] Firecrawl->lightbrd search returned 0 model hits", file=sys.stderr)
-            return 1
+            kind, code, lines = zero_hit_verdict(stats)
+            for line in lines:
+                print(line, file=sys.stdout if kind == "outage" else sys.stderr)
+            # An upstream outage is not ours to fix and must not block every
+            # open PR (its `live-smoke` job gates `auto-merge`, issue #291).
+            return code
         if all_seen:
             matched, unknown = merge_engagements(store, all_seen)
             print(f"[info] matched {matched} known models, {unknown} unknown tokens (ignored unless curated)")
