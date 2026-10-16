@@ -652,6 +652,37 @@ def test_a_guarded_pipeline_gates_the_jobs_that_read_secrets():
                   not (jobs["guard"].get("needs") or []), jobs["guard"].get("needs"))
             needs = {n for n, j in jobs.items() if "guard" in (j.get("needs") or [])}
             check(f"{wf_name}: at least one job needs the guard", needs, list(jobs))
+def test_bot_verification_protocol_is_documented_and_guarded():
+    """The one-bot-at-a-time verification protocol is a RULE, not prose
+    (AGENTS.md is the rulebook, rule 2/§8): the document carries it, and the
+    guard it mandates is exactly the one `BOT_GUARDS` proves for every pipeline.
+    A protocol nothing can check rots the moment someone reorders a job."""
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    # The protocol itself: one bot per cycle, and one bot at a time on the way back
+    check("AGENTS.md: carries the bot verification protocol",
+          "**Bot verification protocol" in agents, "")
+    check("AGENTS.md: ONE bot per cycle, never several at once",
+          "ONE bot per cycle, never several at" in agents, "")
+    check("AGENTS.md: the fix PR carries the regression guard that catches the defect",
+          "the regression guard that would" in agents, "")
+    check("AGENTS.md: no PR is verified before it is MERGED",
+          "until it is MERGED" in agents, "")
+    check("AGENTS.md: a PR lands only through auto-merge, never --admin",
+          "NEVER `--admin`" in agents, "")
+    check("AGENTS.md: verification re-dispatches each bot on its own",
+          "one at a time: re-dispatch each merged bot" in agents, "")
+    # The guard the protocol mandates: FIRST job, actor AND triggering actor
+    check("AGENTS.md: the guard is the FIRST job on BOTH actor and triggering_actor",
+          "FIRST job admits" in agents and "`github.actor` and `github.triggering_actor`" in agents,
+          "")
+    check("AGENTS.md: the guard identity set is owner / write+ / the bot",
+          "`write`/`maintain`/`admin`" in agents and "`github-actions[bot]`" in agents, "")
+    # …and the machinery matches the promise: the guard is the first step of the
+    # job that carries it, in EVERY pipeline the protocol names.
+    for wf_name, job_name in BOT_GUARDS:
+        job_steps = steps(load(wf_name)["jobs"][job_name])
+        at = [i for i, s in enumerate(job_steps) if "guard" in str(s.get("name", "")).lower()]
+        check(f"protocol: {wf_name}'s guard is the FIRST step of `{job_name}`", at == [0], at)
 
 
 def test_nothing_pushes_master():
@@ -1582,6 +1613,7 @@ def main() -> int:
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
     test_a_repo_event_run_is_admitted_by_its_guard()
     test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()
+    test_bot_verification_protocol_is_documented_and_guarded()
     test_nothing_pushes_master()
     test_auto_merge()
     test_images_follow_their_inputs()
