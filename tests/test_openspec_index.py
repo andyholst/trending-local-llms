@@ -158,6 +158,53 @@ def test_real_repo_index_is_current_and_lists_every_change():
           f"on disk={sorted(on_disk)} listed={sorted(listed)}")
 
 
+def test_a_stale_count_line_is_named_and_not_blamed_on_the_rows():
+    """A committed index whose ONLY drift is the count line must say so.
+
+    Measured on `master` 9b3e34c (validate run 38865506979): `OPENSPEC.md` said
+    `Active changes: **30**` while the tree held 31 — every row present and
+    identical — and the message read `rows exist but their data changed
+    (issue/PR/specs/tasks)`, pointing a reader at the rows and at three fields
+    that had not moved. A red check must name the cause it actually found.
+    """
+
+    # Given a committed index whose ONLY drift is the count line
+    with tempfile.TemporaryDirectory() as td:
+        mod, _ = _fixture(Path(td), "agent-thing", "# Tasks\n\n- [x] 1. done\n")
+        _run(mod, ["--write"])
+        good = mod.INDEX.read_text(encoding="utf-8")
+        mod.INDEX.write_text(
+            re.sub(r"^Active changes: \*\*(\d+)\*\*",
+                   lambda m: f"Active changes: **{int(m.group(1)) + 1}**", good, flags=re.MULTILINE),
+            encoding="utf-8")
+
+        # When  the check runs
+        rc, out = _run(mod, ["--check"])
+
+    # Then  it fails, names the COUNT LINE, and does not blame the rows
+    check("count: the check fails", rc != 0, out)
+    check("count: the message names the count line", "count line says" in out, out)
+    check("count: it does NOT claim the rows changed", "rows whose data changed" not in out, out)
+
+
+def test_a_row_whose_data_moved_is_named():
+    """The other direction: when a row's data really moved, name that row."""
+
+    # Given a change whose tasks.md moved after the index was written
+    with tempfile.TemporaryDirectory() as td:
+        mod, where = _fixture(Path(td), "agent-thing", "# Tasks\n\n- [x] 1. done\n")
+        _run(mod, ["--write"])
+        (where / "tasks.md").write_text("# Tasks\n\n- [x] 1. done\n- [ ] 2. new\n", encoding="utf-8")
+
+        # When  the check runs
+        rc, out = _run(mod, ["--check"])
+
+    # Then  it fails and names the change whose row moved
+    check("row: the check fails", rc != 0, out)
+    check("row: the message names the change whose row moved",
+          "rows whose data changed" in out and "agent-thing" in out, out)
+
+
 def test_wired_into_make_test():
     """The generator is reachable from make targets CI runs (rule 6d)."""
 
@@ -187,6 +234,8 @@ def main() -> int:
     test_archived_change_row_is_marked_archived()
     test_write_then_check_is_green()
     test_real_repo_index_is_current_and_lists_every_change()
+    test_a_stale_count_line_is_named_and_not_blamed_on_the_rows()
+    test_a_row_whose_data_moved_is_named()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
