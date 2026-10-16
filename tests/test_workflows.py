@@ -1460,6 +1460,61 @@ def test_issue_writes_use_the_default_token():
           str((agg.get("permissions") or {}).get("issues", "")).lower() == "write", agg.get("permissions"))
 
 
+#: Any step that calls a repo target. `make <target>` only exists where the
+#: Makefile is, and the Makefile only exists where the job checked the repo out.
+_MAKE_CALL = re.compile(r"(?m)(?:^|\s)make\s+[a-z][a-z0-9-]*")
+
+
+def test_a_step_that_calls_make_runs_after_the_checkout():
+    """Issue #281: issue-bot's `implement` job ran `make issue-thread` in step 2,
+    before `actions/checkout` in step 3 — so the sweep died with
+
+        make: *** No rule to make target 'issue-thread'.  Stop.
+
+    and steps 3-18 (checkout, base-check, images, smoke, announce, implement, push,
+    PR, fix loop) were ALL skipped: the implementer could not implement anything
+    while every other bot kept running. A bare runner has no Makefile, so this is
+    the invariant: a `make` call needs the checkout to have happened first.
+    """
+    problems: list[str] = []
+    checked = 0
+    for f in sorted(WF.glob("*.yml")):
+        wf = load(f.name)
+        for job_name, job in (wf.get("jobs") or {}).items():
+            if not isinstance(job, dict):
+                continue
+            job_steps = steps(job)
+            checkout_at = next((i for i, s in enumerate(job_steps)
+                                if str(s.get("uses", "")).startswith("actions/checkout")), None)
+            for i, s in enumerate(job_steps):
+                if not _MAKE_CALL.search(str(s.get("run", "") or "")):
+                    continue
+                checked += 1
+                where = f"{f.name}:{job_name}:{s.get('name')}"
+                if checkout_at is None:
+                    problems.append(f"{where} calls make in a job that never checks the repo out")
+                elif i < checkout_at:
+                    problems.append(f"{where} calls make at step {i + 1}, BEFORE the checkout at {checkout_at + 1}")
+    check("ci: make-calling steps are discovered (the guard is not vacuous)", checked >= 10, checked)
+    check("ci: every `make` call happens after its job's checkout", not problems, problems)
+
+    # …and the measured case, named: the implementer's resolver must need NO repo,
+    # while the thread it reads is rendered after the checkout.
+    impl = load("issue-bot.yml")["jobs"]["implement"]
+    names = [str(s.get("name", "")) for s in steps(impl)]
+    resolver = next((s for s in steps(impl) if str(s.get("name", "")).startswith("Resolve the issue")), {})
+    check("issue-bot: the resolver calls no repo target", not _MAKE_CALL.search(str(resolver.get("run", ""))),
+          str(resolver.get("run", ""))[:200])
+    thread = next((s for s in steps(impl) if "issue-thread" in str(s.get("run", ""))), None)
+    check("issue-bot: the thread is rendered by a step of the implement job", thread is not None, names)
+    check("issue-bot: …after the checkout",
+          thread is not None
+          and names.index(str(thread.get("name")))
+          > names.index("Checkout master (PAT, so its push re-triggers CI)"), names)
+    check("issue-bot: an empty thread is a loud failure",
+          thread is not None and "test -s issue.md" in str(thread.get("run", "")), "")
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -1488,6 +1543,7 @@ def main() -> int:
     test_issue_review_bot()
     test_the_reviewer_never_edits_an_issue_inside_a_window()
     test_issue_writes_use_the_default_token()
+    test_a_step_that_calls_make_runs_after_the_checkout()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

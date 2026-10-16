@@ -184,6 +184,12 @@ jobs:
       # run that skips it never reaches "green/pushed".
       REQUIRE_FINDINGS: "1"
     steps:
+      # The DECISION only — no repository needed, on purpose (issue #281): this
+      # step runs on a bare runner, so anything that calls `make` here dies with
+      # `No rule to make target` before the checkout below has ever run. Measured
+      # (run 38835373137): the sweep failed at step 2/19 and steps 3-18 — checkout,
+      # base-check, images, smoke, announce, implement, push, PR, fix loop — were
+      # ALL skipped, so the implementer could not implement anything.
       - name: Resolve the issue (open, labelled, one branch per issue)
         id: iss
         env:
@@ -201,11 +207,6 @@ jobs:
             echo "Issue #$ISSUE is '$STATE' - nothing to implement."
             echo "implement=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          # The WHOLE thread, not just the body (issue #210): the comments carry
-          # part of the specification (a scope narrowing, a superseding PR), and
-          # the renderer appends the decision instruction the implementer answers
-          # with in triage.md. One implementation, tested.
-          make issue-thread REPO="$REPO" ISSUE="$ISSUE" > issue.md
           SLUG=$(gh api "repos/$REPO/issues/$ISSUE" --jq .title \
             | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40)
           BRANCH="ci/data-gap-${ISSUE}-${SLUG}"
@@ -240,6 +241,25 @@ jobs:
       - name: Hermes routing smoke
         if: steps.iss.outputs.implement == 'true'
         run: make hermes-smoke
+
+      # The WHOLE thread, not just the body (issue #210): the comments carry part
+      # of the specification (a scope narrowing, a superseding PR), and the
+      # renderer appends the decision instruction the implementer answers with in
+      # triage.md. One implementation, tested. It runs HERE, after the checkout,
+      # because `make issue-thread` is a repo target and the resolver above runs on
+      # a bare runner (issue #281).
+      - name: Read the whole thread (make issue-thread)
+        if: steps.iss.outputs.implement == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+        run: |
+          # A run with no thread would implement a specification it never read, so
+          # an empty file is a loud failure, not an empty prompt.
+          make issue-thread REPO="$REPO" ISSUE="$ISSUE" > issue.md
+          test -s issue.md || { echo "::error::issue.md is empty — the issue thread did not render"; exit 1; }
+          echo "issue.md: $(wc -l < issue.md) line(s)"
 
       # The WINDOW the issue reviewer defers to (issue #179): posted BEFORE the
       # body is read by the implementation, so the reviewer sees it while this run
