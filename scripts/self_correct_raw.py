@@ -145,7 +145,8 @@ def derive_backends(engines, store_engines) -> list:
 
 def correct_snapshot(path: Path, store: dict) -> list[str]:
     """Returns list of (field) notes for what was corrected/flagged."""
-    data = json.loads(path.read_text())
+    original = path.read_text()
+    data = json.loads(original)
     notes = []
     ts_date = data.get("generated_utc", "")[:10]
     model_str_keys, engine_str_keys = _contract_string_keys()
@@ -250,7 +251,17 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
                 cannot.append(f"{m.get('id')}/{e.get('engine')}: source_post missing (cannot derive)")
     if cannot:
         notes.append("CANNOT_DERIVE: " + "; ".join(cannot))
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    # Write the file back ONLY when the snapshot actually changed, as this
+    # module has always claimed. When it did change, refresh generated_utc:
+    # `ingest_raw_snapshots` merges only the snapshots NEWER than the store's own
+    # stamp, so a corrected snapshot must be re-merged rather than skipped as
+    # "old" (issue #175). An untouched snapshot is left byte-identical, so the
+    # next merge does not re-read it at all.
+    out = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    if out != original:
+        data["generated_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        notes.append(f"{path.name}: corrected -> generated_utc {data['generated_utc']} (re-merged next run)")
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     return notes
 
 

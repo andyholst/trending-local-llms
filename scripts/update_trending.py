@@ -1173,10 +1173,52 @@ def _collect_seen_posts(m: dict) -> list[dict]:
         out.append(p)
     return dedupe_posts(out)
 
-def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
-    """Merge all data/raw/*.json into the store. Each raw file holds one
-    backend's captured findings (models). New models are added, existing ones
-    updated, NONE removed. Returns (added, updated)."""
+_RAW_FILENAME_STAMP = re.compile(r"-(\d{8})-(\d{6})(?:-\d+)?\.json$")
+
+def parse_utc_stamp(value) -> datetime | None:
+    """Parse a `generated_utc` stamp (`YYYY-MM-DDTHH:MM:SSZ`) into a tz-aware
+    datetime. None when it is missing or unparseable, so a caller can treat
+    "no usable stamp" as fail-open rather than guess a time."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+def raw_snapshot_stamp(path: Path, data: dict | None = None) -> datetime | None:
+    """The instant a raw snapshot was captured: its own `generated_utc` when
+    that parses, else the `<YYYYMMDD>-<HHMMSS>` stamp its writer put in the
+    filename (`write_raw_snapshot`). None when neither parses — the caller
+    then reads the file, so a snapshot this code cannot date is never silently
+    dropped. The field is preferred over the name because `self_correct_raw`
+    refreshes it when it corrects a snapshot, and a corrected snapshot must be
+    re-merged rather than skipped as "old"."""
+    if isinstance(data, dict):
+        stamp = parse_utc_stamp(data.get("generated_utc"))
+        if stamp is not None:
+            return stamp
+    m = _RAW_FILENAME_STAMP.search(path.name)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+def ingest_raw_snapshots(store: dict, since: datetime | None = None) -> tuple[int, int]:
+    """Merge the data/raw/*.json snapshots NEWER than `since` into the store.
+    Each raw file holds one backend's captured findings (models). New models are
+    added, existing ones updated, NONE removed. Returns (added, updated).
+
+    `since` is the store's own `generated_utc` — the instant of the last merge —
+    which `main()` derives for every run. Only a snapshot STRICTLY NEWER than it
+    is merged: one captured at or before that instant was already folded in, so
+    re-merging it adds nothing — and doing so anyway made the cost of a refresh
+    grow with the whole raw history ("5 added, 210 updated" on a store that
+    contained all but 5 of the models, issue #175) while hiding which file
+    actually introduced a change. A snapshot this code cannot date is always
+    merged (fail-open), never silently dropped."""
     added = updated = 0
     if not RAW_DIR.exists():
         return 0, 0
@@ -1187,6 +1229,10 @@ def ingest_raw_snapshots(store: dict) -> tuple[int, int]:
         except Exception as e:  # noqa: BLE001
             print(f"[warn] skipping raw {path.name}: {e}")
             continue
+        if since is not None:
+            stamp = raw_snapshot_stamp(path, data)
+            if stamp is not None and stamp <= since:
+                continue
         # New engines: auto-register a real inference engine from the
         # measurement's engine_repo (GitHub, classified), never a harness/app;
         # strips engine_repo so the store contract never sees it.
@@ -1543,6 +1589,9 @@ def main() -> int:
     ap.add_argument("--write-raw", metavar="BACKEND",
                     help="write a per-backend raw snapshot to data/raw/<backend>-<UTC>.json "
                          "(payload read from stdin JSON) and exit")
+    ap.add_argument("--since", metavar="UTC",
+                    help="merge raw snapshots newer than this YYYY-MM-DDTHH:MM:SSZ stamp "
+                         "instead of the store's own generated_utc (issue #175)")
     args = ap.parse_args()
 
     if args.write_raw:
@@ -1580,8 +1629,17 @@ def main() -> int:
         if args.dry_run:
             return 0
 
-    # Merge any per-backend raw snapshots left by the Hermes search prompts.
-    added, updated = ingest_raw_snapshots(store)
+    # Merge any per-backend raw snapshots left by the Hermes search prompts —
+    # only the ones NEWER than the store we just loaded, i.e. the snapshots no
+    # earlier merge has already folded in (issue #175). `--since` overrides the
+    # derived boundary; a store with no usable `generated_utc` reads everything.
+    since = parse_utc_stamp(store.get("generated_utc"))
+    if args.since is not None:
+        since = parse_utc_stamp(args.since)
+        if since is None:
+            print(f"[error] --since {args.since!r} is not a YYYY-MM-DDTHH:MM:SSZ stamp", file=sys.stderr)
+            return 1
+    added, updated = ingest_raw_snapshots(store, since=since)
     if added or updated:
         print(f"[info] ingested raw snapshots: {added} added, {updated} updated")
 
