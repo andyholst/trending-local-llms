@@ -1,0 +1,332 @@
+#!/usr/bin/env python3
+"""Does a commit's identity and its message get checked? Yes — and the message alone is not enough.
+
+`scripts/check_commit_authorship.py` is the guard; this file is its proof. Every
+rule is broken on a real throwaway repository (one violation, the right identity),
+and the guard is then run over THIS repository, because a rule the repo itself
+violates is not a rule.
+
+The point of the guard is measured, not asserted: the one
+`Co-authored-by: Hermes Agent <hermes@nousresearch.com>` trailer on master sits on
+a SQUASH commit whose *message carries no trailer of its own* — GitHub synthesized
+it from the AUTHOR identity of a commit inside the PR
+(`054b0c84847febbe4500837047c8b1dfb5721d07`). A guard that scanned messages only
+would have passed that commit. So the tests below prove BOTH halves:
+`test_a_wrong_author_identity_with_a_clean_message_is_a_violation` is the exact
+shape, and it fails on a message-only guard.
+
+NO-SKIP POLICY: a missing prerequisite is a LOUD FAILURE, never a skip.
+
+Wired into `make test` (rule 6d). Runs as a plain script and under pytest.
+"""
+from __future__ import annotations
+
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+import check_commit_authorship as cca  # noqa: E402
+
+_PASS = 0
+_FAIL = 0
+
+ALLOWED = "Andy Holst <andy.holst@protonmail.com>"
+BOT = "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+GITHUB = "GitHub <noreply@github.com>"
+HERMES = "Hermes Agent <hermes@nousresearch.com>"
+HERMES_LOCAL = "Hermes Agent <agent@hermes.local>"
+
+
+def check(name, cond, detail=""):
+    global _PASS, _FAIL
+    if cond:
+        _PASS += 1
+        print(f"  ok  {name}")
+    else:
+        _FAIL += 1
+        print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
+
+
+def _git(repo: Path, *args: str, env: dict | None = None) -> str:
+    import os
+
+    e = dict(os.environ)
+    e.update(
+        {
+            "GIT_AUTHOR_NAME": "Andy Holst",
+            "GIT_AUTHOR_EMAIL": "andy.holst@protonmail.com",
+            "GIT_COMMITTER_NAME": "Andy Holst",
+            "GIT_COMMITTER_EMAIL": "andy.holst@protonmail.com",
+        }
+    )
+    if env:
+        e.update(env)
+    out = subprocess.run(
+        ["git", *args], cwd=str(repo), capture_output=True, text=True, check=False, env=e
+    )
+    if out.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} failed: {out.stderr}")
+    return out.stdout
+
+
+def _repo(td: Path) -> Path:
+    """A throwaway repo with a `master` branch and one commit, so a range resolves."""
+    repo = td / "repo"
+    repo.mkdir(parents=True, exist_ok=True)
+    _git(repo, "init", "-q", "-b", "master")
+    _git(repo, "config", "user.name", "Andy Holst")
+    _git(repo, "config", "user.email", "andy.holst@protonmail.com")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "chore: base")
+    _git(repo, "branch", "origin/master")
+    return repo
+
+
+def _commit(repo: Path, subject: str, body: str = "", author: str | None = None, committer: str | None = None):
+    env = {}
+    if author:
+        import re as _re
+
+        m = _re.match(r"(.*?)\s*<([^>]*)>", author)
+        assert m is not None
+        env["GIT_AUTHOR_NAME"], env["GIT_AUTHOR_EMAIL"] = m.group(1), m.group(2)
+    if committer:
+        import re as _re
+
+        m = _re.match(r"(.*?)\s*<([^>]*)>", committer)
+        assert m is not None
+        env["GIT_COMMITTER_NAME"], env["GIT_COMMITTER_EMAIL"] = m.group(1), m.group(2)
+    msg = subject if not body else f"{subject}\n\n{body}"
+    _git(repo, "commit", "-q", "--allow-empty", "-m", msg, env=env)
+
+
+# ---------------------------------------------------------------------------
+# identity rules
+# ---------------------------------------------------------------------------
+def test_an_allowed_identity_is_not_a_violation():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a normal commit")
+        commits = cca.collect(repo, "origin/master..HEAD")
+        bad = cca.scan(commits)
+    check("identity: an allowed author+committer is not a violation", bad == [], str(bad))
+
+
+def test_the_repos_own_bot_identity_is_not_a_violation():
+    """Refusing `github-actions[bot]` would redden every refresh/fix/issue-bot PR."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "chore: Hermes refresh of trending LLM data", author=BOT, committer=GITHUB)
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("identity: `github-actions[bot]` authored, GitHub squashed, is not a violation",
+          bad == [], str(bad))
+
+
+def test_a_wrong_author_identity_with_a_clean_message_is_a_violation():
+    """THE point of the issue: the message carries no trailer — only the author is wrong.
+
+    This is commit `054b0c8` on master's ancestry: author `Hermes Agent
+    <hermes@nousresearch.com>`, committer `Andy Holst`, message with NO trailer. A
+    message-only guard passes it; this guard must not.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "fix(ci): a merged PR must close the issue it implements (#284)", author=HERMES)
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("identity: a disallowed AUTHOR with a trailer-less message is a violation",
+          len(bad) == 1 and "author" in bad[0] and "hermes" in bad[0].lower(), str(bad))
+
+
+def test_a_wrong_committer_identity_is_a_violation():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "fix(x): a normal message", committer=HERMES)
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("identity: a disallowed COMMITTER is a violation",
+          len(bad) == 1 and "committer" in bad[0], str(bad))
+
+
+def test_both_wrong_identities_are_reported_separately():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "fix(x): a normal message", author=HERMES, committer=HERMES_LOCAL)
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("identity: a wrong author AND a wrong committer are two violations",
+          len(bad) == 2 and any("author" in b for b in bad) and any("committer" in b for b in bad),
+          str(bad))
+
+
+# ---------------------------------------------------------------------------
+# trailer rules
+# ---------------------------------------------------------------------------
+def test_the_hermes_co_author_trailer_is_a_violation():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "fix(ci): a merged PR must close the issue it implements (#284)",
+                body="Co-authored-by: Hermes Agent <hermes@nousresearch.com>")
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("trailer: `Co-authored-by: Hermes Agent <hermes@nousresearch.com>` is a violation",
+          len(bad) == 1 and "hermes@nousresearch.com" in bad[0], str(bad))
+
+
+def test_an_allowed_co_author_trailer_is_not_a_violation():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change",
+                body="Co-authored-by: andyholst <andyholst@users.noreply.github.com>")
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("trailer: an allowed co-author trailer is not a violation", bad == [], str(bad))
+
+
+def test_every_trailer_keyword_is_checked_not_only_co_authored_by():
+    for key in ("Signed-off-by", "Reviewed-by", "Tested-by", "Acked-by", "Helped-by"):
+        with tempfile.TemporaryDirectory() as td:
+            repo = _repo(Path(td))
+            _commit(repo, "feat(x): a change", body=f"{key}: Hermes Agent <agent@hermes.local>")
+            bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+        check(f"trailer: `{key}: Hermes Agent` is a violation", len(bad) == 1, str(bad))
+
+
+def test_a_trailer_naming_a_stranger_is_a_violation():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change", body="Co-authored-by: Some Stranger <stranger@example.com>")
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("trailer: a co-author nobody allowed is a violation", len(bad) == 1, str(bad))
+
+
+# ---------------------------------------------------------------------------
+# fail-loud on an unreadable range
+# ---------------------------------------------------------------------------
+def test_an_unreadable_range_fails_loudly_not_silently():
+    """A range git cannot resolve must NOT read as "no commits, pass"."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        rc = cca.main(["check", "--root", str(repo), "--range", "no-such-base..HEAD"])
+    check("fail-loud: a range git cannot resolve exits 2", rc == 2, str(rc))
+
+
+def test_an_empty_range_is_not_a_violation():
+    """The default range on a branch tip equal to base is 0 commits — nothing new to gate.
+
+    This is the correct semantic: the guard gates the commits a PR ADDS and must not
+    re-litigate history (`origin/master..HEAD` on master itself is empty, and the
+    pre-existing `hermes@nousresearch.com` trailer in history must not red it).
+    """
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        rc = cca.main(["check", "--root", str(repo), "--range", "origin/master..HEAD"])
+    check("empty range: 0 commits exits 0, not a false violation", rc == 0, str(rc))
+
+
+def test_a_missing_base_ref_fails_loudly():
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td) / "repo"
+        repo.mkdir(parents=True, exist_ok=True)
+        _git(repo, "init", "-q", "-b", "master")
+        _git(repo, "config", "user.name", "Andy Holst")
+        _git(repo, "config", "user.email", "andy.holst@protonmail.com")
+        _commit(repo, "chore: base")
+        rc = cca.main(["check", "--root", str(repo), "--range", "origin/master..HEAD"])
+    check("fail-loud: a missing `origin/master` exits 2, not 0", rc == 2, str(rc))
+
+
+# ---------------------------------------------------------------------------
+# the offline seams and the exit codes
+# ---------------------------------------------------------------------------
+def test_offline_identity_and_message_seams():
+    with tempfile.TemporaryDirectory() as td:
+        msg = Path(td) / "msg.txt"
+        msg.write_text("fix(ci): a change\n\nCo-authored-by: Hermes Agent <agent@hermes.local>\n")
+        rc = cca.main(["check", "--message-file", str(msg)])
+        rc_ok = cca.main(["check", "--identity", ALLOWED])
+        rc_bad = cca.main(["check", "--identity", HERMES])
+    check("offline: a message file with a bad trailer exits 1", rc == 1, str(rc))
+    check("offline: an allowed identity exits 0", rc_ok == 0, str(rc_ok))
+    check("offline: a banned identity exits 1", rc_bad == 1, str(rc_bad))
+
+
+def test_check_exits_non_zero_on_a_violation_in_a_real_repo():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change", body="Co-authored-by: Hermes Agent <hermes@nousresearch.com>")
+        rc = cca.main(["check", "--root", str(repo), "--range", "origin/master..HEAD"])
+    check("check: a real repo with a bad trailer exits 1", rc == 1, str(rc))
+
+
+def test_the_report_lists_the_commits_it_read():
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change")
+        rc = cca.main(["report", "--root", str(repo), "--range", "origin/master..HEAD"])
+    check("report: exits 0 and names the range", rc == 0, str(rc))
+
+
+# ---------------------------------------------------------------------------
+# this repository's own rule
+# ---------------------------------------------------------------------------
+def test_this_repository_never_credits_a_disallowed_identity():
+    """A rule the repo itself violates is not a rule — run the guard over this repo.
+
+    Scoped to the commits this branch adds (`origin/master..HEAD`) — the guard's
+    default in CI. Inside the test container the checkout is owned by another uid,
+    so git refuses with `detected dubious ownership` (issue #191); the TEST makes
+    that environment usable (`safe.directory = *` via GIT_CONFIG_GLOBAL) rather
+    than the guard weakening its own git call.
+    """
+    import os
+
+    with tempfile.TemporaryDirectory() as td:
+        cfg = Path(td) / "gitconfig"
+        cfg.write_text("[safe]\n\tdirectory = *\n")
+        prev = os.environ.get("GIT_CONFIG_GLOBAL")
+        os.environ["GIT_CONFIG_GLOBAL"] = str(cfg)
+        try:
+            rc = cca.main(["check", "--root", str(ROOT)])
+        finally:
+            if prev is None:
+                os.environ.pop("GIT_CONFIG_GLOBAL", None)
+            else:
+                os.environ["GIT_CONFIG_GLOBAL"] = prev
+    check("self-test: this repository's own commits pass the guard", rc == 0, str(rc))
+
+
+def test_the_guard_is_wired_into_the_repo():
+    """A guard no target names runs nowhere."""
+    mk = (ROOT / "Makefile").read_text()
+    qa = (ROOT / ".github/workflows/qa-validate.yml").read_text()
+    check("make: `check-commit-authorship` target exists", "check-commit-authorship:" in mk, "")
+    check("make: the target runs the guard script", "check_commit_authorship.py check" in mk, "")
+    check("make: the guard's test is in `make test`", "tests/test_commit_authorship.py" in mk, "")
+    check("ci: `validate` runs `make check-commit-authorship`",
+          "make check-commit-authorship" in qa, "")
+    check("ci: the validate checkout is not shallow", "fetch-depth: 0" in qa, "")
+
+
+def main() -> int:
+    print("commit-authorship guard (scripts/check_commit_authorship.py, issue #317)")
+    test_an_allowed_identity_is_not_a_violation()
+    test_the_repos_own_bot_identity_is_not_a_violation()
+    test_a_wrong_author_identity_with_a_clean_message_is_a_violation()
+    test_a_wrong_committer_identity_is_a_violation()
+    test_both_wrong_identities_are_reported_separately()
+    test_the_hermes_co_author_trailer_is_a_violation()
+    test_an_allowed_co_author_trailer_is_not_a_violation()
+    test_every_trailer_keyword_is_checked_not_only_co_authored_by()
+    test_a_trailer_naming_a_stranger_is_a_violation()
+    test_an_unreadable_range_fails_loudly_not_silently()
+    test_an_empty_range_is_not_a_violation()
+    test_a_missing_base_ref_fails_loudly()
+    test_offline_identity_and_message_seams()
+    test_check_exits_non_zero_on_a_violation_in_a_real_repo()
+    test_the_report_lists_the_commits_it_read()
+    test_this_repository_never_credits_a_disallowed_identity()
+    test_the_guard_is_wired_into_the_repo()
+    print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
+    return 1 if _FAIL else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

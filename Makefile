@@ -497,7 +497,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_worktree_base.py && python3 tests/test_firecrawl_fetch.py && python3 tests/test_refresh_run_block.py && python3 tests/test_rule_numbers.py && python3 tests/test_pr_closure.py && python3 tests/test_lint_syntax.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_commit_authorship.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_worktree_base.py && python3 tests/test_firecrawl_fetch.py && python3 tests/test_refresh_run_block.py && python3 tests/test_rule_numbers.py && python3 tests/test_pr_closure.py && python3 tests/test_lint_syntax.py)
 
 
 .PHONY: _requirements-test
@@ -744,6 +744,24 @@ check-secret-output: ## CI: fail when any file prints a secret's VALUE, passes i
 	python3 scripts/check_secret_output.py check
 secret-output-report: ## Show which files name a secret-shaped variable, and whether any prints it
 	python3 scripts/check_secret_output.py report
+
+# ---- commit-authorship guard (issue #317) -----------------------------------
+# The only identities on this repo are Andy Holst and Asimov Agent. Nothing read a
+# commit's MESSAGE or a commit's IDENTITY: `make secret-scan` reads credential
+# values, `make check-secret-output` reads run-time leak shapes, `make pr-closure`
+# reads the PR body — so a `Co-authored-by: Hermes Agent <hermes@nousresearch.com>`
+# trailer landed on master. The trailer is SYNTHESIZED by GitHub at squash time
+# from the AUTHOR identity of a commit inside the PR (measured: 054b0c8 is authored
+# `Hermes Agent <hermes@nousresearch.com>`, committed `Andy Holst`, message with NO
+# trailer), so the guard reads the identity AND the message. The default range is
+# `origin/master..HEAD` — the commits a PR adds; history is never rewritten. A range
+# that cannot be read fails loudly (exit 2), so a shallow CI checkout can never read
+# as "no commits, pass" — the validate checkout uses `fetch-depth: 0`.
+.PHONY: check-commit-authorship commit-authorship-report
+check-commit-authorship: ## CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317)
+	python3 scripts/check_commit_authorship.py check
+commit-authorship-report: ## Show every commit in the range with its author, committer and subject
+	python3 scripts/check_commit_authorship.py report
 
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
