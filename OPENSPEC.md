@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **37** · archived: **0**
+Active changes: **38** · archived: **0**
 
 ## Active changes
 
@@ -23,6 +23,7 @@ Active changes: **37** · archived: **0**
 | `bot-verification-protocol` | active | — | — | [bot-verification-protocol](openspec/changes/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/bot-verification-protocol/proposal.md) |
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
 | `code-review-bot` | active | — | — | [code-review](openspec/changes/code-review-bot/specs/code-review/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-bot/proposal.md) |
+| `code-review-secrets-contract` | active | — | — | [code-review-scan](openspec/changes/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/code-review-secrets-contract/proposal.md) |
 | `data-gap-baseline` | active | #174 | — | [data-gap-baseline](openspec/changes/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-baseline/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
 | `data-gap-filer-labels-its-issue` | active | — | — | [data-gap-filer-labels-its-issue](openspec/changes/data-gap-filer-labels-its-issue/specs/data-gap-filer-labels-its-issue/spec.md) | 11/11 | [proposal.md](openspec/changes/data-gap-filer-labels-its-issue/proposal.md) |
