@@ -165,6 +165,7 @@ def _one_issue_per_changed_gap_set(tmp_path):
     gh.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> {log}\n"
                   "case \"$1 $2\" in\n"
                   "  'issue view') printf '%s\\n' '{\"labels\":[{\"name\":\"data-gap-analysis\"}]}' ;;\n"
+                  "  'label list') printf '%s\\n' '[{\"name\":\"data-gap-analysis\"}]' ;;\n"
                   f"  *) cat >> {log}\n"
                   "     printf '%s\\n' 'https://github.com/andyholst/trending-local-llms/issues/999' ;;\n"
                   "esac\n")
@@ -334,8 +335,15 @@ def test_analysis_is_wired_to_make_and_the_refresh_pipeline():
     # promise is only kept with continue-on-error (measured: the job went red and
     # the PR step was skipped, run 38549751388).
     step = workflow.split("- name: File a data-gap issue", 1)[1].split("\n      - name:", 1)[0]
-    check("filer step uses the owner PAT, never the default token",
-          "FIXBOT_DISPATCH_TOKEN" in step, step)
+    # The token, corrected by the measurement in #277: the owner PAT declares no
+    # Issues scope, so the filing it created carried NO label (the label is what
+    # both bots' queues are keyed on) and the step failed silently. Issue writes
+    # use the DEFAULT token with `issues: write` — the rule AGENTS.md §6b states.
+    check("filer step uses the DEFAULT token (it must be able to write issues)",
+          "github.token" in step and "FIXBOT_DISPATCH_TOKEN" not in step, step)
+    check("the aggregate job requests `issues: write` for it",
+          "issues: write" in workflow.split("- name: File a data-gap issue", 1)[0]
+          .rsplit("aggregate:", 1)[-1], step)
     check("the filer step is report-only, as documented",
           "continue-on-error: true" in step, step)
 
@@ -391,6 +399,10 @@ case "$1 $2" in
     printf 'https://example.test/issues/%s\n' "$n" ;;
   "issue view")
     printf '{"labels":[{"name":"data-gap-analysis"}]}\n' ;;
+  "label list")
+    # The repo already carries the label (issue #277: the filer checks before it
+    # relies on it, and creates it when it is missing).
+    printf '[{"name":"data-gap-analysis"}]\n' ;;
 esac
 exit 0
 """
@@ -495,22 +507,48 @@ case "$1 $2" in
       printf '{"labels":[]}\\n'
     fi ;;
   "issue edit")
-    if [ "${FAKE_GH_EDIT_LABEL_FAILS:-0}" = "1" ]; then exit 0; fi
+    if [ "${FAKE_GH_EDIT_LABEL_FAILS:-0}" = "1" ]; then
+      echo "could not add label: 'data-gap-analysis' not found" >&2
+      exit 1
+    fi
     n=""
     for a in "$@"; do case "$a" in [0-9]*) [ -z "$n" ] && n="$a";; esac; done
     awk -F'|' -v n="$n" 'BEGIN{OFS="|"} $2==n {$4="data-gap-analysis"} 1' \\
       "$FAKE_GH_STORE" > "$FAKE_GH_STORE.tmp" && mv "$FAKE_GH_STORE.tmp" "$FAKE_GH_STORE" ;;
+  "label list")
+    # The repo's label set is a FILE the test creates (or does not): a missing
+    # label is exactly what GitHub silently ignores on `issue create`.
+    if [ -f "$FAKE_GH_LABEL_FLAG" ]; then
+      printf '[{"name":"data-gap-analysis"}]\\n'
+    else
+      printf '[]\\n'
+    fi ;;
+  "label create")
+    # The repo gains the label — unless creating it is refused too.
+    if [ "${FAKE_GH_LABEL_CREATE_FAILS:-0}" = "1" ]; then
+      echo "HTTP 403: Resource not accessible by personal access token" >&2
+      exit 1
+    fi
+    : > "$FAKE_GH_LABEL_FLAG" ;;
 esac
 exit 0
 """
 
 
-def _run_filer_env(baseline_text, td, extra_env=None):
+def _run_filer_env(baseline_text, td, extra_env=None, label_exists=True):
     baseline = td / "baseline.json"
     baseline.write_text(baseline_text)
+    label_flag = td / "label-exists"
+    # Default: the repo already carries the label. With `label_exists=False` the
+    # run starts WITHOUT it, and the stub writes the flag when it is asked to
+    # create one — so a missing label is a case the test can set up, not an
+    # accident of the environment.
+    label_flag.unlink(missing_ok=True)
+    if label_exists:
+        label_flag.touch()
     env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
            "FAKE_GH_LOG": str(td / "gh.log"), "FAKE_GH_STORE": str(td / "issues.txt"),
-           **(extra_env or {})}
+           "FAKE_GH_LABEL_FLAG": str(label_flag), **(extra_env or {})}
     return subprocess.run(
         [sys.executable, "scripts/data_gap_analysis.py", "--issue", "--baseline", str(baseline)],
         cwd=ROOT, capture_output=True, text=True, env=env)
@@ -552,6 +590,53 @@ def test_a_filed_issue_carries_the_label_the_bots_trigger_on():
         check("label unappliable: it names the label and why it matters",
               "does not carry" in broken.stderr and "data-gap-analysis" in broken.stderr,
               broken.stderr)
+        # …and it carries `gh`'s OWN words: the conclusion alone ("the label did
+        # not stick") named no cause and no fix, which is what made the measured
+        # failure (#277) unactionable.
+        check("label unappliable: gh's own message reaches the operator",
+              "not found" in broken.stderr, broken.stderr)
+
+
+def test_the_filer_creates_the_label_the_bots_trigger_on():
+    """Issue #277: GitHub IGNORES a label the repo does not have, so a filing made
+    before `data-gap-analysis` exists lands UNLABELLED while `gh issue create`
+    returns 0 — and `gh issue edit --add-label` then refuses it. The measured
+    consequence on master: `make issue-queue` -> `candidates=0` and
+    `make review-issue-pick` -> `action=none`, so the implementer's and the
+    reviewer's jobs were SKIPPED every run while the pipeline stayed green. The
+    filer must create the label rather than file into the void."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "gh"
+        stub.write_text(_GH_STUB_LABELS)
+        stub.chmod(0o755)
+        (td / "gh.log").write_text("")
+        (td / "issues.txt").write_text("")
+        stale = json.dumps({"as_of": "2026-01-01T00:00:00Z", "signature": ["stale"]})
+
+        # Given a repo that does NOT carry the label, and a create that drops it
+        created = _run_filer_env(stale, td, {"FAKE_GH_DROP_LABEL": "1"}, label_exists=False)
+
+        # Then  the label is created first, and the issue ends up carrying it
+        calls = (td / "gh.log").read_text()
+        check("label missing: the filer creates it", "label create" in calls, calls)
+        check("label missing: the label now exists in the repo", (td / "label-exists").exists(), "")
+        check("label missing: the run exits 0", created.returncode == 0, created.stderr)
+        check("label missing: the filing is visible to both bots",
+              "data-gap-analysis" in (td / "issues.txt").read_text().splitlines()[0],
+              (td / "issues.txt").read_text()[:80])
+
+        # Given the label cannot be created either
+        (td / "issues.txt").write_text("")
+        (td / "gh.log").write_text("")
+        refused = _run_filer_env(stale, td, {"FAKE_GH_DROP_LABEL": "1",
+                                             "FAKE_GH_LABEL_CREATE_FAILS": "1"},
+                                 label_exists=False)
+
+        # Then  the run fails loudly, naming gh's own refusal
+        check("label uncreatable: the run fails", refused.returncode != 0, refused.stderr)
+        check("label uncreatable: gh's refusal is quoted",
+              "Resource not accessible" in refused.stderr, refused.stderr)
 
 
 # ---- the backfill that closes the filed `engine_min_version` gap (issue #163) --
@@ -658,6 +743,7 @@ def main() -> int:
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
     test_a_gap_set_is_filed_once()
     test_a_filed_issue_carries_the_label_the_bots_trigger_on()
+    test_the_filer_creates_the_label_the_bots_trigger_on()
     test_engine_min_version_backfill_traces_to_the_captured_source_text()
     test_engine_min_version_coverage_can_never_shrink()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

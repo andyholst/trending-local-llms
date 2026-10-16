@@ -327,6 +327,19 @@ jobs:
     if: always() && needs.guard.result == 'success' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # This job WRITES AN ISSUE (the data-gap filing), and issue writes — creating
+    # the issue, and applying the `data-gap-analysis` label the whole bot chain
+    # triggers on — need `issues: write` on the token that performs them. The
+    # owner PAT declares no Issues scope (AGENTS.md §6b: "issue reads and comments
+    # use the default github.token with permissions: issues: write"), so the
+    # default token is used for that step and this job asks for the scope it uses.
+    # Job-level permissions REPLACE the workflow-level set, so this repeats the two
+    # the job really needs (branch push + PR) and drops `packages: write`, which
+    # only the image jobs use (they log in to GHCR themselves).
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
@@ -396,7 +409,19 @@ jobs:
         env:
           # `gh` + the repo live on the runner, not in the test image, so
           # `make data-gap-issue` runs here (issue #150).
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          #
+          # The DEFAULT token, with `issues: write` on this job — NOT the owner
+          # PAT (issue #277). Measured: the PAT declares no Issues scope, so
+          # `gh issue create --label data-gap-analysis` returned 0 having applied
+          # NO label, `ensure_label` re-applied it and it did not stick, and the
+          # step failed — silently, behind `continue-on-error`. The filed issue
+          # was invisible to BOTH bots (`make issue-queue` -> `candidates=0`,
+          # `make review-issue-pick` -> `action=none`), so the implementer and the
+          # reviewer skipped their work every run, and the same gap set was filed
+          # twice (#246, #266) because the dedup search filters by that label.
+          # This is the same token rule AGENTS.md §6b states for comments
+          # (#124): issue writes use the default token.
+          GH_TOKEN: ${{ github.token }}
         run: make data-gap-issue
         # The baseline (data/gap_baseline.json) is written by `make data-gap-issue`
         # when it files, so a day with the same gap set files nothing.

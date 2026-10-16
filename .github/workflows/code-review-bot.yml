@@ -79,7 +79,12 @@ jobs:
         run: make code-review-scan REPO="${{ github.repository }}"
       - name: File one issue per new finding
         env:
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          # The DEFAULT token with `issues: write` (issue #277), not the owner PAT:
+          # the PAT declares no Issues scope, so its issue writes are refused or —
+          # measured on the data-gap filer — silently dropped while `gh` exits 0.
+          # The step above keeps the PAT because `gh secret list` needs admin; this
+          # one only creates issues, which the job token can do.
+          GH_TOKEN: ${{ github.token }}
         run: make code-review-file REPO="${{ github.repository }}" ${{ inputs.dry == 'true' && 'DRY=1' || '' }}
       - name: Report
         if: always()
