@@ -38,6 +38,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# The refresh run's window block (issue #199) — the ONE composer this and the aggregate
+# PR step both use, so an issue filed BY a refresh carries the same block as the PR.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import refresh_run_block  # noqa: E402
 DATA = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
 STORE = DATA / "models.json"
 CONTRACT = DATA / "model_contract.json"
@@ -396,6 +402,13 @@ def file_issue(report: dict, previous: dict | None) -> str:
     if added:
         body += ["", "## New since the last analysis", ""] + [f"- `{a}`" for a in added[:40]]
     body += ["", "## Full report", "", "```", render(report).strip(), "```"]
+    # The window of the run that FILED this, at the TOP (issue #199): the same block the
+    # refresh PR carries, from the same composer — so an issue filed BY a refresh can be
+    # told apart from one filed by an earlier run. "" only when there is no run to
+    # describe (a local `make data-gap-issue`); a `gh` read that fails raises instead.
+    block = refresh_run_block.current_block()
+    if block:
+        body = [*block.splitlines(), "", *body]
     # The marker lets the NEXT run recognise this gap set (issue #157). Invisible
     # in the rendered issue, searchable in the body.
     body += ["", marker(signature_id(report))]

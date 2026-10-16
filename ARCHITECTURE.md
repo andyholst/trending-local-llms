@@ -171,6 +171,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `data-gaps` | Report what the store still does not capture (missing/unsctructured requirement dimensions, contract gaps), ranked (`scripts/data_gap_analysis.py`) |
+| `refresh-run-block` | Print the current refresh run's WINDOW (issue #199): the marker line + `started=` + each leg's start + `aggregate=`, all from the run's REAL job timestamps read via `gh api` (`scripts/refresh_run_block.py`). Host-run, like `data-gap-issue`: `gh` lives on the runner, not in the image (#150). `aggregate` embeds it as the PR body; `make data-gap-issue` embeds it in the gap issue |
 | `data-gap-issue` | File **one** issue (label `data-gap-analysis`) when the gap set changed vs `data/gap_baseline.json`; writes the new baseline. Host-side: filing needs `gh` (issue #150) |
 
 ### OpenSpec (spec-tracked changes)
@@ -280,7 +281,7 @@ competing PRs over the same generated files).
 | `test-image` | Same decision (`make rebuild-decision`) for the **test** image → `…-test:latest` + `:test-<hash>` |
 | `openspec-image` | Same decision (`make rebuild-decision`, output `publish_openspec`) for the **OpenSpec CLI** image → `…-openspec:latest` + `:openspec-<hash>` |
 | `search` | Matrix `[nvidia, metal, cpu, amd]`, `fail-fast: false`: prepare the base image, `_search-smoke`, `model-caps`, `hermes-smoke`, then the Hermes search. Each leg uploads its raw snapshots as artifacts |
-| `aggregate` | Runs even when a leg failed: collect the artifacts, `make base-check` (the base `ci/trending-refresh-<UTC>` is cut from is FETCHED and asserted, rule 6n), `merge-fetch`, `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data. It never merges: `qa-validate`'s `auto-merge` does |
+| `aggregate` | Runs even when a leg failed: collect the artifacts, `make base-check` (the base `ci/trending-refresh-<UTC>` is cut from is FETCHED and asserted, rule 6n), `merge-fetch`, `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data — and that PR body LEADS with the run's WINDOW (`make refresh-run-block`, issue #199: the marker + `started=` + each leg's start + `aggregate=`, from the run's real job timestamps), so an in-flight refresh is readable from the PR itself. It never merges: `qa-validate`'s `auto-merge` does |
 
 ### `.github/workflows/qa-validate.yml` — PR CI (every PR, push to master, dispatch)
 
@@ -401,7 +402,8 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/update_trending.py` | The engine of the repo: `ingest_raw_snapshots`, `normalize_model`, `merge_engines`, `sort_models`, `recompute_7d_engagement`, `render_readme` (the README template lives here), `write_snapshot`; CLI `--fetch`, `--dry-run`, `--write-raw <backend>`, `--require-hits` |
 | `scripts/validate.py` | The QA stages: `data`, `schema`, `mapping`, `removal`, `readme`, `links`, plus report-only checks (post-signal coverage). Every `check_*` is registered in a stage, and every stage appears in a Makefile `--only` list (rule 6d) |
 | `scripts/engine_registry.py` | Engine classification + auto-registration at ingest (`classify_repo`, `register_new_engines`), non-engine lists, `KNOWN_ENGINE_URLS` |
-| `scripts/data_gap_analysis.py` | The post-refresh gap analysis (§3) — `analyse`, `rank_impact`, `render`, `file_issue`, `ensure_label` |
+| `scripts/data_gap_analysis.py` | The post-refresh gap analysis (§3) — `analyse`, `rank_impact`, `render`, `file_issue`, `ensure_label`. The issue body LEADS with the refresh run's window block (#199) |
+| `scripts/refresh_run_block.py` | The refresh run's WINDOW block (#199): `render` is pure (a fixed fixture renders the exact expected block), `fetch` reads the run's REAL job timestamps via `gh api`, `current_block()` is the one composer both the PR body and the gap issue embed. Its marker line comes from `scripts/bot_markers.py`, so the shared parser reads it |
 | `scripts/check_openspec_tasks.py` | Fails an active OpenSpec change with an unticked task box |
 | `scripts/openspec_index.py` | Renders / verifies the root `OPENSPEC.md` from `openspec/changes/**` |
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |

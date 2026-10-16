@@ -484,7 +484,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_worktree_base.py && python3 tests/test_firecrawl_fetch.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_worktree_base.py && python3 tests/test_firecrawl_fetch.py && python3 tests/test_refresh_run_block.py)
 
 
 .PHONY: _requirements-test
@@ -656,6 +656,17 @@ data-gaps:
 .PHONY: data-gap-issue
 data-gap-issue:
 	python3 scripts/data_gap_analysis.py --issue
+
+# The refresh run's window as a machine-readable block (issue #199): the REAL job
+# timestamps read from the API (never a wall clock at PR-open time), with the marker
+# line written by the shared helper (scripts/bot_markers.py, #197). The PR `aggregate`
+# opens, and the data-gap issue `make data-gap-issue` files, both carry it — so an
+# in-flight refresh is readable from the artifact a human actually opens.
+# Host-run, like `data-gap-issue`: `gh` and the repo live on the runner, not in the
+# image (issue #150).
+.PHONY: refresh-run-block
+refresh-run-block:
+	python3 scripts/refresh_run_block.py render
 
 # ---- secret scan: no credential may reach the repo (issue #122) --------------
 # gitleaks (MIT, the most widely adopted FOSS secret scanner) runs in ITS OWN

@@ -1,0 +1,43 @@
+{
+  "run_id": 38802740520,
+  "run_started_at": "2026-10-15T20:32:13Z",
+  "html_url": "https://github.com/andyholst/trending-local-llms/actions/runs/38802740520",
+  "jobs": [
+    {
+      "name": "guard",
+      "started_at": "2026-10-15T20:32:17Z"
+    },
+    {
+      "name": "openspec-image",
+      "started_at": "2026-10-15T20:32:23Z"
+    },
+    {
+      "name": "build",
+      "started_at": "2026-10-15T20:32:23Z"
+    },
+    {
+      "name": "search (nvidia)",
+      "started_at": "2026-10-15T20:33:50Z"
+    },
+    {
+      "name": "test-image",
+      "started_at": "2026-10-15T20:33:50Z"
+    },
+    {
+      "name": "search (cpu)",
+      "started_at": "2026-10-15T20:33:49Z"
+    },
+    {
+      "name": "search (metal)",
+      "started_at": "2026-10-15T20:33:50Z"
+    },
+    {
+      "name": "search (amd)",
+      "started_at": "2026-10-15T20:33:50Z"
+    },
+    {
+      "name": "aggregate",
+      "started_at": "2026-10-15T20:58:48Z"
+    }
+  ]
+}

@@ -57,12 +57,12 @@ WRITTEN: frozenset = frozenset({
     ("issue-review-bot", "window"),
     ("fix-bot", "start"),
     ("fix-bot", "end"),
+    ("refresh-bot", "run"),
 })
 
 #: Registered but not yet written, with the issue that lands its writer. Declared here so a reader
-#: written against the registry is already correct when the writer appears (#199).
+#: written against the registry is already correct when the writer appears.
 DECLARED_BY: dict[tuple[str, str], int] = {
-    ("refresh-bot", "run"): 199,
     ("qa-validate", "merge"): 197,
 }
 

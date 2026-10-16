@@ -783,7 +783,18 @@ this `AGENTS.md` and the `gather-data` skill, then:
   dispatch (owner only). Per backend (nvidia / metal / cpu / amd, parallel matrix):
   3 s reachability smoke → Hermes routing smoke → Hermes search. Then
   `aggregate` (runs even if a leg failed): merge → soft validate → **opens a PR
-  only when there is new data**, authored by the owner PAT so qa-validate
+  only when there is new data**, whose body LEADS with the run's **window
+  block** (`make refresh-run-block` → `scripts/refresh_run_block.py`, issue #199):
+  the marker `<!-- refresh-bot-run: <ISO8601Z> run=<id> -->`, then
+  `started=<ISO8601Z> · legs: nvidia=… metal=… cpu=… amd=… · aggregate=<ISO8601Z>`,
+  then the run URL. It is composed from the run's REAL job timestamps read from
+  the API — never a wall clock at PR-open time — and the marker line is written by
+  the shared helper (`scripts/bot_markers.py`, rule 6j), so the shared parser reads
+  it. `make data-gap-issue` embeds the SAME block at the top of the gap issue it
+  files, so an issue filed BY a refresh can be told apart from one filed by an
+  earlier run. A run with no new data opens no PR and therefore stamps no block;
+  a `gh` read we cannot make is LOUD (it raises) rather than printing a window with
+  no numbers. The PR is authored by the owner PAT so qa-validate
   starts without an approval click. It does NOT dispatch fix-bot — that is
   qa-validate's job, after it has validated. It never merges; qa-validate's
   `auto-merge` does, once the PR is green.
@@ -1134,6 +1145,7 @@ actually happened.
 | `check_backends_cover_measurements` (validate, data stage) | a model whose measurements render in a backend table its `backends` does not list (ingest + `normalize_model` now sync it via `sync_backends`) |
 | `check_engine_aliases` (validate, data stage) | a measurement still on the aliased-away engine name; an alias target missing from the registry or with the wrong repo URL |
 | `check_no_value_loss` (validate, `removal` stage) + `tests/test_validate.py::test_no_value_loss` | a key, a measurement group, a t/s or an engagement counter that was in the previous snapshot disappearing from the store. `check_no_removal` only compares model IDS and the contract only sees a missing REQUIRED key, so `engagement.seen_posts`, the computed trend fields, a measurement's `hardware`/`quant`/counters — and 12 of bonsai-2-27b's 13 measurements — could be deleted with `make validate` green (both measured on master before this guard). Additive changes (new key, new measurement, extra backend, raised t/s or counter) must never fire it |
+| `tests/test_refresh_run_block.py` (issue #199) | an in-flight refresh that is invisible from the artifact a human opens: a PR body with no run window (so "which run wrote this, and when did each leg start?" is answerable only from the Actions API, which a reviewer reading the PR page cannot see); a window composed from a wall clock at PR-open time instead of the run's REAL job timestamps (a recorded capture of a real run must render exactly the expected block); a leg matched by POSITION or a hardcoded order instead of by the job NAME the API returns (`search (nvidia)`), so a new backend or a reordered matrix would silently mislabel; a missing leg invented instead of reading `unknown`; a marker line the shared parser (#197) cannot read; a `gh` read that fails printing an empty/clean window instead of raising loudly; a rebuild-only run with NO new data stamping a block for a PR it never opened; and the gap issue not carrying the SAME block from the SAME composer |
 | `tests/test_data_gap_analysis.py` (issue #115) | the analysis not running from `make data-gaps` / `make data-gap-issue` or the `aggregate` job (rule 6d — a script no target calls); a dimension the contract cannot hold not reported as a contract gap; free text (`quant: "1432 MB peak RAM"`, on the model OR a measurement) counted as stored data instead of unstructured; a second issue filed for an unchanged gap set; a volatile item (an `(est)` figure, an empty raw leg) changing the issue-triggering signature; the report failing a data PR |
 | `tests/test_validate.py::test_every_check_is_wired_to_a_stage_and_a_makefile_target` (rule 6d) | a `check_*` in `scripts/validate.py` that no stage in `main()` registers, a stage that no Makefile `--only` list selects, and the `--only removal` call path itself — i.e. a validator function that exists but the CI pipeline never executes (a dead function, or a check wired into no make target) |
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
