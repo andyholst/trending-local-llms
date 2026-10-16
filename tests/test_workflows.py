@@ -542,13 +542,21 @@ def test_owner_guards():
 
 
 #: Every bot pipeline's guard, and the job whose guard step it is (issue #238).
+#: `qa-validate` is here too (issue #279): its guard admits `pull_request`/`push`
+#: — repository events GitHub starts for the repo itself — and guards only the
+#: 30-minute, network-bound dispatch.
 BOT_GUARDS = (
     ("refresh-bot.yml", "guard"),
     ("fix-bot.yml", "fix"),
     ("issue-bot.yml", "guard"),
     ("issue-review-bot.yml", "guard"),
     ("publish-agent-image.yml", "guard"),
+    ("qa-validate.yml", "guard"),
 )
+
+#: Events a guard must admit WITHOUT asking who called, because GitHub starts
+#: them for the repository itself (there is no caller to admit).
+REPO_EVENTS = ("pull_request", "push")
 
 #: The caller classes every bot guard must decide the same way (issue #238). The
 #: bot itself is a bot-to-bot dispatch with the default token; it MUST be allowed.
@@ -598,6 +606,52 @@ def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
               '"schedule"' in step["run"], step["run"][:80])
         rc, out = _run_guard(step, "schedule", "github-actions[bot]", "github-actions[bot]", GUARD_PERMS)
         check(f"guard {wf_name}: a scheduled run is allowed", rc == 0, out.strip()[-120:])
+
+
+def _declares_repo_events(wf_name: str) -> list[str]:
+    """Which repository events this workflow declares in its `on:` block."""
+    on = load(wf_name).get("on") or {}
+    if not isinstance(on, dict):
+        return []
+    return [e for e in REPO_EVENTS if e in on]
+
+
+def test_a_repo_event_run_is_admitted_by_its_guard():
+    """A `pull_request`/`push` run is started by GitHub for the repository
+    itself — there is no caller to admit — so a pipeline that declares one must
+    admit it whatever the actor (issue #279). The only such pipeline today is
+    `qa-validate`, whose PRs must be validated whatever their author: a guard
+    that refused them would leave every outside PR red for ever."""
+    found = 0
+    for wf_name, job in BOT_GUARDS:
+        events = _declares_repo_events(wf_name)
+        if not events:
+            continue
+        step = _guard_step(wf_name, job)
+        for ev in events:
+            found += 1
+            rc, out = _run_guard(step, ev, "stranger", "stranger", {})
+            check(f"guard {wf_name}: a {ev} run by a stranger is admitted", rc == 0,
+                  out.strip()[-120:])
+    check("a repo-event guard was found (non-vacuous)", found > 0, found)
+
+
+def test_a_guarded_pipeline_gates_the_jobs_that_read_secrets():
+    """The guard runs BEFORE anything reads a secret, and the jobs that carry a
+    secret need it (issue #279): a guard in a parallel job — or after the first
+    secret — guards nothing."""
+    for wf_name, job in BOT_GUARDS:
+        jobs = load(wf_name)["jobs"]
+        steps_ = steps(jobs[job])
+        guard_at = [i for i, s in enumerate(steps_)
+                    if "guard" in str(s.get("name", "")).lower()]
+        check(f"{wf_name}: the guard is the FIRST step of {job}",
+              guard_at == [0], guard_at)
+        if "guard" in jobs and job != "guard":
+            check(f"{wf_name}: the guard job needs nothing (it runs first)",
+                  not (jobs["guard"].get("needs") or []), jobs["guard"].get("needs"))
+            needs = {n for n, j in jobs.items() if "guard" in (j.get("needs") or [])}
+            check(f"{wf_name}: at least one job needs the guard", needs, list(jobs))
 
 
 def test_nothing_pushes_master():
@@ -1526,6 +1580,8 @@ def main() -> int:
     test_owner_guards()
     test_guard_behaviour()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
+    test_a_repo_event_run_is_admitted_by_its_guard()
+    test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()
     test_nothing_pushes_master()
     test_auto_merge()
     test_images_follow_their_inputs()
