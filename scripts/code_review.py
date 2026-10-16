@@ -28,6 +28,30 @@ WORKFLOWS = ".github/workflows"
 MARKER = "<!-- code-review:{key} -->"
 
 SECRET_REF = re.compile(r"secrets\.([A-Za-z0-9_]+)")
+
+#: The repo's secret CONTRACT: the names the pipelines legitimately read. This is the
+#: authoritative set for `check_secrets_not_defined`, deliberately kept HERE rather than
+#: fetched with `gh secret list` — that endpoint needs a token with admin on the repo, so the
+#: bot's default `contents: read` token can never answer it and the check was SKIPPED on every
+#: production run while the scan still reported "no findings" (issue #278, measured: run
+#: 38868116656, `HTTP 403 Resource not accessible by personal access token`).
+#:
+#: A contract in the tree is also the honest shape: the check exists to catch a workflow naming a
+#: secret the repo does not have, and what the repo HAS is config the repository can state.
+#: `test_the_declared_secret_contract_matches_what_the_workflows_read` (tests/test_code_review.py)
+#: fails when this tuple and the workflows' `secrets.` references disagree in EITHER direction, so
+#: it cannot decay into the kind of hand-maintained allowlist #223 complains about: adding a
+#: reference forces a declaration, and declaring a name nothing reads fails.
+#:
+#: `GITHUB_TOKEN` is not listed: GitHub injects it for every run, so `check_secrets_not_defined`
+#: exempts it explicitly.
+DECLARED_SECRETS = (
+    "FIRECRAWL_API_KEY",
+    "FIXBOT_DISPATCH_TOKEN",
+    "HF_TOKEN",
+    "NOUS_PORTAL_API_TOKEN",
+    "TYPESAFE_API_KEY",
+)
 # A `run:` block that reaches into the repo directly: the standing rule is one make target per step.
 INLINE_SCRIPT = re.compile(r"(?:^|[^\w./-])((?:python3?\s+)?(?:\./)?(?:scripts/[\w./-]+|tools/[\w./-]+\.sh))\b")
 MAKE_CALL = re.compile(r"\bmake\s+[\w-]+")
@@ -133,12 +157,36 @@ def check_workflow_inline_scripts(root: Path) -> list[dict]:
     return out
 
 
-def check_secrets_not_defined(root: Path, defined: set[str]) -> list[dict]:
-    """A workflow reads `secrets.X` and X is not one of the repo's secrets: the job env is empty."""
+def _without_comments(text: str) -> str:
+    """Drop `#`-comments so a documentation example is not read as a real `secrets.` reference.
+
+    Measured: `.github/workflows/qa-validate.yml` documents the guard with a literal
+    ``${{ secrets.X }}`` in a comment. Scanning raw text turns that comment into a finding
+    ("the workflows read secrets.X"), so the scan would file an issue about its own prose.
+    Splitting on the first `#` can only ever REMOVE a reference, never invent one, so it is
+    conservative in the right direction.
+    """
+    return "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+
+
+def referenced_secrets(root: Path) -> dict[str, set[str]]:
+    """`{secret name: the workflow files that read it}`, comments excluded."""
     used: dict[str, set[str]] = {}
     for wf in _workflow_files(root):
-        for name in SECRET_REF.findall(_read(wf)):
+        for name in SECRET_REF.findall(_without_comments(_read(wf))):
             used.setdefault(name, set()).add(wf.name)
+    return used
+
+
+def check_secrets_not_defined(root: Path, defined: set[str]) -> list[dict]:
+    """A workflow reads `secrets.X` and X is not in the repo's secret contract: the job env is empty.
+
+    `defined` is the contract (`DECLARED_SECRETS`, optionally unioned with a live
+    `gh secret list` read when a token with admin is available). This check is STATIC and
+    always runs — it must never be gated on a credential, or a scan reports "no findings"
+    while this one silently did not run (issue #278).
+    """
+    used = referenced_secrets(root)
     out = []
     for name in sorted(used):
         if name in defined or name in ("GITHUB_TOKEN",):
@@ -148,10 +196,11 @@ def check_secrets_not_defined(root: Path, defined: set[str]) -> list[dict]:
             "key": f"secrets-not-defined/{name}",
             "title": f"ci: the workflows read secrets.{name}, which the repo does not define",
             "evidence": (
-                f"{files} reference `secrets.{name}`, and `gh secret list` for the repo does not "
-                f"define it. GitHub substitutes an EMPTY string for a secret that does not exist, "
-                f"so the job does not fail at startup — it fails later, wherever that value is "
-                f"used. Either the secret is missing, or the workflow names the wrong one."
+                f"{files} reference `secrets.{name}`, and that name is not in the repo's secret "
+                f"contract (`DECLARED_SECRETS` in scripts/code_review.py). GitHub substitutes an "
+                f"EMPTY string for a secret that does not exist, so the job does not fail at "
+                f"startup — it fails later, wherever that value is used. Either the secret is "
+                f"missing, or the workflow names the wrong one."
             ),
             "where": files,
         })
@@ -294,11 +343,15 @@ def workflow_run_counts(gh: str, repo: str) -> dict[str, int] | None:
 
 def findings(root: Path = REPO_ROOT, gh: str | None = None, repo: str = "",
              secrets: set[str] | None = None, runs: dict[str, int] | None = None) -> list[dict]:
-    """Every finding, deterministic: the static checks always run, the live ones when data is given."""
+    """Every finding, deterministic: the static checks always run, the live ones when data is given.
+
+    The secrets check is STATIC and is always run, against the repo's declared contract
+    (`DECLARED_SECRETS`) unioned with any live read — never gated on a credential, or a scan
+    reports "no findings" while a third of its checks silently did not run (issue #278).
+    """
     out = (check_workflow_inline_scripts(root) + check_cron_collisions(root)
-           + check_reusable_orphan(root))
-    if secrets is not None:
-        out += check_secrets_not_defined(root, secrets)
+           + check_reusable_orphan(root)
+           + check_secrets_not_defined(root, set(DECLARED_SECRETS) | (secrets or set())))
     if runs is not None:
         out += check_workflow_never_ran(root, runs)
     return out
@@ -380,9 +433,12 @@ def main(argv=None) -> int:
         secrets = defined_secrets(args.gh, args.repo)
         runs = workflow_run_counts(args.gh, args.repo)
         if secrets is None:
-            print("[code-review] NOTE: the secrets check is unavailable here (it needs a token with "
-                  "admin on the repo); run the bot with one, or the check reports nothing.",
-                  file=sys.stderr)
+            # NOT a skipped check: the secrets check now runs off the repo's declared contract
+            # (DECLARED_SECRETS). The live read only ADDS names, so a refusal narrows the check
+            # rather than disabling it (issue #278).
+            print("[code-review] INFO: the live `gh secret list` read was unavailable (it needs a "
+                  "token with admin on the repo); the secrets check ran against the repo's "
+                  "declared contract instead, so it did not go unchecked.", file=sys.stderr)
         if runs is None:
             print("[code-review] NOTE: the run-count check is unavailable here (the Actions API "
                   "refused the read); run the bot with a token that can read them.", file=sys.stderr)

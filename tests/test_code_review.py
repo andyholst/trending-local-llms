@@ -179,6 +179,81 @@ def test_the_make_targets_pass_their_variables_through():
         check(f"make: {target} runs the script", needle in out, out[-200:])
 
 
+def test_a_secret_outside_the_contract_is_reported_with_no_api():
+    """#278: the check must run WITHOUT the admin-only API, or a scan reports "no findings"
+    while a third of its checks silently did not (measured: run 38868116656, `HTTP 403`).
+
+    RED on the pre-change code: `findings()` was called with `secrets=None`, which SKIPPED
+    `check_secrets_not_defined` entirely — so this finding did not exist.
+    """
+
+    # Given a workflow reading a secret the repo's contract does not declare
+    root = _scratch({"a.yml": "name: a\non:\n  workflow_dispatch:\n"
+                              "jobs:\n  a:\n    steps:\n      - run: echo ${{ secrets.NOT_A_SECRET }}\n"})
+
+    # When  the deterministic checks run with NO live secret list (no `gh`, no admin)
+    found = cr.findings(root)
+
+    # Then  the undeclared secret IS reported, without any API read
+    keys = [f["key"] for f in found]
+    check("secrets: an undeclared secret is reported with no API read",
+          "secrets-not-defined/NOT_A_SECRET" in keys, keys)
+    evidence = next((f["evidence"] for f in found if f["key"] == "secrets-not-defined/NOT_A_SECRET"), "")
+    check("secrets: the evidence names the contract, not `gh secret list`",
+          "contract" in evidence and "gh secret list" not in evidence, evidence[:200])
+
+
+def test_a_contract_secret_is_not_reported():
+    """The other direction: a name IN the contract is never a finding."""
+    root = _scratch({"a.yml": "name: a\non:\n  workflow_dispatch:\n"
+                              "jobs:\n  a:\n    steps:\n      - run: echo ${{ secrets.HF_TOKEN }}\n"})
+    keys = [f["key"] for f in cr.findings(root)]
+    check("secrets: a declared secret is not reported", "secrets-not-defined/HF_TOKEN" not in keys, keys)
+    check("secrets: GITHUB_TOKEN is exempt (GitHub injects it)",
+          "secrets-not-defined/GITHUB_TOKEN" not in [f["key"] for f in cr.findings(
+              _scratch({"b.yml": "name: b\non:\n  workflow_dispatch:\n"
+                                 "jobs:\n  b:\n    steps:\n      - run: echo ${{ secrets.GITHUB_TOKEN }}\n"}))], "")
+
+
+def test_the_declared_secret_contract_matches_what_the_workflows_read():
+    """The contract cannot decay into a hand-maintained allowlist (#223): it must equal the set
+    the workflows actually read, in BOTH directions — a new reference forces a declaration, and
+    declaring a name nothing reads fails."""
+
+    # Given this repository's workflows and the declared contract
+    referenced = set(cr.referenced_secrets(ROOT)) - {"GITHUB_TOKEN"}
+    declared = set(cr.DECLARED_SECRETS)
+
+    # Then  the two sets agree exactly
+    check("contract: every referenced secret is declared", referenced - declared == set(),
+          f"undeclared={sorted(referenced - declared)}")
+    check("contract: every declared secret is referenced", declared - referenced == set(),
+          f"declared but unread={sorted(declared - referenced)}")
+
+
+def test_a_commented_reference_is_not_a_read():
+    """A documentation example in a comment is prose, not a secret the job reads.
+
+    Measured: `.github/workflows/qa-validate.yml:144` documents the guard with a literal
+    ``${{ secrets.X }}``. Read as a real reference it becomes a finding about the repo's own
+    comment — and it did, on the first run of this check.
+    """
+
+    # Given a workflow whose ONLY mention of a secret is inside a comment
+    root = _scratch({"c.yml": "name: c\non:\n  workflow_dispatch:\n"
+                              "jobs:\n  c:\n    steps:\n"
+                              "      # documents `${{ secrets.PROSE_ONLY }}` for the reader\n"
+                              "      - run: echo hello\n"})
+
+    # Then  nothing is reported for it
+    keys = [f["key"] for f in cr.findings(root)]
+    check("comments: a commented reference is not reported",
+          "secrets-not-defined/PROSE_ONLY" not in keys, keys)
+    check("comments: the real repo's own doc comment is not a finding",
+          "secrets-not-defined/X" not in [f["key"] for f in cr.findings(ROOT)],
+          [f["key"] for f in cr.findings(ROOT)])
+
+
 def main() -> int:
     test_an_inline_repo_script_is_reported()
     test_two_colliding_crons_are_reported()
@@ -188,6 +263,10 @@ def main() -> int:
     test_no_check_flags_the_bots_own_workflow()
     test_the_workflow_guards_first_and_calls_the_make_targets()
     test_the_make_targets_pass_their_variables_through()
+    test_a_secret_outside_the_contract_is_reported_with_no_api()
+    test_a_contract_secret_is_not_reported()
+    test_the_declared_secret_contract_matches_what_the_workflows_read()
+    test_a_commented_reference_is_not_a_read()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
