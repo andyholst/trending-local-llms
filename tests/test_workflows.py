@@ -1329,6 +1329,34 @@ def test_the_reviewer_never_edits_an_issue_inside_a_window():
           "findings.md" in body_prompt and "findings.md" in window_prompt, "")
 
 
+def test_no_pipeline_opens_a_draft_pr() -> None:
+    """Issue #276 / AGENTS.md rule 6e: a run opens a REVIEWABLE PR, never a draft.
+
+    `auto-merge` requires `github.event.pull_request.draft == false`, so a draft is valid,
+    green and permanently unmergeable — the run reports success while the only mechanism
+    that could land the change is disabled by a flag. The merge side is asserted
+    (`auto-merge: never a draft PR`); this is the other half: nothing may OPEN one.
+    """
+    print("\nissue #276 — a pipeline opens a reviewable PR, never a draft")
+    offenders = []
+    for path in sorted(WF.glob("*.yml")):
+        for run in re.findall(r"gh pr create[^\n]*", path.read_text(encoding="utf-8")):
+            if "--draft" in run:
+                offenders.append(f"{path.name}: {run.strip()[:80]}")
+    check("no `gh pr create` anywhere passes --draft", not offenders, offenders)
+
+    agg = step(load("refresh-bot.yml")["jobs"]["aggregate"], "Commit + open PR if changed")
+    check("refresh-bot: its data PR is created ready for review",
+          "gh pr create" in agg.get("run", "") and "--draft" not in agg.get("run", ""), agg.get("run", "")[:120])
+    impl = load("issue-bot.yml")["jobs"]["implement"]
+    pr = step(impl, "Open the PR")
+    check("issue-bot: its implementation PR is created ready for review",
+          "gh pr create" in pr.get("run", "") and "--draft" not in pr.get("run", ""), pr.get("run", "")[:120])
+    cond = str(load("qa-validate.yml")["jobs"]["auto-merge"].get("if", ""))
+    check("qa-validate: the merge gate still refuses a draft (the reason for the rule)",
+          "draft == false" in cond, cond)
+
+
 def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
     """Issue #271 / AGENTS.md rule 6n: a branch is cut from the FETCHED base, asserted.
 
@@ -1380,6 +1408,7 @@ def main() -> int:
     test_issue_bot_push_scope_rejection()
     test_issue_bot()
     test_issue_bot_asserts_the_base_it_cuts_from()
+    test_no_pipeline_opens_a_draft_pr()
     test_qa_validate_runs_the_openspec_gate()
     test_secret_output_guard_wired_into_qa_validate()
     test_implement_prompt_requires_openspec_and_findings()
