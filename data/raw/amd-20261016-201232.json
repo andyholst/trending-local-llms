@@ -1,0 +1,48 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "89",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Gyro-S quant (agentionai/Qwen3.8-Flash-Next-Gyro-GGUF), Strata fork + HIP instead of Vulkan, MTP; 2,400 t/s prefill at 16K",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2109583281075196015",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "Halogen",
+          "engine_repo": "https://github.com/peonist-ai/halogen-flash-server",
+          "tps": "38",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395)",
+          "quant": "Halogen 0.12.0, 1,004,581-token context (27 -> 38 tok/s after context-depth fix); 43 tok/s decode at 258K",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/so_sthbryan/status/2109988271790968842",
+          "likes": 74,
+          "comments": 4,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-13"
+    }
+  ],
+  "generated_utc": "2026-10-16T20:12:32Z"
+}
