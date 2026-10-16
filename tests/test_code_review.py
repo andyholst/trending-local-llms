@@ -166,6 +166,8 @@ def test_the_workflow_guards_first_and_calls_the_make_targets():
     check("wf: the guard lets a scheduled run through", '"schedule"' in text)
     check("wf: it calls make code-review-scan", "make code-review-scan REPO=" in text)
     check("wf: it calls make code-review-file", "make code-review-file REPO=" in text)
+    check("wf: it does NOT opt out of the API checks (no --static-only in the pipeline)",
+          "--static-only" not in text, "")
     check("wf: it never runs a repo script directly",
           not re.search(r"^\s*python3 scripts/", text, re.M))
 
@@ -302,6 +304,71 @@ def test_a_refused_run_count_read_still_names_the_skipped_check():
     check("refusal: it still names the skipped check", "SKIPPED this run" in out, out[:200])
 
 
+def _answering_gh(td: Path) -> str:
+    """A gh that ANSWERS the workflows/runs reads and refuses only the secret list — the shape the
+    bot actually runs in (`contents: read` can list workflows and runs; no token reads secrets)."""
+    p = td / "gh"
+    p.write_text(
+        "#!/bin/sh\n"
+        "case \"$1 $2\" in\n"
+        "  'workflow list') echo '[{\"name\":\"a\",\"path\":\".github/workflows/a.yml\"}]' ;;\n"
+        "  'api repos/'*) echo 0 ;;\n"
+        "  'secret list') echo 'HTTP 403: Resource not accessible' >&2; exit 1 ;;\n"
+        "  *) echo '[]' ;;\n"
+        "esac\n")
+    p.chmod(0o755)
+    return str(p)
+
+
+def _run_scan(argv_extra: list[str], gh: str, root: Path):
+    import contextlib
+    import io
+
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+        rc = cr.main(["scan", "--repo", "o/r", "--gh", gh, "--root", str(root), *argv_extra])
+    return rc, out.getvalue()
+
+
+def test_a_scan_that_could_not_run_a_check_is_not_a_clean_scan():
+    """#309: "checked and clean" and "could not check" must never look alike.
+
+    RED on the pre-change code: the refused runs read printed a stderr NOTE, `no findings` went
+    to stdout, and the scan exited **0** — so an unchecked scan was indistinguishable from a
+    clean one.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch({"a.yml": "name: a\non:\n  workflow_dispatch:\n"})
+        rc, out = _run_scan([], _failing_gh(Path(td)), root)
+
+    check("unchecked: a refused runs read FAILS the scan", rc != 0, f"rc={rc}")
+    check("unchecked: the scan names the check that did not run", "UNCHECKED" in out, out[:300])
+    check("unchecked: it denies the clean bill of health",
+          "NOT a clean bill of health" in out, out[:300])
+
+
+def test_a_scan_whose_checks_ran_is_clean():
+    """The other direction: when every check could run, the scan stays green — the gate must not
+    fire on a healthy run, or it would be noise the operator learns to ignore."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch({"a.yml": "name: a\non:\n  workflow_dispatch:\n"})
+        rc, out = _run_scan([], _answering_gh(Path(td)), root)
+
+    check("checked: a fully-run scan exits 0", rc == 0, f"rc={rc} {out[:200]}")
+    check("checked: it does not claim an unchecked check", "UNCHECKED" not in out, out[:200])
+
+
+def test_a_static_only_scan_does_not_fail_for_checks_it_never_asked_for():
+    """`--static-only` deliberately does not ask for the API checks — a different thing from
+    asking and being refused, so it must not fail."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch({"a.yml": "name: a\non:\n  workflow_dispatch:\n"})
+        rc, out = _run_scan(["--static-only"], _failing_gh(Path(td)), root)
+
+    check("static-only: it exits 0", rc == 0, f"rc={rc} {out[:200]}")
+    check("static-only: it claims no unchecked check", "UNCHECKED" not in out, out[:200])
+
+
 def main() -> int:
     test_an_inline_repo_script_is_reported()
     test_two_colliding_crons_are_reported()
@@ -317,6 +384,9 @@ def main() -> int:
     test_a_commented_reference_is_not_a_read()
     test_a_refused_secrets_read_does_not_claim_a_skipped_check()
     test_a_refused_run_count_read_still_names_the_skipped_check()
+    test_a_scan_that_could_not_run_a_check_is_not_a_clean_scan()
+    test_a_scan_whose_checks_ran_is_clean()
+    test_a_static_only_scan_does_not_fail_for_checks_it_never_asked_for()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

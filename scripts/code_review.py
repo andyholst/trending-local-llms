@@ -442,6 +442,7 @@ def main(argv=None) -> int:
         p.error("need a command: scan | file")
     root = Path(args.root)
     secrets = runs = None
+    unchecked: list[str] = []
     if not args.static_only:
         secrets = defined_secrets(args.gh, args.repo)
         runs = workflow_run_counts(args.gh, args.repo)
@@ -453,15 +454,29 @@ def main(argv=None) -> int:
                   "token with admin on the repo); the secrets check ran against the repo's "
                   "declared contract instead, so it did not go unchecked.", file=sys.stderr)
         if runs is None:
-            print("[code-review] NOTE: the run-count check is unavailable here (the Actions API "
-                  "refused the read); run the bot with a token that can read them.", file=sys.stderr)
+            # This one DOES cost a check: `check_workflow_never_ran` cannot run without the
+            # counts, so it is recorded as a coverage gap and the scan fails (issue #309).
+            unchecked.append("dead-workflow (the workflow list / run counts could not be read)")
     items = findings(root, args.gh, args.repo, secrets, runs)
 
     if args.cmd == "scan":
         print(json.dumps(items, indent=2) if args.json else render(items))
-        return 0
-    created = file_findings(args.gh, args.repo, items, args.cap, args.dry)
-    print(f"[code-review] {len(created)} issue(s) {'would be ' if args.dry else ''}filed")
+    else:
+        created = file_findings(args.gh, args.repo, items, args.cap, args.dry)
+        print(f"[code-review] {len(created)} issue(s) {'would be ' if args.dry else ''}filed")
+
+    if unchecked:
+        # "Checked and clean" and "could not check" must never look alike: a stderr NOTE beside a
+        # success is exactly how a reader takes `no findings` for a clean bill of health. So the
+        # scan names the gap in its own output AND exits non-zero — a check that could not run is
+        # never reported as a clean scan (issue #309). `--static-only` is exempt by DESIGN: it
+        # does not ask for the API checks at all, which is a different thing from asking and
+        # being refused.
+        print(f"[code-review] UNCHECKED: {len(unchecked)} check(s) did NOT run this scan — "
+              f"{'; '.join(unchecked)}. `no findings` above is NOT a clean bill of health for "
+              f"them; fix the credential or run with --static-only to say so on purpose.",
+              file=sys.stderr)
+        return 1
     return 0
 
 
