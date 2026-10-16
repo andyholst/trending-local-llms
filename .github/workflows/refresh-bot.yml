@@ -443,8 +443,10 @@ jobs:
             echo "pr_opened=false" >> "$GITHUB_OUTPUT"
           else
             BRANCH="ci/trending-refresh-$(date +%Y%m%d-%H%M)"
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            # The repo's own agent identity (issue #323, guard scripts/check_commit_authorship.py):
+            # the only identities here are Andy Holst and Asimov Agent.
+            git config user.name "Asimov Agent"
+            git config user.email "support@docondee.com"
             git checkout -b "$BRANCH"
             sudo chown -R "$(id -u):$(id -g)" .
             git add README.md data/models.json data/snapshots data/raw data/gap_baseline.json

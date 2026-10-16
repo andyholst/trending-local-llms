@@ -35,6 +35,7 @@ _FAIL = 0
 
 ALLOWED = "Andy Holst <andy.holst@protonmail.com>"
 BOT = "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+AGENT = "Asimov Agent <support@docondee.com>"
 GITHUB = "GitHub <noreply@github.com>"
 HERMES = "Hermes Agent <hermes@nousresearch.com>"
 HERMES_LOCAL = "Hermes Agent <agent@hermes.local>"
@@ -121,6 +122,24 @@ def test_the_repos_own_bot_identity_is_not_a_violation():
         _commit(repo, "chore: Hermes refresh of trending LLM data", author=BOT, committer=GITHUB)
         bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
     check("identity: `github-actions[bot]` authored, GitHub squashed, is not a violation",
+          bad == [], str(bad))
+
+
+def test_the_agents_own_identity_is_allowed():
+    """Issue #323: every committing bot job uses this identity, so it must be allowed.
+
+    `github-actions[bot]` may still appear (the guard gates new commits, and history
+    carries it), but the repo's own agent is `Asimov Agent <support@docondee.com>` —
+    allowed by NAME and, since #323, by EMAIL too.
+    """
+    check("identity: the agent's email is allowed by itself",
+          cca.identity_allowed(AGENT) and "support@docondee.com" in cca.ALLOWED_EMAILS,
+          cca.ALLOWED_EMAILS)
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "chore: Hermes refresh of trending LLM data", author=AGENT, committer=AGENT)
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("identity: `Asimov Agent <support@docondee.com>` authored+committed is not a violation",
           bad == [], str(bad))
 
 
@@ -309,6 +328,7 @@ def main() -> int:
     print("commit-authorship guard (scripts/check_commit_authorship.py, issue #317)")
     test_an_allowed_identity_is_not_a_violation()
     test_the_repos_own_bot_identity_is_not_a_violation()
+    test_the_agents_own_identity_is_allowed()
     test_a_wrong_author_identity_with_a_clean_message_is_a_violation()
     test_a_wrong_committer_identity_is_a_violation()
     test_both_wrong_identities_are_reported_separately()

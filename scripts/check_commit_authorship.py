@@ -100,6 +100,9 @@ ALLOWED_EMAILS = (
     "asimov@example.com",
     "asimov@omarchy.local",
     "asimov-agent@users.noreply.github.com",
+    #: The agent's OWN address — the identity every committing bot job uses
+    #: (issue #323). Allowed by NAME too, but listed so the pair is complete.
+    "support@docondee.com",
     "41898282+github-actions[bot]@users.noreply.github.com",
     "noreply@github.com",
 )

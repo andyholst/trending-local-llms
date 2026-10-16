@@ -233,6 +233,9 @@ def test_fix_bot():
     check("fix: push gated on a green loop", "green == 'true'" in str(push.get("if", "")), push.get("if"))
     check("fix: git identity configured before commit",
           "git config user.name" in push.get("run", "") and "git config user.email" in push.get("run", ""), "")
+    check("fix: it commits as the repo's own agent, not github-actions[bot]",
+          f'git config user.name "{AGENT_NAME}"' in push.get("run", "")
+          and f'git config user.email "{AGENT_EMAIL}"' in push.get("run", ""), push.get("run", "")[:200])
     check("fix: commit message prefix matches qa-validate's cap counter",
           'git commit -m "fix-bot:' in push.get("run", ""), "")
     check("fix: push step has an id (the report reads its outcome)", push.get("id") == "push", push.get("id"))
@@ -502,6 +505,46 @@ echo "$p"
                OWNER="andyholst", REPO="andyholst/trending-local-llms", GH_TOKEN="x")
     p = subprocess.run(["bash", "-e", "-c", step["run"]], env=env, capture_output=True, text=True, timeout=30)
     return p.returncode, p.stdout
+
+
+AGENT_NAME = "Asimov Agent"
+AGENT_EMAIL = "support@docondee.com"
+
+
+def test_every_committing_bot_job_commits_as_the_agent():
+    """Issue #323: EVERY job that commits carries the repo's own agent identity.
+
+    `github-actions[bot]` is GitHub's generic automation account, not this repo's
+    agent. The repo states its only identities are Andy Holst and Asimov Agent —
+    the authorship guard (`scripts/check_commit_authorship.py`, issue #317) reads
+    exactly that — yet every committing bot job contradicted it. The old assertion
+    named `fix-bot.yml` ALONE and only checked that some `git config` line existed,
+    so a job could commit as anyone and stay green.
+    """
+    # Given every workflow, every job and every step that actually commits
+    committing: list[tuple[str, str, str, str]] = []
+    for wf in sorted(WF.glob("*.yml")):
+        doc = yaml.safe_load(wf.read_text()) or {}
+        if True in doc and "on" not in doc:
+            doc["on"] = doc.pop(True)
+        for job_name, job in (doc.get("jobs") or {}).items():
+            for st in steps(job):
+                run = st.get("run", "") or ""
+                if "git commit" in run:
+                    committing.append((wf.name, job_name, st.get("name", ""), run))
+
+    # Then the set is non-empty (a guard that finds nothing proves nothing)…
+    check("identity: the committing bot jobs are found", bool(committing), len(committing))
+
+    # …and each one sets the agent identity, and never the generic bot account.
+    for wf_name, job_name, step_name, run in committing:
+        where = f"{wf_name} {job_name} / {step_name}"
+        check(f"identity: {where} commits as {AGENT_NAME}",
+              f'git config user.name "{AGENT_NAME}"' in run, run[:220])
+        check(f"identity: {where} commits as {AGENT_EMAIL}",
+              f'git config user.email "{AGENT_EMAIL}"' in run, run[:220])
+        check(f"identity: {where} does not commit as github-actions[bot]",
+              "github-actions" not in run, run[:220])
 
 
 def test_owner_guards():
@@ -1641,6 +1684,7 @@ def main() -> int:
     test_fix_bot()
     test_fix_bot_announces_its_window()
     test_fix_bot_push_behaviour()
+    test_every_committing_bot_job_commits_as_the_agent()
     test_owner_guards()
     test_guard_behaviour()
     test_guard_is_before_any_secret()
