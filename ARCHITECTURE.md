@@ -287,6 +287,7 @@ competing PRs over the same generated files).
 
 | Job | Does |
 |---|---|
+| `guard` | FIRST job (issue #279): owner / write+ collaborator / `github-actions[bot]` for BOTH actor and triggering actor; a `pull_request`/`push` run is admitted outright (GitHub starts it for the repository itself, and a PR must be validated whatever its author). The 30-minute network-bound DISPATCH is what this guards |
 | `validate` | `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
 | `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
