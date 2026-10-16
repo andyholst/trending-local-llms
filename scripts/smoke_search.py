@@ -172,6 +172,30 @@ def probe(keyword: str, api_key: str, budget: float, retries: int = 1,
         sleep_fn(retry_wait)
 
 
+def leg_verdict(total: int, missed: int) -> tuple[bool, str]:
+    """Does ONE backend's probe result BLOCK the run, and what should the summary say?
+
+    Rule (issue #258): a leg may only fail on a MAJORITY of its queries missing the budget. The
+    probe is a pre-flight *reachability* check, not a completeness check — it samples its queries,
+    so one slow query out of four means the mirror answered the rest. Reddening a whole scheduled
+    run for that is a flake the maintainer learns to ignore, which costs the signal its value; an
+    unreachable mirror misses ALL of them and must still fail loudly.
+
+    Measured: scheduled run 38723723638 (`search (cpu)`) — three of four queries answered, the
+    fourth was slow on both attempts, `aggregate` ran and succeeded, and the run was FAILURE
+    anyway, indistinguishable from a dead source.
+
+    Returns `(blocking, note)`: `blocking` is whether this leg reds the run; `note` explains a
+    NON-blocking miss (empty when every query answered, so a clean leg says nothing).
+    """
+    if total <= 0 or missed == 0:
+        return False, ""
+    if missed * 2 > total:
+        return True, f"{missed}/{total} queries did not answer within the budget"
+    return False, (f"{missed}/{total} queries sampled slower than the budget "
+                   f"(the rest answered, so the mirror is reachable)")
+
+
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--budget", type=int, default=90,
@@ -189,7 +213,10 @@ def parse_args() -> argparse.Namespace:
     return ap.parse_args()
 
 
-def main() -> int:
+def main(probe_fn=None) -> int:
+    """`probe_fn` is the probe seam: the ONE implementation is `probe` (the default), and a test
+    passes its own to drive a whole leg offline. Nothing else is injected — the leg verdict, the
+    summary lines and the exit code under test are the REAL ones."""
     args = parse_args()
     if args.url_only:
         for b, kw in BACKEND_KEYWORDS.items():
@@ -202,33 +229,49 @@ def main() -> int:
         return 1
 
     backends = [args.backend] if args.backend else list(BACKEND_KEYWORDS)
-    fails = 0
+    probe_fn = probe_fn or probe
     outages = 0
+    blocking: list[str] = []
+    sampled: list[str] = []
     for b in backends:
+        total = missed = 0
         for k in BACKEND_KEYWORDS[b]:
-            res = probe(k, args.key, args.budget, args.retries, args.retry_wait)
+            total += 1
+            res = probe_fn(k, args.key, args.budget, args.retries, args.retry_wait)
             tries = f" (attempt {res['attempts']})" if res["attempts"] > 1 else ""
             print(f"[{b}] {res['label']} http={res['status']} success={res['ok']} "
                   f"upstream={res['upstream']} {res['elapsed']:.1f}s{tries}  {lightbrd_url(k)}")
             if res["label"] == "OUTAGE":
                 outages += 1
             elif res["label"] != "OK":
-                fails += 1
-    if fails:
-        print(f"\n[smoke] {fails} request(s) did NOT return HTTP 200 within {args.budget}s "
-              f"after {args.retries + 1} attempt(s).")
+                missed += 1
+        # The verdict is PER LEG (issue #258): a reachability probe samples its queries, so a
+        # minority that missed the budget is a note, not a red run — while a majority, and so an
+        # unreachable mirror (every query), still fails loudly.
+        block, note = leg_verdict(total, missed)
+        if block:
+            blocking.append(f"{b}: {note}")
+        elif note:
+            sampled.append(f"{b}: {note}")
+    if blocking:
+        print(f"\n[smoke] {len(blocking)} leg(s) missed the budget on a MAJORITY of their "
+              f"queries: {'; '.join(blocking)}. That is a dead or unreachable source, not a flake.")
         return 2
+    if sampled:
+        print(f"\n[smoke] SAMPLED: {'; '.join(sampled)}. Not a failure — a MINORITY of the "
+              f"sampled queries was slow, which is a flake (issue #258).")
     if outages:
         # The mirror is down and Firecrawl is faithfully reporting it. That is
         # the TARGET's outage, not our smoke result, and it must be LOUD without
         # blocking every open PR (issue #291) — the old check called this state
         # "all backends returned HTTP 200", which is how a 502 mirror looked
         # green here while every PR's live-smoke was red.
-        print(f"\n[smoke] OUTAGE: {outages} querie(s) came back as the TARGET's own error page "
+        print(f"[smoke] OUTAGE: {outages} querie(s) came back as the TARGET's own error page "
               f"(upstream >= 500). The lightbrd mirror is DOWN — not a smoke failure, not a "
               f"blocked PR (issue #291). Re-run when it recovers.")
         return 0
-    print(f"\n[smoke] all backends returned HTTP 200 within {args.budget}s")
+    if not sampled:
+        print(f"\n[smoke] all backends returned HTTP 200 within {args.budget}s")
     return 0
 
 
