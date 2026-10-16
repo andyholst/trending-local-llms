@@ -50,22 +50,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  fix:
+  # The guard is its OWN job and runs FIRST — before the run holds a single
+  # secret (rule 6j). A job-level `env:` holding `secrets.*` belongs to the JOB,
+  # not to a step: the runner materialises it when the job starts, so a guard
+  # that lives as a STEP of the secret-carrying job is not "before any secret",
+  # however early that step sits (measured, issue #259: the fix job declared all
+  # four secrets at job level above its guard step, and the test that was
+  # supposed to enforce the rule only looked at STEPS).
+  #
+  # This job declares NO `secrets.` at all: the default `github.token` it uses
+  # to ask the collaborator-permission API is injected by GitHub for the run and
+  # is not a repository secret.
+  guard:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    env:
-      NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
-      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      # The nerve plugin's Jev provider credential (issue #120): forwarded by NAME
-      # only, as `-e TYPESAFE_API_KEY` in the Makefile run wrappers.
-      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-      FIX_ROUNDS: "3"
+    timeout-minutes: 10
     steps:
-      # Before anything touches a secret: only the owner or a collaborator
-      # with write access may run fix-bot (it spends the Nous key and pushes
-      # with the owner PAT). qa-validate dispatches it with the owner PAT, so
-      # its actor IS the owner.
+      # Only the owner, the bot itself, or a collaborator with write access may
+      # run fix-bot (it spends the Nous key and pushes with the owner PAT).
+      # qa-validate dispatches it with the owner PAT, so its actor IS the owner.
       - name: Owner / collaborator trigger guard
         env:
           EVENT: ${{ github.event_name }}
@@ -94,6 +96,21 @@ jobs:
           done
           echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
 
+  # The work: `needs: [guard]`, so a refused caller means this job never starts
+  # and its secrets are never materialised.
+  fix:
+    needs: [guard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      # The nerve plugin's Jev provider credential (issue #120): forwarded by NAME
+      # only, as `-e TYPESAFE_API_KEY` in the Makefile run wrappers.
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      FIX_ROUNDS: "3"
+    steps:
       - name: Resolve PR
         id: pr
         env:

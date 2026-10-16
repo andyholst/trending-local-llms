@@ -532,26 +532,42 @@ def test_owner_guards():
     check("concurrency: refresh-bot runs queue (group set, no cancel)",
           bool(conc.get("group")) and conc.get("cancel-in-progress") is False, conc)
 
-    fb = load("fix-bot.yml")["jobs"]["fix"]
-    first = (steps(fb) or [{}])[0]
-    check("access: fix-bot's FIRST step is the trigger guard", "guard" in first.get("name", "").lower(), first.get("name"))
-    check("access: fix-bot guard checks actor AND triggering_actor: owner or write+ collaborator",
-          "github.triggering_actor" in str(first.get("env", {}).get("TRIGGER")) and _guard_ok(first.get("run", "")))
-    secret_steps = [i for i, st in enumerate(steps(fb)) if "secrets." in str(st)]
-    check("access: no fix-bot step uses a secret before the guard", min(secret_steps or [99]) > 0, secret_steps)
+    fb = load("fix-bot.yml")["jobs"]
+    g = fb.get("guard", {})
+    gstep = (steps(g) or [{}])[0]
+    genv = gstep.get("env", {})
+    check("access: fix-bot's guard is its OWN first job", bool(g), list(fb))
+    check("access: fix-bot's guard checks actor AND triggering_actor: owner or write+ collaborator",
+          "github.triggering_actor" in str(genv.get("TRIGGER")) and _guard_ok(gstep.get("run", "")))
+    check("access: fix-bot's guard declares no secret at job level (rule 6j)",
+          "secrets." not in str(g.get("env", {})), g.get("env"))
+    check("access: fix-bot's guard step touches no secret",
+          not [st for st in steps(g) if "secrets." in str(st)], steps(g))
+    for name in fb:
+        if name != "guard":
+            check(f"access: fix-bot job '{name}' needs the guard", "guard" in _deps(fb, name), _deps(fb, name))
+    check("access: fix-bot's secret-carrying job declares its secrets at job level",
+          "secrets." in str(fb["fix"].get("env", {})), fb["fix"].get("env"))
 
 
 #: Every bot pipeline's guard, and the job whose guard step it is (issue #238).
 #: `qa-validate` is here too (issue #279): its guard admits `pull_request`/`push`
 #: — repository events GitHub starts for the repo itself — and guards only the
 #: 30-minute, network-bound dispatch.
+#: The guard is its OWN job in every one of them, and that job declares NO secret
+#: (issue #259): a job-level `env:` holding `secrets.*` is materialised when the
+#: JOB starts, so a guard that is merely the first STEP of the secret-carrying job
+#: is not "before any secret" as rule 6j requires — and no step-level assertion can
+#: see the difference.
 BOT_GUARDS = (
     ("refresh-bot.yml", "guard"),
-    ("fix-bot.yml", "fix"),
+    ("fix-bot.yml", "guard"),
     ("issue-bot.yml", "guard"),
     ("issue-review-bot.yml", "guard"),
     ("publish-agent-image.yml", "guard"),
     ("qa-validate.yml", "guard"),
+    ("code-review-bot.yml", "guard"),
+    ("queued-alarm.yml", "guard"),
 )
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
@@ -592,6 +608,28 @@ def test_guard_behaviour():
             verdict = "allowed" if want == 0 else "refused"
             check(f"guard {wf_name}: {label} -> {verdict}", (rc == 0) == (want == 0),
                   f"rc={rc} {out.strip()[-120:]}")
+
+
+def test_guard_is_before_any_secret():
+    """#259: the guard must sit before ANY secret, and the only checkable form of
+    that is a guard JOB that declares no secret at all — because a job-level
+    `env:` holding `secrets.*` is materialised when the JOB starts. A guard that
+    is merely the first STEP of the secret-carrying job satisfies no step-level
+    assertion and can drift further with no red (the original fix-bot shape)."""
+    for wf_name, job in BOT_GUARDS:
+        jobs = load(wf_name)["jobs"]
+        g = jobs.get(job, {})
+        check(f"guard {wf_name}: the guard is its own job named '{job}'", job in jobs, list(jobs))
+        check(f"guard {wf_name}: the guard job declares no secret at job level",
+              "secrets." not in str(g.get("env", {})), g.get("env"))
+        secret_steps = [i for i, st in enumerate(steps(g)) if "secrets." in str(st)]
+        check(f"guard {wf_name}: no guard step touches a secret", not secret_steps, secret_steps)
+        gdeps = _deps(jobs, job) if job in jobs else {job}
+        check(f"guard {wf_name}: the guard job needs nothing", not gdeps, gdeps)
+        for name in jobs:
+            if name != job:
+                check(f"guard {wf_name}: job '{name}' runs only after the guard",
+                      job in _deps(jobs, name), f"needs={jobs[name].get('needs')}")
 
 
 def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
@@ -1610,6 +1648,7 @@ def main() -> int:
     test_fix_bot_push_behaviour()
     test_owner_guards()
     test_guard_behaviour()
+    test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
     test_a_repo_event_run_is_admitted_by_its_guard()
     test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()
