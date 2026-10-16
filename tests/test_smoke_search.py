@@ -104,6 +104,95 @@ def test_an_upstream_error_page_is_its_own_outage_label():
     assert probe("q", "k", 3, retries=1, scrape_fn=fn, sleep_fn=lambda s: None)["label"] == "FAIL"
 
 
+def test_one_slow_query_does_not_red_a_leg(S: dict):
+    """#258: the verdict is PER LEG, and only a MAJORITY of missed queries may red it.
+
+    Measured: scheduled run 38723723638 — `search (cpu)` answered three of four queries, the
+    fourth was slow on BOTH attempts, `aggregate` ran and succeeded, and the run was FAILURE
+    anyway — indistinguishable, to whoever reads the notification, from a dead source.
+
+    RED on the pre-change code: there was no decision function at all (the probe counted every
+    miss globally and exited 2 on the first one), so these checks could not exist.
+    """
+    from typing import Callable, cast
+
+    fn = S.get("leg_verdict")
+    check("leg: the probe exposes ONE per-leg decision function", callable(fn), str(fn))
+    if not callable(fn):
+        return
+    verdict = cast("Callable[..., tuple[bool, str]]", fn)
+
+    # Given one leg of four queries with ONE slow one
+    blocking, note = verdict(total=4, missed=1)
+
+    # Then  it does NOT red the run, and the summary says why
+    check("leg: 1 of 4 missed does NOT block the run", blocking is False, f"blocking={blocking}")
+    check("leg: the note names the flake and the ratio", "1/4" in note and "sampled" in note, note)
+
+    # And  a MAJORITY missing still fails loudly (an unreachable mirror misses all of them)
+    for total, missed in ((4, 4), (4, 3), (3, 2), (5, 3), (1, 1)):
+        blocking, note = verdict(total=total, missed=missed)
+        check(f"leg: {missed} of {total} missed DOES block", blocking is True, note)
+
+    # And  a clean leg says nothing, and an exact half is not a majority
+    check("leg: a clean leg is silent", verdict(4, 0) == (False, ""), str(verdict(4, 0)))
+    check("leg: an exact half does not block (not a majority)", verdict(4, 2)[0] is False,
+          str(verdict(4, 2)))
+
+
+def test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S: dict):
+    """#258's second acceptance criterion: "the distinction is visible in the run: a leg that only
+    *sampled* slower than the budget says so in its summary rather than going red".
+
+    Drives the REAL `main()` through its `probe_fn` seam over one leg (cpu), so the leg verdict,
+    the summary lines and the exit code are all production code.
+    """
+    import contextlib
+    import inspect
+    import io
+
+    if "probe_fn" not in inspect.signature(S["main"]).parameters:
+        check("run: main() exposes the probe seam", False, "no probe_fn parameter on main()")
+        return
+    check("run: main() exposes the probe seam", True)
+
+    cpu = S["BACKEND_KEYWORDS"]["cpu"]
+    good = {"label": "OK", "status": 200, "ok": True, "upstream": 200, "elapsed": 0.3, "attempts": 1}
+    slow = {"label": "TIMEOUT", "status": 0, "ok": None, "upstream": None, "elapsed": 3.0, "attempts": 2}
+
+    def run(slow_count: int):
+        calls = {"n": 0}
+
+        def probe_fn(*_a, **_kw):
+            calls["n"] += 1
+            return dict(slow if calls["n"] <= slow_count else good)
+
+        out = io.StringIO()
+        argv = sys.argv
+        sys.argv = ["smoke_search.py", "--backend", "cpu", "--key", "test"]
+        try:
+            with contextlib.redirect_stdout(out):
+                rc = S["main"](probe_fn=probe_fn)
+        finally:
+            sys.argv = argv
+        return rc, out.getvalue()
+
+    # Given one leg of four queries with ONE slow one
+    rc, text = run(slow_count=1)
+    # Then  the run stays GREEN and its summary says it only sampled
+    check("run: a flaky leg exits 0 (not FAILURE)", rc == 0, f"rc={rc}")
+    check("run: the summary says SAMPLED", "SAMPLED" in text, text[-300:])
+    check("run: it names the ratio", f"1/{len(cpu)}" in text, text[-300:])
+    check("run: it does NOT claim every backend was 200", "all backends returned HTTP 200" not in text,
+          text[-200:])
+
+    # And  a MAJORITY slow (an unreachable mirror shape) still FAILS loudly
+    rc, text = run(slow_count=len(cpu))
+    check("run: a dead source still exits 2", rc == 2, f"rc={rc}")
+    check("run: it says the source is unreachable, not a flake",
+          "MAJORITY" in text and "not a flake" in text, text[-300:])
+
+
 def main() -> int:
     print("smoke_search: Makefile keywords match the bounded smoke (same params)")
     smoke = _load_smoke_backends()
@@ -124,6 +213,8 @@ def main() -> int:
     # URL building: each keyword -> exact lightbrd search URL (urlencoded q=)
     print("smoke_search: every keyword builds a lightbrd search URL")
     S = SEARCH_NS
+    test_one_slow_query_does_not_red_a_leg(S)
+    test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S)
     for backend, kws in smoke.items():
         for k in kws:
             url = S["lightbrd_url"](k)
