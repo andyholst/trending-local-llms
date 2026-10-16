@@ -92,11 +92,21 @@ def render(run_started: str | None, legs: dict[str, str], aggregate: str | None,
     ])
 
 
+#: The argv prefix every read here uses. `gh` takes the API path ONLY after `api`:
+#: `gh repos/o/r/actions/runs/1` is `unknown command "repos/…" for "gh"`, which is
+#: exactly how refresh-bot's `aggregate` job died before it could open a PR
+#: (measured on run 38889575999 — every other job succeeded). Named once, so the
+#: writer and the test's stub can never drift.
+GH_API = ("gh", "api")
+
+
 def _gh_json(args: list[str]) -> dict:
     """One `gh api` read. Fails LOUDLY: a window we cannot read must never read as a clean run."""
-    out = subprocess.run(["gh", *args], capture_output=True, text=True)
+    out = subprocess.run([*GH_API, *args], capture_output=True, text=True)
     if out.returncode != 0:
-        raise SystemExit(f"[refresh-run-block] gh {' '.join(args)} failed: {out.stderr.strip()}")
+        raise SystemExit(
+            f"[refresh-run-block] {' '.join(GH_API)} {' '.join(args)} failed: {out.stderr.strip()}"
+        )
     return json.loads(out.stdout or "{}")
 
 
