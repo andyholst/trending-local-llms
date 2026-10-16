@@ -254,6 +254,54 @@ def test_a_commented_reference_is_not_a_read():
           [f["key"] for f in cr.findings(ROOT)])
 
 
+def _failing_gh(td: Path) -> str:
+    """A `gh` that always refuses, the way the default token is refused on repo secrets."""
+    p = td / "gh"
+    p.write_text("#!/bin/sh\necho 'HTTP 403: Resource not accessible' >&2\nexit 1\n")
+    p.chmod(0o755)
+    return str(p)
+
+
+def test_a_refused_secrets_read_does_not_claim_a_skipped_check():
+    """#278's follow-through: once the check moved onto the declared contract, refusing the LIVE
+    read costs no check — and the log must not say it does.
+
+    Measured on the merged fix (run 38876843174): the WARNING read "that check is SKIPPED this
+    run" one line above an INFO saying the check had run anyway.
+    """
+    import contextlib
+    import io
+
+    with tempfile.TemporaryDirectory() as td:
+        gh = _failing_gh(Path(td))
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            got = cr.defined_secrets(gh, "o/r")
+    out = err.getvalue()
+
+    check("refusal: defined_secrets returns None", got is None, got)
+    check("refusal: it does NOT claim a check was skipped",
+          "SKIPPED this run" not in out, out[:200])
+    check("refusal: it says the refusal costs no check", "no check is skipped" in out, out[:200])
+
+
+def test_a_refused_run_count_read_still_names_the_skipped_check():
+    """The other direction: a refusal that DOES cost a check must still say so — the message
+    must stay honest in both cases, not just quiet."""
+    import contextlib
+    import io
+
+    with tempfile.TemporaryDirectory() as td:
+        gh = _failing_gh(Path(td))
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            got = cr.workflow_run_counts(gh, "o/r")
+    out = err.getvalue()
+
+    check("refusal: workflow_run_counts returns None", got is None, got)
+    check("refusal: it still names the skipped check", "SKIPPED this run" in out, out[:200])
+
+
 def main() -> int:
     test_an_inline_repo_script_is_reported()
     test_two_colliding_crons_are_reported()
@@ -267,6 +315,8 @@ def main() -> int:
     test_a_contract_secret_is_not_reported()
     test_the_declared_secret_contract_matches_what_the_workflows_read()
     test_a_commented_reference_is_not_a_read()
+    test_a_refused_secrets_read_does_not_claim_a_skipped_check()
+    test_a_refused_run_count_read_still_names_the_skipped_check()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
