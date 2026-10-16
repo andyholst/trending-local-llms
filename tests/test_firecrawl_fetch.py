@@ -320,6 +320,54 @@ def test_the_verdict_tells_an_outage_from_a_refusal_and_a_quiet_search():
           any("EVERY query" in ln for ln in lines), lines)
 
 
+def test_a_transport_failed_query_does_not_unmask_a_proven_outage():
+    """ONE unclassifiable query must not flip a proven mirror outage to `quiet`.
+
+    THE REGRESSION (issue #296), measured on run 38862487215 after #292 landed:
+    `queries=24 with-hits=0 outage=23 refused=0 failed=1` — 23 queries proved the
+    target's own `502` error page, one hit a connection-level error, and the verdict
+    came back `quiet` (exit 1) blaming the query set. `live-smoke` gates
+    `auto-merge`, so every open PR was blocked again by a query that proves nothing
+    about the mirror either way.
+    """
+
+    # Given  the exact outcome of that run: 23 classified outages and 1 transport failure
+    real = {"queries": 24, "with_hits": 0, "outage": 23, "refused": 0, "failed": 1,
+            "outage_status": ["the target answered HTTP 502 (lightbrd.com | 502: Bad gateway)"],
+            "reasons": ["<urlopen error [Errno 111] Connection refused>"]}
+
+    # When   the verdict is taken
+    kind, code, lines = UT.zero_hit_verdict(real)
+
+    # Then   it is the mirror's outage, it does NOT block, and it does not blame the query set
+    check("verdict(#296): 23 outages + 1 transport failure is an OUTAGE", kind == "outage", (kind, code))
+    check("verdict(#296): it does NOT block (exit 0) — a down mirror must not stop every PR",
+          code == 0, code)
+    check("verdict(#296): the lines name the DOWN mirror and never say QUIET SEARCH",
+          "DOWN" in lines[0] and not any("QUIET SEARCH" in ln for ln in lines), lines[0])
+    check("verdict(#296): the unclassifiable query is REPORTED, not hidden",
+          any("1 further querie" in ln for ln in lines), lines)
+
+    # And    a wholesale transport failure proves no outage, so it is never excused
+    none_proven = {"queries": 24, "with_hits": 0, "outage": 0, "refused": 0, "failed": 24}
+    kind, code, _ = UT.zero_hit_verdict(none_proven)
+    check("verdict(#296): 0 outages PROVEN is never excused as an outage",
+          kind == "quiet" and code == 1, (kind, code))
+
+    # And    a mirror that ANSWERED real pages still blocks, even with a failure beside it
+    answered = {"queries": 24, "with_hits": 0, "outage": 10, "refused": 0, "failed": 1}
+    kind, code, _ = UT.zero_hit_verdict(answered)
+    check("verdict(#296): a mirror that answered 13 real pages stays red",
+          kind == "quiet" and code == 1, (kind, code))
+
+    # And    a refusal still wins over an outage: that one is OUR configuration
+    both = {"queries": 24, "with_hits": 0, "outage": 20, "refused": 1, "failed": 0,
+            "reasons": ["Payment Required: no credits remaining"]}
+    kind, code, _ = UT.zero_hit_verdict(both)
+    check("verdict(#296): a refusal wins over an outage (ours, blocking)",
+          kind == "refused" and code == 1, (kind, code))
+
+
 def test_the_live_check_exits_zero_on_an_outage_and_non_zero_otherwise():
     """THE REGRESSION, at the level it actually hurt: the exit code of
     `make validate-fetch` (`python3 scripts/update_trending.py --fetch
@@ -402,6 +450,7 @@ def main() -> int:
     test_a_bot_wall_is_a_refusal_not_an_outage()
     test_a_healthy_page_is_never_read_as_an_outage()
     test_the_verdict_tells_an_outage_from_a_refusal_and_a_quiet_search()
+    test_a_transport_failed_query_does_not_unmask_a_proven_outage()
     test_the_live_check_exits_zero_on_an_outage_and_non_zero_otherwise()
     test_the_endpoint_seam_defaults_to_firecrawl()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
