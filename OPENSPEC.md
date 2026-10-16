@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **28** · archived: **0**
+Active changes: **29** · archived: **0**
 
 ## Active changes
 
@@ -41,6 +41,7 @@ Active changes: **28** · archived: **0**
 | `query-coverage-guard` | active | — | — | [query-coverage](openspec/changes/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/query-coverage-guard/proposal.md) |
 | `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
+| `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
 | `worktree-base-fresh` | active | — | — | [worktree-base](openspec/changes/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/worktree-base-fresh/proposal.md) |
 
 ## Archived changes

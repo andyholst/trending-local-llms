@@ -456,9 +456,21 @@ jobs:
             regenerated. No existing model removed. Auto-merged by
             qa-validate once green. Ref: #1"
             git push origin "$BRANCH"
+            # The run's WINDOW as the body's first block (issue #199): the REAL job
+            # timestamps, read from the API by `make refresh-run-block` (never a wall clock
+            # at PR-open time), with the marker line from the shared helper (#197). An
+            # in-flight refresh is then readable from the PR a human actually opens, and a
+            # reviewer can tell WHICH run opened it and when each leg started.
+            # Written to $RUNNER_TEMP, so no scratch file lands in the checkout.
+            PR_BODY="$RUNNER_TEMP/refresh-pr-body.md"
+            {
+              make refresh-run-block
+              echo
+              echo "Hermes CLI refresh (deepseek-v4.1-flash via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Closes #1"
+            } > "$PR_BODY"
             PR_URL=$(gh pr create --base master --head "$BRANCH" \
               --title "chore: Hermes refresh of trending LLM data" \
-              --body "Hermes CLI refresh (deepseek-v4.1-flash via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Closes #1" 2>/dev/null)
+              --body-file "$PR_BODY" 2>/dev/null)
             PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$' | head -1 || echo "")
             echo "pr_opened=true" >> "$GITHUB_OUTPUT"
             echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
