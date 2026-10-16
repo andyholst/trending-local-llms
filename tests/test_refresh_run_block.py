@@ -159,6 +159,49 @@ def test_a_run_we_cannot_read_is_loud() -> None:
               out.returncode == 0 and "''" in out.stdout, out.stdout)
 
 
+def test_the_read_is_a_valid_gh_command() -> None:
+    """`gh` takes an API path ONLY after `api` — a dropped `api` must be RED, not invisible.
+
+    Issue #320, measured on run 38889575999: `_gh_json` built `gh repos/<o>/<r>/actions/
+    runs/<id>` with NO `api` subcommand, so `gh` answered `unknown command "repos/…" for
+    "gh"` and refresh-bot's `aggregate` job died at `make refresh-run-block` — before the
+    commit/PR step — while every OTHER job of that run succeeded.
+
+    The stub that catches it must enforce the argv contract: the old one printed `{}`
+    whatever it was asked, so the missing subcommand was invisible. This stub refuses
+    anything whose first argument is not `api`, exactly as `gh` does.
+    """
+
+    # Given  a `gh` on PATH that answers ONLY `gh api …` (the permitted external stand-in)
+    with tempfile.TemporaryDirectory() as td:
+        stub = Path(td) / "gh"
+        stub.write_text(
+            "#!/bin/sh\n"
+            'if [ "$1" != "api" ]; then\n'
+            '  echo "unknown command \\"$1\\" for \\"gh\\"" >&2\n'
+            "  exit 1\n"
+            "fi\n"
+            "echo '{\"run_started_at\": \"2026-10-15T20:32:13Z\","
+            " \"html_url\": \"https://example.invalid/o/r/actions/runs/1\", \"jobs\": []}'\n"
+        )
+        stub.chmod(0o755)
+        env = dict(os.environ, PATH=f"{td}:{os.environ['PATH']}")
+
+        # When   the block is composed for a run
+        out = subprocess.run([sys.executable, "-c",
+                              "import sys; sys.path.insert(0, 'scripts');"
+                              "import refresh_run_block as r; print(r.current_block('o/r', '1'))"],
+                             capture_output=True, text=True, env=env, cwd=ROOT)
+
+        # Then   the read is a valid `gh` command, so the run's OWN start renders
+        check("the read is a valid `gh api` command (a dropped `api` is RED)",
+              out.returncode == 0 and "started=2026-10-15T20:32:13Z" in out.stdout,
+              (out.returncode, out.stdout[-200:], out.stderr[-200:]))
+        # And    the argv the composer builds really starts with `api`
+        check("the composer names the `api` subcommand",
+              getattr(rb, "GH_API", None) == ("gh", "api"), getattr(rb, "GH_API", None))
+
+
 def test_the_workflow_stamps_the_pr_body_and_not_a_no_data_run() -> None:
     """`aggregate` composes the block into the PR body, and only on the path that opens one."""
 
@@ -206,6 +249,7 @@ def main() -> int:
                  test_the_shared_parser_reads_the_block,
                  test_legs_come_from_the_real_job_names,
                  test_a_run_we_cannot_read_is_loud,
+                 test_the_read_is_a_valid_gh_command,
                  test_the_workflow_stamps_the_pr_body_and_not_a_no_data_run,
                  test_the_gap_issue_carries_the_same_block):
         print(f"-- {test.__name__}")
