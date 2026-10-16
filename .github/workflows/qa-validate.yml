@@ -100,6 +100,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # FULL history: `make check-commit-authorship` reads the commits a PR
+          # adds (`origin/master..HEAD`), and a shallow checkout has no base ref
+          # — the guard would then fail loudly instead of checking anything
+          # (issue #317).
+          fetch-depth: 0
 
       # Cheapest gate first, and it needs no image: every tracked text file ends
       # with a newline (issue #186). A file stripped of its final newline turns
@@ -107,6 +113,16 @@ jobs:
       # `\ No newline at end of file` — so the diff stops being honest.
       - name: Lint (every tracked text file ends with a newline)
         run: make lint
+
+      # The only identities on this repo are Andy Holst and Asimov Agent. Nothing
+      # read a commit's MESSAGE or a commit's IDENTITY, so a
+      # `Co-authored-by: Hermes Agent <hermes@nousresearch.com>` trailer landed on
+      # master. The trailer is SYNTHESIZED by GitHub at squash time from the AUTHOR
+      # identity of a commit inside the PR (measured: 054b0c8), so the guard reads
+      # the identity AND the message (issue #317). Git-only, no
+      # image, so it sits with the other cheap gates.
+      - name: No commit credits anyone but Andy Holst / Asimov Agent (issue #317)
+        run: make check-commit-authorship
 
       # A merged PR must CLOSE the issue it implements (rule 6e). The body is the only
       # artifact with no guard on its content, and GitHub binds a closing keyword to ONE
