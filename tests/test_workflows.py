@@ -1676,6 +1676,47 @@ def test_a_step_that_calls_make_runs_after_the_checkout():
           thread is not None and "test -s issue.md" in str(thread.get("run", "")), "")
 
 
+#: A `gh` subcommand whose owner/repo is resolved IMPLICITLY — from the git
+#: remote — and so needs either a checkout or `GH_REPO` in the environment.
+#: `gh api repos/$REPO/...` carries its own path and is never matched.
+_GH_IMPLICIT = re.compile(r"\bgh\s+(?:pr|issue|run|release|workflow|label|search)\b([^\n|;&]*)")
+
+
+def test_gh_before_the_checkout_names_the_repo():
+    """`gh` resolves owner/repo from a git remote. A job that writes to the PR
+    BEFORE it checks anything out dies with `fatal: not a git repository` — and
+    because the announce step is what fails, the checkout and the whole fix loop
+    are SKIPPED. Measured on PR #330 (run 39027053298): the refresh PR stayed red
+    on one dead Hugging Face link and nothing was there to repair it, while every
+    run still reported the defect as "fix-bot was dispatched"."""
+    offenders = []
+    for path in sorted(WF.glob("*.yml")):
+        doc = yaml.safe_load(path.read_text()) or {}
+        for job_name, job in (doc.get("jobs") or {}).items():
+            steps = job.get("steps") or []
+            checkout = next((i for i, s in enumerate(steps)
+                             if "actions/checkout" in str(s.get("uses", ""))), None)
+            job_env = job.get("env") or {}
+            for i, step in enumerate(steps):
+                if checkout is not None and i >= checkout:
+                    continue  # after the checkout, `gh` has the remote
+                run = step.get("run") or ""
+                for m in _GH_IMPLICIT.finditer(run):
+                    if "--repo" in m.group(1) or re.search(r"\s-R\s", m.group(1)):
+                        continue  # names the repo itself
+                    if "GH_REPO" in job_env or "GH_REPO" in (step.get("env") or {}):
+                        continue
+                    offenders.append(f"{path.name}:{job_name}:{step.get('name', '?')}")
+    check("gh before a checkout: no job calls gh implicitly without GH_REPO",
+          not offenders, offenders)
+
+    # The measured regression, named on its own so this guard fails on the OLD
+    # file even if the scan above goes vacuous.
+    fix_env = load("fix-bot.yml")["jobs"]["fix"].get("env") or {}
+    check("gh before a checkout: fix-bot's PR writes name the repo (PR #330)",
+          "GH_REPO" in fix_env, sorted(fix_env))
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
@@ -1710,6 +1751,7 @@ def main() -> int:
     test_the_reviewer_never_edits_an_issue_inside_a_window()
     test_issue_writes_use_the_default_token()
     test_a_step_that_calls_make_runs_after_the_checkout()
+    test_gh_before_the_checkout_names_the_repo()
     test_unit_tests_really_run()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

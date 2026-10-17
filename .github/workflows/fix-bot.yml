@@ -103,6 +103,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      # `gh` resolves owner/repo from a git remote, and this job talks to the
+      # PR BEFORE it checks anything out ("Announce the window", and the result
+      # comment on a run that died early). Without GH_REPO that call dies with
+      # `fatal: not a git repository` and the whole job stops at step 3 —
+      # measured on PR #330 (run 39027053298): the announce step failed, the
+      # checkout and the fix loop were skipped, and the PR stayed red with
+      # nothing to repair it.
+      GH_REPO: ${{ github.repository }}
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}

@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **46** · archived: **0**
+Active changes: **47** · archived: **0**
 
 ## Active changes
 
@@ -38,6 +38,7 @@ Active changes: **46** · archived: **0**
 | `fix-publish-latest-tag` | active | #232 | — | [agent-image-publish](openspec/changes/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/fix-publish-latest-tag/proposal.md) |
 | `fix-publish-login-token-by-name` | active | #240 | — | [agent-image-publish](openspec/changes/fix-publish-login-token-by-name/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-publish-login-token-by-name/proposal.md) |
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
+| `fixbot-gh-repo-before-checkout` | active | #331 | — | [fixbot-before-checkout](openspec/changes/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/fixbot-gh-repo-before-checkout/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
 | `ingest-new-snapshots-only` | active | #175 | — | [ingest-boundary](openspec/changes/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/ingest-new-snapshots-only/proposal.md) |
