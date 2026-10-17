@@ -1,0 +1,264 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-17T19:50:00Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "license": "Muse Model License (free for many developers under $20M revenue; not a blanket commercial pass)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "493GB NVFP4",
+      "system_ram_min": "1024GB",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "Meta's 816B MoE (42B active, 1M context) released Oct 15, tuned with Apple to run through MLX across two to four M5 Ultra Mac Studios linked over Thunderbolt 5 RDMA; Apple's own decode figures are ~25 tok/s on two Studios and ~37 on four.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x M5 Ultra Mac Studios (512GB each, Thunderbolt 5 RDMA, tensor parallelism)",
+          "quant": "491GB NVFP4 across 4 nodes; MLX distributed inference over RDMA; 8,192-token context; 40.6s TTFT at 65,536 tokens",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 4,
+          "views": 642,
+          "interactions": 659,
+          "weight_gb": "491GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x M5 Ultra Mac Studios (512GB each, Thunderbolt 5 RDMA)",
+          "quant": "NVFP4 ~493GB; 8,192-token context; MLX distributed inference over RDMA",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/marcel_butucea/status/2111196917803962501",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 17,
+          "interactions": 17,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studios (512GB each, tensor parallelism)",
+          "quant": "512GB unified memory per Mac Studio; MLX distributed inference over RDMA",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 4,
+          "views": 642,
+          "interactions": 659,
+          "weight_gb": "512GB unified memory per node"
+        },
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "Mac M3 Ultra 512GB",
+          "quant": "2-bit quant, 304GB model; Hugging Face measurement",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/FegaPierre/status/2111094815379378285",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 80,
+          "interactions": 81,
+          "weight_gb": "304GB 2-bit"
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (24B total / ~2B active MoE)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "LFM Open License (free to ship under $10M revenue)",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "Liquid AI's on-device agent MoE (24B total, ~2B active, 131K context); Liquid reports 184 tok/s on an Apple M5 Max, and it runs under MLX alongside llama.cpp, vLLM, SGLang and ONNX.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "24B total / ~2B active per token; 131K-token context, 128K vocabulary; on-device agent model",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 3,
+          "views": 498,
+          "interactions": 504,
+          "context_tokens": "131072"
+        }
+      ],
+      "vram_min": "8GB"
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "12GB",
+      "weight_gb": "2GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Qwen3.5-based 9B converted to ternary weights (-1/0/+1) in about 2GB, released Oct 15 under Apache 2.0; PrismML reports up to 179 tok/s on an M5 Max Pro and up to 34 tok/s on an iPhone 18 Pro Max via MLX (vendor figures).",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "GGUF 2GB ternary (Qwen3.5 base, -1/0/+1 weights); runs agent tasks on-device; PrismML vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 39,
+          "interactions": 40,
+          "weight_gb": "2GB ternary"
+        }
+      ],
+      "vram_min": "8GB"
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "weight_gb": "0.43GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Smallest member of the ternary Bonsai 2 family, 0.43GB on disk; PrismML reports up to 120 tok/s on an iPhone 18 Pro Max and up to 500 tok/s in a browser demo on an M4 Max via MLX.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "M4 Max (browser demo)",
+          "quant": "0.43GB ternary (Qwen3.5 base, -1/0/+1 weights); MLX in a browser demo; PrismML vendor figure",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "0.43GB ternary"
+        }
+      ],
+      "vram_min": "4GB"
+    },
+    {
+      "id": "minicpm-v-4.7",
+      "name": "MiniCPM-V 4.7",
+      "full_name": "MiniCPM-V 4.7 35B-A3B",
+      "type": "MoE multimodal LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "openbmb/MiniCPM-V-4.7-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "openbmb/MiniCPM-V-4.7-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "3GB",
+      "system_ram_min": "3GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "OpenBMB's 35B-A3B multimodal MoE running on-device in about 3GB with the LES (Lookahead Expert Scheduling) inference method, which prefetches MoE experts before a phone can hold them all.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "17",
+          "hardware": "iPad Pro M4 (16GB)",
+          "quant": "~3GB MoE; LES lookahead expert scheduling + 4x/16x visual token compression; OpenBMB vendor figure",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/eltc9584/status/2110187197706170781",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 61,
+          "interactions": 61,
+          "weight_gb": "~3GB MoE",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "13",
+          "hardware": "iPhone 17 Pro Max",
+          "quant": "~3GB MoE; LES lookahead expert scheduling; OpenBMB vendor figure",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/thePandaily/status/2110226678475620707",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 2,
+          "views": 302,
+          "interactions": 305,
+          "weight_gb": "~3GB MoE"
+        }
+      ]
+    }
+  ]
+}
