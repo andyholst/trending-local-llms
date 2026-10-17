@@ -41,7 +41,11 @@
           "comments": 0,
           "reshares": 0,
           "views": 0,
-          "interactions": 0
+          "interactions": 0,
+          "weight_gb": "8.5GB Q4",
+          "context_tokens": "32768",
+          "system_ram_min": "16GB",
+          "storage_offload": "640GB NVMe"
         }
       ],
       "why": "w",

@@ -684,14 +684,120 @@ def check_readme_measurements(store: dict) -> None:
         cells = _split_row(loved)
         # most-loved columns: Model | Status | Trend | <one per BACKENDS> | VRAM | Why
         for idx, b in enumerate(ut.BACKENDS, start=3):
-            best = ut.best_measurement([e for e in m.get("engines", []) if ut.measurement_backend(e, store.get("engines", {})) == b])
+            same = [e for e in m.get("engines", []) if ut.measurement_backend(e, store.get("engines", {})) == b]
+            # The figure a card owner reads must be one they can buy: the best
+            # IN-SCOPE measurement (<= 48 GB consumer/workstation, Apple, CPU),
+            # exactly what render_readme publishes (issues #260, #337).
+            best = ut.best_measurement([e for e in same if ut.in_scope(e)]) or ut.best_measurement(same)
             cell = cells[idx].strip() if idx < len(cells) else ""
             want = f"**{best['tps']}**" if best else "—"
             if not cell.startswith(want):
                 bad += 1
                 fail(f"readme-measurements: most-loved {b} cell for {m['name']} should start with {want!r}, got {cell[:40]!r}")
+        # VRAM column: the LEAST VRAM the model needs, with its evidence — never
+        # the coarse vram_tier string (it disagreed with vram_min for 20 of 46
+        # models, issue #337).
+        need, _ev = ut.vram_need(m)
+        vcell = cells[-2].strip() if len(cells) >= 2 else ""
+        if need == "unknown":
+            if "not stated" not in vcell:
+                bad += 1
+                fail(f"readme-measurements: most-loved VRAM cell for {m['name']} should say 'not stated', got {vcell[:40]!r}")
+        elif not vcell.startswith(f"**{need}**"):
+            bad += 1
+            fail(f"readme-measurements: most-loved VRAM cell for {m['name']} should start with **{need}** "
+                 f"(least needed to run), got {vcell[:40]!r}")
     if not bad:
-        print("  OK: every measurement is in its own backend row; most-loved shows the best per backend")
+        print("  OK: every measurement is in its own backend row; most-loved shows the best in-scope figure per backend and the least VRAM needed")
+
+
+def _card_section(text: str) -> str:
+    """The `## 🖥️ Pick your card` section body (issues #337)."""
+    lines = text.split("\n")
+    start = next((i for i, ln in enumerate(lines) if ln.startswith("## 🖥️")), None)
+    if start is None:
+        return ""
+    out = []
+    for ln in lines[start + 1:]:
+        if ln.startswith("## "):
+            break
+        out.append(ln)
+    return "\n".join(out)
+
+
+def check_card_tables(store: dict) -> None:
+    """The card-fit view: "I have N GB — what fits?" (issue #337).
+
+    The section must exist with one block per tier and an anchor index, every
+    model the ONE fit function (`update_trending.tier_rows`) places in a tier must
+    be listed there, the rows must be sorted by t/s descending, and a
+    `weights-only` row must never be presented as a proven fit. A model silently
+    dropped from a tier — or a tier that renders as "nothing fits" while the store
+    has evidence for it — fails here.
+    """
+    if not README.exists():
+        fail("README.md missing")
+        return
+    ut = _ut()
+    reg = store.get("engines", {})
+    sec = _card_section(README.read_text())
+    if not sec:
+        fail("card-fit: README has no '## 🖥️ Pick your card' section")
+        return
+    bad = 0
+    for t in ut.CARD_TIERS_GB:
+        if f"[{t} GB](#{t}-gb)" not in sec:
+            bad += 1
+            fail(f"card-fit: the anchor index does not link the {t} GB tier")
+    blocks: dict[int, list[str]] = {}
+    cur = None
+    for ln in sec.split("\n"):
+        if ln.startswith("### "):
+            try:
+                cur = int(ln[4:].strip().split()[0])
+            except (ValueError, IndexError):
+                cur = None
+        elif cur and ln.startswith("|") and "---" not in ln and not ln.startswith("| Model"):
+            blocks.setdefault(cur, []).append(ln)
+    for t in ut.CARD_TIERS_GB:
+        expected = ut.tier_rows(store["models"], t, reg)
+        rows = blocks.get(t, [])
+        if not expected:
+            # An empty tier is legitimate ONLY as a loud collection-gap line.
+            if "collection gap" not in sec.split(f"### {t} GB")[-1].split("### ")[0]:
+                bad += 1
+                fail(f"card-fit: {t} GB has no evidence in the store and the README does not say so as a collection gap")
+            continue
+        got = []
+        for r in rows:
+            cells = _split_row(r)
+            m = re.search(r"\*\*(.+?)\*\*", cells[0] if cells else "")
+            tps = cells[1].strip() if len(cells) > 1 else ""
+            got.append((m.group(1) if m else "", tps))
+            if len(cells) >= 5 and not (cells[4].strip().startswith("ran on") or "weights-only" in cells[4]):
+                bad += 1
+                fail(f"card-fit: {t} GB row for {got[-1][0]} carries no evidence tag: {cells[4][:40]!r}")
+        want = [(row[1]["name"], ut._fmt_num(row[0])) for row in expected]
+        if got != want:
+            bad += 1
+            fail(f"card-fit: {t} GB rows differ from the store's evidence. readme={got[:4]} store={want[:4]}")
+        nums = [ut._tps_core(c[1]) for c in got]
+        if nums != sorted(nums, reverse=True):
+            bad += 1
+            fail(f"card-fit: {t} GB rows are not sorted by t/s descending: {nums[:6]}")
+    if not bad:
+        placed = sum(1 for m in store["models"]
+                     if any(ut.tier_measurements(m, t, reg) for t in ut.CARD_TIERS_GB))
+        n_meas = sum(len(m.get("engines", [])) for m in store["models"])
+        with_fp = sum(1 for m in store["models"] for e in m.get("engines", []) if e.get("weight_gb"))
+        print(f"  OK: card-fit section lists every model with evidence in each of the {len(ut.CARD_TIERS_GB)} tiers, sorted, evidence-tagged")
+        # REPORT ONLY (never fails here): how much of the store can answer the
+        # question at all. A thin low end is a data gap for the searches to close,
+        # reported in every validate run instead of being invisible (issue #337).
+        print(f"  card-fit coverage (report only): {placed}/{len(store['models'])} models have card evidence; "
+              f"{with_fp}/{n_meas} measurements carry their own weight_gb (a footprint per run); "
+              + " · ".join(f"{t} GB: {len(ut.tier_rows(store['models'], t, reg))}"
+                           for t in ut.CARD_TIERS_GB))
 
 
 def check_backends_cover_measurements(store: dict) -> None:
@@ -1328,6 +1434,7 @@ def main() -> int:
     add("README completeness", "readme", lambda: check_readme_has_all_models(store))
     add("JSON <-> README sync", "readme", lambda: check_readme_sync(store))
     add("measurements in their backend rows", "readme", lambda: check_readme_measurements(store))
+    add("card-fit tables (what fits your card)", "readme", lambda: check_card_tables(store))
     add("backends cover measurements", "data", lambda: check_backends_cover_measurements(store))
     add("post-signal coverage (report only)", "data", lambda: check_post_signal(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))

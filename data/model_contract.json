@@ -241,6 +241,22 @@
                   "type": "integer",
                   "minimum": 0,
                   "description": "Total interactions on the source X post (likes+comments+reshares+views or the platform's reported total)."
+                },
+                "weight_gb": {
+                  "type": "string",
+                  "description": "OPTIONAL. Weight footprint of the QUANT THIS MEASUREMENT RAN IN, as the post states it (e.g. '5.95GB PTQ1_0'). Per measurement, not per model: two quants of one model fit different cards. A figure only the post gives; never derived."
+                },
+                "context_tokens": {
+                  "type": "string",
+                  "description": "OPTIONAL. Context window this measurement ran with, as the post states it (e.g. '131072'). The KV cache scales with it and consumes VRAM/RAM alike."
+                },
+                "system_ram_min": {
+                  "type": "string",
+                  "description": "OPTIONAL. System RAM / unified memory this measurement needed, as the post states it (e.g. '16GB'). Partial offload keeps the un-offloaded layers + KV cache in system RAM; never derived from a VRAM figure."
+                },
+                "storage_offload": {
+                  "type": "string",
+                  "description": "OPTIONAL. Storage-offload this measurement needed, as the post states it (e.g. '640GB NVMe, experts on SSD')."
                 }
               },
               "additionalProperties": false

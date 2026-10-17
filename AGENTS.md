@@ -486,7 +486,11 @@ The README is **generated**, not hand-maintained:
   backend(s), **supported_engines** (list of engines the model is supported by),
   and a list of **per-engine t/s measurements**, each with date, engine,
   hardware, quant, and the engagement + source post URL of the newest post
-  supporting it. **No duplicate models** (by id or name). The exact JSON schema
+  supporting it. A measurement may also carry the **footprint of THAT run** —
+  optional `weight_gb`, `context_tokens`, `system_ram_min`, `storage_offload`
+  (additive, never `required`, rule 3b) — because one model's quants fit
+  different cards and the card-fit tables are built from that evidence
+  (issue #337). **No duplicate models** (by id or name). The exact JSON schema
   is documented in `data/MODEL_CONTRACT.md` — read it before adding/editing a
   model.
 - `scripts/update_trending.py` — fetches new X data, merges it into the store,
@@ -715,6 +719,17 @@ The README is **generated**, not hand-maintained:
    t/s and supported engines still shown, clearly marked with the measurement
    date so a reader knows it is not current.
 
+**The scope gate applies to what a reader is SHOWN, not only to the score.** The
+order above is `buzz + speed` and is never re-sorted by t/s (rule 4), but the
+figure a **card owner** reads must be one they can buy: the most-loved per-backend
+cells and the card-fit tables use the best **in-scope** measurement
+(`in_scope()`: ≤ 48 GB consumer/workstation, Apple Silicon, CPU), the same gate
+`best_in_scope()` already applies to the speed bonus. A datacenter measurement
+keeps its row in its backend table and its place in the ranking through buzz — it
+is never presented as "what you can get" on a consumer card (issues #260/#337).
+A datacenter SKU family is named by its family in `_DATACENTER_HW`, bare form
+included: a missing `b300` let a 21,000 t/s B300 figure earn `speed +11`.
+
 **How the trend is computed** (`recompute_7d_engagement`, run on every sort):
 
 - **Posts.** `engagement.seen_posts` keeps every real post (`…/status/<id>`)
@@ -758,20 +773,43 @@ hardware → CPU hardware, then the engine registry's `backend` when it names ON
 backend, then the built-in engine map, then keywords; CUDA only as the last
 resort) and
 `best_measurement()` (highest t/s core, newest date on a tie), so no two tables
-can disagree about where a figure belongs.
+can disagree about where a figure belongs — and the figure a **card owner** reads
+(the most-loved per-backend cells and the card-fit tables) is the best
+**in-scope** measurement (`in_scope()`: ≤ 48 GB consumer/workstation, Apple, CPU),
+the same gate the speed bonus uses, so a datacenter figure is never presented as
+"what you can get" (issues #260/#337).
 
 1. **❤️ Most loved** — one row per model in rank order: model (HF link, full
    name · params · license), status (🔥 / 🕑 / 💤 + last seen), **Trend**
    (`trend_score`, with `buzz · N posts · speed +X (t/s, hardware)` beneath),
-   the **best** t/s for each of CUDA / Metal / CPU / ROCm (`BACKENDS` order) with engine
-   link · hardware · quant (`+N more` when there are others), VRAM, why. No
+   the **best in-scope** t/s for each of CUDA / Metal / CPU / ROCm (`BACKENDS`
+   order) with engine
+   link · hardware · quant (`+N more` when there are others), **VRAM = the least
+   amount needed to run the model with its evidence** (`vram_need()`: the source's
+   stated `vram_min`, else the coarse `vram_tier`, else the smallest card it ran
+   on, else `not stated` — the category alone is never published as a
+   requirement), why. No
    `#` rank column — rank is row order.
-2. **🧭 Which inference engine runs what** — models × engines that have at
+2. **🖥️ Pick your card — what fits your VRAM** — the card owner's entry point: an
+   anchor index (`#8-gb` … `#48-gb`) and one table per tier
+   (`CARD_TIERS_GB = 8/12/16/24/32/48`), each row
+   `Model | best t/s that fits | backend | engine · hardware · quant · date | evidence`.
+   A model is placed in a tier only with evidence (`fits_tier()`: `ran-on` when a
+   measurement ran on a card ≤ the tier — proved; `weights-only` when only the
+   STATED weight footprint fits a smaller tier and the run's own card is known —
+   labelled, never sold as a fit), a datacenter measurement places nothing
+   (`in_scope` gate), Apple Silicon and CPU are judged by unified memory / RAM and
+   never appear in a card tier (they keep the Metal/CPU tables, rule 6), and a tier
+   with no evidence renders a named **collection gap** rather than reading as
+   "nothing fits your card". The prioritised low end is a **gaming laptop, 8–24 GB**
+   (`LOW_END_TIERS_GB`); 32/48 GB is the workstation step above it and everything
+   bigger is unified memory or datacenter hardware.
+3. **🧭 Which inference engine runs what** — models × engines that have at
    least one measurement; each cell is the best t/s per backend on that engine.
-3. **🟦 CUDA / 🟪 ROCm / 🟨 CPU / 🟩 Metal backend tables** — numeric `Peak t/s` column (the sort key
+4. **🟦 CUDA / 🟪 ROCm / 🟨 CPU / 🟩 Metal backend tables** — numeric `Peak t/s` column (the sort key
    the validator reads by header name) + every measurement as
    `engine **t/s** · hardware · quant · date`, best first.
-4. **⚙️ Engine guide** — engine link, backend, models measured, best for.
+5. **⚙️ Engine guide** — engine link, backend, models measured, best for.
 
 Free text in cells is pipe-escaped (`\|`); the table validator splits on
 unescaped pipes only.
@@ -1146,6 +1184,7 @@ actually happened.
 
 | Guard | Catches |
 |---|---|
+| `tests/test_card_fit.py` + `check_card_tables` (validate, `readme` stage) — what fits YOUR card (issue #337) | a card owner misled about their VRAM: the most-loved `VRAM` cell publishing the coarse `vram_tier` (it disagreed with the model's own `vram_min` for 20 of 46 models and sat below the smallest card a measurement had run on for 17); a per-backend "best" cell showing a figure measured on a datacenter part or a bigger card than the column claims (#260); a bare `B300` passing `in_scope()` because `_DATACENTER_HW` named `b200`/`gb300` but not `b300`, so a 21,000 t/s cluster figure earned `speed +11` and ranked 3rd; a card tier placed from a measurement on a BIGGER card (a guessed fit) or from a run whose own hardware names no card; a `weights-only` row sold as a proven fit; an Apple Silicon / CPU figure landing in a card tier; a tier silently dropped from the README, unsorted, missing its anchor, or rendered empty instead of as a named collection gap; the search legs no longer asking for the low-end cards (3060/4060/4060 Ti/4070, Radeon 6600/7600/9060 XT, `8gb`/`16gb vram`) |
 | `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
 | `make pr-closure` + `tests/test_pr_closure.py` (rule 6e, issue #284) | a merged PR that does NOT close the issue it implements: a chained reference (`Closes #271 and #276` closes only #271 — the measured PR #272, where the change landed and the issue stayed open), a branch that implements an issue whose body carries no closing keyword for it, a PR that closes an issue it does not implement (the refresh PR's `Closes #1` — the long-closed meta issue), and the checker not running on every PR (rule 6d) |
 | `tests/test_worktree_base.py` (rule 6n, issue #271) | work starting from an unverified base: a checkout that is behind the fetched tip passing `make base-check`, an unfetchable base passing at all; a worktree cut from the clone's own stale tip (so the fetch never happened) or created INSIDE the repository where `git add -A` would commit it; an existing branch silently RE-CUT (`worktree-new`) instead of resumed; the caller's checkout being switched or the local `master` moved by the seam that is supposed to leave it alone; the base branch itself becoming a worktree target; a resume that cannot work in a one-ref clone (the measured #271 `pathspec … did not match`, while a bare `git checkout` still fails on the same fixture); a resumed branch resetting local-only commits (`-B`) instead of reporting drift; the rule missing from AGENTS.md's own wording, the three targets missing from the Makefile, or the guard unwired from `make _test` (rule 6d) |

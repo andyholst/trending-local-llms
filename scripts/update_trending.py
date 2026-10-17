@@ -50,6 +50,17 @@ SEARCH_GROUPS = {
         "rtx 5090 32gb tokens per second",
         "rtx 4090 tokens per second llm",
         "rtx 3090 vs 5090 27b tokens",
+        # Gaming-PC low end (issue #337): the 8/12/16 GB cards a regular person
+        # owns. Every card query above named 24/32 GB, so the tier tables would
+        # have been honest and empty exactly where the low-end reader looks.
+        # These strings are the ones the `_search-nvidia` prompt carries, and
+        # `tests/test_smoke_search.py` keeps prompt and smoke list identical.
+        "rtx 3060 tokens per second",
+        "rtx 4060 tokens per second",
+        "rtx 4060 ti 16gb tokens per second",
+        "rtx 4070 tokens per second",
+        "8gb vram llm tokens per second",
+        "16gb vram llm tokens per second",
         "freetoken gpu llm tokens per second",
         "bonsai 2 ternary 27b tokens",
         "qwen3.8-27b dflash speculative tokens",
@@ -75,6 +86,12 @@ SEARCH_GROUPS = {
         "llama.cpp vulkan amd tokens",
         "strix halo tokens per second",
         "rx 7900 xtx qwen",
+        # AMD gaming-PC low end (issue #337): the 8/16 GB Radeon cards a regular
+        # person owns. Kept identical to the `_search-amd` prompt list.
+        "rx 7600 tokens per second",
+        "rx 6600 tokens per second",
+        "rx 9060 xt tokens per second",
+        "radeon 8gb vram llm tokens per second",
     ],
 }
 
@@ -767,7 +784,12 @@ def measurement_backend(e: dict, registry: dict | None = None) -> str:
 # GPUs, plus Apple and CPU as first-class backends). Only measurements on that
 # hardware earn the speed bonus; a datacenter figure never does.
 MAX_SCOPE_VRAM_GB = 48
-_DATACENTER_HW = ("h100", "h200", "h800", "a100", "a800", "b100", "b200", "gb200", "gb300",
+# Datacenter parts never earn the speed bonus (AGENTS.md §5). Every SKU family
+# here, bare AND suffixed: 'b300' was missing, so a post reading "single NVIDIA
+# B300 GPU (datacenter)" passed hardware_vram_gb() as None and in_scope() as
+# True — LFM2.5-24B-A2B earned speed +11 from a 21,000 t/s datacenter figure and
+# ranked 3rd (issue #337). Add the family, never one spelling of it.
+_DATACENTER_HW = ("h100", "h200", "h800", "a100", "a800", "b100", "b200", "b300", "gb200", "gb300",
                   "mi210", "mi250", "mi300", "mi308", "mi325", "mi355", "tpu", "gaudi")
 # Known consumer cards -> VRAM (GB). Laptop variants listed first (more specific).
 _CARD_VRAM = (
@@ -844,6 +866,125 @@ def best_measurement(es: list[dict]) -> dict | None:
         return None
     return max(es, key=lambda e: (_tps_core(e.get("tps")), e.get("date", "")))
 
+
+# ---- card-fit view (issue #337): "what fits MY card" ------------------------
+# The index exists to answer one question for a card owner: with N GB of VRAM,
+# which model gives me the most t/s? The README answered it with four per-backend
+# cells and a `vram_tier` cell that is a CATEGORY — it disagreed with the model's
+# own `vram_min` for 20 of 46 models and sat below the smallest card a measurement
+# had ever run on for 17. So the fit is derived here, ONCE (rule 6d), and read by
+# the tier tables, the most-loved VRAM cell and the validator, so no two places
+# can disagree about what fits.
+#
+# The evidence ladder, strongest first — and never a guess (rule 2):
+#   'ran-on'      a measurement ran on a card of <= N GB, so N GB is PROVEN
+#   'weights-only' only the weight footprint fits N GB — KV cache and overhead
+#                 are unknown, so it is labelled, never presented as a fit
+#   'declared'    the model states the least VRAM it needs (vram_min)
+#   'tier'        only the coarse vram_tier string is available
+#   'unknown'     nothing supports a claim: reported, never rendered as a number
+CARD_TIERS_GB = (8, 12, 16, 24, 32, 48)
+# The low end this index prioritises: a GAMING LAPTOP, 8-24 GB of VRAM. The
+# trending list and the tier tables are for that reader first; 32/48 GB is the
+# workstation step above it, and everything bigger is unified memory / datacenter
+# (AGENTS.md §6 keeps the headline scope at 8-48 GB consumer/workstation).
+LOW_END_TIERS_GB = (8, 12, 16, 24)
+_GB_TEXT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*gb", re.I)
+
+
+def _gb_value(value) -> float | None:
+    """'5.95GB Q4_K_M' / 12 / '12 GB 8GB' -> the first GB figure, else None."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    m = _GB_TEXT_RE.search(str(value))
+    return float(m.group(1)) if m else None
+
+
+def weights_gb(m: dict, e: dict) -> tuple[float | None, str]:
+    """The weight footprint of the quant THIS measurement ran in, with its
+    evidence: the measurement's own `weight_gb` when the post stated it
+    ('stated'), else the model's ('model-level'), else (None, 'unknown')."""
+    for src, tag in ((e.get("weight_gb"), "stated"), (m.get("weight_gb"), "model-level")):
+        g = _gb_value(src)
+        if g is not None:
+            return g, tag
+    return None, "unknown"
+
+
+def card_memory_gb(e: dict) -> float | None:
+    """The total memory of the card the measurement ran on (upper bound)."""
+    return hardware_vram_gb(e.get("hardware") or "")
+
+
+def fits_tier(m: dict, e: dict, tier: int) -> str | None:
+    """How this measurement qualifies for a `tier`-GB card, or None.
+
+    Only a consumer/workstation measurement can place a model on a card a reader
+    owns (`in_scope`): a datacenter figure a reader cannot buy never becomes
+    "what fits your card" (issues #260/#337). 'ran-on' is proved by the run;
+    'weights-only' needs a KNOWN card — if the run's own hardware names no card
+    (a host, a cluster, a bare "GPU"), we cannot claim one of its quants fits a
+    smaller tier, because the KV cache and the offload it needed are unknown."""
+    if not in_scope(e):
+        return None
+    c = card_memory_gb(e)
+    if c is not None and c <= tier:
+        return "ran-on"
+    w, _ = weights_gb(m, e)
+    if c is not None and c > tier and w is not None and w <= tier:
+        return "weights-only"
+    return None
+
+
+def tier_measurements(m: dict, tier: int, registry: dict | None = None) -> list[tuple[dict, str]]:
+    """The measurements of `m` with evidence for a `tier`-GB card, as (measurement,
+    evidence). Apple Silicon and CPU are judged by unified memory / RAM, not VRAM,
+    so they are never placed in a card tier."""
+    out = []
+    for e in m.get("engines", []):
+        if measurement_backend(e, registry) in ("Metal", "CPU"):
+            continue
+        ev = fits_tier(m, e, tier)
+        if ev:
+            out.append((e, ev))
+    return out
+
+
+def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> list[tuple[float, dict, dict, str]]:
+    """(best t/s, model, measurement, evidence) for every model with evidence for
+    a `tier`-GB card, best first."""
+    rows = []
+    for m in models:
+        cands = tier_measurements(m, tier, registry)
+        if not cands:
+            continue
+        # A proved fit beats a weights-only one, then the fastest figure wins.
+        e, ev = max(cands, key=lambda p: (p[1] == "ran-on", _tps_core(p[0].get("tps"))))
+        rows.append((_tps_core(e.get("tps")), m, e, ev))
+    rows.sort(key=lambda r: (-r[0], r[1]["name"].lower()))
+    return rows
+
+
+def vram_need(m: dict) -> tuple[str, str]:
+    """The LEAST VRAM the model needs to run, with the evidence behind it:
+    ('8GB', 'declared') from `vram_min`, ('16GB', 'tier') from the coarse
+    `vram_tier`, ('>=12GB', 'measured-on') from the smallest card it ran on, else
+    ('unknown', 'unknown'). `vram_tier` alone is never rendered as a requirement —
+    it is a category that can sit below what the model actually needs."""
+    g = _gb_value(m.get("vram_min"))
+    if g is not None:
+        return f"{g:g}GB", "declared"
+    g = _gb_value(m.get("vram_tier"))
+    if g is not None:
+        return f"{g:g}GB", "tier"
+    cards = [c for c in (card_memory_gb(e) for e in m.get("engines", [])) if c is not None]
+    if cards:
+        return f">={min(cards):g}GB", "measured-on"
+    return "unknown", "unknown"
+
+
 BACKEND_LABEL = {
     "CUDA": ("🟦", "CUDA — NVIDIA GPUs (8–48 GB)"),
     "Metal": ("🟩", "Metal — Apple Silicon (unified memory)"),
@@ -913,8 +1054,13 @@ def render_readme(store: dict, today: datetime) -> str:
         return out
 
     # ---- 1. most loved -------------------------------------------------------
+    # The figure a CARD OWNER reads must be one they can actually get: the best
+    # in-scope measurement (<= 48 GB consumer/workstation, Apple, CPU), the same
+    # gate the speed bonus uses — never a datacenter figure a reader cannot buy
+    # (issue #260, issue #337). Out-of-scope figures stay in the backend tables.
     def best_cell(es: list[dict]) -> str:
-        b = best_measurement(es)
+        scoped = [e for e in es if in_scope(e)]
+        b = best_measurement(scoped) or best_measurement(es)
         if b is None:
             return "—"
         cell = f"**{b['tps']}** t/s<br>{elink(b['engine'])}"
@@ -923,6 +1069,14 @@ def render_readme(store: dict, today: datetime) -> str:
         if len(es) > 1:
             cell += f"<br><sub>+{len(es) - 1} more</sub>"
         return cell
+
+    def vram_cell(m: dict) -> str:
+        need, ev = vram_need(m)
+        if need == "unknown":
+            return "<sub>not stated</sub>"
+        tag = {"declared": "stated by the source", "tier": "category only",
+               "measured-on": "smallest card it ran on"}[ev]
+        return f"**{need}**<br><sub>{tag}</sub>"
 
     loved = []
     for m in models:
@@ -935,9 +1089,64 @@ def render_readme(store: dict, today: datetime) -> str:
         best_cells = " | ".join(best_cell(bb[b]) for b in BACKENDS)
         loved.append(
             f"| {model_cell} | {status} | {buzz} | {best_cells} "
-            f"| {_cell(m.get('vram_tier')) or '—'} | {_cell(m.get('why')) or '—'} |"
+            f"| {vram_cell(m)} | {_cell(m.get('why')) or '—'} |"
         )
     most_loved = "\n".join(loved)
+
+    # ---- 1b. pick your card (issue #337) ------------------------------------
+    # The card owner's entry point: pick your VRAM, see the fastest model that
+    # fits it. Derived from the SAME evidence ladder the most-loved VRAM cell
+    # uses (rule 6d), so the two can never disagree; an empty tier is reported as
+    # a collection gap instead of reading as "nothing fits your card".
+    def card_section() -> str:
+        parts = [
+            "## 🖥️ Pick your card — what fits your VRAM",
+            "",
+            "Jump to your card: " + " · ".join(f"[{t} GB](#{t}-gb)" for t in CARD_TIERS_GB) + ".",
+            "",
+            "A model is listed in a tier only with **evidence**: *ran on* a card of that size — a real measured"
+            " figure — or *weights-only*, where only the weight footprint fits and the KV cache and overhead are"
+            " unknown (labelled, never sold as a fit). A measurement on a bigger card does not qualify a smaller"
+            " tier, because what it needed there is unknown. Apple Silicon and CPU are judged by unified memory /"
+            " RAM: see [🟩 Metal](#-metal--apple-silicon-unified-memory) and [🟨 CPU](#-cpu--no-gpu).",
+            "",
+            f"The low end this list is for is a **gaming laptop — {LOW_END_TIERS_GB[0]}\u2013{LOW_END_TIERS_GB[-1]} GB of"
+            " VRAM**; 32/48 GB is the workstation step above it, and anything bigger is unified memory or datacenter"
+            " hardware, never a card tier.",
+            "",
+        ]
+        for t in CARD_TIERS_GB:
+            rows = tier_rows(models, t, registry)
+            parts.append(f"### {t} GB")
+            parts.append("")
+            if not rows:
+                parts.append(f"_No measurement with evidence at {t} GB yet. That is a **collection gap, not"
+                             f" \u201cnothing fits\u201d**: the search legs must ask for these cards"
+                             f" (`skills/gather-data.md`, issue #337)._")
+                parts.append("")
+                continue
+            parts.append("| Model | Best t/s that fits | Backend | Engine · hardware · quant · date | Evidence |")
+            parts.append("|---|---|---|---|---|")
+            for tps, m, e, ev in rows:
+                b = measurement_backend(e, registry)
+                det = detail(e)
+                date = f" · {e['date']}" if e.get("date") else ""
+                cell = f"{elink(e['engine'])} **{e['tps']}**" + (f" · {det}" if det else "") + date
+                if ev == "ran-on":
+                    ev_txt = f"ran on ≤{t} GB"
+                else:
+                    w, tag = weights_gb(m, e)
+                    ev_txt = (f"weights-only {_fmt_num(w)} GB ({tag}), KV cache unknown"
+                              if w is not None else "weights-only")
+                more = sum(1 for _e, _ev in tier_measurements(m, t, registry) if _ev == "ran-on") - 1
+                if more:
+                    ev_txt += f"<br><sub>+{more} more measured at this size</sub>"
+                parts.append(f"| [**{m['name']}**]({hf_url(m)}) | {_fmt_num(tps)} |"
+                             f" {BACKEND_LABEL[b][0]} {b} | {cell} | {ev_txt} |")
+            parts.append("")
+        return "\n".join(parts)
+
+    card_fit = card_section()
 
     # ---- 2. engine matrix ----------------------------------------------------
     measured: dict[str, set] = {}
@@ -1021,11 +1230,15 @@ Ties go to more posts, then the highest t/s. t/s is always shown **per engine**,
 
 ## ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)
 
-Best measured t/s per backend; the full list of measurements is in the backend tables below.
+Best measured t/s per backend, on consumer/workstation hardware; the full list of measurements is in the backend tables below. The **VRAM** column is the least amount needed to run the model, with the evidence behind that claim.
 
 | Model | Status | Trend | {loved_hdr} | VRAM | Why people love it |
 |---|---|---|{"---|" * len(BACKENDS)}---|---|
 {most_loved}
+
+---
+
+{card_fit}
 
 ---
 
@@ -1529,6 +1742,17 @@ def _slug(name: str) -> str:
 # contracts, so the contract can never fall behind this list.
 _ADDITIVE_MODEL_FIELDS = (
     "system_ram_min", "weight_gb", "context_tokens", "storage_offload", "engine_min_version")
+
+# The same source-data dimensions ONE LEVEL DOWN: on the measurement that produced
+# a t/s figure (issue #337). One model's quants fit different cards, so the card-fit
+# view reads the footprint of THE RUN — a measurement on a 32 GB card whose post
+# states 5.95 GB weights is what tells an 8 GB owner the model can run for them.
+# Their absence is MEANINGFUL (the post stated no figure) and is never invented,
+# exactly like the model-level ones: `tests/test_fixture_mapping.py` asserts a raw
+# snapshot that states none yields none, and `tests/test_measurement_footprint.py`
+# drives one that does through the real ingest. ONE definition (rule 6d) — the keys
+# are declared in both contracts, which the same test proves.
+MEASUREMENT_DIMENSION_FIELDS = ("weight_gb", "context_tokens", "system_ram_min", "storage_offload")
 
 
 def coerce_additive(v):

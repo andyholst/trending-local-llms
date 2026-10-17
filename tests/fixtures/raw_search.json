@@ -16,7 +16,11 @@
           "hardware": "RTX 3060",
           "quant": "Q4",
           "date": "2026-09-28",
-          "source_post": "https://lightbrd.com/1"
+          "source_post": "https://lightbrd.com/1",
+          "weight_gb": "8.5GB Q4",
+          "context_tokens": "32768",
+          "system_ram_min": "16GB",
+          "storage_offload": "640GB NVMe"
         }
       ]
     },

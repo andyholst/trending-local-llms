@@ -102,6 +102,15 @@ verified against the lightbrd.com mirror.
 > already capture every model; an unfiltered general query produced a payload
 > too large for the model's output cap and was removed.
 
+> **Query the low end on purpose (issue #337).** The index is for a GAMING LAPTOP
+> first — 8 to 24 GB of VRAM. Measured against the store: 30 of 46 models had no
+> CUDA/ROCm figure on a card ≤ 24 GB and 37 none ≤ 16 GB, because every card query
+> named a 3090/4090/5090 (24-32 GB) or an RX 7900 XTX/9070 XT. So the CUDA and AMD
+> legs now carry the owner cards too (`rtx 3060`, `rtx 4060`, `rtx 4060 ti 16gb`,
+> `rtx 4070`, `8gb vram`, `16gb vram`, `rx 7600`, `rx 6600`, `rx 9060 xt`,
+> `radeon 8gb vram`). A tier with no figure is reported as a collection gap in the
+> README — which is the honest answer, and the reason to run these queries.
+
 > **Trending-model queries (issue #264).** The lists above are fixed and name no
 > model: of the 24 queries the ONE model-specific one names `qwen3.8-27b`, and
 > none names `Strata`, so every figure for the model at the top of the README
@@ -137,6 +146,13 @@ For each model, capture:
   `llama.cpp b6xxx --n-gpu-layers 99`). Leave a field out entirely rather than
   inventing a value — an absent field is reported as a gap, a wrong one is a
   fabrication.
+- **And put the footprint on the MEASUREMENT, not only on the model**, when the
+  post gives it for THAT run: `weight_gb` / `context_tokens` / `system_ram_min` /
+  `storage_offload` are allowed on a measurement too (issue #337). One model's
+  quants fit different cards, and the README's card-fit tables are built from
+  this: a t/s figure whose own card is known but whose weights are 6 GB is what
+  tells an 8 GB owner the model can run for them. A measurement with no footprint
+  can only prove the card it ran on.
 - **Measured t/s** + the **hardware** it was measured on
 - **Inference engine** (the one that runs it best) — **with its repo URL**
   (e.g. `https://github.com/ggml-org/llama.cpp`). Store the engine `url` in

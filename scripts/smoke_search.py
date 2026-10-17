@@ -33,6 +33,12 @@ BACKEND_KEYWORDS = {
     "nvidia": [
         "rtx tokens per second llm",
         "rtx 3090/4090/5090 tokens per second",
+        "rtx 3060 tokens per second",
+        "rtx 4060 tokens per second",
+        "rtx 4060 ti 16gb tokens per second",
+        "rtx 4070 tokens per second",
+        "8gb vram llm tokens per second",
+        "16gb vram llm tokens per second",
         "bonsai 2 ternary",
         "freetoken gpu",
         "dflash speculative",
@@ -53,6 +59,10 @@ BACKEND_KEYWORDS = {
     "amd": [
         "rx 7900 xtx tokens per second",
         "rx 9070 xt tokens per second",
+        "rx 7600 tokens per second",
+        "rx 6600 tokens per second",
+        "rx 9060 xt tokens per second",
+        "radeon 8gb vram llm tokens per second",
         "rocm tokens per second",
         "llama.cpp vulkan amd tokens",
         "strix halo tokens per second",
