@@ -26,6 +26,18 @@ Checks (each one is a rule with a name, so a failure says what to do):
                            lands in the process list, not only in the environment
     env-dump               a bare `env` / `printenv` whose output reaches a log
     key-shaped-literal     something that looks like a real credential, committed
+    whole-stdout-into-output-file
+                           a command's WHOLE stdout redirected into `$GITHUB_OUTPUT`
+                           (a pipeline, or a `$(…)` substitution, ending in
+                           `>> "$GITHUB_OUTPUT"`): the file must hold `key=value` only.
+                           `make` echoes its recipe line, which is enough to fail the
+                           step with `Invalid format` and throw away the work behind it
+                           (issue #346, runs 39026771566 / 39040036748), and every byte
+                           a target prints lands in the output file
+    whole-stdout-into-log  a command piped into `tee /dev/stderr`: the same whole
+                           stream, copied into the job log instead — GitHub masks
+                           registered values only, so a transformed one sails past
+                           (rule 3d)
 
 Commands:
     check_secret_output.py check     exit non-zero on any violation (the `ci-unit` gate)
@@ -85,6 +97,37 @@ RUN_SECRET_EXPR = re.compile(r"\$\{\{\s*secrets\.([A-Za-z0-9_]+)")
 #: script text, `ps`, and any `--debug` output. `secrets-in-run-block` therefore matches both sources;
 #: the expression that was found is named in the failure so there is nothing to guess.
 RUN_GITHUB_TOKEN = re.compile(r"\$\{\{\s*github\s*(?:\.\s*token\b|\[\s*['\"]token['\"]\s*\])")
+
+#: A pipeline whose last stage redirects into Actions' OUTPUT FILE: the file then holds a command's
+#: WHOLE stdout instead of `key=value` — `make` echoing its recipe line is enough to kill the step
+#: (`##[error]Invalid format`, issue #346) and every line a target prints lands in the output file.
+#: The redirect must be OUTSIDE a command substitution: `echo "k=$(cmd | sed …)" >> "$GITHUB_OUTPUT"`
+#: prints one computed LITERAL, which is the safe shape (measured on issue-review-bot.yml:202).
+PIPE_INTO_OUTPUT = re.compile(r"\|[^|]*?(>>\s*['\"]?\$GITHUB_OUTPUT)")
+#: The same whole-stdout problem through a command SUBSTITUTION (`$(make x) >> "$GITHUB_OUTPUT"`).
+SUBST_INTO_OUTPUT = re.compile(r"\$\([^)]*\)\s*>>\s*['\"]?\$GITHUB_OUTPUT")
+#: `… | tee /dev/stderr` (or `/dev/stdout`): copies the whole stream into the job LOG. GitHub masks
+#: the values it knows, so a transformed one (base64, a URL, a slice) sails past — rule 3d.
+TEE_TO_LOG = re.compile(r"\|\s*tee\s+(?:-a\s+)?['\"]?/dev/std(?:err|out)\b")
+
+
+def _inside_dquotes(line: str, pos: int) -> bool:
+    """True when `pos` sits inside a `"…"` string. That is the discriminator between the two
+    shapes that both contain a pipe and `>> $GITHUB_OUTPUT`:
+
+        echo "k=$(cmd | sed …)" >> "$GITHUB_OUTPUT"     pipe INSIDE the quoted argument
+                                                        -> one computed literal, SAFE
+        cmd | tee /dev/stderr >> "$GITHUB_OUTPUT"       pipe at top level
+                                                        -> the whole stream, UNSAFE
+    """
+    in_q = False
+    i = 0
+    while i < pos:
+        c = line[i]
+        if c == '"' and (i == 0 or line[i - 1] != "\\"):
+            in_q = not in_q
+        i += 1
+    return in_q
 
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".pytest_cache"}
 #: Files that legitimately CONTAIN the patterns (this guard and its tests) — the only exemption,
@@ -175,6 +218,18 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
             s = line.strip()
             if not s or s.startswith("#"):
                 continue
+            if TEE_TO_LOG.search(s):
+                bad.append(f"{rel}:{n}: whole-stdout-into-log — a command's whole stdout reaches the "
+                           f"job log (`tee /dev/stderr`); GitHub masks registered values only, so a "
+                           f"transformed one leaks. Print the parsed fields instead: {s[:80]}")
+            if PIPE_INTO_OUTPUT.search(s) or SUBST_INTO_OUTPUT.search(s):
+                m = PIPE_INTO_OUTPUT.search(s)
+                # A pipe INSIDE a quoted argument feeds the printer's value, not the file.
+                unsafe_pipe = bool(m) and not _inside_dquotes(s, m.start())
+                if unsafe_pipe or SUBST_INTO_OUTPUT.search(s):
+                    bad.append(f"{rel}:{n}: whole-stdout-into-output-file — a command's whole stdout is "
+                               f"redirected into $GITHUB_OUTPUT; write the parsed `key=value` fields only "
+                               f"(`make` echoes its recipe line, which is not key=value — issue #346): {s[:80]}")
             if PRINTING.match(s) and SECRET_EXPANSION.search(s) and not FILE_REDIRECT.search(s):
                 bad.append(f"{rel}:{n}: prints-secret-value — a printing command expands a secret's "
                            f"value: {s[:80]}")

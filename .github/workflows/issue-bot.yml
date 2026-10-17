@@ -309,8 +309,17 @@ jobs:
       # with its cited EVIDENCE, closes the issue and applies `agent:closed`. A
       # close with no EVIDENCE, or an unreadable verdict, exits 2 and fails this
       # step loudly — a verdict nobody understands must not be guessed at.
-      # `set -o pipefail`: without it the step reports tee's status and a refused
-      # verdict would look green.
+      #
+      # `key=value` ONLY (issue #346): a step must never copy a command's whole
+      # stdout into the log or into `$GITHUB_OUTPUT`. `make` echoes its recipe
+      # line, which is not `key=value` — that is what failed this very step with
+      # `##[error]Invalid format 'python3 scripts/issue_verdict.py --issue 329 '`
+      # on runs 39026771566 and 39040036748, after ~20 minutes of implementation,
+      # so nothing was pushed, no PR opened and no outcome posted. A wholesale
+      # copy is also how a value nobody meant to print reaches a public log; the
+      # capture + allowlist below keeps every byte but the parsed keys out of it.
+      # `bash -e` is the runner's default, so a refused verdict (`make` exits 2)
+      # still aborts this step.
       - name: Apply the implementer's verdict (make issue-verdict)
         id: verdict
         if: steps.iss.outputs.implement == 'true'
@@ -321,8 +330,12 @@ jobs:
           REPO: ${{ github.repository }}
           ISSUE: ${{ steps.iss.outputs.issue }}
         run: |
-          set -o pipefail
-          make issue-verdict | tee /dev/stderr >> "$GITHUB_OUTPUT"
+          OUT=$(make issue-verdict)
+          for key in verdict; do
+            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1)
+            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"
+          done
+          printf '[verdict] %s\n' "$(printf '%s\n' "$OUT" | sed -n 's/^verdict=//p' | head -1)"
 
       - name: Commit + push the branch
         id: push
