@@ -1,110 +1,6 @@
 {
   "_source": "GitHub /repos API, captured 2026-10-02 for tests (offline)",
   "repos": {
-    "ggml-org/llama.cpp": {
-      "full_name": "ggml-org/llama.cpp",
-      "description": "LLM inference in C/C++",
-      "topics": [
-        "ggml"
-      ]
-    },
-    "prismml-eng/llama.cpp": {
-      "full_name": "PrismML-Eng/llama.cpp",
-      "description": "LLM inference in C/C++",
-      "topics": []
-    },
-    "ollama/ollama": {
-      "full_name": "ollama/ollama",
-      "description": "Get up and running with Kimi, GLM, MiniMax, DeepSeek, gpt-oss, Qwen, Gemma and other models.",
-      "topics": [
-        "deepseek",
-        "gemma",
-        "gemma3",
-        "glm",
-        "go",
-        "golang",
-        "gpt-oss",
-        "llama",
-        "llama3",
-        "llm",
-        "llms",
-        "minimax",
-        "mistral",
-        "ollama",
-        "qwen"
-      ]
-    },
-    "flashml-org/freetoken": {
-      "full_name": "FlashML-org/FreeToken",
-      "description": "FreeToken brings datacenter-scale model serving to your desktop. Run massive models locally, fast and efficiently.",
-      "topics": [
-        "deepseek-v4",
-        "edge",
-        "glm",
-        "inference",
-        "minimax",
-        "moe",
-        "qwen",
-        "transformer"
-      ]
-    },
-    "vllm-project/vllm": {
-      "full_name": "vllm-project/vllm",
-      "description": "A high-throughput and memory-efficient inference and serving engine for LLMs",
-      "topics": [
-        "amd",
-        "blackwell",
-        "cuda",
-        "deepseek",
-        "deepseek-v3",
-        "gpt",
-        "gpt-oss",
-        "inference",
-        "kimi",
-        "llama",
-        "llm",
-        "llm-serving",
-        "model-serving",
-        "moe",
-        "openai",
-        "pytorch",
-        "qwen",
-        "qwen3",
-        "tpu",
-        "transformer"
-      ]
-    },
-    "sgl-project/sglang": {
-      "full_name": "sgl-project/sglang",
-      "description": "SGLang is a high-performance serving framework for large language models and multimodal models.",
-      "topics": [
-        "attention",
-        "blackwell",
-        "cuda",
-        "deepseek",
-        "diffusion",
-        "glm",
-        "gpt-oss",
-        "inference",
-        "llama",
-        "llm",
-        "minimax",
-        "moe",
-        "qwen",
-        "qwen-image",
-        "reinforcement-learning",
-        "transformer",
-        "vlm",
-        "wan"
-      ]
-    },
-    "ml-explore/mlx": {
-      "full_name": "ml-explore/mlx",
-      "description": "MLX: An array framework for Apple silicon",
-      "topics": [
-        "mlx"
-      ]
-    },
     "ashhart/tensorfold": {
       "full_name": "ashhart/TensorFold",
       "description": "Fast, exact LLM decoding on Apple Silicon (MLX) behind an OpenAI-compatible endpoint",
@@ -116,85 +12,15 @@
         "llm-tools"
       ]
     },
-    "nvidia/tensorrt-llm": {
-      "full_name": "NVIDIA/TensorRT-LLM",
-      "description": "TensorRT LLM provides users with an easy-to-use Python API to define Large Language Models (LLMs) and supports state-of-the-art optimizations to perform inference efficiently on NVIDIA GPUs. TensorRT LLM also contains components to create Python and C++ runtimes that orchestrate the inference execution in a performant way.",
-      "topics": [
-        "blackwell",
-        "cuda",
-        "llm-serving",
-        "moe",
-        "pytorch"
-      ]
-    },
-    "google-ai-edge/litert": {
-      "full_name": "google-ai-edge/LiteRT",
-      "description": "LiteRT, successor to TensorFlow Lite. is Google's On-device framework for high-performance ML & GenAI deployment on edge platforms, via efficient conversion, runtime, and optimization",
+    "carouselaether/rocm_exl3": {
+      "description": "A fork of exllamav3 for ROCm.",
+      "full_name": "CarouselAether/rocm_exl3",
       "topics": []
     },
-    "niko1221/strata": {
-      "full_name": "Niko1221/Strata",
-      "description": "Qwen3.8-Flash-Next on any consumer hardware: one-click install for Windows / Linux. Strata inference engine, OpenAI/Anthropic API on localhost, optional image input.",
+    "daig/omlx-exl3": {
+      "description": "EXL3 (ExLlamaV3) quantized models on Apple Silicon with oMLX: Metal kernels; Qwen3.8-27B at MLX 8-bit quality in 6 bits, 2.3x faster with MTP",
+      "full_name": "daig/omlx-exl3",
       "topics": []
-    },
-    "layr-labs/mlxfast-bonsai2-27b-engine": {
-      "full_name": "Layr-Labs/mlxfast-bonsai2-27b-engine",
-      "description": "Ternary Bonsai 2 27B MLX inference speedup benchmark engine",
-      "topics": []
-    },
-    "z-lab/dflash": {
-      "full_name": "z-lab/dflash",
-      "description": "DFlash: Block Diffusion for Flash Speculative Decoding",
-      "topics": []
-    },
-    "mlc-ai/web-llm": {
-      "full_name": "mlc-ai/web-llm",
-      "description": "High-performance In-browser LLM Inference Engine ",
-      "topics": [
-        "chatgpt",
-        "deep-learning",
-        "language-model",
-        "llm",
-        "tvm",
-        "webgpu",
-        "webml"
-      ]
-    },
-    "leeex1/quillan.cpp": {
-      "full_name": "leeex1/quillan.cpp",
-      "description": "quillan.cpp is a high-performance, lightweight, standalone C++17 inference engine engineered for the Quillan-Ronin sovereign multi-tier cognitive architecture.  Inspired by the minimalistic philosophies of llama.cpp and bitnet.cpp, quillan.cpp operates with zero heavyweight runtime dependencies (no PyTorch, no LibTorch, no Python runtime), running ",
-      "topics": []
-    },
-    "deepseek-ai/deepseek-harness": {
-      "full_name": "deepseek-ai/deepseek-harness",
-      "description": "DeepSeek Harness: Everything is a Plugin.",
-      "topics": [
-        "ai-agents",
-        "cordis",
-        "dsh",
-        "dsh-plugin"
-      ]
-    },
-    "open-webui/open-webui": {
-      "full_name": "open-webui/open-webui",
-      "description": "User-friendly AI Interface (Supports Ollama, OpenAI API, ...)",
-      "topics": [
-        "ai",
-        "llm",
-        "llm-ui",
-        "llm-webui",
-        "llms",
-        "mcp",
-        "ollama",
-        "ollama-webui",
-        "open-webui",
-        "openai",
-        "openapi",
-        "rag",
-        "self-hosted",
-        "ui",
-        "webui"
-      ]
     },
     "ddalcu/mlx-serve": {
       "description": "Native LLM inference server for Apple Silicon. OpenAI + Anthropic API compatible. No Python. Zig backend, Swift frontend macOS app with chat, music, voice, video generation.",
@@ -222,60 +48,45 @@
         "zig"
       ]
     },
-    "jundot/omlx": {
-      "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon \u2014 managed from the macOS menu bar",
-      "full_name": "jundot/omlx",
+    "deepseek-ai/deepseek-harness": {
+      "full_name": "deepseek-ai/deepseek-harness",
+      "description": "DeepSeek Harness: Everything is a Plugin.",
       "topics": [
-        "apple-silicon",
-        "inference-server",
-        "llm",
-        "macos",
-        "mlx",
-        "openai-api"
+        "ai-agents",
+        "cordis",
+        "dsh",
+        "dsh-plugin"
       ]
     },
-    "carouselaether/rocm_exl3": {
-      "description": "A fork of exllamav3 for ROCm.",
-      "full_name": "CarouselAether/rocm_exl3",
-      "topics": []
-    },
-    "laurentzuijdwijk/llama.cpp": {
-      "description": "llama.cpp with adaptive speculative decoding (--spec-draft-adaptive) and a Vulkan backend tuned for AMD Strix Halo. 4.7x on structured output, 1.9x mainline prefill on MoE.",
-      "full_name": "LaurentZuijdwijk/llama.cpp",
+    "flashml-org/freetoken": {
+      "full_name": "FlashML-org/FreeToken",
+      "description": "FreeToken brings datacenter-scale model serving to your desktop. Run massive models locally, fast and efficiently.",
       "topics": [
-        "amd",
-        "llama-cpp",
-        "local-llm",
-        "speculative-decoding",
-        "strix-halo",
-        "vulkan"
-      ]
-    },
-    "perkel666/megacapybara": {
-      "description": "The fastest inference engine for Qwen3.8-27B on the NVIDIA RTX 5090: up to 500 tokens/s for one agent and up to 2,000 tokens/s for many, contexts up to 1M tokens, and a launcher that shows what every setting costs. Windows and Linux.",
-      "full_name": "perkel666/MegaCapybara",
-      "topics": [
-        "anthropic-api",
-        "claude-code",
-        "cuda",
-        "inference-engine",
-        "linux",
-        "llm",
-        "local-llm",
-        "openai-api",
+        "deepseek-v4",
+        "edge",
+        "glm",
+        "inference",
+        "minimax",
+        "moe",
         "qwen",
-        "rtx-5090",
-        "windows"
+        "transformer"
       ]
     },
-    "turboderp-org/exllamav3": {
-      "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
-      "full_name": "turboderp-org/exllamav3",
+    "ggml-org/llama.cpp": {
+      "full_name": "ggml-org/llama.cpp",
+      "description": "LLM inference in C/C++",
+      "topics": [
+        "ggml"
+      ]
+    },
+    "google-ai-edge/litert": {
+      "full_name": "google-ai-edge/LiteRT",
+      "description": "LiteRT, successor to TensorFlow Lite. is Google's On-device framework for high-performance ML & GenAI deployment on edge platforms, via efficient conversion, runtime, and optimization",
       "topics": []
     },
-    "daig/omlx-exl3": {
-      "description": "EXL3 (ExLlamaV3) quantized models on Apple Silicon with oMLX: Metal kernels; Qwen3.8-27B at MLX 8-bit quality in 6 bits, 2.3x faster with MTP",
-      "full_name": "daig/omlx-exl3",
+    "haddard/llama.cpp": {
+      "full_name": "HaddarD/llama.cpp",
+      "description": "llama.cpp – Adaptive Speculation + Fastest Vulkan on AMD Strix Halo",
       "topics": []
     },
     "jakeatx/llamampere": {
@@ -304,32 +115,169 @@
         "turboquant"
       ]
     },
-    "haddard/llama.cpp": {
-      "full_name": "HaddarD/llama.cpp",
-      "description": "llama.cpp \u2013 Adaptive Speculation + Fastest Vulkan on AMD Strix Halo",
+    "jundot/omlx": {
+      "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon — managed from the macOS menu bar",
+      "full_name": "jundot/omlx",
+      "topics": [
+        "apple-silicon",
+        "inference-server",
+        "llm",
+        "macos",
+        "mlx",
+        "openai-api"
+      ]
+    },
+    "laurentzuijdwijk/llama.cpp": {
+      "description": "llama.cpp with adaptive speculative decoding (--spec-draft-adaptive) and a Vulkan backend tuned for AMD Strix Halo. 4.7x on structured output, 1.9x mainline prefill on MoE.",
+      "full_name": "LaurentZuijdwijk/llama.cpp",
+      "topics": [
+        "amd",
+        "llama-cpp",
+        "local-llm",
+        "speculative-decoding",
+        "strix-halo",
+        "vulkan"
+      ]
+    },
+    "layr-labs/mlxfast-bonsai2-27b-engine": {
+      "full_name": "Layr-Labs/mlxfast-bonsai2-27b-engine",
+      "description": "Ternary Bonsai 2 27B MLX inference speedup benchmark engine",
       "topics": []
     },
-    "sybil-solutions/glm-flash-lite": {
-      "full_name": "sybil-solutions/glm-flash-lite",
-      "description": "GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API",
+    "leeex1/quillan.cpp": {
+      "full_name": "leeex1/quillan.cpp",
+      "description": "quillan.cpp is a high-performance, lightweight, standalone C++17 inference engine engineered for the Quillan-Ronin sovereign multi-tier cognitive architecture.  Inspired by the minimalistic philosophies of llama.cpp and bitnet.cpp, quillan.cpp operates with zero heavyweight runtime dependencies (no PyTorch, no LibTorch, no Python runtime), running ",
       "topics": []
+    },
+    "lightseekorg/tokenspeed": {
+      "full_name": "lightseekorg/tokenspeed",
+      "description": "TokenSpeed is a speed-of-light LLM inference engine.",
+      "topics": [
+        "b200",
+        "b300",
+        "blackwell",
+        "deepseek",
+        "gb200",
+        "gb300",
+        "glm",
+        "gpt-oss",
+        "inkling",
+        "kimi",
+        "lightseek",
+        "llm",
+        "mi355x",
+        "mi455x",
+        "minimax",
+        "qwen",
+        "rubin",
+        "speed-of-light",
+        "tokenspeed",
+        "vlm"
+      ]
+    },
+    "magnitudedev/magnitude": {
+      "full_name": "magnitudedev/magnitude",
+      "description": "Open source inference engine that tunes its kernels on your hardware to find the fastest way to run each model. 2x faster than Ollama. Works on Apple Silicon, NVIDIA, AMD, or just a CPU.",
+      "topics": []
+    },
+    "ml-explore/mlx": {
+      "full_name": "ml-explore/mlx",
+      "description": "MLX: An array framework for Apple silicon",
+      "topics": [
+        "mlx"
+      ]
+    },
+    "mlc-ai/web-llm": {
+      "full_name": "mlc-ai/web-llm",
+      "description": "High-performance In-browser LLM Inference Engine ",
+      "topics": [
+        "chatgpt",
+        "deep-learning",
+        "language-model",
+        "llm",
+        "tvm",
+        "webgpu",
+        "webml"
+      ]
     },
     "mw00/project-maya": {
       "full_name": "mw00/project-maya",
       "description": "Project Maya - GLM-5.3-Flash (321B MoE) on your own NVIDIA GPU(s): engine, server, dashboard, quant tools. Built on Strata.",
       "topics": []
     },
-    "shawnshekari/strixite": {
-      "full_name": "shawnshekari/strixite",
-      "description": "LLM inference engine written from scratch in HIP for AMD Strix Halo (gfx1151) and Qwen3.8-Flash-Next - ~50 tokens/s out to 492k context",
+    "niko1221/strata": {
+      "full_name": "Niko1221/Strata",
+      "description": "Qwen3.8-Flash-Next on any consumer hardware: one-click install for Windows / Linux. Strata inference engine, OpenAI/Anthropic API on localhost, optional image input.",
+      "topics": []
+    },
+    "nvidia/tensorrt-llm": {
+      "full_name": "NVIDIA/TensorRT-LLM",
+      "description": "TensorRT LLM provides users with an easy-to-use Python API to define Large Language Models (LLMs) and supports state-of-the-art optimizations to perform inference efficiently on NVIDIA GPUs. TensorRT LLM also contains components to create Python and C++ runtimes that orchestrate the inference execution in a performant way.",
       "topics": [
-        "amd",
-        "hip",
-        "llm-inference",
+        "blackwell",
+        "cuda",
+        "llm-serving",
+        "moe",
+        "pytorch"
+      ]
+    },
+    "ollama/ollama": {
+      "full_name": "ollama/ollama",
+      "description": "Get up and running with Kimi, GLM, MiniMax, DeepSeek, gpt-oss, Qwen, Gemma and other models.",
+      "topics": [
+        "deepseek",
+        "gemma",
+        "gemma3",
+        "glm",
+        "go",
+        "golang",
+        "gpt-oss",
+        "llama",
+        "llama3",
+        "llm",
+        "llms",
+        "minimax",
+        "mistral",
+        "ollama",
+        "qwen"
+      ]
+    },
+    "open-webui/open-webui": {
+      "full_name": "open-webui/open-webui",
+      "description": "User-friendly AI Interface (Supports Ollama, OpenAI API, ...)",
+      "topics": [
+        "ai",
+        "llm",
+        "llm-ui",
+        "llm-webui",
+        "llms",
+        "mcp",
+        "ollama",
+        "ollama-webui",
+        "open-webui",
+        "openai",
+        "openapi",
+        "rag",
+        "self-hosted",
+        "ui",
+        "webui"
+      ]
+    },
+    "perkel666/megacapybara": {
+      "description": "The fastest inference engine for Qwen3.8-27B on the NVIDIA RTX 5090: up to 500 tokens/s for one agent and up to 2,000 tokens/s for many, contexts up to 1M tokens, and a launcher that shows what every setting costs. Windows and Linux.",
+      "full_name": "perkel666/MegaCapybara",
+      "topics": [
+        "anthropic-api",
+        "claude-code",
+        "cuda",
+        "inference-engine",
+        "linux",
+        "llm",
         "local-llm",
+        "openai-api",
         "qwen",
-        "rocm",
-        "strix-halo"
+        "rtx-5090",
+        "windows"
       ]
     },
     "prabanta-dev/janas": {
@@ -353,6 +301,89 @@
         "speculative-decoding",
         "vulkan"
       ]
+    },
+    "prismml-eng/llama.cpp": {
+      "full_name": "PrismML-Eng/llama.cpp",
+      "description": "LLM inference in C/C++",
+      "topics": []
+    },
+    "sgl-project/sglang": {
+      "full_name": "sgl-project/sglang",
+      "description": "SGLang is a high-performance serving framework for large language models and multimodal models.",
+      "topics": [
+        "attention",
+        "blackwell",
+        "cuda",
+        "deepseek",
+        "diffusion",
+        "glm",
+        "gpt-oss",
+        "inference",
+        "llama",
+        "llm",
+        "minimax",
+        "moe",
+        "qwen",
+        "qwen-image",
+        "reinforcement-learning",
+        "transformer",
+        "vlm",
+        "wan"
+      ]
+    },
+    "shawnshekari/strixite": {
+      "full_name": "shawnshekari/strixite",
+      "description": "LLM inference engine written from scratch in HIP for AMD Strix Halo (gfx1151) and Qwen3.8-Flash-Next - ~50 tokens/s out to 492k context",
+      "topics": [
+        "amd",
+        "hip",
+        "llm-inference",
+        "local-llm",
+        "qwen",
+        "rocm",
+        "strix-halo"
+      ]
+    },
+    "sybil-solutions/glm-flash-lite": {
+      "full_name": "sybil-solutions/glm-flash-lite",
+      "description": "GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API",
+      "topics": []
+    },
+    "turboderp-org/exllamav3": {
+      "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
+      "full_name": "turboderp-org/exllamav3",
+      "topics": []
+    },
+    "vllm-project/vllm": {
+      "full_name": "vllm-project/vllm",
+      "description": "A high-throughput and memory-efficient inference and serving engine for LLMs",
+      "topics": [
+        "amd",
+        "blackwell",
+        "cuda",
+        "deepseek",
+        "deepseek-v3",
+        "gpt",
+        "gpt-oss",
+        "inference",
+        "kimi",
+        "llama",
+        "llm",
+        "llm-serving",
+        "model-serving",
+        "moe",
+        "openai",
+        "pytorch",
+        "qwen",
+        "qwen3",
+        "tpu",
+        "transformer"
+      ]
+    },
+    "z-lab/dflash": {
+      "full_name": "z-lab/dflash",
+      "description": "DFlash: Block Diffusion for Flash Speculative Decoding",
+      "topics": []
     }
   }
 }

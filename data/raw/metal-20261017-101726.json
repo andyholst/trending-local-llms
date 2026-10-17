@@ -1,0 +1,257 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "LFM Open License (Apache 2.0 based)",
+      "params": "24B total / 2.45B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "14.5GB 4-bit",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "24B MoE that touches only ~2.45B params per token, so it runs on a laptop; vendor speed test: 184 tok/s on an Apple M5 Max (llama.cpp, 14.5GB 4-bit build, 4K prompt) and 114 on Ryzen AI Max+ 395.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "4-bit build (14.5GB), 4K-token prompt; vendor-run (Liquid AI)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 3,
+          "views": 170,
+          "interactions": 175
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        },
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Dense 27B that the community keeps making faster on Apple Silicon without touching the weights — MLX-Serve, TensorFold, mlx.fast and DFlash2 all post big decode gains.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "124",
+          "hardware": "Apple Silicon (TensorFold)",
+          "quant": "MLX 4-bit; TensorFold parallel-lane draft/verify, 120-124 tok/s range",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "87.9",
+          "hardware": "Mac M5 Max (mlx.fast)",
+          "quant": "median decode over 8 prompts, 26 -> 87.9 tok/s, 33-93.1 across prompts, prefill ~971.8 tok/s; custom MTP heads accept ~3.9 tokens/round",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/0xkydo/status/2090894947335750142",
+          "likes": 24,
+          "comments": 30,
+          "reshares": 344,
+          "views": 33093,
+          "interactions": 33491
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "352.28",
+          "hardware": "Mac M5 Max 256GB",
+          "quant": "MLX 4-bit",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "M5 Max MacBook Pro 128GB",
+          "quant": "block-diffusion draft model, 16 draft tokens per parallel forward pass, 4.6x autoregressive baseline, output bit-identical",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/zhijianliu/status/2089836737132650504",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 3,
+          "views": 350,
+          "interactions": 355
+        }
+      ],
+      "vram_min": "12GB"
+    },
+    {
+      "id": "laya-mlx-decision-models",
+      "name": "Laya (MLX decision models)",
+      "full_name": "laya-mlx decision models (421M English / 322M multilingual)",
+      "type": "LLM (decision)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "aac6fef/laya-mlx"
+        }
+      ],
+      "license": "see repo",
+      "params": "421M / 322M",
+      "hf": "aac6fef/laya-mlx",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Decision models that answer route/urgency/jailbreak/tool-call questions in a single MLX pass on Apple Silicon instead of a cloud LLM call.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "75.4",
+          "hardware": "Mac M3 Max",
+          "quant": "Snake demo: 75.4 moves/s over 2,400 moves; P50 13.42ms (421M) / 7.39ms (322M); peak MLX memory 943.6MiB / 687.6MiB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976",
+          "likes": 5,
+          "comments": 4,
+          "reshares": 12,
+          "views": 2365,
+          "interactions": 2386
+        }
+      ],
+      "vram_min": "8GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        },
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "125B MoE that MLX stacks (oMLX, mlx-serve, MTP builds) push to ~80-97 tok/s decode on M-series Ultra Macs.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "97.1",
+          "hardware": "Mac Studio M3 Ultra",
+          "quant": "4-bit MTP build via oMLX; 23K context, ~1,131 tok/s uncached prefill",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099312823025496405",
+          "likes": 7,
+          "comments": 5,
+          "reshares": 108,
+          "views": 15455,
+          "interactions": 15575
+        },
+        {
+          "engine": "oMLX",
+          "tps": "80",
+          "hardware": "M5 Ultra Studio",
+          "quant": "Q4 with MTP; 2,574 tok/s prefill at 64K context",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100630175260045820",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct (Mirai 2.4-bit)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Mirai Labs compressed this dense 27B to 2.4 bits/weight and ported the codes to llama.cpp without requantizing.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "66",
+          "hardware": "Mac mini M4 Pro 64GB",
+          "quant": "Apple Silicon (MLX-Serve 26.10.1) byte-identical outputs across 18 models",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-17T10:17:26Z"
+}

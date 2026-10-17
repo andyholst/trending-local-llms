@@ -1,0 +1,194 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "system_ram_min": "6GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "0.0167",
+          "hardware": "Jailbroken PS5, CPU only (~6 GiB usable)",
+          "quant": "2-bit GGUF via PS5LM (llama.cpp port for jailbroken PS5); ~1 token per minute on the console CPU, vs ~20 tok/s on the PS5 GPU",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/chasmmmmmmmmmmm/status/2110216776759804103",
+          "likes": 758,
+          "comments": 10,
+          "reshares": 2,
+          "views": 0
+        }
+      ],
+      "weight_gb": "2-bit Qwen3.8-27B GGUF"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-35B-A3B",
+          "hf": "empero-ai/Qwen3.8-35B-A3B-Distill"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop + Intel i7-12700H, 16GB DDR4 (CPU/GPU split, 25 GPU layers)",
+          "quant": "Unsloth IQ4_XS (~14.6GB on disk), Q4_0 KV cache, native MTP, 25 GPU layers; 64K context, 150 tok/s prefill",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "14.6GB IQ4_XS",
+      "context_tokens": "64K",
+      "engine_min_version": "llama.cpp with 25 GPU layers (--n-gpu-layers 25), Q4_0 KV cache, native MTP"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "full_name": "gpt-oss-120b",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "gpt-oss-120b",
+          "hf": "openai/gpt-oss-120b"
+        }
+      ],
+      "license": "Apache-2.0",
+      "params": "120B (MoE)",
+      "hf": "openai/gpt-oss-120b",
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-08-13",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.2",
+          "hardware": "12GB Android phone, four cores, flash storage (no GPU, no NPU)",
+          "quant": "BigMoeOnEdge expert streaming from flash on stock llama.cpp, upstream untouched, tracked as a submodule; 14x faster than ordinary mmap loading (0.09 tok/s with mmap)",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 16,
+          "comments": 10,
+          "reshares": 3,
+          "views": 1494
+        }
+      ],
+      "weight_gb": "60GB weights streamed from flash",
+      "storage_offload": "60GB experts streamed from phone flash storage"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-30B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "system_ram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-08-13",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5.2",
+          "hardware": "12GB Android phone, four cores, flash storage (no GPU, no NPU)",
+          "quant": "BigMoeOnEdge expert streaming from flash on stock llama.cpp; same device that runs gpt-oss-120b at 2.2 tok/s",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 16,
+          "comments": 10,
+          "reshares": 3,
+          "views": 1494
+        }
+      ],
+      "storage_offload": "experts streamed from phone flash storage"
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma-4-26B-A4B",
+      "full_name": "Gemma-4-26B-A4B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Gemma 4 26B A4B",
+          "hf": "google/gemma-4-26B-A4B-it"
+        }
+      ],
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "system_ram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-08-13",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.1",
+          "hardware": "12GB Android phone, four cores, flash storage (no GPU, no NPU)",
+          "quant": "BigMoeOnEdge expert streaming from flash on stock llama.cpp; same device that runs gpt-oss-120b at 2.2 tok/s",
+          "date": "2026-08-13",
+          "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460",
+          "likes": 16,
+          "comments": 10,
+          "reshares": 3,
+          "views": 1494
+        }
+      ],
+      "storage_offload": "experts streamed from phone flash storage"
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

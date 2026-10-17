@@ -1,0 +1,78 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash (RED-SNOW-5.3-FLASH abliterated build)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GLM-5.3-Flash",
+          "hf": "zai-org/GLM-5.3-Flash"
+        }
+      ],
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "27.5",
+          "hardware": "NVIDIA DGX Spark (one Spark), 2.49bpw, 97.4 GiB",
+          "quant": "RED-SNOW-5.3-FLASH, an abliterated 321B build by Blackfrost AI quantized by Cruz at 2.49bpw, 262K context; decode by workload - structured output 45.2 tok/s, JSON 45.7, code 35.9, prose 27.5 (the honest floor), harness-shaped research turn at 33k context 32 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2110193379342786881",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "97.4 GiB at 2.49bpw",
+      "context_tokens": "262144"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GLM-5.3-Flash",
+          "hf": "zai-org/GLM-5.3-Flash"
+        }
+      ],
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62.2",
+          "hardware": "served endpoint (Artificial Analysis comparison)",
+          "quant": "provider-served GLM 5.3 Flash vs DeepSeek V4.1 Flash (Max) at 173.9 tok/s per Artificial Analysis; some OpenRouter figures show the opposite, so speed depends on the provider",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}
