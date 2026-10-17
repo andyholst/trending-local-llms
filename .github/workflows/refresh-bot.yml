@@ -385,6 +385,10 @@ jobs:
           # Run the direct Firecrawl->lightbrd search + merge: gathers engagement
           # the Hermes prompts also capture, and exercises the --fetch integration.
           make merge-fetch
+          # The merge is what auto-registers a new engine; record its GitHub
+          # metadata into the offline test fixture straight away, so this PR is
+          # not red on `make test` for an engine it just gained (issue #334).
+          make engine-meta-capture
           # Self-correct raw snapshots FIRST (prune extra keys, fill last_seen)
           # so _validate sees contract-conforming data. Previously validate ran
           # before self_correct_raw (only in validate-search) and the aggregate

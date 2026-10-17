@@ -151,6 +151,7 @@ keep it honest (issue #207):
 | `merge-fetch` | The same **plus** a direct Firecrawl→lightbrd fetch (`--fetch`) — used by the refresh aggregate |
 | `correct-raw` | `scripts/self_correct_raw.py`: prune stray keys / fill `last_seen` in `data/raw/*` so validation sees contract-conforming data |
 | `engine-check` | Report every engine mentioned in the raw snapshots that is not registered, and the decision ingest will make (`scripts/engine_registry.py`) |
+| `engine-meta-capture` | Record GitHub metadata (`full_name`, `description`, `topics`) for every registry engine the OFFLINE test fixture `tests/fixtures/github_meta.json` lacks (`scripts/engine_registry.py --capture-meta`, issue #334). Writes only what is missing and never invents an entry it could not read; the refresh aggregate runs it right after the merge that registers a new engine |
 
 ### Validation (QA)
 
@@ -290,7 +291,7 @@ competing PRs over the same generated files).
 | `test-image` | Same decision (`make rebuild-decision`) for the **test** image → `…-test:latest` + `:test-<hash>` |
 | `openspec-image` | Same decision (`make rebuild-decision`, output `publish_openspec`) for the **OpenSpec CLI** image → `…-openspec:latest` + `:openspec-<hash>` |
 | `search` | Matrix `[nvidia, metal, cpu, amd]`, `fail-fast: false`: prepare the base image, `_search-smoke`, `model-caps`, `hermes-smoke`, then the Hermes search. Each leg uploads its raw snapshots as artifacts |
-| `aggregate` | Runs even when a leg failed: collect the artifacts, `make base-check` (the base `ci/trending-refresh-<UTC>` is cut from is FETCHED and asserted, rule 6n), `merge-fetch`, `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data — and that PR body LEADS with the run's WINDOW (`make refresh-run-block`, issue #199: the marker + `started=` + each leg's start + `aggregate=`, from the run's real job timestamps), so an in-flight refresh is readable from the PR itself. It never merges: `qa-validate`'s `auto-merge` does |
+| `aggregate` | Runs even when a leg failed: collect the artifacts, `make base-check` (the base `ci/trending-refresh-<UTC>` is cut from is FETCHED and asserted, rule 6n), `merge-fetch`, `engine-meta-capture` (the merge is what auto-registers an engine; its GitHub metadata is recorded into the offline test fixture so this PR is not red on `make test`, #334), `correct-raw`, `qa-report`, `make data-gaps`, `make data-gap-issue` (`continue-on-error`: report-only), then **open a PR** (owner PAT, branch `ci/trending-refresh-<UTC>`) only when there is new data — and that PR body LEADS with the run's WINDOW (`make refresh-run-block`, issue #199: the marker + `started=` + each leg's start + `aggregate=`, from the run's real job timestamps), so an in-flight refresh is readable from the PR itself. It never merges: `qa-validate`'s `auto-merge` does |
 
 ### `.github/workflows/qa-validate.yml` — PR CI (every PR, push to master, dispatch)
 
@@ -412,7 +413,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 |---|---|
 | `scripts/update_trending.py` | The engine of the repo: `ingest_raw_snapshots` (merges only the snapshots newer than the `since` boundary `main()` derives from the store's `generated_utc`; `raw_snapshot_stamp`/`parse_utc_stamp` are the one definition of a snapshot's capture instant, issue #175), `normalize_model`, `merge_engines`, `sort_models`, `recompute_7d_engagement`, `render_readme` (the README template lives here), `write_snapshot`; CLI `--fetch`, `--dry-run`, `--write-raw <backend>`, `--require-hits`, `--since <ISO8601Z>` |
 | `scripts/validate.py` | The QA stages: `data`, `schema`, `mapping`, `removal`, `readme`, `links`, plus report-only checks (post-signal coverage). Every `check_*` is registered in a stage, and every stage appears in a Makefile `--only` list (rule 6d) |
-| `scripts/engine_registry.py` | Engine classification + auto-registration at ingest (`classify_repo`, `register_new_engines`), non-engine lists, `KNOWN_ENGINE_URLS` |
+| `scripts/engine_registry.py` | Engine classification + auto-registration at ingest (`classify_repo`, `register_new_engines`), non-engine lists, `KNOWN_ENGINE_URLS`; `--check-raw DIR` reports what ingest will decide, `--capture-meta` records a registered engine's GitHub metadata into the offline test fixture (`capture_meta`, issue #334) |
 | `scripts/data_gap_analysis.py` | The post-refresh gap analysis (§3) — `analyse`, `rank_impact`, `render`, `file_issue`, `ensure_label`. The issue body LEADS with the refresh run's window block (#199) |
 | `scripts/refresh_run_block.py` | The refresh run's WINDOW block (#199): `render` is pure (a fixed fixture renders the exact expected block), `fetch` reads the run's REAL job timestamps via `gh api`, `current_block()` is the one composer both the PR body and the gap issue embed. Its marker line comes from `scripts/bot_markers.py`, so the shared parser reads it |
 | `scripts/check_openspec_tasks.py` | Fails an active OpenSpec change with an unticked task box |
