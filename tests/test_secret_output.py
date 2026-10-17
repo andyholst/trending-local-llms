@@ -309,6 +309,128 @@ def test_check_exits_non_zero_on_a_violation():
         check("check: a clean tree exits 0", cso.main(["check", "--root", str(clean)]) == 0, "")
 
 
+def test_a_whole_stdout_piped_into_github_output_is_a_violation():
+    """issue #346 — the measured line. `make` echoes its recipe line, so the output
+    file gets a line that is not `key=value` and the whole step dies with
+    `Invalid format`, after the implementation behind it was already done."""
+    old = ("      - name: Apply the implementer's verdict (make issue-verdict)\n"
+           "        run: |\n"
+           "          set -o pipefail\n"
+           '          make issue-verdict | tee /dev/stderr >> "$GITHUB_OUTPUT"\n')
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/issue-bot.yml": old})
+        rules = _rules(root)
+        check("whole-stdout: the measured step shape is a violation",
+              "whole-stdout-into-output-file" in rules, rules)
+        check("whole-stdout: the log copy is caught too",
+              "whole-stdout-into-log" in rules, rules)
+
+
+def test_a_command_substitution_into_the_output_file_is_a_violation():
+    sub = ("      - name: x\n"
+           "        run: |\n"
+           '          $(make rebuild-decision) >> "$GITHUB_OUTPUT"\n')
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/refresh-bot.yml": sub})
+        check("whole-stdout: a bare command substitution into the output file is a violation",
+              "whole-stdout-into-output-file" in _rules(root), _rules(root))
+
+
+def test_parsed_key_values_are_not_a_violation():
+    """The fix's shape: capture the output, write ONLY `key=value`, print at most the
+    parsed value. It must be clean, or the guard would forbid the fix it exists for."""
+    fixed = ("      - name: Apply the implementer's verdict (make issue-verdict)\n"
+             "        run: |\n"
+             "          OUT=$(make issue-verdict)\n"
+             "          for key in verdict; do\n"
+             '            value=$(printf \'%s\\n\' "$OUT" | sed -n "s/^${key}=//p" | head -1)\n'
+             '            printf \'%s=%s\\n\' "$key" "$value" >> "$GITHUB_OUTPUT"\n'
+             "          done\n"
+             "          printf '[verdict] %s\\n' \"$value\"\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/issue-bot.yml": fixed})
+        check("whole-stdout: the parsed key=value shape is clean", _rules(root) == [], _rules(root))
+
+
+def test_tee_into_the_log_alone_is_a_violation():
+    """No output file needed: `| tee /dev/stderr` puts a whole stream in a public log."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"s.sh": '#!/usr/bin/env bash\nmake thing | tee /dev/stderr\n'})
+        check("whole-stdout: a bare tee to the log is a violation",
+              "whole-stdout-into-log" in _rules(root), _rules(root))
+        ok = _tree(Path(td) / "ok", {"s.sh": '#!/usr/bin/env bash\nmake thing | sed -n "/^a=/p"\n'})
+        check("whole-stdout: a filtered pipeline is not a violation", _rules(ok) == [], _rules(ok))
+
+
+def _verdict_step_snippet() -> str:
+    """The REAL `run:` text of the verdict step, dedented — so the test locks the
+    workflow as shipped, never a copy of it that could drift."""
+    lines = (ROOT / ".github/workflows/issue-bot.yml").read_text().splitlines()
+    start = next(i for i, l in enumerate(lines) if l.startswith("      - name: Apply the implementer's verdict"))
+    run_at = next(i for i in range(start, len(lines)) if lines[i].strip() == "run: |")
+    body: list[str] = []
+    for l in lines[run_at + 1:]:
+        if l.strip() and not l.startswith("          "):
+            break
+        body.append(l[10:])
+    return "\n".join(body)
+
+
+def test_the_verdict_step_writes_only_the_parsed_key_and_never_the_whole_stream():
+    """Run the workflow's own step against a stub `make` whose output carries a recipe
+    echo, a diagnostic line and a secret-shaped value: only `verdict=` may reach
+    `$GITHUB_OUTPUT`, and the value may reach neither the file nor the log (issue #346)."""
+    import os
+    import subprocess
+
+    snippet = _verdict_step_snippet()
+    check("step: the shipped verdict step captures the output", "OUT=$(make issue-verdict)" in snippet, snippet)
+    check("step: and never pipes it wholesale", "| tee" not in snippet and "| tee /dev/stderr" not in snippet)
+    with tempfile.TemporaryDirectory() as td:
+        bindir = Path(td) / "bin"
+        bindir.mkdir()
+        stub = bindir / "make"
+        # a stub CLI on PATH stands in for the external command; the step's own logic runs.
+        stub.write_text("#!/bin/sh\n"
+                        "echo 'python3 scripts/issue_verdict.py --issue 346'\n"
+                        "echo '[verdict] implement on #346 (o/r)'\n"
+                        "echo 'verdict=implement'\n"
+                        "echo 'LEAKED=NEVER-PRINT-THIS-0123456789'\n")
+        stub.chmod(0o755)
+        out = Path(td) / "out"
+        out.write_text("")
+        env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}", GITHUB_OUTPUT=str(out),
+                   GH_TOKEN="token-name-only", REPO="o/r", ISSUE="346")
+        r = subprocess.run(["bash", "-e", "-c", snippet], env=env, capture_output=True, text=True)
+        check("step: it exits 0 on a normal verdict", r.returncode == 0, r.stderr[-300:])
+        content = out.read_text()
+        check("step: $GITHUB_OUTPUT holds the parsed key only", content.strip() == "verdict=implement", repr(content))
+        check("step: the make echo never reaches the output file", "issue_verdict.py" not in content, repr(content))
+        check("step: a value the target printed never reaches the output file", "LEAKED" not in content, repr(content))
+        check("step: nor the log", "NEVER-PRINT-THIS-0123456789" not in (r.stdout + r.stderr), r.stdout[-300:])
+
+
+def test_a_refused_verdict_still_fails_the_step():
+    """`make` exiting 2 (a close with no EVIDENCE, an unreadable verdict) must abort the
+    step: `bash -e` + a bare assignment are what makes that true now that pipefail is gone."""
+    import os
+    import subprocess
+
+    snippet = _verdict_step_snippet()
+    with tempfile.TemporaryDirectory() as td:
+        bindir = Path(td) / "bin"
+        bindir.mkdir()
+        stub = bindir / "make"
+        stub.write_text("#!/bin/sh\necho '[verdict] refused: a close with no EVIDENCE'\nexit 2\n")
+        stub.chmod(0o755)
+        out = Path(td) / "out"
+        out.write_text("")
+        env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}", GITHUB_OUTPUT=str(out),
+                   GH_TOKEN="token-name-only", REPO="o/r", ISSUE="346")
+        r = subprocess.run(["bash", "-e", "-c", snippet], env=env, capture_output=True, text=True)
+        check("step: a refused verdict exits non-zero (never a green verdict)", r.returncode != 0, r.returncode)
+
+
 def test_the_guard_is_wired_into_the_repo():
     """A guard no target names runs nowhere: the make targets, .PHONY and the test chain."""
     mk = (ROOT / "Makefile").read_text()
@@ -341,6 +463,12 @@ def main() -> int:
     test_a_credential_shaped_literal_is_a_violation()
     test_a_fixture_name_that_merely_starts_like_a_token_is_not_a_violation()
     test_the_marker_declares_deliberate_test_values()
+    test_a_whole_stdout_piped_into_github_output_is_a_violation()
+    test_a_command_substitution_into_the_output_file_is_a_violation()
+    test_parsed_key_values_are_not_a_violation()
+    test_tee_into_the_log_alone_is_a_violation()
+    test_the_verdict_step_writes_only_the_parsed_key_and_never_the_whole_stream()
+    test_a_refused_verdict_still_fails_the_step()
     test_this_repository_never_prints_a_secret_value()
     test_the_report_lists_the_files_that_name_a_secret()
     test_check_exits_non_zero_on_a_violation()

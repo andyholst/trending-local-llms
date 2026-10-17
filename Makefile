@@ -830,7 +830,7 @@ issue-skip-note: ## Say on the held issue why the sweep skipped it (one comment 
 # The sweep skips a decided issue through the SHARED queue rule (#210), never a
 # second copy in shell.
 issue-verdict: ## Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>)
-	python3 scripts/issue_verdict.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(TRIAGE_FILE),--file $(TRIAGE_FILE),)
+	@python3 scripts/issue_verdict.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(TRIAGE_FILE),--file $(TRIAGE_FILE),)
 
 # The implementer's INPUT (issue #210): the WHOLE thread — title, body, every
 # comment oldest-first with author and ISO8601Z, then the decision instruction the

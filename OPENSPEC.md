@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **50** · archived: **0**
+Active changes: **51** · archived: **0**
 
 ## Active changes
 
@@ -62,6 +62,7 @@ Active changes: **50** · archived: **0**
 | `refresh-run-block-uses-gh-api` | active | #320 | — | [refresh-run-block](openspec/changes/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-run-block-uses-gh-api/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
 | `unique-rule-numbers` | active | — | — | [rulebook-integrity](openspec/changes/unique-rule-numbers/specs/rulebook-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/unique-rule-numbers/proposal.md) |
+| `verdict-output-format` | active | — | — | [ci-output-safety](openspec/changes/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/verdict-output-format/proposal.md) |
 | `vram-card-fit` | active | — | — | [card-fit](openspec/changes/vram-card-fit/specs/card-fit/spec.md) | 15/15 | [proposal.md](openspec/changes/vram-card-fit/proposal.md) |
 | `worktree-base-fresh` | active | — | — | [worktree-base](openspec/changes/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/worktree-base-fresh/proposal.md) |
 

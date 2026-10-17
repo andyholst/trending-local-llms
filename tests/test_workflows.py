@@ -146,13 +146,21 @@ def test_the_rebuild_decision_is_one_tested_unit():
           re.search(r"^rebuild-decision:", make, re.M) is not None
           and "ensure_image.py decide" in make, "")
     make_code = [l for l in make.splitlines() if not l.lstrip().startswith("#")]
-    # A `cmd | tee` step reports tee's status to GitHub's `bash -e` (no pipefail by
-    # default), so a failed decision would be a GREEN step whose $GITHUB_OUTPUT is
-    # empty — every build below is gated on those outputs, so the toolchain would
-    # silently stop rebuilding. Measured: GitHub logs `shell: /usr/bin/bash -e {0}`.
-    check("refresh: every piped decision step sets pipefail",
+    # A failed decision must not be a GREEN step whose $GITHUB_OUTPUT is empty — every
+    # build below is gated on those outputs, so the toolchain would silently stop
+    # rebuilding. Two shapes satisfy that, and issue #346 retired the first:
+    #   * `make … | tee … >> $GITHUB_OUTPUT` + `set -o pipefail` — the old shape; it also
+    #     copied the whole stream (incl. make's echoed recipe) into the log and the
+    #     output file, which is what killed the implementer's verdict step.
+    #   * `OUT=$(make …)` + a bare assignment, then parsed `key=value` — the shape now.
+    #     `bash -e` is the runner's default, so a non-zero command aborts the step.
+    # The step must therefore CAPTURE and PARSE, and must not swallow the status.
+    check("refresh: every decision step captures the output and writes parsed key=value",
           len(decision_steps) == 2
-          and all("set -o pipefail" in s.get("run", "") for s in decision_steps),
+          and all("OUT=$(make rebuild-decision" in s.get("run", "")
+                  and ">> \"$GITHUB_OUTPUT\"" in s.get("run", "")
+                  and "| tee" not in s.get("run", "")
+                  for s in decision_steps),
           [s.get("run", "")[:80] for s in decision_steps])
 
     check("make: the clock is read once, in the Makefile (never in a workflow)",

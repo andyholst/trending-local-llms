@@ -136,11 +136,20 @@ jobs:
       - name: Decide whether to rebuild the images (make rebuild-decision)
         id: decide
         run: |
-          # pipefail: without it the step reports tee's status, so a failed
-          # decision would be green with EMPTY outputs and every build below
-          # would be skipped — the toolchain would silently stop rebuilding.
-          set -o pipefail
-          make rebuild-decision FORCE="${{ inputs.force_rebuild }}" | tee /dev/stderr >> "$GITHUB_OUTPUT"
+          # `key=value` ONLY (issue #346): never copy a command's whole stdout into
+          # the log or into `$GITHUB_OUTPUT` — `make` echoes its recipe line, and a
+          # wholesale copy is how a value nobody meant to print reaches a public
+          # log. The capture + allowlist below keeps only the decision's keys; the
+          # reasons are printed for the reader, not written to the output file.
+          # `bash -e` is the runner's default, so a failed decision still fails the
+          # step instead of leaving it green with EMPTY outputs (which would skip
+          # every build below and silently stop rebuilding the toolchain).
+          OUT=$(make rebuild-decision FORCE="${{ inputs.force_rebuild }}")
+          for key in built test_built base_tag test_tag openspec_tag publish_openspec; do
+            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1)
+            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"
+          done
+          printf '%s\n' "$OUT" | sed -n '/^  (/p'
       - name: Cache Docker layers
         uses: actions/cache@v4
         with:
@@ -240,8 +249,12 @@ jobs:
       - name: Decide whether to publish the OpenSpec image (make rebuild-decision)
         id: decide
         run: |
-          set -o pipefail   # see the images decision above: tee must not hide a failure
-          make rebuild-decision | tee /dev/stderr >> "$GITHUB_OUTPUT"
+          # `key=value` ONLY — see the images decision above (issue #346).
+          OUT=$(make rebuild-decision)
+          for key in publish_openspec openspec_tag; do
+            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1)
+            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"
+          done
       - name: Build + push the OpenSpec image (its hash tag is not published)
         if: steps.decide.outputs.publish_openspec == 'no'
         uses: docker/build-push-action@v6

@@ -274,10 +274,16 @@ def test_the_workflow_renders_the_thread_and_applies_the_verdict():
     check("wf: `make issue-verdict` applies the verdict",
           "make issue-verdict" in text, "")
     check("make: the target exists", "issue-verdict:" in make, "")
-    check("wf: the verdict step sets pipefail (a refusal must not look green)",
-          "set -o pipefail" in text, "")
-    check("wf: the verdict reaches $GITHUB_OUTPUT",
-          'make issue-verdict | tee /dev/stderr >> "$GITHUB_OUTPUT"' in text, "")
+    # issue #346: the step CAPTURES the verdict and writes parsed `key=value` only.
+    # Piping `make`'s whole stdout into the output file put its echoed recipe line
+    # there (`Invalid format`) and failed the step AFTER the implementation was done
+    # — runs 39026771566 / 39040036748, nothing pushed and no outcome posted.
+    check("wf: the verdict is captured, never piped wholesale into the output file",
+          "OUT=$(make issue-verdict)" in text and "make issue-verdict | tee" not in text, "")
+    check("wf: the verdict step writes parsed key=value only",
+          'printf \'%s=%s\\n\' "$key" "$value" >> "$GITHUB_OUTPUT"' in text, "")
+    check("wf: the verdict assignment is bare, so a refusal (exit 2) aborts the step",
+          "make issue-verdict || true" not in text and "make issue-verdict 2>/dev/null" not in text, "")
 
     # And a refine/close does not continue to a PR nor get reported as a failure
     check("wf: the push is gated on the implement verdict",
