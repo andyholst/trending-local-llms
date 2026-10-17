@@ -186,6 +186,22 @@
                   "type": "string",
                   "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/?$",
                   "description": "Optional. GitHub repo of the engine when it is NOT in the engines registry yet (from the post). Ingest auto-registers it only if the repo is classified as an inference engine; harnesses, agent frameworks, apps and benchmarks are never registered. Stripped before the store."
+                },
+                "weight_gb": {
+                  "type": "string",
+                  "description": "Optional. Weight footprint of the QUANT THIS MEASUREMENT RAN IN, as the post states it (e.g. '5.95GB PTQ1_0'). Per measurement, not per model (issue #337). A figure only the post gives; never derived."
+                },
+                "context_tokens": {
+                  "type": "string",
+                  "description": "Optional. Context window this measurement ran with, as the post states it (e.g. '131072')."
+                },
+                "system_ram_min": {
+                  "type": "string",
+                  "description": "Optional. System RAM / unified memory this measurement needed, as the post states it (e.g. '16GB'). Never derived from a VRAM figure."
+                },
+                "storage_offload": {
+                  "type": "string",
+                  "description": "Optional. Storage-offload this measurement needed, as the post states it (e.g. '640GB NVMe, experts on SSD')."
                 }
               },
               "additionalProperties": false

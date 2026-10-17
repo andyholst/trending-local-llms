@@ -150,14 +150,34 @@ def test_optional_fields_filled():
         for field in sorted(UT._ADDITIVE_MODEL_FIELDS):
             check(f"{m['id']}: source-data '{field}' not invented by ingest",
                   m.get(field) is None, repr(m.get(field)))
-    # engine optional fields
-    eng_opt = [k for k in items["properties"]["engines"]["items"]["properties"]
-               if k not in items["properties"]["engines"]["items"]["required"]]
+    # engine optional fields — except the per-MEASUREMENT source-data dimensions
+    # (issue #337: weight_gb / context_tokens / system_ram_min / storage_offload on
+    # the measurement), whose absence is meaningful exactly like the model-level
+    # ones: a raw snapshot that states none must yield none. ONE definition lives
+    # in update_trending, so a new dimension is covered without editing this test.
+    eng_items = items["properties"]["engines"]["items"]
+    eng_sparse = set(getattr(UT, "MEASUREMENT_DIMENSION_FIELDS", ()))
+    eng_opt = [k for k in eng_items["properties"]
+               if k not in eng_items["required"] and k not in eng_sparse]
     for m in store["models"]:
         for e in m.get("engines", []):
             for f in eng_opt:
                 check(f"{m['id']}/{e.get('engine')}: engine optional '{f}' present",
                       f in e, f"missing {f}")
+    # And the per-measurement dimensions are carried when the post states them and
+    # NEVER invented when it does not — driven by the RAW fixture itself, so the
+    # assertion is exact for every model: the first states all four, the second
+    # none, and one of those two outcomes must hold for each.
+    raw = json.loads(RAW_FIXTURE.read_text())
+    stated = {(m["id"], e.get("tps"), f)
+              for m in raw["models"] for e in m.get("engines", []) for f in eng_sparse
+              if e.get(f) is not None}
+    for m in store["models"]:
+        for e in m.get("engines", []):
+            for f in sorted(eng_sparse):
+                want = (m["id"], e.get("tps"), f) in stated
+                check(f"{m['id']}/{e.get('engine')}/{f}: {'survived' if want else 'not invented'} ingest",
+                      (e.get(f) is not None) == want, f"want={want} got={e.get(f)!r}")
 
 
 def test_store_validates_against_contract():
