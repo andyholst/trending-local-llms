@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -1206,7 +1207,57 @@ def raw_snapshot_stamp(path: Path, data: dict | None = None) -> datetime | None:
     except ValueError:
         return None
 
-def ingest_raw_snapshots(store: dict, since: datetime | None = None) -> tuple[int, int]:
+HF_MODEL_API = "https://huggingface.co/api/models"
+
+
+def hf_repo_resolves(repo_id) -> bool | None:
+    """True for a Hugging Face repo id that answers, False only when the answer
+    is DEFINITIVE (401/404), None when the check could not tell (no id, a
+    transport error, 403/429/5xx). A rate-limited or briefly-down API must never
+    be reported as a bad link — the whole point is to name a guessed id, not to
+    add a flaky failure.
+
+    `HF_MODEL_API` overrides the endpoint (tests point it at a local server)."""
+    if not isinstance(repo_id, str) or "/" not in repo_id.strip("/"):
+        return None
+    base = os.environ.get("HF_MODEL_API", HF_MODEL_API)
+    req = urllib.request.Request(f"{base.rstrip('/')}/{repo_id.strip('/')}",
+                                 headers={"User-Agent": "trending-local-llms"})
+    tok = os.environ.get("HF_TOKEN")
+    if tok:
+        req.add_header("Authorization", f"Bearer {tok}")
+    try:
+        with urllib.request.urlopen(req, timeout=10):
+            return True
+    except urllib.error.HTTPError as e:
+        return False if e.code in (401, 404) else None
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+        return None
+
+
+def note_unresolved_hf(model: dict) -> None:
+    """Name a NEW model's Hugging Face repo that does not resolve, in the run
+    that produced it (issue #333).
+
+    `check_links_resolve` already fails the PR on a dead link, but that is the
+    first moment anyone sees it, and by then the refresh has opened a PR whose
+    only repairer is a bot round. One line here makes a guessed id visible in the
+    refresh run itself. Report-only: a guessed id costs a fix round, not a
+    blocked refresh."""
+    ids = []
+    if model.get("hf"):
+        ids.append(("hf", model["hf"]))
+    for f in model.get("formats") or []:
+        if isinstance(f, dict) and f.get("hf") and f["hf"] != model.get("hf"):
+            ids.append(("format-hf", f["hf"]))
+    for kind, repo in ids:
+        if hf_repo_resolves(repo) is False:
+            print(f"[ingest] HF {kind} {repo!r} does NOT resolve ({model.get('id')}) "
+                  f"— the link check will fail this PR")
+
+
+def ingest_raw_snapshots(store: dict, since: datetime | None = None,
+                         verify_hf: bool = False) -> tuple[int, int]:
     """Merge the data/raw/*.json snapshots NEWER than `since` into the store.
     Each raw file holds one backend's captured findings (models). New models are
     added, existing ones updated, NONE removed. Returns (added, updated).
@@ -1275,9 +1326,12 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None) -> tuple[in
                 existing["engagement"] = prune_engagement(eng, mid)
                 updated += 1
             else:
-                by_id[mid] = normalize_model(m, store)
-                store["models"].append(by_id[mid])
+                model = normalize_model(m, store)
+                by_id[mid] = model
+                store["models"].append(model)
                 added += 1
+                if verify_hf:
+                    note_unresolved_hf(model)
     return added, updated
 
 def resolve_model_mapping(raw_model: dict, store: dict) -> dict:
@@ -1639,7 +1693,7 @@ def main() -> int:
         if since is None:
             print(f"[error] --since {args.since!r} is not a YYYY-MM-DDTHH:MM:SSZ stamp", file=sys.stderr)
             return 1
-    added, updated = ingest_raw_snapshots(store, since=since)
+    added, updated = ingest_raw_snapshots(store, since=since, verify_hf=True)
     if added or updated:
         print(f"[info] ingested raw snapshots: {added} added, {updated} updated")
 
