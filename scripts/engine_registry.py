@@ -226,12 +226,64 @@ def check_raw(raw_dir: Path, store: dict, fetch=fetch_repo_meta) -> list[dict]:
     return register_new_engines(shadow, json.loads(json.dumps(models)), fetch=fetch)
 
 
+META_FIXTURE = ROOT / "tests" / "fixtures" / "github_meta.json"
+
+
+def capture_meta(store: dict, path: Path = META_FIXTURE, fetch=fetch_repo_meta) -> list[str]:
+    """Record GitHub metadata for every REGISTERED engine the offline fixture
+    lacks, and return the slugs added.
+
+    `tests/fixtures/github_meta.json` is what the classifier is tested against
+    offline ("a registered engine is never refused"), so a refresh that
+    auto-registers a new engine makes `make test` fail while `make validate`
+    stays green — measured on PR #330, which registered TokenSpeed and Magnitude
+    (issue #334). Ingest already FETCHES this metadata to classify the engine
+    (`register_new_engines` -> `fetch_repo_meta`); this keeps the fixture in step
+    with the registry instead of leaving it to a hand edit. Writes only when
+    something was missing, and never invents an entry for a repo it could not
+    read."""
+    doc = json.loads(path.read_text()) if path.exists() else {"repos": {}}
+    repos = doc.setdefault("repos", {})
+    have = {k.lower() for k in repos}
+    added: list[str] = []
+    for name, v in sorted(store.get("engines", {}).items()):
+        url = v.get("url", "") if isinstance(v, dict) else ""
+        slug = repo_slug(url)
+        if not slug or slug in have:
+            continue
+        meta = fetch(url)
+        if not isinstance(meta, dict):
+            print(f"[engine-meta] WARN {name!r}: no GitHub metadata for {slug} — fixture left alone")
+            continue
+        repos[slug] = {"full_name": meta.get("full_name") or slug,
+                       "description": meta.get("description") or "",
+                       "topics": meta.get("topics") or []}
+        added.append(slug)
+    if added:
+        doc["repos"] = dict(sorted(repos.items()))
+        path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+    return added
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--check-raw", metavar="DIR", required=True)
+    ap.add_argument("--check-raw", metavar="DIR")
+    ap.add_argument("--capture-meta", action="store_true",
+                    help="record GitHub metadata for every registered engine the offline "
+                         "test fixture lacks (issue #334)")
+    ap.add_argument("--meta-file", default=str(META_FIXTURE))
     ap.add_argument("--store", default=str(Path(os.environ.get("TRENDING_DATA_DIR", ROOT / "data")) / "models.json"))
     args = ap.parse_args()
     store = json.loads(Path(args.store).read_text())
+    if args.capture_meta:
+        added = capture_meta(store, Path(args.meta_file))
+        for slug in added:
+            print(f"[engine-meta] captured {slug}")
+        if not added:
+            print("[engine-meta] OK: the offline fixture already covers every registered engine")
+        return 0
+    if not args.check_raw:
+        ap.error("one of --check-raw DIR or --capture-meta is required")
     decisions = check_raw(Path(args.check_raw), store)
     if not decisions:
         print("[engine-check] OK: every engine in the raw snapshots is registered (or auto-registrable)")

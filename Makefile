@@ -455,6 +455,16 @@ _validate-schema:
 _engine-check:
 	python3 scripts/engine_registry.py --check-raw data/raw
 
+# Record GitHub metadata for every registry engine the OFFLINE test fixture
+# lacks (issue #334). Ingest already fetches this to classify a new engine; the
+# fixture is what `tests/test_engine_registry.py` proves "a registered engine is
+# never refused" against, so a refresh that registers one used to turn `make
+# test` red while `make validate` stayed green. Runs in the refresh aggregate
+# AFTER the merge (the merge is what registers the engine) and before qa-report.
+.PHONY: _engine-meta-capture
+_engine-meta-capture:
+	python3 scripts/engine_registry.py --capture-meta
+
 .PHONY: _nerve-check
 _nerve-check:
 	python3 scripts/nerve_key_check.py
@@ -630,6 +640,10 @@ validate-schema:
 .PHONY: engine-check
 engine-check:
 	$(DOCKER_RUN) make _engine-check
+
+.PHONY: engine-meta-capture
+engine-meta-capture: ## Capture GitHub metadata for registry engines the offline test fixture lacks
+	$(DOCKER_RUN) make _engine-meta-capture
 
 .PHONY: validate-search
 validate-search:

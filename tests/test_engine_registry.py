@@ -526,6 +526,58 @@ def test_ingest_idempotent_and_model_backends():
           "CPU" in q.get("backends", []), q.get("backends"))
 
 
+def test_capture_meta_keeps_the_fixture_covering_the_registry():
+    """Issue #334: a refresh that auto-registers an engine must not leave the
+    OFFLINE fixture behind it. The classifier is tested against the fixture, so a
+    registered engine with no entry reds `make test` while `make validate` stays
+    green (measured on PR #330: TokenSpeed and Magnitude). `capture_meta` records
+    the metadata ingest already fetched, writes only what is missing, and never
+    invents an entry for a repo it could not read."""
+    store = {"engines": {
+        "llama.cpp": {"url": "https://github.com/ggml-org/llama.cpp", "backend": "CUDA"},
+        "TokenSpeed": {"url": "https://github.com/lightseekorg/tokenspeed", "backend": "CUDA"},
+        "Ghost": {"url": "https://github.com/no-such-org/ghost", "backend": "CUDA"},
+    }}
+    meta = {
+        "https://github.com/lightseekorg/tokenspeed": {
+            "full_name": "lightseekorg/tokenspeed",
+            "description": "TokenSpeed is a speed-of-light LLM inference engine.",
+            "topics": ["llm", "speed-of-light"],
+        },
+    }
+
+    def fetch(url):
+        return meta.get(url)
+
+    with tempfile.TemporaryDirectory() as td:
+        fx = Path(td) / "github_meta.json"
+        fx.write_text(json.dumps({"_source": "test", "repos": {
+            "ggml-org/llama.cpp": {"full_name": "ggml-org/llama.cpp",
+                                   "description": "LLM inference in C/C++", "topics": []},
+        }}))
+        added = ER.capture_meta(store, fx, fetch=fetch)
+        doc = json.loads(fx.read_text())
+        check("capture-meta: the registered engine the fixture lacked is added",
+              added == ["lightseekorg/tokenspeed"], added)
+        check("capture-meta: its REAL description + topics are recorded",
+              doc["repos"].get("lightseekorg/tokenspeed", {}).get("description", "").startswith("TokenSpeed"),
+              doc["repos"].get("lightseekorg/tokenspeed"))
+        check("capture-meta: an engine the fetch could not read is NOT invented",
+              "no-such-org/ghost" not in doc["repos"], sorted(doc["repos"]))
+        check("capture-meta: the existing entry and _source are preserved",
+              doc["_source"] == "test" and "ggml-org/llama.cpp" in doc["repos"], doc.get("_source"))
+        check("capture-meta: a second run adds nothing (idempotent)",
+              ER.capture_meta(store, fx, fetch=fetch) == [], "second run")
+
+    mk = (ROOT / "Makefile").read_text()
+    check("capture-meta: wired to a make target", "engine-meta-capture:" in mk and
+          "scripts/engine_registry.py --capture-meta" in mk, "")
+    wf = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text()
+    check("capture-meta: the refresh aggregate runs it AFTER the merge that registers an engine",
+          "make engine-meta-capture" in wf
+          and wf.index("make engine-meta-capture") > wf.index("make merge-fetch"), "")
+
+
 def main() -> int:
     print("engine registration at ingest + engine-kind QA (issue #73)")
     test_repo_slug()
@@ -553,6 +605,7 @@ def main() -> int:
     test_offline_cache()
     test_engine_check_cli_every_branch()
     test_ingest_idempotent_and_model_backends()
+    test_capture_meta_keeps_the_fixture_covering_the_registry()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
