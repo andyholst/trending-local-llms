@@ -80,12 +80,12 @@
       "formats": [
         {
           "name": "MLX",
-          "hf": "meta-models/Muse-Spark-Open"
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
         }
       ],
       "license": "free commercial use under $20M revenue",
       "params": "816B total / 42B active",
-      "hf": "meta-models/Muse-Spark-Open",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
       "vram_tier": "512GB",
       "vram_min": "493GB",
       "weight_gb": "493GB NVFP4",
@@ -112,5 +112,5 @@
       ]
     }
   ],
-  "generated_utc": "2026-10-17T10:20:09Z"
+  "generated_utc": "2026-10-17T13:13:00Z"
 }
