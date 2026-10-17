@@ -1,0 +1,222 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB (single card)",
+          "quant": "DFlash2 speculative decode + context lookup, optimized lookup verification, prefix caching; verifies up to 16 tokens per pass with ~15 accepted on the document-reproduction workload; ordinary chat runs ~133 tok/s on the same setup",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 24,
+          "comments": 6,
+          "reshares": 2,
+          "views": 6484
+        }
+      ],
+      "context_tokens": "25K"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "NVIDIA DGX Spark (single)",
+          "quant": "NVFP4 weights via SGLang, DFlash2 speculative decoding with a 4-bit drafter proposing 16 tokens per verification pass, BF16 KV cache, thinking disabled; median of four runs (65K context still 67 tok/s, 260K 38 tok/s)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 12,
+          "comments": 5,
+          "reshares": 1,
+          "views": 2132
+        }
+      ],
+      "context_tokens": "260K"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21.9",
+          "hardware": "RTX 5060 Ti 16GB + GTX 1080 8GB (two cards, 128K context)",
+          "quant": "IQ3_S MTP GGUF across 16GB + 8GB with a custom llama.cpp CUDA build, Q8_0 KV cache, 4,1 layer split; the stock backend did not support the 1080's compute 6.1",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/dextune/status/2110606409947861207",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 68
+        }
+      ],
+      "context_tokens": "128K",
+      "engine_min_version": "custom llama.cpp CUDA build with compute 6.1 (Pascal) support, Q8_0 KV cache, 4,1 layer split"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.8",
+          "hardware": "24GB GPU (Q4 GGUF)",
+          "quant": "Q4 GGUF, long-context agent test: 8K context 18.4GB VRAM / 43.8 tok/s, 65K context 22.0GB VRAM / 31.2 tok/s, 131K context out of memory",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110312777415893173",
+          "likes": 23,
+          "comments": 4,
+          "reshares": 0,
+          "views": 9811
+        }
+      ],
+      "context_tokens": "131072"
+    },
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "24GB GPU",
+          "quant": "DFlash2 speculative decoding, using 'up to 180 tokens/sec' as its headline figure on a modified 27B tuned to cut unproductive reasoning",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110315086669595007",
+          "likes": 9,
+          "comments": 3,
+          "reshares": 2,
+          "views": 1521
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14.06",
+          "hardware": "4GB VRAM + 32GB system RAM (MoE/quantized build, partial offload)",
+          "quant": "quantized-down Qwen3.8-27B / Bonsai 2 class build; the reply's llama.cpp slot print_timing lines show ~14.06-14.59 tok/s decode with ~12 t/s prompt processing on a ~4K-token prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2111038392578310446",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

@@ -1,0 +1,78 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B-Instruct",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3-235B-A22B",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "96GB",
+      "system_ram_min": "128GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo), 128GB unified LPDDR5X, ~96-110GB of GPU-accessible memory",
+          "quant": "Q3-class aggressive quantization brings the MoE weights to ~100GB; only ~22B parameters active per token. Reported real-world generation 14-17 tok/s, with Vulkan often edging out ROCm for generation",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "~100GB at ~Q3"
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B-Instruct",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3-235B-A22B",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-07-16",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "200",
+          "hardware": "NVIDIA GB10 (DGX Spark class, 4 concurrent generations)",
+          "quant": "vLLM nightly builds serving the MoE across 4 concurrent generations on a consumer-grade GB10 device - 200 tokens per second aggregate",
+          "date": "2026-07-16",
+          "source_post": "https://lightbrd.com/orbitant/status/2077849002461016469",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

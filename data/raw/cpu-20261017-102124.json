@@ -1,0 +1,116 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "64GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB, 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ2_XS ~87 tok/s and IQ3_S ~70 tok/s via Strata splitting the 177B model between GPU VRAM and system RAM (GPU keeps hot experts, rest in RAM); prompt processing ~1,900 tok/s; IQ3_S still ~66 tok/s at 261K context. Developer recommends 64GB system RAM",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 18,
+          "comments": 2,
+          "reshares": 2,
+          "views": 2871
+        }
+      ],
+      "context_tokens": "261K"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 (NVIDIA RTX 20-50 series and recent AMD Radeon), 32GB system RAM",
+          "quant": "Strata compressed builds of the 125B model, 53-94 tokens per second per the developers' tests; needs ~80GB disk space; OpenAI/Anthropic-compatible endpoint on localhost",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 105,
+          "comments": 10,
+          "reshares": 22,
+          "views": 56335
+        }
+      ],
+      "storage_offload": "about 80GB disk space (compressed model builds)"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "TokenSpeed",
+          "tps": "685",
+          "hardware": "4x NVIDIA GB300 (TP4/EP4), datacenter",
+          "quant": "TokenSpeed LightSeek, NVFP4, batch size 1 on SWE-Smith agent conversations with a 50K-token first turn; 3 MTP draft steps with ~3.23 tokens accepted per round; n-gram embedding table moved to host memory frees ~12.22 GiB per GPU",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/dextune/status/2110363008669290627",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 97,
+          "engine_repo": "https://github.com/lightseekorg/tokenspeed"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

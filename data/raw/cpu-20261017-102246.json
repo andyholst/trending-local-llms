@@ -1,0 +1,166 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "24B total / ~2B active per token, 40 layers with 64 experts per MoE block routed top-4, 131K context from a 128K tokenizer; vendor figure (Liquid AI reports it)",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "context_tokens": "131K"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "unified memory (Strix Halo APU)",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "114",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo APU)",
+          "quant": "24B total / ~2B active, 131K context; vendor-reported figure alongside 184 tok/s on an Apple M5 Max",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "context_tokens": "131K"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (on-device)",
+          "quant": "24B params / ~2B active, trained inside agent harnesses; strong on tool-use benchmarks, behind on coding; free to ship under $10M revenue",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 490
+        }
+      ],
+      "context_tokens": "131K"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "21000",
+          "hardware": "single NVIDIA B300 GPU (datacenter)",
+          "quant": "vendor-reported throughput ceiling for the same model: up to 21,000 output tokens per second on one NVIDIA B300, against 184 tok/s on an Apple M5 Max",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

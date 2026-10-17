@@ -1,0 +1,122 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "125B MoE running through MTPLX on a MacBook: 126.5 TPS peak, still 61 TPS average at 100K and 50 TPS at 200K context.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "126.5",
+          "hardware": "MacBook M5 Max",
+          "quant": "MTPLX V2.11.3; 126.5 TPS peak, 61 TPS avg at 100K context, 50 TPS avg at 200K context, through OpenCode",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100499328376713348",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 8,
+          "views": 0,
+          "interactions": 12
+        }
+      ],
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen 3.6 27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "Qwen/Qwen3.6-27B"
+        },
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "32GB",
+      "system_ram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Dense 27B used as an always-on agent box on a Mac mini M4 Pro — ~17 tok/s at Q4 via MLX, ~32 with MTP.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "32",
+          "hardware": "Mac mini M4 Pro 64GB",
+          "quant": "Q4 via MLX; ~17 tok/s without MTP, ~32 with MTP",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "vram_min": "18GB"
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "full_name": "DeepSeek-V4.1-Flash",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "license": "see model card",
+      "params": "see model card",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "128GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Measured on an M5 Max through antirez's ds4: 26.87 tok/s at ~2.2 J/output token (0.61 kWh, EUR0.19 per million output tokens) for local single-sequence inference.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26.87",
+          "hardware": "Mac M5 Max",
+          "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 0,
+          "views": 468,
+          "interactions": 474
+        }
+      ],
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-17T10:19:44Z"
+}

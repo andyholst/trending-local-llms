@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "LittleBitLLM/littlebit-qwen3-4b-mlx-4bit",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-08-10",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "2.55x",
+          "hardware": "GPU serving test (vLLM)",
+          "quant": "parallel speculative decoding benchmark on one Qwen3-4B target model: DSpark reached 2.45-2.55x baseline throughput while DFlash achieved 1.96-2.09x; a lightweight draft model proposes several tokens in parallel and the target verifies them in one batch",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/ZhihuFrontier/status/2086712577296633887",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

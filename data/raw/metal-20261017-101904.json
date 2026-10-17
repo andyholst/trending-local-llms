@@ -1,0 +1,50 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "LFM Open License (Apache 2.0 based)",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "14.5GB 4-bit",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "24B MoE activating ~2B params per token, built for on-device agents: Liquid AI reports 184 tok/s on an Apple M5 Max (llama.cpp, 4-bit) and 131K context.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "4-bit build (14.5GB), 4K-token prompt; 15GB unified memory on M5 Max, 16GB on Mac Studio; vendor-run (Liquid AI)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/michaelnemtsev/status/2110916425191723495",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 75,
+          "interactions": 76
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:19:04Z"
+}

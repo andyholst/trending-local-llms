@@ -1,0 +1,81 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-35B-A3B",
+          "hf": "empero-ai/Qwen3.8-35B-A3B-Distill"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-05",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM (26 MoE layers on CPU)",
+          "quant": "Q4_K_M with 26 MoE layers offloaded to the CPU, Flash Attention, Q8_0 K and V cache, 262K context; ~550 tok/s prefill. Settings: --n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning on",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107065293684003048",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "context_tokens": "262144",
+      "engine_min_version": "llama.cpp with --n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning on"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-35B-A3B",
+          "hf": "empero-ai/Qwen3.8-35B-A3B-Distill"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, 262K context window configured, ~550 tok/s prompt processing; the A3B sparse MoE activates roughly 3B of 35B parameters per token, so the compute per token stays low even though the weights must be stored",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+          "likes": 26,
+          "comments": 2,
+          "reshares": 4,
+          "views": 2104
+        }
+      ],
+      "context_tokens": "262144"
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

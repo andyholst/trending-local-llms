@@ -1,0 +1,317 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-26",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "ternary compressed 27B (~1.72 bits/weight) on the MLX-fast YukonResearch challenge build; 237.4 tok/s decode up from ~59 at baseline, a 302.7% gain over the frozen baseline",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "5.93GB ternary build"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-25",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "ternary compressed 27B on the MLX-fast challenge build, half a day in: 148.4 tok/s decode, 125.8% faster (2.26x) over baseline",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 340,
+          "comments": 25,
+          "reshares": 22,
+          "views": 94665
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-20",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "143",
+          "hardware": "RTX 5090",
+          "quant": "ternary PrismML build; 53.8GB down to 5.93GB, 98.2% of Qwen3.8-27B's aggregate score, Apache 2.0 (Terminal-Bench falls 69.7 -> 52.8)",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2101718479250264407",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "5.93GB ternary build"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-19",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary build at 1.72 bits/weight: ~35 tok/s decode and ~550 tok/s prefill with 220K context resident (7.21GB file). PTQ1_0 is smaller (5.95GB) and reaches the native 262K context at 26 tok/s decode / 260 tok/s prefill",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 15516
+        }
+      ],
+      "weight_gb": "7.21GB PQ2_0 (5.95GB PTQ1_0)",
+      "context_tokens": "262144"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34.5",
+          "hardware": "Mac Studio M4 Max 128GB",
+          "quant": "ternary 1.72 bits/weight; 34.5 tok/s prose and 34.3 tok/s code, 242 tok/s prefill, 82.4/100 on Spark Bench",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b-mlx",
+      "name": "Bonsai 2 27B (MLX)",
+      "full_name": "Ternary-Bonsai-2-27B (MLX)",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "24GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "Mac mini M4, 24GB, 10-core GPU",
+          "quant": "ternary 1.72 bits/weight; 11.0 tok/s decode, 33 tok/s prefill; the 3.1x decode gap vs the M4 Max Studio lines up with the memory-bandwidth difference",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b-mlx",
+      "name": "Bonsai 2 27B (MLX)",
+      "full_name": "Ternary-Bonsai-2-27B (MLX)",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "9",
+          "hardware": "MacBook Pro M1 Pro, 16GB",
+          "quant": "ternary Bonsai 2 27B on a 2021 M1 Pro with only 16GB RAM - 9 tokens per second, no custom runtime",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-20",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary build with the full 262K context resident plus a real agent loop on top (Hermes Agent, 25 tools); ~40 tok/s decode over a 77-minute agent build",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 161
+        }
+      ],
+      "context_tokens": "262144"
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

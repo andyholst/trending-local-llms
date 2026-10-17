@@ -1,0 +1,154 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "google/gemma-3-1b-it"
+        }
+      ],
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "system_ram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Q4_K_M (769 MB); prompt 5.9 t/s, generation 2.9 t/s; llama.cpp b8816, CPU-only",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "769MB Q4_K_M",
+      "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)"
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM (edge)",
+      "formats": [
+        {
+          "name": "LiteRT-LM",
+          "hf": "litert-community/gemma-4-E2B-it-litert-lm"
+        }
+      ],
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "1432 MB peak (Pi 5)",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-05",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5, CPU (VideoCore VII GPU can split the load)",
+          "quant": "LiteRT-LM Gemma 4 E2B; 99 tok/s prefill, 9 tok/s decode at 1432 MB peak; tokenizer ~4.2 chars/token",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM (edge)",
+      "formats": [
+        {
+          "name": "LiteRT-LM",
+          "hf": "litert-community/gemma-4-E2B-it-litert-lm"
+        }
+      ],
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "1",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Q4_K_M (2.9 GB); prompt 2.0 t/s, generation 1.0 t/s; llama.cpp b8816, CPU-only",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "weight_gb": "2.9GB Q4_K_M",
+      "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)"
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+        }
+      ],
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "2GB",
+      "vram_min": "1GB",
+      "system_ram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-06-25",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B, 2GB LPDDR4 (offline, no internet)",
+          "quant": "quantized model served offline from an SD card; the same Pi pulls 5 watts under load",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:48:16Z"
+}

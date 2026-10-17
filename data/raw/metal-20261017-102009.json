@@ -1,0 +1,116 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "125K",
+      "engine_min_version": "Apple Neural Engine path needs macOS 27 + Core AI (ANEMLL Forge based, cowboycoderhq port); GPU path uses MLX + DFlash2 speculative decoding; MTP head build for llama.cpp",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Ternary 27B in 5.95GB; on a 16GB M6 Mac mini the GPU path (MLX + DFlash2) hits ~36 tok/s at 30W while the Neural Engine path reaches ~52 tok/s code at 12W.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "52",
+          "hardware": "16GB M6 Mac mini (Apple Neural Engine)",
+          "quant": "code generation ~52 tok/s (GPU 36), ~300 tok/s prefill (GPU 185), ~12W (GPU 30W); median of 3 runs on the same machine/prompt; ANEMLL Forge based port, macOS 27 + Core AI",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/CowboyCoderHQ/status/2110112587194974618",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 72,
+          "views": 6890,
+          "interactions": 6965
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "16GB M6 Mac mini (GPU)",
+          "quant": "MLX + DFlash2 speculative decoding on GPU, ~36 tok/s at ~30W; plain text generation ~29 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/FeitengLi/status/2110169973167431911",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "27",
+          "hardware": "16GB M6 Mac mini (GPU)",
+          "quant": "plain text generation ~29 tok/s; MLX + DFlash2",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/FeitengLi/status/2110169973167431911",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open"
+        }
+      ],
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "493GB NVFP4",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "816B MoE (42B active, 1M context) that Apple's MLX distributes across four M5 Ultra Mac Studios over Thunderbolt RDMA, NVFP4 compressed to ~493GB.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x M5 Ultra Mac Studios (512GB each, Thunderbolt 5 RDMA)",
+          "quant": "NVFP4 ~493GB; 8,192-token context; 40.6s TTFT at 65,536 tokens; MLX distributed inference over RDMA",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-17T10:20:09Z"
+}
