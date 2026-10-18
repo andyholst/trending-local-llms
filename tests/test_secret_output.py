@@ -538,6 +538,58 @@ def test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation():
     check("agent-stream-printed-raw: naming the target in output is not a violation", bad == [], str(bad))
 
 
+def test_a_public_agent_target_without_the_seam_is_a_violation():
+    """issue #355: the redaction belongs in the PUBLIC target, because a workflow step, a bot
+    script (`fix_loop.sh`) and a human all reach the agent through `make <target>`."""
+    mk = ("scrubbed_run:\n"          # a seam that exists...
+           "define scrubbed_run\n\t@echo nothing\nendef\n"
+           "search-nvidia:\n\t$(DOCKER_RUN) make _search-nvidia\n")   # ...but is not used
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: |\n"
+            "          make search-nvidia\n          echo done\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"Makefile": mk, ".github/workflows/w.yml": body})
+        bad = cso.violations(root)
+    names = [v.split(": ", 1)[1].split(" —")[0] for v in bad]
+    check("agent-target-does-not-scrub: a target that lost the redaction is refused",
+          "agent-target-does-not-scrub" in names, str(names))
+    check("scrub-seam-does-not-redact: a gutted seam is refused",
+          "scrub-seam-does-not-redact" in names, str(names))
+
+
+def test_the_matrix_search_step_is_covered_when_every_leg_scrubs():
+    """`make search-${{ matrix.backend }}` names all four legs at once: it is safe exactly when
+    every leg redacts its own stream (the measured escape of issue #355)."""
+    each = "".join(f"{t}:\n\t$(call scrubbed_run,$(DOCKER_RUN) make x)\n"
+                   for t in ("search-nvidia", "search-metal", "search-cpu", "search-amd",
+                             "search", "fix"))
+    mk = ("define scrubbed_run\n\t@python3 scripts/scrub_log.py --in x --tail 5\nendef\n" + each)
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: make search-${{ matrix.backend }}\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"Makefile": mk, ".github/workflows/w.yml": body})
+        bad = cso.violations(root)
+    check("agent-stream-printed-raw: the matrix step is covered when every leg scrubs", bad == [], str(bad))
+    # and one leg losing the seam re-opens it
+    broken = mk.replace("search-cpu:\n\t$(call scrubbed_run,$(DOCKER_RUN) make x)\n",
+                        "search-cpu:\n\t$(DOCKER_RUN) make x\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"Makefile": broken, ".github/workflows/w.yml": body})
+        bad = cso.violations(root)
+    check("agent-stream-printed-raw: one un-scrubbed leg re-opens the matrix step",
+          any("agent-stream-printed-raw" in v or "agent-target-does-not-scrub" in v for v in bad), str(bad))
+
+
+def test_the_shipped_agent_targets_scrub_their_own_stream():
+    """The real Makefile: every agent target whose stream no workflow step captures redacts it."""
+    mk = (ROOT / "Makefile").read_text()
+    check("make: the scrubbed_run seam calls the redactor", cso.seam_redacts(mk), "")
+    for target in cso.AGENT_TARGETS_TO_SCRUB:
+        check(f"make: `{target}` redacts its own stream", cso.public_target_scrubs(mk, target), "")
+    check("make: the seam is one definition, not a per-target copy",
+          mk.count("define scrubbed_run") == 1, "")
+    check("gitignore: the captured log and its redacted copy are ignored",
+          "hermes-run.log" in (ROOT / ".gitignore").read_text(), "")
+
+
 def test_agents_md_requires_the_run_log_audit_and_rotation():
     """issue #351: the scan must cover the RUN LOGS, and a value found in one is ROTATED.
 
@@ -609,6 +661,9 @@ def main() -> int:
     test_a_captured_agent_run_is_clean()
     test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation()
     test_agents_md_requires_the_run_log_audit_and_rotation()
+    test_a_public_agent_target_without_the_seam_is_a_violation()
+    test_the_matrix_search_step_is_covered_when_every_leg_scrubs()
+    test_the_shipped_agent_targets_scrub_their_own_stream()
     test_this_repository_never_prints_a_secret_value()
     test_the_report_lists_the_files_that_name_a_secret()
     test_check_exits_non_zero_on_a_violation()

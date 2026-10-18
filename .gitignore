@@ -24,3 +24,8 @@ implement.log
 implement.scrubbed.log
 review.log
 review.scrubbed.log
+# the captured agent stream of a PUBLIC target that runs the agent (`make search-*`,
+# `make fix` — the `scrubbed_run` seam, issue #355) and its REDACTED copy. Only the
+# redacted one is ever printed or uploaded.
+hermes-run.log
+hermes-run.scrubbed.log
