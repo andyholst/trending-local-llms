@@ -1,0 +1,125 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 4060 laptop 8GB",
+          "quant": "paper-reported; bandwidth-adaptive execution splits compute between CPU and GPU; TTFT cut 42-58%, multi-turn agent latency down 65-80%; 1.46x faster than llama.cpp, 3-4x faster than Ollama",
+          "date": "2026-08-26",
+          "source_post": "https://lightbrd.com/jiqizhixin/status/2092632159014043897",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 1146
+        }
+      ],
+      "last_seen": "2026-09-01"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB",
+          "quant": "Unsloth IQ4_XS 14.6GB, 64K context, native MTP, 25 layers offloaded, no VRAM overflow; ~150 tok/s prefill",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107883429966533041",
+          "likes": 3,
+          "comments": 5,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "65536",
+          "weight_gb": "14.6"
+        }
+      ],
+      "last_seen": "2026-10-07"
+    },
+    {
+      "id": "ornith-1.5",
+      "name": "Ornith 1.5 9B",
+      "full_name": "Ornith 1.5 9B",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Ornith/Ornith-1.5-9B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "RTX 4060 8GB",
+          "quant": "MTP on, q8 KV caches, ~200 tok/s prompt processing, draft acceptance 0.95, avg draft length 2.27; MTP off doubles both numbers",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+          "likes": 34,
+          "comments": 33,
+          "reshares": 0,
+          "views": 233
+        }
+      ],
+      "last_seen": "2026-10-13",
+      "vram_min": "8GB"
+    },
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen3.6-27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "2 x RTX 4060 Ti 16GB (32GB total)",
+          "quant": "Q4_K_M 27B; llama.cpp + flash-attention + kv-cache q4_0; 2x RTX 4060 Ti bandwidth 288 GB/s each = 576 GB/s total",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2070234634684715492",
+          "likes": 8,
+          "comments": 45,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-06-25",
+      "vram_min": "32GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

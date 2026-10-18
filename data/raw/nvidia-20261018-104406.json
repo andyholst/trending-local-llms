@@ -1,0 +1,64 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "97.3",
+          "hardware": "RTX 5070 12GB + Core i9 workstation, 64GB system RAM",
+          "quant": "Strata experts-across-GPU/RAM/SSD on a 12GB VRAM card with 64GB system RAM",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/car31108301/status/2109314886379425890",
+          "likes": 87,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-11",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash-Uncensored",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "20GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (Ada), ~17GB VRAM + 128GB DDR5",
+          "quant": "DeepSeek-V4.1-Flash-Uncensored MXFP4-engram GGUF via HikiCoder's llama.cpp build (github.com/hikicoder/llama.cpp); 192GB engram streamed from Gen4 7GB/s NVMe; 32k context fp16; 16GB on VRAM + 60GB RAM; prefill ~23 tok/s then drops to ~10 tok/s with heat; generation ~2 tok/s",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 267
+        }
+      ],
+      "last_seen": "2026-09-24",
+      "vram_min": "20GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

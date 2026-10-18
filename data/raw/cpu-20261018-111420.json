@@ -1,0 +1,85 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:14:20Z",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "weight_gb": "0.95GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "Apple M5 Pro MacBook Pro",
+          "quant": "ternary weights (-1, 0, +1) with group-wise scales; 0.95GB footprint; 32 concurrent streams processing 250 emails into JSON with summaries, action items, calendar events and priority scoring; peak memory under 4GB; over 700 tokens per second in total across all 32 streams; up to 5x throughput and 3x energy efficiency vs full-precision on RTX 4090 and M5 Pro",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 4,
+          "reshares": 15,
+          "views": 5116,
+          "weight_gb": "0.95GB",
+          "system_ram_min": "4GB"
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "vram_min": "8GB"
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "PrismML Ternary Bonsai 2 9B",
+      "type": "LLM (VLM, ternary)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "PrismML/Bonsai-2-9B",
+      "vram_tier": "8GB",
+      "weight_gb": "2.0GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro; iPhone 18 Pro Max",
+          "quant": "ternary (-1, 0, +1); ~2GB footprint, more than 9x smaller than full-precision; retention vs original 9B: tool calling 92.4%, math 98.2%, instruction following 100%, vision ~100%, GPQA Diamond 84.7%; uses about 40% fewer tokens on instruction-following and everyday math; runs via MLX on Mac/iPhone/iPad and llama.cpp on NVIDIA GPUs; ternary GGUF packings need PrismML's llama.cpp fork (upstream loads only Q2_0)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/PrismML/status/2110823972107612202",
+          "likes": 32,
+          "comments": 12,
+          "reshares": 1,
+          "views": 3275,
+          "weight_gb": "2.0GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Apple Silicon (mlx.fast track)",
+          "quant": "Yukon challenge baseline: on a Mac it starts at 170+ tokens per second, described as the floor; two tracks, Apple Silicon on mlx.fast and NVIDIA DGX Spark on cuda.fast; open leaderboard",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 32,
+          "comments": 12,
+          "reshares": 1,
+          "views": 3275
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "8GB"
+    }
+  ]
+}

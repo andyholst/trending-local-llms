@@ -1,0 +1,100 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Strata, weights compressed to 2-3 bits, most-used experts on GPU rest in RAM; generation/decode t/s",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 879,
+          "comments": 52,
+          "reshares": 64,
+          "views": 122099,
+          "interactions": 995,
+          "system_ram_min": "32GB",
+          "weight_gb": "~80GB disk (2-3 bit experts)"
+        }
+      ],
+      "last_seen": "2026-10-04"
+    },
+    {
+      "id": "qwen3.8-27b-swift",
+      "name": "Qwen3.8-27B Swift 1.5",
+      "full_name": "Swift-1.5-Qwen3.8-27B-GSQ-RCO",
+      "type": "LLM (adapter over Qwen3.8-27B)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "GSQ-RCO mixed-precision GGUF, 128K context configuration, MTP support; generation/decode t/s, community test",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 0,
+          "views": 1119,
+          "interactions": 9,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-07"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "51.8",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan backend, MTP=2, Windows, Try mmap OFF; AMD official preliminary validation; generation/decode t/s",
+          "date": "2026-09-06",
+          "source_post": "https://lightbrd.com/xfxjapan/status/2096715285923520644",
+          "likes": 37,
+          "comments": 2,
+          "reshares": 0,
+          "views": 4272,
+          "interactions": 39,
+          "weight_gb": "Q4 (Dense model)"
+        }
+      ],
+      "last_seen": "2026-09-06"
+    }
+  ],
+  "generated_utc": "2026-10-18T10:42:50Z"
+}

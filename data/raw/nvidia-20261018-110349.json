@@ -1,0 +1,50 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "177B-parameter model via Strata splitting workload between GPU VRAM and system RAM; IQ3_S ~70 tok/s, ~66 tok/s at 261K context; IQ2_XS ~87 tok/s; prompt processing ~1900 tok/s; developer recommends 64GB system RAM",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "261000",
+          "system_ram_min": "64GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB, 32GB system RAM",
+          "quant": "developers' tests 53 to 94 tokens per second on an RTX 5070; compressed versions of the model; needs 32GB RAM and about 80GB disk space; works with RTX 20 to 50 series and recent AMD Radeon cards",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 22,
+          "comments": 10,
+          "reshares": 109,
+          "views": 57060,
+          "system_ram_min": "32GB"
+        }
+      ],
+      "last_seen": "2026-10-18",
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

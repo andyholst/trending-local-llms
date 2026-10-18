@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B-Coder390",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "NVIDIA consumer GPU (card not specified for the peak figure)",
+          "quant": "MTP + DFlash2 speculative decoding; reported peak 180 tokens/sec; GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100 up from 83; base is a Q4 GGUF ~17GB",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110315086669595007",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 768,
+          "weight_gb": "17"
+        }
+      ],
+      "last_seen": "2026-10-14"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:13:52Z"
+}

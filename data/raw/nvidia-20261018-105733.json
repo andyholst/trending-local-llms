@@ -1,0 +1,50 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "PrismML/Bonsai-2-27B",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "143",
+          "hardware": "RTX 5090 32GB",
+          "quant": "ternary weights 5.93GB, 98.2% of Qwen3.8-27B aggregate score; Terminal-Bench 69.7 -> 52.8",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2101718479250264407",
+          "likes": 2,
+          "comments": 444,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "5.93"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "155.97",
+          "hardware": "RTX 5090 32GB",
+          "quant": "PQ2 primary; F16 target and draft KV; full 262,144-token context capacity; xhigh reasoning; Q4 n4 drafter weights; code/think 130.14 -> 155.97 tp/s",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2101685231761694894",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144"
+        }
+      ],
+      "last_seen": "2026-09-20",
+      "weight_gb": "5.93",
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

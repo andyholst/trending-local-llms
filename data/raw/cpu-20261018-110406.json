@@ -1,0 +1,90 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:04:06Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LiquidAI/LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License (Apache 2.0 based)",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "8GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CPU",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "24B params, ~2B active per token; runs through llama.cpp and MLX from day one; Liquid-reported 184 tokens/s on M5 Max; 40 layers, 64 experts per MoE block, 30 of 40 layers convolutions; 128K tokenizer; 131K context after 33T-token pretraining",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "likes": 510,
+          "comments": 3,
+          "reshares": 3,
+          "views": 0,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "24B params with only 2B active per token; open weights on Hugging Face; runs through llama.cpp and MLX from day one; Liquid reports 184 tokens a second on an M5 Max",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 1,
+          "views": 62
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "25.4",
+          "hardware": "8GB card (expert layers offloaded to CPU)",
+          "quant": "14.5 GB at Q4_K_M, fits an 8GB card with the expert layers offloaded to CPU; Agon bench composite 185/198 (93.4%), first of 23 models; agent 91.7%, code 93.3%, reasoning 96.1%; median 5,506 generated tokens per request, 67 of 68 requests over 1,000, decoded at 25.4 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2110216348903129348",
+          "likes": 331,
+          "comments": 21,
+          "reshares": 26,
+          "views": 22804,
+          "weight_gb": "14.5GB Q4_K_M"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "21000",
+          "hardware": "NVIDIA B300",
+          "quant": "Day-0 SGLang support; Liquid AI reports up to 21,000 output tokens per second on a single NVIDIA B300 (peak reported throughput, not single-user); LiveClaw 48.09 vs 38.19, AutomationBench 27.69 vs 8.72 vs Qwen3.6-35B-A3B; 131K-token context",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110561774541959348",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max; Ryzen AI Max+ 395",
+          "quant": "Liquid reports 184 tokens per second on an Apple M5 Max and 114 on a Ryzen AI Max+ 395; llama.cpp, MLX, vLLM, SGLang and ONNX supported; 40 layers, 64 experts per MoE block; context 32K -> 131K tokens; 128K vocabulary; pretraining 17T -> 33T tokens",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 60,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-18",
+      "vram_min": "8GB"
+    }
+  ]
+}

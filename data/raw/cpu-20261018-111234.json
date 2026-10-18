@@ -1,0 +1,56 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:12:34Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Meta Muse Spark Open",
+      "type": "LLM (MoE, multimodal)",
+      "license": "Meta Muse License (>$20M revenue needs separate agreement)",
+      "params": "816B total / ~42B active",
+      "hf": "meta-llama/Muse-Spark-Open",
+      "vram_tier": "512GB",
+      "system_ram_min": "1024GB",
+      "context_tokens": "1048576",
+      "weight_gb": "493GB NVFP4",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Apple M5 Ultra Mac Studios (512GB each, Thunderbolt 5 RDMA, tensor parallelism)",
+          "quant": "compressed NVFP4 version occupies about 493GB for the model before additional working memory; Apple measured 16 to 37 tokens per second and about 40 s to first token on long prompts; runs across four M5 Ultra Mac Studios at more than 36 t/s; 816B params, ~42B active per token, 1M-token context, text/image/audio/video in",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/publishednft/status/2111431855832490428",
+          "likes": 359,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "1048576",
+          "system_ram_min": "1024GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studios (512GB each, tensor parallelism)",
+          "quant": "compressed NVFP4 ~493GB; Apple ML research decode speed about 25 tokens per second on two M5 Ultra Mac Studios with tensor parallelism at 8192-token context; needs 2x 512GB Mac Studios; 1M-token window; 512GB Mac Studio ships late October at $10K+ per machine",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 11732,
+          "comments": 19,
+          "reshares": 1,
+          "views": 0,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "1048576",
+          "system_ram_min": "1024GB"
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "vram_min": "512GB"
+    }
+  ]
+}

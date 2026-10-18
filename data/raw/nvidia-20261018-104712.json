@@ -1,0 +1,80 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "181",
+          "hardware": "RTX 4090 24GB",
+          "quant": "EXL3 4.0 bits per weight 15.4 GiB + DFlash2 block-diffusion drafter; 3-bit KV cache; 262,144-token context on one 24GB card; no-drafter baseline ~42 tok/s",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2100595901006008791",
+          "likes": 13,
+          "comments": 81,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144",
+          "weight_gb": "15.4"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2 x RTX 4090 24GB",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, 128K context, 8 concurrent sessions; combined throughput",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 5,
+          "comments": 7,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-10"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB, 32GB system RAM, 80GB disk",
+          "quant": "70GB model download; Strata inference engine one-click install",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/ethanwalkerman/status/2106988896529920109",
+          "likes": 2,
+          "comments": 210,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "32GB"
+        }
+      ],
+      "last_seen": "2026-10-05",
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

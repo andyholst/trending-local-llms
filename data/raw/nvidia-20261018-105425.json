@@ -1,0 +1,93 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "53.2",
+          "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+          "quant": "Strata runtime with expert caching and quantized KV; comparison of complete serving setups, not controlled; llama.cpp best number at 60k context was 27 tok/s",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 2,
+          "comments": 112,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "60000",
+          "system_ram_min": "64GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "27",
+          "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+          "quant": "best llama.cpp number at 60k context",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 2,
+          "comments": 112,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "60000",
+          "system_ram_min": "64GB"
+        }
+      ],
+      "last_seen": "2026-10-04",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "211",
+          "hardware": "RTX 4070 12GB, i9, 32GB RAM",
+          "quant": "Q2 quantization; reads at 4900 tok/s",
+          "date": "2026-08-21",
+          "source_post": "https://lightbrd.com/decentricity/status/2090937320765825156",
+          "likes": 1,
+          "comments": 6,
+          "reshares": 0,
+          "views": 237
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 4070 12GB",
+          "quant": "UD-IQ2_XXS with MTP, 64k context; reported 40-60 tok/s",
+          "date": "2026-08-19",
+          "source_post": "https://lightbrd.com/mihawkxxxxx/status/2089897329104965819",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 237,
+          "context_tokens": "65536"
+        }
+      ],
+      "last_seen": "2026-08-21"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

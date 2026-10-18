@@ -1,0 +1,49 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "ASUS Ascent GX10 (GB10, 128GB), GPU capped at 2200 MHz",
+          "quant": "unsloth UD-Q4_K_XL + DFlash drafter, quantized KV cache; copy-a-passage round on a 66K-token prompt; 50.4 tok/s writing a new story after a 67K-token prompt (0.79x Ollama); no-context story 77.6 tok/s; DFlash drafter 75% guess acceptance copying, 43% on the story; engine counters, 256 tokens, greedy, thinking off, median of 3 runs",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 8,
+          "views": 1162,
+          "context_tokens": "67000"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "ASUS Ascent GX10 (GB10, 128GB), GPU capped at 2200 MHz",
+          "quant": "Ollama 0.40.5 registry tag Q4_K_M with built-in MTP, default f16 KV; copy-a-passage round on a 66K-token prompt; 63.4 tok/s writing a new story after a 67K-token prompt; prefill 1,834 tok/s at 66K; no-context story 83.5 tok/s; Ollama 0.35.1 gave 85.7 copying, 63.8 on the story",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 8,
+          "views": 1162,
+          "context_tokens": "67000"
+        }
+      ],
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:12:07Z"
+}

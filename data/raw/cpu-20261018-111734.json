@@ -1,0 +1,40 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:17:34Z",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen/Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B total / ~22B active",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "48GB",
+      "system_ram_min": "128GB",
+      "weight_gb": "~100GB Q3",
+      "backends": [
+        "ROCm",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo) 128GB unified LPDDR5X",
+          "quant": "Q3 quantization, weights ~100GB; real-world generation 14-17 tokens/sec on a single Strix Halo system (Vulkan often edges out ROCm for generation); 128 experts and 94 layers, router selects 8 of 128 per token; smaller 3-5B-active MoEs hit 50-80+ tok/s on the same hardware",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 257,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~100GB Q3",
+          "system_ram_min": "128GB"
+        }
+      ],
+      "last_seen": "2026-10-14",
+      "vram_min": "48GB"
+    }
+  ]
+}

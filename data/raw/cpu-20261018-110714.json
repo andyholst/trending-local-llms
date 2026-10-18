@@ -1,0 +1,117 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:07:14Z",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "PrismML Ternary Bonsai 2 9B",
+      "type": "LLM (VLM, ternary)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "PrismML/Bonsai-2-9B",
+      "vram_tier": "8GB",
+      "weight_gb": "2.0GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1, 0, +1) with small group-wise scales; ~2 GB footprint, more than 9x smaller than full-precision; runs on Macs/iPhones/iPads via MLX and on NVIDIA GPUs via llama.cpp; per-benchmark retention vs Qwen3.5 baselines roughly 92-100% across skill groups; GPQA Diamond keeps 84.7%; on instruction-following and everyday math the 9B uses ~40% fewer tokens",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/PrismML/status/2110823964650164348",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 1,
+          "views": 1541,
+          "weight_gb": "2.0GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro; iPhone 18 Pro Max",
+          "quant": "PrismML reports up to 179 tokens per second for the 9B on an M5 Max Pro and up to 34 on an iPhone 18 Pro Max; ternary GGUF packings need PrismML's llama.cpp fork (upstream llama.cpp loads only the Q2_0 file)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 0,
+          "views": 940,
+          "weight_gb": "2.0GB"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "8GB"
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "PrismML Ternary Bonsai 2 2B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "PrismML/Bonsai-2-2B",
+      "vram_tier": "8GB",
+      "weight_gb": "0.43GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "120",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights (-1, 0, +1); 0.43GB footprint; runs via MLX on Mac, iPhone and iPad; up to 120 tokens per second on iPhone 18 Pro Max",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 43,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.43GB"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "8GB"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "PrismML Ternary Bonsai 2 27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "PrismML/Bonsai-2-27B",
+      "vram_tier": "12GB",
+      "weight_gb": "5.95GB",
+      "context_tokens": "128000",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "14.06",
+          "hardware": "4GB VRAM + 32GB system RAM",
+          "quant": "Bonsai 2 27B / Qwen 3.8 27B quantized; llama.cpp print_timing: prompt processing 12.04-14.06 tokens per second; generation tg = 2.50 t/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2111038392578310446",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "32GB"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "12GB"
+    }
+  ]
+}

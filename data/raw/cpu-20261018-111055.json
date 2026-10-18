@@ -1,0 +1,61 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:10:55Z",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "zai-org/GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "321B (RED-SNOW abliterated build)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "48GB",
+      "system_ram_min": "128GB",
+      "context_tokens": "262144",
+      "storage_offload": "97.4 GiB of the 128 GB unified bank",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "45.7",
+          "hardware": "NVIDIA DGX Spark (128GB unified)",
+          "quant": "RED-SNOW-5.3-FLASH abliterated build, 2.49 bpw SAGE EXL3, 15 shards, 97.4 GiB; served through tabbyAPI on the exllamav3 fork, 51.5 s warm load, MTP + n-gram speculation on; single stream structured output 45.2 tok/s, JSON 45.7, code 35.9, prose 27.5; decode falls 11.3 tok/s at 8k to 0.7 at 240k; TTFT 14 s at 8k, 280 s at 240k; prefill 450-640 t/s; pin fork commit 7c1636f (merged tip 25% slower, 17.1 vs 22.9 tok/s)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2109454666933436691",
+          "likes": 15,
+          "comments": 7,
+          "reshares": 1,
+          "views": 1152,
+          "weight_gb": "97.4GiB SAGE EXL3 2.49bpw",
+          "context_tokens": "262144",
+          "system_ram_min": "128GB",
+          "storage_offload": "97.4 GiB of 128 GB unified bank"
+        },
+        {
+          "engine": "ExLlamaV3",
+          "tps": "43.2",
+          "hardware": "NVIDIA DGX Spark (128GB unified)",
+          "quant": "RED-SNOW-5.3-FLASH 2.49 bpw, one Spark, 262k context; structured output 45.2 tok/s, code 40.7, JSON 32.1, prose 29.2, a 34k-token agent turn 78.1 tok/s; time to first token 14 s at 8k, 22 s at 16k, 79 s at 65k, 152 s at 131k, 280 s at 240k; prefill 450-640 tokens per second; 25% of decode speed depends on the fork commit (pin 7c1636f)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/ViC305/status/2109454666933436691",
+          "likes": 15,
+          "comments": 7,
+          "reshares": 1,
+          "views": 1152,
+          "weight_gb": "97.4GiB SAGE EXL3 2.49bpw",
+          "context_tokens": "262144",
+          "system_ram_min": "128GB",
+          "storage_offload": "97.4 GiB of 128 GB unified bank"
+        }
+      ],
+      "last_seen": "2026-10-12",
+      "vram_min": "48GB",
+      "engine_min_version": "tabbyAPI + exllamav3 fork pinned at 7c1636f"
+    }
+  ]
+}

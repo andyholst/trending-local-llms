@@ -1,0 +1,62 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:16:07Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen/Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "ASUS Ascent GX10 (NVIDIA GB10, 128GB, GPU clock capped 2200 MHz)",
+          "quant": "copy a passage, 66K-token prompt; quantized KV cache; engine starts fresh per request; 2,332 tok/s prefill vs Ollama 1,834 at 66K; writing a new story after a 67K prompt 50.4 tok/s vs Ollama 63.4 (0.79x); with no context 77.6 vs 83.5; vendor page shows 85.8 -> 216 tok/s (2.52x); greedy, 256 tokens, median of 3 runs",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 1162
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "ASUS Ascent GX10 (NVIDIA GB10, 128GB, GPU clock capped 2200 MHz)",
+          "quant": "Ollama 0.40.5 registry tag Q4_K_M with built-in MTP, f16 KV cache; copy a passage 87.2 tok/s at 66K prompt; new story 63.4 tok/s; prefill 1,834 tok/s at 66K; Ollama 0.35.1 (version Magnitude tested) gives the same picture, 85.7 copying and 63.8 on the story",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 1162,
+          "weight_gb": "Q4_K_M"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "84",
+          "hardware": "NVIDIA RTX Spark",
+          "quant": "NVIDIA-reported 84 tokens per second on RTX Spark; beats Qwen3.6 35B-A3B on agent benchmarks (comparison run, not this model's own figure)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Qualiteg_global/status/2111242525839384740",
+          "likes": 144,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "24GB"
+    }
+  ]
+}

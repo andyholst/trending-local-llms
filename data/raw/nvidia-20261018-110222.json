@@ -1,0 +1,61 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "optimized lookup verification, verifies up to 16 tokens per pass ~15 accepted on document-reproduction workload; progression 82 -> MTP 114 -> DFlash2 + context lookup 138 -> 381; ordinary chat ~133 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "NVIDIA DGX Spark (single)",
+          "quant": "NVFP4 weights via SGLang, DFlash2 speculative decoding with 4-bit drafter proposing 16 tokens per pass, BF16 KV cache, thinking disabled, 512 output tokens per run, temp 0; median of 4 runs; prefill peaks ~2500 tok/s",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 1,
+          "comments": 10,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.9",
+          "hardware": "RTX 5060 Ti 16GB + GTX 1080 8GB",
+          "quant": "IQ3_S MTP GGUF, 128K context, Q8_0 KV cache, 4,1 layer split, custom llama.cpp CUDA build; stock backend did not support the 1080's compute 6.1",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/dextune/status/2110606409947861207",
+          "likes": 1,
+          "comments": 74,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:02:22Z"
+}

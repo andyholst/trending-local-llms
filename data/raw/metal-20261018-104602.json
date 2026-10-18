@@ -1,0 +1,86 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-18T10:45:53Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "Dense LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "weight_gb": "IQ4_XS (~14GB)",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Qwen3.8-27B measured on a 24GB M4 Pro MacBook with an iPhone 17 Pro Max attached over USB-C for split llama.cpp inference; also runs across 2-3 bit quants on a jailbroken PS5 via llama.cpp Vulkan.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "157",
+          "hardware": "MacBook Pro M4 Pro 24GB + iPhone 17 Pro Max over 10Gb/s USB-C (layers 1-40 Mac, 41-64 phone)",
+          "quant": "IQ4_XS; 16k context; split llama.cpp build (Phone-as-accelerator)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2110483596293386465",
+          "likes": 16,
+          "comments": 28,
+          "reshares": 194,
+          "views": 14773,
+          "interactions": 14911,
+          "weight_gb": "IQ4_XS",
+          "context_tokens": "16384"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "130",
+          "hardware": "MacBook Pro M4 Pro 24GB + iPhone 17 Pro Max over 10Gb/s USB-C",
+          "quant": "IQ4_XS; 32k context; split llama.cpp build",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2110483596293386465",
+          "likes": 16,
+          "comments": 28,
+          "reshares": 194,
+          "views": 14773,
+          "interactions": 14911,
+          "weight_gb": "IQ4_XS",
+          "context_tokens": "32768"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "113",
+          "hardware": "MacBook Pro M4 Pro 24GB + iPhone 17 Pro Max over 10Gb/s USB-C",
+          "quant": "IQ4_XS; 48k context; split llama.cpp build",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2110483596293386465",
+          "likes": 16,
+          "comments": 28,
+          "reshares": 194,
+          "views": 14773,
+          "interactions": 14911,
+          "weight_gb": "IQ4_XS",
+          "context_tokens": "49152"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "109",
+          "hardware": "MacBook Pro M4 Pro 24GB (phone not accelerating decode below 64k)",
+          "quant": "IQ4_XS; 16k context; baseline Mac-only run",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2110483596293386465",
+          "likes": 16,
+          "comments": 28,
+          "reshares": 194,
+          "views": 14773,
+          "interactions": 14911,
+          "weight_gb": "IQ4_XS",
+          "context_tokens": "16384"
+        }
+      ]
+    }
+  ]
+}

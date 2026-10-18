@@ -1,0 +1,51 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T11:19:03Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B-Coder390",
+      "full_name": "Qwen3.8-27B-Coder390",
+      "type": "LLM (multimodal, reasoning)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B-Coder390",
+      "vram_tier": "24GB",
+      "context_tokens": "131072",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "24GB GPU",
+          "quant": "DFlash2 speculative decoding with MTP; reported generation speeds reaching 180 tokens/sec; the figure is a reported peak dependent on GPU, engine, quantization, context and decoding config; GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100 up from 83; EfficientThink base with SFT + RLOO training",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110315086669595007",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "43.8",
+          "hardware": "24GB GPU",
+          "quant": "Q4 GGUF ~17GB, 8K context 18.4GB VRAM at 43.8 tok/s; 65K context 22.0GB VRAM at 31.2 tok/s; 131K context out of memory; Qwen model card lists ~51.76 GiB BF16 weights plus ~16 GiB KV cache at native context; KV cache is not reduced by weight quantization; Terminal-Bench 2.1 73.0, SWE-Bench Pro 61.7, OSWorld-Verified 84.3",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110312777415893173",
+          "likes": 768,
+          "comments": 2,
+          "reshares": 5,
+          "views": 0,
+          "weight_gb": "~17GB Q4 GGUF",
+          "context_tokens": "65536"
+        }
+      ],
+      "last_seen": "2026-10-14",
+      "vram_min": "24GB"
+    }
+  ]
+}

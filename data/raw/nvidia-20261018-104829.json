@@ -1,0 +1,66 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "321B-A18B",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Project Maya",
+          "tps": "30",
+          "hardware": "RTX 5090 32GB",
+          "quant": "three-tier memory hierarchy (GPU VRAM / system RAM / NVMe SSD); dedicated quants hold 97.7-99.2% of original FP8 zero-shot accuracy up to 1M tokens; scaling reaches up to 118 tok/s across four RTX 4090s",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+          "likes": 1,
+          "comments": 35,
+          "reshares": 33,
+          "views": 266,
+          "context_tokens": "1000000",
+          "storage_offload": "NVMe SSD"
+        }
+      ],
+      "last_seen": "2026-10-12",
+      "vram_min": "32GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "75.43",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4; TTFT 20.39 s cold (prefix cache off)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2106445239615463431",
+          "likes": 2,
+          "comments": 73,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-03",
+      "vram_min": "32GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

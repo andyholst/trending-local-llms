@@ -1,0 +1,108 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "optimized vLLM + DFlash2 speculative decoding + context lookup + prefix caching; up to 16 tokens verified per pass (~15 accepted) on a document-reproduction task; ordinary chat ~133 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "23.8",
+          "hardware": "RTX 3090 + RTX 3060 12GB",
+          "quant": "Qwen3.8-27B q4, context length 262,144",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 251,
+          "context_tokens": "262144"
+        }
+      ],
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ2_XS ~87 tok/s, IQ3_S ~70 tok/s, ~66 tok/s at 261K context; Strata splits experts between GPU VRAM and system RAM; recommends 64GB system RAM",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "261000",
+          "system_ram_min": "64GB"
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "vram_min": "24GB"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "MoE",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "glm-flash-lite",
+          "tps": "20",
+          "hardware": "RTX 3090 24GB",
+          "quant": "125GB MoE model; busy experts on GPU, rest stream from RAM and SSD",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 0,
+          "views": 415
+        }
+      ],
+      "last_seen": "2026-10-10",
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

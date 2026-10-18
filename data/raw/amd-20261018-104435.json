@@ -1,0 +1,94 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "158.5",
+          "hardware": "Radeon AI PRO R9700 32GB (eGPU over Thunderbolt)",
+          "quant": "Q4, 131k context, Q8 DFlash2 draft, DFlash2 speculative decoding mode on iPadOS (LemonSeed Studio); base 31.2 tps, MTP 3 108.7 tps; macOS comparison 159.4 tps, Strix Halo 64.4 tps",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dextune/status/2109530059765858549",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 159,
+          "interactions": 1,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "100",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "Q4 quant, MTP enabled, on the LaurentZuijdwijk llama.cpp fork; generation/decode t/s ('close to 100')",
+          "date": "2026-08-25",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2092168643308105983",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 112,
+          "interactions": 2
+        }
+      ],
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo, Bosgame M5, 140W Performance mode)",
+          "quant": "Strata experimental Strix Halo support, Unsloth Q4 / GSQ-RCO weights; 55-58 t/s decode (1400-1500 t/s prefill excluded); Balanced mode held steady decode across deep context",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 16,
+          "comments": 8,
+          "reshares": 0,
+          "views": 562,
+          "interactions": 24
+        },
+        {
+          "engine": "vLLM",
+          "tps": "100",
+          "hardware": "8x Radeon Pro V620 32GB cluster (256GB total VRAM)",
+          "quant": "experimental vLLM RDNA2 fork with hand-written custom RDNA2 kernels, pipeline parallelism PP=4, W4A16 routed experts, 3-token drafting; 60-100 t/s decode range (recorded top), 40-50 bare; prefill 3000+ t/s excluded",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/raminaol9ykas/status/2108497527586611313",
+          "likes": 7,
+          "comments": 5,
+          "reshares": 0,
+          "views": 228,
+          "interactions": 12,
+          "system_ram_min": "256GB VRAM cluster"
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ],
+  "generated_utc": "2026-10-18T10:44:35Z"
+}

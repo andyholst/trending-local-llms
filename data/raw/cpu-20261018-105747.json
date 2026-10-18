@@ -1,0 +1,108 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T10:57:47Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "PS5 GPU (jailbroken, 12GiB direct memory, RADV/Vulkan)",
+          "quant": "2-bit UD-IQ2_XXS; PS5LM llama.cpp port (github.com/cobanov/PS5LM), Vulkan backend on Mihawk-99 RADV port; 9-21 tok/s; models load from USB straight into GPU memory (no mmap)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 128,
+          "weight_gb": "2-bit UD-IQ2_XXS"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup, optimized lookup verification, up to 16 tokens verified per pass (~15 accepted); ordinary chat ~133 t/s; prefix caching cut TTFT from 22.4s to 0.56s; initial setup 82 t/s, optimized MTP 114 t/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 111,
+          "comments": 3,
+          "reshares": 9,
+          "views": 10885
+        },
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "NVIDIA DGX Spark (single)",
+          "quant": "NVFP4 weights, DFlash2 spec decode with 4-bit drafter proposing 16 tokens/pass, BF16 KV cache, thinking disabled, 512 output tokens/run, temp 0; 320-tok ctx 73 t/s, 8K 74, 65K 67, 130K 56, 260K 38; prefill peaks ~2,500 t/s; prefix caching cut TTFT 277s -> 1.2s",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 72,
+          "comments": 3,
+          "reshares": 5,
+          "views": 8971,
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.9",
+          "hardware": "RTX 5060 Ti 16GB + GTX 1080 8GB",
+          "quant": "IQ3_S MTP GGUF, 128K context, Q8_0 KV cache, 4,1 layer split; custom llama.cpp CUDA build (stock backend lacked GTX 1080 compute 6.1)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/dextune/status/2110606409947861207",
+          "likes": 74,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "vram_min": "24GB"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "vram_tier": "12GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, 262K context, Flash Attention + Q8 KV cache; 26 MoE layers offloaded to CPU; ~550 t/s prompt processing",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 50,
+          "comments": 5,
+          "reshares": 5,
+          "views": 14881,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "vram_min": "12GB"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "PrismML/Bonsai-2-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 ternary ~1.72 bits per weight; 262K context window resident; MTP head restored; kernel-level tweaks",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 5,
+          "comments": 18,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262000"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary build, 7.21GB model file, 220K context, ~550 tok/s prefill; PTQ1_0 5.95GB does 26 tok/s decode / 260 tok/s prefill at 262K context",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "7.21",
+          "context_tokens": "220000"
+        }
+      ],
+      "last_seen": "2026-09-20",
+      "weight_gb": "5.95"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B-A3B",
+      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, 262K context, Flash Attention, Q8 KV cache; --n-cpu-moe 26; 26 MoE layers offloaded to CPU; ~550 tok/s prefill",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262000",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "last_seen": "2026-10-15"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + Ryzen 5 5600X, 64GB system RAM",
+          "quant": "Strata 0.1.42 on Windows; GSQ-RCO / IQ2_XS; reported 50-60 tok/s generation",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109636228937093580",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB"
+        }
+      ],
+      "last_seen": "2026-10-12",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "ornith-1.5",
+      "name": "Ornith 1.0 9B",
+      "full_name": "Ornith 1.0 9B",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Ornith/Ornith-1.0-9B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "52.9",
+          "hardware": "RTX 3060 12GB, laptop 64GB+ system RAM (offload)",
+          "quant": "Q4_K_M GGUF, Unsloth Desktop",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/jaytekh/status/2098133168742441128",
+          "likes": 1,
+          "comments": 5,
+          "reshares": 0,
+          "views": 422
+        }
+      ],
+      "last_seen": "2026-09-10",
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-18T11:31:02Z"
+}

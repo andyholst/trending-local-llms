@@ -1,0 +1,35 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-18T10:48:57Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "PS5 GPU (jailbroken, ~12GiB shared memory)",
+          "quant": "2-bit Qwen 3.8 27B; PS5LM llama.cpp port for jailbroken PS5s; PS5 CPU only did ~1 token/min",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/chasmmmmmmmmmmm/status/2110216776759804103",
+          "likes": 774,
+          "comments": 2,
+          "reshares": 10,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-14",
+      "vram_min": "24GB"
+    }
+  ]
+}

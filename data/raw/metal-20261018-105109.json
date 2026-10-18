@@ -1,0 +1,86 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-18T10:51:09Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "Muse Model License (free for many developers under $20M revenue; not a blanket commercial pass)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "493GB NVFP4",
+      "system_ram_min": "1024GB",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "Meta's 816B MoE (42B active, 1M context) released Oct 15, tuned with Apple to run through MLX across two to four M5 Ultra Mac Studios linked over Thunderbolt 5 RDMA; Apple's own decode figures are ~25 tok/s on two Studios and ~37 on four.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x M5 Ultra Mac Studios (512GB each, Thunderbolt 5 RDMA)",
+          "quant": "~493GB NVFP4; 8,192-token context; MLX distributed inference over RDMA",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 458,
+          "interactions": 463,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x M5 Ultra Mac Studios (512GB each, Thunderbolt 5 RDMA)",
+          "quant": "NVFP4 ~493GB; 8,192-token context; MLX distributed inference over RDMA",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 4,
+          "reshares": 11,
+          "views": 797,
+          "interactions": 812,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studios (512GB each, tensor parallelism)",
+          "quant": "512GB unified memory per Mac Studio; ~493GB NVFP4 model; MLX distributed inference over RDMA",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 167,
+          "interactions": 171,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "16",
+          "hardware": "2x Apple M5 Ultra Mac Studios (512GB each)",
+          "quant": "~493GB NVFP4; long prompts ~40s to first token",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 458,
+          "interactions": 463,
+          "weight_gb": "493GB NVFP4"
+        }
+      ]
+    }
+  ]
+}

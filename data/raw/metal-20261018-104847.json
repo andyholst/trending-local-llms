@@ -1,0 +1,73 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-18T10:48:47Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (24B total / ~2B active MoE)",
+      "type": "MoE LLM",
+      "license": "LFM Open License (free to ship under $10M revenue)",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "14.5GB 4-bit",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Liquid AI's on-device agent MoE (24B total, ~2B active, 131K context) runs through llama.cpp and MLX day one; Liquid reports 184 tok/s on an Apple M5 Max with the 14.5GB 4-bit build at a 4K-token prompt, using ~15GB unified memory.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "14.5GB 4-bit build; 4K-token prompt; llama.cpp",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 510,
+          "interactions": 516,
+          "weight_gb": "14.5GB 4-bit",
+          "context_tokens": "4096",
+          "system_ram_min": "15GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (15GB unified memory used)",
+          "quant": "14.5GB 4-bit build; 4K-token prompt; llama.cpp",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 198,
+          "interactions": 200,
+          "weight_gb": "14.5GB 4-bit",
+          "context_tokens": "4096",
+          "system_ram_min": "15GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "14.5GB 4-bit build; llama.cpp",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 4,
+          "views": 62,
+          "interactions": 68,
+          "weight_gb": "14.5GB 4-bit",
+          "system_ram_min": "15GB"
+        }
+      ]
+    }
+  ]
+}

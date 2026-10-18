@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, 22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo, 128GB unified LPDDR5X, GMKtec EVO-X2 class)",
+          "quant": "~Q3 quant bringing weights to ~100GB, unified memory pool usable up to ~96-110GB; real-world generation lands 14-17 t/s (top of range recorded), Vulkan often edges out ROCm for generation; generation/decode t/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 0,
+          "views": 253,
+          "interactions": 4,
+          "weight_gb": "~100GB (~Q3)",
+          "system_ram_min": "128GB"
+        }
+      ],
+      "last_seen": "2026-10-14"
+    }
+  ],
+  "generated_utc": "2026-10-18T10:44:53Z"
+}
