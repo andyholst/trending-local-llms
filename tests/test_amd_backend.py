@@ -469,11 +469,11 @@ def test_wiring_parity():
     mk = (ROOT / "Makefile").read_text()
     for b in legs:
         check(f"make: _search-{b} recipe", f"\n_search-{b}:\n\thermes -z " in mk)
-        # The public wrapper still runs the docker image, and it now goes through the ONE
-        # scrub seam (issue #355): the agent's stream is captured and only a redacted tail
-        # is printed, so every caller of `make search-<backend>` gets it.
+        # The public wrapper runs the docker image THROUGH the one scrub seam (issue #355),
+        # and checks the credential it needs BEFORE the agent starts (issue #357).
         check(f"make: public search-{b} docker wrapper, through the scrub seam",
-              f'\nsearch-{b}:\n\t$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search-{b}")' in mk)
+              f'\nsearch-{b}:\n\t@$(MAKE) --no-print-directory _search-preflight BACKEND={b}\n'
+              f'\t$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search-{b}")' in mk)
     agg = re.search(r"\n_search:\n.*?make -j4 ([^\n]+)", mk, re.S)
     check("make: _search runs every leg in parallel",
           agg and sorted(agg.group(1).split()) == sorted(f"_search-{b}" for b in legs), agg and agg.group(1))

@@ -19,6 +19,20 @@ This repo tracks open-weight LLMs people actually run and like, based on **commu
 
 **Firecrawl / web_extract does NOT support x.com** — it returns `Website Not Supported`. Don't waste calls on it.
 
+### The Firecrawl header — the value comes from the environment, and is never printed
+
+The scrape call authenticates with `Authorization: Bearer ${FIRECRAWL_API_KEY}`: **read the VALUE
+from the environment and never print, echo, log or write it anywhere** — not in a summary, not in a
+snapshot, not in a message to a human. The pipeline sets it (the `FIRECRAWL_API_KEY` environment
+variable, forwarded by NAME from the repo secret; `make search-<backend>` fails loudly before you
+start when it is missing or empty, issue #357).
+
+If a call returns `401`, that is a **BLOCKER**: report it and stop. Do **not** go looking for a key —
+do not search the filesystem, do not quote `~/.hermes/.env`, do not ask a human to supply one, and
+never write an `export FIRECRAWL_API_KEY=…` line (with a value or a placeholder) into output: the
+log is public, and a placeholder is one paste away from the real thing (issue #355). A leg that
+cannot authenticate must fail, never narrate its search.
+
 Use the **lightbrd.com mirror** (a working X frontend) via `web_extract`:
 
 ```
