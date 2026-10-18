@@ -14,6 +14,7 @@
 - [x] 11. `tests/test_workflows.py`: the shipped implement step is the captured-and-redacted shape, uploads the redacted log, and keeps the rc contract.
 - [x] 12. Guard verified: the new rules go RED on a fixture carrying the pre-change shape, and the guard is green over the whole tree.
 - [x] 13. `AGENTS.md` §3d bullets + §8 rows; `ARCHITECTURE.md` (the `scrub-log` target and `scripts/scrub_log.py`); `OPENSPEC.md` index refreshed.
+- [x] 13b. `AGENTS.md` §3d: the scan covers the RUN LOGS and a value found in one is ROTATED, pinned by `tests/test_secret_output.py::test_agents_md_requires_the_run_log_audit_and_rotation`; the audit was RUN over the real pipeline (18 runs / 55,161 log lines: 0 values — the only `NAME=…` hits were the agent's own `<key>`/`…` placeholders, so nothing needs rotating).
 - [x] 14. `findings.md` written and `make findings-check` green (rule 6g).
 - [x] 15. Gates green: `make lint`, `make check-secret-output`, `make secret-scan`, `make test`, `make architecture-check`, `make openspec-check`.
 - [x] 16. Local proof: the redactor driven with a real (fake) environment value — 0 leaks in the console and in the artifact; the shipped step driven end to end with 0 leaks.

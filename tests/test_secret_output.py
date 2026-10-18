@@ -538,6 +538,29 @@ def test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation():
     check("agent-stream-printed-raw: naming the target in output is not a violation", bad == [], str(bad))
 
 
+def test_agents_md_requires_the_run_log_audit_and_rotation():
+    """issue #351: the scan must cover the RUN LOGS, and a value found in one is ROTATED.
+
+    Pinned here because the rule is a standing behaviour, and a behaviour that lives only in
+    prose rots: an agent reads AGENTS.md, so the rule has to be there — and the guard over the
+    TREE cannot see a credential that only ever reached a log.
+    """
+    text = (ROOT / "AGENTS.md").read_text()
+    # AGENTS.md is hard-wrapped prose, so compare against a whitespace-normalized copy: a phrase
+    # that spans a line break is still the rule.
+    flat = " ".join(text.split())
+    for phrase, why in (
+        ("The scan covers the RUN LOGS too", "the run logs are in scope, not only the tree"),
+        ("gh run view <id> --log", "the audit names how to read a real run's log"),
+        ("ROTATED in the provider", "a value found in a log is rotated, not just deleted"),
+        ('"GitHub masked it" is not a pass', "a mask GitHub applied is not a clean bill of health"),
+    ):
+        check(f"agents.md: {why}", phrase in flat, "")
+    check("agents.md: the rule lives under the secret rules (3d)",
+          "3d. **Secrets never enter the repo" in text
+          and text.index("3d. **Secrets never enter the repo") < text.index("The scan covers the RUN LOGS too"), "")
+
+
 def test_the_guard_is_wired_into_the_repo():
     """A guard no target names runs nowhere: the make targets, .PHONY and the test chain."""
     mk = (ROOT / "Makefile").read_text()
@@ -585,6 +608,7 @@ def main() -> int:
     test_an_agent_stream_printed_raw_is_a_violation()
     test_a_captured_agent_run_is_clean()
     test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation()
+    test_agents_md_requires_the_run_log_audit_and_rotation()
     test_this_repository_never_prints_a_secret_value()
     test_the_report_lists_the_files_that_name_a_secret()
     test_check_exits_non_zero_on_a_violation()
