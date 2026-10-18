@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **54** · archived: **0**
+Active changes: **55** · archived: **0**
 
 ## Active changes
 
@@ -17,6 +17,7 @@ Active changes: **54** · archived: **0**
 | `agent-image-publish` | active | — | — | [agent-image-publish](openspec/changes/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/agent-image-publish/proposal.md) |
 | `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
 | `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
+| `agent-shell-keys` | active | — | — | [bot-agent-run-safety](openspec/changes/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-shell-keys/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
 | `bot-agent-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 19/19 | [proposal.md](openspec/changes/bot-agent-output-scrubbed/proposal.md) |

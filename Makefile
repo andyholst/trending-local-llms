@@ -42,8 +42,30 @@ NERVE_KEY_ENV  := TYPESAFE_API_KEY
 NERVE_MODEL    := jev-latest
 
 IMAGE := trending-local-llms:latest
+# ---- credentials the AGENT's shell must see (issue #359) ----------------------
+# Hermes STRIPS provider credentials from its terminal tool on purpose
+# (tools/environments/local_env_policy.py: FIRECRAWL_API_KEY, HF_TOKEN, NOUS_API_KEY
+# ... are blocklisted, and env_passthrough can never re-allow one). So a key passed
+# as `-e FIRECRAWL_API_KEY` reaches the container and Hermes, and the agent's `curl`
+# still sends an EMPTY Bearer — measured: every refresh search leg got HTTP 401 while
+# the step listing showed `FIRECRAWL_API_KEY: ***`. The one sanctioned way through is
+# `_HERMES_FORCE_<NAME>`, which Hermes unwraps to `<NAME>` in the terminal child.
+# ONE list: every credential a container receives. On the HOST, make exports
+# `_HERMES_FORCE_<NAME>` from `<NAME>` (by reference — the value is never on a command
+# line or in a recipe), only when `<NAME>` is set, and the run wrappers forward it by
+# NAME. Inside a container (`/.dockerenv`) nothing is re-exported, so
+# `make agent-shell-keys-check` proves what `docker run` forwarded, not what an inner
+# make re-created. `IN_CONTAINER` is overridable for the tests only.
+AGENT_SHELL_KEYS := NOUS_API_KEY FIRECRAWL_API_KEY HF_TOKEN $(NERVE_KEY_ENV)
+AGENT_FORCE_PREFIX := _HERMES_FORCE_
+IN_CONTAINER ?= $(if $(wildcard /.dockerenv),1,)
+ifeq ($(IN_CONTAINER),)
+$(foreach k,$(AGENT_SHELL_KEYS),$(if $(value $(k)),$(eval export $(AGENT_FORCE_PREFIX)$(k) = $$($(k)))))
+endif
+AGENT_SHELL_FORWARD := $(foreach k,$(AGENT_SHELL_KEYS),-e $(AGENT_FORCE_PREFIX)$(k))
+
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(IMAGE)
 
 # The TEST image layers the CURRENT requirements-test.txt on top of the base
 # image at build time, so unit/QA tests (which need markdown-it-py + tabulate
@@ -63,7 +85,7 @@ TEST_REQUIREMENTS := requirements-test.txt
 # extra mount) when the directory is not a git checkout at all.
 GIT_COMMON_DIR := $(shell cd "$$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd)
 TEST_RUN := docker run --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(TEST_IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
 
 
 HERMES_MODEL := deepseek/deepseek-v4.1-flash
@@ -498,6 +520,16 @@ _engine-meta-capture:
 	python3 scripts/engine_registry.py --capture-meta
 
 .PHONY: _nerve-check
+# Which keys to prove: all of them by default; a leg that only receives one (the search
+# job is given no HF_TOKEN) narrows it, so the check never fails on a key the job lacks.
+AGENT_SHELL_CHECK_KEYS ?= $(AGENT_SHELL_KEYS)
+_agent-shell-keys-check:
+	python3 scripts/agent_shell_keys_check.py $(AGENT_SHELL_CHECK_KEYS)
+
+.PHONY: agent-shell-keys-check
+agent-shell-keys-check: ## Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359)
+	$(DOCKER_RUN) make _agent-shell-keys-check AGENT_SHELL_CHECK_KEYS="$(AGENT_SHELL_CHECK_KEYS)"
+
 _nerve-check:
 	python3 scripts/nerve_key_check.py
 
@@ -539,7 +571,7 @@ qa-report:
 
 .PHONY: _test
 _test:
-	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_search_key.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_scrub_log.py && python3 tests/test_commit_authorship.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_card_fit.py && python3 tests/test_measurement_footprint.py && python3 tests/test_worktree_base.py && python3 tests/test_firecrawl_fetch.py && python3 tests/test_refresh_run_block.py && python3 tests/test_rule_numbers.py && python3 tests/test_pr_closure.py && python3 tests/test_lint_syntax.py && python3 tests/test_ingest_watermark.py && python3 tests/test_ingest_hf_verify.py)
+	python3 -m pytest tests/ -q 2>/dev/null || (python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_make_commands.py && python3 tests/test_hermes_update_needed.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py && python3 tests/test_smoke_search.py && python3 tests/test_data_gap_analysis.py && python3 tests/test_secret_scan.py && python3 tests/test_hermes_prompts.py && python3 tests/test_engagement_contract.py && python3 tests/test_fix_loop.py && python3 tests/test_workflows.py && python3 tests/test_readme_render.py && python3 tests/test_post_signal.py && python3 tests/test_trend_score.py && python3 tests/test_engine_aliases.py && python3 tests/test_hermes_smoke.py && python3 tests/test_search_budget.py && python3 tests/test_engine_registry.py && python3 tests/test_amd_backend.py && python3 tests/test_search_key.py && python3 tests/test_agent_shell_keys.py && python3 tests/test_nerve_key_wiring.py && python3 tests/test_qa_report.py && python3 tests/test_ensure_image.py && python3 tests/test_hf_id.py && python3 tests/test_check_openspec_tasks.py && python3 tests/test_openspec_index.py && python3 tests/test_file_findings.py && python3 tests/test_architecture.py && python3 tests/test_lint_linefeeds.py && python3 tests/test_secret_output.py && python3 tests/test_scrub_log.py && python3 tests/test_commit_authorship.py && python3 tests/test_issue_review.py && python3 tests/test_install_hermes_ci.py && python3 tests/test_publish_agent_image.py && python3 tests/test_issue_triage.py && python3 tests/test_queued_run_alarm.py && python3 tests/test_code_review.py && python3 tests/test_bot_markers.py && python3 tests/test_makefile_only.py && python3 tests/test_query_coverage.py && python3 tests/test_card_fit.py && python3 tests/test_measurement_footprint.py && python3 tests/test_worktree_base.py && python3 tests/test_firecrawl_fetch.py && python3 tests/test_refresh_run_block.py && python3 tests/test_rule_numbers.py && python3 tests/test_pr_closure.py && python3 tests/test_lint_syntax.py && python3 tests/test_ingest_watermark.py && python3 tests/test_ingest_hf_verify.py)
 
 
 .PHONY: _requirements-test
@@ -637,6 +669,7 @@ search:
 _search-preflight:
 	@python3 scripts/require_env.py FIRECRAWL_API_KEY --why "the search legs cannot scrape lightbrd.com without it"
 	@$(MAKE) --no-print-directory search-smoke BACKEND=$(BACKEND)
+	@$(MAKE) --no-print-directory agent-shell-keys-check AGENT_SHELL_CHECK_KEYS=FIRECRAWL_API_KEY
 
 .PHONY: search-smoke
 search-smoke:

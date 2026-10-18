@@ -217,6 +217,13 @@ jobs:
       - name: Hermes routing smoke (real call through the search alias)
         run: make hermes-smoke
 
+      # Hermes STRIPS provider credentials from the agent's terminal, so a key
+      # that reaches the container can still be EMPTY in the agent's `curl`
+      # (every refresh search leg: HTTP 401 with `FIRECRAWL_API_KEY: ***` set).
+      # Real secrets, the bot image, Hermes's own terminal env (issue #359).
+      - name: Agent shell sees every credential (_HERMES_FORCE_<NAME>)
+        run: make agent-shell-keys-check
+
       - name: Search returns data (real Firecrawl->lightbrd, --require-hits)
         run: make validate-fetch
 
