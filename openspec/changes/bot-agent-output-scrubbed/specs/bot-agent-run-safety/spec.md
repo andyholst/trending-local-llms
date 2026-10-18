@@ -121,6 +121,24 @@ THEN the block captures that call's stream and calls the redactor, and no raw ag
 - **Then** the guard reports nothing
 - **Test:** `tests/test_secret_output.py::test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation`
 
+### Requirement: The leak scan covers the run logs, and a value found in one is rotated
+
+The scan over the tree is not enough: a credential that reaches a *log* never touches the tree,
+and GitHub masks only the values it registers. An agent that changes any way output reaches a log
+MUST audit the real pipeline — the affected runs' logs and artifacts — for every secret name's
+value in every spelling plus the credential shapes, and a value found in a log or an artifact MUST
+be rotated in the provider and in the repo secret. AGENTS.md MUST carry this rule, because the
+guard over the tree cannot see a run-time value.
+
+WHEN an agent changes what a bot prints,
+THEN it audits the affected runs' logs and artifacts, and AGENTS.md states the rule and the rotation consequence.
+
+#### Scenario: the rule is in AGENTS.md and a test keeps it there
+
+- **Given** `AGENTS.md` §3d, the secret rules
+- **Then** it names the run logs as in scope, the `gh run view <id> --log` audit, the rotation, and that a GitHub mask is not a pass — and a test fails if any of those leaves the file
+- **Test:** `tests/test_secret_output.py::test_agents_md_requires_the_run_log_audit_and_rotation`
+
 ### Requirement: The shipped implement step prints only the redacted tail
 
 The implementer's implement step MUST capture the agent's stream to a gitignored file,
