@@ -788,6 +788,81 @@ def test_engine_min_version_coverage_can_never_shrink():
           missing < 29, f"{missing} still missing")
 
 
+# A storage-offload value names a storage MEDIUM and (usually) a size. The value
+# is only real when the model's captured source text says both.
+_STORAGE_MEDIA = ("ssd", "nvme", "flash", "disk", "hdd")
+_STORAGE_SIZE_RX = re.compile(r"\d+(?:\.\d+)?\s*(?:gb|mb|tb)", re.I)
+
+
+def _storage_offload_is_evidenced(value: str, captured: str) -> bool:
+    """True when the captured source text supports a `storage_offload` value:
+    the value names a storage medium, the captured text names one too, every size
+    token of the value appears in the text, and at least one distinctive token
+    does. An invented offload ('8TB tape library') has no medium and is refused."""
+    hay = (captured or "").lower()
+    low = (value or "").lower()
+    if not (any(med in low for med in _STORAGE_MEDIA) and any(med in hay for med in _STORAGE_MEDIA)):
+        return False
+    if any(s.lower() not in hay for s in _STORAGE_SIZE_RX.findall(low)):
+        return False
+    tokens = [t for t in re.split(r"[^A-Za-z0-9]+", low) if len(t) >= 4]
+    return bool(tokens) and any(t in hay for t in tokens)
+
+
+def test_storage_offload_backfill_traces_to_the_captured_source_text():
+    """Issue #364's top-ranked gap closes with REAL data only: every structured
+    `storage_offload` in the store must be the source post's own statement of the
+    offload, i.e. its storage medium and every size token are present in the text
+    the search captured for that model (`data/raw/*.json`) — and the post it came
+    from is a real `…/status/<id>` URL."""
+
+    import update_trending as UT  # noqa: E402
+
+    store = G.load(G.STORE)
+    captured = _captured_text()
+    carried = [m for m in store["models"] if m.get("storage_offload")]
+
+    # Then  the guard is not vacuous …
+    check("storage_offload: at least one model carries a structured value",
+          bool(carried), "no model carries storage_offload")
+
+    # … every value is evidenced by the captured text of a real post …
+    unevidenced = [m.get("id") for m in carried
+                   if not _storage_offload_is_evidenced(m["storage_offload"],
+                                                        captured.get(m.get("id"), ""))]
+    check("storage_offload: every value is present in the model's captured source text",
+          not unevidenced, str(unevidenced))
+
+    # … and each such model has a real `…/status/<id>` post behind it
+    untraceable = [m.get("id") for m in carried
+                   if not any(UT._is_post_url(str(e.get("source_post", "")))
+                              for e in (m.get("engines") or []))]
+    check("storage_offload: every value traces to a real …/status/<id> post",
+          not untraceable, str(untraceable))
+
+    # And  an invented value — one no captured snapshot mentions — is refused
+    check("storage_offload: an unsupported value fails the evidence rule",
+          not _storage_offload_is_evidenced("8TB tape library, experts streamed",
+                                            captured.get(carried[0].get("id"), "")),
+          "a value naming no captured storage medium was accepted")
+
+
+def test_storage_offload_coverage_can_never_shrink():
+    """The closed gap must not silently reopen. The dimension is carried by a
+    floor of models, and the analysis reports fewer models missing it than the
+    41/49 the filed issue (#364) recorded."""
+
+    store = G.load(G.STORE)
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    n = sum(1 for m in store["models"] if m.get("storage_offload"))
+    missing = len(report["missing"]["storage_offload"])
+
+    check("storage_offload: coverage floor holds (>= 9 models)",
+          n >= 9, f"{n} models carry it")
+    check("storage_offload: fewer models are missing it than the filed issue's 41/49",
+          missing < 41, f"{missing} still missing")
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -807,6 +882,8 @@ def main() -> int:
     test_the_filer_creates_the_label_the_bots_trigger_on()
     test_engine_min_version_backfill_traces_to_the_captured_source_text()
     test_engine_min_version_coverage_can_never_shrink()
+    test_storage_offload_backfill_traces_to_the_captured_source_text()
+    test_storage_offload_coverage_can_never_shrink()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
