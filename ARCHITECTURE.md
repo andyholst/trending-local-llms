@@ -135,7 +135,7 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `search-nvidia` / `search-metal` / `search-cpu` / `search-amd` | One backend each: first the loud credential + backend pre-flight (`_search-preflight`: `require_env.py FIRECRAWL_API_KEY`, then the existing `search-smoke` — issue #357), then `_setup` and the Hermes search prompt for that leg, writing `data/raw/<backend>-<UTC>.json` per query. `HERMES_REASONING=none` (mechanical work). The whole command runs through the `scrubbed_run` seam, so only a bounded, REDACTED tail of the agent's conversation reaches the console (issue #355) |
+| `search-nvidia` / `search-metal` / `search-cpu` / `search-amd` | One backend each: first the loud credential + backend pre-flight (`_search-preflight`: `require_env.py FIRECRAWL_API_KEY`, then the existing `search-smoke` — issue #357 — then `agent-shell-keys-check` for `FIRECRAWL_API_KEY`, proving the AGENT's shell can see it — issue #359), then `_setup` and the Hermes search prompt for that leg, writing `data/raw/<backend>-<UTC>.json` per query. `HERMES_REASONING=none` (mechanical work). The whole command runs through the `scrubbed_run` seam, so only a bounded, REDACTED tail of the agent's conversation reaches the console (issue #355) |
 | `search` | All four legs in sequence, through the same seam |
 | `query-coverage` (`TOP=<n>`) | Report which of the top-N trending models the search queries name — the hand-curated set vs the full set (curated + derived), one line per model — and **FAIL** when one is named by none, so a stale or broken derivation is loud and separable from "the query ran and found nothing" (issue #264). Runs in `_validate-search` |
 | `search-smoke` (`BACKEND=<b>`) | Live reachability: the exact Firecrawl → lightbrd scrape of every query for one backend, 3 s cap per query, one retry on timeout/429/5xx (`scripts/smoke_search.py`) |
@@ -258,6 +258,7 @@ keep it honest (issue #207):
 | `check-commit-authorship` | Fail when a commit's author/committer identity, or a crediting trailer in its message, is not an allowed one (`scripts/check_commit_authorship.py`) — the only identities are Andy Holst and Asimov Agent (issue #317) |
 | `commit-authorship-report` | Show every commit in the range with its author, committer and subject (`scripts/check_commit_authorship.py report`) |
 | `nerve-check` | Prove the nerve plugin's credential is wired by NAME only, that the plugin is pinned, and that a run without the key fails loudly (`scripts/nerve_key_check.py`) |
+| `agent-shell-keys-check` | Prove every credential a container receives is visible in the AGENT's shell (`scripts/agent_shell_keys_check.py`, issue #359): runs a command through Hermes's own terminal environment in the bot image and fails, naming the variable, when a key set in the container reads EMPTY there. Hermes strips provider credentials from its terminal on purpose, so the run wrappers forward each key of the ONE `AGENT_SHELL_KEYS` list as `-e _HERMES_FORCE_<NAME>` (by name, exported from `<NAME>` on the host). Every search leg's pre-flight runs it for `FIRECRAWL_API_KEY` |
 
 ### Bots / tests / full runs
 
@@ -300,7 +301,7 @@ competing PRs over the same generated files).
 |---|---|
 | `guard` | FIRST job (issue #279): owner / write+ collaborator / `github-actions[bot]` for BOTH actor and triggering actor; a `pull_request`/`push` run is admitted outright (GitHub starts it for the repository itself, and a PR must be validated whatever its author). The 30-minute network-bound DISPATCH is what this guards |
 | `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
-| `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
+| `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `agent-shell-keys-check` (the real secrets are visible in the agent's shell, issue #359), `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
 | `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides |
 
@@ -437,6 +438,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/hermes_update_needed.sh` | Decides whether the baked Hermes install needs a refresh |
 | `scripts/model_caps_check.py` | The live model-capability check (`make model-caps`) |
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
+| `scripts/agent_shell_keys_check.py` | The agent-shell credential guard (`make agent-shell-keys-check`, issue #359): drives Hermes's real `LocalEnvironment` and reports, per key, whether the container's value is visible in the agent's shell — lengths only, never a value; a key missing from the container is a loud exit 2 |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
 | `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal, a captured agent stream with no redactor (`raw-agent-log-captured`), a step printing a captured log (`raw-agent-log-printed`), and a Python script that reads a key value and prints it (issue #351) |
 | `scripts/require_env.py` | The loud credential pre-flight (`_search-preflight`, issue #357): fails (exit 2) when a named environment variable is missing or EMPTY — the shape a missing GitHub secret takes at run time — naming the variable and how to set it, and never printing a value. `--allow-unconfigured` is a loud local opt-out that reports NOT CONFIGURED |
