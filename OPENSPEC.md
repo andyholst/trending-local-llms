@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **51** · archived: **0**
+Active changes: **52** · archived: **0**
 
 ## Active changes
 
@@ -19,6 +19,7 @@ Active changes: **51** · archived: **0**
 | `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
+| `bot-agent-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 18/18 | [proposal.md](openspec/changes/bot-agent-output-scrubbed/proposal.md) |
 | `bot-commits-as-the-agent` | active | — | — | [commit-authorship](openspec/changes/bot-commits-as-the-agent/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/bot-commits-as-the-agent/proposal.md) |
 | `bot-guards-allow-the-bot` | active | — | — | [bot-guards-allow-the-bot](openspec/changes/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-guards-allow-the-bot/proposal.md) |
 | `bot-marker-registry` | active | — | — | [bot-markers](openspec/changes/bot-marker-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-marker-registry/proposal.md) |

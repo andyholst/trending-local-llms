@@ -78,6 +78,31 @@ VALUE_IN_ARGV = re.compile(rf"(?:-e|--env|--build-arg)\s+(?:{SECRET_ALT})=\S")
 #: which were fixture names. A deliberate test value can still be committed: mark its file with
 #: `# secret-output: test value` and the check accepts it there, visibly.
 KEY_SHAPED = re.compile(r"(?:hf_|sk-|sk_|jev-)[A-Za-z0-9]{20,}")
+
+#: A PYTHON script that pulls a secret's value out of the environment into a local name
+#: (issue #351: the scripts wired to key values must be asserted too, not only the shell).
+PY_ENV_READ = re.compile(rf"^\s*([A-Za-z_]\w*)\s*=\s*os\.(?:environ(?:\.get)?|getenv)\s*[\[\(]\s*['\"]({SECRET_ALT})['\"]")
+#: A printing call, in Python's spelling.
+PY_PRINTER = re.compile(r"(?:^|[^\w])(?:print|breakpoint|logging\.\w+|logger\.\w+|sys\.(?:stdout|stderr)\.write)\s*[\(\.]")
+
+#: A command's stream redirected into a LOG FILE — the capture shape. Safe ONLY together with the
+#: redactor in the same `run:` block (issue #351).
+LOG_REDIRECT = re.compile(r"(?<![0-9])>{1,2}\s*['\"]?([\w./-]+\.log)\b")
+#: A command that PRINTS a captured log file: the raw stream, on the console. Anchored to the
+#: start of a line (a `run:` block is one string, so `^` needs MULTILINE), a pipeline stage or a
+#: substitution.
+LOG_PRINT = re.compile(r"(?:^|[|;&]\s*|\$\()\s*(?:cat|head|tail|less|more|strings|sed|awk|grep)\b[^|]*?\b([\w./-]+\.log)\b", re.MULTILINE)
+#: The ONE thing allowed to read a captured log: the redactor, reached through `make`.
+LOG_REDACTOR = re.compile(r"\b(?:make\s+scrub-log|scripts/scrub_log\.py)\b")
+#: A `make` target that runs the AGENT, invoked as a command in a workflow step: its whole stream
+#: would become that step's console log. (`hermes-smoke` is excluded: it is a bounded routing probe
+#: whose reply is the point. `make fix` inside `scripts/fix_loop.sh` is a script, not a step, and is
+#: tracked as a finding rather than silently covered here.)
+AGENT_STREAM_MAKE = re.compile(
+    r"(?:^|[;&|]|\$\()\s*(?:-\s*)?(?:run:\s*)?(?:@\s*)?make\s+"
+    r"(?:implement-issue|review-issue|review-issue-window|search-(?:nvidia|metal|cpu|amd))"
+    r"\b(?![-.\w])",
+    re.MULTILINE)
 #: The marker that declares deliberate, non-live credential shapes in a file (tests do this).
 TEST_VALUE_MARKER = "secret-output: test value"
 #: `set -x` (or `set -ex`, `set -eux`) at the START of a command — xtrace prints every expansion.
@@ -132,7 +157,10 @@ def _inside_dquotes(line: str, pos: int) -> bool:
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".pytest_cache"}
 #: Files that legitimately CONTAIN the patterns (this guard and its tests) — the only exemption,
 #: because a check that exempts the things it checks is not a check.
-SELF_EXEMPT = {"scripts/check_secret_output.py", "tests/test_secret_output.py"}
+SELF_EXEMPT = {"scripts/check_secret_output.py", "tests/test_secret_output.py", "tests/test_scrub_log.py"}
+#: (test_scrub_log.py is exempt for the same reason test_secret_output.py is: it must WRITE the
+#: leak shape — a stub `make` that prints a value — to prove the redactor removes it. The guard is
+#: what checks the rest of the tree.)
 
 
 def tracked_files(root: Path = REPO_ROOT) -> list[Path]:
@@ -178,6 +206,46 @@ def _run_blocks(text: str) -> list[tuple[int, str]]:
     return out
 
 
+def _run_blocks_grouped(text: str) -> list[tuple[int, str]]:
+    """(first line number, the block's whole text) for each workflow `run:` block.
+
+    A rule about a STEP — "this block captures a stream AND redacts it" — needs the block as a
+    whole, not one of its lines (issue #351).
+    """
+    grouped: list[tuple[int, str]] = []
+    start = 0
+    prev: int | None = None
+    buf: list[str] = []
+    for n, line in _run_blocks(text):
+        if prev is not None and n != prev + 1:
+            grouped.append((start, "\n".join(buf)))
+            buf = []
+        if not buf:
+            start = n
+        buf.append(line)
+        prev = n
+    if buf:
+        grouped.append((start, "\n".join(buf)))
+    return grouped
+
+
+def _py_reveals_value(line: str, var: str) -> bool:
+    """True when a printing line could reveal the VALUE held in `var`, not merely its presence.
+
+    `print("NOUS_API_KEY is not set")` (the NAME, as a literal) and `print(f"present: {bool(key)}")`
+    reveal nothing about the value; `print(key)` and `print(f"{key[:8]}")` do — the second is a
+    slice, which is exactly the "transformed value" GitHub's mask does not cover (rule 3d).
+    """
+    # A quoted literal that mentions the word is text, not the variable — but an f-string's braces
+    # are an interpolation, so only NON-f spans are dropped.
+    stripped = re.sub(r"(?<![fF])(?:\"[^\"]*\"|'[^']*')", "", line)
+    for presence_only in (rf"\bbool\(\s*{var}\s*\)", rf"\blen\(\s*{var}\s*\)",
+                          rf"\b{var}\s+is\s+(?:not\s+)?None\b", rf"\bnot\s+{var}\b",
+                          rf"\b{var}\s*[!=]="):
+        stripped = re.sub(presence_only, "", stripped)
+    return bool(re.search(rf"\b{re.escape(var)}\b", stripped))
+
+
 def violations(root: Path = REPO_ROOT) -> list[str]:
     """Every way a secret value could leave the process, with the line that does it."""
     bad: list[str] = []
@@ -213,6 +281,41 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
                     bad.append(f"{rel}:{n}: secrets-in-run-block — `{m.group(0)}` inside `run:` becomes "
                                f"script text and output; pass it through `env:` (`github.token` is the "
                                f"same credential as `secrets.GITHUB_TOKEN`)")
+            for start, block in _run_blocks_grouped(text):
+                captures = sorted(set(LOG_REDIRECT.findall(block)))
+                redacted = bool(LOG_REDACTOR.search(block))
+                if captures and not redacted:
+                    bad.append(f"{rel}:{start}: raw-agent-log-captured — a step captures a command's "
+                               f"whole stream into {', '.join(captures)} and never redacts it; capture "
+                               f"is only safe WITH the redactor in the same step "
+                               f"(`make scrub-log FILE={captures[0]} LOG_OUT=…`), because GitHub masks "
+                               f"registered values only (issue #351, rule 3d)")
+                for m in LOG_PRINT.finditer(block):
+                    bad.append(f"{rel}:{start}: raw-agent-log-printed — `{m.group(0).strip()[:60]}` "
+                               f"prints a captured stream ({m.group(1)}) to the console; print "
+                               f"`make scrub-log`'s bounded, redacted tail instead (issue #351)")
+                if not redacted:
+                    for m in AGENT_STREAM_MAKE.finditer(block):
+                        bad.append(f"{rel}:{start}: agent-stream-printed-raw — `{m.group(0).strip()[:50]}` "
+                                   f"runs the agent with its whole stream going to this step's console "
+                                   f"log; capture it (`… > <target>.log 2>&1`) and print only "
+                                   f"`make scrub-log`'s bounded tail (issue #351, rule 3d)")
+
+        if path.suffix == ".py":
+            # The scripts wired to key values: a value read out of the environment and then
+            # printed is the same leak as `echo \"$KEY\"`, and a shell-shaped rule cannot see it.
+            for n, line in enumerate(lines, 1):
+                m = PY_ENV_READ.match(line)
+                if not m:
+                    continue
+                var, name = m.group(1), m.group(2)
+                for pn, pl in enumerate(lines, 1):
+                    if pn == n or pl.strip().startswith("#"):
+                        continue
+                    if PY_PRINTER.search(pl) and _py_reveals_value(pl, var):
+                        bad.append(f"{rel}:{pn}: prints-secret-value — `{var}` holds the value of "
+                                   f"{name} (read at line {n}) and is printed; print the NAME, never "
+                                   f"the value (issue #351)")
 
         for n, line in enumerate(lines, 1):
             s = line.strip()

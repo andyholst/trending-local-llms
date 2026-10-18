@@ -295,11 +295,21 @@ jobs:
         id: impl
         if: steps.iss.outputs.implement == 'true'
         run: |
+          # The agent's stream IS this step's console log, so it is captured to a
+          # gitignored file and only the REDACTED, bounded tail is printed (issue
+          # #351). GitHub masks the VALUES it registers, so a transformed one
+          # (URL-encoded, base64, a slice) sails past a mask — and nothing bounded
+          # how much of the stream reached the log. `make scrub-log` reads the
+          # secret values BY NAME, replaces every spelling with `***` plus every
+          # credential SHAPE, and prints at most a tail; the REDACTED whole log is
+          # the run artifact. `make check-secret-output` refuses a capture that has
+          # no redactor in the same step, so this shape cannot be half-applied.
           set +e
-          make implement-issue
+          make implement-issue > implement.log 2>&1
           rc=$?
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
           if [ "$rc" != "0" ]; then echo "implemented=false" >> "$GITHUB_OUTPUT"; else echo "implemented=true" >> "$GITHUB_OUTPUT"; fi
+          make scrub-log FILE=implement.log LOG_OUT=implement.scrubbed.log TAIL=60
           exit 0
 
       # The implementer's verdict, applied DETERMINISTICALLY (issue #210). The
@@ -368,7 +378,7 @@ jobs:
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md implement.log implement.scrubbed.log 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "The implementation produced no file changes - nothing to push."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
@@ -481,7 +491,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: issue-bot-qa-report
-          path: qa-report.txt
+          # The REDACTED agent log, never the raw one (issue #351): the raw stream
+          # may carry a value GitHub's mask does not cover.
+          path: |
+            qa-report.txt
+            implement.scrubbed.log
           if-no-files-found: ignore
 
       # A scope-rejected push must not throw the agent's work away: the commit is
@@ -509,7 +523,7 @@ jobs:
           git config user.email "support@docondee.com"
           sudo chown -R "$(id -u):$(id -g)" .
           git add -A
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md 2>/dev/null || true
+          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md implement.log implement.scrubbed.log 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Pipeline green with no extra changes."
             exit 0

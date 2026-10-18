@@ -1,0 +1,20 @@
+# Tasks
+
+- [x] 1. Write the proposal + spec for `bot-agent-run-safety` (issue #351).
+- [x] 2. `Makefile`: `HERMES_NONINTERACTIVE := --yolo --accept-hooks`, and every `hermes -z` recipe's continuation line uses it (8 recipes).
+- [x] 3. `scripts/scrub_log.py`: redact the secret VALUES (by name) and token shapes, write the redacted full log to `--out`, print at most `--tail`, be loud on a missing file, never print a value.
+- [x] 4. `Makefile`: `scrub-log` public target calling the script, so a workflow reaches it through `make` (rule 6m).
+- [x] 5. `.gitignore`: the captured/redacted agent logs.
+- [x] 6. `.github/workflows/issue-bot.yml`: the implement step captures to a log file, prints only `make scrub-log`'s bounded tail, uploads the REDACTED log; `rc` handling and the loud failure unchanged.
+- [x] 7. `scripts/check_secret_output.py`: `raw-agent-log-captured` (a capture with no redactor in the same `run:` block), `raw-agent-log-printed` (printing the captured file), `agent-stream-printed-raw` (a `run:` block running an agent target straight to the console — the reviewer's two paths), and the Python `prints-secret-value` rule (a value read from the environment and printed) — with the presence-only shapes (`bool(x)`, `len(x)`, `is None`, `not x`, `x ==`) excluded and a target merely NAMED in a message not counted.
+- [x] 7b. `.github/workflows/issue-review-bot.yml`: both agent paths (`body`, `window`) capture + redact; their logs are gitignored.
+- [x] 8. `tests/test_scrub_log.py`: every spelling of a value replaced (raw / URL-encoded / base64) plus token shapes; the tail bound; the redacted out-file; the loud missing file; the empty log; no environment value printed; and the SHIPPED implement step executed against a stub `make` carrying the value in three spellings — none may reach the step's console output, and a failing `rc` still reports `implemented=false`.
+- [x] 9. `tests/test_hermes_prompts.py`: every `hermes -z` recipe passes the whole non-interactive set; the variable carries both flags; and the measured `--yolo`-only recipe is refused.
+- [x] 10. `tests/test_secret_output.py`: the capture-without-redaction, the printed-capture and the Python print rules falsified; the safe shape proven clean; a slice of a value still refused.
+- [x] 11. `tests/test_workflows.py`: the shipped implement step is the captured-and-redacted shape, uploads the redacted log, and keeps the rc contract.
+- [x] 12. Guard verified: the new rules go RED on a fixture carrying the pre-change shape, and the guard is green over the whole tree.
+- [x] 13. `AGENTS.md` §3d bullets + §8 rows; `ARCHITECTURE.md` (the `scrub-log` target and `scripts/scrub_log.py`); `OPENSPEC.md` index refreshed.
+- [x] 14. `findings.md` written and `make findings-check` green (rule 6g).
+- [x] 15. Gates green: `make lint`, `make check-secret-output`, `make secret-scan`, `make test`, `make architecture-check`, `make openspec-check`.
+- [x] 16. Local proof: the redactor driven with a real (fake) environment value — 0 leaks in the console and in the artifact; the shipped step driven end to end with 0 leaks.
+- [x] 17. Commit, push, open the PR (`closes #351`) — reviewable, never a draft, never merged here.

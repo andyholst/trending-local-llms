@@ -431,6 +431,113 @@ def test_a_refused_verdict_still_fails_the_step():
         check("step: a refused verdict exits non-zero (never a green verdict)", r.returncode != 0, r.returncode)
 
 
+def test_a_captured_stream_without_redaction_is_a_violation():
+    """issue #351: capturing a stream to a file is only safe WITH the redactor in the same
+    step. On its own it is a raw stream one edit away from the console."""
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: |\n"
+            "          make implement-issue > implement.log 2>&1\n"
+            "          echo \"done\"\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/w.yml": body})
+        rules = _rules(root)
+    check("raw-agent-log-captured: a capture with no redactor is a violation",
+          "raw-agent-log-captured" in rules, str(rules))
+
+
+def test_the_captured_and_redacted_shape_is_clean():
+    """The shape the implement step uses: capture, then print only the redacted tail."""
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: |\n"
+            "          make implement-issue > implement.log 2>&1\n"
+            "          make scrub-log FILE=implement.log LOG_OUT=implement.scrubbed.log TAIL=60\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/w.yml": body})
+        bad = cso.violations(root)
+    check("raw-agent-log-captured: capture + `make scrub-log` is not a violation", bad == [], str(bad))
+
+
+def test_printing_the_captured_log_is_a_violation():
+    """`cat implement.log` puts the raw stream back on the console the capture existed to keep it off."""
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: |\n"
+            "          make implement-issue > implement.log 2>&1\n"
+            "          make scrub-log FILE=implement.log\n"
+            "          cat implement.log\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/w.yml": body})
+        rules = _rules(root)
+    check("raw-agent-log-printed: printing the captured file is a violation",
+          "raw-agent-log-printed" in rules, str(rules))
+
+
+def test_a_python_script_that_prints_a_secret_value_is_a_violation():
+    """The scripts wired to key values (issue #351): a value read from the environment and
+    then printed is the same leak as `echo \"$KEY\"`, and no shell-shaped rule sees it."""
+    src = ('import os\n'
+           'key = os.environ["HF_TOKEN"]\n'
+           'print(f"using {key} for the request")\n')
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"s.py": src})
+        rules = _rules(root)
+    check("prints-secret-value: a python script printing a value it read is a violation",
+          rules == ["prints-secret-value"], str(rules))
+
+
+def test_a_python_script_that_prints_the_name_only_is_not_a_violation():
+    src = ('import os\n'
+           'token = os.environ.get("NOUS_API_KEY")\n'
+           'if not token:\n'
+           '    print("NOUS_API_KEY is not set")\n'
+           'print(f"present: {bool(token)}")\n')
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"s.py": src})
+        bad = cso.violations(root)
+    check("prints-secret-value: printing the NAME (never the value) is not a violation",
+          bad == [], str(bad))
+
+
+def test_a_python_script_that_prints_a_slice_of_the_value_is_a_violation():
+    """A slice is the transformed value GitHub's mask does NOT cover (rule 3d) — still a leak."""
+    src = ('import os\n'
+           'key = os.environ.get("TYPESAFE_API_KEY")\n'
+           'print(f"key starts with {key[:8]}")\n')
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"s.py": src})
+        rules = _rules(root)
+    check("prints-secret-value: a slice of the value is a violation",
+          rules == ["prints-secret-value"], str(rules))
+
+
+def test_an_agent_stream_printed_raw_is_a_violation():
+    """issue #351: a step that runs the agent with its whole stream going to the console log —
+    the reviewer's two paths did exactly this (`run: make review-issue`)."""
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: make review-issue\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/w.yml": body})
+        rules = _rules(root)
+    check("agent-stream-printed-raw: an inline agent run is a violation",
+          rules == ["agent-stream-printed-raw"], str(rules))
+
+
+def test_a_captured_agent_run_is_clean():
+    """The shipped shape: capture the agent's stream, print only the redacted tail."""
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: |\n"
+            "          make review-issue > review.log 2>&1\n"
+            "          make scrub-log FILE=review.log LOG_OUT=review.scrubbed.log TAIL=40\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/w.yml": body})
+        bad = cso.violations(root)
+    check("agent-stream-printed-raw: the captured+scrubbed agent run is clean", bad == [], str(bad))
+
+
+def test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation():
+    """A step that only NAMES the target (an error message) does not run it."""
+    body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: |\n"
+            "          echo \"::error::produced no implementation (make implement-issue rc=2).\"\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {".github/workflows/w.yml": body})
+        bad = cso.violations(root)
+    check("agent-stream-printed-raw: naming the target in output is not a violation", bad == [], str(bad))
+
+
 def test_the_guard_is_wired_into_the_repo():
     """A guard no target names runs nowhere: the make targets, .PHONY and the test chain."""
     mk = (ROOT / "Makefile").read_text()
@@ -469,6 +576,15 @@ def main() -> int:
     test_tee_into_the_log_alone_is_a_violation()
     test_the_verdict_step_writes_only_the_parsed_key_and_never_the_whole_stream()
     test_a_refused_verdict_still_fails_the_step()
+    test_a_captured_stream_without_redaction_is_a_violation()
+    test_the_captured_and_redacted_shape_is_clean()
+    test_printing_the_captured_log_is_a_violation()
+    test_a_python_script_that_prints_a_secret_value_is_a_violation()
+    test_a_python_script_that_prints_the_name_only_is_not_a_violation()
+    test_a_python_script_that_prints_a_slice_of_the_value_is_a_violation()
+    test_an_agent_stream_printed_raw_is_a_violation()
+    test_a_captured_agent_run_is_clean()
+    test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation()
     test_this_repository_never_prints_a_secret_value()
     test_the_report_lists_the_files_that_name_a_secret()
     test_check_exits_non_zero_on_a_violation()
