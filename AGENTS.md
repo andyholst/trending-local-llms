@@ -358,6 +358,32 @@ retains 30 days of history.
      beside a key read), dumped (bare `env`/`printenv`), interpolated into a
      `run:` block (`${{ secrets.X }}`), or committed as a credential-shaped
      literal. CI runs it in the same `validate` job (issue #219).
+   - **An agent's stream is captured and REDACTED before any of it is printed**
+     (issue #351, rule 6c). A bot's agent output IS the job's console log, and
+     GitHub masks the values it *registers* — a transformed one (URL-encoded,
+     base64, a slice) sails past that mask. So a bot step that runs the agent
+     captures it to a gitignored file and prints only `make scrub-log`'s output:
+     `scripts/scrub_log.py` reads the secret values from the environment **by
+     name** (one list, in `check_secret_output.py`), replaces every spelling of
+     each plus every credential SHAPE with `***`, and prints at most a bounded
+     tail; the run artifact is the REDACTED log, never the raw one.
+     `make check-secret-output` refuses a capture with no redactor in the same
+     step (`raw-agent-log-captured`), any step that prints a captured log
+     (`raw-agent-log-printed`), any `run:` block that executes an agent target
+     (`implement-issue`, `review-issue`, `review-issue-window`, `search-*`) with
+     its stream going straight to the console (`agent-stream-printed-raw`), and a
+     **Python** script that reads a key value out of the environment and prints it
+     (a shell-shaped rule cannot see `print(key)` — the scripts wired to key
+     values are part of the same rule).
+   - **Every headless agent call passes the whole non-interactive flag set**
+     (`HERMES_NONINTERACTIVE := --yolo --accept-hooks`, issues #351). `--yolo`
+     covers "dangerous command approval prompts" only; `--accept-hooks` is a
+     separate flag, and a `-z` run that needs input DETACHES
+     (`Input required; detached without cancelling`) instead of proceeding or
+     failing loudly — measured on run 39079759124, where the implementer burned
+     10m21s and returned rc=2 that the pipeline could only report as "no
+     implementation". `tests/test_hermes_prompts.py` refuses a recipe carrying
+     half the set.
    - A finding is fixed by **removing the value and rotating the key**, never by
      widening `.gitleaks.toml`: an allowlist entry is for a documented
      PLACEHOLDER (with a comment saying why) — a real value is never allowlisted.
@@ -1220,6 +1246,8 @@ actually happened.
 | `make secret-scan` + `tests/test_secret_scan.py` (rule 3d) | a credential shape reaching a push or a PR (gitleaks over the working tree incl. staged files, `.gitleaks.toml`); a widened allowlist that exempts a REAL value instead of a documented placeholder; the scan or its self-test missing from qa-validate's `validate` job (rule 6d); the history scan reporting a fake clean in a worktree it cannot read; the self-test no longer proving that a planted credential IS detected (`make secret-scan-self-test` — a scanner that silently does nothing is a false green) |
 | `make check-secret-output` + `tests/test_secret_output.py` (rule 3d, issue #219) | a secret VALUE that reaches a log, a process list or a committed file at run time — printed (`echo "$NOUS_API_KEY"`), passed on a command line (`-e KEY=$KEY`, `--build-arg KEY=$KEY`), xtraced (`set -x` beside a key read), dumped (bare `env`/`printenv`), interpolated into a `run:` block (`${{ secrets.X }}`), or committed as a credential-shaped literal; the guard or its test missing from qa-validate's `validate` job / `make test` (rule 6d); a rule the repo itself violates passing (the guard runs over THIS tree) |
 | `check-secret-output`'s `whole-stdout-into-output-file` / `whole-stdout-into-log` rules + `tests/test_secret_output.py` (rule 3d/6c, issue #346) | a workflow step copying a command's WHOLE stdout into `$GITHUB_OUTPUT` or the log: the implementer's verdict step (`make issue-verdict \| tee /dev/stderr >> "$GITHUB_OUTPUT"`) put `make`'s echoed recipe line in the output file, failed with `Invalid format` AFTER the implementation was done and skipped push/PR/outcome (runs 39026771566 / 39040036748), and the same shape copies a stream a target printed into a public log where GitHub masks only registered values; the shipped step's own `run:` text executed against a stub `make` carrying a secret-shaped line (only `verdict=` may survive), and a refused verdict (exit 2) still failing the step |
+| `make scrub-log` + `tests/test_scrub_log.py` + the `raw-agent-log-captured` / `raw-agent-log-printed` / python `prints-secret-value` rules (rule 3d/6c, issue #351) | an agent's stream printed RAW into a bot job's console log: the implement step wrote the whole Hermes stream to the step log, where GitHub masks only the values it REGISTERS (a URL-encoded, base64 or sliced value sails past — rule 3d); a capture-to-file with no redactor in the same step (one edit from printing it); a step printing the captured file (`cat implement.log`); a **Python** script that reads a key value out of the environment and prints it or a slice of it (`print(key)`, `f"{key[:8]}"`), which no shell-shaped rule can see; the redactor printing a value or a fragment of it instead of a fixed `***`; an unbounded print (the tail is capped); a missing log reported as a clean run; a too-short value shredding the log; the raw capture uploaded as the run artifact instead of the REDACTED one; the capture not gitignored or not reset out of a commit |
+| `tests/test_hermes_prompts.py` — the non-interactive flag set (rule 6c, issue #351) | a headless `hermes -z` recipe that passes `--yolo` WITHOUT `--accept-hooks` (a separate flag, `hermes --help`): an agent run that needs input DETACHES (`Input required; detached without cancelling`) instead of proceeding or failing loudly — measured on run 39079759124, where the implementer burned 10m21s, returned rc=2 and the pipeline could only report "no implementation"; the flag set kept in one Makefile variable so a recipe cannot carry half of it |
 | `tests/test_workflows.py::test_issue_writes_use_the_default_token` (rules 6b/6c, issue #277) | an issue write made with a token that cannot write issues: the data-gap filing stepping to the owner PAT (no Issues scope) so the issue landed UNLABELLED while `gh` exited 0 — both bot queues then read `candidates=0` / `action=none` and the implementer's and reviewer's jobs were skipped on every green run; the same class in `code-review-bot`'s filing step; a job that writes an issue without declaring `issues: write`; a guard that finds no issue-writing step at all (vacuous) |
 | `tests/test_data_gap_analysis.py::test_the_filer_creates_the_label_the_bots_trigger_on` (rules 6b/6c, issue #277) | a filer that relies on a label the repo does not have (GitHub ignores it, the issue is filed unlabelled, and `gh issue edit --add-label` cannot repair it); a label that cannot be created accepted silently; a failure message that hides `gh`'s own refusal |
 | `tests/test_workflows.py::test_a_step_that_calls_make_runs_after_the_checkout` (rules 6c/6d, issue #281) | a step that runs `make` before its job checked the repository out — measured on the implementer: `make issue-thread` in step 2/19, `No rule to make target 'issue-thread'`, checkout and the other 15 steps SKIPPED, so issue-bot could not implement anything while every other bot stayed green; a job that calls `make` with no checkout at all; the resolver ceasing to be repo-free; the thread step slipping back above the checkout or losing its empty-file guard; a guard that finds no make-calling step (vacuous) |

@@ -809,6 +809,40 @@ def test_auto_merge():
     check("auto-merge: one merge attempt per PR at a time", bool(am.get("concurrency")), am.get("concurrency"))
 
 
+def test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log():
+    """#351: the implement step's agent stream IS the step's console log, so it is captured to a
+    gitignored file and only `make scrub-log`'s bounded, REDACTED tail is printed; the run artifact
+    is the REDACTED log. A capture without the redactor is a leak surface (the guard refuses it),
+    and the refusal contract — a non-zero rc from `make implement-issue` fails the run — is
+    unchanged."""
+    wf = load("issue-bot.yml")
+    impl_steps = steps(wf["jobs"]["implement"])
+    step = next((s for s in impl_steps if s.get("id") == "impl"), None)
+    check("issue-bot: the implement step exists", step is not None,
+          [s.get("name") for s in impl_steps])
+    run = str((step or {}).get("run", ""))
+    check("issue-bot: the agent stream is CAPTURED, not printed",
+          "make implement-issue > implement.log 2>&1" in run, run[:200])
+    check("issue-bot: the capture is redacted in the SAME step",
+          "make scrub-log FILE=implement.log" in run, run[:200])
+    check("issue-bot: the raw capture is never printed by the step",
+          "cat implement.log" not in run and "tail -" not in run, run[:200])
+    check("issue-bot: the reported tail is bounded", "TAIL=" in run, run[:200])
+    check("issue-bot: the refusal contract is unchanged (rc captured, false → red)",
+          'echo "rc=$rc" >> "$GITHUB_OUTPUT"' in run and "implemented=false" in run, run[:400])
+
+    arts = [s for s in impl_steps if "upload-artifact" in str(s.get("uses", ""))]
+    paths = " ".join(str(s.get("with", {}).get("path", "")) for s in arts)
+    check("issue-bot: the REDACTED log is the artifact", "implement.scrubbed.log" in paths, paths)
+    check("issue-bot: the RAW log is never uploaded",
+          "implement.log" not in paths.replace("implement.scrubbed.log", ""), paths)
+
+    resets = [str(s.get("run", "")) for s in impl_steps if "git reset -q --" in str(s.get("run", ""))]
+    check("issue-bot: the capture is reset out of every commit", resets and all("implement.log" in r for r in resets),
+          len(resets))
+    check("issue-bot: the capture is gitignored", "implement.log" in (ROOT / ".gitignore").read_text(), "")
+
+
 def test_issue_bot():
     """#113: the implementer bot reacts ONLY to a newly-created data-gap issue,
     ONE implementer per issue, and it owns its own PR's pipeline: implement ->
@@ -1261,8 +1295,11 @@ def test_implement_prompt_requires_openspec_and_findings():
           "NEVER fix a finding in this change" in prompt, prompt[:400])
     # And the prompt is still ONE shell command (the alias must stay on the
     # continued line, or hermes auto-routes to whatever provider key is in env).
+    # The flag set is one variable (issue #351): `--yolo` alone is not enough,
+    # `--accept-hooks` is a separate flag, and a `-z` run that needs input detaches.
     check("prompt: the recipe keeps the `-z` line and the model flags on one command",
-          prompt.count("-z \"") == 1 and "-m nous-deepseek" in prompt and prompt.rstrip().endswith("--yolo"),
+          prompt.count('-z "') == 1 and "-m nous-deepseek" in prompt
+          and prompt.rstrip().endswith("$(HERMES_NONINTERACTIVE)"),
           prompt[-200:])
 
 
@@ -1746,6 +1783,7 @@ def main() -> int:
     test_images_follow_their_inputs()
     test_every_job_prepares_the_images_it_uses()
     test_issue_bot_push_scope_rejection()
+    test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log()
     test_issue_bot()
     test_issue_bot_asserts_the_base_it_cuts_from()
     test_no_pipeline_opens_a_draft_pr()

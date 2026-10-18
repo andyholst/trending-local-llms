@@ -225,7 +225,15 @@ jobs:
       # --- path `body`: refine the issue (no code, ever) -----------------------
       - name: Refine the issue (Hermes, through make)
         if: steps.route.outputs.path == 'body'
-        run: make review-issue
+        run: |
+          # The reviewer agent's stream IS this step's console log, so it is captured
+          # and only the REDACTED, bounded tail is printed (issue #351): GitHub masks
+          # the values it registers, so a transformed one sails past the mask.
+          set +e
+          make review-issue > review.log 2>&1
+          rc=$?
+          make scrub-log FILE=review.log LOG_OUT=review.scrubbed.log TAIL=40
+          exit $rc
 
       # The dedup markers are not decoration: dropping one re-files an issue that
       # already exists (#184/#185). The rewrite is compared against the live body.
@@ -259,7 +267,14 @@ jobs:
       # --- path `window`: an implementer is working — reply, do not rewrite -----
       - name: Review as a reply (Hermes, through make)
         if: steps.route.outputs.path == 'window'
-        run: make review-issue-window
+        run: |
+          # Same shape as the body path (issue #351): capture the agent's stream,
+          # print only the redacted tail.
+          set +e
+          make review-issue-window > review.log 2>&1
+          rc=$?
+          make scrub-log FILE=review.log LOG_OUT=review.scrubbed.log TAIL=40
+          exit $rc
 
       # The hard rule of this path, enforced rather than promised: the body the
       # implementer's run read is byte-identical to the body it will close.

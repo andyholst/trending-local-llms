@@ -17,3 +17,10 @@ comment-window.md
 current-body.md
 reply.md
 triage.md
+# the captured agent stream and its REDACTED copy (issue #351): the raw capture is
+# never printed and never uploaded — only `make scrub-log`'s redacted output is —
+# and neither may a stray `git add -A` commit.
+implement.log
+implement.scrubbed.log
+review.log
+review.scrubbed.log

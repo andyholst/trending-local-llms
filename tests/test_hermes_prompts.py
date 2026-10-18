@@ -69,6 +69,59 @@ def test_makefile_prompts_cap_reasoning():
 HERMES_TARGETS = ("_search-nvidia", "_search-metal", "_search-cpu", "_search-amd", "_fix")
 
 
+def _noninteractive_violations(makefile_text: str) -> list[str]:
+    """The recipes whose `hermes -z` continuation line does not pass the WHOLE non-interactive set.
+
+    `--yolo` alone is not enough (issue #351): it covers "dangerous command approval prompts" only,
+    while `--accept-hooks` is a separate flag — and a `-z` run that needs input DETACHES
+    ("Input required; detached without cancelling") instead of proceeding or failing loudly.
+    """
+    import re
+    out: list[str] = []
+    # this is the one variable every recipe must use, so a recipe cannot carry half the set
+    var = re.search(r"^HERMES_NONINTERACTIVE\s*:=\s*(.+)$", makefile_text, re.M)
+    flags = var.group(1) if var else ""
+    for line in makefile_text.splitlines():
+        if not re.match(r"\t\t-m nous-deepseek\b", line):
+            continue
+        if "$(HERMES_NONINTERACTIVE)" not in line:
+            out.append(line.strip()[-60:])
+    if "$(HERMES_NONINTERACTIVE)" not in makefile_text:
+        out.append("HERMES_NONINTERACTIVE is not defined")
+    for required in ("--yolo", "--accept-hooks"):
+        if required not in flags:
+            out.append(f"HERMES_NONINTERACTIVE lacks {required}")
+    return out
+
+
+def test_every_headless_agent_call_passes_the_noninteractive_flag_set():
+    """issue #351, measured on run 39079759124: the implementer's headless run stopped on an
+    input prompt and DETACHED after 10m21s, returning rc=2 that the pipeline could only report as
+    'no implementation'. Every `hermes -z` recipe must pass the whole set."""
+    text = (ROOT / "Makefile").read_text()
+    bad = _noninteractive_violations(text)
+    check("non-interactive: every hermes call passes the whole flag set", not bad, str(bad))
+    import re
+    calls = [l for l in text.splitlines() if re.match(r"\t\t-m nous-deepseek\b", l)]
+    check("non-interactive: the recipes were really found (guard not vacuous)", len(calls) >= 8,
+          f"count={len(calls)}")
+
+
+def test_a_recipe_with_only_yolo_is_refused():
+    """Falsify the rule on the MEASURED shape: a recipe whose line ends `--yolo` only."""
+    old = ("HERMES_NONINTERACTIVE := --yolo --accept-hooks\n"
+           ".PHONY: x\nx:\n\thermes -z \"do a thing\" \\\n"
+           "\t\t-m nous-deepseek --reasoning low --yolo\n")
+    check("non-interactive: a recipe carrying only --yolo is refused",
+          _noninteractive_violations(old) != [], "")
+    check("non-interactive: and carries no --accept-hooks in the variable either",
+          any("accept-hooks" in v for v in _noninteractive_violations(
+              old.replace("--yolo --accept-hooks", "--yolo"))), "")
+
+
+
+
+
 def _logical_commands(text: str) -> list[str]:
     """Join make -n output lines continued with a trailing backslash."""
     out, cur = [], ""
@@ -172,6 +225,8 @@ def main() -> int:
     test_makefile_prompts_cap_reasoning()
     test_make_dry_run_single_hermes_command()
     test_every_search_leg_asks_for_the_model_dimensions_from_one_definition()
+    test_every_headless_agent_call_passes_the_noninteractive_flag_set()
+    test_a_recipe_with_only_yolo_is_refused()
     test_prompt_permutations()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
