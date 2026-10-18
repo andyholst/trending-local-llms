@@ -5153,6 +5153,7 @@
       "vram_min": "16GB",
       "system_ram_min": "60GB",
       "context_tokens": "32768",
+      "storage_offload": "MoE experts streamed from SSD to CPU; 192GB engram on Gen4 NVMe",
       "backends": [
         "CPU",
         "CUDA",
