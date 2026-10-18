@@ -258,6 +258,39 @@ def test_the_shipped_implement_step_still_reports_a_failed_run():
           FAKE_VALUE not in (r.stdout + r.stderr), (r.stdout + r.stderr)[:300])
 
 
+def test_the_seam_prints_only_the_redacted_tail_and_keeps_the_status():
+    """The REAL `scrubbed_run` seam, extracted from the Makefile and driven through make against a
+    command that prints the value (issue #355).
+
+    This is the seam `make search-<backend>` and `make fix` now use, so the console a workflow step
+    or `fix_loop.sh` shows is this: the mask, never the value — and a command that fails must keep
+    its status, or a red leg would report green.
+    """
+    import re
+    import shutil
+
+    mk = (ROOT / "Makefile").read_text()
+    seam = re.search(r"^define scrubbed_run\n.*?^endef\n", mk, re.M | re.S).group(0)
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    for f in ("scrub_log.py", "check_secret_output.py"):
+        shutil.copy(ROOT / "scripts" / f, td / "scripts" / f)
+    (td / "Makefile").write_text(
+        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\nHERMES_LOG_TAIL ?= 60\n\n" + seam +
+        "\nleaky:\n\t$(call scrubbed_run,echo \"the key is $$NOUS_API_KEY\")\n"
+        "failing:\n\t$(call scrubbed_run,exit 3)\n")
+    env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
+    r = subprocess.run(["make", "leaky"], cwd=str(td), env=env, capture_output=True, text=True)
+    console = r.stdout + r.stderr
+    check("seam: the value never reaches make's console", FAKE_VALUE not in console, console[:200])
+    check("seam: the redacted tail IS printed", "the key is ***" in console, console[:300])
+    check("seam: a green command exits 0", r.returncode == 0, r.returncode)
+    check("seam: the REDACTED copy is written for the artifact", (td / "hermes-run.scrubbed.log").is_file(), "")
+    r2 = subprocess.run(["make", "failing"], cwd=str(td), env=env, capture_output=True, text=True)
+    check("seam: a failing command keeps its exit status (a red leg stays red)",
+          r2.returncode != 0, r2.returncode)
+
+
 def test_the_target_is_wired_into_the_repo():
     """A script no target names runs nowhere (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -282,6 +315,7 @@ def main() -> int:
     test_the_environment_carries_no_other_spelling()
     test_the_shipped_implement_step_prints_no_value_in_any_spelling()
     test_the_shipped_implement_step_still_reports_a_failed_run()
+    test_the_seam_prints_only_the_redacted_tail_and_keeps_the_status()
     test_the_target_is_wired_into_the_repo()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

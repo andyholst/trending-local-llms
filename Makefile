@@ -123,6 +123,28 @@ HERMES_FIX_REASONING := low
 # implementation". One variable, so a recipe can never carry half the set.
 HERMES_NONINTERACTIVE := --yolo --accept-hooks
 
+# ---- every public target that runs the agent SCRUBS its stream (issue #351/355) ----
+# An agent's output IS the job's console log, and GitHub masks only the values it
+# REGISTERS — a transformed one (URL-encoded, base64, a slice) sails past. The
+# redaction lives HERE, in the public targets, because they are the ONE seam every
+# caller shares: a workflow step (`make search-<backend>`), a bot script (`make fix`
+# from `scripts/fix_loop.sh`) and a human all get it by calling `make`, and a new
+# leg cannot forget it. `hermes-run.log` is gitignored; the REDACTED copy is what a
+# workflow uploads as its artifact.
+HERMES_LOG      := hermes-run.log
+HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
+HERMES_LOG_TAIL ?= 60
+# `$(call scrubbed_run,<command>)`: run it into $(HERMES_LOG), print only the
+# redactor's bounded tail, and keep the command's own exit status (a red run must
+# stay red). `scripts/scrub_log.py` reads the secret values BY NAME from this
+# environment — the runner passes them with `env:`, the docker call forwards the
+# NAMES — so a value the agent printed, in any spelling, never reaches the console.
+define scrubbed_run
+	@rc=0; { $(1) ; } > $(HERMES_LOG) 2>&1 || rc=$$?; \
+	python3 scripts/scrub_log.py --in $(HERMES_LOG) --out $(HERMES_LOG_SCRUBBED) --tail $(HERMES_LOG_TAIL) || true; \
+	exit $$rc
+endef
+
 
 ## ---------------------------------------------------------------------------
 ## Build the image (do this once; CI does it in its own cached step)
@@ -580,23 +602,23 @@ hermes-alias-check:
 
 .PHONY: search-nvidia
 search-nvidia:
-	$(DOCKER_RUN) sh -c "make _setup && make _search-nvidia"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search-nvidia")
 
 .PHONY: search-metal
 search-metal:
-	$(DOCKER_RUN) sh -c "make _setup && make _search-metal"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search-metal")
 
 .PHONY: search-cpu
 search-cpu:
-	$(DOCKER_RUN) sh -c "make _setup && make _search-cpu"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search-cpu")
 
 .PHONY: search-amd
 search-amd:
-	$(DOCKER_RUN) sh -c "make _setup && make _search-amd"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search-amd")
 
 .PHONY: search
 search:
-	$(DOCKER_RUN) sh -c "make _setup && make _search"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _search")
 
 .PHONY: search-smoke
 search-smoke:
@@ -621,7 +643,7 @@ correct-raw:
 
 .PHONY: fix
 fix:
-	$(DOCKER_RUN) sh -c "make _setup && make _correct-raw && make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING) && make _merge"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _correct-raw && make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING) && make _merge")
 
 .PHONY: merge
 merge:

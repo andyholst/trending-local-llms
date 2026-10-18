@@ -96,13 +96,46 @@ LOG_PRINT = re.compile(r"(?:^|[|;&]\s*|\$\()\s*(?:cat|head|tail|less|more|string
 LOG_REDACTOR = re.compile(r"\b(?:make\s+scrub-log|scripts/scrub_log\.py)\b")
 #: A `make` target that runs the AGENT, invoked as a command in a workflow step: its whole stream
 #: would become that step's console log. (`hermes-smoke` is excluded: it is a bounded routing probe
-#: whose reply is the point. `make fix` inside `scripts/fix_loop.sh` is a script, not a step, and is
-#: tracked as a finding rather than silently covered here.)
+#: whose reply is the point.)
 AGENT_STREAM_MAKE = re.compile(
     r"(?:^|[;&|]|\$\()\s*(?:-\s*)?(?:run:\s*)?(?:@\s*)?make\s+"
-    r"(?:implement-issue|review-issue|review-issue-window|search-(?:nvidia|metal|cpu|amd))"
-    r"\b(?![-.\w])",
+    r"(?:implement-issue|review-issue|review-issue-window"
+    r"|search-(?:nvidia|metal|cpu|amd|\$+[{(])|\$+[{(])"
+    r"(?![-.\w])",
     re.MULTILINE)
+#: The seam a public agent target calls instead of repeating the redaction (issue #355).
+SCRUB_SEAM = "scrubbed_run"
+#: The public targets whose stream is NOT captured by a workflow step, so the target itself must
+#: scrub it (issue #355). `implement-issue` / `review-issue*` are captured + redacted by their own
+#: steps; each target therefore has exactly ONE owner of its stream.
+AGENT_TARGETS_TO_SCRUB = ("search-nvidia", "search-metal", "search-cpu", "search-amd", "search", "fix")
+#: A public target's recipe, for the rule that reads it.
+_TARGET_RECIPE = re.compile(r"^(?P<name>[A-Za-z][\w.%/-]*):[^\n]*\n(?P<body>(?:\t.*\n|\r?\n(?=\t))*)",
+                            re.MULTILINE)
+
+
+def seam_redacts(makefile_text: str) -> bool:
+    """Does the `scrubbed_run` seam itself actually call the redactor? (issue #355)
+
+    A target that calls the seam is safe only while the seam redacts — so the seam is a rule of its
+    own, or gutting one function would silently un-cover every target that trusts it.
+    """
+    m = re.search(rf"^define\s+{SCRUB_SEAM}\b(.*?)^endef", makefile_text, re.M | re.S)
+    return bool(m) and "scrub_log.py" in m.group(1)
+
+
+def public_target_scrubs(makefile_text: str, target: str) -> bool:
+    """Does the public `target`'s own recipe redact the stream it captured? (issue #355)
+
+    The seam is the target, not the caller: a workflow step, `scripts/fix_loop.sh` and a human all
+    reach the agent through `make <target>`, so the redaction belongs there — and a caller that
+    repeats it by hand is exactly how the fix loop was missed.
+    """
+    for m in _TARGET_RECIPE.finditer(makefile_text):
+        if m.group("name") == target:
+            body = m.group("body")
+            return "scrub_log.py" in body or SCRUB_SEAM in body
+    return False
 #: The marker that declares deliberate, non-live credential shapes in a file (tests do this).
 TEST_VALUE_MARKER = "secret-output: test value"
 #: `set -x` (or `set -ex`, `set -eux`) at the START of a command — xtrace prints every expansion.
@@ -249,6 +282,23 @@ def _py_reveals_value(line: str, var: str) -> bool:
 def violations(root: Path = REPO_ROOT) -> list[str]:
     """Every way a secret value could leave the process, with the line that does it."""
     bad: list[str] = []
+    #: Which public agent targets redact their own stream (issue #355) — read ONCE, and the
+    #: workflow rule below consults it, so a target that self-scrubs is not flagged for it.
+    _mk_path = root / "Makefile"
+    _mk = _mk_path.read_text() if _mk_path.is_file() else ""
+    self_scrubbing = {t for t in AGENT_TARGETS_TO_SCRUB if public_target_scrubs(_mk, t)}
+    if _mk:
+        if not seam_redacts(_mk):
+            bad.append(f"Makefile: scrub-seam-does-not-redact — the `{SCRUB_SEAM}` seam no longer "
+                       f"calls `scripts/scrub_log.py`, so every target that trusts it prints the "
+                       f"agent's stream raw (issue #355)")
+        for target in AGENT_TARGETS_TO_SCRUB:
+            if target not in self_scrubbing:
+                bad.append(f"Makefile: agent-target-does-not-scrub — `{target}` runs the agent and "
+                           f"nothing redacts its stream; its recipe must capture and print only "
+                           f"`scripts/scrub_log.py`'s bounded tail (the `$(call scrubbed_run,…)` "
+                           f"seam — a workflow step, `fix_loop.sh` and a human all call this target, "
+                           f"so a caller cannot be the one that remembers; issue #355)")
     for path in tracked_files(root):
         rel = path.relative_to(root).as_posix()
         if rel in SELF_EXEMPT:
@@ -296,10 +346,21 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
                                f"`make scrub-log`'s bounded, redacted tail instead (issue #351)")
                 if not redacted:
                     for m in AGENT_STREAM_MAKE.finditer(block):
-                        bad.append(f"{rel}:{start}: agent-stream-printed-raw — `{m.group(0).strip()[:50]}` "
+                        hit = m.group(0)
+                        # A target that redacts its OWN stream is safe however it is called, so it is
+                        # not a finding — and the dynamic form (`make search-${{ matrix.backend }}`)
+                        # names all four legs, so it is covered when every leg self-scrubs.
+                        if any(t in hit for t in self_scrubbing):
+                            continue
+                        if "search-$" in hit and all(
+                                t in self_scrubbing
+                                for t in ("search-nvidia", "search-metal", "search-cpu", "search-amd")):
+                            continue
+                        bad.append(f"{rel}:{start}: agent-stream-printed-raw — `{hit.strip()[:50]}` "
                                    f"runs the agent with its whole stream going to this step's console "
                                    f"log; capture it (`… > <target>.log 2>&1`) and print only "
-                                   f"`make scrub-log`'s bounded tail (issue #351, rule 3d)")
+                                   f"`make scrub-log`'s bounded tail, or make the target scrub itself "
+                                   f"(issue #351/#355, rule 3d)")
 
         if path.suffix == ".py":
             # The scripts wired to key values: a value read out of the environment and then

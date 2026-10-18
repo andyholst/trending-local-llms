@@ -135,8 +135,8 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `search-nvidia` / `search-metal` / `search-cpu` / `search-amd` | One backend each: `_setup` then the Hermes search prompt for that leg, writing `data/raw/<backend>-<UTC>.json` per query. `HERMES_REASONING=none` (mechanical work). |
-| `search` | All four legs in sequence |
+| `search-nvidia` / `search-metal` / `search-cpu` / `search-amd` | One backend each: `_setup` then the Hermes search prompt for that leg, writing `data/raw/<backend>-<UTC>.json` per query. `HERMES_REASONING=none` (mechanical work). The whole command runs through the `scrubbed_run` seam, so only a bounded, REDACTED tail of the agent's conversation reaches the console (issue #355) |
+| `search` | All four legs in sequence, through the same seam |
 | `query-coverage` (`TOP=<n>`) | Report which of the top-N trending models the search queries name — the hand-curated set vs the full set (curated + derived), one line per model — and **FAIL** when one is named by none, so a stale or broken derivation is loud and separable from "the query ran and found nothing" (issue #264). Runs in `_validate-search` |
 | `search-smoke` (`BACKEND=<b>`) | Live reachability: the exact Firecrawl → lightbrd scrape of every query for one backend, 3 s cap per query, one retry on timeout/429/5xx (`scripts/smoke_search.py`) |
 | `model-caps` | Live: the pinned model is served, `HERMES_MAX_TOKENS` fits its real cap, `reasoning` is accepted (`scripts/model_caps_check.py`). With no `NOUS_API_KEY` it **FAILS loudly** (issue #209) — the endpoint cannot be read, so a green pre-flight would prove nothing |
@@ -264,7 +264,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `implement-issue` | The implementer prompt: `_setup` + `_implement-issue` in ONE container. Requires the OpenSpec change (created first, indexed, gate green), the `findings.md` analysis, and the `ARCHITECTURE.md` update |
-| `fix` | Repair a red CI: `_setup`, `correct-raw`, the Hermes fix prompt (reads `qa-report.txt`), `_merge` |
+| `fix` | Repair a red CI: `_setup`, `correct-raw`, the Hermes fix prompt (reads `qa-report.txt`), `_merge` — through the `scrubbed_run` seam, so a caller (the fix loop, a human) sees only a bounded, REDACTED tail of the agent's conversation (issue #355) |
 | `test` | The whole unit suite in the test image (`_test`) |
 | `refresh` | The full pipeline in one container: setup, search, merge, validate, test |
 | `all` | Alias for `refresh` |
