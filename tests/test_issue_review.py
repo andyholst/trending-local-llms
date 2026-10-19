@@ -174,6 +174,45 @@ def four_issues() -> list[dict]:
             candidate(175, "2026-01-03T00:00:00Z"), candidate(176, "2026-01-04T00:00:00Z")]
 
 
+def test_the_queue_attributes_a_run_by_its_start_comment_not_its_title():
+    """Issue #193: the in-flight backstop matched `f"#{n}" in displayTitle` — a field
+    that cannot identify an issue. Measured on this repo: a scheduled run's
+    displayTitle is `issue-bot`, an `issues` run's is the issue TITLE (which often
+    carries no number). So the backstop never fired for a sweep, and fired by accident
+    for a run the start comment already described. The start comment is the signal."""
+
+    # Given an in-progress run whose displayTitle CONTAINS the issue number
+    runs = [{"databaseId": 1, "status": "in_progress", "event": "issues",
+             "createdAt": hours_ago(0.2), "displayTitle": "Implement #176 right now"}]
+
+    # And   an issue with NO start comment
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues(), runs=runs)
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        calls = [json.loads(l) for l in (Path(td) / "calls.log").read_text().splitlines() if l.strip()]
+
+    row = [l for l in proc.stdout.splitlines() if l.startswith("issue=176 ")]
+    check("displayTitle: the row is emitted", len(row) == 1, proc.stdout)
+    # Then  the title is not attribution: not started, window open
+    check("displayTitle: a run whose TITLE mentions the issue does not mark it started",
+          bool(row) and "started=0" in row[0], row[:1])
+    check("displayTitle: and it is not reported as a run in flight",
+          bool(row) and "reason=run-in-flight" not in row[0], row[:1])
+    # And   the queue does not ask for a field it cannot use
+    check("displayTitle: the queue no longer calls `gh run list`",
+          not any(c[:2] == ["run", "list"] for c in calls), calls[:3])
+
+    # Given a fresh START COMMENT, the same issue IS started (the real signal)
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues(), runs=runs,
+                      comments={"176": [{"createdAt": hours_ago(0.1),
+                                         "body": "<!-- issue-bot-start: " + hours_ago(0.1) + " -->"}]})
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+    started = [l for l in proc.stdout.splitlines() if l.startswith("issue=176 ")]
+    check("displayTitle: a fresh start comment still marks it started",
+          bool(started) and "started=1" in started[0], started[:1])
+
+
 def test_the_window_opens_and_closes_at_the_three_hour_boundary():
     """2 h 59 m after implementer activity DEFERS the issue; 3 h 01 m reviews it."""
 
@@ -759,6 +798,7 @@ def test_the_implementer_never_edits_a_label_or_a_body_when_it_skips():
 
 def main() -> int:
     print("issue reviewer: one queue, one 3 h window, two bots (issue #179)")
+    test_the_queue_attributes_a_run_by_its_start_comment_not_its_title()
     test_the_window_opens_and_closes_at_the_three_hour_boundary()
     test_the_next_three_sweeps_are_the_window_before_a_start()
     test_a_fresh_start_comment_means_started_not_merely_next()

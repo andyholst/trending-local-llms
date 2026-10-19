@@ -213,15 +213,6 @@ def _pulls(repo: str) -> list[dict]:
         return []
 
 
-def _runs(repo: str) -> list[dict]:
-    out = _gh(["run", "list", "--repo", repo, "--workflow", "issue-bot.yml", "--limit", "30",
-               "--json", "databaseId,status,event,createdAt,displayTitle"], check=False)
-    try:
-        return json.loads(out or "[]")
-    except json.JSONDecodeError:
-        return []
-
-
 def _comments(repo: str, number: int) -> list[dict]:
     out = _gh(["api", f"repos/{repo}/issues/{number}/comments?per_page=100",
                "--jq", "[.[] | {createdAt, body}]"], check=False)
@@ -260,7 +251,6 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
     """
     refs = _branches(repo)
     pulls = _pulls(repo)
-    runs = _runs(repo)
     rows: list[dict] = []
     position = 0
 
@@ -306,17 +296,17 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
         def fresh(ts: dt.datetime | None) -> bool:
             return bool(ts) and (now - ts) < dt.timedelta(hours=gap_hours)
 
+        # The implementer's START COMMENT is the ONLY in-flight signal (issue #193).
+        # It is posted before `make implement-issue` reads the body (AGENTS.md rule 6j),
+        # so it covers the whole run. The old backstop scanned `gh run list` for a
+        # queued/in_progress run whose `displayTitle` contained `#<n>` — a field that
+        # cannot identify an issue: a scheduled run's displayTitle is `issue-bot`, and
+        # an `issues` run's is the issue TITLE (which may carry no number at all).
+        # Measured on this repo: 12 runs, 10 of them `issues` with a title, 2 `schedule`
+        # with `issue-bot` — so the backstop could never fire for a sweep and only fired
+        # for a run the start comment already described. A signal that is never true is
+        # not a backstop; it is coverage that is not there.
         started_recently = fresh(start_ts) or fresh(start_marker_ts)
-        # A run we can attribute to THIS issue and that has not finished. The start
-        # comment above is the primary signal (it is posted before `make
-        # implement-issue`, so it covers the whole run); this is the backstop for a
-        # queued run whose start comment the reviewer has not seen yet.
-        in_flight = any(
-            r.get("status") in ("queued", "in_progress")
-            and f"#{number}" in (r.get("displayTitle") or "")
-            and fresh(parse_ts(r.get("createdAt")))
-            for r in runs
-        )
         recent_activity = fresh(activity)
         # The reviewer's own window: a marker from ANOTHER run inside the gap.
         # The `review-in-progress` label alone is NOT enough — labels carry no
@@ -353,7 +343,7 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
             reason = "verdict-fresh"
         elif impl_skip:
             reason = "reviewer-working"
-        elif in_flight or started_recently:
+        elif started_recently:
             reason = "run-in-flight"
         elif recent_activity:
             reason = "implementer-recent"
@@ -371,7 +361,7 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
             "last_implementer_activity": activity.strftime("%Y-%m-%dT%H:%M:%SZ") if activity else "none",
             "window": "closed" if reason == "closed" else "open",
             "reason": reason,
-            "started": 1 if (in_flight or started_recently) else 0,
+            "started": 1 if started_recently else 0,
             "reply_recent": 1 if fresh(reply_ts) else 0,
             "review_recent": 1 if reviewer_recent else 0,
             "impl_skip": 1 if impl_skip else 0,
