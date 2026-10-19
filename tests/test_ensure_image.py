@@ -277,6 +277,45 @@ def test_ensure_test_pulls_or_builds_on_that_base():
           any(c[:2] == ["build", "-f"] for c in calls), str(calls))
 
 
+def test_force_reaches_the_script_as_a_value_not_a_bare_flag():
+    """Issue #227: `$(if $(FORCE),--force,)` kept only the fact that FORCE was
+    non-empty, so `FORCE=0` reached `publish(force="--force" in argv)` as ON and
+    a valueless flag crashed `decide` with IndexError."""
+    tag = _base_tag()
+
+    # Given every ref published and an OFF value in each spelling the make
+    # variable can carry (`--force=<v>` is what the Makefile passes now)
+    for off in ("0", "false", "no", "off"):
+        rc, calls, out = _run(["publish", f"--force={off}"], available=[tag])
+
+        # Then  nothing is rebuilt and the script says why
+        check(f"publish: FORCE={off!r} does NOT rebuild", rc == 0
+              and not any(c[:1] == ["build"] for c in calls), str(calls))
+        check(f"publish: FORCE={off!r} reports nothing to do",
+              "already published" in out, out)
+
+    # Given the value as a separate argument (the `decide` shape)
+    rc, calls, out = _run(["publish", "--force", "0"], available=[tag])
+    check("publish: `--force 0` does NOT rebuild",
+          not any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # Given a BARE --force (what `FORCE=1` used to become, and what a human types)
+    for args in (["publish", "--force"], ["publish", "--force=1"], ["publish", "--force", "true"]):
+        rc, calls, out = _run(args, available=[tag])
+        check(f"publish: {' '.join(args[1:])} is ON",
+              any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # Given `decide` with a bare --force — it used to die with IndexError
+    rc, _, out = _run(["decide", "--force", "--dow", "1"], available=[])
+    check("decide: a bare --force is ON and never an IndexError",
+          rc == 0 and "built=yes" in out, out)
+
+    # Given the Makefile target itself: the value is forwarded, not dropped
+    mk = (ROOT / "Makefile").read_text()
+    check("make: publish-agent-image forwards FORCE's VALUE",
+          "--force=$(FORCE)" in mk, "")
+
+
 def test_wired_into_make_test():
     """The suite runs under `make test` (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -406,6 +445,7 @@ def main() -> int:
     test_tags_are_the_hash_of_this_revisions_inputs()
     test_the_rebuild_decision_is_data_not_workflow_shell()
     test_force_is_parsed_strictly_so_zero_means_off()
+    test_force_reaches_the_script_as_a_value_not_a_bare_flag()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()

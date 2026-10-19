@@ -371,6 +371,35 @@ def parse_bool(raw: str) -> bool:
                      "(use 1/0, true/false, yes/no)")
 
 
+#: Everything a caller may write to mean on/off. `force_flag` reads a BARE
+#: `--force` as on and leaves any other word to `parse_bool`, which refuses it.
+_BOOLISH = ("0", "1", "false", "true", "no", "yes", "off", "on")
+
+
+def force_flag(argv: list[str]) -> bool:
+    """The `--force` option in every spelling a caller uses, parsed STRICTLY.
+
+    `make publish-agent-image FORCE=0` used to reach this script as a bare
+    `--force` — `$(if $(FORCE),…)` keeps only the fact that the variable is
+    non-empty — so the off value took the destructive branch, and a bare flag
+    with no value crashed `decide` with IndexError (issue #227). All three
+    spellings are accepted: `--force` (on), `--force=<bool>`, `--force <bool>`.
+    """
+    args = argv[2:]
+    for i, arg in enumerate(args):
+        if arg.startswith("--force="):
+            return parse_bool(arg.split("=", 1)[1])
+        if arg == "--force":
+            # No value at all -> ON (a bare flag). A value that is another
+            # option -> ON. Anything else IS the caller's value and is parsed
+            # strictly, so `--force ''` is OFF and `--force maybe` is an error.
+            if i + 1 >= len(args):
+                return True
+            nxt = args[i + 1]
+            return True if nxt.startswith("-") else parse_bool(nxt)
+    return False
+
+
 def main(argv: list[str]) -> int:
     action = argv[1] if len(argv) > 1 else "ensure"
     if action == "tags":
@@ -400,13 +429,13 @@ def main(argv: list[str]) -> int:
         print(push_check())
         return 0
     if action == "publish":
-        print(publish(force="--force" in argv[2:]))
+        print(publish(force=force_flag(argv)))
         return 0
     # ---- the rebuild decision, as data (issue #208) ----
     if action == "decide":
         def opt(name: str, default: str = "") -> str:
             return argv[argv.index(name) + 1] if name in argv[2:] else default
-        force = parse_bool(opt("--force", "false"))
+        force = force_flag(argv)
         dow = int(opt("--dow", str(dt.datetime.now().isoweekday())))
         for key, value in decide(force, dow).items():
             print(f"{key}={value}")
