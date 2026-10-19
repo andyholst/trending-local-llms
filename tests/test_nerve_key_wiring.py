@@ -36,6 +36,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import nerve_key_check as NK  # noqa: E402
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 _PASS = 0
 _FAIL = 0
 
@@ -267,7 +269,7 @@ def test_wired_to_make_and_ci():
           "$(TEST_RUN) make _nerve-check" in mk)
     check("make: the check script is reachable", "scripts/nerve_key_check.py" in mk)
     check("make: this guard runs in `make test`",
-          "tests/test_nerve_key_wiring.py" in mk.split("_test:\n", 1)[-1].split("\n\n", 1)[0])
+          wired(__file__))
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
     check("ci: qa-validate runs `make nerve-check`", "run: make nerve-check" in qa)
     check("ci: it runs after the images are prepared",

@@ -477,9 +477,9 @@ def test_wiring_parity():
     agg = re.search(r"\n_search:\n.*?make -j4 ([^\n]+)", mk, re.S)
     check("make: _search runs every leg in parallel",
           agg and sorted(agg.group(1).split()) == sorted(f"_search-{b}" for b in legs), agg and agg.group(1))
-    test_recipe = re.search(r"\n_test:\n\t([^\n]+)", mk).group(1)
-    unwired = sorted(p.name for p in (ROOT / "tests").glob("test_*.py") if f"tests/{p.name}" not in test_recipe)
-    check("make: every tests/test_*.py runs in the _test fallback chain (pytest may be absent)", not unwired, unwired)
+    # The `_test` wiring assertion moved to tests/test_ci_wiring.py (issue #192):
+    # a Makefile wiring mistake was reported by this backend suite and failed a
+    # data-mapping stage, which is the wrong file and the wrong stage for it.
     ns = {}
     exec(compile((ROOT / "scripts" / "smoke_search.py").read_text(), "smoke_search.py", "exec"), ns)
     check("smoke: one keyword list per leg", sorted(ns["BACKEND_KEYWORDS"]) == sorted(legs))
