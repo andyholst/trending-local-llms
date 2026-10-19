@@ -1,6 +1,11 @@
 {
   "_source": "GitHub /repos API, captured 2026-10-02 for tests (offline)",
   "repos": {
+    "asf0/strix-llama.cpp": {
+      "full_name": "asf0/strix-llama.cpp",
+      "description": "LLM inference in C/C++",
+      "topics": []
+    },
     "ashhart/tensorfold": {
       "full_name": "ashhart/TensorFold",
       "description": "Fast, exact LLM decoding on Apple Silicon (MLX) behind an OpenAI-compatible endpoint",

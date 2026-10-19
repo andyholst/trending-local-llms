@@ -270,8 +270,20 @@ def test_the_shipped_store_and_readme_answer_the_question():
     check("real: Qwen3.5 9B reports the stated minimum, not the smaller tier",
           q is None or UT.vram_need(q) == ("32GB", "declared"), q and UT.vram_need(q))
     lfm = next((m for m in models if m["id"] == "lfm2.5-24b-a2b"), None)
-    check("real: the model whose headline figure is a B300 is in no card tier",
-          lfm is None or UT.tier_rows([lfm], 24, reg) == [], lfm and UT.tier_rows([lfm], 24, reg))
+    # A datacenter HEADLINE never places a model: this row's fastest figure is
+    # 21,000 t/s on a B300, and that measurement must never be the one a card
+    # owner is shown. The refresh also gave it a PROVED RTX 4080 Super 16 GB run,
+    # so 16/24 GB are now real evidence (before that run existed the model
+    # placed in no tier at all) — and 8 GB still is not.
+    rows24 = UT.tier_rows([lfm], 24, reg) if lfm else []
+    check("real: a datacenter headline figure never places a card tier",
+          lfm is None or all(abs(r[0] - 21000) > 1 and "B300" not in r[2].get("hardware", "")
+                             for r in rows24), rows24)
+    check("real: the model's proved 16 GB run is what places it",
+          lfm is None or (bool(rows24) and rows24[0][3] == "ran-on"
+                          and UT.card_memory_gb(rows24[0][2]) == 16), rows24)
+    check("real: and its 8 GB tier stays empty (no 8 GB evidence)",
+          lfm is None or UT.tier_rows([lfm], 8, reg) == [])
     check("real: and it is still in the README", lfm is None or "LFM2.5-24B-A2B" in text)
     # BOTH evidence branches are exercised by the REAL store, not only by the
     # fixture: a proved run and a stated-weights-only row both exist on disk. If

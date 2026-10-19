@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-19T00:44:10Z",
+  "generated_utc": "2026-10-19T02:06:34Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -1859,7 +1859,7 @@
           "interactions": 0
         },
         {
-          "engine": "NVIDIA FP4-Local",
+          "engine": "vLLM",
           "tps": "191",
           "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
           "quant": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local); median 191, p90 271, peak 328 tok/s",
@@ -2929,7 +2929,7 @@
           {
             "url": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
             "date": "2026-10-17",
-            "engine": "NVIDIA FP4-Local",
+            "engine": "vLLM",
             "tps": "191",
             "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
             "quant": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local); median 191, p90 271, peak 328 tok/s",

@@ -191,7 +191,7 @@
       "last_seen": "2026-10-17",
       "engines": [
         {
-          "engine": "NVIDIA FP4-Local",
+          "engine": "vLLM",
           "tps": "191",
           "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
           "quant": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local); median 191, p90 271, peak 328 tok/s",
