@@ -1672,6 +1672,20 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
         max_core = max(_tps_core(x.get("tps")) for x in group)
         final_core = max(max_core, rep_core)
         row = dict(primary, tps=f"{final_core:g}")
+        # The representative is picked by ENGAGEMENT, not by which capture stated
+        # the run's footprint: a lower-engagement member can be the only one that
+        # states `weight_gb` / `context_tokens` / `system_ram_min` /
+        # `storage_offload` / `engine_min_version`. `dict(primary)` used to drop
+        # those silently — and, in the other direction, drop a value the STORE row
+        # already held when a higher-engagement incoming row won the group. Fill
+        # only (a stated value is never overwritten, an unstated one never
+        # invented): the additive-only rule (AGENTS.md §2.3b) at measurement level.
+        for member in group:
+            for k in MEASUREMENT_DIMENSION_FIELDS:
+                if row.get(k) in (None, "", [], {}):
+                    v = member.get(k)
+                    if v not in (None, "", [], {}):
+                        row[k] = coerce_additive(v)
         for k in ("likes", "comments", "reshares", "views", "interactions"):
             row.setdefault(k, 0)
         out.append(row)

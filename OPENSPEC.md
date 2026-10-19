@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **59** · archived: **0**
+Active changes: **60** · archived: **0**
 
 ## Active changes
 
@@ -33,6 +33,7 @@ Active changes: **59** · archived: **0**
 | `data-gap-baseline` | active | #174 | — | [data-gap-baseline](openspec/changes/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-baseline/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
 | `data-gap-filer-labels-its-issue` | active | — | — | [data-gap-filer-labels-its-issue](openspec/changes/data-gap-filer-labels-its-issue/specs/data-gap-filer-labels-its-issue/spec.md) | 11/11 | [proposal.md](openspec/changes/data-gap-filer-labels-its-issue/proposal.md) |
+| `data-gap-measurement-dimensions` | active | #376 — `data-gap: storage_offload (38 models)` | — | [data-gap-capture](openspec/changes/data-gap-measurement-dimensions/specs/data-gap-capture/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-measurement-dimensions/proposal.md) |
 | `data-gap-storage-offload` | active | #364 — `data-gap: storage_offload (41 models)` | — | [data-gap-backfill](openspec/changes/data-gap-storage-offload/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-storage-offload/proposal.md) |
 | `engine-meta-capture-at-ingest` | active | #334 | — | [engine-meta-capture](openspec/changes/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/engine-meta-capture-at-ingest/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
