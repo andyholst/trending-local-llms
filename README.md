@@ -8,7 +8,7 @@ A living, detailed list of **open-weight** LLMs that actually make a difference 
 
 Ties go to more posts, then the highest t/s. t/s is always shown **per engine**, with the hardware and quant it was measured on.
 
-> Last generated: 2026-10-19 12:55 UTC. Source: lightbrd.com mirror (X posts).
+> Last generated: 2026-10-19 17:20 UTC. Source: lightbrd.com mirror (X posts).
 
 ---
 
