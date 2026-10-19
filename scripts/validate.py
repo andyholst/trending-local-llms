@@ -992,9 +992,12 @@ def check_readme_generated(store: dict) -> None:
     def strip_ts(s: str) -> str:
         return "\n".join(ln for ln in s.splitlines() if not ln.startswith("> Last generated:"))
     if strip_ts(on_disk) != strip_ts(expected):
-        fail("README.md is NOT regenerated from models.json — it was hand-edited or stale. Run `make merge`.")
+        fail("README.md is NOT regenerated from models.json — it was hand-edited or stale. "
+             "Run `make render-readme` (template/docs change, no snapshot — issue #195) or "
+             "`make merge` (new data).")
     else:
-        print("  OK: README.md matches the generator output (produced by make merge, not hand-edited)")
+        print("  OK: README.md matches the generator output (produced by make render-readme or "
+              "make merge, not hand-edited)")
 
 
 def check_readme_tables_wellformed(store: dict) -> None:

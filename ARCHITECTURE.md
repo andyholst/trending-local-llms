@@ -148,6 +148,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `merge` | `scripts/update_trending.py`: ingest the `data/raw/*` snapshots **newer than the store's `generated_utc`** into the store — an older snapshot is already folded in, so it is skipped, and one this code cannot date is always merged (issue #175, `--since <ISO8601Z>` overrides the derived boundary) — sort, regenerate `README.md`, write a snapshot |
+| `render-readme` | Render `README.md` from the store **as of its own `generated_utc`** and nothing else: no raw ingest, no `generated_utc` bump, no snapshot (issue #195). A template/docs change uses this, so its PR carries the README and no store churn; the README keeps the `> Last generated:` line it already had, so a re-run is a no-op. `make merge` remains the path for new data |
 | `merge-fetch` | The same **plus** a direct Firecrawl→lightbrd fetch (`--fetch`) — used by the refresh aggregate |
 | `correct-raw` | `scripts/self_correct_raw.py`: prune stray keys / fill `last_seen` in `data/raw/*` so validation sees contract-conforming data |
 | `engine-check` | Report every engine mentioned in the raw snapshots that is not registered, and the decision ingest will make (`scripts/engine_registry.py`) |

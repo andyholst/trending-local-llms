@@ -1901,6 +1901,10 @@ def normalize_model(m: dict, store: dict) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true", help="regenerate + print, do not write")
+    ap.add_argument("--render-only", action="store_true",
+                    help="regenerate README.md from the store AS OF its own generated_utc — no "
+                         "raw ingest, no store write, no snapshot (issue #195: a template change "
+                         "must not need a data diff)")
     ap.add_argument("--fetch", action="store_true",
                     help="fetch lightbrd.com search results directly (default: re-sort/re-render "
                          "from the store only; the Hermes CLI does the live fetch via web_extract)")
@@ -1927,6 +1931,36 @@ def main() -> int:
         print("[error] missing data/models.json", file=sys.stderr)
         return 1
     store = json.loads(DATA.read_text())
+
+    if args.render_only:
+        # Render-only (issue #195). The README is rendered AS OF the store's own
+        # `generated_utc` — exactly the as-of `check_readme_generated` re-renders with — so
+        # the output is byte-identical to what `make merge` would write, while
+        # data/models.json and data/snapshots/ stay untouched. A template/docs change then
+        # carries the README and nothing else.
+        as_of = parse_utc_stamp(store.get("generated_utc"))
+        if as_of is None:
+            print("[error] the store has no usable generated_utc — run `make merge`", file=sys.stderr)
+            return 1
+        readme = render_readme(store, as_of)
+        # Keep the "Last generated" line the README already carries: render_readme stamps
+        # the WALL CLOCK there, and no data changed — a template change must not move a
+        # timestamp (the gate strips that line, and a re-run must be a no-op).
+        if README.is_file():
+            existing = README.read_text()
+            keep = next((ln for ln in existing.splitlines() if ln.startswith("> Last generated:")), "")
+            if keep:
+                readme = "\n".join(
+                    keep if ln.startswith("> Last generated:") else ln
+                    for ln in readme.splitlines()) + ("\n" if readme.endswith("\n") else "")
+        if args.dry_run:
+            print(readme)
+            return 0
+        README.write_text(readme)
+        print(f"[ok] rendered {README.name} from {DATA.name} as of {store['generated_utc']} "
+              f"(no store write, no snapshot — issue #195)")
+        return 0
+
     today = now_utc()
 
     if args.fetch:
