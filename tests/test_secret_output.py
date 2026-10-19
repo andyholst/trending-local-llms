@@ -257,6 +257,46 @@ def test_a_fixture_name_that_merely_starts_like_a_token_is_not_a_violation():
           bad == [], str(bad))
 
 
+# ---------------------------------------------------------------------------
+# rule: the guarded NAME set (issue #223)
+# ---------------------------------------------------------------------------
+def test_a_new_workflow_key_is_guarded_without_editing_the_guard():
+    """Issue #223: `SECRET_VARS` was a hand-maintained tuple, so a new provider key added
+    to a workflow was invisible to every rule until a human edited the list — while the
+    docstring claimed it guarded "every key this repo uses"."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {
+            ".github/workflows/w.yml": ("jobs:\n  x:\n    steps:\n      - env:\n"
+                                        "          BRAND_NEW_KEY: ${{ secrets.BRAND_NEW_KEY }}\n"
+                                        "        run: ./deploy.sh\n"),
+            "deploy.sh": 'echo "$BRAND_NEW_KEY"\n',
+        })
+        rules = _rules(root)
+
+    check("derived names: a key the workflow references is guarded",
+          rules == ["prints-secret-value"], str(rules))
+
+
+def test_the_floor_stays_guarded_without_a_workflow_reference():
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"deploy.sh": 'echo "$NOUS_API_KEY"\n'})
+        rules = _rules(root)
+    check("derived names: a floor name is guarded even with no reference",
+          rules == ["prints-secret-value"], str(rules))
+
+
+def test_a_name_quoted_in_a_comment_declares_nothing():
+    """`qa-validate.yml` quotes `${{ secrets.X }}` while explaining the rule — a name
+    derived from that prose would guard a variable that does not exist."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {
+            ".github/workflows/w.yml": "# explains `${{ secrets.X }}` inside a run block\njobs: {}\n",
+            "deploy.sh": 'echo "$X"\n',
+        })
+        rules = _rules(root)
+    check("derived names: prose does not declare a credential", rules == [], str(rules))
+
+
 def test_the_marker_declares_deliberate_test_values():
     # this file itself carries the marker (see the module docstring), so use a copy of it
     body = (ROOT / "tests" / "test_secret_output.py").read_text()
@@ -645,6 +685,9 @@ def main() -> int:
     test_the_run_block_rule_only_applies_to_workflows()
     test_python_reading_os_environ_is_not_a_violation()
     test_a_credential_shaped_literal_is_a_violation()
+    test_a_new_workflow_key_is_guarded_without_editing_the_guard()
+    test_the_floor_stays_guarded_without_a_workflow_reference()
+    test_a_name_quoted_in_a_comment_declares_nothing()
     test_a_fixture_name_that_merely_starts_like_a_token_is_not_a_violation()
     test_the_marker_declares_deliberate_test_values()
     test_a_whole_stdout_piped_into_github_output_is_a_violation()
