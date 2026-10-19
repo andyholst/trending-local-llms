@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-19T18:02:27Z",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash-Uncensored (GGUF, MXFP4 engram)",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "V4.1 Flash (MoE)",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-24",
+      "engines": [
+        {
+          "engine": "llama.cpp (hikicoder fork)",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (~17GB VRAM used) + 128GB DDR5",
+          "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM; 192GB Engram on a Gen4 7GB/s NVMe with --moe-stream; generation slowed by thermal/IO pacing",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 2,
+          "views": 274,
+          "system_ram_min": "128GB (60GB used by the run)",
+          "storage_offload": "192GB Engram on Gen4 7GB/s NVMe (--moe-stream)",
+          "context_tokens": "32K",
+          "engine_min_version": "-ngl 99 -c 32768 -nkvo --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 --moe-stream-direct",
+          "engine_repo": "https://github.com/hikicoder/llama.cpp"
+        }
+      ]
+    }
+  ]
+}

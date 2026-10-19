@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8 35B A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (A3B MoE)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.50",
+          "hardware": "CPU-only (4GB VRAM + 32GB system RAM, partial offload)",
+          "quant": "llama-server print_timing slot lines: tg = 2.50 t/s, tg_3s 2.53; ~12-12.5 t/s prompt processing on a ~4K-token prompt; user notes Qwen3.8-35B / MoE builds scale better than the dense Bonsai pack on a system this small",
+          "weight_gb": "Q4 (partial offload)",
+          "system_ram_min": "32GB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2112691165860839855",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 110,
+          "interactions": 1
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T18:00:55Z"
+}

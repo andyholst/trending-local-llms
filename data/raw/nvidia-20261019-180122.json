@@ -1,0 +1,108 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2x RTX 4090 24GB",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP; combined throughput across 8 concurrent agent sessions; 128K context",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 7,
+          "comments": 5,
+          "reshares": 2,
+          "views": 1196,
+          "context_tokens": "128K"
+        },
+        {
+          "engine": "ExLlamaV3",
+          "tps": "181",
+          "hardware": "RTX 4090 24GB",
+          "quant": "EXL3 at 4.0 bits per weight (15.4 GiB for the whole 27B model) with DFlash2 block-diffusion drafter (up to 7 proposals per pass); r0b0tlab's qwen38-exl3-dflash2 build",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2100595901006008791",
+          "likes": 81,
+          "comments": 13,
+          "reshares": 8,
+          "views": 6720,
+          "weight_gb": "15.4 GiB (EXL3 4.0 bpw)",
+          "engine_min_version": "r0b0tlab qwen38-exl3-dflash2 build"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3-4B",
+      "full_name": "Qwen3-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "240",
+          "hardware": "H100 80GB",
+          "quant": "spec-decode comparison on GSM8K/HumanEval, single request: autoregressive 240 tok/s, EAGLE3 353 strict / 405 relaxed, DFlash 573 strict / 746 relaxed — the 240 figure is the plain AR baseline of the same run",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 1,
+          "views": 73
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B-A4B",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B (MoE, 4B active)",
+      "hf": "google/gemma-4-26b-a4b",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "663",
+          "hardware": "H100 80GB",
+          "quant": "best speculative setting measured on Gemma-4-26B (DFlash-family drafter), single request; the diffusion+ORL arm of the same test reached ~1,400 tok/s",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 1,
+          "views": 73
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T18:01:22Z"
+}

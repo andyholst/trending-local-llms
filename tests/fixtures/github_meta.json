@@ -94,6 +94,11 @@
       "description": "llama.cpp – Adaptive Speculation + Fastest Vulkan on AMD Strix Halo",
       "topics": []
     },
+    "hikicoder/llama.cpp": {
+      "full_name": "hikicoder/llama.cpp",
+      "description": "DeepSeek-V4.1-Flash expert streaming on a ~20 GB GPU: faster prefill for JigSawPT's dsv41-porte branch (fork of JigSawPT/llama.cpp). See README-dsv41.md.",
+      "topics": []
+    },
     "jakeatx/llamampere": {
       "description": "llama.cpp fork for significantly improved performance on Ampere (especially RTX 3090 / 3090 Ti): example: 95+ tok/s over a 100K-token generation at temperature 1 for qwen3.8, supporting full 262K ctx.",
       "full_name": "JakeATX/llamAmpere",

@@ -1,0 +1,94 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "140",
+          "hardware": "RTX 3090 24GB",
+          "quant": "MTP multi-token prediction; WITHOUT speculation the figure is 42.9 tok/s; OpenJet (L-Forster/open-jet) reports 140 vs 73 tok/s on the same card",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/dextune/status/2109902247559938343",
+          "likes": 52,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB",
+          "quant": "developer tests; ~100 tok/s on a 4090, needs a 70GB download, 32GB system RAM, 80GB disk",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/ethanwalkerman/status/2106988896529920109",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 210,
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (MoE, 2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50.7",
+          "hardware": "RTX 3080 10GB",
+          "quant": "Q4; prefill 644 tok/s in, 50.7 tok/s out; no bespoke engine (FreeToken/Strata not used)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2110275665408704970",
+          "likes": 61,
+          "comments": 10,
+          "reshares": 6,
+          "views": 4160
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T17:59:58Z"
+}

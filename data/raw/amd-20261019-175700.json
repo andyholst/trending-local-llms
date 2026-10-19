@@ -1,0 +1,73 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "32GB Radeon GPU (ROCm)",
+          "quant": "EXL3 5.05 bpw quant, Q8 KV cache, patched ExLlamaV3 ROCm fork; ~863 tok/s prefill while processing ~101K new tokens which is prefill, never the decode figure",
+          "weight_gb": "EXL3 5.05 bpw (does not fit entirely in VRAM)",
+          "context_tokens": "235520",
+          "system_ram_min": "~90GB",
+          "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
+          "engine_min_version": "patched ExLlamaV3 ROCm fork",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 115,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 119
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "Q3-class quantization (~100GB weights); Vulkan often edges out ROCm for generation on Strix Halo; 14-17 tok/s range on a single Strix Halo system; 50-80+ tok/s for smaller MoE models with 3-5B active params",
+          "weight_gb": "~100GB Q3-class",
+          "system_ram_min": "128GB unified LPDDR5X",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110439255179042980",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 6
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:57:00Z"
+}

@@ -1,0 +1,58 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE, 2.45B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Liquid's 24B with only ~2.4B active per token is built for on-device agents: 184 tok/s on an M5 Max and 114 on a Ryzen AI Max+ 395, both measured with llama.cpp on the 14.5GB 4-bit build.",
+      "context_tokens": "131072",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (15GB peak memory reported)",
+          "quant": "Liquid AI's compressed 4-bit build, 14.5GB on disk, 4K-token prompt",
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096",
+          "system_ram_min": "15GB",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 238,
+          "comments": 1,
+          "reshares": 3,
+          "views": 170,
+          "interactions": 240
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo APU, 16GB reported memory)",
+          "quant": "Liquid AI's compressed 4-bit build, 14.5GB on disk, 4K-token prompt",
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096",
+          "system_ram_min": "16GB",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 238,
+          "comments": 1,
+          "reshares": 3,
+          "views": 170,
+          "interactions": 240
+        }
+      ],
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:19Z"
+}

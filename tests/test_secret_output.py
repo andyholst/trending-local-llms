@@ -257,6 +257,58 @@ def test_a_fixture_name_that_merely_starts_like_a_token_is_not_a_violation():
           bad == [], str(bad))
 
 
+# ---------------------------------------------------------------------------
+# rule: the file set (issue #224)
+# ---------------------------------------------------------------------------
+def test_a_leaked_value_in_a_non_code_file_is_a_violation():
+    """Issue #224: the file set was a suffix whitelist (.sh/.py/.yml/.yaml/.mk/.bash/
+    .zsh + Makefile), so a value committed into a .txt/.json/.toml/.md was invisible
+    while the docstring claimed "every text file a reviewer would call part of the
+    repo"."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {
+            "notes.txt": "deploy key: hf_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3" + "\n",
+            "config/app.toml": 'token = "sk-' + "A1b2C3d4E5f6G7h8I9j0K1l2M3" + '"\n',
+        })
+        bad = cso.violations(root)
+        files = sorted(v.split(":")[0] for v in bad)
+
+    check("file set: a credential literal in a .txt is a violation",
+          "notes.txt" in files, str(bad))
+    check("file set: … and in a .toml", "config/app.toml" in files, str(bad))
+    check("file set: the rule is named", all("key-shaped-literal" in v for v in bad), str(bad))
+
+
+def test_a_document_quoting_the_forbidden_shape_is_not_a_violation():
+    """The command-shaped rules describe EXECUTION: a proposal that explains why
+    `echo "$HF_TOKEN"` is wrong is not the leak (it is how this repo documents the
+    rule). The SHAPE rules still apply to the same file."""
+    quote = ('The forbidden line is `echo "$HF_TOKEN"`, and `make thing | tee /dev/stderr`\n'
+             'is the other shape. Neither is a leak when it is prose.\n')
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"openspec/changes/x/proposal.md": quote,
+                                "README.md": quote})
+        rules = _rules(root)
+
+    check("file set: prose quoting a printed secret is not a violation", rules == [], str(rules))
+
+    # … and the same file with a real value IS caught by the shape rule
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"README.md": quote + "value: hf_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3" + "\n"})
+        rules = _rules(root)
+    check("file set: a value pasted into a document is still caught",
+          rules == ["key-shaped-literal"], str(rules))
+
+
+def test_a_binary_or_empty_file_is_never_a_finding():
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"ok.txt": "nothing here\n"})
+        (root / "blob.bin").write_bytes(b"hf_" + b"A1b2C3d4E5f6G7h8I9j0K1l2M3" + b"\x00\x01")
+        (root / "empty.txt").write_text("")
+        rules = _rules(root)
+    check("file set: a binary file is skipped", rules == [], str(rules))
+
+
 def test_the_marker_declares_deliberate_test_values():
     # this file itself carries the marker (see the module docstring), so use a copy of it
     body = (ROOT / "tests" / "test_secret_output.py").read_text()
@@ -645,6 +697,9 @@ def main() -> int:
     test_the_run_block_rule_only_applies_to_workflows()
     test_python_reading_os_environ_is_not_a_violation()
     test_a_credential_shaped_literal_is_a_violation()
+    test_a_leaked_value_in_a_non_code_file_is_a_violation()
+    test_a_document_quoting_the_forbidden_shape_is_not_a_violation()
+    test_a_binary_or_empty_file_is_never_a_finding()
     test_a_fixture_name_that_merely_starts_like_a_token_is_not_a_violation()
     test_the_marker_declares_deliberate_test_values()
     test_a_whole_stdout_piped_into_github_output_is_a_violation()

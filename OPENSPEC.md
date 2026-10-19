@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **70** · archived: **0**
+Active changes: **76** · archived: **0**
 
 ## Active changes
 
@@ -18,6 +18,7 @@ Active changes: **70** · archived: **0**
 | `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
 | `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
 | `agent-shell-keys` | active | — | — | [bot-agent-run-safety](openspec/changes/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-shell-keys/proposal.md) |
+| `alias-one-definition` | active | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/alias-one-definition/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
 | `baseline-age-visible` | active | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/baseline-age-visible/proposal.md) |
@@ -31,6 +32,7 @@ Active changes: **70** · archived: **0**
 | `code-review-refusal-names-its-cost` | active | — | — | [code-review-scan](openspec/changes/code-review-refusal-names-its-cost/specs/code-review-scan/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-refusal-names-its-cost/proposal.md) |
 | `code-review-secrets-contract` | active | — | — | [code-review-scan](openspec/changes/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/code-review-secrets-contract/proposal.md) |
 | `commit-authorship-guard` | active | #317 | — | [commit-authorship](openspec/changes/commit-authorship-guard/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/commit-authorship-guard/proposal.md) |
+| `data-gap-acquired-footprint-capture` | active | #395 — `data-gap: storage_offload (40 models)` | — | [data-gap-backfill](openspec/changes/data-gap-acquired-footprint-capture/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-acquired-footprint-capture/proposal.md) |
 | `data-gap-baseline` | active | #174 | — | [data-gap-baseline](openspec/changes/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-baseline/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
 | `data-gap-filer-labels-its-issue` | active | — | — | [data-gap-filer-labels-its-issue](openspec/changes/data-gap-filer-labels-its-issue/specs/data-gap-filer-labels-its-issue/spec.md) | 11/11 | [proposal.md](openspec/changes/data-gap-filer-labels-its-issue/proposal.md) |
@@ -49,6 +51,7 @@ Active changes: **70** · archived: **0**
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
 | `fixbot-gh-repo-before-checkout` | active | #331 | — | [fixbot-before-checkout](openspec/changes/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/fixbot-gh-repo-before-checkout/proposal.md) |
 | `force-flag-parsing` | active | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/force-flag-parsing/proposal.md) |
+| `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
 | `ingest-names-a-dead-hf-link` | active | #333 | — | [hf-link-verification](openspec/changes/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/ingest-names-a-dead-hf-link/proposal.md) |
@@ -78,9 +81,12 @@ Active changes: **70** · archived: **0**
 | `search-engine-must-be-named` | active | #378 | #379 | [search-engine-rule](openspec/changes/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/search-engine-must-be-named/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
+| `secret-guard-file-set` | active | #224 — `tech-debt: the no-secret-VALUE guard only scans a fixed suffix set` | — | [secret-output-guard](openspec/changes/secret-guard-file-set/specs/secret-output-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/secret-guard-file-set/proposal.md) |
 | `setup-output-visible` | active | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/setup-output-visible/proposal.md) |
+| `skip-note-every-hold` | active | #204 — `tech-debt: The skip note covers ONE held issue per run` | — | [issue-queue](openspec/changes/skip-note-every-hold/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/skip-note-every-hold/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
 | `unique-rule-numbers` | active | — | — | [rulebook-integrity](openspec/changes/unique-rule-numbers/specs/rulebook-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/unique-rule-numbers/proposal.md) |
+| `verdict-hold-ceiling` | active | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | active | — | — | [ci-output-safety](openspec/changes/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/verdict-output-format/proposal.md) |
 | `vram-card-fit` | active | — | — | [card-fit](openspec/changes/vram-card-fit/specs/card-fit/spec.md) | 15/15 | [proposal.md](openspec/changes/vram-card-fit/proposal.md) |
 | `worktree-base-fresh` | active | — | — | [worktree-base](openspec/changes/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/worktree-base-fresh/proposal.md) |

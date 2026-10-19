@@ -1,0 +1,66 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "The 27B everyone measures every new inference stack against: speculative decoding, context lookup and prefix caching keep moving the same weights from 82 to 381 tok/s on one 3090.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Thunderbolt Sapphire Radeon AI PRO R9700 eGPU",
+          "quant": "Q4 quantization, 131K context, DFlash2 draft-tree decoding (up from 31 tok/s standard and 109 tok/s with MTP speculative decoding)",
+          "weight_gb": "Q4",
+          "context_tokens": "131072",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 2,
+          "views": 744,
+          "interactions": 6
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB direct GPU memory (native Vulkan app on Mihawk-99's RADV/Mesa port)",
+          "quant": "2-bit UD-IQ2_XXS quant of Qwen3.8-27B; models load from USB straight into GPU memory (no mmap)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 182,
+          "interactions": 6
+        },
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "NVIDIA DGX Spark (single)",
+          "quant": "NVFP4 weights via SGLang, DFlash2 speculative decoding with a 4-bit drafter proposing 16 tokens per verification pass, BF16 KV cache, thinking disabled; median of four runs (65K context still 67 tok/s, 260K 38 tok/s)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 12,
+          "comments": 5,
+          "reshares": 1,
+          "views": 2132,
+          "interactions": 13
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:57:33Z"
+}

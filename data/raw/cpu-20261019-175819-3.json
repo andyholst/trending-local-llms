@@ -1,0 +1,40 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "Empero's distillation of Qwen3.8 reasoning into the 35B-A3B MoE keeps landing on 12GB cards: 26 MoE layers pushed to the CPU still leaves ~50 tok/s decode and 550 tok/s prefill at 262K context.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M with 26 MoE layers offloaded to the CPU (--n-cpu-moe 26), Q8_0 KV cache, Flash Attention on, 262K context configured",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 50,
+          "comments": 5,
+          "reshares": 5,
+          "views": 14995,
+          "interactions": 60
+        }
+      ],
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:19Z"
+}

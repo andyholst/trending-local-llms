@@ -908,8 +908,109 @@ def test_measurement_dimension_coverage_can_never_shrink():
     store = json.loads((ROOT / "data" / "models.json").read_text())
     carrying = sum(1 for m in store["models"] for e in m.get("engines", [])
                    if any(e.get(k) for k in MEASUREMENT_DIMENSIONS))
-    check("coverage: at least 43 measurements carry a structured dimension "
-          "(the merge/backfill cannot silently regress)", carrying >= 43, carrying)
+    check("coverage: at least 46 measurements carry a structured dimension "
+          "(the merge/backfill cannot silently regress)", carrying >= 46, carrying)
+    # PER DIMENSION, the same floor: a single dimension's backfill must not be
+    # droppable while the total still passes on the other four.
+    floors = {"weight_gb": 26, "context_tokens": 18, "system_ram_min": 24,
+              "storage_offload": 2, "engine_min_version": 14}
+    for k, floor in floors.items():
+        n = sum(1 for m in store["models"] for e in m.get("engines", []) if e.get(k))
+        check(f"coverage: at least {floor} measurements carry {k}", n >= floor, str(n))
+
+
+def _captured_measurement_values() -> dict[tuple[str, str, str], dict[str, set[str]]]:
+    """Per (model id, source_post, engine), the dimension values the captured
+    snapshots (`data/raw/*.json`) state for that run — the record of the real
+    `…/status/<id>` post the search acquired.
+
+    Keyed by the MODEL the snapshot recorded it for, not by the post alone: one
+    post is sometimes captured under two models (measured: a Bonsai 2 27B run's
+    `4221` context sits under `qwen3.8-27b` in one leg), and copying a value
+    across models is exactly the fabrication this stage must never make. Several
+    legs may capture the same run, so a value is a set: they do not always agree
+    on the wording."""
+    out: dict[tuple[str, str, str], dict[str, set[str]]] = {}
+    for path in sorted((ROOT / "data" / "raw").glob("*.json")):
+        for m in json.loads(path.read_text()).get("models", []):
+            mid = m.get("id")
+            if not mid:
+                continue
+            for e in m.get("engines", []) or []:
+                post, engine = str(e.get("source_post", "")), e.get("engine")
+                if not post or not engine:
+                    continue
+                for k in MEASUREMENT_DIMENSIONS:
+                    if e.get(k):
+                        out.setdefault((mid, post, engine), {}).setdefault(k, set()).add(str(e[k]))
+    return out
+
+
+def _lost_captured_footprints(models: list[dict],
+                              stated: dict[tuple[str, str, str], dict[str, set[str]]]
+                              ) -> tuple[int, list[str]]:
+    """The captured dimension values NO matching store measurement carries.
+
+    A captured value the store dropped is a silent LOSS of real data
+    (AGENTS.md §2.3b: loss is a defect, not a simplification) — and it is the
+    gap the filed issue reports ("real data the search sees and the store does
+    not capture"). A value the legs disagree on is satisfied by ANY of the
+    wordings the captured post states."""
+    rows: dict[tuple[str, str, str], list[dict]] = {}
+    for m in models:
+        for e in m.get("engines", []) or []:
+            rows.setdefault((str(m.get("id", "")), str(e.get("source_post", "")),
+                             e.get("engine")), []).append(e)
+    checked = 0
+    lost: list[str] = []
+    for (mid, post, engine), dims in stated.items():
+        stored = rows.get((mid, post, engine))
+        if not stored:
+            continue
+        for k, values in dims.items():
+            checked += 1
+            if not any(r.get(k) in values for r in stored):
+                lost.append(f"{mid}/{engine}/{k} on {post.rsplit('/', 1)[-1]} "
+                            f"(captured {sorted(values)})")
+    return checked, lost
+
+
+def test_a_captured_measurement_footprint_is_never_lost_from_the_store():
+    """The store carries every per-run dimension value the search captured.
+
+    Issue #395's own words: the gap is "real data the search sees and the store
+    does not capture". Measured on the store BEFORE this change: three captured
+    cells belonged to a run whose store measurement carried nothing at all — the
+    oMLX and mlx-serve runs' `engine_min_version` on `qwen3.8-27b` and
+    `bonsai-2-2b`'s `0.43GB ternary` weight footprint."""
+
+    store = json.loads((ROOT / "data" / "models.json").read_text())
+    stated = _captured_measurement_values()
+    checked, lost = _lost_captured_footprints(store["models"], stated)
+
+    # Then  the guard is not vacuous …
+    check("captured footprints: the guard compares real captured cells", checked > 0, str(checked))
+
+    # … the store carries every one of them …
+    check("captured footprints: no captured dimension value is missing from the store",
+          lost == [], str(lost[:5]))
+
+    # … and the rule BITES: a store stripped of a captured value is reported
+    stripped = json.loads(json.dumps(store["models"]))
+    rows = {(str(m.get("id", "")), str(e.get("source_post", "")), e.get("engine"))
+            for m in stripped for e in m.get("engines", []) or []}
+    candidates = [(key, dims) for key, dims in sorted(stated.items()) if key in rows and dims]
+    check("captured footprints: the evidence-keyed pairs exist in the store",
+          bool(candidates), "no (model, post, engine) pair matched")
+    (mid, post, engine), dims = candidates[0]
+    key = sorted(dims)[0]
+    for m in stripped:
+        for e in m.get("engines", []) or []:
+            if (str(m.get("id", "")), str(e.get("source_post", "")), e.get("engine")) == (mid, post, engine):
+                e.pop(key, None)
+    _, caught = _lost_captured_footprints(stripped, stated)
+    check("captured footprints: a store that dropped the value fails the guard",
+          any(f"{mid}/{engine}/{key}" in c for c in caught), str(caught[:3]))
 
 
 def main() -> int:
@@ -935,6 +1036,7 @@ def main() -> int:
     test_storage_offload_coverage_can_never_shrink()
     test_measurement_dimensions_trace_to_the_captured_snapshot()
     test_measurement_dimension_coverage_can_never_shrink()
+    test_a_captured_measurement_footprint_is_never_lost_from_the_store()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

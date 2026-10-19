@@ -1,0 +1,150 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "64.4",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "LemonSeed Studio/Engine (github.com/Geramy/LemonSeed-Studio); Qwen3.8 27B Q4 at 131k context with a Q8 DFlash2 draft, reported macOS comparison figure; same setup reports Strix Halo at 64.4 t/s and an iPad Pro eGPU at 158.5 t/s",
+          "context_tokens": "131072",
+          "engine_min_version": "LemonSeed Engine (DFlash2 draft)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dextune/status/2109763687310164022",
+          "likes": 162,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 163
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    },
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (A3B MoE, MTP head)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "strixite",
+          "tps": "50",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "strixite inference engine written from scratch in HIP for AMD Strix Halo (gfx1151); holds ~fifty tokens per second out to nearly five hundred thousand context tokens",
+          "context_tokens": "491520",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
+          "likes": 51,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 51
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "56.5",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "experimental Strata Strix Halo support (Unsloth Q4 and GSQ-RCO weights), scaling to a 1M context window; Bosgame M5 in 140W Performance mode 55-58 t/s decode and 1400-1500 t/s prefill; a developer on a 16GB VRAM + 96GB RAM laptop clocked 27 t/s at 168k-262k context",
+          "weight_gb": "Unsloth Q4 / GSQ-RCO",
+          "context_tokens": "262144",
+          "system_ram_min": "96GB",
+          "engine_min_version": "Strata experimental Strix Halo support (Linux-only)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107378902136947009",
+          "likes": 16,
+          "comments": 8,
+          "reshares": 0,
+          "views": 568,
+          "interactions": 24
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "33",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtec Evo-X2)",
+          "quant": "Nathanw1014 portable Strix Halo 'Vulcan' build of llama.cpp, Qwen3.8-27B Q3_K_XL, 64K context, vision enabled; ~33 tok/s total shared across four concurrent lanes",
+          "context_tokens": "65536",
+          "engine_min_version": "Nathanw1014 portable Strix Halo Vulkan llama.cpp build",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2089073298487615541",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 718,
+          "interactions": 8
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    },
+    {
+      "id": "qwen3-next-80b-a3b",
+      "name": "Qwen3-Next 80B A3B",
+      "full_name": "Qwen3-Next-80B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "80B (A3B MoE)",
+      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "32",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "rocmfp4 requant + MTP working (LaurentZuijdwijk build); ngram layout changed so it can sit in GPU memory on a Strix, lowering CPU usage without affecting performance",
+          "weight_gb": "rocmfp4 (low-quality quant, published on Hugging Face to test performance)",
+          "engine_min_version": "LaurentZuijdwijk llama.cpp fork with MTP + ngram on GPU",
+          "date": "2026-08-27",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2081836235475272003",
+          "likes": 12,
+          "comments": 1,
+          "reshares": 2,
+          "views": 711,
+          "interactions": 20
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:04Z"
+}

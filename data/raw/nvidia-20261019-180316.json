@@ -1,0 +1,37 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-19T18:03:16Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "543",
+          "hardware": "8x NVIDIA B300",
+          "quant": "NVFP4 checkpoint with DFlash V2 speculative decoding, concurrency 1; 80.3K total tokens per second per GPU at concurrency 128",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/VaseGod/status/2110864545413788150",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 52,
+          "context_tokens": "1M",
+          "engine_min_version": "DFlash V2 speculative decoding"
+        }
+      ]
+    }
+  ]
+}

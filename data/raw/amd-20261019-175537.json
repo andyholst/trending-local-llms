@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "56",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm/HIP (Linux, ./setup.sh --backend hip, experimental, no image input); 52-60 tok/s output sustained + 1250 tok/s prompt processing which is prefill, never the decode figure; KV cache k8v4 INT8 K + 4-bit V for +10%",
+          "weight_gb": "37.6GB Q2_0 (39.2GB IQ2_XS)",
+          "context_tokens": "131072",
+          "system_ram_min": "64GB",
+          "storage_offload": "experts across GPU/RAM/SSD, ~70GB download (SSD recommended)",
+          "engine_min_version": "Strata setup.sh --backend hip (ROCm, Linux)",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 510,
+          "comments": 43,
+          "reshares": 58,
+          "views": 41086,
+          "interactions": 627
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:55:37Z"
+}

@@ -543,6 +543,69 @@ def _verdict_fixture(td: Path, hours: float | None, label: str = "needs-refineme
     return env_for(td, issues=[candidate(163, labels=[label]), candidate(174)], comments=comments)
 
 
+def test_a_reviewer_that_keeps_re_dating_a_verdict_cannot_hold_for_ever():
+    """Issue #203: freshness is measured from the NEWEST reviewer marker, so a
+    re-review every few hours kept a verdict fresh for ever and the issue was never
+    picked. The hold now has a ceiling, measured from the OLDEST marker of the
+    unbroken chain."""
+    import datetime as _dt
+
+    # Given a reviewer that re-dated the same verdict every 20 h for 200 h
+    #   … with the NEWEST marker 6 h old, so it is not "the reviewer is working now"
+    hours = [200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 6]
+    comments = {"163": [{"createdAt": hours_ago(h),
+                         "body": f"<!-- issue-review: {hours_ago(h)} run={i} -->\nReviewed."}
+                        for i, h in enumerate(hours, start=1)]}
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = env_for(fixture, issues=[candidate(163, labels=["needs-refinement"])], comments=comments)
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+    row = [l for l in proc.stdout.splitlines() if l.startswith("issue=163 ")]
+
+    # Then  the hold has EXPIRED: it is reported, and the sweep may take the issue
+    check("ceiling: the row is emitted", len(row) == 1, proc.stdout)
+    check("ceiling: the hold is reported as expired", bool(row) and "verdict_expired=1" in row[0], row[:1])
+    check("ceiling: it is no longer a verdict hold",
+          bool(row) and "verdict_fresh=0" in row[0] and "impl_skip=0" in row[0], row[:1])
+    check("ceiling: the reason says why", bool(row) and "reason=verdict-expired" in row[0], row[:1])
+    check("ceiling: the issue is back in the pick order",
+          bool(row) and "position=0" in row[0], row[:1])
+    # … and it says how long the verdict had been held, from the CHAIN's first marker
+    check("ceiling: the held duration is the whole chain, not the newest marker",
+          bool(row) and "verdict_held_hours=200" in row[0], row[:1])
+    check("ceiling: the log shouts that the hold expired",
+          "EXPIRES" in proc.stderr and "200 h" in proc.stderr, proc.stderr[-400:])
+
+    # Given a SHORT chain (40 h), the hold is still fresh and still holds
+    short = {"163": [{"createdAt": hours_ago(h),
+                      "body": f"<!-- issue-review: {hours_ago(h)} run={i} -->\nReviewed."}
+                     for i, h in enumerate([40, 20, 1], start=1)]}
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=[candidate(163, labels=["needs-refinement"])], comments=short)
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+    held = [l for l in proc.stdout.splitlines() if l.startswith("issue=163 ")]
+    check("ceiling: a short chain still holds", bool(held) and "verdict_fresh=1" in held[0]
+          and "impl_skip=1" in held[0], held[:1])
+    check("ceiling: and it reports the 40 h it has been held",
+          bool(held) and "verdict_held_hours=40" in held[0], held[:1])
+
+
+def test_the_verdict_chain_breaks_across_a_stale_gap():
+    """The chain is contiguous: a marker older than the TTL does not extend the hold."""
+    import datetime as _dt
+    mod = _module()
+    ttl = 24
+    now = _dt.datetime.fromisoformat(NOW.replace("Z", "+00:00"))
+
+    # Given markers 2 h and 300 h old (a gap far wider than the TTL)
+    start = mod.verdict_chain_start([now - _dt.timedelta(hours=2), now - _dt.timedelta(hours=300)], ttl)
+
+    # Then  the chain is the newest link only
+    check("chain: a stale gap does not extend the hold",
+          start is not None and (now - start).total_seconds() // 3600 == 2, start)
+    check("chain: no markers means no hold", mod.verdict_chain_start([], ttl) is None, "")
+
+
 def test_a_fresh_verdict_holds_the_implementer():
     """A `needs-refinement` verdict younger than the TTL holds the sweep off that issue."""
 
@@ -635,6 +698,63 @@ def test_skip_note_is_posted_once_per_review_round():
 
 
 
+def test_the_skip_note_covers_every_held_issue():
+    """Issue #204: the note used to describe `held[0]` — ONE issue — so with two fresh
+    verdicts the second stayed silent, which is the "why is nobody working on this?"
+    the comment exists to answer."""
+
+    # Given TWO issues, each with its own fresh verdict label and reviewer marker
+    marker = lambda h: {"createdAt": hours_ago(h), "body": f"{REVIEW_MARKER} {hours_ago(h)} run=1 -->\nReviewed."}
+    comments = {"163": [marker(2.0)], "174": [marker(1.0)]}
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = env_for(fixture, issues=[candidate(163, labels=["needs-refinement"]),
+                                       candidate(174, labels=["needs-refinement"])],
+                      comments=comments)
+
+        # When  the sweep notes the holds
+        first = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        posted = [json.loads(l) for l in (fixture / "comments-posted.jsonl").read_text().splitlines()]
+
+        # … and the SAME round runs again, with both notes now on their issues
+        stored = json.loads((fixture / "comments.json").read_text())
+        for c in posted:
+            stored.setdefault(c["issue"], []).append({"createdAt": NOW, "body": c["body"]})
+        (fixture / "comments.json").write_text(json.dumps(stored))
+        second = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        posted_again = (fixture / "comments-posted.jsonl").read_text().splitlines()
+
+    # Then  BOTH held issues are noted, once each
+    check("skip note: one comment per held issue", len(posted) == 2, str(posted))
+    check("skip note: it covers both issues", sorted(c["issue"] for c in posted) == ["163", "174"],
+          str([c["issue"] for c in posted]))
+    check("skip note: each note carries its own verdict timestamp",
+          any(f"since={hours_ago(2.0)}" in c["body"] for c in posted)
+          and any(f"since={hours_ago(1.0)}" in c["body"] for c in posted), str(posted))
+    check("skip note: the run reports what it did",
+          "2 posted" in first.stdout and "2 held" in first.stdout, first.stdout)
+    # … and the round is idempotent per issue
+    check("skip note: a second run in the same round posts nothing new",
+          len(posted_again) == 2 and "2 already noted" in second.stdout, second.stdout)
+
+    # Given MORE held issues than the bound (MAX_SKIP_NOTES = 10)
+    numbers = list(range(200, 212))
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = env_for(fixture,
+                      issues=[candidate(n, labels=["needs-refinement"]) for n in numbers],
+                      comments={str(n): [marker(2.0)] for n in numbers})
+        proc = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        many = [json.loads(l) for l in (fixture / "comments-posted.jsonl").read_text().splitlines()]
+
+    check("skip note: the walk is bounded", len(many) == 10, len(many))
+    check("skip note: the bound is owned by the script, not the shell",
+          "MAX_SKIP_NOTES" in (ROOT / "scripts" / "issue_queue.py").read_text()
+          and "MAX_SKIP_NOTES = 10" in (ROOT / "scripts" / "issue_queue.py").read_text(), "")
+    check("skip note: it says what it left for the next sweep",
+          "more held issue(s) not noted in this sweep" in proc.stdout, proc.stdout[-300:])
+
+
 def test_a_decided_issue_is_skipped_by_the_shared_queue():
     """Issue #210: once the implementer has SAID what an issue is, the sweep must
     not re-litigate the verdict every hour."""
@@ -691,10 +811,13 @@ def main() -> int:
     test_body_hash_and_finish_are_the_write_proof_and_the_cleanup()
     test_the_reviewer_reads_the_one_queue_the_implementer_reads()
     test_the_clock_is_injected_never_read_from_the_wall_clock()
+    test_a_reviewer_that_keeps_re_dating_a_verdict_cannot_hold_for_ever()
+    test_the_verdict_chain_breaks_across_a_stale_gap()
     test_a_fresh_verdict_holds_the_implementer()
     test_a_stale_verdict_releases_the_issue()
     test_a_label_without_any_reviewer_marker_never_holds()
     test_skip_note_is_posted_once_per_review_round()
+    test_the_skip_note_covers_every_held_issue()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
     test_a_decided_issue_is_skipped_by_the_shared_queue()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
