@@ -981,6 +981,27 @@ def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> li
     return rows
 
 
+def card_gap_reason(m: dict, registry: dict | None = None) -> str | None:
+    """Why a model has no card-tier row (issue #342), or None when it has one.
+
+    A tier places a model only with EVIDENCE (`fits_tier`), so a model with none is silently
+    absent from every table — and "we never measured this on a card" then reads exactly like
+    "no card can run it". The two reasons want different actions:
+
+      * ``'unified memory / CPU-only'`` — every measurement is Metal or CPU. There is no
+        card figure to collect; the model's home is the Metal/CPU table.
+      * ``'no card figure collected'`` — it HAS a CUDA/ROCm figure, but none placed: a
+        datacenter part, a card above every tier, or a run whose hardware names no card.
+        This is a data gap the searches must close.
+    """
+    if any(tier_measurements(m, t, registry) for t in CARD_TIERS_GB):
+        return None
+    backends = {measurement_backend(e, registry) for e in m.get("engines", [])}
+    if backends and backends <= {"Metal", "CPU"}:
+        return "unified memory / CPU-only"
+    return "no card figure collected"
+
+
 def vram_need(m: dict) -> tuple[str, str]:
     """The LEAST VRAM the model needs to run, with the evidence behind it:
     ('8GB', 'declared') from `vram_min`, ('16GB', 'tier') from the coarse
