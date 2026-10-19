@@ -23,6 +23,19 @@ import validate as V  # noqa: E402
 _PASS = 0
 _FAIL = 0
 
+#: The model flag every `hermes -z` continuation line must carry. The alias has ONE
+#: definition — `HERMES_ALIAS`, which the Dockerfile writes into the config and
+#: `make _hermes-alias-check` reads back — so a call site that hardcodes the name is
+#: a second copy of a fact nothing keeps in step (issue #221).
+MODEL_FLAG = r"^\t\t-m\s+\$\(HERMES_ALIAS\)\s+--reasoning\b"
+
+
+def _defined_alias() -> str:
+    """The alias as the Makefile defines it — this suite hardcodes nothing (issue #221)."""
+    import re
+    m = re.search(r"^HERMES_ALIAS\s*:=\s*(\S+)\s*$", (ROOT / "Makefile").read_text(), re.M)
+    return m.group(1) if m else ""
+
 
 def check(name, cond, detail=""):
     global _PASS, _FAIL
@@ -56,7 +69,7 @@ def test_makefile_prompts_cap_reasoning():
     no raw snapshot, and fail the search leg with exit 2 (seen on search-cpu)."""
     import re
     lines = (ROOT / "Makefile").read_text().splitlines()
-    calls = [l for l in lines if re.match(r"\t\t-m nous-deepseek\b", l)]
+    calls = [l for l in lines if re.match(MODEL_FLAG, l)]
     check("reasoning: found hermes model-flag lines", len(calls) >= 4, f"count={len(calls)}")
     missing = [l.strip() for l in calls if "--reasoning " not in l]
     check("reasoning: every hermes call sets --reasoning", not missing, str(missing))
@@ -82,7 +95,7 @@ def _noninteractive_violations(makefile_text: str) -> list[str]:
     var = re.search(r"^HERMES_NONINTERACTIVE\s*:=\s*(.+)$", makefile_text, re.M)
     flags = var.group(1) if var else ""
     for line in makefile_text.splitlines():
-        if not re.match(r"\t\t-m nous-deepseek\b", line):
+        if not re.match(MODEL_FLAG, line):
             continue
         if "$(HERMES_NONINTERACTIVE)" not in line:
             out.append(line.strip()[-60:])
@@ -102,7 +115,7 @@ def test_every_headless_agent_call_passes_the_noninteractive_flag_set():
     bad = _noninteractive_violations(text)
     check("non-interactive: every hermes call passes the whole flag set", not bad, str(bad))
     import re
-    calls = [l for l in text.splitlines() if re.match(r"\t\t-m nous-deepseek\b", l)]
+    calls = [l for l in text.splitlines() if re.match(MODEL_FLAG, l)]
     check("non-interactive: the recipes were really found (guard not vacuous)", len(calls) >= 8,
           f"count={len(calls)}")
 
@@ -111,7 +124,7 @@ def test_a_recipe_with_only_yolo_is_refused():
     """Falsify the rule on the MEASURED shape: a recipe whose line ends `--yolo` only."""
     old = ("HERMES_NONINTERACTIVE := --yolo --accept-hooks\n"
            ".PHONY: x\nx:\n\thermes -z \"do a thing\" \\\n"
-           "\t\t-m nous-deepseek --reasoning low --yolo\n")
+           "\t\t-m $(HERMES_ALIAS) --reasoning low --yolo\n")
     check("non-interactive: a recipe carrying only --yolo is refused",
           _noninteractive_violations(old) != [], "")
     check("non-interactive: and carries no --accept-hooks in the variable either",
@@ -138,8 +151,8 @@ def _logical_commands(text: str) -> list[str]:
 
 def test_make_dry_run_single_hermes_command():
     """`make -n <target>` must yield ONE shell command that carries the prompt
-    AND `-m nous-deepseek --reasoning`. If the -z line loses its trailing
-    backslash, make runs `-m nous-deepseek --yolo` as its OWN command (the
+    AND `-m $(HERMES_ALIAS) --reasoning`. If the -z line loses its trailing
+    backslash, make runs the model flag as its OWN command (the
     leading '-' even becomes make's ignore-errors prefix) and hermes starts
     with NO alias — it auto-routed to Hugging Face via HF_TOKEN and 403'd on
     every fix-bot run. This checks what make actually executes."""
@@ -149,6 +162,8 @@ def test_make_dry_run_single_hermes_command():
     if not shutil.which("make"):
         print("  SKIP make dry-run: make not installed")
         return
+    alias = _defined_alias()
+    check("alias: the Makefile defines HERMES_ALIAS", bool(alias), alias)
     for t in HERMES_TARGETS:
         p = subprocess.run(["make", "-s", "-n", t], cwd=ROOT, capture_output=True, text=True)
         cmds = _logical_commands(p.stdout)
@@ -156,10 +171,10 @@ def test_make_dry_run_single_hermes_command():
         # command is still the one hermes command that recipe runs.
         hermes = [c for c in cmds
                   if c.startswith("hermes -z") or re.match(r"^timeout \S+ hermes -z", c)]
-        stray = [c for c in cmds if "nous-deepseek" in c and c not in hermes]
+        stray = [c for c in cmds if f"-m {alias}" in c and c not in hermes]
         check(f"make -n {t}: exactly one hermes -z command", len(hermes) == 1, f"rc={p.returncode} {len(hermes)}")
-        check(f"make -n {t}: that command carries -m nous-deepseek --reasoning",
-              bool(hermes) and "-m nous-deepseek --reasoning " in hermes[0], hermes[0][-80:] if hermes else "")
+        check(f"make -n {t}: that command carries -m {alias} --reasoning",
+              bool(hermes) and f"-m {alias} --reasoning " in hermes[0], hermes[0][-80:] if hermes else "")
         check(f"make -n {t}: no detached model-flag command", not stray, [c[:60] for c in stray])
 
     # Issue #383: `make fix` MUST bound the Hermes call itself, so one hung round is
@@ -279,6 +294,42 @@ def test_prompt_permutations():
         check(f"prompt-perm: BAD rejected: {s[:38]!r}", not ok, why)
 
 
+def test_the_alias_has_exactly_one_definition():
+    """Issue #221: the alias name exists once, and every call site USES it.
+
+    `-m nous-deepseek` appeared as a literal in eight recipes while the config was
+    written from `HERMES_ALIAS` — a rename then meant editing every call site, and
+    nothing proved the two agreed. The flag is now the variable, and this proves the
+    expansion really is the defined alias (a `make -n` dry run), not just that some
+    line looks right.
+    """
+    import re
+    import subprocess
+    text = (ROOT / "Makefile").read_text()
+    defined = re.search(r"^HERMES_ALIAS\s*:=\s*(\S+)\s*$", text, re.M)
+
+    # Given the Makefile
+    flag_lines = [l for l in text.splitlines() if l.startswith("\t\t-m ")]
+
+    # Then  every model flag is the one variable, and no alias literal is left in a recipe
+    check("alias: defined once", bool(defined), text[:200])
+    check("alias: every model flag uses $(HERMES_ALIAS)",
+          len(flag_lines) >= 4 and all(re.match(MODEL_FLAG, l) for l in flag_lines),
+          str(flag_lines[:3]))
+    recipe_lines = [l for l in text.splitlines()
+                    if not l.lstrip().startswith("#") and f"-m {defined.group(1)}" in l] if defined else []
+    check("alias: no recipe hardcodes the alias name", recipe_lines == [], str(recipe_lines[:3]))
+
+    # And   a dry run expands it to exactly the defined value
+    for target in HERMES_TARGETS:
+        proc = subprocess.run(["make", "-n", target, "ISSUE=1"], cwd=str(ROOT),
+                              capture_output=True, text=True)
+        expanded = [l for l in proc.stdout.splitlines() if re.search(r"\s-m\s+(\S+)\s", l)]
+        check(f"alias: `make -n {target}` expands the flag to the defined alias",
+              bool(expanded) and all(f"-m {defined.group(1)} " in l for l in expanded),
+              proc.stdout[:300] or proc.stderr[:300])
+
+
 def main() -> int:
     print("hermes -z prompt shell-string validation")
     test_makefile_prompts_valid()
@@ -287,6 +338,7 @@ def main() -> int:
     test_every_search_leg_asks_for_the_model_dimensions_from_one_definition()
     test_every_search_leg_asks_for_the_engine_rule_from_one_definition()
     test_every_headless_agent_call_passes_the_noninteractive_flag_set()
+    test_the_alias_has_exactly_one_definition()
     test_a_recipe_with_only_yolo_is_refused()
     test_prompt_permutations()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
