@@ -1,6 +1,10 @@
 scripts/__pycache__/
 __pycache__/
 qa-report.txt
+# the fix loop's scratch class (issue #390): the loop used to write `qa-report.txt.notes`
+# beside the report, and a bot's `git add -A` committed the 0-byte file into PR #387.
+# The loop now keeps its notes outside the checkout; this covers any other sibling.
+qa-report.txt.*
 comment.md
 # issue-bot working files: the issue text it implements, the PR body it opens,
 # and the finding list `make file-findings` turns into issues (AGENTS.md: every

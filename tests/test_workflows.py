@@ -259,8 +259,9 @@ def test_fix_bot():
 
 def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
     """Execute the REAL fix-bot commit+push script in a temp clone whose
-    .gitignore is the repo's, with qa-report.txt + comment.md present (the loop
-    leaves them behind). Returns (rc, output, files in the pushed commit)."""
+    .gitignore is the repo's, with qa-report.txt + qa-report.txt.notes +
+    comment.md present (the loop leaves them behind). Returns (rc, output,
+    files in the pushed commit)."""
     import os
     import shutil
     import subprocess
@@ -279,6 +280,9 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
         g("push", "-q", "origin", "HEAD:refs/heads/ci/x", cwd=wc)
         before = g("rev-parse", "HEAD", cwd=wc).stdout.strip()
         (wc / "qa-report.txt").write_text("=== make validate ===\n")
+        # The loop's between-round notes used to be written as `$REPORT.notes`
+        # (issue #390) — a 0-byte `qa-report.txt.notes` reached PR #387 that way.
+        (wc / "qa-report.txt.notes").write_text("=== make fix: TIMED OUT after 1800s ===\n")
         (wc / "comment.md").write_text("c\n")
         if changed:
             (wc / "data.json").write_text('{"fixed": true}\n')
@@ -351,6 +355,11 @@ def test_fix_bot_push_behaviour():
     check("fix-push: the pushed commit carries the fix", files == ["data.json"], files)
     check("fix-push: qa-report.txt / comment.md never committed",
           "qa-report.txt" not in files and "comment.md" not in files, files)
+    # Issue #390: a SIBLING of the report was committed by the same `git add -A`
+    # (an empty qa-report.txt.notes landed in PR #387), so the rule is the whole
+    # qa-report.txt.* class, not two exact names.
+    check("fix-push: the loop's scratch notes (qa-report.txt.notes) never committed",
+          "qa-report.txt.notes" not in files, files)
     check("fix-push: reports pushed=yes", "pushed=yes" in out, out[-200:])
     rc, out, files = _run_push_step(changed=False)
     check("fix-push: green with no changes -> exit 0, nothing pushed", rc == 0 and files == [], (rc, files, out[-200:]))

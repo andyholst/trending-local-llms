@@ -33,8 +33,13 @@ REPORT="${QA_REPORT:-qa-report.txt}"
 # no progress: issue #383). `run_checks` truncates $REPORT at the start of every
 # round, so these are accumulated here and folded into $REPORT by the NEXT
 # run_checks — otherwise the note is wiped before anyone can see it.
-NOTES="$REPORT.notes"
-: >"$NOTES"
+# It lives OUTSIDE the checkout (issue #390). `$REPORT.notes` put the file in the
+# repo root, where the bot's `git add -A` commit step picked it up: PR #387 carries
+# an empty `qa-report.txt.notes` it never meant to add, and a NON-empty one would
+# publish the loop's own diagnostics (a hung round, a round that made no progress)
+# into the repository. Scratch state of the loop is not repository content.
+NOTES="$(mktemp "${TMPDIR:-/tmp}/fix-loop-notes.XXXXXX")"
+trap 'rm -f "$NOTES"' EXIT
 MAKE="${MAKE:-make}"
 # Bound ONE Hermes round (issue #383). The loop used to run `make fix` with no time
 # limit at all, so a round that never returned was killed by the JOB's

@@ -242,6 +242,37 @@ def test_a_hung_round_is_bounded_by_the_loop():
           rc == 1 and calls.count("fix") == 3, f"rc={rc} {calls}")
 
 
+def test_scratch_notes_stay_out_of_the_tree():
+    """Issue #390: the loop records a timed-out / no-progress round in a notes file it
+    folds into the report. Writing it as `$REPORT.notes` put it in the repo root, and a
+    bot's `git add -A` committed an empty `qa-report.txt.notes` into PR #387. The notes
+    are the loop's own scratch: they must never appear next to the report."""
+    if not shutil.which("bash"):
+        print("  SKIP notes: bash not available")
+        return
+    td = Path(tempfile.mkdtemp())
+    try:
+        rec = td / "make"
+        rec.write_text(RECORDER)
+        rec.chmod(0o755)
+        (td / "red").write_text("99")
+        (td / "calls.log").write_text("")
+        # QA_REPORT relative to the loop's cwd is the production shape (`qa-report.txt`
+        # in the repo root), and a timed-out round is what makes a NON-empty note.
+        env = dict(os.environ, MAKE=str(rec), FIX_ROUNDS="1", QA_REPORT="qa-report.txt",
+                   FIX_BASE_MERGE="0", HERMES_FIX_TIMEOUT="1", FIX_SLEEP="5")
+        subprocess.run(["bash", str(LOOP)], cwd=str(td), env=env, capture_output=True,
+                       text=True, timeout=120)
+        report = (td / "qa-report.txt").read_text() if (td / "qa-report.txt").exists() else ""
+        leftovers = sorted(p.name for p in td.iterdir() if p.name.endswith(".notes"))
+        check("notes: no scratch file is created beside the report (issue #390)",
+              leftovers == [], leftovers)
+        check("notes: the timeout still reaches qa-report.txt through the scratch file",
+              "TIMED OUT after 1s" in report, report[-300:])
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
 def test_base_merge_is_skipped_outside_a_checkout():
     """The base merge must be a no-op outside a git checkout (issue #383): it can
     never fail the loop, and the checks still run."""
@@ -340,6 +371,7 @@ def main() -> int:
     test_budget_burn_retries_with_reasoning_off()
     test_report_holds_only_the_failing_check()
     test_a_hung_round_is_bounded_by_the_loop()
+    test_scratch_notes_stay_out_of_the_tree()
     test_base_merge_is_skipped_outside_a_checkout()
     test_the_base_is_merged_before_any_llm_round()
     test_a_round_that_changes_nothing_stops_the_loop()
