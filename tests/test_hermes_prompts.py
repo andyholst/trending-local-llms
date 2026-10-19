@@ -200,6 +200,45 @@ def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():
               "also record the optional model fields" not in recipe, "")
 
 
+def test_every_search_leg_asks_for_the_engine_rule_from_one_definition():
+    """Issue #378: the legs fabricated an ENGINE out of the MODEL name when a post
+    named no engine (`Nvidia/Qwen3.8-Flash-Next-FP4-Local` running NVFP4 became
+    engine `NVIDIA FP4-Local`). An engine with no repo can never be registered, so
+    the whole refresh PR went red for it. The rule that forbids it was four
+    byte-identical inline copies; it is now ONE definition no leg can diverge from.
+    """
+    mk = (ROOT / "Makefile").read_text()
+
+    # Given ONE shared definition
+    check("make: ENGINE_ASK is defined exactly once", mk.count("ENGINE_ASK :=") == 1, mk.count("ENGINE_ASK :="))
+    parts = mk.split("ENGINE_ASK :=", 1)
+    definition = parts[1].split("\n", 1)[0] if len(parts) > 1 else ""
+
+    # Then  it requires an engine the POST names, and forbids manufacturing one
+    for want in ("must be the engine the post ACTUALLY NAMES",
+                 "names no engine at all, SKIP that measurement",
+                 "a t/s with no engine is not a valid entry",
+                 "A model name, a vendor name or a quantization is NEVER an engine",
+                 "NVFP4"):
+        check(f"engine ask: names the rule ({want[:38]}…)", want in definition, definition[:120])
+
+    # Then  it keeps the rules it already carried (one definition, not a rewrite)
+    for want in ("Use engine names exactly as registered in data/models.json",
+                 "record the engine exactly as that fork is named",
+                 "add engine_repo =",
+                 "never invent or guess a URL"):
+        check(f"engine ask: keeps the existing rule ({want[:38]}…)", want in definition, definition[:120])
+    check("engine ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
+          '"' not in definition, definition[:60])
+
+    # Then  every leg takes it from $(ENGINE_ASK) and keeps no divergent copy
+    for leg in ("nvidia", "metal", "cpu", "amd"):
+        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
+        check(f"{leg}: takes the engine rule from $(ENGINE_ASK)", "$(ENGINE_ASK)" in recipe, recipe[-160:])
+        check(f"{leg}: carries no second copy of the buried engine sentence",
+              "Use engine names exactly as registered in data/models.json" not in recipe, "")
+
+
 def test_prompt_permutations():
     """DATA-DRIVEN: correct prompt bodies pass; every broken form (unescaped
     quote, malformed -z, missing quotes) is rejected."""
@@ -234,6 +273,7 @@ def main() -> int:
     test_makefile_prompts_cap_reasoning()
     test_make_dry_run_single_hermes_command()
     test_every_search_leg_asks_for_the_model_dimensions_from_one_definition()
+    test_every_search_leg_asks_for_the_engine_rule_from_one_definition()
     test_every_headless_agent_call_passes_the_noninteractive_flag_set()
     test_a_recipe_with_only_yolo_is_refused()
     test_prompt_permutations()

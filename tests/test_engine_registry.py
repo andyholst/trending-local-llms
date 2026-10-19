@@ -245,10 +245,16 @@ def test_contracts_and_prompts():
     check("contract: store measurements do NOT accept engine_repo (stripped at ingest)",
           "engine_repo" not in mc["properties"]["models"]["items"]["properties"]["engines"]["items"]["properties"])
     mk = (ROOT / "Makefile").read_text()
+    # The engine rules are ONE definition the legs expand (`ENGINE_ASK`, issue #378),
+    # so they are checked once there and each leg is checked to expand it — a leg
+    # cannot carry a divergent copy of them.
+    engine_ask = mk.split("ENGINE_ASK :=", 1)[1].split("\n", 1)[0] if "ENGINE_ASK :=" in mk else ""
+    check("engine ask: defines engine vs harness/app/benchmark", "harnesses, agent frameworks" in engine_ask)
+    check("engine ask: asks for engine_repo, never invent",
+          "engine_repo" in engine_ask and "never invent" in engine_ask)
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         prompt = mk[mk.index(f"_search-{b}:\n"):].split("\n", 2)[1]
-        check(f"prompt {b}: defines engine vs harness/app/benchmark", "harnesses, agent frameworks" in prompt)
-        check(f"prompt {b}: asks for engine_repo, never invent", "engine_repo" in prompt and "never invent" in prompt)
+        check(f"prompt {b}: takes the engine rules from $(ENGINE_ASK)", "$(ENGINE_ASK)" in prompt, prompt[-120:])
     fix = mk[mk.index("_fix:\n"):].split("\n", 2)[1]
     check("prompt fix: never register a harness/app/benchmark", "Never register a harness" in fix)
     check("make: engine-check target", "_engine-check:" in mk and "engine_registry.py --check-raw" in mk)
@@ -306,8 +312,14 @@ def test_search_prompts_look_up_missing_repos():
     could not register it. The prompts must ask for ONE verified lookup."""
     mk = (ROOT / "Makefile").read_text()
     lines = [l for l in mk.splitlines() if "hermes -z" in l and "--write-raw" in l]
-    check("prompts: every search prompt asks for a verified repo lookup when the post links none",
-          lines and all("links no repo" in l and "page resolves" in l for l in lines), len(lines))
+    # The lookup rule is ONE definition the legs expand (`ENGINE_ASK`, issue #378):
+    # it is stated once there, and each leg is checked to expand it rather than to
+    # carry its own copy.
+    engine_ask = mk.split("ENGINE_ASK :=", 1)[1].split("\n", 1)[0] if "ENGINE_ASK :=" in mk else ""
+    check("engine ask: asks for a verified repo lookup when the post links none",
+          "links no repo" in engine_ask and "page resolves" in engine_ask, engine_ask[-160:])
+    check("prompts: every search prompt takes the engine rules from $(ENGINE_ASK)",
+          lines and all("$(ENGINE_ASK)" in l for l in lines), len(lines))
 
 
 def test_classifier_signals():

@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **57** · archived: **0**
+Active changes: **58** · archived: **0**
 
 ## Active changes
 
@@ -64,6 +64,7 @@ Active changes: **57** · archived: **0**
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 | `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
 | `refresh-run-block-uses-gh-api` | active | #320 | — | [refresh-run-block](openspec/changes/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-run-block-uses-gh-api/proposal.md) |
+| `search-engine-must-be-named` | active | #378 | — | [search-engine-rule](openspec/changes/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/search-engine-must-be-named/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
