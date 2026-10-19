@@ -47,7 +47,11 @@ case "$1" in
   manifest|image)
     case "$2" in
       inspect)
-        if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0; else exit 1; fi ;;
+        # The registry can FAIL to answer (issue #235): that is not "the tag is absent".
+        if [ -n "$FAKE_DOCKER_MANIFEST_ERROR" ]; then
+          echo "$FAKE_DOCKER_MANIFEST_ERROR" >&2; exit 1; fi
+        if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0
+        else echo "manifest unknown: $3" >&2; exit 1; fi ;;
     esac ;;
   push)
     if grep -qxF "$2" "$FAKE_DOCKER_TAGS" 2>/dev/null; then exit 0; else echo "tag does not exist: $2" >&2; exit 1; fi ;;
@@ -318,6 +322,34 @@ def test_force_reaches_the_script_as_a_value_not_a_bare_flag():
           "--force=$(FORCE)" in mk, "")
 
 
+def test_a_registry_hiccup_is_a_loud_failure_not_a_rebuild():
+    """Issue #235: `published()` was `returncode == 0`, so a network error, a 5xx or a
+    rate limit read as "the tag is absent" — and the run rebuilt and republished the
+    toolchain from whatever tree was checked out."""
+    hiccup = "Get \"https://ghcr.io/v2/\": dial tcp 140.82.112.33:443: i/o timeout"
+
+    # Given every tag IS published, but the registry cannot answer
+    rc, calls, out = _run(["ensure-base"], available=[_base_tag()],
+                          env_extra={"FAKE_DOCKER_MANIFEST_ERROR": hiccup})
+
+    # Then  the run fails loudly and builds NOTHING
+    check("hiccup: exit non-zero", rc != 0, out[-400:])
+    check("hiccup: it says the registry could not tell", "cannot tell whether" in out, out[-400:])
+    check("hiccup: it names docker's own words", "i/o timeout" in out, out[-400:])
+    check("hiccup: it does NOT fall back to a build",
+          not any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # Given the registry DOES say the tag is absent, the same target builds as before
+    rc, calls, out = _run(["ensure-base"], available=[])
+    check("absent: exit 0", rc == 0, out[-300:])
+    check("absent: it builds", any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # And the rebuild DECISION refuses to guess too
+    rc, calls, out = _run(["decide", "--dow", "1"], available=[_base_tag()],
+                          env_extra={"FAKE_DOCKER_MANIFEST_ERROR": hiccup})
+    check("hiccup: the rebuild decision fails instead of deciding", rc != 0, out[-400:])
+
+
 def test_wired_into_make_test():
     """The suite runs under `make test` (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -447,6 +479,7 @@ def main() -> int:
     test_tags_are_the_hash_of_this_revisions_inputs()
     test_the_rebuild_decision_is_data_not_workflow_shell()
     test_force_is_parsed_strictly_so_zero_means_off()
+    test_a_registry_hiccup_is_a_loud_failure_not_a_rebuild()
     test_force_reaches_the_script_as_a_value_not_a_bare_flag()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
