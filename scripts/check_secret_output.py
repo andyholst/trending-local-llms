@@ -196,15 +196,41 @@ SELF_EXEMPT = {"scripts/check_secret_output.py", "tests/test_secret_output.py", 
 #: what checks the rest of the tree.)
 
 
+#: A file whose lines are COMMANDS. The command-shaped rules (a printed value, a value on
+#: argv, an env dump, a piped stdout, an `set -x`) describe EXECUTION, so they apply to
+#: files that run things: a document that QUOTES the forbidden shape — every OpenSpec
+#: proposal that explains one, `AGENTS.md`'s own §3d examples — is not a leak (issue
+#: #224). The SHAPE rules (a credential literal) apply to every text file, because a real
+#: value pasted into prose is a leak too.
+EXECUTES_SUFFIXES = (".sh", ".bash", ".zsh", ".py", ".mk", ".yml", ".yaml")
+
+
+def executes_commands(path: Path) -> bool:
+    """True when this file's lines are commands rather than prose or data."""
+    return path.suffix.lower() in EXECUTES_SUFFIXES or path.name == "Makefile"
+
+
 def tracked_files(root: Path = REPO_ROOT) -> list[Path]:
-    """Every text file a reviewer would call part of the repo."""
+    """Every TEXT file a reviewer would call part of the repo (issue #224).
+
+    This used to be a suffix whitelist (`.sh`/`.py`/`.yml`/`.yaml`/`.mk`/`.bash`/`.zsh`
+    plus `Makefile`), so a credential printed from a `.txt`, `.toml`, `.json`, `.md` or
+    extension-less file was invisible while the docstring claimed the wider set — the
+    file type nobody scans is the file type a one-line leak survives in. A binary (a NUL
+    byte in the first 8000) and an empty file are skipped, the same rule
+    `scripts/lint_linefeeds.py` uses, so an image or an empty placeholder is never a
+    finding.
+    """
     out: list[Path] = []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or any(part in SKIP_DIRS for part in path.parts):
             continue
-        if path.suffix.lower() not in (".sh", ".py", ".yml", ".yaml", ".mk", ".bash", ".zsh"):
-            if path.name != "Makefile":
-                continue
+        try:
+            head = path.read_bytes()[:8000]
+        except OSError:
+            continue
+        if not head or b"\x00" in head:
+            continue
         out.append(path)
     return out
 
@@ -310,7 +336,8 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
         is_workflow = rel.startswith(".github/workflows/")
         lines = text.splitlines()
 
-        if any(XTRACE.search(l) for l in lines) and SECRET_VALUE.search(text):
+        runs_things = executes_commands(path)
+        if runs_things and any(XTRACE.search(l) for l in lines) and SECRET_VALUE.search(text):
             line = next(n for n, l in enumerate(lines, 1) if XTRACE.search(l))
             bad.append(f"{rel}:{line}: xtrace-with-secrets — `set -x` in a file that reads a "
                        f"secret prints every expansion; drop the flag or the secret")
@@ -379,6 +406,10 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
                                    f"the value (issue #351)")
 
         for n, line in enumerate(lines, 1):
+            if not runs_things:
+                # A prose/data file is checked for a leaked VALUE (the shape rules above),
+                # never for running a command it quotes (issue #224).
+                break
             s = line.strip()
             if not s or s.startswith("#"):
                 continue
