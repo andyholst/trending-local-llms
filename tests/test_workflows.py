@@ -34,6 +34,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from update_trending import SEARCH_LEGS  # noqa: E402  ('nvidia', 'metal', 'cpu', 'amd')
+import pr_closure  # noqa: E402  the pipeline's OWN closure parser (issue #289)
 
 PAT = "secrets.FIXBOT_DISPATCH_TOKEN"
 _PASS = 0
@@ -300,6 +301,73 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
         return p.returncode, p.stdout + p.stderr + gh_out, files
     finally:
         shutil.rmtree(td, ignore_errors=True)
+
+
+def _run_issue_pr_step(issue: str = "376") -> tuple[int, str, str, str]:
+    """Execute the REAL issue-bot "Open the PR" step with a stub `gh`.
+
+    Returns (rc, output, the argv gh was called with, the body file it was given).
+    The body is what GitHub parses, so it — not the workflow text — is the claim.
+    """
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    pr = step(load("issue-bot.yml")["jobs"]["implement"], "Open the PR")
+    td = Path(tempfile.mkdtemp())
+    try:
+        bin_ = td / "bin"
+        bin_.mkdir()
+        gh = bin_ / "gh"
+        gh.write_text(
+            "#!/bin/sh\n"
+            'printf "%s\\n" "$*" >> "$TD/gh.log"\n'
+            'prev=""\n'
+            'for a in "$@"; do\n'
+            '  [ "$prev" = "--body-file" ] && cp "$a" "$TD/body.md"\n'
+            '  prev="$a"\n'
+            "done\n"
+            'echo "https://example.invalid/pull/1"\n')
+        gh.chmod(0o755)
+        env = dict(os.environ, PATH=f"{bin_}{os.pathsep}{os.environ['PATH']}", TD=str(td),
+                   ISSUE=issue, BRANCH=f"ci/data-gap-{issue}-slug", REPO="o/r",
+                   GH_TOKEN="x", GITHUB_OUTPUT=str(td / "out"))
+        p = subprocess.run(["bash", "-e", "-c", pr["run"]], cwd=td, env=env,
+                           capture_output=True, text=True)
+        log = (td / "gh.log").read_text() if (td / "gh.log").exists() else ""
+        body = (td / "body.md").read_text() if (td / "body.md").exists() else ""
+        return p.returncode, p.stdout + p.stderr, log, body
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_issue_bot_pr_body_actually_closes_the_issue():
+    """Issue #289: the assertion was `"closes #" in pr_run` — the marker word, not
+    the claim. #272's body said `Closes #271 and #276`, closed #271 and left #276
+    open, and that check stayed green. The step is now RUN and its body handed to
+    the same parser the pipeline uses (scripts/pr_closure.py)."""
+
+    # Given the issue-bot PR step, executed with a stub `gh`
+    rc, out, log, body = _run_issue_pr_step("376")
+
+    # Then  it opens the PR with a body FILE (what GitHub reads)
+    check("issue-bot: the PR is created with --body-file", rc == 0 and "--body-file" in log, out[-300:] or log)
+    check("issue-bot: it hands gh a non-empty body", bool(body.strip()), body[:200])
+
+    # And   that body closes EXACTLY the issue the branch implements
+    problems = pr_closure.check(body, "ci/data-gap-376-slug")
+    check("issue-bot: the body closes the issue it implements (no chained reference)",
+          problems == [], problems)
+    binds = pr_closure.closing_bindings(pr_closure.visible_text(body))
+    check("issue-bot: exactly one closing keyword, binding one reference",
+          binds == [(376, [376])], binds)
+
+    # And   the assertion is not vacuous: the two shapes that broke the pipeline
+    #       in reality are still refused by the same parser.
+    for bad, why in (("closes #271 and #276", "a chained reference"),
+                     ("closes #999", "the wrong issue")):
+        check(f"issue-bot: the check would refuse {why}",
+              pr_closure.check(bad, "ci/data-gap-376-slug") != [], bad)
 
 
 def test_fix_bot_announces_its_window():
@@ -914,7 +982,10 @@ def test_issue_bot():
     pr = step(impl, "Open the PR")
     pr_run = pr.get("run", "")
     check("issue-bot: opens the PR against master", "--base master" in pr_run, pr_run[:200])
-    check("issue-bot: the PR closes the issue", "closes #" in pr_run, pr_run[:200])
+    # The old check here was `"closes #" in pr_run` — a marker word, which is
+    # exactly what hid #272 (`Closes #271 and #276` closed only #271). The body
+    # the step really hands to `gh` is now checked with the pipeline's own
+    # parser; see test_issue_bot_pr_body_actually_closes_the_issue (#289).
     check("issue-bot: opens the PR with the owner PAT (a GITHUB_TOKEN PR is held for approval)",
           PAT in str(pr.get("env", {}).get("GH_TOKEN", "")), pr.get("env"))
     check("issue-bot: never merges a PR itself", "gh pr merge" not in body, "")
@@ -1779,6 +1850,7 @@ def main() -> int:
     test_fix_bot()
     test_fix_bot_announces_its_window()
     test_fix_bot_push_behaviour()
+    test_issue_bot_pr_body_actually_closes_the_issue()
     test_every_committing_bot_job_commits_as_the_agent()
     test_owner_guards()
     test_guard_behaviour()
