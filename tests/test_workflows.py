@@ -1024,8 +1024,10 @@ def test_issue_bot():
     import re as _re
     hermes_recipe = _re.search(r"\n_implement-issue:\n((?:\t[^\n]*\n)+)", mk)
     hermes_body = hermes_recipe.group(1) if hermes_recipe else ""
+    # The alias is the Makefile's ONE definition (issue #221): the recipe uses
+    # `$(HERMES_ALIAS)`, so the check reads the variable the image config is built from.
     check("issue-bot: the `_implement-issue` recipe is the alias-using one",
-          "-m nous-deepseek" in hermes_body, hermes_body[:300])
+          "-m $(HERMES_ALIAS)" in hermes_body, hermes_body[:300])
     comment = step(impl, "Report the outcome")
     check("issue-bot: the outcome comment uses the default token (the PAT has no Issues write)",
           comment.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", comment.get("env"))
@@ -1384,7 +1386,7 @@ def test_implement_prompt_requires_openspec_and_findings():
     # The flag set is one variable (issue #351): `--yolo` alone is not enough,
     # `--accept-hooks` is a separate flag, and a `-z` run that needs input detaches.
     check("prompt: the recipe keeps the `-z` line and the model flags on one command",
-          prompt.count('-z "') == 1 and "-m nous-deepseek" in prompt
+          prompt.count('-z "') == 1 and "-m $(HERMES_ALIAS)" in prompt
           and prompt.rstrip().endswith("$(HERMES_NONINTERACTIVE)"),
           prompt[-200:])
 
