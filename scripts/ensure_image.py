@@ -108,12 +108,33 @@ def _run(*cmd: str) -> None:
     subprocess.run(list(cmd), cwd=ROOT, check=True)
 
 
+class RegistryUnknown(Exception):
+    """The registry could not answer whether a tag exists — not the same as "absent"."""
+
+
+#: docker's own wording when the TAG is genuinely absent, as opposed to the registry
+#: failing to answer. Anything else is silence about the tag, and silence is not absence
+#: (issue #235): reading a hiccup as "not published" rebuilt the toolchain and could
+#: overwrite a perfectly good tag with a build of whatever tree happened to be checked out.
+_ABSENT_SIGNATURES = ("manifest unknown", "no such manifest", "not found")
+
+
 def published(ref: str) -> bool:
-    """True when the registry can serve the tag (public packages: no login)."""
-    return subprocess.run(
+    """True when the registry serves the tag; False when it says the tag is absent.
+
+    Raises `RegistryUnknown` when docker fails for any OTHER reason (network, 5xx, rate
+    limit, auth): the caller must fail loudly instead of rebuilding (issue #235).
+    """
+    out = subprocess.run(
         ["docker", "manifest", "inspect", ref],
         cwd=ROOT, capture_output=True, text=True,
-    ).returncode == 0
+    )
+    if out.returncode == 0:
+        return True
+    said = f"{out.stderr or ''}\n{out.stdout or ''}".strip()
+    if any(sig in said.lower() for sig in _ABSENT_SIGNATURES):
+        return False
+    raise RegistryUnknown(f"cannot tell whether {ref} is published — docker said: {said[:200] or '(no output)'}")
 
 
 def ensure_base() -> str:
@@ -401,6 +422,18 @@ def force_flag(argv: list[str]) -> bool:
 
 
 def main(argv: list[str]) -> int:
+    """The CLI: a registry that cannot answer is a LOUD failure, never a rebuild."""
+    try:
+        return _dispatch(argv)
+    except RegistryUnknown as exc:
+        print(f"[ensure] FAIL: {exc}", file=sys.stderr)
+        print("[ensure] the registry did not say the tag is absent, so this is not a "
+              "reason to build or push — retry when the registry answers (issue #235)",
+              file=sys.stderr)
+        return 1
+
+
+def _dispatch(argv: list[str]) -> int:
     action = argv[1] if len(argv) > 1 else "ensure"
     if action == "tags":
         print(f"BASE_TAG={base_tag()}")
