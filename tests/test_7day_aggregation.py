@@ -19,6 +19,7 @@ Run:  python3 tests/test_7day_aggregation.py   or   make test
 """
 from __future__ import annotations
 
+import itertools
 import json
 import sys
 import tempfile
@@ -372,15 +373,25 @@ def test_ingest_same_model_engine_gpu_not_duplicated():
           ("RTX 4090 24GB", "50") in gpu_rows and ("RTX 5090", "80") in gpu_rows, json.dumps(gpu_rows))
 
 
+_POST_SEQ = itertools.count(900000)
+
+def _next_post() -> str:
+    """A fresh synthetic post URL for a row that must stay its OWN measurement.
+
+    Since #389 one real post is ONE measurement per (engine, date), so two rows sharing a
+    post collapse whatever their t/s — and these cases are about t/s concordance."""
+    return f"https://lightbrd.com/u/status/{next(_POST_SEQ)}"
+
+
 def test_merge_engines_interaction_weighted():
     """The three engagement rules:
     1. Higher engagement -> that measurement's t/s matters more.
     2. Concordant reports -> engagement-weighted average is set.
     3. Only UPDATE to a higher t/s, never lower the stored value.
     Plus: est-duplicate rows (39.3 vs 39.3 (est)) collapse to one."""
-    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/u/status/9002", date="2026-09-28"):
+    def eng(tps, likes, hw="RTX 8GB GPU", post=None, date="2026-09-28"):
         return {"engine": "FreeToken", "tps": tps, "hardware": hw, "date": date,
-                "source_post": post, "likes": likes, "comments": 0}
+                "source_post": post or _next_post(), "likes": likes, "comments": 0}
 
     # rule 3: incoming concordant but LOWER -> keep the stored (higher) value
     cur = [eng("50", 30)]
@@ -435,10 +446,10 @@ def test_merge_engines_edge_cases():
     """Edge cases for the interaction-weighted merge: empty groups, ranges,
     different engines/GPUs, missing engagement, extreme engagement, zero/empty
     tps, and many-concordant collapse."""
-    def eng(tps, likes=0, comments=0, hw="RTX 8GB GPU", post="https://lightbrd.com/u/status/9002",
+    def eng(tps, likes=0, comments=0, hw="RTX 8GB GPU", post=None,
             date="2026-09-28", engine="FreeToken"):
         return {"engine": engine, "tps": tps, "hardware": hw, "date": date,
-                "source_post": post, "likes": likes, "comments": comments}
+                "source_post": post or _next_post(), "likes": likes, "comments": comments}
 
     # 1. empty inputs
     check("edge: empty current + empty incoming -> []",
@@ -499,9 +510,11 @@ def test_merge_engines_tps_matrix():
     or distinct (2 rows) under the concordance rule. Covers identical, est,
     near, decimal-near, range-vs-single, range-vs-range, far, far-range,
     tilde-vs-int, comment-vs-plain, and different-engine/GPU."""
-    def eng(tps, hw="RTX 8GB GPU", engine="FreeToken"):
+    def eng(tps, hw="RTX 8GB GPU", engine="FreeToken", post=None):
+        # Each row is its OWN post: since #389 one real post is ONE measurement per
+        # (engine, date), so a shared post would collapse rows whatever their t/s.
         return {"engine": engine, "tps": tps, "hardware": hw, "date": "2026-09-28",
-                "source_post": "https://lightbrd.com/u/status/9002", "likes": 1, "comments": 0}
+                "source_post": post or _next_post(), "likes": 1, "comments": 0}
     # (a, b, expected_collapse)
     matrix = [
         ("50", "50", True),                       # identical
@@ -653,9 +666,9 @@ def test_merge_engines_engagement_tps_permutations():
     (low/high engagement) x (lower/same/higher tps) -> expected (rows, core).
     Each row: (tps_a, likes_a, tps_b, likes_b, expected_rows, expected_core or
     None for 'distinct'). keep-higher wins over the weighted mean."""
-    def eng(tps, likes, hw="RTX 8GB GPU", post="https://lightbrd.com/u/status/9002"):
+    def eng(tps, likes, hw="RTX 8GB GPU", post=None):
         return {"engine": "FreeToken", "tps": tps, "hardware": hw, "date": "2026-09-28",
-                "source_post": post, "likes": likes, "comments": 0}
+                "source_post": post or _next_post(), "likes": likes, "comments": 0}
     # (a_tps, a_likes, b_tps, b_likes, expected_rows, expected_core)
     matrix = [
         # higher vs higher (both high eng) -> collapse, higher tps
