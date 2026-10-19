@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **67** · archived: **0**
+Active changes: **69** · archived: **0**
 
 ## Active changes
 
@@ -68,6 +68,7 @@ Active changes: **67** · archived: **0**
 | `prs-are-never-drafts` | active | — | — | [pr-lifecycle](openspec/changes/prs-are-never-drafts/specs/pr-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/prs-are-never-drafts/proposal.md) |
 | `qa-validate-carries-the-guard` | active | — | — | [qa-validate-carries-the-guard](openspec/changes/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/qa-validate-carries-the-guard/proposal.md) |
 | `query-coverage-guard` | active | — | — | [query-coverage](openspec/changes/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/query-coverage-guard/proposal.md) |
+| `queue-drops-run-backstop` | active | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/queue-drops-run-backstop/proposal.md) |
 | `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 | `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
