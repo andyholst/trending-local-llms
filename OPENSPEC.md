@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **82** · archived: **0**
+Active changes: **84** · archived: **0**
 
 ## Active changes
 
@@ -27,6 +27,7 @@ Active changes: **82** · archived: **0**
 | `bot-guards-allow-the-bot` | active | — | — | [bot-guards-allow-the-bot](openspec/changes/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-guards-allow-the-bot/proposal.md) |
 | `bot-marker-registry` | active | — | — | [bot-markers](openspec/changes/bot-marker-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-marker-registry/proposal.md) |
 | `bot-verification-protocol` | active | — | — | [bot-verification-protocol](openspec/changes/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/bot-verification-protocol/proposal.md) |
+| `card-gap-report` | active | #342 — `tech-debt: Only EMPTY tiers are reported as collection gaps — a model with no card evidence at all is silent` | — | [card-fit](openspec/changes/card-gap-report/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/card-gap-report/proposal.md) |
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
 | `code-review-bot` | active | — | — | [code-review](openspec/changes/code-review-bot/specs/code-review/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-bot/proposal.md) |
 | `code-review-refusal-names-its-cost` | active | — | — | [code-review-scan](openspec/changes/code-review-refusal-names-its-cost/specs/code-review-scan/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-refusal-names-its-cost/proposal.md) |
@@ -51,6 +52,7 @@ Active changes: **82** · archived: **0**
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
 | `fixbot-gh-repo-before-checkout` | active | #331 | — | [fixbot-before-checkout](openspec/changes/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/fixbot-gh-repo-before-checkout/proposal.md) |
 | `force-flag-parsing` | active | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/force-flag-parsing/proposal.md) |
+| `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
