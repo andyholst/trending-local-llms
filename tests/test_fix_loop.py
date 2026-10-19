@@ -273,6 +273,22 @@ def test_scratch_notes_stay_out_of_the_tree():
         shutil.rmtree(td, ignore_errors=True)
 
 
+def test_no_scratch_report_file_is_tracked():
+    """Issue #390, follow-up: the notes fix stopped the loop CREATING the file, but a
+    file already tracked stays tracked — PR #387 had merged the 0-byte
+    `qa-report.txt.notes` into master. Nothing may be tracked in the loop's scratch
+    class (the report, its siblings, the PR comment body)."""
+    if not shutil.which("git") or not (ROOT / ".git").exists():
+        print("  SKIP tracked scratch: not a git checkout")
+        return
+    out = subprocess.run(
+        ["git", "ls-files", "--", "qa-report.txt", "qa-report.txt.*", "comment.md"],
+        cwd=str(ROOT), capture_output=True, text=True)
+    tracked = [p for p in out.stdout.split() if p]
+    check("scratch: no qa-report*/comment.md scratch file is tracked (issue #390)",
+          tracked == [], tracked)
+
+
 def test_base_merge_is_skipped_outside_a_checkout():
     """The base merge must be a no-op outside a git checkout (issue #383): it can
     never fail the loop, and the checks still run."""
@@ -372,6 +388,7 @@ def main() -> int:
     test_report_holds_only_the_failing_check()
     test_a_hung_round_is_bounded_by_the_loop()
     test_scratch_notes_stay_out_of_the_tree()
+    test_no_scratch_report_file_is_tracked()
     test_base_merge_is_skipped_outside_a_checkout()
     test_the_base_is_merged_before_any_llm_round()
     test_a_round_that_changes_nothing_stops_the_loop()
