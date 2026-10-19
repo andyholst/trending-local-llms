@@ -4,7 +4,14 @@
 One model's quants fit different cards, so the card-fit view needs the footprint
 on the MEASUREMENT that produced a t/s figure — not only on the model row. The
 contracts now declare optional `weight_gb` / `context_tokens` / `system_ram_min` /
-`storage_offload` on a measurement item.
+`storage_offload` / `engine_min_version` on a measurement item.
+
+`engine_min_version` is a requirement dimension too, and the only one whose home
+is the MEASUREMENT: a minimum engine build (or the flags a run needed) is a
+property of the engine that produced the figure, so a raw snapshot that records
+it per measurement is right — the store contract used to accept it on the model
+row alone and `additionalProperties: false` then refused the per-measurement one,
+reddening a whole refresh PR (run 39124432576).
 
 The contract files being right is not enough: the measurement item is
 `additionalProperties: false`, so a key the ingest path does not carry through is
@@ -57,7 +64,7 @@ RAW = {
         "id": "bonsai-2-27b", "name": "Bonsai 2 27B", "full_name": "Ternary-Bonsai-2-27B",
         "type": "LLM", "license": "Apache 2.0", "params": "27B", "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
         "vram_tier": "12GB", "vram_min": "6GB", "backends": ["CUDA"],
-        "supported_engines": ["llama.cpp"], "why": "ternary", "last_seen": "2026-10-17",
+        "why": "ternary", "last_seen": "2026-10-17",
         "formats": [{"name": "GGUF", "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"}],
         "engagement": {"likes": 10, "comments": 2, "views": 1000},
         "engines": [{
@@ -66,6 +73,7 @@ RAW = {
             "source_post": "https://lightbrd.com/a/status/1",
             "weight_gb": "5.95GB PTQ1_0", "context_tokens": "262144",
             "system_ram_min": "16GB", "storage_offload": "640GB NVMe",
+            "engine_min_version": "b6xxx, --n-gpu-layers 99",
         }],
     }],
 }
@@ -79,11 +87,30 @@ STORE = {
 }
 
 
+def _write_raw(tmp: str) -> Path:
+    """Write the shape ONE search leg produces into `tmp/raw` and return the dir."""
+    raw_dir = Path(tmp) / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / "nvidia-20261017T090000Z.json").write_text(json.dumps(RAW))
+    return raw_dir
+
+
+def search_contract_failures(raw_dir: Path) -> list:
+    """Run the REAL `check_search_contract` against the REAL search contract over
+    `raw_dir` and return what it reported — the check the refresh PR failed on, not
+    a stub of it (rule 6m)."""
+    V.RAW_DIR = raw_dir
+    V.FAILURES.clear()
+    V.check_search_contract()
+    failures = list(V.FAILURES)
+    V.FAILURES.clear()
+    return failures
+
+
 def run_ingest(tmp: str):
     """Real ingest of a real raw file under a temp data tree; returns (store, model, measurement)."""
     os.environ["TRENDING_DATA_DIR"] = tmp
-    (Path(tmp) / "raw").mkdir(parents=True, exist_ok=True)
-    (Path(tmp) / "raw" / "nvidia-20261017T090000Z.json").write_text(json.dumps(RAW))
+    _write_raw(tmp)
     import update_trending as ut  # imported AFTER the env seam, like the make targets
     store = json.loads(json.dumps(STORE))
     ut.ingest_raw_snapshots(store, since=None)
@@ -97,12 +124,14 @@ def main() -> int:
         ut, store, m, e = run_ingest(tmp)
         print("-- test_a_measurement_footprint_survives_ingest")
         for k, want in (("weight_gb", "5.95GB PTQ1_0"), ("context_tokens", "262144"),
-                        ("system_ram_min", "16GB"), ("storage_offload", "640GB NVMe")):
+                        ("system_ram_min", "16GB"), ("storage_offload", "640GB NVMe"),
+                        ("engine_min_version", "b6xxx, --n-gpu-layers 99")):
             check(f"ingest: the measurement keeps its own {k}", e.get(k) == want, e.get(k))
         check("ingest: the t/s figure itself is unchanged", e.get("tps") == "146", e.get("tps"))
         check("ingest: nothing was pruned from the measurement",
               set(e) >= {"engine", "tps", "hardware", "quant", "date", "source_post",
-                         "weight_gb", "context_tokens", "system_ram_min", "storage_offload"}, sorted(e))
+                         "weight_gb", "context_tokens", "system_ram_min", "storage_offload",
+                         "engine_min_version"}, sorted(e))
 
         print("-- test_the_store_still_conforms_to_the_contract")
         V.FAILURES.clear()
@@ -110,6 +139,17 @@ def main() -> int:
         check("contract: the real check_schema accepts a store carrying the new keys",
               V.FAILURES == [], V.FAILURES[:2])
         V.FAILURES.clear()
+
+        print("-- test_the_search_contract_accepts_a_per_measurement_engine_min_version")
+        # The regression this fix exists for: a search leg wrote the minimum engine
+        # build ON THE MEASUREMENT and the search contract refused it
+        # (`Additional properties are not allowed ('engine_min_version' was
+        # unexpected) (at ['models', 0, 'engines', 1])`), so a whole refresh PR went
+        # red and the loop burned its budget repairing nothing (run 39124432576).
+        # The REAL check, against the REAL contract.
+        failures = search_contract_failures(Path(tmp) / "raw")
+        check("search contract: a per-measurement engine_min_version is accepted",
+              failures == [], failures[:2])
 
         print("-- test_the_footprint_drives_the_card_fit")
         check("fit: the run proves the 32 GB card it ran on", ut.fits_tier(m, e, 32) == "ran-on")
@@ -122,7 +162,8 @@ def main() -> int:
     for name in ("model_contract.json", "search_contract.json"):
         c = json.loads((ROOT / "data" / name).read_text())
         item = c["properties"]["models"]["items"]["properties"]["engines"]["items"]
-        for k in ("weight_gb", "context_tokens", "system_ram_min", "storage_offload"):
+        for k in ("weight_gb", "context_tokens", "system_ram_min", "storage_offload",
+                  "engine_min_version"):
             check(f"{name}: measurement declares optional {k}", k in item["properties"], sorted(item["properties"]))
             check(f"{name}: {k} is NOT required (additive, rule 3b)", k not in item.get("required", []),
                   item.get("required"))
