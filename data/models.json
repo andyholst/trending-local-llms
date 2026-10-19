@@ -6569,7 +6569,7 @@
       "license": "Apache-2.0",
       "params": "80B (MoE, 3B active)",
       "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-      "vram_tier": "48",
+      "vram_tier": "48GB",
       "vram_min": "48GB",
       "backends": [
         "CPU",
@@ -7736,7 +7736,7 @@
       "license": "Apache 2.0",
       "params": "1.5B",
       "hf": "Qwen/Qwen2.5-1.5B-Instruct",
-      "vram_tier": "8",
+      "vram_tier": "8GB",
       "vram_min": "8GB RAM (no GPU)",
       "backends": [
         "CPU"
