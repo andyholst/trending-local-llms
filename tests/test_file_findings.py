@@ -95,6 +95,57 @@ def _stub_env(td: Path, *, issues: str = "[]", label_on: str = '{"labels":[{"nam
     return env, log, body
 
 
+_MULTILINE_FINDING = """# Findings
+
+## A filed finding loses everything after its first line
+
+- **Signature:** findings-continuation
+- **Evidence:** `scripts/file_findings.py` extracts each section with a
+  per-field regex anchored to `^`, so only the marker's own line reaches the
+  issue body — the filed #202 carries the headline and stops.
+- **Why:** rule 6g makes the issue the durable artifact, so a headline without
+  its evidence forces a reviewer to re-derive the defect.
+- **Done when:** the extractor captures each section until the next marker or
+  `## ` heading, and the body keeps that text.
+"""
+
+
+def test_a_multiline_field_keeps_its_continuation_lines():
+    """Issue #205: issue #202 was filed with `- **Evidence:** \\`.github/workflows/
+    issue-bot.yml\\`, the \\`pick\\` job's` and nothing else — the four lines under it
+    existed only in the gitignored findings.md."""
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        path = td / "findings.md"
+        path.write_text(_MULTILINE_FINDING, encoding="utf-8")
+        env, log, body = _stub_env(td)
+
+        # Given a finding whose Evidence/Why/Done-when continue on later lines
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--file", "--path", str(path)],
+                              cwd=ROOT, capture_output=True, text=True, env=env)
+        filed = body.read_text(encoding="utf-8") if body.exists() else ""
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+
+    check("multiline: --file exits 0", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("multiline: exactly one issue created", calls.count("issue create") == 1, calls)
+    # Then  every continuation line is in the filed body
+    for fragment in ("anchored to `^`", "the filed #202 carries the headline and stops",
+                     "forces a reviewer to re-derive", "the extractor captures each section"):
+        check(f"multiline: the body keeps {fragment!r}", fragment in filed, filed[:400])
+    check("multiline: the body is not just the marker's line",
+          len(filed.split("\n")) > 12, filed[:400])
+
+    # And   prose inside a continuation that QUOTES another marker is not that field
+    mod = _module()
+    tricky = ("# Findings\n\n## Tricky\n\n- **Evidence:** first line\n"
+              "  continuation that quotes `**Why:**` in its prose\n"
+              "- **Why:** the real why\n- **Done when:** done\n")
+    got, err = mod.parse(tricky)
+    check("multiline: prose quoting another marker is not read as that field",
+          bool(got) and got[0]["Why"] == "the real why" and "quotes" in got[0]["Evidence"],
+          err or str(got))
+
+
 def test_missing_findings_file_is_a_loud_failure():
     """A run that wrote no analysis fails the check instead of passing silently."""
 
@@ -258,6 +309,7 @@ def test_wired_into_make_test_and_the_bot():
 
 def main() -> int:
     print("findings -> issues (scripts/file_findings.py)")
+    test_a_multiline_field_keeps_its_continuation_lines()
     test_missing_findings_file_is_a_loud_failure()
     test_finding_without_why_is_rejected()
     test_none_is_a_valid_empty_analysis()
