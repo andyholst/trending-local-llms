@@ -56,21 +56,64 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-#: The variables that carry a credential in this repo (by name — the values never appear here).
-SECRET_VARS = (
+#: The variables that carry a credential whatever references them (by name — the values
+#: never appear here): the env names the run wrappers inject, the tokens GitHub itself
+#: provides, the bot's PAT and the plugin's provider key. This is the FLOOR.
+SECRET_FLOOR = (
     "NOUS_API_KEY", "NOUS_PORTAL_API_TOKEN", "GH_TOKEN", "GITHUB_TOKEN", "FIXBOT_DISPATCH_TOKEN", "HF_TOKEN", "TYPESAFE_API_KEY", "FIRECRAWL_API_KEY",
 )
-SECRET_ALT = "|".join(SECRET_VARS)
+
+
+#: A REAL secret reference: the expression form GitHub evaluates. `secrets.NAME` in prose
+#: or in a comment declares nothing (issue #223).
+SECRET_EXPR = re.compile(r"\$\{\{\s*secrets\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
+
+
+def secret_names(root: Path = REPO_ROOT) -> tuple[str, ...]:
+    """The guarded names: the FLOOR plus every `secrets.<NAME>` the workflows reference.
+
+    The set used to be the hand-maintained tuple above, so a NEW provider key added to a
+    workflow was invisible to every rule until a human edited it — the guard's docstring
+    claimed it covered "every key this repo uses" while the list was a memory test
+    (issue #223). A `secrets.*` reference IS the declaration: whatever the workflows ask
+    GitHub for is a credential, and it is guarded the moment it is used.
+    """
+    names = set(SECRET_FLOOR)
+    workflows = root / ".github" / "workflows"
+    if workflows.is_dir():
+        for wf in sorted(workflows.glob("*.yml")):
+            try:
+                text = wf.read_text()
+            except OSError:
+                continue
+            for line in text.splitlines():
+                # A COMMENT is not a declaration: qa-validate quotes `${{ secrets.X }}`
+                # while explaining the rule, and a name derived from prose would guard a
+                # variable that does not exist. Only a real expression declares a name.
+                if line.lstrip().startswith("#"):
+                    continue
+                names |= set(SECRET_EXPR.findall(line))
+    return tuple(sorted(names))
+
+
+def _patterns(names: tuple[str, ...]) -> dict[str, re.Pattern]:
+    """Every value-shaped rule, built for THIS name set (the derived names included)."""
+    alt = "|".join(names)
+    return {
+        "value": re.compile(rf"\$\{{?(?:{alt})\b"),
+        "expansion": re.compile(rf"\$\{{?(?:{alt})(?::[-][^}}]*)?\}}?"),
+        "argv": re.compile(rf"(?:-e|--env|--build-arg)\s+(?:{alt})=\S"),
+        "py_read": re.compile(rf"^\s*([A-Za-z_]\w*)\s*=\s*os\.(?:environ(?:\.get)?|getenv)\s*[\[\(]\s*['\"]({alt})['\"]"),
+        "named": re.compile(rf"\b({alt})\b"),
+    }
+
+
+#: Kept for callers that only need the repository's own set (the printed summary).
+SECRET_VARS = secret_names()
 
 #: A printing command whose output goes to a terminal or a log (a redirect is a file, not output).
 PRINTING = re.compile(r"^(?:@|-)?\s*(?:echo|printf|say|warn|annotate|print|sys\.stdout\.write|"
                       r"logger(?:\.\w+)?)\b")
-#: The value of a secret-shaped variable, however it is spelled.
-SECRET_VALUE = re.compile(rf"\$\{{?(?:{SECRET_ALT})\b")
-#: Concatenated / embedded in a bigger expansion (`${KEY:-}`, `"prefix$VAR"`).
-SECRET_EXPANSION = re.compile(rf"\$\{{?(?:{SECRET_ALT})(?::[-][^}}]*)?\}}?")
-#: A value handed over on a command line instead of through the environment.
-VALUE_IN_ARGV = re.compile(rf"(?:-e|--env|--build-arg)\s+(?:{SECRET_ALT})=\S")
 #: Anything that looks like a live credential (second alarm). The BODY must be a bare alphanumeric
 #: run: a real token has no `_` or `-` after its prefix, while the fixtures this repo writes look
 #: like names (`hf_get_wrapped`, `hf_download_stall`) or carry separators
@@ -79,9 +122,6 @@ VALUE_IN_ARGV = re.compile(rf"(?:-e|--env|--build-arg)\s+(?:{SECRET_ALT})=\S")
 #: `# secret-output: test value` and the check accepts it there, visibly.
 KEY_SHAPED = re.compile(r"(?:hf_|sk-|sk_|jev-)[A-Za-z0-9]{20,}")
 
-#: A PYTHON script that pulls a secret's value out of the environment into a local name
-#: (issue #351: the scripts wired to key values must be asserted too, not only the shell).
-PY_ENV_READ = re.compile(rf"^\s*([A-Za-z_]\w*)\s*=\s*os\.(?:environ(?:\.get)?|getenv)\s*[\[\(]\s*['\"]({SECRET_ALT})['\"]")
 #: A printing call, in Python's spelling.
 PY_PRINTER = re.compile(r"(?:^|[^\w])(?:print|breakpoint|logging\.\w+|logger\.\w+|sys\.(?:stdout|stderr)\.write)\s*[\(\.]")
 
@@ -308,6 +348,9 @@ def _py_reveals_value(line: str, var: str) -> bool:
 def violations(root: Path = REPO_ROOT) -> list[str]:
     """Every way a secret value could leave the process, with the line that does it."""
     bad: list[str] = []
+    # The guarded names for THIS tree (issue #223): the floor plus every `secrets.<NAME>`
+    # the workflows reference, so a new key is guarded the moment it is used.
+    pat = _patterns(secret_names(root))
     #: Which public agent targets redact their own stream (issue #355) — read ONCE, and the
     #: workflow rule below consults it, so a target that self-scrubs is not flagged for it.
     _mk_path = root / "Makefile"
@@ -337,7 +380,7 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
         lines = text.splitlines()
 
         runs_things = executes_commands(path)
-        if runs_things and any(XTRACE.search(l) for l in lines) and SECRET_VALUE.search(text):
+        if runs_things and any(XTRACE.search(l) for l in lines) and pat["value"].search(text):
             line = next(n for n, l in enumerate(lines, 1) if XTRACE.search(l))
             bad.append(f"{rel}:{line}: xtrace-with-secrets — `set -x` in a file that reads a "
                        f"secret prints every expansion; drop the flag or the secret")
@@ -393,7 +436,7 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
             # The scripts wired to key values: a value read out of the environment and then
             # printed is the same leak as `echo \"$KEY\"`, and a shell-shaped rule cannot see it.
             for n, line in enumerate(lines, 1):
-                m = PY_ENV_READ.match(line)
+                m = pat["py_read"].match(line)
                 if not m:
                     continue
                 var, name = m.group(1), m.group(2)
@@ -425,10 +468,10 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
                     bad.append(f"{rel}:{n}: whole-stdout-into-output-file — a command's whole stdout is "
                                f"redirected into $GITHUB_OUTPUT; write the parsed `key=value` fields only "
                                f"(`make` echoes its recipe line, which is not key=value — issue #346): {s[:80]}")
-            if PRINTING.match(s) and SECRET_EXPANSION.search(s) and not FILE_REDIRECT.search(s):
+            if PRINTING.match(s) and pat["expansion"].search(s) and not FILE_REDIRECT.search(s):
                 bad.append(f"{rel}:{n}: prints-secret-value — a printing command expands a secret's "
                            f"value: {s[:80]}")
-            if VALUE_IN_ARGV.search(s):
+            if pat["argv"].search(s):
                 bad.append(f"{rel}:{n}: value-in-argv — the value is on the command line (visible in "
                            f"`ps`), not only in the environment: {s[:80]}")
             if ENV_DUMP.search(s) and not s.startswith("#"):
@@ -438,6 +481,7 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
 
 def report(root: Path = REPO_ROOT) -> list[dict]:
     """What each file does with a secret-shaped variable (for a maintainer reading, not a gate)."""
+    pat = _patterns(secret_names(root))
     rows = []
     for path in tracked_files(root):
         rel = path.relative_to(root).as_posix()
@@ -447,10 +491,10 @@ def report(root: Path = REPO_ROOT) -> list[dict]:
             text = path.read_text()
         except (UnicodeDecodeError, OSError):
             continue
-        named = sorted({m for m in re.findall(rf"\b({SECRET_ALT})\b", text)})
+        named = sorted({m for m in pat["named"].findall(text)})
         if named:
             rows.append({"file": rel, "names": named,
-                         "prints": bool(PRINTING.search(text) and SECRET_EXPANSION.search(text)),
+                         "prints": bool(PRINTING.search(text) and pat["expansion"].search(text)),
                          "xtrace": bool(XTRACE.search(text))})
     return rows
 
