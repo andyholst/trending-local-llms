@@ -48,6 +48,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -288,6 +289,26 @@ def push_check(host: str = "", scheme: str = "", token: str = "") -> str:
             f"(upload session accepted, HTTP {status}) — the build may proceed")
 
 
+#: A fresh push is re-probed this many times before the publish is called UNVERIFIED: a
+#: registry's read path can trail its write path by a moment.
+VERIFY_ATTEMPTS = 3
+VERIFY_DELAY_S = float(os.environ.get("ENSURE_VERIFY_DELAY_S", "2"))
+
+
+class PublishUnverified(Exception):
+    """The push returned 0, but the registry does not serve what was pushed."""
+
+
+def _serves(ref: str) -> bool:
+    """Does the REGISTRY serve this ref? Re-probed, because a read can trail a write."""
+    for attempt in range(VERIFY_ATTEMPTS):
+        if published(ref):
+            return True
+        if attempt + 1 < VERIFY_ATTEMPTS:
+            time.sleep(VERIFY_DELAY_S)
+    return False
+
+
 def publish(force: bool = False) -> str:
     """Build + push the agent (base) image, but ONLY when its tag is absent.
 
@@ -304,7 +325,18 @@ def publish(force: bool = False) -> str:
     _run("docker", "build", "-t", IMAGE, "-t", tag, "-t", latest_tag(), ".")
     _run("docker", "push", tag)
     _run("docker", "push", latest_tag())
-    return f"publish: pushed {tag} and {latest_tag()}"
+    # A push's exit code is the CLI's OPINION; `manifest inspect` is the REGISTRY's answer,
+    # and that is what every consumer gets — `ensure`, and every bot job that pulls. A push
+    # that "succeeded" into a package nothing can read is the failure this catches: a
+    # private package, a token that could write but not read back, a typo'd repo path
+    # (issue #228). Nothing verified it before.
+    missing = [ref for ref in (tag, latest_tag()) if not _serves(ref)]
+    if missing:
+        raise PublishUnverified(
+            "the push returned 0 but the registry does not serve "
+            + ", ".join(missing)
+            + " — check the package's visibility and the token's read scope, not the build")
+    return f"publish: pushed and VERIFIED {tag} and {latest_tag()}"
 
 
 def decide(force: bool, dow: int) -> dict:
@@ -462,7 +494,11 @@ def _dispatch(argv: list[str]) -> int:
         print(push_check())
         return 0
     if action == "publish":
-        print(publish(force=force_flag(argv)))
+        try:
+            print(publish(force=force_flag(argv)))
+        except PublishUnverified as exc:
+            print(f"[publish] FAIL: {exc}", file=sys.stderr)
+            return 1
         return 0
     # ---- the rebuild decision, as data (issue #208) ----
     if action == "decide":

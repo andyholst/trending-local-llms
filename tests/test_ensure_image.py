@@ -54,7 +54,12 @@ case "$1" in
         else echo "manifest unknown: $3" >&2; exit 1; fi ;;
     esac ;;
   push)
-    if grep -qxF "$2" "$FAKE_DOCKER_TAGS" 2>/dev/null; then exit 0; else echo "tag does not exist: $2" >&2; exit 1; fi ;;
+    if grep -qxF "$2" "$FAKE_DOCKER_TAGS" 2>/dev/null; then
+      # A real push makes the ref READABLE — unless the test asks for a registry that
+      # accepts the write and never serves it (issue #228).
+      [ -z "$FAKE_DOCKER_PUSH_INVISIBLE" ] && echo "$2" >> "$FAKE_DOCKER_AVAILABLE"
+      exit 0
+    else echo "tag does not exist: $2" >&2; exit 1; fi ;;
 esac
 exit 0
 """
@@ -348,6 +353,30 @@ def test_a_registry_hiccup_is_a_loud_failure_not_a_rebuild():
     rc, calls, out = _run(["decide", "--dow", "1"], available=[_base_tag()],
                           env_extra={"FAKE_DOCKER_MANIFEST_ERROR": hiccup})
     check("hiccup: the rebuild decision fails instead of deciding", rc != 0, out[-400:])
+def test_a_publish_is_not_done_until_the_registry_serves_it():
+    """Issue #228: `publish` built, pushed and returned — and nothing asked the REGISTRY
+    whether the refs it claimed to publish were actually served. A push that exits 0 into
+    a package nothing can read (private, wrong scope, typo'd path) looked like success."""
+    fast = {"ENSURE_VERIFY_DELAY_S": "0"}
+
+    # Given a registry that serves what a push writes
+    rc, calls, out = _run(["publish", "--force"], available=[], env_extra=fast)
+
+    # Then  the publish is verified, and says so
+    check("publish: exit 0 when the registry serves the refs", rc == 0, out[-400:])
+    check("publish: it says VERIFIED", "VERIFIED" in out, out[-300:])
+    check("publish: it asked the registry about both refs",
+          sum(1 for c in calls if c[:2] == ["manifest", "inspect"]) >= 2, str(calls))
+
+    # Given a registry that accepts the push and never serves it
+    rc, calls, out = _run(["publish", "--force"], available=[],
+                          env_extra={**fast, "FAKE_DOCKER_PUSH_INVISIBLE": "1"})
+
+    # Then  the publish FAILS, naming what is not served
+    check("publish: exit non-zero when the refs are not served", rc != 0, out[-400:])
+    check("publish: it says the registry does not serve them",
+          "does not serve" in out, out[-400:])
+    check("publish: it names both refs", ":latest" in out and "dockerfile-" in out, out[-400:])
 
 
 def test_wired_into_make_test():
@@ -480,6 +509,7 @@ def main() -> int:
     test_the_rebuild_decision_is_data_not_workflow_shell()
     test_force_is_parsed_strictly_so_zero_means_off()
     test_a_registry_hiccup_is_a_loud_failure_not_a_rebuild()
+    test_a_publish_is_not_done_until_the_registry_serves_it()
     test_force_reaches_the_script_as_a_value_not_a_bare_flag()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
