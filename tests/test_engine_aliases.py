@@ -175,10 +175,16 @@ def test_fork_registered_and_known():
 
 def test_prompts_mention_forks():
     text = (ROOT / "Makefile").read_text()
+    # The fork rule is ONE definition the legs expand (`ENGINE_ASK`, issue #378), so
+    # a leg cannot carry a divergent copy: the rule is checked once, and then every
+    # leg is checked to take the engine rule from there.
+    definition = text.split("ENGINE_ASK :=", 1)[1].split("\n", 1)[0] if "ENGINE_ASK :=" in text else ""
+    check("engine ask: record forks by their registry name",
+          "fork or custom build" in definition and "engines registry" in definition, definition[:120])
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         body = text[text.index(f"_search-{b}:\n"):].split("\n", 2)[1]
-        check(f"prompt {b}: record forks by their registry name",
-              "fork or custom build" in body and "engines registry" in body)
+        check(f"prompt {b}: takes the engine rule from $(ENGINE_ASK)",
+              "$(ENGINE_ASK)" in body, body[-120:])
 
 
 def main() -> int:
