@@ -77,6 +77,32 @@
         "transformer"
       ]
     },
+    "geramy/lse": {
+      "full_name": "Geramy/LSE",
+      "description": "HRX, LOOM, Mac, and AMD running top speed kernels with a self optimizing engine.",
+      "topics": [
+        "amd",
+        "amdgpu",
+        "apple",
+        "dflash2",
+        "dsl",
+        "gpu-optimization",
+        "hrx",
+        "ipad",
+        "llm",
+        "loom",
+        "mac",
+        "macbook",
+        "macbook-air",
+        "macbook-pro",
+        "macbookpro",
+        "macos",
+        "mtp",
+        "razer",
+        "thunderbolt-3",
+        "thunderbolt-5"
+      ]
+    },
     "ggml-org/llama.cpp": {
       "full_name": "ggml-org/llama.cpp",
       "description": "LLM inference in C/C++",
