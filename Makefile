@@ -233,7 +233,7 @@ agent-image-push-check: ## CI: prove the ambient credential can PUSH the agent i
 	python3 scripts/ensure_image.py push-check
 
 publish-agent-image: ## Build + push the agent image when its hash tag is absent (FORCE=1 rebuilds the same inputs)
-	python3 scripts/ensure_image.py publish $(if $(FORCE),--force,)
+	python3 scripts/ensure_image.py publish $(if $(FORCE),--force=$(FORCE),)
 
 # ---- the rebuild decision, as data (issue #208) ------------------------------
 # `refresh-bot`'s `build` and `openspec-image` jobs read this instead of computing
