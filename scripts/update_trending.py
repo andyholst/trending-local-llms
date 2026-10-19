@@ -790,7 +790,13 @@ MAX_SCOPE_VRAM_GB = 48
 # True — LFM2.5-24B-A2B earned speed +11 from a 21,000 t/s datacenter figure and
 # ranked 3rd (issue #337). Add the family, never one spelling of it.
 _DATACENTER_HW = ("h100", "h200", "h800", "a100", "a800", "b100", "b200", "b300", "gb200", "gb300",
-                  "mi210", "mi250", "mi300", "mi308", "mi325", "mi355", "tpu", "gaudi")
+                  "mi210", "mi250", "mi300", "mi308", "mi325", "mi355", "tpu", "gaudi",
+                  # AMD's datacenter V-series (cloud-gaming / VDI parts). A
+                  # 'Radeon Pro V620 32GB x8' homelab cluster is not a card a
+                  # reader buys, and its pool size is what the gate must read
+                  # (#260). Radeon Pro W-series (W7900/W7800) are workstation
+                  # cards and stay in scope.
+                  "v620", "v520", "v340")
 # Known consumer cards -> VRAM (GB). Laptop variants listed first (more specific).
 _CARD_VRAM = (
     ("5090 laptop", 24), ("4090 laptop", 16), ("5080 laptop", 16), ("4080 laptop", 12),
@@ -814,6 +820,12 @@ def hardware_vram_gb(hw: str) -> float | None:
     An explicit 'NN GB' wins; otherwise a known card. 'Nx' multiplies
     ('2x RTX 3090' -> 48)."""
     h = re.sub(r"\brx\s*-?(?=\d)", "rx ", (hw or "").lower())  # 'RX7900' / 'rx-7600' -> 'rx 7900'
+    # An explicit pool total wins outright: 'Radeon Pro V620 32GB x8 (256GB
+    # total)' states the memory one run had, and reading the per-card 32 would
+    # put a 256 GB cluster inside the 8-48 GB band (issue #260).
+    total = re.search(r"(\d+(?:\.\d+)?)\s*gb\s*total", h)
+    if total:
+        return float(total.group(1))
     mult = 1
     # '2x RTX 3090' / '4 x 3090' multiply; a standalone 1-2 digit count only, so
     # the 'x' of an AMD suffix ('7900 xtx', '9070 xt') is never read as one.
@@ -822,7 +834,9 @@ def hardware_vram_gb(hw: str) -> float | None:
         mult = int(mm.group(1))
     m = re.search(r"(\d+(?:\.\d+)?)\s*gb", h)
     if m:
-        return float(m.group(1)) * mult
+        # '32GB x8' — the multiplier AFTER the size (the mirror image of '2x 32GB').
+        after = re.search(r"\d+(?:\.\d+)?\s*gb\s*[x×]\s*(\d{1,2})\b", h)
+        return float(m.group(1)) * (int(after.group(1)) if after else mult)
     for card, gb in _CARD_VRAM:
         if card in h:
             return float(gb * mult)
