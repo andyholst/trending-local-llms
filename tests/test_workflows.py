@@ -36,6 +36,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from update_trending import SEARCH_LEGS  # noqa: E402  ('nvidia', 'metal', 'cpu', 'amd')
 import pr_closure  # noqa: E402  the pipeline's OWN closure parser (issue #289)
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 PAT = "secrets.FIXBOT_DISPATCH_TOKEN"
 _PASS = 0
 _FAIL = 0
@@ -1063,7 +1065,7 @@ def test_issue_bot():
           "make issue-queue" in pick_run and "issue list" not in pick_run and "matching-refs" not in pick_run,
           pick_run[:300])
     check("issue-bot: the queue's own test file runs in the suite",
-          "python3 tests/test_issue_review.py" in (ROOT / "Makefile").read_text(), "")
+          wired(ROOT / "tests" / "test_issue_review.py"), "")
     check("issue-bot: an empty backlog is a green run that implements nothing",
           'issue=' in pick_run and "backlog empty" in pick_run, "")
     # The reviewer's verdict is a HOLD, and the sweep says so on the issue
@@ -1147,11 +1149,15 @@ def test_unit_tests_really_run():
         return m.group(1) if m else ""
     v = run_text(load("qa-validate.yml")["jobs"]["validate"])
     for target, public in (("_validate-search", "make validate-search"),
-                           ("_validate-mapped", "make validate-mapped"),
-                           ("_test", "make test")):
+                           ("_validate-mapped", "make validate-mapped")):
         check(f"ci: validate job runs `{public}`", public in v, "")
         check(f"ci: {target} runs the link-validator unit tests",
               "tests/test_validate_links.py" in recipe(target), recipe(target)[:200])
+    # `_test` discovers its modules (issues #176/#192), so the wiring question is
+    # "does the runner list it", not "is the filename in the recipe".
+    check("ci: validate job runs `make test`", "make test" in v, "")
+    check("ci: `make test` runs the link-validator unit tests (through the runner)",
+          wired(ROOT / "tests" / "test_validate_links.py"), "")
     for f in sorted((ROOT / "tests").glob("test_*.py")):
         tree = ast.parse(f.read_text())
         defs = [n.name for n in tree.body if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")]
@@ -1339,7 +1345,7 @@ def test_secret_output_guard_wired_into_qa_validate():
     check("make: the guard script is a `make` target (rule 6d)",
           "check_secret_output.py check" in mk, "")
     check("make: the guard's test is wired into `make test`'s `_test` chain",
-          "test_secret_output.py" in mk, "")
+          wired(ROOT / "tests" / "test_secret_output.py"), "")
 
     # And the guard genuinely passes on THIS repo (a rule the repo violates is not a rule)
     import subprocess, sys

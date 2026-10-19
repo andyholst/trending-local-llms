@@ -36,6 +36,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 THREAD = ROOT / "scripts" / "issue_thread.py"
 VERDICT = ROOT / "scripts" / "issue_verdict.py"
@@ -297,7 +299,7 @@ def test_the_workflow_renders_the_thread_and_applies_the_verdict():
     check("make: `issue-verdict` goes through the tested script",
           "scripts/issue_verdict.py" in make and "scripts/issue_thread.py" in make, "")
     check("wiring: this test runs in `make test`",
-          "python3 tests/test_issue_triage.py" in make, "")
+          wired(__file__), "")
 
 
 def main() -> int:

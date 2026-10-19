@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import check_secret_output as cso  # noqa: E402
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 _PASS = 0
 _FAIL = 0
 
@@ -621,7 +623,7 @@ def test_the_guard_is_wired_into_the_repo():
     check("make: the targets are in .PHONY",
           ".PHONY: check-secret-output secret-output-report" in mk, "")
     check("make: the target runs the guard script", "check_secret_output.py check" in mk, "")
-    check("make: the guard's test is in `make test`", "tests/test_secret_output.py" in mk, "")
+    check("make: the guard's test is in `make test`", wired(__file__), "")
 
 
 def main() -> int:

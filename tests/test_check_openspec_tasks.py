@@ -19,6 +19,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "check_openspec_tasks.py"
 
@@ -163,7 +165,7 @@ def test_wired_into_make_test():
     check("make: openspec-check runs the task gate",
           "openspec-check: openspec-image openspec-tasks-check openspec-index-check" in mk, "")
     check("make: the task-gate tests run in the suite",
-          "python3 tests/test_check_openspec_tasks.py" in mk, "")
+          wired(__file__), "")
 
 
 def main() -> int:

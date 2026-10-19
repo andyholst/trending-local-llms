@@ -41,6 +41,8 @@ MAKEFILE = ROOT / "Makefile"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_ensure_image import _run  # the real-script + fake-docker harness  # noqa: E402
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 _PASS = 0
 _FAIL = 0
 
@@ -391,7 +393,7 @@ def test_everything_is_wired_where_ci_and_the_suite_look():
     for target in ("agent-image-ref:", "agent-image-push-check:", "publish-agent-image:"):
         check(f"wiring: `{target.rstrip(':')}` exists", re.search(rf"^{target}", make, re.M) is not None, "")
     check("wiring: this test runs in `make test`",
-          "python3 tests/test_publish_agent_image.py" in make, "")
+          wired(__file__), "")
     check("wiring: push-check and publish go through the one script",
           "ensure_image.py push-check" in make and "ensure_image.py publish" in make, "")
     check("wiring: the workflow file exists", WF.is_file(), "")

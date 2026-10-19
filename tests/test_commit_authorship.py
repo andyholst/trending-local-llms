@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import check_commit_authorship as cca  # noqa: E402
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 _PASS = 0
 _FAIL = 0
 
@@ -318,7 +320,7 @@ def test_the_guard_is_wired_into_the_repo():
     qa = (ROOT / ".github/workflows/qa-validate.yml").read_text()
     check("make: `check-commit-authorship` target exists", "check-commit-authorship:" in mk, "")
     check("make: the target runs the guard script", "check_commit_authorship.py check" in mk, "")
-    check("make: the guard's test is in `make test`", "tests/test_commit_authorship.py" in mk, "")
+    check("make: the guard's test is in `make test`", wired(__file__), "")
     check("ci: `validate` runs `make check-commit-authorship`",
           "make check-commit-authorship" in qa, "")
     check("ci: the validate checkout is not shallow", "fetch-depth: 0" in qa, "")

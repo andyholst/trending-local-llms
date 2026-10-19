@@ -266,7 +266,7 @@ keep it honest (issue #207):
 |---|---|
 | `implement-issue` | The implementer prompt: `_setup` + `_implement-issue` in ONE container. Requires the OpenSpec change (created first, indexed, gate green), the `findings.md` analysis, and the `ARCHITECTURE.md` update |
 | `fix` | Repair a red CI: `_setup`, `correct-raw`, the Hermes fix prompt (reads `qa-report.txt`), `_merge` — through the `scrubbed_run` seam, so a caller (the fix loop, a human) sees only a bounded, REDACTED tail of the agent's conversation (issue #355) |
-| `test` | The whole unit suite in the test image (`_test`) |
+| `test` | The whole unit suite in the test image (`_test` → `scripts/run_tests.sh`) |
 | `refresh` | The full pipeline in one container: setup, search, merge, validate, test |
 | `all` | Alias for `refresh` |
 
@@ -433,6 +433,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation. Writes a snapshot only when it actually changed it and then refreshes its `generated_utc`, so a corrected snapshot is re-merged by the next `make merge` instead of being skipped as old (issue #175) |
 | `scripts/hf_id.py` | One HF-identifier definition (a URL-shaped `hf` is reduced to `owner/repo`) |
 | `scripts/qa_report.sh` | Runs the aggregate's QA targets; a *finding* is reported, a target that could not run fails the run |
+| `scripts/run_tests.sh` | The ONE unit-test runner (`make test` → `_test`, issues #176/#192): discovers `tests/test_*.py`, runs each in its own process, and stops at the FIRST red with that module's own output (`--list` prints what it would run; a directory with no modules is red) |
 | `scripts/fix_loop.sh` | The fix loop's control flow (check → report → `make fix`, ≤ `FIX_ROUNDS`, reasoning-budget retry). `REQUIRE_FINDINGS=1` makes it demand the analysis file |
 | `scripts/hermes_smoke.sh` | The routing smoke (passes on a refusal-free answer through the alias; retries once) |
 | `scripts/hermes_update_needed.sh` | Decides whether the baked Hermes install needs a refresh |

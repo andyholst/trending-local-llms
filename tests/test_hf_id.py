@@ -27,6 +27,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import hf_id  # noqa: E402
 import self_correct_raw as SCR  # noqa: E402
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 _PASS = 0
 _FAIL = 0
 
@@ -182,7 +184,7 @@ def test_the_link_builders_use_the_same_definition():
           "from hf_id import normalise as normalise_hf" in scr, "")
     mk = (ROOT / "Makefile").read_text()
     check("make: the tests are wired into the suite",
-          "python3 tests/test_hf_id.py" in mk, "")
+          wired(__file__), "")
 
 
 def main() -> int:

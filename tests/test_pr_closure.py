@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import pr_closure as PC  # noqa: E402  (the real product)
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 SCRIPT = ROOT / "scripts" / "pr_closure.py"
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
 QA_VALIDATE = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
@@ -214,7 +216,7 @@ def test_the_pipeline_runs_it_on_every_pr() -> None:
     check("Makefile: it calls scripts/pr_closure.py",
           bool(recipe) and "pr_closure.py" in recipe.group(1), "")
     check("Makefile: the test is in the `_test` chain (rule 6d)",
-          "tests/test_pr_closure.py" in MAKEFILE, "")
+          wired(__file__), "")
     check("qa-validate: the validate job runs `make pr-closure` on every PR",
           "make pr-closure" in QA_VALIDATE, "")
     check("qa-validate: it reads the payload by PATH, never interpolated into the run block",

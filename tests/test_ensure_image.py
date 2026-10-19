@@ -19,6 +19,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "ensure_image.py"
 IMAGE_REPO = "ghcr.io/andyholst/trending-local-llms"
@@ -320,7 +322,7 @@ def test_wired_into_make_test():
     """The suite runs under `make test` (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
     check("make: the ensure_image tests run in the suite",
-          "python3 tests/test_ensure_image.py" in mk, "")
+          wired(__file__), "")
     check("make: `image-ensure` calls the script the tests exercise",
           "image-ensure:\n\tpython3 scripts/ensure_image.py ensure" in mk, "")
 

@@ -33,6 +33,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "worktree_base.py"
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
@@ -321,7 +323,7 @@ def test_the_makefile_is_the_one_seam() -> None:
         check(f"Makefile: `{target}` calls scripts/worktree_base.py {script}",
               bool(recipe) and f"worktree_base.py {script}" in recipe.group(1), "")
     check("Makefile: the test is in the `_test` chain (rule 6d — a guard nothing runs)",
-          "tests/test_worktree_base.py" in MAKEFILE, "")
+          wired(__file__), "")
     check("issue-bot: the branch is cut through the Makefile seam, never a bare checkout",
           "make worktree-new" in ISSUE_BOT and 'git checkout -b "$BRANCH"' not in ISSUE_BOT, "")
 
