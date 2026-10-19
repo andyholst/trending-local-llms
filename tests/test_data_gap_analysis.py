@@ -863,6 +863,55 @@ def test_storage_offload_coverage_can_never_shrink():
           missing < 41, f"{missing} still missing")
 
 
+MEASUREMENT_DIMENSIONS = ("weight_gb", "context_tokens", "system_ram_min",
+                          "storage_offload", "engine_min_version")
+
+
+def _captured_raw_text() -> dict[str, str]:
+    """Every text field of every captured raw model, per model id — the record of the
+    real `…/status/<id>` posts the search acquired."""
+    text: dict[str, list[str]] = {}
+    for path in sorted((ROOT / "data" / "raw").glob("*.json")):
+        data = json.loads(path.read_text())
+        for m in data.get("models", []):
+            mid = m.get("id")
+            if not mid:
+                continue
+            parts = text.setdefault(mid, [])
+            parts += [str(m.get(k, "")) for k in ("why", "quant", "hardware")]
+            for e in m.get("engines", []):
+                parts += [str(e.get(k, "")) for k in
+                          ("quant", "hardware", *MEASUREMENT_DIMENSIONS)]
+    return {mid: " ".join(p) for mid, p in text.items()}
+
+
+def test_measurement_dimensions_trace_to_the_captured_snapshot():
+    """Every per-measurement dimension value in the store is the captured post's own
+    wording — a value no raw snapshot states is a fabrication."""
+    store = json.loads((ROOT / "data" / "models.json").read_text())
+    text = _captured_raw_text()
+    invented = []
+    for m in store["models"]:
+        hay = text.get(m["id"], "")
+        for e in m.get("engines", []):
+            for k in MEASUREMENT_DIMENSIONS:
+                v = e.get(k)
+                if v and str(v) not in hay:
+                    invented.append(f"{m['id']}/{e.get('engine')}:{k}={v!r}")
+    check("traceability: every measurement dimension value appears in the captured text",
+          invented == [], invented[:5])
+
+
+def test_measurement_dimension_coverage_can_never_shrink():
+    """A floor on measurements carrying a structured dimension, so a regeneration
+    that drops the backfill cannot pass silently."""
+    store = json.loads((ROOT / "data" / "models.json").read_text())
+    carrying = sum(1 for m in store["models"] for e in m.get("engines", [])
+                   if any(e.get(k) for k in MEASUREMENT_DIMENSIONS))
+    check("coverage: at least 43 measurements carry a structured dimension "
+          "(the merge/backfill cannot silently regress)", carrying >= 43, carrying)
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -884,6 +933,8 @@ def main() -> int:
     test_engine_min_version_coverage_can_never_shrink()
     test_storage_offload_backfill_traces_to_the_captured_source_text()
     test_storage_offload_coverage_can_never_shrink()
+    test_measurement_dimensions_trace_to_the_captured_snapshot()
+    test_measurement_dimension_coverage_can_never_shrink()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

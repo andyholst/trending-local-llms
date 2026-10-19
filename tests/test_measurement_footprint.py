@@ -118,6 +118,97 @@ def run_ingest(tmp: str):
     return ut, store, m, m["engines"][0]
 
 
+# The merge must not lose a dimension a lower-engagement capture stated, and must
+# not drop one the store already held when a higher-engagement capture wins the
+# group as representative. Both are real `…/status/<id>` posts: the values are
+# copied from data/raw/nvidia-20261019-003834.json (qwen3.8-27b's llama.cpp run
+# states 14.6GB IQ4_XS / 64000 context / 16GB RAM that the store measurement lost).
+MERGE_STORE = {
+    "generated_utc": "2026-10-15T00:00:00Z",
+    "note": "fixture",
+    "engines": {"llama.cpp": {"backend": "CUDA / CPU / Metal", "note": "n",
+                              "url": "https://github.com/ggml-org/llama.cpp"}},
+    "models": [
+        {"id": "store-wins", "name": "Store Wins", "full_name": "Store Wins", "type": "LLM",
+         "license": "Apache 2.0", "params": "27B", "hf": "a/store-wins",
+         "vram_tier": "8GB", "vram_min": "8GB", "backends": ["CUDA"],
+         "supported_engines": ["llama.cpp"], "why": "w", "last_seen": "2026-10-15",
+         "formats": [{"name": "GGUF", "hf": "a/store-wins"}],
+         "engagement": {"likes": 0, "comments": 0, "views": 0, "last_7d_likes": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "5", "hardware": "RTX 4060 8GB laptop",
+                      "quant": "UD-Q3_K_XL", "date": "2026-09-16",
+                      "source_post": "https://lightbrd.com/a/status/1",
+                      "likes": 131, "comments": 10, "reshares": 15, "views": 15067}]},
+        {"id": "incoming-wins", "name": "Incoming Wins", "full_name": "Incoming Wins",
+         "type": "LLM", "license": "Apache 2.0", "params": "27B", "hf": "a/incoming-wins",
+         "vram_tier": "24GB", "vram_min": "24GB", "backends": ["CUDA"],
+         "supported_engines": ["llama.cpp"], "why": "w", "last_seen": "2026-10-15",
+         "formats": [{"name": "GGUF", "hf": "a/incoming-wins"}],
+         "engagement": {"likes": 0, "comments": 0, "views": 0, "last_7d_likes": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "45", "hardware": "RTX 5090 32GB",
+                      "quant": "Q4_K_M", "date": "2026-10-01",
+                      "source_post": "https://lightbrd.com/a/status/2",
+                      "likes": 1, "comments": 0, "storage_offload": "640GB NVMe"}]},
+    ],
+}
+MERGE_RAW = {
+    "backend": "nvidia", "generated_utc": "2026-10-17T09:00:00Z",
+    "models": [
+        {"id": "store-wins", "name": "Store Wins", "engines": [
+            {"engine": "llama.cpp", "tps": "5", "hardware": "RTX 4060 8GB laptop",
+             "quant": "Unsloth IQ4_XS 14.6GB, 64K context", "date": "2026-09-16",
+             "source_post": "https://lightbrd.com/a/status/1",
+             "likes": 10, "comments": 0, "weight_gb": "14.6GB IQ4_XS",
+             "context_tokens": "64000", "system_ram_min": "16GB"}]},
+        {"id": "incoming-wins", "name": "Incoming Wins", "engines": [
+            {"engine": "llama.cpp", "tps": "45", "hardware": "RTX 5090 32GB",
+             "quant": "Q4_K_M", "date": "2026-10-01",
+             "source_post": "https://lightbrd.com/a/status/2",
+             "likes": 500, "comments": 10}]},
+    ],
+}
+
+
+def merge_ingest(tmp: str):
+    """Drive the REAL ingest of MERGE_RAW into a store that already holds both
+    measurements. A fresh module import per test, because the data-dir seam is
+    bound at import time (the same seam the make targets use)."""
+    import importlib
+    os.environ["TRENDING_DATA_DIR"] = tmp
+    raw_dir = Path(tmp) / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / "nvidia-20261017T090000Z.json").write_text(json.dumps(MERGE_RAW))
+    import update_trending as ut
+    ut = importlib.reload(ut)
+    store = json.loads(json.dumps(MERGE_STORE))
+    ut.ingest_raw_snapshots(store, since=None)
+    return {m["id"]: m for m in store["models"]}
+
+
+def test_a_dimension_survives_the_merge_onto_an_existing_measurement():
+    """The store row wins the group as representative; the incoming row is the only
+    one stating the run's footprint — the merge must carry it across."""
+    with tempfile.TemporaryDirectory() as tmp:
+        models = merge_ingest(tmp)
+        e = models["store-wins"]["engines"][0]
+        check("merge: the representative keeps the stated weight_gb", e.get("weight_gb") == "14.6GB IQ4_XS", e.get("weight_gb"))
+        check("merge: the representative keeps the stated context_tokens", e.get("context_tokens") == "64000", e.get("context_tokens"))
+        check("merge: the representative keeps the stated system_ram_min", e.get("system_ram_min") == "16GB", e.get("system_ram_min"))
+        check("merge: the t/s figure is not altered by the fill", e.get("tps") == "5", e.get("tps"))
+
+
+def test_the_merge_never_drops_a_stored_dimension():
+    """The incoming row wins the group as representative and states no offload; the
+    stored value must survive (additive only, AGENTS.md rule 3b)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        models = merge_ingest(tmp)
+        e = models["incoming-wins"]["engines"][0]
+        check("merge: a higher-engagement incoming row does not drop the stored storage_offload",
+              e.get("storage_offload") == "640GB NVMe", e.get("storage_offload"))
+        check("merge: the representative is the incoming row (t/s unchanged)",
+              e.get("tps") == "45", e.get("tps"))
+
+
 def main() -> int:
     print("measurement footprint: a figure can state its own run (issue #337)")
     with tempfile.TemporaryDirectory() as tmp:
@@ -157,6 +248,9 @@ def main() -> int:
               ut.fits_tier(m, e, 8) == "weights-only", ut.fits_tier(m, e, 8))
         check("fit: a measured footprint beats the model-level field",
               ut.weights_gb(m, e) == (5.95, "stated"), ut.weights_gb(m, e))
+
+    test_a_dimension_survives_the_merge_onto_an_existing_measurement()
+    test_the_merge_never_drops_a_stored_dimension()
 
     print("-- test_the_contract_declares_them_optional")
     for name in ("model_contract.json", "search_contract.json"):
