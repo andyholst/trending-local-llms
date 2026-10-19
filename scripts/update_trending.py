@@ -1747,12 +1747,19 @@ _ADDITIVE_MODEL_FIELDS = (
 # a t/s figure (issue #337). One model's quants fit different cards, so the card-fit
 # view reads the footprint of THE RUN — a measurement on a 32 GB card whose post
 # states 5.95 GB weights is what tells an 8 GB owner the model can run for them.
+# `engine_min_version` belongs here too: a minimum engine build or a set of required
+# flags is a property of the ENGINE THAT RAN THE FIGURE, not of the model — a model
+# can be measured on two engines whose required builds differ, so only the
+# measurement can carry it (the search agent writes it there; the contract used to
+# accept it on the model row alone, so `additionalProperties: false` refused the
+# per-measurement one and reddened a whole refresh PR).
 # Their absence is MEANINGFUL (the post stated no figure) and is never invented,
 # exactly like the model-level ones: `tests/test_fixture_mapping.py` asserts a raw
 # snapshot that states none yields none, and `tests/test_measurement_footprint.py`
 # drives one that does through the real ingest. ONE definition (rule 6d) — the keys
 # are declared in both contracts, which the same test proves.
-MEASUREMENT_DIMENSION_FIELDS = ("weight_gb", "context_tokens", "system_ram_min", "storage_offload")
+MEASUREMENT_DIMENSION_FIELDS = (
+    "weight_gb", "context_tokens", "system_ram_min", "storage_offload", "engine_min_version")
 
 
 def coerce_additive(v):
@@ -1814,6 +1821,15 @@ def normalize_model(m: dict, store: dict) -> dict:
     for e in engs:
         for k in ("likes", "comments", "reshares", "views", "interactions"):
             e.setdefault(k, 0)
+        # The source-data dimensions of THIS run, kept as the text the post gave.
+        # A bare number the agent wrote (`"context_tokens": 131072`) is coerced
+        # instead of failing the schema — the same rule the model-level fields get
+        # below.  Absent means "the post stated no figure" and is never invented.
+        for k in MEASUREMENT_DIMENSION_FIELDS:
+            if e.get(k) not in (None, "", [], {}):
+                e[k] = coerce_additive(e[k])
+            else:
+                e.pop(k, None)
     # dedup the raw model's own engine rows (same engine+tps+GPU size reported
     # by two posts in ONE snapshot) so a brand-new model never carries duplicates
     engs = merge_engines([], engs)

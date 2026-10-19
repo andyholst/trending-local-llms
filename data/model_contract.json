@@ -257,6 +257,10 @@
                 "storage_offload": {
                   "type": "string",
                   "description": "OPTIONAL. Storage-offload this measurement needed, as the post states it (e.g. '640GB NVMe, experts on SSD')."
+                },
+                "engine_min_version": {
+                  "type": "string",
+                  "description": "OPTIONAL. Engine minimum build / required flags THIS measurement needed, as the post states them (e.g. 'b6xxx, --n-gpu-layers 99'). A version is a property of the engine that ran the figure, so it belongs on the measurement, not only on the model row."
                 }
               },
               "additionalProperties": false

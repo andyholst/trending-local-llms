@@ -183,6 +183,15 @@ def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():
     check("dimension ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
           '"' not in definition, definition[:60])
 
+    # Then  it says WHICH dimensions the MEASUREMENT itself carries (issue #371): a
+    #       minimum engine build or a set of required flags is a property of the
+    #       engine that produced the figure, so the ask must send it to the
+    #       measurement — the contract used to refuse it exactly there.
+    check("dimension ask: names engine_min_version ON the measurement",
+          "engine_min_version on the measurement" in definition, definition[-200:])
+    check("dimension ask: names storage_offload ON the measurement",
+          "storage_offload on the measurement" in definition, definition[-200:])
+
     # Then  every leg references it and keeps no divergent copy of the old sentence
     for leg in ("nvidia", "metal", "cpu", "amd"):
         recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
