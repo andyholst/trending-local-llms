@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **79** · archived: **0**
+Active changes: **81** · archived: **0**
 
 ## Active changes
 
@@ -93,6 +93,7 @@ Active changes: **79** · archived: **0**
 | `verdict-hold-ceiling` | active | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | active | — | — | [ci-output-safety](openspec/changes/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/verdict-output-format/proposal.md) |
 | `vram-card-fit` | active | — | — | [card-fit](openspec/changes/vram-card-fit/specs/card-fit/spec.md) | 15/15 | [proposal.md](openspec/changes/vram-card-fit/proposal.md) |
+| `vram-need-cpu-marker` | active | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/vram-need-cpu-marker/proposal.md) |
 | `worktree-base-fresh` | active | — | — | [worktree-base](openspec/changes/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/worktree-base-fresh/proposal.md) |
 
 ## Archived changes

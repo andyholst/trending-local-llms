@@ -981,13 +981,25 @@ def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> li
     return rows
 
 
+#: `vram_min` values that DECLARE "no GPU needed" rather than a capacity. Deliberately
+#: strict — a sentence like "system RAM holds the expert set (32GB GPU + system RAM)" is
+#: NOT this (it names a GPU too), so only the bare marker forms match (issue #343).
+CPU_ONLY_MARKER = re.compile(r"^cpu(?:[- ]?only)?$", re.I)
+
+
 def vram_need(m: dict) -> tuple[str, str]:
     """The LEAST VRAM the model needs to run, with the evidence behind it:
     ('8GB', 'declared') from `vram_min`, ('16GB', 'tier') from the coarse
     `vram_tier`, ('>=12GB', 'measured-on') from the smallest card it ran on, else
     ('unknown', 'unknown'). `vram_tier` alone is never rendered as a requirement —
     it is a category that can sit below what the model actually needs."""
-    g = _gb_value(m.get("vram_min"))
+    raw_min = str(m.get("vram_min") or "")
+    if CPU_ONLY_MARKER.match(raw_min.strip()):
+        # `vram_min: "CPU"` is a DECLARATION — the model needs no VRAM at all — and it used
+        # to fall through to the coarse tier or to "unknown", so a reader was told the
+        # requirement was unstated when the source had stated it plainly (issue #343).
+        return "CPU only", "declared"
+    g = _gb_value(raw_min)
     if g is not None:
         return f"{g:g}GB", "declared"
     g = _gb_value(m.get("vram_tier"))
