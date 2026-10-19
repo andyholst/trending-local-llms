@@ -1,6 +1,7 @@
 # Proposal: search-engine-must-be-named
 
 Issue: #378
+PR: #379
 
 ## Why
 
