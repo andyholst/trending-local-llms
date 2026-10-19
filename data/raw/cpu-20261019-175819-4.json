@@ -1,0 +1,55 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Bonsai 2 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "backends": [
+        "CPU",
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 9B vision-language model compressed into about 2GB of ternary weights, which is why it runs on an iPhone and still decodes at 179 tok/s on Apple Silicon.",
+      "weight_gb": "2.0GB (ternary)",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales; ~2GB footprint, over 9x smaller than the full-precision Qwen3.5 original",
+          "weight_gb": "2.0GB (ternary)",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 968,
+          "comments": 8,
+          "reshares": 5,
+          "views": 699,
+          "interactions": 981,
+          "date": "2026-10-16"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, on-device agent tasks; the 2B reaches up to 120 tok/s on the same phone",
+          "weight_gb": "2.0GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 47,
+          "views": 39,
+          "interactions": 47
+        }
+      ],
+      "vram_min": "6GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:19Z"
+}

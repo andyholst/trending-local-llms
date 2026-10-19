@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "reported on a used 24GB Radeon-class card through Strata splitting the workload between VRAM and system RAM; IQ3_S ~70 tok/s and still ~66 tok/s at 261K context, IQ2_XS ~87 tok/s; prompt processing ~1,900 tok/s which is prefill, never the decode figure",
+          "weight_gb": "IQ2_XS / IQ3_S compressed builds",
+          "context_tokens": "267264",
+          "system_ram_min": "64GB (tested on 128GB dual-channel DDR4-2400)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111308200163885268",
+          "likes": 26,
+          "comments": 3,
+          "reshares": 4,
+          "views": 4457,
+          "interactions": 43
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:59:24Z"
+}

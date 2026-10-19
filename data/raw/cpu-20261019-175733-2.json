@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-09-24",
+      "why": "An MXFP4 Engram GGUF of DeepSeek V4.1 Flash streaming 192GB of experts off a 7GB/s NVMe through a custom llama.cpp branch, sharing the MoE state table between CPU and GPU.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (16GB VRAM) + 60GB RAM, 192GB Engram on Gen4 7GB/s NVMe",
+          "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32k context at fp16, MoE experts streamed from NVMe at ~3GB/s with --moe-stream",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 274,
+          "comments": 3,
+          "reshares": 2,
+          "views": 252,
+          "interactions": 279
+        }
+      ],
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:57:33Z"
+}

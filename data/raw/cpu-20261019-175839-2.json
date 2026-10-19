@@ -1,0 +1,53 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The 35B-A3B MoE that both Magnitude and Ollama are benchmarked against on a single DGX Spark: copying a 66K-token passage runs at 188.9 tok/s under Magnitude versus 87.2 under Ollama 0.40.5.",
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "repeating a passage from a ~64K-token Moby-Dick prompt with both engines' default drafters; Magnitude's DFlash drafter had 75% of guesses accepted on this workload (63.4 vs 50.4 tok/s Ollama on a fresh story)",
+          "context_tokens": "66000",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 9,
+          "comments": 2,
+          "reshares": 5,
+          "views": 1300,
+          "interactions": 16
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "Ollama 0.40.5, same ~64K-token Moby-Dick copy prompt and default drafter as the Magnitude comparison",
+          "context_tokens": "66000",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 9,
+          "comments": 2,
+          "reshares": 5,
+          "views": 1300,
+          "interactions": 16
+        }
+      ],
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:39Z"
+}

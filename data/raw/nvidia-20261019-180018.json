@@ -1,0 +1,66 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "DGX Spark (GB10, 128GB unified)",
+          "quant": "NVFP4 weights with DFlash2 speculative decoding (4-bit drafter, 16 proposals per pass), BF16 KV cache, thinking off; 67 tok/s at 65K context, 56 at 130K, 38 at 260K; median of four 512-token runs",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 10,
+          "comments": 1,
+          "reshares": 2,
+          "views": 944,
+          "context_tokens": "260K"
+        }
+      ]
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (MoE, ~18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "Project Maya",
+          "tps": "30",
+          "hardware": "RTX 5090 32GB",
+          "quant": "dedicated quants kept at 97.7-99.2% of FP8 zero-shot accuracy up to 1M context; three-tier GPU VRAM / system RAM / NVMe expert placement",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+          "likes": 35,
+          "comments": 33,
+          "reshares": 1,
+          "views": 270,
+          "storage_offload": "NVMe SSD holds the experts that do not fit VRAM or RAM, swapped mid-generation"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T18:00:18Z"
+}

@@ -1,0 +1,52 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 320B MoE with 18B active that keeps getting squeezed onto local hardware, from one DGX Spark at 27.5 tok/s to a 24GB RTX 3090 running the 20B distilled sibling.",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62.2",
+          "hardware": "served endpoint (Artificial Analysis comparison)",
+          "quant": "served GLM-5.3-Flash, compared against DeepSeek V4.1 Flash (Max) at 173.9 tok/s on the same source",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4038,
+          "interactions": 0
+        },
+        {
+          "engine": "glm-flash-lite",
+          "tps": "20",
+          "hardware": "RTX 3090 24GB",
+          "quant": "GLM-5.3-Flash 20B distilled build with CPU-offloaded MoE layers, 32k context, 0.55-0.58 acceptance on the spec-decode drafter",
+          "context_tokens": "32768",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+          "likes": 34,
+          "comments": 3,
+          "reshares": 3,
+          "views": 415,
+          "interactions": 38
+        }
+      ],
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:19Z"
+}

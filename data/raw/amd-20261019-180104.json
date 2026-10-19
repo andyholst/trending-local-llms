@@ -1,0 +1,40 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8 35B A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (A3B MoE)",
+      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Q4_K_M, llama.cpp with Flash Attention and Q8 KV cache; --n-cpu-moe 26 -c 262144; ~550 tok/s prompt processing which is prefill, never the decode figure; 16GB system RAM",
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "268288",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp --n-cpu-moe 26 -c 262144 (Flash Attention, Q8 KV)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2100346050473074805",
+          "likes": 26,
+          "comments": 26,
+          "reshares": 278,
+          "views": 28021,
+          "interactions": 412
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T18:01:04Z"
+}

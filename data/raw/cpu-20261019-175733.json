@@ -1,0 +1,40 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "context_tokens": "1048576",
+      "why": "Meta's 816B open-weight MoE run across Mac Studios over Thunderbolt: four machines generate over 36 tok/s, and Apple's own sweeps put two M5 Ultras at about 25 tok/s.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (unified memory, Thunderbolt 5 cluster)",
+          "quant": "816B MoE NVFP4 open weights across four Apple Silicon machines over Thunderbolt",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 92,
+          "comments": 1,
+          "reshares": 1,
+          "views": 56,
+          "interactions": 94
+        }
+      ],
+      "vram_min": "493GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:57:33Z"
+}

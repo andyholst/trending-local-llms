@@ -1,0 +1,97 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M with Flash Attention and Q8 KV cache, 26 MoE layers on the CPU (--n-cpu-moe 26), 262K context; ~550 tok/s prompt processing",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "16GB",
+          "context_tokens": "262K",
+          "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-01",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 4060 laptop 8GB",
+          "quant": "FreeToken paper result, official checkpoints (no extreme quantization); the post goes through the FreeToken paper and repository",
+          "date": "2026-09-01",
+          "source_post": "https://lightbrd.com/cheese_cakee_9/status/2094862134874411504",
+          "likes": 23,
+          "comments": 2,
+          "reshares": 1,
+          "views": 1786
+        }
+      ]
+    },
+    {
+      "id": "ornith-1.5-9b",
+      "name": "Ornith 1.5 9B",
+      "full_name": "Ornith 1.5 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "RTX 4060 8GB",
+          "quant": "MTP on with q8 KV caches (~200 tok/s prompt processing, 0.95 draft acceptance); turning MTP off doubles both figures",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+          "likes": 33,
+          "comments": 0,
+          "reshares": 34,
+          "views": 237,
+          "engine_min_version": "MTP speculative decoding enabled, q8_0 KV caches"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T18:01:01Z"
+}

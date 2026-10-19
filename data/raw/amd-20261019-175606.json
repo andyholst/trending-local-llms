@@ -1,0 +1,71 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "project-reported benchmark (Strata README); 52 tok/s on the higher-quality IQ3_S quantization; 2-3 bit compressed experts",
+          "weight_gb": "39.2GB IQ2_XS",
+          "system_ram_min": "32GB",
+          "storage_offload": "experts streamed from system RAM/SSD, ~80GB disk",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 878,
+          "comments": 52,
+          "reshares": 64,
+          "views": 122161,
+          "interactions": 1448
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    },
+    {
+      "id": "qwen3.8-27b-swift",
+      "name": "Qwen3.8-27B Swift 1.5",
+      "full_name": "Swift-1.5-Qwen3.8-27B-GSQ-RCO",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27.3B",
+      "hf": "ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "GSQ-RCO mixed-precision GGUF; community test at a 128K context configuration",
+          "weight_gb": "GSQ-RCO mixed-precision GGUF (27.3B architecture)",
+          "context_tokens": "131072",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
+          "likes": 779,
+          "comments": 2,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 782
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:56:06Z"
+}

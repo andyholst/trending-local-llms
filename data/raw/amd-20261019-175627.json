@@ -1,0 +1,36 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5 4B",
+      "full_name": "Qwen3.5-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3.5-4B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-18",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62",
+          "hardware": "RX 6750 XT 12GB",
+          "quant": "ROCm 7.15 native Windows 11 runtime (custom rocBLAS built via TheRock, no WSL2); Adrenalin 24.x driver, one-click installer v2.0; RX 6600 to 6750 XT class cards",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/GameGPU_com/status/2089735525330485464",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 0,
+          "views": 641,
+          "interactions": 11
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:56:27Z"
+}

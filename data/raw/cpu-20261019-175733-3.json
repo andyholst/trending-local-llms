@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Strata keeps the 125B Flash-Next MoE usable on a 12GB card by leaving the cold experts in system RAM and streaming them on demand.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "53",
+          "hardware": "RTX 5070 12GB + 32GB system RAM, ~80GB disk",
+          "quant": "compressed Qwen3.8-Flash-Next with experts split between GPU VRAM and system RAM (53-94 tok/s range on the RTX 5070)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 22,
+          "reshares": 22,
+          "views": 57398,
+          "interactions": 140
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:57:33Z"
+}

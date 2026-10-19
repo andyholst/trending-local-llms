@@ -1,0 +1,65 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-19T18:02:59Z",
+  "models": [
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2 753B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "753B (MoE)",
+      "hf": "zai-org/GLM-5.2",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "RTX PRO 6000 (96GB)",
+          "quant": "FreeToken, 2-4x faster than Ollama claim; experts live in system RAM with a GPU cache of the hot ones",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 86,
+          "comments": 11,
+          "reshares": 7,
+          "views": 8770,
+          "storage_offload": "experts resident in system RAM (router misses copied over PCIe)"
+        }
+      ]
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "284B (MoE, 13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "RTX 5090 32GB",
+          "quant": "FreeToken; 6 of 256 experts per layer active (13B of 284B); post states 22 tok/s",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 86,
+          "comments": 11,
+          "reshares": 7,
+          "views": 8770
+        }
+      ]
+    }
+  ]
+}
