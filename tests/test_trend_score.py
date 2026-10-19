@@ -147,10 +147,36 @@ def test_datacenter_never_earns_speed():
 
 def test_vram_parsing():
     cases = [("RTX 5060 Ti 16GB", 16), ("RTX 4090", 24), ("RTX 4090 Laptop", 16), ("RTX 5090", 32),
-             ("2x RTX 3090", 48), ("4x RTX 4090", 96), ("RTX 3060 12 GB", 12), ("unknown box", None)]
+             ("2x RTX 3090", 48), ("4x RTX 4090", 96), ("RTX 3060 12 GB", 12), ("unknown box", None),
+             # Issue #260: the multiplier AFTER the size, and a stated pool total.
+             ("Radeon Pro V620 32GB x8 (256GB total, homelab cluster)", 256),
+             ("2x Radeon AI PRO R9700 32GB", 64),
+             ("RTX 3090 24GB x2", 48)]
     for hw, want in cases:
         got = UT.hardware_vram_gb(hw)
         check(f"vram: '{hw}' -> {want}", got == (float(want) if want is not None else None), got)
+
+
+def test_a_multi_card_pool_is_never_a_card_you_can_buy():
+    """Issue #260: the most-loved ROCm cell advertised 100 t/s from 'Radeon Pro
+    V620 32GB x8 (256GB total)' under a column labelled 8-48 GB, because the
+    per-card 32 GB was read and the pool was ignored."""
+    pool = "Radeon Pro V620 32GB x8 (256GB total, user-built homelab cluster of ~$350 surplus cards)"
+    check("scope: a 256 GB V620 pool is OUT of scope", UT.in_scope({"engine": "vLLM", "hardware": pool}) is False,
+          UT.hardware_vram_gb(pool))
+    check("scope: '32GB x8' reads as 256 GB", UT.hardware_vram_gb("Radeon Pro V620 32GB x8") == 256.0,
+          UT.hardware_vram_gb("Radeon Pro V620 32GB x8"))
+    check("scope: a single V620 is out too (datacenter V-series)",
+          UT.in_scope({"engine": "vLLM", "hardware": "Radeon Pro V620 32GB"}) is False, "")
+    # The workstation cards the list must NOT swallow.
+    check("scope: Radeon Pro W7900 48GB stays in scope",
+          UT.in_scope({"engine": "vLLM", "hardware": "Radeon Pro W7900 48GB"}) is True, "")
+    # And the chosen figure is the in-scope one.
+    m = model("pool", [
+        meas("vLLM", "100", pool, "2026-09-30", "https://lightbrd.com/a/status/1"),
+        meas("Strata", "58", "Radeon 8060S / Strix Halo 96GB", "2026-09-30", "https://lightbrd.com/a/status/2")])
+    best = UT.best_in_scope(m)
+    check("scope: the best in-scope figure ignores the cluster", best and best["tps"] == "58", best)
 
 
 def test_no_duplicate_posts_after_tps_rewrite():
@@ -259,6 +285,7 @@ def main() -> int:
     test_speed_only_while_trending()
     test_datacenter_never_earns_speed()
     test_vram_parsing()
+    test_a_multi_card_pool_is_never_a_card_you_can_buy()
     test_no_duplicate_posts_after_tps_rewrite()
     test_real_posts_persist_placeholders_derived()
     test_last_seen_from_data_not_merge_time()

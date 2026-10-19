@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **63** · archived: **0**
+Active changes: **64** · archived: **0**
 
 ## Active changes
 
@@ -69,6 +69,7 @@ Active changes: **63** · archived: **0**
 | `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
 | `refresh-run-block-uses-gh-api` | active | #320 | — | [refresh-run-block](openspec/changes/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-run-block-uses-gh-api/proposal.md) |
 | `remove-stray-qa-notes` | active | #390 — `tech-debt: the fix loop leaves qa-report.txt.notes in the repo tree and git add -A commits it` | — | [fix-loop-scratch](openspec/changes/remove-stray-qa-notes/specs/fix-loop-scratch/spec.md) | 6/6 | [proposal.md](openspec/changes/remove-stray-qa-notes/proposal.md) |
+| `scope-gate-total-vram` | active | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/scope-gate-total-vram/proposal.md) |
 | `search-engine-must-be-named` | active | #378 | #379 | [search-engine-rule](openspec/changes/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/search-engine-must-be-named/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
