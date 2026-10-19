@@ -50,12 +50,12 @@ LABEL = "tech-debt"
 LABEL_DESCRIPTION = "Real gap / technical debt surfaced by an implementation run"
 
 _SECTION = re.compile(r"^##\s+(?P<title>.+?)\s*$", re.MULTILINE)
-_FIELD = {
-    "Signature": re.compile(r"^\s*[-*]\s+\*\*Signature:\*\*\s*(?P<v>.+?)\s*$", re.MULTILINE),
-    "Evidence": re.compile(r"^\s*[-*]\s+\*\*Evidence:\*\*\s*(?P<v>.+?)\s*$", re.MULTILINE),
-    "Why": re.compile(r"^\s*[-*]\s+\*\*Why:\*\*\s*(?P<v>.+?)\s*$", re.MULTILINE),
-    "Done when": re.compile(r"^\s*[-*]\s+\*\*Done when:\*\*\s*(?P<v>.+?)\s*$", re.MULTILINE),
-}
+# A FIELD is its marker line AND the lines under it, until the next marker, the next
+# `## ` heading, or a blank line (issue #205: the single-line regex filed issue #202
+# as "`- **Evidence:** \`.github/workflows/issue-bot.yml\`, the \`pick\` job's" and
+# dropped the four lines of reasoning that made the finding worth filing).
+_FIELD_START = re.compile(r"^\s*[-*]\s+\*\*(?P<name>[A-Za-z][A-Za-z ]*?):?\*\*\s*:?\s*(?P<first>.*)$")
+_FIELD_NAMES = ("Signature", "Evidence", "Why", "Done when")
 _REQUIRED = ("Evidence", "Why", "Done when")
 
 
@@ -91,6 +91,35 @@ def render_finding(f: dict, pr: str | None, issue: str | None) -> str:
     return "\n".join(body)
 
 
+def _fields(chunk: str) -> dict[str, str]:
+    """Every `- **Name:** …` field in a section, with its CONTINUATION lines.
+
+    A field runs from its marker to the next marker / `## ` heading / blank line, so
+    the detail a finding was written with survives into the issue body (issue #205).
+    Lines are joined with a space; the marker's own line is always the first.
+    """
+    found: dict[str, str] = {}
+    lines = chunk.splitlines()
+    i = 0
+    while i < len(lines):
+        m = _FIELD_START.match(lines[i])
+        i += 1
+        if not m:
+            continue
+        name = m.group("name").strip()
+        if name not in _FIELD_NAMES or name in found:
+            continue
+        parts = [m.group("first").strip()]
+        while i < len(lines):
+            nxt = lines[i]
+            if not nxt.strip() or _FIELD_START.match(nxt) or nxt.lstrip().startswith("## "):
+                break
+            parts.append(nxt.strip())
+            i += 1
+        found[name] = " ".join(p for p in parts if p).strip()
+    return found
+
+
 def parse(text: str) -> tuple[list[dict], str | None]:
     """(findings, error). `- none` with no sections is a valid empty result."""
     if not text.strip():
@@ -105,10 +134,8 @@ def parse(text: str) -> tuple[list[dict], str | None]:
         end = sections[i + 1].start() if i + 1 < len(sections) else len(text)
         chunk = text[m.end():end]
         title = m.group("title").strip()
-        f = {"title": title}
-        for name, rx in _FIELD.items():
-            hit = rx.search(chunk)
-            f[name] = hit.group("v").strip() if hit else ""
+        f = {"title": title, **{n: "" for n in _FIELD_NAMES}}
+        f.update(_fields(chunk))
         missing = [k for k in _REQUIRED if not f[k]]
         if missing:
             return [], f"finding {title!r} is missing {', '.join(missing)}"

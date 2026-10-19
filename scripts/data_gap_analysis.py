@@ -252,6 +252,10 @@ def render(report: dict) -> str:
         "## Gaps, ranked by models unblocked",
         "",
     ]
+    if report.get("baseline_as_of"):
+        age = report.get("baseline_age_days")
+        when = f"{age} day(s) before this analysis" if age is not None else "age unknown"
+        lines.insert(5, f"- baseline: recorded `{report['baseline_as_of']}` ({when})")
     for key, n in rank_impact(report):
         lines.append(f"- **{key}** — {n} model(s)")
     if not report["findings"]:
@@ -271,6 +275,28 @@ def changed(report: dict, baseline_path: Path) -> tuple[bool, dict | None]:
     if previous is None:
         return True, None
     return report["signature"] != previous.get("signature", []), previous
+
+
+def baseline_info(baseline_path: Path, as_of: str) -> dict | None:
+    """The recorded baseline's `as_of` and how many days before this analysis it was written.
+
+    The baseline was written and never read (issue #307): it is the dedup key that decides
+    whether a gap set is "new", so a stale one suppresses a filing (`signature unchanged`)
+    for gaps that describe a month-old store — and nothing in the output said when it was
+    recorded or how old it was.
+    """
+    previous = load(baseline_path) or {}
+    recorded_raw = previous.get("as_of")
+    if not recorded_raw:
+        return None
+    info = {"baseline_as_of": recorded_raw, "baseline_age_days": None}
+    try:
+        recorded = datetime.strptime(recorded_raw, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        here = datetime.strptime(as_of, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return info
+    info["baseline_age_days"] = (here - recorded).days
+    return info
 
 
 def write_baseline(report: dict, path: Path) -> None:
@@ -451,14 +477,35 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[data-gaps] {STORE} missing", file=sys.stderr)
         return 1
     report = analyse(store, contract_keys())
-    text = render(report)
 
     baseline_path = Path(a.baseline)
     is_changed, previous = changed(report, baseline_path)
+    # WHICH baseline this run compared against, and how old it is (issue #307). A
+    # stale baseline suppresses a filing silently ("signature unchanged"), so its age
+    # belongs in the report AND in the run log.
+    info = baseline_info(baseline_path, report["as_of"])
+    if info:
+        report.update(info)
+        age = info["baseline_age_days"]
+        if age is not None and age >= STALE_DAYS:
+            report["findings"] = list(report["findings"]) + [
+                f"the gap baseline was recorded {age} days ago ({info['baseline_as_of']}) — "
+                f"older than {STALE_DAYS} days: an unchanged gap set files nothing, so "
+                f"re-record it with `make data-gap-baseline` if the gaps look stale"]
+    text = render(report)
     if a.out:
         Path(a.out).write_text(text)
     else:
         print(text)
+    if info:
+        age = info["baseline_age_days"]
+        print(f"[data-gaps] baseline: recorded {info['baseline_as_of']}"
+              + (f" ({age} day(s) before this analysis)" if age is not None else " (age unknown)"),
+              file=sys.stderr)
+        if age is not None and age >= STALE_DAYS:
+            print(f"[data-gaps] baseline is STALE ({age} days, threshold {STALE_DAYS}) — "
+                  f"an unchanged gap set files nothing; `make data-gap-baseline` re-records it",
+                  file=sys.stderr)
     print(f"[data-gaps] signature {'CHANGED' if is_changed else 'unchanged'} "
           f"({len(report['signature'])} entries, {len(rank_impact(report))} ranked gaps)",
           file=sys.stderr)
