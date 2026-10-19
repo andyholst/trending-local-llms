@@ -143,6 +143,7 @@ def test_make_dry_run_single_hermes_command():
     leading '-' even becomes make's ignore-errors prefix) and hermes starts
     with NO alias — it auto-routed to Hugging Face via HF_TOKEN and 403'd on
     every fix-bot run. This checks what make actually executes."""
+    import re
     import shutil
     import subprocess
     if not shutil.which("make"):
@@ -151,12 +152,23 @@ def test_make_dry_run_single_hermes_command():
     for t in HERMES_TARGETS:
         p = subprocess.run(["make", "-s", "-n", t], cwd=ROOT, capture_output=True, text=True)
         cmds = _logical_commands(p.stdout)
-        hermes = [c for c in cmds if c.startswith("hermes -z")]
-        stray = [c for c in cmds if "nous-deepseek" in c and not c.startswith("hermes -z")]
+        # Issue #383: a recipe may BOUND its call with `timeout <seconds>`; the
+        # command is still the one hermes command that recipe runs.
+        hermes = [c for c in cmds
+                  if c.startswith("hermes -z") or re.match(r"^timeout \S+ hermes -z", c)]
+        stray = [c for c in cmds if "nous-deepseek" in c and c not in hermes]
         check(f"make -n {t}: exactly one hermes -z command", len(hermes) == 1, f"rc={p.returncode} {len(hermes)}")
         check(f"make -n {t}: that command carries -m nous-deepseek --reasoning",
               bool(hermes) and "-m nous-deepseek --reasoning " in hermes[0], hermes[0][-80:] if hermes else "")
         check(f"make -n {t}: no detached model-flag command", not stray, [c[:60] for c in stray])
+
+    # Issue #383: `make fix` MUST bound the Hermes call itself, so one hung round is
+    # reaped by the loop (the container dies with it) instead of surviving as an
+    # orphan until the JOB's `timeout-minutes` kills the whole run.
+    p = subprocess.run(["make", "-s", "-n", "_fix"], cwd=ROOT, capture_output=True, text=True)
+    bounded = [c for c in _logical_commands(p.stdout) if re.match(r"^timeout \S+ hermes -z", c)]
+    check("make -n _fix: the hermes call is bounded by a timeout", len(bounded) == 1,
+          f"rc={p.returncode} {[c[:50] for c in _logical_commands(p.stdout)][:2]}")
 
 
 def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():

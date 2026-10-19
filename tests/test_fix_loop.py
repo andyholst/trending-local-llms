@@ -54,6 +54,7 @@ echo "$*" | tr ' ' '+' >> "$d/calls.log"
 red=$(cat "$d/red")
 case "$1" in
   fix)
+    [ "${FIX_SLEEP:-0}" -gt 0 ] && sleep "${FIX_SLEEP}"
     if [ "${BUDGET_BURN:-0}" = "1" ] && [ "$2" != "HERMES_FIX_REASONING=none" ]; then
       echo "No visible answer was produced. The model hit its output-token limit on every continuation attempt - its reasoning consumed the entire budget each time."
       exit 2
@@ -79,7 +80,8 @@ esac
 
 
 def run(red: int, rounds: int = 3, fix_exit: int = 0, test_red: int = 0, budget_burn: int = 0,
-        vs_red: int = 0, require_findings: int = 0):
+        vs_red: int = 0, require_findings: int = 0, fix_sleep: int = 0, cwd: Path | None = None,
+        fix_timeout: int = 0, base_merge: str = "0", extra_env: dict | None = None):
     td = Path(tempfile.mkdtemp())
     rec = td / "make"
     rec.write_text(RECORDER)
@@ -89,13 +91,26 @@ def run(red: int, rounds: int = 3, fix_exit: int = 0, test_red: int = 0, budget_
     env = dict(os.environ, MAKE=str(rec), FIX_ROUNDS=str(rounds),
                QA_REPORT=str(td / "qa-report.txt"), FIX_EXIT=str(fix_exit), TEST_RED=str(test_red),
                BUDGET_BURN=str(budget_burn), VS_RED=str(vs_red),
-               REQUIRE_FINDINGS=str(require_findings))
-    p = subprocess.run(["bash", str(LOOP)], env=env, capture_output=True, text=True, timeout=60)
+               REQUIRE_FINDINGS=str(require_findings), FIX_SLEEP=str(fix_sleep),
+               # The base merge is OFF unless a test asks for it: the loop must never
+               # touch the repository this suite runs in (issue #383), and the tests
+               # that drive it build their own real git repository.
+               FIX_BASE_MERGE=base_merge)
+    if fix_timeout:
+        env["HERMES_FIX_TIMEOUT"] = str(fix_timeout)
+    if extra_env:
+        env.update(extra_env)
+    # cwd=td by default: the loop is hermetic — it must never run in (or merge into)
+    # the checkout this suite was started from.
+    p = subprocess.run(["bash", str(LOOP)], env=env, capture_output=True, text=True, timeout=120,
+                       cwd=str(cwd or td))
     calls = [c.split("+")[0] for c in (td / "calls.log").read_text().split()]
     raw_calls = (td / "calls.log").read_text().split()
     report = (td / "qa-report.txt").read_text() if (td / "qa-report.txt").exists() else ""
-    shutil.rmtree(td)
+    if cwd is None:
+        shutil.rmtree(td)
     run.raw_calls = raw_calls
+    run.tmpdir = td
     return p.returncode, calls, report, p.stdout
 
 
@@ -213,6 +228,101 @@ def test_round_cap_respected():
     check("cap: FIX_ROUNDS=1 -> one fix call", calls.count("fix") == 1 and rc == 1, calls)
 
 
+def test_a_hung_round_is_bounded_by_the_loop():
+    """Issue #383, measured on run 39124432576: one Hermes round ran 1 h 58 m and was
+    killed by the JOB's `timeout-minutes: 120`, so the loop's own failure path never
+    ran and the PR was left with nothing. Every round is bounded, reported, and can
+    never cost the job's budget."""
+    rc, calls, report, out = run(red=99, rounds=3, fix_sleep=5, fix_timeout=1)
+    check("bound: the round is aborted by the LOOP, not by the job limit",
+          "TIMED OUT after 1s" in out, out[-500:])
+    check("bound: the timeout is recorded in qa-report.txt (what the PR comment shows)",
+          "TIMED OUT after 1s" in report, report[-300:])
+    check("bound: the loop still ends through its OWN path (red, capped rounds)",
+          rc == 1 and calls.count("fix") == 3, f"rc={rc} {calls}")
+
+
+def test_base_merge_is_skipped_outside_a_checkout():
+    """The base merge must be a no-op outside a git checkout (issue #383): it can
+    never fail the loop, and the checks still run."""
+    rc, calls, _, out = run(red=0, base_merge="1")
+    check("base: outside a git checkout the merge is skipped loudly",
+          "not a git checkout — skipping the base merge" in out, out[-400:])
+    check("base: the checks still run", bool(calls) and calls[0] == "lint", calls)
+    check("base: and the loop is still green", rc == 0, rc)
+
+
+def test_the_base_is_merged_before_any_llm_round():
+    """Issue #383: a red refresh PR is usually red because the BASE moved — a
+    contract, a prompt, an ingest rule — and no repair of the branch's own tree can
+    fix a rule the branch does not have. Real `git` in a real repository (rule 6m)."""
+    if not shutil.which("git"):
+        print("  SKIP base merge: git not installed")
+        return
+    root = Path(tempfile.mkdtemp())
+    origin, work, clone = root / "origin.git", root / "work", root / "clone"
+    ident = (["git", "config", "user.email", "t@example.com"], ["git", "config", "user.name", "t"])
+
+    def git(*args, cwd):
+        subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True)
+
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", str(work)], check=True)
+    for c in ident:
+        git(*c[1:], cwd=work)
+    (work / "base.txt").write_text("base\n")
+    git("add", ".", cwd=work)
+    git("commit", "-qm", "base", cwd=work)
+    git("branch", "-M", "master", cwd=work)
+    git("remote", "add", "origin", str(origin), cwd=work)
+    git("push", "-q", "origin", "master", cwd=work)
+    subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
+    for c in ident:
+        git(*c[1:], cwd=clone)
+
+    # The BASE moves AFTER the branch was cut: the fix the branch does not have.
+    (work / "the-base-fix.txt").write_text("fixed on the base\n")
+    git("add", ".", cwd=work)
+    git("commit", "-qm", "the base fix", cwd=work)
+    git("push", "-q", "origin", "master", cwd=work)
+
+    rc, calls, _, out = run(red=0, base_merge="1", cwd=clone)
+    merged = subprocess.run(["git", "log", "--oneline"], cwd=str(clone),
+                            capture_output=True, text=True).stdout
+    check("base: the branch is brought up to the base BEFORE any LLM round",
+          "the base fix" in merged, merged[:200])
+    check("base: the merge is reported in the log",
+          "merging the base in BEFORE any LLM round" in out, out[-500:])
+    check("base: a failure the base already fixed costs ZERO LLM rounds",
+          calls.count("fix") == 0, calls)
+    check("base: the loop is green afterwards", rc == 0, rc)
+    shutil.rmtree(root, ignore_errors=True)
+
+
+def test_a_round_that_changes_nothing_stops_the_loop():
+    """Issue #383: a round that leaves the failure byte-identical AND the tree
+    untouched is a fix that did not stick — it must not buy the remaining rounds.
+    Real `git` in a real repository, because the check is only asked in a checkout."""
+    if not shutil.which("git"):
+        print("  SKIP no-progress: git not installed")
+        return
+    repo = Path(tempfile.mkdtemp())
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    for c in (("user.email", "t@example.com"), ("user.name", "t")):
+        subprocess.run(["git", "config", *c], cwd=str(repo), check=True)
+    (repo / "f.txt").write_text("x\n")
+    subprocess.run(["git", "add", "."], cwd=str(repo), check=True)
+    subprocess.run(["git", "commit", "-qm", "init"], cwd=str(repo), check=True)
+
+    rc, calls, report, out = run(red=99, rounds=3, base_merge="0", cwd=repo)
+    check("progress: the loop stops after the round that changed nothing",
+          calls.count("fix") == 1, calls)
+    check("progress: the log says why", "fixed nothing" in out, out[-500:])
+    check("progress: the reason is recorded in qa-report.txt", "no progress" in report, report[-300:])
+    check("progress: and the loop is red, not green", rc == 1, rc)
+    shutil.rmtree(repo, ignore_errors=True)
+
+
 def main() -> int:
     if not shutil.which("bash"):
         print("SKIP: bash not available")
@@ -229,6 +339,10 @@ def main() -> int:
     test_summary_drops_fixture_noise()
     test_budget_burn_retries_with_reasoning_off()
     test_report_holds_only_the_failing_check()
+    test_a_hung_round_is_bounded_by_the_loop()
+    test_base_merge_is_skipped_outside_a_checkout()
+    test_the_base_is_merged_before_any_llm_round()
+    test_a_round_that_changes_nothing_stops_the_loop()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
