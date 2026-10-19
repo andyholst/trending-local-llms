@@ -1,0 +1,42 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:47:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "PrismML Ternary Bonsai 2 27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.9GB ternary",
+      "context_tokens": "262144",
+      "storage_offload": "expert layers offloaded to CPU/SSD on 4GB-VRAM machines",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The compact 27B-class option: 5.9GB of ternary weights against Qwen3.8-27B's full precision, but on a 4GB-VRAM laptop it is slow (2.50 t/s decode) and Qwen3.6-35B runs faster there.",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "2.50",
+          "hardware": "4GB VRAM + 32GB system RAM (MoE/quantized build, partial offload)",
+          "quant": "quantized-down Ternary Bonsai 2 27B / Qwen3.8-27B class build; llama-server print_timing slot lines tg 2.50 t/s (tg_3s 2.53), ~12 t/s prompt processing on a ~4K-token prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2111038392578310446",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 103,
+          "system_ram_min": "32GB",
+          "context_tokens": "4221",
+          "engine_min_version": "llama-server (print_timing slot output)"
+        }
+      ]
+    }
+  ]
+}

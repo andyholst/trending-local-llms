@@ -1,0 +1,87 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:50:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "PrismML Ternary Bonsai 2 9B",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "2GB ternary (GGUF and MLX formats)",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 2GB ternary model on Apple Silicon that starts at 170+ tok/s on a Mac and still runs agent tasks on an iPhone.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "170",
+          "hardware": "Mac (Apple Silicon, Yukon mlx.fast track)",
+          "quant": "2GB ternary weights, \"starts at 170+\" as the floor on the mlx.fast leaderboard",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB",
+          "engine_min_version": "mlx.fast track"
+        },
+        {
+          "engine": "MLX",
+          "tps": "22",
+          "hardware": "iPhone (on-device MLX, Yukon measurement)",
+          "quant": "2GB ternary weights",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB",
+      "system_ram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "32 concurrent streams on an M5 Pro MacBook Pro, parsing 250 emails into JSON with summaries, action items and priorities, under 4GB peak memory.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary 4B (0.95GB weights); 700+ tok/s aggregate across 32 streams, peak memory under 4GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 0,
+          "reshares": 4,
+          "views": 5116,
+          "weight_gb": "0.95GB",
+          "system_ram_min": "4GB"
+        }
+      ]
+    }
+  ]
+}

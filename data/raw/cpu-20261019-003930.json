@@ -1,0 +1,43 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-19T00:39:30Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "180",
+          "hardware": "24GB GPU (DFlash2 speculative decoding)",
+          "quant": "DFlash2 speculative decoding on llama.cpp, up to 180 tok/s decode",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110315086669595007",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "why": "Coder390 keeps DFlash2 speculative decoding at up to 180 tok/s while cutting the unproductive reasoning that eats context before a coding answer."
+    }
+  ]
+}

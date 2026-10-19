@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:44:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Long-context generation holds up: 74 t/s on one DGX Spark and still 38 t/s at 260K context, from the inference stack rather than the model.",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "NVIDIA DGX Spark (single GB10), 8K context",
+          "quant": "NVFP4 weights, DFlash2 speculative decoding with a 4-bit drafter (16 draft tokens per verification pass), BF16 KV cache, thinking disabled, 512 output tokens, temperature 0; median of 4 runs",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.9",
+          "hardware": "RTX 5060 Ti 16GB + GTX 1080 8GB (two cards, 128K context)",
+          "quant": "IQ3_S MTP GGUF across 16GB + 8GB with a custom llama.cpp CUDA build, Q8_0 KV cache, 4,1 layer split (stock backend did not support the 1080's compute 6.1)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/dextune/status/2110606409947861207",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 74,
+          "context_tokens": "131072",
+          "engine_min_version": "custom llama.cpp CUDA build (Pascal compute 6.1 support)"
+        }
+      ]
+    }
+  ]
+}

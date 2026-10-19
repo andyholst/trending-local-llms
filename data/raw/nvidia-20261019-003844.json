@@ -1,0 +1,235 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39",
+          "hardware": "RTX 4060 laptop 8GB",
+          "quant": "official checkpoints, no extreme quantization",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
+          "likes": 315,
+          "comments": 10,
+          "reshares": 34,
+          "views": 53503
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39",
+          "hardware": "RTX 4060 laptop 8GB",
+          "quant": "official checkpoints, no extreme quantization",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2091325799790195058",
+          "likes": 76,
+          "comments": 10,
+          "reshares": 8,
+          "views": 44940
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-08-23"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "284B (MoE, 13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "25",
+          "hardware": "RTX 5090 32GB",
+          "quant": "official checkpoints; post gives a 22-25 tok/s range",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
+          "likes": 315,
+          "comments": 10,
+          "reshares": 34,
+          "views": 53503
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "RTX 5090 32GB",
+          "quant": "official checkpoints; low end of the 22-25 tok/s range",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
+          "likes": 315,
+          "comments": 10,
+          "reshares": 34,
+          "views": 53503
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-08-23"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2 753B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "753B (MoE)",
+      "hf": "zai-org/GLM-5.2",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "15",
+          "hardware": "RTX PRO 6000 (96GB)",
+          "quant": "official checkpoints, no extreme quantization",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2091325799790195058",
+          "likes": 76,
+          "comments": 10,
+          "reshares": 8,
+          "views": 44940
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "RTX PRO 6000 (96GB)",
+          "quant": "official checkpoints",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/konig0000/status/2104268737839063181",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-27"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "20",
+          "hardware": "RTX PRO 6000 (6000 Pro) + 572GB system RAM, PCIe 3.0",
+          "quant": "FreeToken (FlashML-org); >20 tok/s on prose prompts",
+          "system_ram_min": "572GB",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
+          "likes": 50,
+          "comments": 3,
+          "reshares": 3,
+          "views": 12870
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-04"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB",
+          "quant": "compressed build; post: 70GB download, 32GB RAM, 80GB disk",
+          "weight_gb": "70GB download",
+          "system_ram_min": "32GB",
+          "storage_offload": "80GB disk",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/ethanwalkerman/status/2106988896529920109",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 210
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-05"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "60",
+          "hardware": "RTX 3090 24GB",
+          "quant": "OpenJet build with MTP-enabled verification, 99.60% token agreement at 96K context; without speculation 42.9 tok/s",
+          "context_tokens": "96000",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/dextune/status/2109902247559938343",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 52
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.9",
+          "hardware": "RTX 5060 Ti 16GB + GTX 1080 8GB",
+          "quant": "IQ3_S MTP GGUF, 128K context, Q8_0 KV cache, 4,1 layer split, custom CUDA build for Pascal (compute 6.1)",
+          "weight_gb": "IQ3_S MTP GGUF",
+          "context_tokens": "128000",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/dextune/status/2110606409947861207",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 74
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15"
+    }
+  ],
+  "generated_utc": "2026-10-19T00:38:44Z"
+}

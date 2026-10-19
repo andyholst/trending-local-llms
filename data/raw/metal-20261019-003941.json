@@ -1,0 +1,84 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:49:00Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Meta Muse Spark Open 816B-A42B",
+      "type": "MoE LLM",
+      "license": "Muse Model License (free commercial use under $20M revenue), open weights",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "~493GB NVFP4 (compressed checkpoint, before working memory)",
+      "context_tokens": "1048576",
+      "system_ram_min": "2x 512GB unified memory (two M5 Ultra Mac Studios)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Apple measured 16 to 37 t/s across two to four M5 Ultra Mac Studios, with about 40s to first token on long prompts - a four-machine setup, not a single desktop.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Apple M5 Ultra Mac Studio, 512GB each (tensor parallelism)",
+          "quant": "NVFP4 weights (~493GB), 8,192-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 458,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192",
+          "system_ram_min": "4x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studio, 512GB each (tensor parallelism), 8,192-token context",
+          "quant": "NVFP4 weights (~493GB); Apple ML Research numbers",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 167,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192",
+          "system_ram_min": "2x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "16",
+          "hardware": "2x Apple M5 Ultra Mac Studio, 512GB each",
+          "quant": "NVFP4, 8,192-token context (low end of Apple's 16-37 tok/s measured range)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 458,
+          "context_tokens": "8192",
+          "system_ram_min": "2x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "Mac M3 Ultra 512GB",
+          "quant": "2-bit quant, 304GB model (Hugging Face measurement)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/FegaPierre/status/2111094815379378285",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "304GB (2-bit quant)"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:51:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "context_tokens": "66000",
+      "system_ram_min": "128GB (DGX Spark unified memory)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "On one DGX Spark Ollama 0.40.5 with its default drafter decodes 87.2 tok/s on a ~66K-token passage copy but 63.4 tok/s writing a new story, where the drafter has far less to accept - the honest half of the same test.",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "NVIDIA DGX Spark (single GB10, 128GB)",
+          "quant": "Ollama 0.40.5 registry tag (Q4_K_M with built-in MTP drafter), ~66K-token Moby-Dick passage-copy prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 5,
+          "views": 1162,
+          "context_tokens": "66000",
+          "system_ram_min": "128GB",
+          "engine_min_version": "Ollama 0.40.5"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "63.4",
+          "hardware": "NVIDIA DGX Spark (single GB10, 128GB)",
+          "quant": "Ollama 0.40.5 registry tag (Q4_K_M with built-in MTP drafter), new-story generation after a 67K-token prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 5,
+          "views": 1162,
+          "context_tokens": "67000",
+          "system_ram_min": "128GB",
+          "engine_min_version": "Ollama 0.40.5"
+        }
+      ]
+    }
+  ]
+}

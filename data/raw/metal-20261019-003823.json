@@ -1,0 +1,66 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:45:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "storage_offload": "about 80GB disk for the compressed model",
+      "context_tokens": "262144",
+      "system_ram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "Strata makes a 125B MoE usable on a 12GB gaming card (53-94 t/s on an RTX 5070) with a local Anthropic-compatible endpoint for coding agents.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB",
+          "quant": "compressed Strata build, 32GB system RAM, ~80GB disk",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 0,
+          "reshares": 22,
+          "views": 57060,
+          "storage_offload": "~80GB disk",
+          "system_ram_min": "32GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB DDR4-2400 (developer recommends 64GB system RAM)",
+          "quant": "IQ2_XS, GPU/CPU hybrid expert placement; ~1,900 t/s prompt processing",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB (developer recommendation; tested on 128GB)"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "68",
+          "hardware": "1x NVIDIA DGX Spark (GB10)",
+          "quant": "NVIDIA FP4-Local TP1, 90.8% SixCat (one of four ways the model was tested)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166",
+          "likes": 88,
+          "comments": 0,
+          "reshares": 24,
+          "views": 6640
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:46:00Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License (free commercial use under $10M revenue), open weights",
+      "params": "24B (A2B MoE, ~2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "weight_gb": "14.5GB Q4_K_M",
+      "context_tokens": "131072",
+      "system_ram_min": "15GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "It leads the Agon bench (93.4%) at 25.4 tok/s, and a 14.5GB Q4_K_M build fits an 8GB card with the expert layers offloaded to CPU.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo APU)",
+          "quant": "llama.cpp on a 14.5GB 4-bit build, 4K-token prompt (Liquid AI's own test)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 198,
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096",
+          "system_ram_min": "16GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25.4",
+          "hardware": "Agon benchmark harness (engine not stated in the post)",
+          "quant": "Q4_K_M 14.5GB, median 5,506 generated tokens per request over 67 of 68 requests; some runs with reasoning constraints",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2110216348903129348",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "14.5GB Q4_K_M"
+        }
+      ]
+    }
+  ]
+}
