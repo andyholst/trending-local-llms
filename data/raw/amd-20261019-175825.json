@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "PlayStation 5 (AMD RDNA2 GPU, 12GB GDDR6 shared memory, console APU)",
+          "quant": "AMD RDNA2 GPU via the RADV Vulkan driver port (Mihawk-99); 2-bit UD-IQ2_XXS quant; 9-21 tok/s range; models load from USB straight into GPU memory (no mmap); llama.cpp ported natively (github.com/cobanov/PS5LM, v0.1, GPL-3.0)",
+          "weight_gb": "Qwen3.8-27B UD-IQ2_XXS (2-bit)",
+          "engine_min_version": "cobanov/PS5LM v0.1 (native PS5 port of llama.cpp, Vulkan/RADV)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111486092433707011",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 180,
+          "interactions": 7
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:25Z"
+}

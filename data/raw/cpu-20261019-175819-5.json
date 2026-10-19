@@ -1,0 +1,55 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Bonsai 2 4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 0.95GB ternary 4B that runs 32 concurrent streams on a MacBook Pro while staying under 4GB peak memory, which is what makes it usable for bulk parsing jobs.",
+      "weight_gb": "0.95GB (ternary)",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary weights; 32 parallel streams parsing 250 emails to JSON with summaries, action items and calendar events, under 4GB peak memory in total",
+          "weight_gb": "0.95GB (ternary)",
+          "system_ram_min": "4GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 0,
+          "reshares": 15,
+          "views": 5186,
+          "interactions": 102
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (on-device)",
+          "quant": "ternary 4B in a Nothing-OS-style local chat UI with web search and cross-chat memory (the 2B does 10-11 tok/s on the same phone)",
+          "weight_gb": "0.95GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 97,
+          "views": 0,
+          "interactions": 97
+        }
+      ],
+      "vram_min": "1GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:19Z"
+}

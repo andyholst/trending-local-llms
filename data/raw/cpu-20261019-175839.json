@@ -1,0 +1,69 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Meta's 816B open-weight MoE, tuned with Apple so it runs through MLX on a pair of 512GB M5 Ultra Mac Studios (about 1TB of unified memory) with no cloud calls.",
+      "context_tokens": "1048576",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (unified memory, Thunderbolt-linked)",
+          "quant": "816B MoE NVFP4 open weights across four Apple Silicon machines over Thunderbolt; Apple reports 16-37 tok/s depending on the number of Studios",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 92,
+          "comments": 1,
+          "reshares": 1,
+          "views": 56,
+          "interactions": 94
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Mac Studio M5 Ultra, 512GB each (about 1TB unified memory)",
+          "quant": "Meta and Apple tuned the 816B model for Apple's MLX framework; Apple Machine Learning Research reports about 25 tok/s on two Studios with tensor parallelism and about 37 on four",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 11,
+          "comments": 5,
+          "reshares": 6,
+          "views": 892,
+          "interactions": 21
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Mac Studio M5 Ultra, 512GB each, tensor parallelism",
+          "quant": "Apple's published benchmark at an 8,192-token context; the compressed NVFP4 version occupies about 493GB for the model before working memory",
+          "weight_gb": "493GB (NVFP4)",
+          "context_tokens": "8192",
+          "system_ram_min": "1024GB",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 1,
+          "views": 203,
+          "interactions": 5
+        }
+      ],
+      "vram_min": "493GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:39Z"
+}

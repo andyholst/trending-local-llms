@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (A3B MoE, MTP head)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "strixite",
+          "tps": "50",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "strixite inference engine written from scratch in HIP for AMD Strix Halo (gfx1151); holds ~fifty tokens per second out to nearly five hundred thousand context tokens",
+          "context_tokens": "491520",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
+          "likes": 51,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 51
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:09Z"
+}

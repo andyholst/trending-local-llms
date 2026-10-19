@@ -1,0 +1,51 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "53.2",
+          "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+          "quant": "Strata runtime vs llama.cpp comparison (different quants/settings, so a direction not a controlled benchmark); best llama.cpp number at 60K context was 27 tok/s",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 115,
+          "system_ram_min": "64GB",
+          "context_tokens": "60K"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "27",
+          "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+          "quant": "best llama.cpp number at 60K context in the same comparison; Strata reached 53.2 tok/s on the same box",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 115,
+          "system_ram_min": "64GB",
+          "context_tokens": "60K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T18:01:49Z"
+}

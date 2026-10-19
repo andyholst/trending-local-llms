@@ -1,0 +1,54 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (A3B MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+          "quant": "Ollama 0.40.5 registry tag (Q4_K_M with built-in MTP), f16 KV cache; repeat-a-passage round at a 66K-token prompt, median of 3 runs, thinking off; new-story round on the same box 63.4 tok/s (Magnitude 50.4); prefill 1,834 tok/s which is prompt processing, never the decode figure",
+          "weight_gb": "Q4_K_M (Ollama registry tag)",
+          "context_tokens": "67584",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 9,
+          "views": 1293,
+          "interactions": 39
+        },
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+          "quant": "Magnitude 0.2.9 with its DFlash drafter and quantized KV cache, unsloth UD-Q4_K_XL on the repeat-a-passage round at a 66K-token prompt (75% drafter acceptance); new-story round 50.4 tok/s at 43% acceptance; prefill 2,332 tok/s",
+          "weight_gb": "UD-Q4_K_XL",
+          "context_tokens": "67584",
+          "system_ram_min": "128GB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 9,
+          "views": 1293,
+          "interactions": 39
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "CPU"
+    }
+  ],
+  "generated_utc": "2026-10-19T18:02:30Z"
+}

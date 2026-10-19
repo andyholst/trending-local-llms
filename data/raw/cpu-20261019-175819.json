@@ -1,0 +1,69 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "A 177-180B MoE that keeps showing up on hardware nobody expected: an RTX 3090 splitting it with system RAM, a single DGX Spark, and RTX PRO 6000 serving the FP4 build at 191 tok/s median.",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "191",
+          "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+          "quant": "NVIDIA Qwen3.8-Flash-Next FP4-Local weights served in an updated container; median 191 tok/s, 90th percentile 271, peak 328 (the older NVFP4 container did 85-88 on the same workload)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 32,
+          "interactions": 0
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ3_S quant split between GPU VRAM and system RAM at 261K context (~66 tok/s); IQ2_XS reaches ~87 tok/s, prompt processing ~1,900 tok/s",
+          "context_tokens": "261000",
+          "system_ram_min": "64GB",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 3,
+          "reshares": 4,
+          "views": 4471,
+          "interactions": 33,
+          "weight_gb": "IQ3_S"
+        },
+        {
+          "engine": "Strata",
+          "tps": "53",
+          "hardware": "RTX 5070 12GB + 32GB system RAM, ~80GB disk",
+          "quant": "compressed Qwen3.8-Flash-Next with cold experts kept in system RAM (53-94 tok/s range on the RTX 5070 per the developers' tests)",
+          "system_ram_min": "32GB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 22,
+          "reshares": 22,
+          "views": 57398,
+          "interactions": 140
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T17:58:19Z"
+}
