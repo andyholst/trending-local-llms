@@ -173,6 +173,21 @@ def test_vram_need_prefers_what_the_source_states():
     check("readme: the most-loved VRAM cell carries the claim's evidence",
           "**8GB**<br><sub>stated by the source</sub>" in text)
 
+    # A SPLIT requirement is not one number: publishing its first capacity reads as "fits
+    # that card", which an offload requirement does not promise (issue #431).
+    split = model("split", "Split", [meas("Strata", "20", "RTX 4090 24GB + 128GB RAM")],
+                  vram_min="system RAM holds the expert set (32GB GPU + system RAM)")
+    check("need: a GPU+RAM split names both halves",
+          UT.vram_need(split) == ("32GB + system RAM", "declared"), UT.vram_need(split))
+    ram_only = model("ram", "RAM only", [meas("llama.cpp", "9", "M4 Max")], vram_min="16GB RAM")
+    check("need: a plain RAM capacity is not called a split",
+          UT.vram_need(ram_only) == ("16GB", "declared"), UT.vram_need(ram_only))
+    # …and a NEGATED GPU ("no GPU") is not a GPU half either.
+    negated = model("neg", "Negated", [meas("llama.cpp", "9", "Ryzen 9, CPU")],
+                    vram_min="8GB RAM (no GPU)")
+    check("need: 'no GPU' is a CPU statement, not a split",
+          UT.vram_need(negated) == ("8GB", "declared"), UT.vram_need(negated))
+
     # `vram_min: "CPU"` DECLARES that no VRAM is needed. It used to fall through to the
     # coarse tier (or to "unknown"), so the reader was told the requirement was unstated
     # when the source had stated it plainly (issue #343).
