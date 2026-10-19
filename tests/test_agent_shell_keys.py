@@ -29,6 +29,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "agent_shell_keys_check.py"
 
@@ -186,7 +188,7 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
           "\tagent-shell-keys-check:" not in mk and "\t$(DOCKER_RUN) make _agent-shell-keys-check" in mk, "")
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
     check("wiring: qa-validate runs `make agent-shell-keys-check`", "make agent-shell-keys-check" in qa, "")
-    check("wiring: this suite is in `make test`", "tests/test_agent_shell_keys.py" in mk, "")
+    check("wiring: this suite is in `make test`", wired(__file__), "")
 
 
 def main() -> int:

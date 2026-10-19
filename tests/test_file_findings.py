@@ -23,6 +23,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "file_findings.py"
 
@@ -300,7 +302,7 @@ def test_wired_into_make_test_and_the_bot():
     check("make: findings-check is the analysis gate",
           "findings-check:" in mk and "python3 scripts/file_findings.py --check" in mk, "")
     check("make: the findings tests run in the suite",
-          "python3 tests/test_file_findings.py" in mk, "")
+          wired(__file__), "")
     check("loop: an implementation run demands findings-check (REQUIRE_FINDINGS)",
           "REQUIRE_FINDINGS" in loop and "findings-check" in loop, "")
     check("bot: the findings are filed with the issue and PR context",

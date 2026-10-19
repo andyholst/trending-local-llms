@@ -17,6 +17,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "lint_syntax.py"
 
@@ -142,7 +144,7 @@ def test_wired_into_make_ci_the_loop_and_the_suite():
     check("loop: lint is the first check",
           loop.split("CHECKS=(", 1)[1].split(")", 1)[0].strip().startswith("lint"),
           loop.split("CHECKS=(", 1)[1][:60])
-    check("make: these tests run in the suite", "python3 tests/test_lint_syntax.py" in mk, "")
+    check("make: these tests run in the suite", wired(__file__), "")
 
 
 def main() -> int:

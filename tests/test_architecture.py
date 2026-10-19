@@ -17,6 +17,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "architecture_check.py"
 
@@ -196,7 +198,7 @@ def test_wired_into_ci_the_loop_the_suite_and_the_prompt():
     check("loop: the fix loop runs it before the network-bound validate",
           "architecture-check" in loop, "")
     check("make: this test file runs in the suite",
-          "python3 tests/test_architecture.py" in mk, "")
+          wired(__file__), "")
     check("prompt: the implementer must update ARCHITECTURE.md (rule 6h)",
           "ARCHITECTURE.md" in prompt and "make architecture-check" in prompt, prompt[:300])
 

@@ -36,6 +36,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from wiring import wired  # noqa: E402  (issues #176/#192)
+
 ROOT = Path(__file__).resolve().parent.parent
 SEAM = ROOT / "scripts" / "install_hermes_ci.sh"
 DOCKERFILE = ROOT / "Dockerfile"
@@ -378,7 +380,7 @@ def test_the_seam_and_the_check_are_wired_where_ci_looks():
     check("wiring: the public `hermes-alias-check` target exists",
           re.search(r"^hermes-alias-check:", make, re.M) is not None, "")
     check("wiring: this test file runs in `make test`",
-          "python3 tests/test_install_hermes_ci.py" in make, "")
+          wired(__file__), "")
     check("wiring: the seam is tracked as executable",
           (SEAM.stat().st_mode & 0o111) != 0, oct(SEAM.stat().st_mode))
 
