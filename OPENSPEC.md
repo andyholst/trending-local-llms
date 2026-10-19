@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **64** · archived: **0**
+Active changes: **66** · archived: **0**
 
 ## Active changes
 
@@ -47,6 +47,7 @@ Active changes: **64** · archived: **0**
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
 | `fixbot-gh-repo-before-checkout` | active | #331 | — | [fixbot-before-checkout](openspec/changes/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/fixbot-gh-repo-before-checkout/proposal.md) |
 | `force-flag-parsing` | active | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/force-flag-parsing/proposal.md) |
+| `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
 | `ingest-names-a-dead-hf-link` | active | #333 | — | [hf-link-verification](openspec/changes/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/ingest-names-a-dead-hf-link/proposal.md) |

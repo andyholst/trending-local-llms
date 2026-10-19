@@ -714,6 +714,38 @@ GUARD_CALLERS = (
 GUARD_PERMS = {"alice": "write", "bob": "maintain", "carol": "admin", "eve": "read", "mallory": "triage"}
 
 
+def _guard_step_index(wf_name: str) -> tuple[str, int] | None:
+    """(job, index) of this workflow's trigger guard, derived from the TREE.
+
+    The shape is the one `_guard_step` already detects — a step whose NAME
+    carries `guard` — but found by scanning, so a guard nobody registered is
+    still FOUND instead of being invisible (issue #313).
+    """
+    for job_name, body in (load(wf_name).get("jobs") or {}).items():
+        if not isinstance(body, dict):
+            continue
+        for i, st in enumerate(steps(body)):
+            if "guard" in str(st.get("name", "")).lower():
+                return job_name, i
+    return None
+
+
+def discovered_guards() -> dict[str, str]:
+    """Every workflow in the tree that carries a guard step -> the job it is in."""
+    found: dict[str, str] = {}
+    for f in sorted(WF.glob("*.yml")):
+        hit = _guard_step_index(f.name)
+        if hit:
+            found[f.name] = hit[0]
+    return found
+
+
+def _dispatchable(wf_name: str) -> bool:
+    """Whether the workflow can be started by hand (`workflow_dispatch`)."""
+    on = load(wf_name).get("on") or {}
+    return isinstance(on, dict) and "workflow_dispatch" in on
+
+
 def _has_cron(wf_name: str) -> bool:
     """Whether the workflow declares an `on.schedule` cron."""
     return re.search(r"^\s{2}schedule:\s*$", (WF / wf_name).read_text(), re.M) is not None
@@ -767,6 +799,50 @@ def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
               '"schedule"' in step["run"], step["run"][:80])
         rc, out = _run_guard(step, "schedule", "github-actions[bot]", "github-actions[bot]", GUARD_PERMS)
         check(f"guard {wf_name}: a scheduled run is allowed", rc == 0, out.strip()[-120:])
+
+
+def test_the_guard_registry_is_derived_from_the_tree():
+    """Issue #313: `BOT_GUARDS` must be the RECORD of the guard decision, never
+    the INPUT to the tests that exercise it. A literal tuple is remembered, and
+    what is remembered gets forgotten — measured: `code-review-bot.yml` and
+    `queued-alarm.yml` carried guards that `ARCHITECTURE.md` described and no
+    test ever ran, and `fix-bot.yml`'s entry named the `fix` job while the guard
+    lived elsewhere. The suite was green through all of it, because a pipeline
+    that is missing from the registry is simply not in the "N passed".
+
+    So the tree is the input and the registry is checked against it, in BOTH
+    directions: a guard nobody registered fails, and a registered pipeline that
+    lost its guard fails.
+    """
+    discovered = discovered_guards()
+    registered = dict(BOT_GUARDS)
+
+    check("guards: the tree yields guarded pipelines (the guard is not vacuous)",
+          bool(discovered), discovered)
+
+    # Direction 1: a guarded workflow that is not registered — the guard would
+    # never be exercised by any caller-class test.
+    unregistered = sorted(set(discovered) - set(registered))
+    check("guards: every workflow carrying a guard step is in BOT_GUARDS",
+          not unregistered, unregistered)
+
+    # Direction 2: a registered pipeline whose guard is gone.
+    vanished = sorted(set(registered) - set(discovered))
+    check("guards: every registered pipeline still carries its guard step",
+          not vanished, vanished)
+
+    # …and they must agree about WHICH job the guard is in (fix-bot's measured
+    # drift: the registry named `fix`, the guard was not the first step of it).
+    mismatched = {n: (registered[n], discovered[n])
+                  for n in sorted(set(registered) & set(discovered)) if registered[n] != discovered[n]}
+    check("guards: BOT_GUARDS names the job each guard is actually in",
+          not mismatched, mismatched)
+
+    # The direction that protects the keys: a workflow that can be DISPATCHED
+    # must be guarded, or someone's manual start is the unguarded one.
+    undefended = [f.name for f in sorted(WF.glob("*.yml"))
+                  if _dispatchable(f.name) and f.name not in discovered]
+    check("guards: every dispatchable workflow carries a guard", not undefended, undefended)
 
 
 def _declares_repo_events(wf_name: str) -> list[str]:
@@ -1856,6 +1932,7 @@ def main() -> int:
     test_guard_behaviour()
     test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
+    test_the_guard_registry_is_derived_from_the_tree()
     test_a_repo_event_run_is_admitted_by_its_guard()
     test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()
     test_bot_verification_protocol_is_documented_and_guarded()
