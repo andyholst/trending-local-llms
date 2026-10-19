@@ -649,7 +649,7 @@ setup:
 # published even if nobody runs this).
 .PHONY: hermes-alias-check
 hermes-alias-check:
-	$(DOCKER_RUN) sh -c "make _setup >/dev/null && make _hermes-alias-check"
+	$(DOCKER_RUN) sh -c "make _setup 1>&2 && make _hermes-alias-check"
 
 .PHONY: search-nvidia
 search-nvidia:
@@ -700,7 +700,7 @@ model-caps:
 
 .PHONY: hermes-smoke
 hermes-smoke:
-	$(DOCKER_RUN) sh -c "make _setup >/dev/null && make _hermes-smoke"
+	$(DOCKER_RUN) sh -c "make _setup 1>&2 && make _hermes-smoke"
 
 # Live pipeline smoke: real Firecrawl->lightbrd scrape for every nvidia/metal/
 # cpu/amd query (3s cap each) + a real Hermes call through the search alias.

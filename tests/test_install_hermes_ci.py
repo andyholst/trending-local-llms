@@ -385,6 +385,30 @@ def test_the_seam_and_the_check_are_wired_where_ci_looks():
           (SEAM.stat().st_mode & 0o111) != 0, oct(SEAM.stat().st_mode))
 
 
+def test_no_wrapper_discards_the_seams_diagnosis():
+    """Issue #222: `hermes-alias-check` and `hermes-smoke` ran the seam through
+    `make _setup >/dev/null`, so the one line that explains a setup failure was
+    thrown away and the target failed with nothing said — the same class as a seam
+    that fails silently. Every wrapped target keeps it: bare, or `1>&2` so the
+    target's own stdout stays what the caller parses."""
+    make = (ROOT / "Makefile").read_text()
+
+    # Given every wrapper that runs the seam inside a container
+    wrapped = [line.strip() for line in make.splitlines()
+               if "make _setup" in line and "sh -c" in line]
+
+    # Then  there are several, none discards the output, and each keeps it
+    check("wrappers: the container wrappers are found (guard not vacuous)", len(wrapped) >= 8, len(wrapped))
+    discarded = [l for l in wrapped if "_setup >/dev/null" in l or "_setup 1>/dev/null" in l]
+    check("wrappers: none throws the seam's diagnosis away", discarded == [], discarded)
+    kept = [l for l in wrapped if "make _setup" in l and ">/dev/null" not in l.split("make _setup")[1][:12]]
+    check("wrappers: every one keeps it (bare, or 1>&2)", len(kept) == len(wrapped), wrapped)
+    for target in ("hermes-alias-check", "hermes-smoke"):
+        recipe = make.split(f"\n{target}:\n", 1)[1].split("\n", 1)[0] if f"\n{target}:\n" in make else ""
+        check(f"wrappers: {target} keeps _setup's output", "make _setup" in recipe
+              and "_setup >/dev/null" not in recipe, recipe)
+
+
 def main() -> int:
     print("install_hermes_ci.sh: one seam, one pin, a build that proves the alias")
     test_a_present_cli_is_used_and_nothing_is_downloaded()
@@ -400,6 +424,7 @@ def main() -> int:
     test_the_alias_has_one_name_for_the_writer_and_the_reader()
     test_the_alias_check_passes_on_the_pin_and_fails_on_a_different_one()
     test_the_seam_and_the_check_are_wired_where_ci_looks()
+    test_no_wrapper_discards_the_seams_diagnosis()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
