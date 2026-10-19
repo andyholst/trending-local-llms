@@ -1,0 +1,77 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:43:10Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "An M4 Max comparison of TensorFold + DFlash2, oMLX and mlx-serve on the same 4-bit model: TensorFold leads numbers at 154 t/s but the three engines are within a few t/s of each other, and with drafting off all three sit at 29-31 t/s.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max",
+          "quant": "4-bit Qwen3.8-27B, DFlash2 drafter, thinking off; median of 2 runs",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/YvesLaRose/status/2105730083767881779",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 4,
+          "views": 1269,
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max",
+          "quant": "4-bit Qwen3.8-27B, drafter on, thinking off (oMLX 0.7.0); 146/111/144/53 on numbers/code/JSON/story",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "oMLX 0.7.0"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max",
+          "quant": "4-bit Qwen3.8-27B (ddalcu 4-bit build), --no-mtp so the DFlash drafter is used; 146/115/139/54 on numbers/code/JSON/story",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "mlx-serve 26.10.1, --no-mtp"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "31",
+          "hardware": "M4 Max",
+          "quant": "4-bit Qwen3.8-27B with drafting DISABLED (baseline; all three engines land at 29-31 t/s)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "mlx-serve 26.10.1, drafting off"
+        }
+      ]
+    }
+  ]
+}

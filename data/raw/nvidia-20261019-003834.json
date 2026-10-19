@@ -1,0 +1,427 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "32GB",
+      "storage_offload": "~80GB free disk (compressed weights); 32GB system RAM recommended",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB",
+          "quant": "developer-published range 53-94 tok/s on an RTX 5070",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 22,
+          "reshares": 10,
+          "views": 57060
+        },
+        {
+          "engine": "Strata",
+          "tps": "53",
+          "hardware": "RTX 5070 12GB",
+          "quant": "low end of the same developer-published 53-94 tok/s range",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 22,
+          "reshares": 10,
+          "views": 57060
+        },
+        {
+          "engine": "Strata",
+          "tps": "97.3",
+          "hardware": "RTX 5070 12GB + i9, 64GB RAM",
+          "quant": "Strata on Windows 11",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/car31108301/status/2109318714449379470",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 34
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB",
+          "quant": "IQ2_XS; ~1,900 t/s prompt processing; developer recommends 64GB system RAM (tested on 128GB DDR4-2400)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 24,
+          "comments": 3,
+          "reshares": 3,
+          "views": 4299
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB",
+          "quant": "IQ3_S",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 24,
+          "comments": 3,
+          "reshares": 3,
+          "views": 4299
+        },
+        {
+          "engine": "Strata",
+          "tps": "66",
+          "hardware": "RTX 3090 24GB",
+          "quant": "IQ3_S at 261K context",
+          "context_tokens": "261000",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 24,
+          "comments": 3,
+          "reshares": 3,
+          "views": 4299
+        },
+        {
+          "engine": "Strata",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + Ryzen 5 5600X, 64GB RAM",
+          "quant": "GSQ-RCO / IQ2_XS, Strata 0.1.42 on Windows; post gives a 50-60 tok/s range",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109636228937093580",
+          "likes": 30,
+          "comments": 5,
+          "reshares": 5,
+          "views": 11616
+        },
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RTX 3060 12GB + Ryzen 5 5600X, 64GB RAM",
+          "quant": "GSQ-RCO / IQ2_XS, Strata 0.1.42 on Windows; upper end of the 50-60 tok/s range",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109636228937093580",
+          "likes": 30,
+          "comments": 5,
+          "reshares": 5,
+          "views": 11616
+        },
+        {
+          "engine": "Strata",
+          "tps": "68",
+          "hardware": "DGX Spark (GB10, 128GB unified)",
+          "quant": "NVFP4, FP4-Local TP1, 90.8% SixCat; 2 Sparks measured 32% slower decode",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166",
+          "likes": 88,
+          "comments": 24,
+          "reshares": 9,
+          "views": 6640
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-17"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "optimized lookup verification (DFlash2 + context lookup, 16-token verify blocks), prefix caching, quantized KV cache; figure is for reproducing text already in the prompt - normal chat on the same setup is ~133 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 111,
+          "comments": 3,
+          "reshares": 9,
+          "views": 10885
+        },
+        {
+          "engine": "vLLM",
+          "tps": "138",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 111,
+          "comments": 3,
+          "reshares": 9,
+          "views": 10885
+        },
+        {
+          "engine": "vLLM",
+          "tps": "114",
+          "hardware": "RTX 3090 24GB",
+          "quant": "optimized MTP",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 111,
+          "comments": 3,
+          "reshares": 9,
+          "views": 10885
+        },
+        {
+          "engine": "vLLM",
+          "tps": "82",
+          "hardware": "RTX 3090 24GB",
+          "quant": "baseline without the stack optimizations",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 111,
+          "comments": 3,
+          "reshares": 9,
+          "views": 10885
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop + i7-12700H, 16GB DDR4",
+          "quant": "Unsloth IQ4_XS 14.6GB, 64K context, 25 GPU layers, Q4_0 KV cache, native MTP; ~150 t/s prefill",
+          "weight_gb": "14.6GB IQ4_XS",
+          "context_tokens": "64000",
+          "system_ram_min": "16GB",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 131,
+          "comments": 10,
+          "reshares": 15,
+          "views": 15067
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "262K",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, llama-server, Flash Attention, Q8 KV cache, 26 MoE layers on CPU; ~550 t/s prompt processing",
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262000",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp (llama-server) with Flash Attention and 26 MoE layers offloaded to CPU",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 50,
+          "comments": 5,
+          "reshares": 5,
+          "views": 14895
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 build, 1.72 bpw, ~550 t/s prefill; ternary files need PrismML's llama.cpp fork",
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "220000",
+          "engine_min_version": "PrismML llama.cpp fork (ternary kernels not yet upstream); llama-serve + bonsai-ada-surgery",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 43,
+          "comments": 6,
+          "reshares": 6,
+          "views": 15524
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "26",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 build, ~260 t/s prefill; ternary files need PrismML's llama.cpp fork",
+          "weight_gb": "5.95GB PTQ1_0",
+          "context_tokens": "262000",
+          "engine_min_version": "PrismML llama.cpp fork",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 43,
+          "comments": 6,
+          "reshares": 6,
+          "views": 15524
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "5-hour agent session, ~50 tok/s fresh and ~22 tok/s session average",
+          "weight_gb": "5.95GB",
+          "context_tokens": "125000",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 48,
+          "comments": 3,
+          "reshares": 6,
+          "views": 7099
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-02"
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "system_ram_min": "4GB",
+      "context_tokens": "262144",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "163",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 + DFlash2 draft, 262K context with Q8_0 KV; code-edit workload (rewriting a 190-line file)",
+          "context_tokens": "262000",
+          "engine_min_version": "PrismML llama.cpp fork: -m Ternary-Bonsai-2-9B-PTQ1_0.gguf -md Ternary-Bonsai-2-9B-DFlash2-Q8_0.gguf -ngld 99 --spec-type draft-dflash",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "144",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 with MTP head, code-edit workload",
+          "context_tokens": "262000",
+          "engine_min_version": "-m Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf --spec-type draft-mtp --spec-draft-n-max 2",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "119",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 with MTP head, chat workload (code-edit workload gave 144)",
+          "context_tokens": "262000",
+          "engine_min_version": "-m Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf --spec-type draft-mtp --spec-draft-n-max 1",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 plain, chat workload",
+          "context_tokens": "262000",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "engines": [
+        {
+          "engine": "Project Maya",
+          "tps": "30",
+          "hardware": "RTX 5090 32GB",
+          "quant": "engine built for this model, three-tier memory: hot experts in VRAM, warm in system RAM, rest streamed from NVMe mid-generation; the 30+ tok/s target the post argues for over a 10 tok/s demo",
+          "storage_offload": "NVMe SSD for cold experts swapped in during generation",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+          "likes": 35,
+          "comments": 33,
+          "reshares": 1,
+          "views": 266
+        },
+        {
+          "engine": "glm-flash-lite",
+          "tps": "20",
+          "hardware": "RTX 3090 24GB",
+          "quant": "2-bit, 12,096 experts",
+          "weight_gb": "125GB",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+          "likes": 7,
+          "comments": 1,
+          "reshares": 3,
+          "views": 415
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-12"
+    }
+  ],
+  "generated_utc": "2026-10-19T00:38:34Z"
+}

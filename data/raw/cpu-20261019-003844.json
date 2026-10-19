@@ -1,0 +1,125 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE, ~2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "weight_gb": "14.5GB (Q4_K_M)",
+      "context_tokens": "131K",
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "75",
+          "hardware": "RTX 4080 Super 16GB, expert layers offloaded to CPU",
+          "quant": "Q4_K_M (14.5GB) run off the card with the expert layers in system RAM; first of 23 models on the Agon composite (185/198)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2110216348903129348",
+          "likes": 21,
+          "comments": 26,
+          "reshares": 0,
+          "views": 22876,
+          "weight_gb": "14.5GB (Q4_K_M)"
+        }
+      ],
+      "why": "ONNX-style offload works: the 24B-A2B at 14.5GB Q4_K_M runs from an RTX 4080 Super 16GB with its expert layers on the CPU."
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE, ~2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "weight_gb": "14.5GB (compressed 4-bit build)",
+      "system_ram_min": "15GB",
+      "context_tokens": "131K",
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max (15GB of memory used per Liquid AI's chart)",
+          "quant": "compressed 4-bit build (14.5GB), Liquid AI's own speed test",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "14.5GB (compressed 4-bit build)",
+          "system_ram_min": "15GB"
+        }
+      ],
+      "why": "Liquid's own measured run: the compressed 4-bit build at 14.5GB does 184 tok/s on an M5 Max using 15GB of unified memory."
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B (ternary -1/0/+1)",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "weight_gb": "5.9GB ternary",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "300",
+          "hardware": "RTX 4090 (NVIDIA GPU via llama.cpp)",
+          "quant": "ternary weights (5.9GB); PrismML reports up to 5x the throughput and 3x the energy efficiency of the full-precision Qwen3.5 originals on RTX 4090 and M5 Pro — vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "5.9GB ternary"
+        }
+      ],
+      "why": "PrismML's 9B/27B ternary family cut to 5.9GB: vendor reports up to 5x throughput on an RTX 4090 vs the full-precision original."
+    }
+  ],
+  "generated_utc": "2026-10-19T00:38:44Z"
+}

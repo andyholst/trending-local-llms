@@ -1,0 +1,45 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal"
+      ],
+      "system_ram_min": "1TB unified memory (2x 512GB Mac Studios)",
+      "context_tokens": "1M",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studios linked by Thunderbolt (Apple MLX measurement)",
+          "quant": "Apple MLX across four linked Mac Studios; 8K prompt 4.8s to first token, 65K prompt 40.6s, generation down only ~2 tok/s between them",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 56,
+          "system_ram_min": "4x 512GB Mac Studios",
+          "context_tokens": "1M"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T00:38:59Z"
+}

@@ -1,0 +1,105 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:40:00Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Meta Muse Spark Open 816B-A42B",
+      "type": "MoE LLM",
+      "license": "Muse Model License (free commercial use under $20M revenue), open weights",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "~493GB NVFP4 (compressed checkpoint, before working memory)",
+      "context_tokens": "1048576",
+      "system_ram_min": "2x 512GB unified memory (two M5 Ultra Mac Studios)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Apple MLX (RDMA distributed) reaches 36+ t/s only across FOUR M5 Ultra Mac Studios, and about 25 t/s on two with tensor parallelism.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio, 512GB each (RDMA over Thunderbolt 5, distributed MLX)",
+          "quant": "NVFP4 weights (~493GB), 8,192-token context",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 65,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192",
+          "system_ram_min": "4x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studio, 512GB each (tensor parallelism)",
+          "quant": "NVFP4 weights (~493GB)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 11,
+          "comments": 0,
+          "reshares": 6,
+          "views": 796,
+          "weight_gb": "~493GB NVFP4",
+          "system_ram_min": "2x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "Mac M3 Ultra 512GB",
+          "quant": "2-bit quant, 304GB model",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/FegaPierre/status/2111094815379378285",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "304GB (2-bit quant)"
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License (free commercial use under $10M revenue), open weights",
+      "params": "24B (A2B MoE, ~2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "15GB (4-bit build)",
+      "weight_gb": "14.5GB (4-bit build)",
+      "context_tokens": "131072",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "An on-device agent model: 184 t/s on an M5 Max with a 4K prompt, and it leads or matches Qwen3.6-35B-A3B on five of eight tool-use/agent benchmarks.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max (Liquid AI's own run; runs through llama.cpp and MLX from day one)",
+          "quant": "4-bit compressed build (14.5GB weights), 4K-token prompt",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 2,
+          "views": 58,
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096",
+          "system_ram_min": "15GB unified memory on M5 Max"
+        }
+      ]
+    }
+  ]
+}

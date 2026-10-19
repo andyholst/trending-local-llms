@@ -1,0 +1,75 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "llama.cpp (strix-llama.cpp fork)",
+          "engine_repo": "https://github.com/asf0/strix-llama.cpp",
+          "tps": "312",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "ROCm, rdna35-perf branch, 128k context; prompt processing / prefill only - the same post reports answer (decode) speed tied with Vulkan",
+          "context_tokens": "131072",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/BTC_Cracker/status/2110747338108993849",
+          "likes": 3,
+          "comments": 5,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 8
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "256GB",
+      "vram_min": "12GB",
+      "system_ram_min": "256GB",
+      "backends": [
+        "ROCm",
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "100",
+          "hardware": "Radeon Pro V620 32GB x8 (256GB total, user-built homelab cluster of ~$350 surplus cards)",
+          "quant": "W4A16 routed experts, 3-token drafting vs bare decode; vLLM fork with custom RDNA2 kernels, pipeline parallelism PP=4. Same post: 40-50 t/s bare decode, and 3000+ t/s prefill which is prompt processing, never the decode figure",
+          "system_ram_min": "256GB",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/raminaol9ykas/status/2108497527586611313",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T00:38:15Z"
+}

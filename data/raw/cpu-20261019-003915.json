@@ -1,0 +1,80 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, vision-language)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B (ternary)",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "4GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "weight_gb": "2.0GB ternary",
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast YukonResearch challenge baseline)",
+          "quant": "ternary 2.0GB build; YukonResearch's Apple Silicon track starts at 170+ tok/s and treats that as the floor",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2.0GB ternary"
+        }
+      ]
+    },
+    {
+      "id": "minicpm-v-4.7",
+      "name": "MiniCPM-V 4.7 35B-A3B",
+      "full_name": "MiniCPM-V 4.7 35B-A3B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "openbmb/MiniCPM-V-4.7-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "openbmb/MiniCPM-V-4.7-35B-A3B",
+      "vram_tier": "6GB",
+      "vram_min": "6GB",
+      "backends": [
+        "CPU"
+      ],
+      "system_ram_min": "3GB",
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "13",
+          "hardware": "iPhone 17 Pro Max, ~3GB of memory (on-device)",
+          "quant": "OpenBMB's LES (Lookahead Expert Scheduling) MoE expert prefetch; 13+ tok/s decode in about 3GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2110783435866308677",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "3GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-19T00:39:15Z"
+}

@@ -1,0 +1,54 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T00:52:00Z",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "weight_gb": "~100GB at ~Q3",
+      "system_ram_min": "128GB unified LPDDR5X (Ryzen AI Max+ 395)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "A single Strix Halo mini PC runs this 235B MoE locally at 14-17 tok/s generation, with Vulkan often edging ROCm - conversationally usable on unified memory.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395)",
+          "quant": "~Q3 weights, GPU uses up to ~96-110GB of the unified LPDDR5X pool; Vulkan often edges ROCm for generation (community range 14-17 tok/s)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 257,
+          "weight_gb": "~100GB at ~Q3",
+          "system_ram_min": "128GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "14",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo), 128GB unified LPDDR5X, ~96-110GB of GPU-accessible memory",
+          "quant": "Q3-class aggressive quantization brings the MoE weights to ~100GB; only ~22B parameters active per token; Vulkan often edges out ROCm for generation",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 257,
+          "weight_gb": "~100GB at ~Q3",
+          "system_ram_min": "128GB"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "context_tokens": "25K (prefix-cache demo document)",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + optimized context lookup verification (up to 16 tokens/pass, ~15 accepted) + prefix caching; progression 82 -> 114 (MTP) -> 138 (DFlash2 + context lookup) -> 381 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "25K (prefix-cache demo document)"
+        }
+      ],
+      "why": "Same RTX 3090 went 82 -> 381 tok/s purely from stack work: DFlash2 speculation, optimized lookup verification and prefix caching."
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "weight_gb": "2-bit UD-IQ2_XXS",
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB direct GPU memory (native Vulkan app on Mihawk-99's RADV/Mesa port)",
+          "quant": "2-bit (UD-IQ2_XXS), 9 to 21 tok/s; models load from USB into GPU memory, no mmap",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2-bit UD-IQ2_XXS"
+        }
+      ],
+      "why": "llama.cpp ported to a jailbroken PS5 runs Qwen3.8-27B at a 2-bit quant at 9-21 tok/s on the console's 12 GiB of GPU memory."
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "system_ram_min": "64GB recommended (128GB DDR4-2400 dual-channel tested)",
+      "context_tokens": "261K",
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB DDR4-2400 dual-channel (GPU keeps hot experts, rest in system RAM)",
+          "quant": "IQ2_XS, ~1,900 tok/s prompt processing",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB recommended (128GB DDR4-2400 tested)"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB + 128GB DDR4-2400 dual-channel (GPU keeps hot experts, rest in system RAM)",
+          "quant": "IQ3_S, ~66 tok/s still at 261K context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB recommended (128GB DDR4-2400 tested)",
+          "context_tokens": "261K"
+        }
+      ],
+      "why": "Strata splits the 125B MoE across an RTX 3090 and DDR4: ~70 tok/s (IQ3_S, 66 at 261K) and ~87 tok/s (IQ2_XS)."
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "system_ram_min": "32GB",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB (gaming PC; RTX 20-50 series and recent Radeon supported)",
+          "quant": "compressed versions of the model; 53 to 94 tok/s per the developers' tests, ~80GB disk",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk"
+        }
+      ],
+      "why": "Strata runs the 125B model on a 12GB RTX 5070 at 53-94 tok/s from 32GB RAM and ~80GB disk."
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "NVFP4",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "NVIDIA FP4-Local",
+          "tps": "191",
+          "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+          "quant": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local); median 191, p90 271, peak 328 tok/s",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "why": "NVIDIA's own FP4-Local NVFP4 bundle hits a 191 tok/s median (328 peak) on an RTX PRO 6000."
+    }
+  ],
+  "generated_utc": "2026-10-19T00:38:23Z"
+}
