@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import collections
 import re
 import socket
 import sys
@@ -800,6 +801,37 @@ def check_card_tables(store: dict) -> None:
                            for t in ut.CARD_TIERS_GB))
 
 
+#: The capacity categories `data/MODEL_CONTRACT.md` documents, plus `CPU` for a run with no
+#: GPU. NOT an enum in the contract: narrowing `vram_tier` to one would reject the store as
+#: it is (rule 3b), which is why this is a vocabulary report, not a gate (issue #341).
+VRAM_TIER_CATEGORIES = ("8GB", "12GB", "16GB", "24GB", "32GB", "48GB")
+
+
+def check_vram_tier_vocabulary(store: dict) -> None:
+    """REPORT ONLY (issue #341): the `vram_tier` vocabulary the store actually uses.
+
+    `vram_tier` is a bare string in the contract, and the crawl writes what a post says, so
+    one category arrives spelled several ways (`48` and `48GB`), `CPU` is not a capacity at
+    all, and `9GB`/`18GB` are measurements rather than categories. This prints the
+    distribution and the two defect shapes — a competable spelling, and a value outside the
+    documented set — and never fails: the answer is a contract decision (issue #343), not a
+    red build.
+    """
+    counts = collections.Counter((m.get("vram_tier") or "(none)") for m in store.get("models", []))
+    bare = sorted(v for v in counts if re.fullmatch(r"\d+(?:\.\d+)?", str(v)))
+    outside = sorted(v for v in counts
+                     if v != "(none)" and v != "CPU" and v not in VRAM_TIER_CATEGORIES
+                     and not re.fullmatch(r"\d+(?:\.\d+)?", str(v)))
+    print("  vram_tier (report only): "
+          + ", ".join(f"{v}×{n}" for v, n in counts.most_common()))
+    if bare:
+        print(f"  vram_tier: {len(bare)} value(s) carry no unit ({', '.join(bare)}) — "
+              f"a bare number is one spelling of NNGB")
+    if outside:
+        print(f"  vram_tier: {len(outside)} value(s) outside the documented categories "
+              f"({', '.join(outside)}) — report only, see #341/#343")
+
+
 def check_backends_cover_measurements(store: dict) -> None:
     """Every backend a model has a measurement on is listed in its `backends`
     (the README table it renders in must be one the model claims). Catches an
@@ -1418,6 +1450,7 @@ def main() -> int:
     add("no-removal guarantee", "removal", lambda: check_no_removal(store, snap_dir))
     add("additive-only (no key/value loss)", "removal", lambda: check_no_value_loss(store, snap_dir))
     add("no duplicate models", "data", lambda: check_no_duplicates(store))
+    add("vram_tier vocabulary (report only)", "data", lambda: check_vram_tier_vocabulary(store))
     add("no duplicate engines", "data", lambda: check_no_duplicate_engines(store))
     add("tps starts with a numeric token", "data", lambda: check_tps_shape(store))
     add("hermes prompts are valid shell (dry-run)", "data", lambda: check_hermes_prompts())
