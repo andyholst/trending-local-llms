@@ -596,6 +596,63 @@ def test_skip_note_is_posted_once_per_review_round():
 
 
 
+def test_the_skip_note_covers_every_held_issue():
+    """Issue #204: the note used to describe `held[0]` — ONE issue — so with two fresh
+    verdicts the second stayed silent, which is the "why is nobody working on this?"
+    the comment exists to answer."""
+
+    # Given TWO issues, each with its own fresh verdict label and reviewer marker
+    marker = lambda h: {"createdAt": hours_ago(h), "body": f"{REVIEW_MARKER} {hours_ago(h)} run=1 -->\nReviewed."}
+    comments = {"163": [marker(2.0)], "174": [marker(1.0)]}
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = env_for(fixture, issues=[candidate(163, labels=["needs-refinement"]),
+                                       candidate(174, labels=["needs-refinement"])],
+                      comments=comments)
+
+        # When  the sweep notes the holds
+        first = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        posted = [json.loads(l) for l in (fixture / "comments-posted.jsonl").read_text().splitlines()]
+
+        # … and the SAME round runs again, with both notes now on their issues
+        stored = json.loads((fixture / "comments.json").read_text())
+        for c in posted:
+            stored.setdefault(c["issue"], []).append({"createdAt": NOW, "body": c["body"]})
+        (fixture / "comments.json").write_text(json.dumps(stored))
+        second = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        posted_again = (fixture / "comments-posted.jsonl").read_text().splitlines()
+
+    # Then  BOTH held issues are noted, once each
+    check("skip note: one comment per held issue", len(posted) == 2, str(posted))
+    check("skip note: it covers both issues", sorted(c["issue"] for c in posted) == ["163", "174"],
+          str([c["issue"] for c in posted]))
+    check("skip note: each note carries its own verdict timestamp",
+          any(f"since={hours_ago(2.0)}" in c["body"] for c in posted)
+          and any(f"since={hours_ago(1.0)}" in c["body"] for c in posted), str(posted))
+    check("skip note: the run reports what it did",
+          "2 posted" in first.stdout and "2 held" in first.stdout, first.stdout)
+    # … and the round is idempotent per issue
+    check("skip note: a second run in the same round posts nothing new",
+          len(posted_again) == 2 and "2 already noted" in second.stdout, second.stdout)
+
+    # Given MORE held issues than the bound (MAX_SKIP_NOTES = 10)
+    numbers = list(range(200, 212))
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = env_for(fixture,
+                      issues=[candidate(n, labels=["needs-refinement"]) for n in numbers],
+                      comments={str(n): [marker(2.0)] for n in numbers})
+        proc = run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        many = [json.loads(l) for l in (fixture / "comments-posted.jsonl").read_text().splitlines()]
+
+    check("skip note: the walk is bounded", len(many) == 10, len(many))
+    check("skip note: the bound is owned by the script, not the shell",
+          "MAX_SKIP_NOTES" in (ROOT / "scripts" / "issue_queue.py").read_text()
+          and "MAX_SKIP_NOTES = 10" in (ROOT / "scripts" / "issue_queue.py").read_text(), "")
+    check("skip note: it says what it left for the next sweep",
+          "more held issue(s) not noted in this sweep" in proc.stdout, proc.stdout[-300:])
+
+
 def test_a_decided_issue_is_skipped_by_the_shared_queue():
     """Issue #210: once the implementer has SAID what an issue is, the sweep must
     not re-litigate the verdict every hour."""
@@ -655,6 +712,7 @@ def main() -> int:
     test_a_stale_verdict_releases_the_issue()
     test_a_label_without_any_reviewer_marker_never_holds()
     test_skip_note_is_posted_once_per_review_round()
+    test_the_skip_note_covers_every_held_issue()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
     test_a_decided_issue_is_skipped_by_the_shared_queue()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
