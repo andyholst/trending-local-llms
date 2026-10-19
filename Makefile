@@ -719,6 +719,17 @@ fix:
 merge:
 	$(DOCKER_RUN) make _merge
 
+# Render the README from the store WITHOUT merging raws: no `generated_utc` bump, no
+# snapshot (issue #195). A template or docs change uses this, so the PR carries the
+# README and nothing else — the store churn a `make merge` would add is not the change.
+.PHONY: _render-readme
+_render-readme:
+	python3 scripts/update_trending.py --render-only
+
+.PHONY: render-readme
+render-readme:
+	$(DOCKER_RUN) make _render-readme
+
 .PHONY: merge-fetch
 merge-fetch:
 	$(DOCKER_RUN) sh -c "make _merge-fetch"
