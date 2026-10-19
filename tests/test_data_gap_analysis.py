@@ -119,6 +119,37 @@ def test_free_text_mention_is_unstructured_not_present():
           any("free text" in f for f in report["findings"]), str(report["findings"]))
 
 
+def test_a_measurement_level_value_is_captured():
+    """#337/#376 put a run's footprint ON the measurement, and both contracts declare every
+    dimension optional there. A value that lives only on a measurement is CAPTURED — counting
+    it as missing re-filed the same gap issue on every refresh (#364 then #376 both topped out
+    at `storage_offload` while the store held it; issues #368/#388)."""
+
+    # Given a model whose ONLY storage_offload lives on one of its measurements
+    with_meas = model("m-measured")
+    with_meas["engines"][0]["storage_offload"] = "12 of 48 layers streamed from SSD"
+    # …and a model that states it nowhere
+    without = model("m-silent")
+
+    # When  the store is analysed
+    report = G.analyse(store_with([with_meas, without]),
+                       {"model": set(), "measurement": set(), "search_model": set()},
+                       raw_dir=Path("/nonexistent"))
+
+    # Then  the measurement-level value counts as captured…
+    check("a measurement-level value is NOT missing",
+          report["missing"]["storage_offload"] == ["m-silent"], report["missing"]["storage_offload"])
+    check("…and is not reported as free-text-only either",
+          "m-measured" not in report["unstructured"]["storage_offload"],
+          report["unstructured"]["storage_offload"])
+    # …while a model that states it nowhere is still the gap it always was
+    check("a model with the value nowhere is still missing",
+          "m-silent" in report["missing"]["storage_offload"], report["missing"]["storage_offload"])
+    check("the signature follows: the captured model is not a gap",
+          not any("storage_offload:m-measured" in g for g in report["signature"]),
+          str(report["signature"]))
+
+
 def test_signature_tracks_the_store_not_the_noise():
     """The issue-triggering signature covers what the STORE lacks; volatile items
     (empty raw legs, estimates) stay in the report and out of the signature."""
@@ -1017,6 +1048,7 @@ def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
     test_free_text_mention_is_unstructured_not_present()
+    test_a_measurement_level_value_is_captured()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))

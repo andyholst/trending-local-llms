@@ -125,6 +125,21 @@ def contract_keys() -> dict:
     }
 
 
+def _stated(m: dict, key: str) -> bool:
+    """Is `key` captured for this model — on its own row OR on any of its measurements?
+
+    #337/#376 deliberately moved a run's footprint onto the measurement (`weight_gb`,
+    `context_tokens`, `system_ram_min`, `storage_offload`, `engine_min_version`), and both
+    contracts declare every such dimension OPTIONAL on a measurement item. A value that lives
+    only there is CAPTURED, and counting it as missing re-filed the same gap issue on every
+    refresh — #364 then #376 both topped out at `storage_offload` while the store held it
+    (issues #368/#388).
+    """
+    if m.get(key) not in (None, "", [], {}):
+        return True
+    return any(e.get(key) not in (None, "", [], {}) for e in (m.get("engines") or []))
+
+
 def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     """The gap report: per-dimension coverage, free-text-only mentions, and the
     store/maintenance gaps the refresh cannot see."""
@@ -142,11 +157,11 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
             contract_gaps[key] = (
                 f"`{key}` is not declared in model_contract.json/search_contract.json — "
                 f"the value is pruned at ingest, so {dim['label']} cannot be stored")
-        ids = [m.get("id", "?") for m in models if not m.get(key)]
+        ids = [m.get("id", "?") for m in models if not _stated(m, key)]
         missing[key] = ids
         text_models = []
         for m in models:
-            if m.get(key):
+            if _stated(m, key):
                 continue
             # free text lives on the model (quant/why) AND on every measurement
             # (a figure written into a measurement's `quant` is exactly the case
