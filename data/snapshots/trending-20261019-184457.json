@@ -1075,7 +1075,7 @@
           "interactions": 0
         },
         {
-          "engine": "EXLlamaV3",
+          "engine": "ExLlamaV3",
           "tps": "181",
           "hardware": "RTX 4090 24GB",
           "quant": "EXL3 at 4.0 bits per weight (15.4 GiB for the whole 27B model) with DFlash2 block-diffusion drafter (up to 7 proposals per pass); r0b0tlab's qwen38-exl3-dflash2 build",

@@ -103,7 +103,7 @@
       "type": "LLM (MoE)",
       "license": "Apache 2.0",
       "params": "35B (A3B MoE, MTP head)",
-      "hf": "Qwen/Qwopus3.6-35B-A3B-Coder-MTP",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
       "backends": [
         "ROCm"
       ],

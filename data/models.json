@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-19T18:44:48Z",
+  "generated_utc": "2026-10-19T19:24:53Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -1075,7 +1075,7 @@
           "interactions": 0
         },
         {
-          "engine": "EXLlamaV3",
+          "engine": "ExLlamaV3",
           "tps": "181",
           "hardware": "RTX 4090 24GB",
           "quant": "EXL3 at 4.0 bits per weight (15.4 GiB for the whole 27B model) with DFlash2 block-diffusion drafter (up to 7 proposals per pass); r0b0tlab's qwen38-exl3-dflash2 build",
