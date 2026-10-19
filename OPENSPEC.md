@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **66** · archived: **0**
+Active changes: **67** · archived: **0**
 
 ## Active changes
 
@@ -36,6 +36,7 @@ Active changes: **66** · archived: **0**
 | `data-gap-measurement-dimensions` | active | #376 — `data-gap: storage_offload (38 models)` | — | [data-gap-capture](openspec/changes/data-gap-measurement-dimensions/specs/data-gap-capture/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-measurement-dimensions/proposal.md) |
 | `data-gap-storage-offload` | active | #364 — `data-gap: storage_offload (41 models)` | — | [data-gap-backfill](openspec/changes/data-gap-storage-offload/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-storage-offload/proposal.md) |
 | `engine-meta-capture-at-ingest` | active | #334 | — | [engine-meta-capture](openspec/changes/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/engine-meta-capture-at-ingest/proposal.md) |
+| `findings-field-bodies` | active | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/findings-field-bodies/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `fix-bot-announces-its-window` | active | — | — | [bot-coordination](openspec/changes/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-bot-announces-its-window/proposal.md) |
 | `fix-bot-guard-own-job` | active | — | — | [bot-dispatch-guards](openspec/changes/fix-bot-guard-own-job/specs/bot-dispatch-guards/spec.md) | 10/10 | [proposal.md](openspec/changes/fix-bot-guard-own-job/proposal.md) |
