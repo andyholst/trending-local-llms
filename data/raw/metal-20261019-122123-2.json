@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T12:21:23Z",
+  "models": [
+    {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "full_name": "OpenAI gpt-oss-120b",
+      "type": "MoE LLM",
+      "license": "Apache 2.0",
+      "params": "120B (MoE)",
+      "hf": "openai/gpt-oss-120b",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Rapid-MLX (OpenAI/Anthropic-compatible server for Apple Silicon) decodes gpt-oss-20b-class agents at 73 tok/s on an M4 Pro 48GB.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "73",
+          "hardware": "Apple M4 Pro 48GB (Rapid-MLX 0.16.3)",
+          "quant": "gpt-oss-20b, 12.4 GiB resident",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/HaseebMir91/status/2111804875906375990",
+          "likes": 48,
+          "comments": 1,
+          "reshares": 1,
+          "views": 48,
+          "system_ram_min": "12.4 GiB"
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "weight_gb": "60GB",
+      "system_ram_min": "12GB",
+      "storage_offload": "flash storage (phone), experts streamed per token",
+      "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge expert streaming",
+      "last_seen": "2026-10-18"
+    }
+  ]
+}

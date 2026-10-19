@@ -1,0 +1,68 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T12:22:20Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Meta Muse Spark Open 816B-A42B",
+      "type": "MoE LLM",
+      "license": "Muse Model License (free commercial use under $20M revenue), open weights",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Apple's MLX runs it across Mac Studios over Thunderbolt: 25 tok/s on two M5 Ultras, more than 36 on four, with a 1M-token context.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio, 512GB each (RDMA over Thunderbolt)",
+          "quant": "NVFP4 weights, 8,192-token context; 40.6s to first token at 65K",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 81,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "context_tokens": "8192",
+          "system_ram_min": "4x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studio, 512GB each (tensor parallelism)",
+          "quant": "NVFP4 compressed weights (~493GB), 8,192-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 1,
+          "views": 197,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192",
+          "system_ram_min": "2x 512GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Apple M5 Ultra Mac Studio, 512GB each",
+          "quant": "NVFP4 compressed weights; measured 16-37 tok/s across configurations",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 1,
+          "views": 606
+        }
+      ],
+      "vram_min": "493GB",
+      "weight_gb": "493GB NVFP4",
+      "system_ram_min": "1024GB",
+      "last_seen": "2026-10-18"
+    }
+  ]
+}

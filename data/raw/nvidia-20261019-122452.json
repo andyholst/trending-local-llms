@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "24.6",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2100734364908986511",
+          "hardware": "NVIDIA DGX Spark (one box, 128GB unified)",
+          "quant": "Cruz's GLM-5.3-Flash build packed to ~91 GiB, after his kernel work; average 24.6, 27.6 on coding",
+          "likes": 19,
+          "comments": 24,
+          "reshares": 0,
+          "views": 23480,
+          "weight_gb": "~91 GiB"
+        }
+      ],
+      "last_seen": "2026-09-17"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:24:52Z"
+}

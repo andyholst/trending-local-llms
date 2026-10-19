@@ -1,0 +1,211 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "97.3",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/car31108301/status/2109318714449379470",
+          "hardware": "RTX 5070 12GB + Intel i9 workstation, 64GB system RAM",
+          "quant": "Qwen3.8-Flash Next on Strata, experts split between GPU VRAM and system RAM",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 34,
+          "system_ram_min": "64GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "hardware": "RTX 5070 12GB (gaming PC); needs 32GB RAM and ~80GB disk",
+          "quant": "compressed Qwen3.8-Flash-Next; developers' 53-94 tok/s range, upper end (53 / 94 stored separately)",
+          "likes": 22,
+          "comments": 9,
+          "reshares": 0,
+          "views": 57349,
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk"
+        },
+        {
+          "engine": "Strata",
+          "tps": "53",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "hardware": "RTX 5070 12GB (gaming PC); needs 32GB RAM and ~80GB disk",
+          "quant": "compressed Qwen3.8-Flash-Next; developers' 53-94 tok/s range, lower end",
+          "likes": 22,
+          "comments": 9,
+          "reshares": 0,
+          "views": 57349,
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk"
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "hardware": "RTX 3090 24GB (used) + 128GB system RAM, model split across GPU VRAM and system RAM",
+          "quant": "IQ2_XS; developer recommends 64GB RAM, tested machine 128GB dual-channel DDR4-2400",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4457,
+          "system_ram_min": "128GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "hardware": "RTX 3090 24GB (used) + 128GB system RAM, model split across GPU VRAM and system RAM",
+          "quant": "IQ3_S; developer recommends 64GB RAM, tested machine 128GB dual-channel DDR4-2400",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4457,
+          "system_ram_min": "128GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "66",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "hardware": "RTX 3090 24GB (used) + 128GB system RAM, model split across GPU VRAM and system RAM",
+          "quant": "IQ3_S at 261K context; developer recommends 64GB RAM, tested machine 128GB",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4457,
+          "system_ram_min": "128GB",
+          "context_tokens": "261000"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "68",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166",
+          "hardware": "1x NVIDIA DGX Spark",
+          "quant": "NVIDIA FP4-Local (Nvidia/Qwen3.8-Flash-Next-FP4-Local) TP1; 90.8% SixCat",
+          "likes": 26,
+          "comments": 10,
+          "reshares": 0,
+          "views": 8112,
+          "weight_gb": "FP4-Local (NVFP4)"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "191",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+          "quant": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local); median 191, p90 271, peak 328 tok/s",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 34,
+          "weight_gb": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local)"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "271",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+          "quant": "NVFP4; 90th percentile of the same workload (median 191, peak 328)",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 34,
+          "weight_gb": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local)"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "328",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+          "quant": "NVFP4; peak of the same workload (median 191, p90 271)",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 34,
+          "weight_gb": "NVFP4 (Qwen3.8-Flash-Next-FP4-Local)"
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "formats": [
+        {
+          "name": "FP4-Local (NVFP4)",
+          "hf": "nvidia/Qwen3.8-Flash-Next-FP4-Local"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/codvynn/status/2112001034126016990",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB memory (native Vulkan app, cobanov/PS5LM port)",
+          "quant": "2-bit GGUF via PS5LM; 9-21 tok/s",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 70,
+          "weight_gb": "2-bit GGUF"
+        },
+        {
+          "engine": "LSE",
+          "tps": "159",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "hardware": "iPad Pro + Thunderbolt-connected Sapphire Radeon AI PRO R9700 eGPU",
+          "quant": "Q4, 131K context; LemonSeed Engine (LSE) DFlash2 draft-tree decoding; standard 31, MTP 109, DFlash2 159 tok/s",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 0,
+          "views": 562,
+          "context_tokens": "131072",
+          "engine_repo": "https://github.com/Geramy/LSE"
+        }
+      ],
+      "last_seen": "2026-10-19"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:22:47Z"
+}

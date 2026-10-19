@@ -1,0 +1,93 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T12:21:50Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "ROCm"
+      ],
+      "why": "On an iPad Pro driving an external R9700 GPU, LemonSeed's DFlash2 draft-tree decoding reportedly reaches 159 tok/s at Q4 and 131K context, 5.1x baseline.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Sapphire R9700 GPU over Thunderbolt (Strix Halo iGPU reaches ~64 tok/s)",
+          "quant": "Q4, 131K context; DFlash2 draft-tree decoding inside the LemonSeed Engine",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072",
+          "engine_min_version": "LemonSeed Engine (github.com/Geramy/LSE)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "31",
+          "hardware": "iPad Pro + Sapphire R9700 GPU over Thunderbolt",
+          "quant": "Q4, 131K context; standard decoding baseline (LemonSeed Engine)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "90",
+          "hardware": "RTX 5090 32GB",
+          "quant": "Q4_K_S (Twin Turbo community tune)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032613405761904",
+          "likes": 9,
+          "comments": 4,
+          "reshares": 1,
+          "views": 727,
+          "weight_gb": "Q4: 16-18GB"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB (TeksEdge)",
+          "quant": "document-reproduction workload with context lookup and optimistic verification (up to 16 tokens/pass); ordinary chat ~133 tok/s",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
+          "likes": 9,
+          "comments": 4,
+          "reshares": 1,
+          "views": 727
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "138",
+          "hardware": "RTX 3090 24GB (TeksEdge)",
+          "quant": "DFlash2 + context lookup, before verification optimisation",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
+          "likes": 9,
+          "comments": 4,
+          "reshares": 1,
+          "views": 727
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "system_ram_min": "128GB",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "last_seen": "2026-10-19"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T12:22:20Z",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B",
+      "type": "GGUF / ternary LLM (vision-language)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "weight_gb": "~2GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "why": "A 9B vision-language model in ~2GB that the company says runs agent tasks on an iPhone at 34 tok/s.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights (-1/0/+1), ~2GB; PrismML's reported figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 47,
+          "comments": 1,
+          "reshares": 1,
+          "views": 47,
+          "weight_gb": "~2GB ternary"
+        }
+      ],
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "context_tokens": "131072",
+      "system_ram_min": "4GB",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary Bonsai 2 4B",
+      "type": "GGUF / ternary LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "weight_gb": "~0.95GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The 4B ternary build runs on a CMF Phone 2 Pro at 5-6 tok/s with a custom Nothing-OS style UI.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (Android)",
+          "quant": "ternary weights, ~0.95GB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 95,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "weight_gb": "~0.95GB ternary"
+        }
+      ],
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "system_ram_min": "4GB",
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary Bonsai 2 2B",
+      "type": "GGUF / ternary LLM",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "weight_gb": "~0.43GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The 2B ternary build runs on a CMF Phone 2 Pro at 10-11 tok/s, and the company reports up to 120 tok/s on an iPhone 18 Pro Max.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "CMF Phone 2 Pro (Android)",
+          "quant": "ternary weights, ~0.43GB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 95,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "weight_gb": "~0.43GB ternary"
+        }
+      ],
+      "vram_tier": "6GB",
+      "vram_min": "4GB",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork",
+      "last_seen": "2026-10-16"
+    }
+  ]
+}

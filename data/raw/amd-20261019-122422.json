@@ -1,0 +1,52 @@
+{
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "LLM (MoE)",
+      "license": "open weights (Muse terms, \"Built with\" label)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "four M5 Ultra Mac Studios, 512GB unified memory each (~1TB per pair, Thunderbolt tensor parallelism)",
+          "quant": "Apple MLX; Apple's own decode measurements: about 25 tok/s on two Studios with tensor parallelism, about 37 on four; 8K prompt 4.8 s to first token, 65K prompt 40.6 s",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "1024GB",
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "four M5 Ultra Mac Studios",
+          "quant": "Apple MLX, MLX toolkit updated for the model; over 36 tok/s across four M5 Ultra Mac Studios; two M5 Ultra Mac Studios run it with 512GB memory each, compressed NVFP4 checkpoint about 493GB",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/jack_gor/status/2111513200340713906",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "493GB NVFP4 (compressed, before working memory)",
+          "system_ram_min": "1024GB",
+          "interactions": 0
+        }
+      ],
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "vram_min": "512GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:59:30Z",
+  "backend": "amd"
+}

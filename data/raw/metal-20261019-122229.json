@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-19T12:22:29Z",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "MoE LLM",
+      "license": "see model card",
+      "params": "GLM-5.3-Flash family (GLM-5.3-FlashX variant: 320B total / 18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "context_tokens": "1048576",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "GLM-5.3-Flash is now free in OpenCode (200K-context free tier), and Z.AI's speed-optimised FlashX variant reports up to 200 tok/s - a hosted API figure, no local runtime named.",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "200",
+          "hardware": "served API endpoint (Z.AI GLM-5.3-FlashX)",
+          "quant": "Z.AI's reported generation speed for the FlashX variant, 1M context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/joejossy_12/status/2111590837847052539",
+          "likes": 94,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "context_tokens": "1048576"
+        }
+      ],
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "weight_gb": "~306GB at FP8",
+      "system_ram_min": "50GB",
+      "storage_offload": "100GB NVMe, MoE experts on SSD",
+      "last_seen": "2026-10-17"
+    }
+  ]
+}

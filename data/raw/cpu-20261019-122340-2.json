@@ -1,0 +1,66 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB",
+          "quant": "compressed quants; developers' tests give 53-94 tokens/sec range, upper bound",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 22,
+          "comments": 9,
+          "reshares": 109,
+          "views": 57349,
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk"
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB",
+          "quant": "IQ2_XS; 64GB system RAM recommended by the developer",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 4,
+          "comments": 3,
+          "reshares": 26,
+          "views": 4457,
+          "system_ram_min": "64GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "Ryzen AI Max+ 395 / Radeon 8060S 128GB (Strix Halo)",
+          "quant": "IQ3_S short-context figure on the Strix Halo box; 66 tok/s at 261K context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 4,
+          "comments": 3,
+          "reshares": 26,
+          "views": 4457,
+          "context_tokens": "261120",
+          "system_ram_min": "128GB"
+        }
+      ],
+      "why": "The big-MoE-on-a-consumer-card story: Strata splits the 125B across VRAM and system RAM, reported at 53-94 tok/s on a 12 GB RTX 5070 with 32 GB RAM.",
+      "last_seen": "2026-10-17"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:23:40Z"
+}

@@ -1,0 +1,58 @@
+{
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "one DGX Spark (GB10), 128GB unified memory",
+          "quant": "both engines' default drafters; 66K-token prompt, copy-a-passage test (DFlash drafter, 75% of guesses accepted); Ollama 0.40.5 baseline 87.2 tok/s = 2.17x. New-story prompt: 50.4 tok/s vs Ollama 63.4",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "65536",
+          "system_ram_min": "128GB",
+          "engine_min_version": "Magnitude 0.2.9 (Ollama 0.40.5 baseline)",
+          "interactions": 0
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "one DGX Spark (GB10), 128GB unified memory",
+          "quant": "Ollama defaults; 66K-token prompt, copy-a-passage test (baseline for Magnitude 0.2.9 at 188.9 tok/s = 2.17x). New-story prompt: 63.4 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "65536",
+          "system_ram_min": "128GB",
+          "engine_min_version": "Ollama 0.40.5",
+          "interactions": 0
+        }
+      ],
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:59:30Z",
+  "backend": "amd"
+}

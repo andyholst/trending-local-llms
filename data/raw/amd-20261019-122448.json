@@ -1,0 +1,49 @@
+{
+  "models": [
+    {
+      "id": "florida-ai-nvidia-nemotron-3.5-bolt-74b-a9b",
+      "name": "NVIDIA Nemotron 3.5 Bolt 74B-A9B",
+      "full_name": "NVIDIA Nemotron 3.5 Bolt 74B-A9B (24GB, LiLiCorr)",
+      "type": "LLM (MoE, ~2-bit)",
+      "license": "NVIDIA open weights",
+      "params": "74B (MoE, A9B)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-LiLiCorr-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "87.8",
+          "hardware": "NVIDIA GB10 DGX Spark",
+          "quant": "Nemotron 3.5 Bolt + LiLiCorr DFlash; compressed from the 120B Super VL and quantized to about 2 bits; 87.8 tok/s single-stream decode and 195.1 tok/s balanced throughput (author's own measurements on the DGX Spark); official ~84 tok/s is quoted on a 128GB configuration",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/ViC305/status/2111165770159845500",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "84",
+          "hardware": "NVIDIA GB10 DGX Spark",
+          "quant": "compressed from the 120B Super VL, quantized to about 2 bits; NVIDIA's own figure of 84 tok/s on RTX Spark; runs local AI agents in 24GB; beats Qwen3.6-35B-A3B and Gemma 4 26B-A4B on agent benchmarks",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Qualiteg_global/status/2111242525839384740",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 192,
+          "interactions": 5
+        }
+      ],
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:59:30Z",
+  "backend": "amd"
+}

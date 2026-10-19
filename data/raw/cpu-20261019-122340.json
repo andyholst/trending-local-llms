@@ -1,0 +1,214 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "context_tokens": "131072",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup, up to 16 verified tokens/pass (~15 accepted); MTP baseline 82 tok/s",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 9,
+          "views": 727
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "PS5 GPU (RADV Vulkan port, 12 GiB direct memory)",
+          "quant": "UD-IQ2_XXS 2-bit",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 4,
+          "views": 180
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "PS5 GPU (PS5LM llama.cpp port)",
+          "quant": "GGUF IQ2_XXS; about 20 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/chasmmmmmmmmmmm/status/2110216776759804103",
+          "likes": 2,
+          "comments": 10,
+          "reshares": 0,
+          "views": 785
+        }
+      ],
+      "why": "Topped the local-model conversation this week: 82 -> 381 tok/s on one RTX 3090 by stacking DFlash2 speculative decode with context lookup, and the PS5LM llama.cpp port now runs the 27B on a jailbroken console at ~20 tok/s.",
+      "last_seen": "2026-10-19"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (A2B MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "weight_gb": "14.5GB (4-bit)",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max 128GB unified",
+          "quant": "Liquid AI's compressed 4-bit build (14.5GB); Liquid's own M5 Max figure",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/justrehen/status/2110101795137794211",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 61,
+          "weight_gb": "14.5GB 4-bit",
+          "context_tokens": "131072",
+          "system_ram_min": "15GB"
+        }
+      ],
+      "why": "Liquid's 24B-A2B agent model hit tech Twitter: 2B active of 24B, 184 tok/s on an M5 Max, 131K context - pitched at private on-device agents.",
+      "last_seen": "2026-10-13"
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM (MoE, multimodal)",
+      "license": "Free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "context_tokens": "1048576",
+      "weight_gb": "~493GB (compressed NVFP4)",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra 512GB (Thunderbolt)",
+          "quant": "4-machine cluster; 'over 36 tokens a second'",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 81
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x M5 Ultra Mac Studio 512GB",
+          "quant": "Apple ML decode speed on four Studios with tensor parallelism",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 4,
+          "reshares": 11,
+          "views": 877
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio 512GB (tensor parallel)",
+          "quant": "NVFP4; 8,192-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 3,
+          "views": 197,
+          "context_tokens": "8192",
+          "weight_gb": "~493GB NVFP4"
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "2-4x Mac Studio M5 Ultra 512GB",
+          "quant": "Apple: 16-37 tok/s across the cluster",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 606
+        }
+      ],
+      "why": "Meta's 816B-A42B open weights running on a desk via MLX across Mac Studios - the frontier-size local story of the week, at 25-37 tok/s.",
+      "last_seen": "2026-10-18"
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "GGUF (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "7.21GB PQ2_0 / 5.95GB PTQ1_0",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary 7.21GB, ~220K context; ~550 tok/s prefill",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107064827923284104",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 21,
+          "views": 2402,
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "225280"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "26",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary 5.95GB, full 262K context; ~260 tok/s prefill",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107064827923284104",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 21,
+          "views": 2402,
+          "weight_gb": "5.95GB PTQ1_0",
+          "context_tokens": "262144"
+        }
+      ],
+      "why": "PrismML's ternary 27B remains the cheap-card favourite: PQ2_0 at 7.21GB still gives ~35 tok/s on a 12 GB RTX 3060.",
+      "last_seen": "2026-10-03"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:23:40Z"
+}

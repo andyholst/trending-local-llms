@@ -1,0 +1,101 @@
+{
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, vision-language)",
+      "license": "Apache 2.0",
+      "params": "9B (ternary, Qwen3.5 based)",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "2GB",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales; about 2GB footprint; PrismML reports up to 5x the throughput and 3x the energy efficiency of the originals; up to 34 tok/s on an iPhone 18 Pro Max (vendor figures)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB",
+          "interactions": 0
+        }
+      ],
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "2GB"
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B (ternary, Qwen3.5 based)",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "1GB",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "56",
+          "hardware": "CMF Phone 2 Pro (Android phone)",
+          "quant": "ternary weights (-1/0/+1); 0.95GB on-disk footprint; the post reports 5-6 tok/s for the 4B and 10-11 tok/s for the 2B",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 95,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.95GB",
+          "interactions": 99
+        }
+      ],
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "vram_min": "1GB"
+    },
+    {
+      "id": "qwen3.8-27b-primary-20261017",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB direct GPU memory (native Vulkan app on Mihawk-99's RADV/Mesa port)",
+          "quant": "2-bit (UD-IQ2_XXS); 9-21 tok/s range; models load from USB into GPU memory, no mmap; smaller models in payload mode, about 1.6GB resident",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2-bit UD-IQ2_XXS",
+          "interactions": 0
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-17",
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:59:30Z",
+  "backend": "amd"
+}

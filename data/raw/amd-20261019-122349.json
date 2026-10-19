@@ -1,0 +1,88 @@
+{
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Thunderbolt-connected Sapphire R9700 GPU (AMD Radeon)",
+          "quant": "Q4, 131K context; DFlash2 draft-tree decoding; LemonSeed Engine records the forward pass (standard decoding 31 tok/s, MTP speculative 109 tok/s)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072",
+          "engine_min_version": "LemonSeed Engine, DFlash2 draft-tree decoding",
+          "interactions": 0
+        }
+      ],
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "vram_min": "16GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB (per the developers' tests)",
+          "quant": "compressed model packs (IQ2_XS / Q2_0 / IQ3_XXS / IQ3_S), experts split GPU VRAM + system RAM; range 53-94 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 22,
+          "reshares": 9,
+          "views": 57349,
+          "system_ram_min": "32GB",
+          "storage_offload": "about 80GB disk",
+          "interactions": 140
+        },
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "AMD ROCm/HIP backend (setup.sh --backend hip); output 52-60 tok/s + 1250 prompt-processing tok/s; KV cache k8v4 for +10%; 8GB+ AMD GPU",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 510,
+          "comments": 43,
+          "reshares": 58,
+          "views": 41086,
+          "interactions": 664
+        }
+      ],
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:59:30Z",
+  "backend": "amd"
+}

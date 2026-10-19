@@ -1,0 +1,51 @@
+{
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "open weights (Liquid AI)",
+      "params": "24B (MoE, 2B active per token)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "24GB",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "M5 Max",
+          "quant": "Liquid AI's reported figure; runs through llama.cpp and MLX from day one; leads or matches Qwen3.6-35B-A3B on 5 of 8 tool-use/agent benchmarks",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 81,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 83
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "M5 Max",
+          "quant": "Liquid AI's reported figure; day-one llama.cpp support alongside MLX",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 81,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 83
+        }
+      ],
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-18",
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:59:30Z",
+  "backend": "amd"
+}

@@ -1,0 +1,251 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B (Empero distillation)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, 26 MoE layers on CPU, -c 262144, Flash Attention, Q8 KV cache; ~550 tok/s prefill",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+          "likes": 26,
+          "comments": 26,
+          "reshares": 278,
+          "views": 28021,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "268288",
+          "system_ram_min": "16GB",
+          "engine_min_version": "-n-cpu-moe 26, -c 262144, --flash-attn, --cache-type-k q8_0, --cache-type-v q8_0"
+        }
+      ],
+      "why": "12 GB of VRAM plus 16 GB of RAM is enough for a 35B-A3B at ~50 tok/s once 26 MoE layers go to the CPU - the low-end recipe people kept sharing this week.",
+      "last_seen": "2026-10-12"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "DGX Spark GB10 (one box)",
+          "quant": "unsloth UD-Q4_K_XL with DFlash drafter; 66K-token prompt copy test, 75% draft acceptance",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 9,
+          "views": 1293,
+          "context_tokens": "67584",
+          "weight_gb": "UD-Q4_K_XL"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "DGX Spark GB10 (one box)",
+          "quant": "Q4_K_M registry tag with built-in MTP; 66K-token prompt copy test",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 9,
+          "views": 1293,
+          "context_tokens": "67584",
+          "weight_gb": "Q4_K_M"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "63.4",
+          "hardware": "DGX Spark GB10 (one box)",
+          "quant": "Q4_K_M with built-in MTP; new-story generation after a 67K-token prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 9,
+          "views": 1293,
+          "context_tokens": "68608",
+          "weight_gb": "Q4_K_M"
+        },
+        {
+          "engine": "Magnitude",
+          "tps": "50.4",
+          "hardware": "DGX Spark GB10 (one box)",
+          "quant": "unsloth UD-Q4_K_XL with DFlash drafter; new-story generation after a 67K-token prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 9,
+          "views": 1293,
+          "context_tokens": "68608",
+          "weight_gb": "UD-Q4_K_XL"
+        }
+      ],
+      "why": "One DGX Spark, two runtimes measured head-to-head: Magnitude's DFlash drafter wins prompt copying 2.17x, Ollama wins fresh generation - the honest read on speculative decoding.",
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (vision-language)",
+      "type": "GGUF (ternary)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB ternary",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary 2GB build; PrismML vendor figure (upper bound)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 8,
+          "reshares": 0,
+          "views": 965,
+          "weight_gb": "2GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary 2GB build on-device; vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 8,
+          "reshares": 0,
+          "views": 965,
+          "weight_gb": "2GB ternary",
+          "system_ram_min": "8GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary 2GB build; PrismML vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 47,
+          "weight_gb": "2GB ternary",
+          "system_ram_min": "8GB"
+        }
+      ],
+      "why": "A 9B vision-language model in 2 GB of ternary weights, running on an iPhone - PrismML's Bonsai 2 9B was the small-model headliner (vendor figures).",
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary Bonsai 2 4B",
+      "type": "GGUF (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro",
+          "quant": "32 concurrent streams; aggregate throughput across streams, not one stream",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 87,
+          "views": 5178,
+          "weight_gb": "0.95GB ternary",
+          "system_ram_min": "4GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (Android, on-device app)",
+          "quant": "ternary build; 5-6 tok/s range, upper bound",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 95,
+          "weight_gb": "0.95GB ternary"
+        }
+      ],
+      "why": "The 4B ternary build fits under 4 GB of memory and has already been shipped into a phone UI - phone makers' favourite of the new Bonsai sizes.",
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash 320B-A18B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62.2",
+          "hardware": "H100-class cloud serving endpoint (provider-hosted, not a local GPU)",
+          "quant": "served endpoint figure from Artificial Analysis, batching/provider-dependent",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "why": "GLM-5.3-Flash went free in OpenCode for a day, which drove most of the chatter; the only speed figure in this window is a hosted endpoint's, not a local run.",
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-10-19T12:23:40Z"
+}
