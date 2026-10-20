@@ -1,0 +1,61 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "system_ram_min": "32GB",
+      "context_tokens": "66000",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "One NVIDIA DGX Spark; independent rebuild of the vendor's ~64K-token Moby-Dick passage-copy test, 66K-token prompt, default DFlash drafter with 75% draft acceptance",
+          "quant": "unsloth UD-Q4_K_XL with a quantized KV cache; the same model writes a new story at 50.4 t/s (0.79x Ollama) with 43% acceptance",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "66000"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "63.4",
+          "hardware": "One NVIDIA DGX Spark (GB10), same box and prompt shape as the copy test",
+          "quant": "registry tag Q4_K_M with built-in MTP drafter; writes a new story after a 67K-token prompt (Magnitude 50.4 t/s on the same round)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "67000"
+        }
+      ],
+      "why": "The model local-AI benches argue about: on one DGX Spark, Magnitude copies a passage 2.17x faster than Ollama (188.9 vs 87.2 t/s) but writes a new story at 0.79x Ollama's speed (50.4 vs 63.4 t/s), so \"over 2x\" holds only for the vendor's copy test."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:54Z"
+}

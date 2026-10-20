@@ -1,0 +1,70 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "id": "qwen3.8-flash-next-125b",
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "AMD Strix Halo laptop (16GB VRAM + 96GB RAM)",
+          "quant": "Unsloth Q4 / GSQ-RCO weights, experimental Linux-only Strix Halo support; 27 t/s sustained at 168K-262K context (the post's 1400-1500 t/s is prefill)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "context_tokens": "262144",
+          "system_ram_min": "96GB",
+          "likes": 572,
+          "comments": 8,
+          "reshares": 16,
+          "views": 0,
+          "interactions": 596
+        }
+      ]
+    },
+    {
+      "name": "Qwen3.8 27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "id": "qwen3.8-27b",
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "LemonSeed Engine",
+          "tps": "159",
+          "hardware": "AMD Radeon AI PRO R9700 32GB (Thunderbolt eGPU on an iPad Pro)",
+          "quant": "Q4, 131K context; DFlash2 draft-tree decoding 159 t/s, MTP 109, standard decoding 31 (the post's 1636 t/s is 4K prefill)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "context_tokens": "131072",
+          "engine_repo": "https://github.com/Geramy/LSE",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:32:01Z"
+}

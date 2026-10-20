@@ -1,0 +1,71 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB, inference stack optimised by a r/LocalLLaMA developer (MTP + DFlash2 spec-decode + context lookup, 16-token verification batches)",
+          "quant": "DFlash2 speculative decoding with context lookup and 16 tokens verified per step; reproduce-a-document task (25K+ tokens); the underlying stack starts at ~82 t/s and reaches ~133-138 t/s in ordinary chat",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112385215423193459",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 2,
+          "views": 483
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "Single Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM (~16GB used), a custom llama.cpp fork streaming the KV cache between VRAM and system RAM",
+          "quant": "IQ4_XS; Q4 KV values + Q8 keys, MTP speculative decoding, N-gram prediction; ~200K context (262K targeted); 42.7 t/s at ~20K context, 658 t/s prefill",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 13,
+          "views": 1449,
+          "system_ram_min": "24GB",
+          "context_tokens": "200000"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB of direct GPU memory, native app on Mihawk-99's RADV Vulkan port",
+          "quant": "2-bit UD-IQ2_XXS; 9-21 tok/s range; models load from USB straight into GPU memory (no mmap); PS5LM v0.1 (GPL-3.0)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 4,
+          "views": 193
+        }
+      ],
+      "why": "Qwen3.8-27B is the model the local-AI crowd tunes hardest: ~382 tok/s on an RTX 3090 with DFlash2 + context lookup (4.6x its ~82 t/s baseline), ~35 t/s at 200K context on a single 16GB RX 9060 XT via a KV-streaming llama.cpp fork, and 9-21 t/s on a jailbroken PS5 through PS5LM's Vulkan port."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:21Z"
+}

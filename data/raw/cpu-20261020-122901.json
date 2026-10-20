@@ -1,0 +1,79 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "11.66GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "system_ram_min": "110GB",
+      "context_tokens": "250K",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.52",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM, Ubuntu 22; experimental llama.cpp build with hybrid inference + 40 expert layers on GPU (no MTP, no DFlash2, no KV-cache quantization)",
+          "quant": "Q4_K_XL GGUF, ~111.4GB across four shards, at 80K context; VRAM 23.85GB",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "111.4GB Q4_K_XL (four shards)",
+          "context_tokens": "80000",
+          "system_ram_min": "110GB",
+          "engine_min_version": "experimental llama.cpp build with hybrid offload (40 expert layers on GPU)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "20.84",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM; expert computation moved to system RAM, VRAM drops from 23.85GB to 11.66GB",
+          "quant": "Q4_K_XL GGUF, ~111.4GB across four shards, at 80K context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "111.4GB Q4_K_XL (four shards)",
+          "context_tokens": "80000",
+          "system_ram_min": "110GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "20.98",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM, hybrid inference",
+          "quant": "Q4_K_XL GGUF, ~111.4GB across four shards, at 180K context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "111.4GB Q4_K_XL (four shards)",
+          "context_tokens": "180000",
+          "system_ram_min": "110GB"
+        }
+      ],
+      "why": "A 125B MoE on a single RTX 4090 24GB: ~21 tok/s at 250K context via hybrid GPU+RAM inference in an experimental llama.cpp build — 22.52 tok/s decode / 384 tok/s prefill at 80K with 40 expert layers on GPU, 20.84 with expert computation on CPU (VRAM 23.85 -> 11.66GB), 20.98 at 180K."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:01Z"
+}

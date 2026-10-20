@@ -1,0 +1,89 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Still the model every local-runtime experiment is measured on; this window's posts carry DFlash2 and context-lookup runs from 180 tok/s on a 3090 to a PS5 port.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup, longer verification (16 proposals per step); on a ~25K-token document-reproduction task; ordinary chat ~133 t/s",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+          "likes": 384,
+          "comments": 1,
+          "reshares": 5,
+          "views": 0,
+          "engine_min_version": "context lookup with 16-token verification blocks"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup on a 25K-token document reproduction task; ordinary chat ~133 t/s",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112385215423193459",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "not stated (post gives no GPU for this figure)",
+          "quant": "DFlash2 speculative decoding",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "42.7",
+          "hardware": "Radeon RX 9060 XT 16GB",
+          "quant": "IQ4_XS, custom llama.cpp fork streaming the KV cache between VRAM and system RAM; ~20K context (35 t/s at ~200K)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "24GB DDR5",
+          "context_tokens": "20000"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB console GPU",
+          "quant": "2-bit GGUF (llama.cpp ported via PS5LM); 9-21 tok/s range",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/codvynn/status/2112001034126016990",
+          "likes": 80,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:16Z"
+}

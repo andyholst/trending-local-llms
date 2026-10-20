@@ -1,0 +1,66 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "816B MoE (42B active) with public weights; Apple's MLX recipe runs it across Thunderbolt-linked M5 Ultra Mac Studios at ~25-37 tok/s.",
+      "weight_gb": "493GB NVFP4 compressed",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x M5 Ultra Mac Studios (512GB each, Thunderbolt 5 + RDMA)",
+          "quant": "NVFP4 compressed weights",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 105,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "weight_gb": "493GB NVFP4"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studios (512GB each)",
+          "quant": "tensor parallelism; Apple's own 16-37 t/s range, 2-machine setup",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 11,
+          "comments": 6,
+          "reshares": 4,
+          "views": 906,
+          "weight_gb": "493GB NVFP4"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studios",
+          "quant": "NVFP4, 8192-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 1,
+          "views": 216,
+          "weight_gb": "493GB NVFP4",
+          "context_tokens": "8192"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:16Z"
+}

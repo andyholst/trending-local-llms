@@ -1,0 +1,75 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary, VLM)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-mlx"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "weight_gb": "2GB ternary GGUF",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro (Mac)",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales, ~2GB, more than 9x smaller than the full-precision Qwen3.5 original; PrismML's vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max, on-device MLX",
+          "quant": "ternary weights; the 2B model reaches up to 120 tok/s on the same phone; vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 49,
+          "weight_gb": "2GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac on mlx.fast (Yukon leaderboard baseline)",
+          "quant": "ternary 2GB weights; 170+ tok/s is the starting floor for a Mac in Yukon's optimisation challenge",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB ternary"
+        }
+      ],
+      "why": "PrismML's 9B vision-language model in ~2GB of ternary weights: 179 tok/s on an M5 Max Pro, 170+ on any Mac (Yukon's floor), 22-34 tok/s on an iPhone 18 Pro Max, and >9x smaller than the full-precision Qwen3.5 original — with ternary GGUF packings that need PrismML's own llama.cpp fork."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:49Z"
+}

@@ -1,0 +1,76 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse-Spark-Open-816B-A42B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "system_ram_min": "1024GB",
+      "context_tokens": "1048576",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "Four M5 Ultra Mac Studios (256GB each) linked by Thunderbolt 5 with RDMA configured",
+          "quant": "compressed NVFP4 weights (~493GB for the model, before working memory), one full copy of the model per machine; decode speed, not time-to-completion",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 50,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "493GB compressed NVFP4",
+          "system_ram_min": "1024GB",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "Four M5 Ultra Mac Studios linked by Thunderbolt (Apple ML research)",
+          "quant": "not stated; 8K-token prompt gets its first token back in 4.8s, a 65K prompt in 40.6s, generation speed barely moves between them",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 105,
+          "system_ram_min": "1024GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "Two M5 Ultra Mac Studios with 512GB memory each (1TB unified across both), tensor parallelism",
+          "quant": "compressed NVFP4 version about 493GB for the model before working memory; Apple's published benchmark, 8,192-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 3,
+          "views": 216,
+          "weight_gb": "493GB compressed NVFP4",
+          "system_ram_min": "1024GB",
+          "context_tokens": "8192"
+        }
+      ],
+      "why": "The first ~1T-parameter open model that runs on desks: Meta's 816B/42B-active MoE (1M context) via Apple MLX on two to four M5 Ultra Mac Studios — ~25 tok/s on two machines with tensor parallelism, 36-37 tok/s on four, at 4.8s to first token on an 8K prompt but ~40s on 65K."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:43Z"
+}

@@ -1,0 +1,41 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "dory-1.0-4b",
+      "name": "Dory 1.0 4B",
+      "full_name": "NVIDIA Dory 1.0 4B",
+      "type": "LLM",
+      "license": "not stated on the post",
+      "params": "4B",
+      "hf": "not stated on the post",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "NVIDIA's looped-architecture 4B model; 256K context held entirely in VRAM on a 12GB RTX 3060 (38 tok/s without the -ot tensor placement, ~50 with it)",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB, 16GB system RAM",
+          "quant": "Q5_K_M, 262,144-token context, Q8 KV cache (Q8_0 keys/values), two loops with last-loop recurrent KV cache, -ot 'blk.(scale|alpha).=CUDA0,token_embd.*=CUDA0'",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112381379488911629",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 3,
+          "views": 483,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "requires llama.cpp change llama.cpp#30306 (not yet upstream); run via llama-server"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

@@ -1,0 +1,45 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma-4-E2B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LiteRT-LM",
+          "hf": "google/gemma-4-E2B"
+        }
+      ],
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "8GB",
+      "vram_min": "1.4GB",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "system_ram_min": "1432 MB",
+      "last_seen": "2026-09-05",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU), on-device; 1432 MB peak RAM",
+          "quant": "Gemma 4 E2B via LiteRT-LM; ~4.2 characters per token",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "1432 MB"
+        }
+      ],
+      "why": "Google's practical edge path: Gemma 4 E2B on a Pi 5 via LiteRT hits 99 tok/s prefill and 9 tok/s decode at 1432 MB peak RAM, ~27 characters/s in the Reachy Mini voice demo."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:22Z"
+}

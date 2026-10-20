@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "nemotron-3.5-bolt-74b-a9b",
+      "name": "Nemotron-3.5 Bolt 74B-A9B",
+      "full_name": "NVIDIA Nemotron-3.5 Bolt-74B-A9B",
+      "type": "LLM",
+      "license": "not stated on the post",
+      "params": "74B",
+      "hf": "not stated on the post",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "context_tokens": "256K",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "74B vision-language hybrid Mamba-2/Transformer MoE compressed to 2-bit so it fits in 24GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "93",
+          "hardware": "NVIDIA A100 80GB",
+          "quant": "compressed to 2-bit, 256K context, DFlash speculative decoding (2-bit GGUF running locally with llama.cpp)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/fahdmirza/status/2111208280408355216",
+          "likes": 17,
+          "comments": 5,
+          "reshares": 1,
+          "views": 1225,
+          "context_tokens": "262144",
+          "engine_min_version": "llama.cpp with DFlash speculative decoding"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

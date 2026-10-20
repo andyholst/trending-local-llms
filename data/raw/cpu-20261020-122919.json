@@ -1,0 +1,44 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "not stated",
+      "backends": [
+        "CPU"
+      ],
+      "system_ram_min": "not stated",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "34.8",
+          "hardware": "Lenovo Snapdragon X laptop, Debian, CPU-only; one .deb, no compiling (Bonsai-Oryon)",
+          "quant": "Ternary-Bonsai-2-9B ternary weights; the 34.8 vs 15.6 figures are prompt processing (stock llama.cpp fork + ggml)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/th3ycallmeibra/status/2111135412119117896",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 0,
+          "views": 36,
+          "engine_repo": "https://github.com/SatoruGoj0/Bonsai-Oryon"
+        }
+      ],
+      "why": "Bonsai Oryon runs Ternary-Bonsai-2-9B CPU-only on a Snapdragon X + Debian laptop from one .deb: 34.8 tok/s prompt processing vs 15.6 stock (2.2x), built on PrismML's llama.cpp fork + ggml."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:19Z"
+}

@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "context_tokens": "250K",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
+      "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM",
+          "quant": "Q4_K_XL GGUF ~111.4GB across four shards, hybrid CPU/GPU inference via experimental llama.cpp build (-cmoe: expert weights in system RAM, attention on GPU), -b 4096 -ub 4096; 20.97 tok/s decode at 250K context, 18.3GB VRAM",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 50,
+          "comments": 2,
+          "reshares": 6,
+          "views": 4829,
+          "context_tokens": "262144",
+          "system_ram_min": "110GB",
+          "engine_min_version": "experimental llama.cpp build with -cmoe expert offload, -b 4096 -ub 4096"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

@@ -1,0 +1,48 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3-235B-A22B",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "96GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "weight_gb": "~100GB at ~Q3",
+      "system_ram_min": "128GB",
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo) single system with 128GB unified LPDDR5X, GPU able to address ~96-110GB of the pool; Vulkan generally edges out ROCm for generation here",
+          "quant": "aggressive ~Q3 quantization bringing the weights to ~100GB; real-world generation lands at 14-17 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 1254,
+          "weight_gb": "~100GB at ~Q3",
+          "system_ram_min": "128GB"
+        }
+      ],
+      "why": "Lisa Su's lunchbox demo made concrete: Qwen3-235B-A22B at ~Q3 (~100GB) on one 128GB Strix Halo mini PC really generates ~14-17 tok/s (Vulkan over ROCm) — conversationally usable, not fast; the \"3x faster than an RTX 5080\" claim only holds for models that do not fit 16GB."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:31:20Z"
+}

@@ -1,0 +1,48 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "8GB",
+      "vram_min": "9.15GiB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "context_tokens": "64k",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "Jailbroken PS5 Slim, 16GB unified GDDR6 (448 GB/s peak), GPU access through Mihawk-99's RADV/Mesa Vulkan driver on RDNA 2",
+          "quant": "UD-Q2_K_XL, 9.83GB (9.15GiB) weight file; 64k context per PS5LM's table",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/llmrequirements/status/2111840979485700458",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "9.83GB (9.15GiB) UD-Q2_K_XL",
+          "context_tokens": "64k"
+        }
+      ],
+      "why": "A jailbroken PS5 Slim runs Qwen3.8-27B at about 20 tok/s via cobanov/PS5LM (llama.cpp on RADV/Mesa Vulkan): a 9.15GiB UD-Q2_K_XL file against 16GB unified GDDR6; the earlier CPU-only payload managed about one token a minute, streaming weights from disk."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:08Z"
+}

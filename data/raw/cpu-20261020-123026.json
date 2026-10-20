@@ -1,0 +1,62 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "system_ram_min": "64GB",
+      "context_tokens": "250K",
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "One RTX 3090 24GB; experts split between VRAM (hot ones) and system RAM, tested machine has 128GB dual-channel DDR4-2400, developer recommends 64GB",
+          "quant": "IQ2_XS; prompt processing ~1,900 t/s",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "One RTX 3090 24GB, workload split between GPU VRAM and system RAM (128GB DDR4-2400 tested, 64GB recommended)",
+          "quant": "IQ3_S; still ~66 t/s at 261K context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB",
+          "context_tokens": "261000"
+        }
+      ],
+      "why": "A 125B/177B-class MoE on a single used RTX 3090 24GB through Strata: ~70 tok/s at IQ3_S and ~66 t/s even at 261K context, ~87 t/s at IQ2_XS, ~1,900 t/s prompt processing, with 64GB system RAM recommended."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:26Z"
+}

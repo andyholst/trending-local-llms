@@ -1,0 +1,52 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-mlx"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8.4GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "weight_gb": "8.4GB ternary",
+      "system_ram_min": "64GB",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "64GB Mac mini",
+          "quant": "ternary weights (-1/0/+1) in 8.4GB; runs faster than Gemma 3 27B's 18 tok/s on the same box",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/pratikg/status/2112217547366088851",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "weight_gb": "8.4GB ternary",
+          "system_ram_min": "64GB"
+        }
+      ],
+      "why": "Ternary Bonsai 2 27B stores almost every weight as -1/0/+1, fits in 8.4GB and still outruns Gemma 3 27B on the same 64GB Mac mini (26 vs 18 tok/s)."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:31:13Z"
+}

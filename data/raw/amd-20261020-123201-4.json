@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "id": "qwen3.8-flash-next-125b",
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "Radeon 32GB GPU (model does not fit in VRAM)",
+          "quant": "EXL3 5.05 bpw, Q8 KV cache, patched ExLlamaV3 ROCm fork; experts split GPU/CPU-NVMe (112 of 512 experts per layer on GPU), ~102GB BF16 n-gram table streamed from NVMe; ~230K context (the post's 863 tok/s is prefill)",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "weight_gb": "EXL3 5.05 bpw",
+          "context_tokens": "230000",
+          "system_ram_min": "90GB",
+          "storage_offload": "NVMe, ~102GB BF16 n-gram table streamed",
+          "engine_min_version": "patched ExLlamaV3 ROCm fork",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:32:01Z"
+}

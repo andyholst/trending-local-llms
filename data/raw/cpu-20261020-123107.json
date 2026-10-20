@@ -1,0 +1,61 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "Bonsai 2 4B",
+          "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "0.95GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "weight_gb": "0.95GB ternary GGUF",
+      "system_ram_min": "4GB",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro, 32 concurrent streams; peak memory under 4GB",
+          "quant": "ternary 0.95GB weights; 700+ tok/s is the aggregate across 32 streams processing 250 emails into JSON, not a single-stream figure",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 87,
+          "views": 5204,
+          "weight_gb": "0.95GB ternary",
+          "system_ram_min": "4GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "5.5",
+          "hardware": "CMF Phone 2 Pro (Nothing OS-style UI), on-device",
+          "quant": "ternary 0.95GB weights; 5-6 tok/s with the 4B on a phone (the 2B runs 10-11 tok/s there)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 99,
+          "weight_gb": "0.95GB ternary"
+        }
+      ],
+      "why": "The 4B ternary model: 32 concurrent streams on an M5 Pro to parse 250 emails into JSON at 700+ tok/s aggregate under 4GB peak memory, and 5-6 tok/s on a CMF Phone 2 Pro."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:31:07Z"
+}

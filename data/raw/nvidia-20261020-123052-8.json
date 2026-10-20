@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2.0GB (ternary)",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "system_ram_min": "4GB",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0, 262,144-token context, Q8_0 KV cache, Flash Attention, ~7.5GB runtime footprint",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 1,
+          "views": 454,
+          "weight_gb": "2GB (PTQ1_0)",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp fork required for PTQ1_0"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

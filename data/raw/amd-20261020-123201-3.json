@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "name": "Qwen3.5 4B",
+      "full_name": "Qwen3.5-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3.5-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "id": "qwen3.5-4b",
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62",
+          "hardware": "RX 6750 XT 12GB",
+          "quant": "ROCm 7.15 native Windows 11 vLLM runtime (custom rocBLAS via TheRock, no WSL2); Qwen3.5-4B, 8 GB free storage",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/GameGPU_com/status/2089735525330485464",
+          "storage_offload": "8 GB free storage",
+          "likes": 641,
+          "comments": 2,
+          "reshares": 7,
+          "views": 0,
+          "interactions": 650
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:32:01Z"
+}

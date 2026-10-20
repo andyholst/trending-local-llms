@@ -1,0 +1,81 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama-3.1-8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Llama 3.1 8B",
+          "hf": "meta-llama/Llama-3.1-8B"
+        }
+      ],
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "8GB",
+      "vram_min": "not stated",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "Apple M3 Max, in-browser (WebGPU kernels via MLC-LLM + Apache TVM, WebAssembly for the CPU-side work)",
+          "quant": "MLC-compiled WebLLM build, 8-billion-parameter model in a browser tab; ~71% of native speed on the same Mac",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296",
+          "likes": 1,
+          "comments": 5,
+          "reshares": 0,
+          "views": 288
+        }
+      ],
+      "why": "Llama-3.1-8B at 41.1 tokens/sec inside a browser tab on an M3 Max via WebLLM (WebGPU/MLC-LLM), about 71% of native Metal speed; Phi-3.5-mini hits 71.1 tok/s in the same harness."
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5-9B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "Qwen/Qwen3.5-9B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "system_ram_min": "32GB",
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "6.73",
+          "hardware": "32GB laptop, CPU-only run (no GPU named)",
+          "quant": "not stated; reasoning overhead noted as the reason one response took nearly 10 minutes",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
+          "likes": 5,
+          "comments": 3,
+          "reshares": 0,
+          "views": 356,
+          "system_ram_min": "32GB"
+        }
+      ],
+      "why": "Second real run on a 32GB laptop: 6.73 tok/s and nearly 10 minutes for one response, RAM-bound with reasoning overhead."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:28:49Z"
+}

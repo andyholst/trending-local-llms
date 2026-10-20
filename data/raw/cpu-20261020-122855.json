@@ -1,0 +1,64 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Super VL (120B MoE)",
+      "full_name": "Nemotron 3.5 Super VL 120B-A12B",
+      "type": "LLM (MoE, 12B active)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+        }
+      ],
+      "license": "OpenMDW 1.1",
+      "params": "120B (MoE, 12B active)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "32GB",
+      "vram_min": "29.6GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "system_ram_min": "64GB",
+      "context_tokens": "262144",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35.1",
+          "hardware": "RTX 5090 32GB + 64GB RAM, mmap off (--load-mode none), 29.6 GiB VRAM with 57 of 88 layer parts' experts on CPU",
+          "quant": "GGUF with its built-in MTP head (n=3) already in the file, 64K context; stock llama.cpp --fit is 22.3 tok/s, mmap off alone 25.5",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2112201475518533730",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "not stated",
+          "context_tokens": "65536",
+          "system_ram_min": "64GB",
+          "engine_min_version": "--load-mode none (mmap off) + built-in MTP head n=3"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "30.8",
+          "hardware": "RTX 5090 32GB + 64GB RAM, 29.6 GiB VRAM, experts partly on CPU (57 of 88 layer parts)",
+          "quant": "daily 262K-context setup, built-in MTP head",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2112201475518533730",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144",
+          "system_ram_min": "64GB",
+          "engine_min_version": "--load-mode none (mmap off) + built-in MTP head n=3"
+        }
+      ],
+      "why": "120B MoE on one RTX 5090: 22.3 tok/s stock, 25.5 with mmap off, 35.1 with the GGUF's built-in MTP head at 64K (1.58x stock), 30.8 in the daily 262K setup; only 8 of 88 layers are attention so long context is nearly free, and NVIDIA's LiLiCorr DFlash drafter LOSES with experts offloaded."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:28:55Z"
+}

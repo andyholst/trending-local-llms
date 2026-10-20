@@ -1,0 +1,63 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE, 2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm",
+        "CPU"
+      ],
+      "context_tokens": "131K",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid's published figure; MLX is one of the day-one paths (alongside llama.cpp GGUF); 24B total with ~2B active per token",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 7,
+          "views": 208,
+          "context_tokens": "131K"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "21000",
+          "hardware": "Single NVIDIA B300 GPU",
+          "quant": "not stated; peak aggregate output throughput under batching/concurrency, not single-user speed",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 70
+        }
+      ],
+      "why": "Liquid AI's 24B/A2B MoE for on-device agents: 184 tok/s on an M5 Max (MLX) and up to 21,000 aggregate output tok/s on a single NVIDIA B300 (vLLM); 14.5GB at Q4_K_M, scores 185/198 on the Agon bench, beats Qwen3.6-35B-A3B on Liquid's LiveClaw (48.09 vs 38.19), and runs through llama.cpp, MLX, vLLM, SGLang (day-0) and ONNX."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:33Z"
+}

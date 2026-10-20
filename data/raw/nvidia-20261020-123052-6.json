@@ -1,0 +1,58 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-20",
+      "system_ram_min": "128GB",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup, prefix caching, optimized lookup verification; ~381 tok/s peak on a 25K-token document-reproduction task, ~133 tok/s ordinary chat, time-to-first-token 22.4s -> 0.56s with prefix caching",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
+          "likes": 12,
+          "comments": 2,
+          "reshares": 4,
+          "views": 1175,
+          "context_tokens": "25K (document-reproduction task)",
+          "engine_min_version": "vLLM stack with DFlash2 speculative decoding + context lookup + prefix caching"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup, verification blocks raised from 7 to 16 tokens (~15 of 16 accepted); 381 tok/s on document reproduction, ~133 tok/s ordinary chat",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 5,
+          "views": 384,
+          "context_tokens": "25K (document-reproduction task)",
+          "engine_min_version": "vLLM with DFlash2 + context lookup, 16-token verification blocks"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

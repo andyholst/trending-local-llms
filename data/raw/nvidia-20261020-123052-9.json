@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "offrail-27b",
+      "name": "Offrail 27B",
+      "full_name": "Offrail 27B (Ternary Bonsai 2 27B uncensored + MTP)",
+      "type": "GGUF",
+      "license": "not stated on the post",
+      "params": "27B",
+      "hf": "not stated on the post",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "7.0GB (12GB build), 6.3GB (8GB build)",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Uncensored Ternary Bonsai 2 27B rebuild with Qwen3.8-27B's MTP head re-attached; ~50 tok/s on an RTX 3060 12GB, greedy output lossless with MTP on/off",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Offrail 27B uncensored (Ternary Bonsai 2 27B base + Qwen3.8-27B MTP head), 1.75bpw PTQ1_0; 12GB build 7.0GB, 8GB build 6.3GB",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/aiaicreate/status/2111776181368537264",
+          "likes": 23,
+          "comments": 1,
+          "reshares": 5,
+          "views": 2565,
+          "weight_gb": "7.0GB (12GB build), 6.3GB (8GB build)",
+          "engine_min_version": "PrismML llama.cpp fork with MTP speculative decoding"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

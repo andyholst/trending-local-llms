@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "context_tokens": "250K",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
+      "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7",
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "88.6",
+          "hardware": "NVIDIA DGX Spark GB10, 128GB unified memory",
+          "quant": "EXL3 3.05 bpw; 88.6 tok/s code / 55.9 tok/s prose with the second model (MiniCPM-V 4.7) loaded but idle, 35.3 tok/s while both generate, 26.2 tok/s under 8-worker load",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+          "likes": 157,
+          "comments": 25,
+          "reshares": 24,
+          "views": 8884,
+          "context_tokens": "262144",
+          "system_ram_min": "128GB unified memory",
+          "engine_min_version": "ExLlamaV3 with a shared 1M-token Q4 KV pool for the worker model"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T12:30:52Z"
+}

@@ -1,0 +1,63 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-35B-A3B",
+          "hf": "empero-ai/Qwen3.8-35B-A3B-Distill"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "system_ram_min": "16GB",
+      "context_tokens": "262K",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM, hybrid inference with 26 MoE layers on the CPU",
+          "quant": "Q4_K_M + Flash Attention + Q8 KV cache",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112030236590137348",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp with Flash Attention (-fa) + 8-bit (Q8_0) KV cache"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM, hybrid inference with 26 MoE layers on the CPU",
+          "quant": "Q4_K_M + Flash Attention + Q8 KV cache",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/_elenajoseph_/status/2111218125567869207",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp with Flash Attention (-fa) + 8-bit (Q8_0) KV cache"
+        }
+      ],
+      "why": "A 35B MoE generating ~50 tok/s on an RTX 3060 12GB with 16GB system RAM: Q4_K_M, 262K configured context, ~550 tok/s prompt processing, llama.cpp with Flash Attention + Q8 KV cache and 26 MoE layers offloaded to the CPU (hybrid inference)."
+    }
+  ],
+  "generated_utc": "2026-10-20T12:29:05Z"
+}
