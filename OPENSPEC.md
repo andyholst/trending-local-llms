@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **95** · archived: **0**
+Active changes: **97** · archived: **0**
 
 ## Active changes
 
@@ -70,6 +70,7 @@ Active changes: **95** · archived: **0**
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
 | `measurement-engine-min-version` | active | #371 | #374 | [measurement-source-dimensions](openspec/changes/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/measurement-engine-min-version/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
+| `one-person-one-identity` | active | #445 (filed first, with the measurement) | — | [commit-authorship](openspec/changes/one-person-one-identity/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/one-person-one-identity/proposal.md) |
 | `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |
 | `one-slow-query-is-not-a-red-run` | active | — | — | [search-smoke](openspec/changes/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/one-slow-query-is-not-a-red-run/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
