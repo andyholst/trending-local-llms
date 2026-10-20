@@ -209,7 +209,12 @@ retains 30 days of history.
    whoever reads the thread. When the sweep has nothing to take because of a
    fresh verdict, it SAYS SO ON THE ISSUE (`make issue-skip-note`,
    `<!-- issue-bot-skip: <ISO8601Z> verdict=<label> since=<reviewer ts> -->`, one
-   comment per review round) instead of only in its log. The implementer NEVER
+   comment per review round) instead of only in its log. The DECIDED hold
+   (`agent:refined` / `agent:closed`, applied by the implementer's own verdict) is
+   **a human's decision and has no expiry** — the owner's ruling: a label carries no
+   timestamp, so the queue never releases it by itself — which is exactly why the
+   sweep must ANNOUNCE it on the issue, dated from the `issue-bot-verdict` marker
+   that applied it, alongside the verdict hold it already announced (issue #449). The implementer NEVER
    writes a label and never edits a body: a verdict is the reviewer's or a
    human's, and the answer to one is a comment. The marker NAMES and SHAPES live
    in ONE place — `scripts/bot_markers.py` (rule 6d) — and no reader may re-spell
@@ -219,7 +224,7 @@ retains 30 days of history.
 
    | bot | artifact it announces on | marker(s) |
    |---|---|---|
-   | `issue-bot` | the issue, BEFORE `make implement-issue` reads it | `issue-bot-start`, `issue-bot-skip` |
+   | `issue-bot` | the issue, BEFORE `make implement-issue` reads it | `issue-bot-start`, `issue-bot-skip`, `issue-bot-verdict` |
    | `issue-review-bot` | the issue, before its first write | `issue-review`, `issue-review: window` |
    | `fix-bot` | the PR it repairs | `fix-bot-start`, `fix-bot-end` |
    | `refresh-bot` | the PR (and the gap issue) it opens | `refresh-bot-run` |

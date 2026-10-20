@@ -29,7 +29,8 @@ import re
 #: `<bot> -> {kind: marker name}`. The name is the literal inside `<!-- ... -->`, so a reader and a
 #: writer that both go through this module can never disagree about it.
 REGISTRY: dict[str, dict[str, str]] = {
-    "issue-bot":        {"start": "issue-bot-start", "skip": "issue-bot-skip"},
+    "issue-bot":        {"start": "issue-bot-start", "skip": "issue-bot-skip",
+                         "verdict": "issue-bot-verdict"},
     "issue-review-bot": {"start": "issue-review", "window": "issue-review: window"},
     "fix-bot":          {"start": "fix-bot-start", "end": "fix-bot-end"},
     "refresh-bot":      {"run": "refresh-bot-run"},
@@ -45,6 +46,13 @@ ARTIFACTS: dict[str, str] = {
     "qa-validate": "the PR (immediately before the merge)",
 }
 
+#: The markers whose shape carries a WORD before the stamp (`issue-bot-verdict: refine <TS>`).
+#: Everything else is `<name>: <TS>` only — and that is load-bearing: an optional field on
+#: EVERY marker made `<!-- issue-review: window <TS> -->` parse as the `issue-review` START
+#: marker, the exact confusion #197 exists to prevent (caught by
+#: tests/test_bot_markers.py::test_the_two_reviewer_markers_are_not_confused).
+FIELDS: frozenset = frozenset({("issue-bot", "verdict")})
+
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
 DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature")
 
@@ -53,6 +61,10 @@ DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature")
 WRITTEN: frozenset = frozenset({
     ("issue-bot", "start"),
     ("issue-bot", "skip"),
+    # Written by `scripts/issue_verdict.py` since #210 and NOT registered until it became
+    # a READER's problem: the decided hold (`agent:refined`) has no timestamp of its own,
+    # so the queue reads this marker's stamp to date it (issue #449).
+    ("issue-bot", "verdict"),
     ("issue-review-bot", "start"),
     ("issue-review-bot", "window"),
     ("fix-bot", "start"),
@@ -103,11 +115,19 @@ def parse_markers(text: str) -> list[dict]:
     # one name that carries a word of its own — `[:\s]+` accepts the `:` every other name has.
     for bot, kinds in REGISTRY.items():
         for kind, name in kinds.items():
-            pat = re.compile(re.escape(f"<!-- {name}") + r"[:\s]+" + f"({TS})"
-                             + r"(?:\s+run=([A-Za-z0-9_-]+))?")
+            # ONLY a marker in FIELDS accepts a word before its stamp; making it optional for
+            # every marker let `issue-review: window <TS>` parse as the `issue-review` start.
+            field = r"(?:([a-z]+)\s+)?" if (bot, kind) in FIELDS else ""
+            pat = re.compile(re.escape(f"<!-- {name}") + r"[:\s]+" + field
+                             + f"({TS})" + r"(?:\s+run=([A-Za-z0-9_-]+))?")
             for m in pat.finditer(text):
-                out.append({"bot": bot, "kind": kind, "name": name, "at": m.group(1),
-                            "run": m.group(2)})
+                if (bot, kind) in FIELDS:
+                    hit = {"bot": bot, "kind": kind, "name": name, "field": m.group(1),
+                           "at": m.group(2), "run": m.group(3)}
+                else:
+                    hit = {"bot": bot, "kind": kind, "name": name, "field": None,
+                           "at": m.group(1), "run": m.group(2)}
+                out.append(hit)
     out.sort(key=lambda r: (r["at"], r["name"]))
     return out
 
