@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **97** · archived: **0**
+Active changes: **98** · archived: **0**
 
 ## Active changes
 
@@ -75,6 +75,7 @@ Active changes: **97** · archived: **0**
 | `one-slow-query-is-not-a-red-run` | active | — | — | [search-smoke](openspec/changes/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/one-slow-query-is-not-a-red-run/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
+| `pin-flash-1017-snapshot` | active | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/pin-flash-1017-snapshot/proposal.md) |
 | `pr-body-closure-guard` | active | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-body-closure-guard/proposal.md) |
 | `pr-closure-guard` | active | — | — | [pr-lifecycle](openspec/changes/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/pr-closure-guard/proposal.md) |
 | `pr-exercises-every-pipeline` | active | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-exercises-every-pipeline/proposal.md) |
