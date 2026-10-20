@@ -1,0 +1,108 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LiquidAI/LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License (free to ship under $10M revenue)",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "weight_gb": "14.5GB 4-bit",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo APU, 16GB memory reported)",
+          "quant": "Liquid AI's compressed 4-bit build (14.5 GB), 4K-token prompt, ROCm",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 230,
+          "interactions": 3,
+          "weight_gb": "14.5GB 4-bit",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LiquidAI/LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License (free to ship under $10M revenue)",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "weight_gb": "14.5GB 4-bit",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "75",
+          "hardware": "RTX 4080 Super 16GB, expert layers offloaded to CPU (Agon bench rig)",
+          "quant": "Q4_K_M 14.5 GB, expert layers on CPU",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2110216348903129348",
+          "likes": 331,
+          "comments": 26,
+          "reshares": 21,
+          "views": 22931,
+          "interactions": 80,
+          "weight_gb": "14.5GB Q4_K_M"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-14"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LiquidAI/LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License (free to ship under $10M revenue)",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "weight_gb": "14.5GB 4-bit",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "21000",
+          "hardware": "single NVIDIA B300 GPU (datacenter; peak aggregate throughput, not a single-user figure)",
+          "quant": "Liquid AI's reported peak output throughput with batching/concurrency",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
+          "likes": 70,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 72
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-14"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:50:37Z"
+}

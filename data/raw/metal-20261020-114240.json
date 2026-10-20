@@ -1,0 +1,225 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (PrismML, Qwen3.5 9B converted to ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "2GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "PrismML's ternary 9B vision-language model packs into about 2GB and runs on Macs, iPhones and iPads through MLX: up to 179 t/s on an M5 Max Pro and 34 t/s on an iPhone 18 Pro Max, at roughly 92-100 percent retention on 19 benchmarks.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights, 2GB footprint (vendor figure)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~2GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (Yukon mlx.fast leaderboard floor)",
+          "quant": "ternary MLX build, 2GB footprint",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~2GB ternary"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b-phone",
+      "name": "Bonsai 2 9B (iPhone)",
+      "full_name": "Ternary Bonsai 2 9B on iPhone 18 Pro Max via MLX",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "2GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "The same 2GB ternary 9B that hits 179 t/s on an M5 Max Pro still runs agent tasks on an iPhone 18 Pro Max at 34 t/s, which is the point of the family: a capable VLM in a phone-sized footprint.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, 2GB footprint",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2.0GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, 2GB footprint (PrismML figure)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB ternary"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary Bonsai 2 4B (PrismML, Qwen3.5 4B converted to ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The 0.95GB ternary 4B runs 32 concurrent streams on an M5 Pro MacBook Pro to triage 250 emails into JSON under 4GB of peak memory, generating over 700 t/s in total.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams, <4GB peak memory)",
+          "quant": "ternary weights, 0.95GB footprint",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.95GB ternary",
+          "system_ram_min": "<4GB peak"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary Bonsai 2 2B (PrismML, Qwen3.5 2B converted to ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "0.43GB",
+      "weight_gb": "0.43GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The smallest of the ternary family: 0.43GB of weights, 120 t/s on an iPhone 18 Pro Max and up to 500 t/s in a browser demo on an M4 Max — the low end of a family that tops out at the 27B.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "M4 Max (browser demo)",
+          "quant": "ternary weights, 0.43GB footprint",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.43GB ternary"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-2b-phone",
+      "name": "Bonsai 2 2B (iPhone)",
+      "full_name": "Ternary Bonsai 2 2B on iPhone 18 Pro Max via MLX",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "0.43GB",
+      "weight_gb": "0.43GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The 2B reaches up to 120 t/s on an iPhone 18 Pro Max, with 0.43GB of ternary weights and the same Apache 2.0 release as the rest of the Bonsai 2 family.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "120",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, 0.43GB footprint",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.43GB ternary"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-4b-cmf-phone",
+      "name": "Bonsai 2 4B on a CMF Phone 2 Pro",
+      "full_name": "Ternary Bonsai 2 4B on a CMF Phone 2 Pro (Nothing OS-style UI)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A reader ran both small Bonsai 2 models on a CMF Phone 2 Pro with a custom Nothing OS-style chat UI plus web search and cross-chat memory: 5-6 t/s for the 4B and 10-11 t/s for the 2B, on-phone.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (Android)",
+          "quant": "ternary weights, 0.95GB footprint",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.95GB ternary"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:42:40Z"
+}

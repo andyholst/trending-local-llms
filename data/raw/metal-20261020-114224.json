@@ -1,0 +1,85 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (Strata hybrid offload on a single RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "context_tokens": "262144",
+      "system_ram_min": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "why": "Strata splits Qwen3.8-Flash-Next between a used RTX 3090's VRAM and 128GB of DDR4-2400 system RAM: about 70 t/s at IQ3_S and 66 t/s still at 261K context, or ~87 t/s at IQ2_XS, with 64GB of RAM as the developer's recommendation.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ2_XS, hybrid GPU/user experts split",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "128GB (64GB recommended)"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB + 128GB DDR4-2400 system RAM",
+          "quant": "IQ3_S, still ~66 t/s at 261K context",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "261000",
+          "system_ram_min": "128GB (64GB recommended)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b-4090-hybrid",
+      "name": "Qwen3.8-Flash-Next 125B (RTX 4090 hybrid)",
+      "full_name": "Qwen3.8-Flash-Next 125B (hybrid GPU/CPU expert split from a raw llama.cpp log)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "context_tokens": "262144",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "why": "Raw llama.cpp slot logs show Qwen3.8-Flash-Next holding 12.2-12.5 t/s decode while prompt-processing a 4K-token prompt, with the dense layers on a 24GB RTX 4090 and the experts spread over system RAM.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14.06",
+          "hardware": "RTX 4090 24GB + system RAM (raw llama.cpp slot print_timing log)",
+          "quant": "hybrid expert offload, 4K-token prompt, 262K-class context",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2111038392578310446",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:42:24Z"
+}

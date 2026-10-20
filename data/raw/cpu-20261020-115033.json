@@ -1,0 +1,44 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen/Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "110GB",
+      "context_tokens": "262144",
+      "weight_gb": "111.4GB Q4_K_XL",
+      "why": "A 125B MoE at ~21 tok/s decode on a single RTX 4090 24GB by keeping attention on the GPU and streaming expert layers from system RAM with an experimental llama.cpp build (-cmoe), 250K context.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.52",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM (hybrid: 40 expert layers on GPU, -cmoe CPU expert offload), Ubuntu 22",
+          "quant": "Q4_K_XL GGUF ~111.4GB across 4 shards; no MTP, no DFlash2, no KV-cache quant; experimental llama.cpp build with -cmoe",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 24,
+          "comments": 6,
+          "reshares": 5,
+          "views": 9208,
+          "interactions": 40,
+          "weight_gb": "111.4GB Q4_K_XL",
+          "system_ram_min": "110GB",
+          "context_tokens": "81920"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:50:33Z"
+}

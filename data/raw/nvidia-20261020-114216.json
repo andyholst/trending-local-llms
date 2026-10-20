@@ -1,0 +1,235 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-20T11:42:16Z",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "A 9B vision model at ~2-bit ternary weights that decodes ~114 tok/s on a 12GB RTX 3060.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary quant; llama-server with GPU offload, Flash Attention, 262,144-token context, Q8_0 K/V cache (Q8_0 cache for both keys and values), vision projector loaded separately; ~1,800 tok/s prefill; ~7.5GB reported memory footprint",
+          "weight_gb": "~7.5GB runtime footprint (PTQ1_0)",
+          "context_tokens": "262144",
+          "engine_min_version": "llama-server, GPU offload, Flash Attention, Q8_0 K/V cache",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 7,
+          "views": 454,
+          "interactions": 10
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 requires PrismML's llama.cpp fork (stock llama.cpp rejects the format); ~1,800 tok/s prefill, 262K context",
+          "weight_gb": "~7.5GB runtime footprint (PTQ1_0)",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp fork (PTQ1_0 loader)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 7,
+          "views": 454,
+          "interactions": 10
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Qwen3.8-27B's brains at 9x smaller: 5.9GB ternary weights (98.2% retained) that run on an 8-16 GB card or a 16GB Mac.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 ternary weights, Qwen3.8-27B-based; 262K context resident with a real agent loop on top (~77-minute agent build)",
+          "context_tokens": "262144",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "5.95GB ternary weights, 125K context, fresh context (~22 tok/s average across a 5-hour agent session)",
+          "weight_gb": "5.95GB",
+          "context_tokens": "125000",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "22",
+          "hardware": "RTX 3060 12GB",
+          "quant": "5.95GB ternary weights, 125K context, session average over a 5-hour agent build (fresh-context rate ~50 tok/s)",
+          "weight_gb": "5.95GB",
+          "context_tokens": "125000",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Offrail 27B uncensored build of Ternary Bonsai 2 27B at 1.75bpw PTQ1_0 with a Qwen3.8-27B MTP head re-attached; 7.0GB file for 12GB cards (6.3GB for 8GB cards); lossless MTP",
+          "weight_gb": "7.0GB (12GB build) / 6.3GB (8GB build)",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/aiaicreate/status/2111776181368537264",
+          "likes": 1,
+          "comments": 5,
+          "reshares": 23,
+          "views": 2565,
+          "interactions": 29
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "mlx.fast contest submission (+302.7% over the frozen baseline; ~59 tok/s at baseline)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "reshares": 0
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "mlx.fast contest submission (+125.8% over baseline, 2.26x)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 22,
+          "comments": 25,
+          "reshares": 11,
+          "views": 94698,
+          "interactions": 58
+        }
+      ]
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, 22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Classic 235B MoE that a single Strix Halo box still generates on, at conversational speed.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo), 128GB unified LPDDR5X, ~96-110GB GPU-accessible",
+          "quant": "~Q3, Vulkan (often edges out ROCm for generation); real-world 14-17 tok/s range on one Strix Halo system",
+          "weight_gb": "~100GB (Q3)",
+          "system_ram_min": "128GB unified LPDDR5X",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "views": 980
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo), 128GB unified LPDDR5X, ~96-110GB GPU-accessible",
+          "quant": "~Q3, Vulkan (often edges out ROCm for generation); real-world 14-17 tok/s range",
+          "weight_gb": "~100GB (Q3)",
+          "system_ram_min": "128GB unified LPDDR5X",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "views": 980
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse-Spark-Open-816B-A42B",
+      "type": "LLM (MoE, multimodal)",
+      "license": "open weights (Meta, see HF repo)",
+      "params": "816B (MoE, 42B active)",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Meta's 816B agentic-coding MoE: 22 RTX 5090s or four 256GB Mac Studios run it locally.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "80",
+          "hardware": "22x RTX 5090 32GB (~1TB of VRAM across the rack)",
+          "quant": "BF16 / NVFP4 checkpoints; needs ~1TB of memory to load; 22 5090s ~= $150K of silicon",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/realMeetKevin/status/2111630844745892076",
+          "likes": 1,
+          "comments": 138
+        }
+      ]
+    }
+  ]
+}
