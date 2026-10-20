@@ -322,6 +322,13 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
         decided_label = next((name for name in DECIDED_LABELS if name in labels), None)
         verdict_label = next((name for name in VERDICT_LABELS if name in labels), None)
         verdict_ts = newest([review_ts, reply_ts])
+        # A DECIDED hold (`agent:refined` / `agent:closed`, applied by the implementer's
+        # own verdict) carries no timestamp in the label, so it is dated from the verdict
+        # MARKER — the comment that applied it (issue #449). Without this the queue held
+        # the whole data-gap backlog for ever and every sweep reported a green
+        # "backlog empty"; the decision stays a HUMAN one, but it must be announced.
+        decided_ts = newest([bm.ts_of(c.get("body") or "", "issue-bot", "verdict")
+                             for c in comments])
         # How long the CURRENT verdict has been held (issue #203): the unbroken chain
         # of reviewer markers, not the newest one — a re-review re-dates freshness but
         # does not restart the hold.
@@ -374,6 +381,8 @@ def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
                                    if verdict_chain and verdict_label else "none"),
             "verdict_expired": 1 if verdict_expired else 0,
             "decided": decided_label or "-",
+            "decided_since": (decided_ts.strftime("%Y-%m-%dT%H:%M:%SZ")
+                              if decided_ts and decided_label else "none"),
             "branch": branch or "",
         })
         if not impl_skip:
@@ -393,14 +402,15 @@ def render(rows: list[dict]) -> str:
             f"verdict_fresh={r['verdict_fresh']} "
             f"verdict_held_since={r['verdict_held_since']} "
             f"verdict_held_hours={r['verdict_held_hours']} "
-            f"verdict_expired={r['verdict_expired']} decided={r['decided']}"
+            f"verdict_expired={r['verdict_expired']} decided={r['decided']} "
+            f"decided_since={r['decided_since']}"
         )
     return "\n".join(lines)
 
 
 def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int,
                    now: dt.datetime, run: str | None) -> int:
-    """Say on EVERY issue the implementer skipped for a FRESH VERDICT.
+    """Say on EVERY issue the implementer skipped — a fresh VERDICT or a DECISION.
 
     One comment per issue per review round: the marker carries
     `since=<the reviewer's newest timestamp>`, so a later sweep in the same round
@@ -414,14 +424,24 @@ def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int
     comment storm; the remainder is reported for the next sweep.
     """
     rows = build(repo, label, gap_hours, now, run, verdict_ttl_hours)
-    held = sorted((r for r in rows if r["verdict_fresh"] == 1), key=lambda r: r["issue"])
+    # TWO holds are announced, because both park an issue the sweep will skip (issue #449):
+    # the reviewer's fresh VERDICT (a label WITH a live timestamp), and the implementer's
+    # own DECISION (`agent:refined` / `agent:closed`) — which the owner has ruled must stay
+    # a HUMAN's call, so it must never be silent. The decided hold used to print nothing at
+    # all: `held` only ever selected `verdict_fresh` rows, so the sweep said
+    # "no fresh verdict holds the queue — nothing to note" while four issues sat parked.
+    held = [(r, "verdict") for r in sorted((r for r in rows if r["verdict_fresh"] == 1),
+                                          key=lambda r: r["issue"])]
+    held += [(r, "decided") for r in sorted((r for r in rows if r["decided"] != "-"),
+                                            key=lambda r: r["issue"])]
     if not held:
-        print("[issue-queue] no fresh verdict holds the queue — nothing to note")
+        print("[issue-queue] nothing holds the queue — no note to post")
         return 0
 
     posted, skipped, batch = 0, 0, held[:MAX_SKIP_NOTES]
-    for row in batch:
-        number, since = row["issue"], row["verdict_since"]
+    for row, kind in batch:
+        number = row["issue"]
+        since = row["verdict_since"] if kind == "verdict" else row["decided_since"]
         already = False
         for comment in _comments(repo, number):
             body = comment.get("body") or ""
@@ -435,29 +455,50 @@ def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int
             skipped += 1
             continue
 
+        if kind == "verdict":
+            label_text = row["verdict"]
+            lines = [
+                f"**Not picked by the implementer: the reviewer holds this issue "
+                f"(`{label_text}`).**",
+                "",
+                f"- verdict: `{label_text}` — the issue reviewer judged this issue not "
+                f"ready to implement",
+                f"- since: {since} (the reviewer's newest marker on this issue; a verdict is "
+                f"fresh for {verdict_ttl_hours} h)",
+                "",
+                "The hourly sweep will take this issue again once the verdict is stale, or as",
+                "soon as the reviewer (or a human) clears the label. Nothing was implemented.",
+            ]
+        else:
+            label_text = row["decided"]
+            lines = [
+                f"**Not picked by the implementer: this issue already carries a decision "
+                f"(`{label_text}`) — it needs a HUMAN, not another sweep.**",
+                "",
+                f"- label: `{label_text}` — the implementer triaged this issue and applied its "
+                f"own verdict, so it will not be implemented as it stands",
+                f"- since: {since} (the verdict marker that applied it; the label itself "
+                f"carries no timestamp, which is why the queue dates the hold from the marker)",
+                "",
+                "This hold has NO expiry: a label cannot prove how old it is, so the queue will "
+                "never release it on its own. To move it: refine the issue and remove "
+                f"`{label_text}`, or close it. Nothing was implemented.",
+            ]
         text = "\n".join([
             f"<!-- {bm.marker_name('issue-bot', 'skip')}: {now.strftime('%Y-%m-%dT%H:%M:%SZ')} "
-            f"verdict={row['verdict']} since={since} -->",
-            f"**Not picked by the implementer: the reviewer holds this issue "
-            f"(`{row['verdict']}`).**",
-            "",
-            f"- verdict: `{row['verdict']}` — the issue reviewer judged this issue not "
-            f"ready to implement",
-            f"- since: {since} (the reviewer's newest marker on this issue; a verdict is "
-            f"fresh for {verdict_ttl_hours} h)",
-            "",
-            "The hourly sweep will take this issue again once the verdict is stale, or as",
-            "soon as the reviewer (or a human) clears the label. Nothing was implemented.",
+            f"verdict={label_text} since={since} -->",
+            *lines,
         ])
         _gh(["issue", "comment", str(number), "--repo", repo, "--body", text])
-        print(f"[issue-queue] #{number}: skip note posted (verdict={row['verdict']} since={since})")
+        print(f"[issue-queue] #{number}: skip note posted ({kind}={label_text} since={since})")
         posted += 1
 
     if len(held) > len(batch):
         print(f"[issue-queue] {len(held) - len(batch)} more held issue(s) not noted in this "
               f"sweep (MAX_SKIP_NOTES={MAX_SKIP_NOTES}) — the next sweep notes them")
     print(f"[issue-queue] skip notes: {posted} posted, {skipped} already noted "
-          f"({len(held)} held by a fresh verdict)")
+          f"({sum(1 for r, k in held if k == 'verdict')} held by a fresh verdict, "
+          f"{sum(1 for r, k in held if k == 'decided')} by a decision)")
     return 0
 
 

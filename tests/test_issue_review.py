@@ -664,6 +664,47 @@ def test_a_label_without_any_reviewer_marker_never_holds():
     check("label only: never a hold", row and "impl_skip=0" in row[0] and "verdict_fresh=0" in row[0], str(row))
 
 
+
+def test_a_decided_hold_is_announced_on_the_issue():
+    """Issue #449: `agent:refined` / `agent:closed` is the implementer's own verdict, and the
+    owner's ruling is that releasing it stays a HUMAN decision — a label carries no
+    timestamp, so the queue must never expire it by itself. What it must NOT do is stay
+    silent: the sweep announced only `verdict_fresh` holds, so four parked issues printed
+    "no fresh verdict holds the queue — nothing to note" while nothing was ever implemented.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        applied = hours_ago(5.0)
+        env = env_for(
+            fixture,
+            issues=[candidate(163, labels=["agent:refined"]), candidate(174)],
+            comments={"163": [{"createdAt": applied,
+                               "body": f"<!-- issue-bot-verdict: refine {applied} -->\n"
+                                       "Triaged: needs refinement."}]},
+        )
+        # When the queue is built and the note runs
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        rows = [l for l in proc.stdout.splitlines() if l.startswith("issue=163 ")]
+        run(QUEUE, "--skip-note", "--repo", "o/r", "--now", NOW, env=env)
+        posted = [json.loads(l) for l in (fixture / "comments-posted.jsonl").read_text().splitlines()]
+
+    # Then  the hold is reported WITH its date, and announced as a human's call
+    check("decided: the row reports the decision",
+          bool(rows) and "decided=agent:refined" in rows[0], str(rows[:1]))
+    check("decided: the row dates it from the verdict marker",
+          bool(rows) and f"decided_since={applied}" in rows[0], str(rows[:1]))
+    check("decided: exactly one note is posted", len(posted) == 1, str(posted))
+    check("decided: it names the label", bool(posted) and "agent:refined" in posted[0]["body"], str(posted))
+    check("decided: it says a HUMAN must release it",
+          bool(posted) and "needs a HUMAN" in posted[0]["body"], str(posted))
+    check("decided: it says the hold has no expiry",
+          bool(posted) and "NO expiry" in posted[0]["body"], str(posted))
+    check("decided: the marker carries the label and the marker's stamp",
+          bool(posted) and "issue-bot-skip:" in posted[0]["body"]
+          and "verdict=agent:refined" in posted[0]["body"]
+          and f"since={applied}" in posted[0]["body"], str(posted))
+
+
 def test_skip_note_is_posted_once_per_review_round():
     """`--skip-note` says it ON the issue, once per reviewer timestamp, and edits no label."""
 
@@ -816,6 +857,7 @@ def main() -> int:
     test_a_fresh_verdict_holds_the_implementer()
     test_a_stale_verdict_releases_the_issue()
     test_a_label_without_any_reviewer_marker_never_holds()
+    test_a_decided_hold_is_announced_on_the_issue()
     test_skip_note_is_posted_once_per_review_round()
     test_the_skip_note_covers_every_held_issue()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
