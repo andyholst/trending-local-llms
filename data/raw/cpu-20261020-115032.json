@@ -91,7 +91,7 @@
           "engine": "llama.cpp",
           "tps": "35.1",
           "hardware": "RTX 5090 24GB + 64GB system RAM (29.6 GiB VRAM, 57 of 88 layer parts' experts on CPU)",
-          "quant": "Q4_K_M from LM Studio; --fit on, --load-mode none, --spec-type draft-mtp n 3, -ub 4096; built-in MTP head (acceptance 80-88%); stock --fit is 22.3 tok/s, 30.8 tok/s at 262K",
+          "quant": "Q4_K_M from LM Studio, llama.cpp b11696; --fit on, --load-mode none, --spec-type draft-mtp n 3, -ub 4096; built-in MTP head (acceptance 80-88%); stock --fit is 22.3 tok/s, 30.8 tok/s at 262K",
           "date": "2026-10-19",
           "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2112201475518533730",
           "likes": 49,

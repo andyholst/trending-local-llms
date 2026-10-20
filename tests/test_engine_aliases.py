@@ -64,8 +64,14 @@ def test_real_store_bonsai_links_the_fork():
           not any("ggml-org/llama.cpp" in r for r in rows), [r[:80] for r in rows if "ggml-org" in r])
     check("readme: Bonsai CUDA figures link the PrismML fork", any(f"]({FORK_URL})" in r for r in rows))
     guide = md.split("## ⚙️", 1)[1]
-    check("readme: engine guide lists the fork with models measured = 1",
-          f"| [{FORK}]({FORK_URL}) | CUDA / CPU / Metal | 1 |" in guide)
+    # The guide lists how many models carry a measurement ON the fork — read
+    # from the store, not hardcoded: a second Bonsai 2 model measured on the
+    # fork (bonsai-2-9b, whose `Bonsai Oryon` .deb is the PrismML fork) is a
+    # data change, not a broken README (AGENTS.md rule 6b).
+    measured = sum(1 for m in s["models"]
+                   if any(e.get("engine") == FORK for e in m.get("engines") or []))
+    check("readme: engine guide lists the fork with its measured models",
+          f"| [{FORK}]({FORK_URL}) | CUDA / CPU / Metal | {measured} |" in guide, measured)
 
 
 def _model():

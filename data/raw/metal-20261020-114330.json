@@ -2,7 +2,7 @@
   "backend": "metal",
   "models": [
     {
-      "id": "qwen3.8-27b-mlx_srv",
+      "id": "qwen3.8-27b-mlx-serve-26.10.1",
       "name": "Qwen3.8-27B (MLX-Serve 26.10.1)",
       "full_name": "Qwen3.8-27B 4-bit on MLX-Serve 26.10.1 with a DFlash-style drafter",
       "type": "LLM",
