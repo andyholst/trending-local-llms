@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **89** · archived: **0**
+Active changes: **92** · archived: **0**
 
 ## Active changes
 
@@ -29,6 +29,7 @@ Active changes: **89** · archived: **0**
 | `bot-verification-protocol` | active | — | — | [bot-verification-protocol](openspec/changes/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/bot-verification-protocol/proposal.md) |
 | `card-gap-report` | active | #342 — `tech-debt: Only EMPTY tiers are reported as collection gaps — a model with no card evidence at all is silent` | — | [card-fit](openspec/changes/card-gap-report/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/card-gap-report/proposal.md) |
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
+| `closure-on-body-edit` | active | #290 — `tech-debt: A PR body edit never re-runs the closure check` | — | [pr-ci](openspec/changes/closure-on-body-edit/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/closure-on-body-edit/proposal.md) |
 | `code-review-bot` | active | — | — | [code-review](openspec/changes/code-review-bot/specs/code-review/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-bot/proposal.md) |
 | `code-review-refusal-names-its-cost` | active | — | — | [code-review-scan](openspec/changes/code-review-refusal-names-its-cost/specs/code-review-scan/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-refusal-names-its-cost/proposal.md) |
 | `code-review-secrets-contract` | active | — | — | [code-review-scan](openspec/changes/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/code-review-secrets-contract/proposal.md) |
@@ -96,8 +97,10 @@ Active changes: **89** · archived: **0**
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
 | `unique-rule-numbers` | active | — | — | [rulebook-integrity](openspec/changes/unique-rule-numbers/specs/rulebook-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/unique-rule-numbers/proposal.md) |
+| `unstructured-is-not-a-capacity` | active | #213 (the finding, measured while attempting its backfill) | — | [data-gap-analysis](openspec/changes/unstructured-is-not-a-capacity/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/unstructured-is-not-a-capacity/proposal.md) |
 | `verdict-hold-ceiling` | active | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | active | — | — | [ci-output-safety](openspec/changes/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/verdict-output-format/proposal.md) |
+| `verify-the-issue-closed` | active | #288 — `tech-debt: No post-merge step verifies the referenced issue actually closed` | — | [pr-ci](openspec/changes/verify-the-issue-closed/specs/pr-ci/spec.md) | 9/9 | [proposal.md](openspec/changes/verify-the-issue-closed/proposal.md) |
 | `vram-card-fit` | active | — | — | [card-fit](openspec/changes/vram-card-fit/specs/card-fit/spec.md) | 15/15 | [proposal.md](openspec/changes/vram-card-fit/proposal.md) |
 | `vram-min-prose` | active | #431 — `tech-debt: a prose vram_min is published as its first number (32GB GPU + system RAM -> 32GB)` | — | [card-fit](openspec/changes/vram-min-prose/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/vram-min-prose/proposal.md) |
 | `vram-need-cpu-marker` | active | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/vram-need-cpu-marker/proposal.md) |

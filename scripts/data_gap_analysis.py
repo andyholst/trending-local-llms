@@ -73,7 +73,18 @@ DIMENSIONS = (
     {
         "key": "weight_gb",
         "label": "weight footprint per format + quant",
-        "text": re.compile(r"\b\d+(?:\.\d+)?\s*(?:gb|mb)\b", re.I),
+        # A bare capacity is NOT a weights figure: "RX 9070 XT 16GB" is a card, "M3 Ultra
+        # 256GB" is unified memory, "67K-token prompt" is context. Counting those as
+        # `unstructured` reported 18 claims that do not exist and sent a backfill hunting for
+        # weights in text that never stated one (issue #213). The number must sit next to a
+        # weights word.
+        "text": re.compile(
+            r"\b(?:weights?|gguf|quants?|on[- ]disk|file size)\b[^.\n]{0,24}\b\d+(?:\.\d+)?\s*(?:gb|mb)\b"
+            r"|\b\d+(?:\.\d+)?\s*(?:gb|mb)\b[^.\n]{0,24}\b(?:weights?|gguf|quants?|on[- ]disk)\b",
+            re.I),
+        # `hardware` names the CARD, never the weights (a GPU's VRAM would be read as a
+        # footprint the run does not have).
+        "skip_fields": ("hardware",),
         "why": "the real budget a run needs before any context is allocated",
     },
     {
@@ -175,8 +186,9 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
             # free text lives on the model (quant/why) AND on every measurement
             # (a figure written into a measurement's `quant` is exactly the case
             # measured on the store: "1432 MB peak RAM")
-            hay = " ".join(str(m.get(f, "")) for f in TEXT_FIELDS)
-            hay += " ".join(str(e.get(f, "")) for e in (m.get("engines") or []) for f in TEXT_FIELDS)
+            fields = [f for f in TEXT_FIELDS if f not in dim.get("skip_fields", ())]
+            hay = " ".join(str(m.get(f, "")) for f in fields)
+            hay += " ".join(str(e.get(f, "")) for e in (m.get("engines") or []) for f in fields)
             hay += " ".join(str((store.get("engines") or {}).get(n, {}).get("note", ""))
                             for n in (m.get("supported_engines") or []))
             if dim["text"].search(hay):

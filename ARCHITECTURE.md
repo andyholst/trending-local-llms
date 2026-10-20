@@ -230,6 +230,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `pr-closure` (`PR_EVENT=<event json>` · or `BRANCH=<head> BODY_FILE=<pr body>`) | Fail when the PR does not close the issue its branch implements (`scripts/pr_closure.py`, issue #284): a closing keyword whose clause chains a second reference is refused (`Closes #1 and #2` would close only #1), a branch issue with no keyword bound to it is refused, and a PR whose branch implements no issue must not close one (the refresh PR references its tracking issue). In CI the default reads `$GITHUB_EVENT_PATH` by PATH — nothing is interpolated into a `run:` block. A non-PR event is a green no-op. Runs in `qa-validate`'s `validate` job |
+| `verify-closure` (`PR=<n>` `REPO=<owner/name>`) | After a merge, PROVE the issue the body claimed to close actually closed (`scripts/verify_closure.py`, issue #288): `pr-closure` PREDICTS the closure from GitHub's parser semantics, and PR #272 shows the difference (`Closes #271 and #276` closed #271, left #276 open, every job green). Reads the merged PR's own `closingIssuesReferences` (fetching an issue's state when the reference omits it), retries briefly because GitHub's close trails the merge call, exits 1 naming the issue and its state, and is LOUD when `gh` itself fails. A PR that closes nothing is not a failure. Read-only; runs as the last step of `auto-merge` |
 
 ### Lint
 
@@ -304,7 +305,7 @@ competing PRs over the same generated files).
 | `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
 | `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `agent-shell-keys-check` (the real secrets are visible in the agent's shell, issue #359), `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
-| `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides |
+| `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides, and then runs `make verify-closure` so a body whose keyword did not bind leaves a RED run (issue #288) |
 
 ### `.github/workflows/fix-bot.yml` — the repairer (`workflow_dispatch` only)
 
@@ -328,6 +329,22 @@ credential must be proven before the ten-minute build.
 Triggers are `workflow_dispatch` only — no `schedule`, no `pull_request`, no
 `push`, no `workflow_run` — so a refresh can never publish the toolchain and a PR
 can never trigger a publish copy. It never merges and never pushes a branch.
+
+### `.github/workflows/pr-closure.yml` — the closure check on the artifact it reads (PR only)
+
+`make pr-closure`'s input is the PR **body**, and a body changes without a new commit
+(issue #290). `qa-validate` triggers on GitHub's default `pull_request` types, so an edit was
+never re-checked and a body that broke its closure kept a green check.
+
+- **`guard`** — the FIRST job (rule 6j); `pull_request` is a repository event, so it is admitted
+  outright (the same clause `qa-validate`'s guard carries).
+- **`closure`** (`needs: guard`) — `actions/checkout` then `make pr-closure`, which reads the
+  webhook payload by path (`$GITHUB_EVENT_PATH`, the Makefile's `PR_EVENT` default); an
+  `edited` event carries the **new** body, so the verdict always describes what is on screen.
+
+Two jobs, seconds long, read-only (no push, no comment, no merge). Its own pipeline on purpose:
+adding `edited` to `qa-validate` would re-run the image builds, the unit suite and the
+30-minute network-bound `live-smoke` — a real Firecrawl spend — because a sentence changed.
 
 ### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
 

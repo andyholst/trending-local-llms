@@ -19,6 +19,7 @@ Run:  python3 tests/test_workflows.py   or   make test
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -693,6 +694,7 @@ BOT_GUARDS = (
     ("qa-validate.yml", "guard"),
     ("code-review-bot.yml", "guard"),
     ("queued-alarm.yml", "guard"),
+    ("pr-closure.yml", "guard"),
 )
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
@@ -2018,12 +2020,43 @@ def test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage():
           not undiscovered, undiscovered)
 
 
+
+def test_the_closure_check_reruns_when_the_pr_body_is_edited():
+    """Issue #290: the check's input is the PR BODY, and a body changes without a commit.
+    `qa-validate` triggers on the default `pull_request` types (no `edited`), so a body that
+    broke its closure kept a green check until an unrelated push."""
+    doc = load("pr-closure.yml")
+    triggers = doc.get("on") or doc.get(True) or {}
+    types = set((triggers.get("pull_request") or {}).get("types") or [])
+    check("pr-closure: it triggers on a BODY EDIT", "edited" in types, sorted(types))
+    check("pr-closure: … and on the ordinary PR events",
+          {"opened", "synchronize", "reopened"} <= types, sorted(types))
+    steps = doc["jobs"]["closure"]["steps"]
+    check("pr-closure: the closure job checks the repository out",
+          any("actions/checkout" in str(s.get("uses", "")) for s in steps), [s.get("name") for s in steps])
+    check("pr-closure: it runs the check through the Makefile (rule 6m)",
+          any(s.get("run", "").strip() == "make pr-closure" for s in steps),
+          [s.get("run") for s in steps])
+    check("pr-closure: it needs the guard (rule 6j)",
+          doc["jobs"]["closure"].get("needs") == "guard", doc["jobs"]["closure"].get("needs"))
+    # …and the pipeline stays READ-ONLY: it never pushes, comments or merges.
+    body = json.dumps(doc)
+    offenders = [w for w in ("git push", "gh pr merge", "gh pr comment", "--admin") if w in body]
+    check("pr-closure: read-only (no push, no comment, no merge)", not offenders, offenders)
+    # qa-validate keeps its own closure gate: this pipeline ADDS a trigger, it does not move it.
+    qa = load("qa-validate.yml")
+    qa_steps = [s.get("run", "").strip() for s in qa["jobs"]["validate"]["steps"]]
+    check("pr-closure: qa-validate still runs the closure check itself",
+          "make pr-closure" in qa_steps, qa_steps[-6:])
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
     test_refresh_bot()
     test_the_rebuild_decision_is_one_tested_unit()
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
+    test_the_closure_check_reruns_when_the_pr_body_is_edited()
     test_qa_validate()
     test_fix_bot()
     test_fix_bot_announces_its_window()
