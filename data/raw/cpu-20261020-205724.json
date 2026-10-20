@@ -1,0 +1,45 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE, 3B active)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "CPU"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "A 35B MoE that decodes ~50 tok/s on a 12GB RTX 3060 with 16GB system RAM via llama.cpp partial MoE offload (26 layers on the CPU).",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 26 MoE layers offloaded to CPU (--n-cpu-moe 26); Flash Attention + Q8 KV cache; 262K configured context; ~550 tok/s prompt processing",
+          "weight_gb": "Q4_K_M GGUF",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp with Flash Attention + Q8 KV cache and --n-cpu-moe 26",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112030236590137348",
+          "likes": 44,
+          "comments": 4,
+          "reshares": 5,
+          "views": 7876,
+          "interactions": 53
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T20:57:24Z"
+}

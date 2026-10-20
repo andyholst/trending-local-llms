@@ -1,0 +1,130 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "First six models on a fresh 64GB M5 Pro Mac mini, all measured with Apple's MLX: Qwen3 30B tops the list at 106 t/s because only ~3B of its parameters work per token.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "106",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "MLX build, ~3B active parameters per token",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory"
+        }
+      ],
+      "vram_min": "64GB"
+    },
+    {
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "full_name": "Qwen3-8B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "Qwen/Qwen3-8B",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "Second of the six models benchmarked with MLX on a 64GB M5 Pro Mac mini: 61 t/s, the straightforward 8B that still runs on a small machine.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "61",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "MLX build",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory"
+        }
+      ],
+      "vram_min": "64GB"
+    },
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "Fourth of six models measured with MLX on a 64GB M5 Pro Mac mini: 34 t/s.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "MLX build",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory"
+        }
+      ],
+      "vram_min": "64GB"
+    },
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "The slowest of six models benchmarked with MLX on a 64GB M5 Pro Mac mini at 18 t/s — the size-to-speed baseline next to the 30B MoE that beat it by 5.9x.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "MLX build",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory"
+        }
+      ],
+      "vram_min": "64GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T21:47:45Z"
+}

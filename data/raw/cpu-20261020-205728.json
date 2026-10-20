@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "1432 MB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Google's Pi 5 edge target: Gemma 4 E2B runs 9 tok/s decode on a Raspberry Pi 5 CPU with LiteRT-LM at a 1432 MB peak.",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU)",
+          "quant": "LiteRT-LM on-device runtime; 99 tok/s prefill; 1432 MB peak memory",
+          "system_ram_min": "1432 MB",
+          "engine_min_version": "LiteRT-LM",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 546,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 549
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T20:57:28Z"
+}

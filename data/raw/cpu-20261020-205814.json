@@ -1,0 +1,70 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "32GB",
+      "storage_offload": "about 80GB disk for the compressed model",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "191",
+          "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+          "quant": "NVIDIA Qwen3.8-Flash-Next FP4-Local (NVFP4) weights in an updated container; median 191 tok/s, 90th percentile 271, peak 328 — up from 85-88 tok/s on an older NVFP4 container; harness not named in the post",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "likes": 46,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 46
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ2_XS split between GPU VRAM and system RAM; prompt processing ~1,900 tok/s; the IQ3_S config gave ~70 tok/s (~66 at 261K context)",
+          "weight_gb": "IQ2_XS",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 4,
+          "reshares": 3,
+          "views": 4508,
+          "interactions": 33
+        },
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB + 32GB system RAM, ~80GB disk",
+          "quant": "compressed weights, cold experts kept in system RAM; 53-94 tok/s range on the card",
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 109,
+          "comments": 22,
+          "reshares": 10,
+          "views": 57493,
+          "interactions": 141
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T20:58:14Z"
+}
