@@ -1,0 +1,141 @@
+name: architecture-bot
+
+# Issue #479 — THE DESCRIPTION IS PART OF THE CHANGE, so it needs a keeper.
+#
+# `ARCHITECTURE.md` is the only artifact that answers "which bot does what, and how
+# does a model reach README.md?", and its mechanical half (every pipeline's triggers,
+# jobs and `make` targets, the product end to end, one line per script) is the half
+# that goes stale between touches: the prose already counted "Seven workflows" over a
+# directory of ten, and `make architecture-check` only noticed a name that was
+# MISSING, never a description of a bot whose jobs had moved on.
+#
+# So the block between `<!-- architecture-bot:begin -->` / `<!-- architecture-bot:end -->`
+# is DERIVED from the tree by `scripts/architecture_bot.py`, and this pipeline runs it
+# once a day: regenerate (rule 6h), prove the whole document is still true, and open a PR
+# ONLY when the regenerated block actually differs. No model anywhere — a generated
+# sentence cannot be invented, so this bot cannot fabricate a claim about the system.
+#
+# It never merges, never pushes master, and never edits a file the generator does not own.
+# Exit contract: green when the document already matches the tree (the common case) or when
+# its PR is opened; red only when the regeneration itself broke, so a silent green cannot
+# hide a description the bot failed to write.
+
+on:
+  schedule:
+    - cron: "13 5 * * *"   # daily, an odd minute (GitHub drops/delays top-of-hour crons)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: architecture-bot
+  cancel-in-progress: false
+
+jobs:
+  # Rule 6j: the guard is the FIRST job, before anything is read or written, and the
+  # scheduled run passes it by design (its identity is GitHub's, not a caller's).
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            echo "The scheduled refresh is GitHub's own event - allowed."
+            exit 0
+          fi
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            if [ "$u" = "github-actions[bot]" ]; then echo "The bot itself ($u) - allowed."; continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner, the bot, or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  refresh:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The owner PAT, not the default token: a GITHUB_TOKEN push starts no workflows and a
+      # GITHUB_TOKEN PR is authored by `github-actions[bot]` and waits for an approval click
+      # (rule 6b), so the PR this bot opens would never be validated or merged.
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+
+      # Rule 6n: prove the checkout IS the freshly fetched base before cutting a branch.
+      - name: Assert the base is the freshly fetched origin/master
+        run: make base-check
+
+      # Regenerate (rule 6h) and then prove the WHOLE document, not only the block:
+      # architecture-check also runs scripts/architecture_check.py, so a new target, a new
+      # workflow or a new script that the prose still does not name turns THIS run red
+      # rather than waiting for the next PR to notice.
+      - name: Regenerate the inventory from the tree
+        run: make architecture-refresh
+
+      - name: Prove ARCHITECTURE.md is true to the repository
+        run: make architecture-check
+
+      # A workflow step writes `key=value` into $GITHUB_OUTPUT, never a command's whole
+      # stdout (rule 3d, issue #346): `make` echoes its recipe lines, and one of those in
+      # the output file is an `Invalid format` failure AFTER the work behind it was done.
+      - name: Did the tree move the description?
+        id: drift
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- ARCHITECTURE.md; then
+            printf 'changed=%s\n' "false" >> "$GITHUB_OUTPUT"
+            echo "ARCHITECTURE.md already matches the tree - nothing to open."
+          else
+            printf 'changed=%s\n' "true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- ARCHITECTURE.md
+          fi
+
+      # The branch name must not END in digits: `scripts/pr_closure.py` reads a trailing
+      # `-<n>` as "this branch implements issue n" and would refuse a body without a closing
+      # keyword for an issue that does not exist. The UTC stamp ends in `Z` on purpose.
+      - name: Commit, push and open the PR when the block changed
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          branch="ci/architecture-$(date -u +%Y%m%dT%H%M%SZ)"
+          make git-identity
+          git switch -c "$branch"
+          git add ARCHITECTURE.md
+          git commit -m "docs(architecture): refresh the generated inventory (refs #479)"
+          git push origin "HEAD:refs/heads/$branch"
+          # The body arrives on stdin (`--body-file -`), so no scratch file exists for a later
+          # `git add -A` to commit. It carries NO closing keyword: this PR implements no issue,
+          # and `scripts/pr_closure.py` refuses a PR that closes an issue it does not implement.
+          {
+            printf '%s\n\n' '`make architecture-refresh` rewrote the generated block in `ARCHITECTURE.md` §10, because the tree moved and the description had not: a pipeline'"'"'s triggers, jobs or `make` targets changed, a script appeared, or the `README.md` sections changed.'
+            printf '%s\n\n' 'The block is derived from the tree (`scripts/architecture_bot.py`), so nothing here is invented. `make architecture-check` is green on this commit — the whole document, not only the regenerated block.'
+            printf 'Run: %s\n' "$RUN_URL"
+            printf '%s\n' 'Tracking issue: #479 (referenced, never closed: this PR implements no issue)'
+          } | gh pr create --base master --head "$branch" \
+            --title "docs(architecture): refresh the generated inventory" \
+            --body-file -
+
+      - name: Report a no-op run
+        if: steps.drift.outputs.changed != 'true'
+        run: echo "ARCHITECTURE.md is already true to the tree - no branch, no PR (a daily no-op is the healthy case)."

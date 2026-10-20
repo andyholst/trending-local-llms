@@ -743,6 +743,7 @@ BOT_GUARDS = (
     ("queued-alarm.yml", "guard"),
     ("pr-health.yml", "guard"),
     ("pr-closure.yml", "guard"),
+    ("architecture-bot.yml", "guard"),
 )
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
@@ -2014,6 +2015,7 @@ DISPATCH_ONLY_COVERAGE = {
     "pr-health.yml": "tests/test_pr_health.py",  # the silent-PR decision it makes
     "publish-agent-image.yml": "tests/test_publish_agent_image.py",  # the publish decision
     "refresh-bot.yml": "tests/test_refresh_run_block.py",  # the window block it composes
+    "architecture-bot.yml": "tests/test_architecture_bot.py",  # the block it regenerates, its guard
 }
 
 #: Events that mean "a pull request runs this pipeline".

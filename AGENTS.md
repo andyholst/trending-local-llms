@@ -320,7 +320,17 @@ retains 30 days of history.
    workflow/script that does not exist. It runs in `qa-validate`'s `validate`
    job, in the fix loop (before the network-bound `validate`) and, through
    `tests/test_architecture.py`, in `make test` — so an agent that adds a target
-   either documents it or turns the pipeline red. The split is deliberate:
+   either documents it or turns the pipeline red. **Its mechanical half is
+   GENERATED (issue #479):** §10 — every pipeline's triggers, jobs and the `make`
+   targets each job calls, the product end to end, one line per script and the
+   `README.md` sections a refresh rewrites — is derived from the tree by
+   `scripts/architecture_bot.py` (`make architecture-refresh`), and
+   `architecture-check` ALSO fails on a stale block. `architecture-bot.yml`
+   regenerates it daily and opens a PR only when the block changed, so prose that
+   stops matching the code is repaired instead of sitting until someone rereads
+   it. A change that moves a workflow, a target, a script or a README section
+   therefore regenerates the block in the SAME change (never by hand edits between
+   the markers). The split is deliberate:
    AGENTS.md is the rulebook (what must happen), ARCHITECTURE.md the description
    (how it works); never move a rule into the description or vice versa.
 
@@ -1130,6 +1140,20 @@ this `AGENTS.md` and the `gather-data` skill, then:
   `comment.md` is made RED by a named final step: a silent review is
   indistinguishable from a review that never ran.
 
+- **`architecture-bot.yml`** — the **description's keeper** (rule 6h, issue #479):
+  daily `13 5` + owner dispatch. Its `guard` job runs FIRST (rule 6j), then
+  `needs: guard`: `make base-check` (rule 6n — the branch is cut from the fetched
+  tip), `make architecture-refresh` (`scripts/architecture_bot.py --write`: the
+  `ARCHITECTURE.md` §10 block — every pipeline's triggers, jobs and the `make`
+  targets each job calls, the product end to end, one line per script from its own
+  docstring, the `README.md` sections a refresh rewrites — all DERIVED from the
+  tree), `make architecture-check` (the WHOLE document), then a commit and a PR on
+  `ci/architecture-<UTC>` **only when the block changed**; a run where the block
+  already matches the tree is a green no-op with no branch and no PR. **No model
+  anywhere**, so it cannot invent a claim about the system. It never merges, never
+  pushes `master`, and its PR carries NO closing keyword — it implements no issue,
+  and `pr_closure` refuses a PR that claims to close one.
+
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
   the workflows enforce it themselves too, so it never depends on a setting:
@@ -1366,6 +1390,7 @@ actually happened.
 | `tests/test_lint_linefeeds.py` + `make lint` (rule 6i, issue #186) | a tracked text file that ends without a newline (git's `\ No newline at end of file`, which turns the next append into a spurious last-line change); `--fix` appending more than one newline or not being idempotent; a binary file (NUL in the first 8000) or an empty file being reported as a finding; an UNTRACKED file failing the lint (the set is `git ls-files`); the gate not wired into `qa-validate`, the fix loop's first check or `make test` (rule 6d); `.editorconfig` losing the editor half of the rule |
 | `tests/test_lint_syntax.py` + `make lint` (the trailing-newline rule's sibling, issue #190) | a tracked Python module that raises a `SyntaxWarning` on compile — the measured `scripts/update_trending.py` docstring containing an invalid escape sequence (a lone backslash before a space; PEP 686's warning path ends in an error in a future Python) — or does not parse at all; the warning being hidden because the module was already imported (the warning registry is cleared per file, so the guard cannot be silenced by an earlier import); an UNTRACKED module failing the lint (the set is `git ls-files '*.py'`); the gate not wired into `make lint`, `qa-validate`, the fix loop's first check or `make test` (rule 6d) |
 | `tests/test_architecture.py` (rule 6h, issue #178) | an `ARCHITECTURE.md` that lost a public make target, a workflow or a script; a description still naming a target that was removed (its §3 tables are the claim, the Makefile the truth); a phantom `.github/workflows/*.yml` or `scripts/*` reference; the check not wired into `qa-validate`, the fix loop or `make test` (rule 6d); the implementer prompt no longer requiring the update |
+| `tests/test_architecture_bot.py` + `make architecture-refresh` (rule 6h, issue #479) | the description drifting from the code in its MECHANICAL half: an `ARCHITECTURE.md` §10 block that no longer names a pipeline's cron, its jobs or a `make` target a step actually calls; a `make` that only appears in a workflow COMMENT (or names no real target) reported as a call; a script with no line in the inventory; a README section or backend table missing from the list a refresh rewrites; a FLOW step whose target, script or artifact the tree no longer has (refused at write time too, so the generator never publishes a claim it could not back); a missing marker silently skipped instead of a loud failure; `architecture-check` no longer failing on a stale block; the daily `architecture-bot.yml` losing its guard, its `base-check`, its "PR only when changed" gate, or opening a PR that claims to close an issue it does not implement; the guard not registered in `tests/test_workflows.py` |
 | `tests/test_check_openspec_tasks.py` (rule 6f, issue #172) | an ACTIVE change left with an unticked `- [ ]` box passing CI (`openspec validate` checks structure only) — the completion half of the gate; an archived change's boxes being checked; a literal `- [ ]` inside a fenced code block counted as a task; the gate not reachable from a make target CI runs (rule 6d) |
 | `tests/test_openspec_index.py` (rule 6f, issue #172) | a change directory with NO row in the root `OPENSPEC.md`, a stale row (issue/PR/spec/tasks drift), a hand-written index that disagrees with the generator, an archived change mislabelled active; `make openspec-index`/`-index-check` not wired or `openspec-check` not running the check; **a stale index whose cause is misnamed** — the `Active changes: **N**` line drifting while every row is present and identical, which used to be reported as `rows exist but their data changed (issue/PR/specs/tasks)` (measured on `master` `9b3e34c`, run 38865506979: the file said 30, the tree held 31, and `validate` was red on `master` and on every open PR while their own branches were green) |
 | `tests/test_file_findings.py` (rule 6g, issue #172) | an implementation run that wrote no `findings.md` passing silently; a vague finding (no Evidence/Why/Done-when) accepted; `- none` treated as an error instead of a valid "found nothing"; a finding filed twice (the signature dedup); a filing that loses its `tech-debt` label or its origin link; the `gh` create writing an EMPTY body (`--body-file -` needs stdin); `file-findings`/`findings-check` unwired, or the loop/bot not demanding the analysis |
