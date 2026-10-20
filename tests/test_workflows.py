@@ -1805,9 +1805,17 @@ def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
     check("issue-bot: the re-run goes through `make worktree-resume` (IN_PLACE=1)",
           "make worktree-resume" in body, "")
     rb = load("refresh-bot.yml")
-    agg = [st for st in steps(rb["jobs"]["aggregate"]) if "make base-check" in str(st.get("run", ""))]
-    check("refresh-bot: the job that cuts ci/trending-refresh-* asserts its base too",
+    # `aggregate` cuts `ci/trending-refresh-<UTC>` after ~40 min of searching, so its
+    # checkout is behind by construction and the STRICT refusal would discard the run
+    # (issue #448, measured: run 39329834698, 4/4 legs green, nothing merged). It must
+    # ADVANCE onto the fetched base instead — and must NOT carry `base-check`, which
+    # would fail the job again the moment master moves.
+    agg = [st for st in steps(rb["jobs"]["aggregate"]) if "make base-advance" in str(st.get("run", ""))]
+    check("refresh-bot: the job that cuts ci/trending-refresh-* advances onto the fetched base",
           bool(agg) and "origin/master" in str(agg[0].get("name", "")), "")
+    check("refresh-bot: the aggregate does NOT run the strict base-check (it has written nothing yet)",
+          not [st for st in steps(rb["jobs"]["aggregate"]) if "make base-check" in str(st.get("run", ""))],
+          [st.get("name") for st in steps(rb["jobs"]["aggregate"])])
 
 
 #: Steps whose `run` WRITES an issue — creates one, or labels / comments on one.

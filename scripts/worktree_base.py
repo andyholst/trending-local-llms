@@ -27,6 +27,12 @@ through:
   * `resume` — an existing branch (a re-run): FETCH it first, then attach, and report how
                far behind the fetched base it is, so drift is visible instead of silent.
                Commits that exist only locally are never discarded.
+  * `advance` — fetch the base and FAST-FORWARD this clean checkout onto it (issue #448).
+               For a CI job that has written NOTHING yet: `refresh-bot`'s `aggregate`
+               cuts its branch from the tip after ~40 min of searching, so a checkout
+               that is merely BEHIND must move, not refuse — refusing there discarded a
+               whole refresh (run 39329834698). It still refuses what it cannot prove
+               safe: a dirty tree, or a HEAD carrying commits the base does not have.
 
 Exit codes: 0 = the decision holds, 1 = it does not (the refusal says what to do),
 2 = usage / not a git checkout.
@@ -205,6 +211,61 @@ def _base_is_not_a_target(branch: str, base: str) -> None:
         )
 
 
+def mode_advance(args: argparse.Namespace) -> int:
+    """Fetch the base and fast-forward a CLEAN checkout onto it (issue #448).
+
+    `check` is right for a job with work in the tree: refusing is the safe answer to
+    "start from an old base". But `refresh-bot`'s `aggregate` has written nothing when it
+    asserts its base — the raw snapshots arrive afterwards as artifacts — so refusing a
+    checkout that is merely BEHIND is not a safety net, it is a scheduled data loss: the
+    job runs ~40 min while `master` routinely merges, and four green search legs are
+    discarded (measured: run 39329834698, HEAD 2 commits behind after 4/4 legs succeeded).
+
+    So this ADVANCES to the fetched tip, and refuses only what it cannot prove safe: a
+    dirty tree (a reset would discard it) or a HEAD carrying commits the base does not
+    have (it is not behind, it has diverged).
+    """
+    cwd = os.getcwd()
+    repo_root(cwd)
+    tip = fetch_base(args.base, args.remote, cwd)
+    head = git_out(["rev-parse", "HEAD"], cwd)
+    if head == tip:
+        print(f"base={args.remote}/{args.base}")
+        print(f"base_sha={tip}")
+        print(f"head={head}")
+        print("fresh=true")
+        print(f"OK: this checkout IS the freshly fetched {args.remote}/{args.base} ({tip[:12]}).")
+        return 0
+
+    dirty = git_out(["status", "--porcelain"], cwd)
+    if dirty:
+        raise Refused(
+            f"CANNOT ADVANCE: the tree is dirty, so fast-forwarding to "
+            f"{args.remote}/{args.base} would discard it.\n"
+            f"  {dirty.strip().splitlines()[0] if dirty.strip() else ''}\n"
+            f"  Commit or stash it first: a job that ADVANCES has written nothing yet."
+        )
+
+    if git(["merge-base", "--is-ancestor", head, tip], cwd).returncode != 0:
+        # Not behind — it has its own commits. That is the `check` refusal, verbatim.
+        raise _stale(head, tip, args.base, args.remote, cwd)
+
+    behind = _count(head, tip, cwd)
+    git_out(["-c", "advice.detachedHead=false", "reset", "--hard", tip], cwd)
+    after = git_out(["rev-parse", "HEAD"], cwd)
+    if after != tip:
+        raise Refused(f"advancing to {tip} did not take: HEAD is {after or '<unreadable>'}.")
+    print(f"base={args.remote}/{args.base}")
+    print(f"base_sha={tip}")
+    print(f"head_before={head}")
+    print(f"head={after}")
+    print(f"advanced={behind}")
+    print("fresh=true")
+    print(f"OK: advanced {head[:12]} -> {tip[:12]} ({behind} commit(s)) onto the freshly "
+          f"fetched {args.remote}/{args.base}.")
+    return 0
+
+
 def mode_new(args: argparse.Namespace) -> int:
     cwd = os.getcwd()
     root = repo_root(cwd)
@@ -334,15 +395,15 @@ def mode_resume(args: argparse.Namespace) -> int:
     return 0
 
 
-MODES = {"check": mode_check, "new": mode_new, "resume": mode_resume}
+MODES = {"check": mode_check, "new": mode_new, "resume": mode_resume, "advance": mode_advance}
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="worktree_base.py",
         description="Fetch the base and assert where work starts (AGENTS.md rule 6n).",
-        epilog="Run through the Makefile: `make base-check`, `make worktree-new BRANCH=…`, "
-               "`make worktree-resume BRANCH=…`.",
+        epilog="Run through the Makefile: `make base-check`, `make base-advance`, "
+               "`make worktree-new BRANCH=…`, `make worktree-resume BRANCH=…`.",
     )
     parser.add_argument("mode", choices=sorted(MODES))
     parser.add_argument("--branch", help="the branch to start (new) or resume")
