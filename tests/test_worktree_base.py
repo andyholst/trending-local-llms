@@ -117,6 +117,54 @@ def test_check_fails_on_a_checkout_behind_the_fetched_base(tmp: Path) -> None:
           "make worktree-new" in proc.stderr, proc.stderr)
 
 
+def test_advance_fast_forwards_a_checkout_behind_the_base(tmp: Path) -> None:
+    """The measured shape (run 39329834698): four green search legs, `master` merged
+    twice while they ran. Refusing there throws the refresh away; advancing keeps it."""
+    fx = fixture(tmp)
+    advance(fx["seed"], "moved on\n")
+    proc = run_script("advance", fx["ci"])
+    check("advance: a clean checkout behind the base exits 0 (never discards the run)",
+          proc.returncode == 0, proc.stderr)
+    check("advance: it reports having moved, machine-readably",
+          "advanced=1" in proc.stdout and "fresh=true" in proc.stdout, proc.stdout)
+    head = git(["rev-parse", "HEAD"], fx["ci"]).stdout.strip()
+    tip = git(["rev-parse", "origin/master"], fx["ci"]).stdout.strip()
+    check("advance: HEAD IS the fetched tip afterwards", head == tip, (head, tip))
+    check("advance: and the base's own content is in the tree",
+          "moved on" in (fx["ci"] / "f.txt").read_text(), "")
+
+
+def test_advance_is_a_no_op_on_a_fresh_checkout(tmp: Path) -> None:
+    fx = fixture(tmp)
+    proc = run_script("advance", fx["ci"])
+    check("advance: a fresh checkout passes without moving anything",
+          proc.returncode == 0 and "advanced=" not in proc.stdout, proc.stdout)
+
+
+def test_advance_refuses_a_dirty_tree(tmp: Path) -> None:
+    fx = fixture(tmp)
+    advance(fx["seed"], "moved on\n")
+    (fx["ci"] / "scratch.txt").write_text("uncommitted work\n")
+    proc = run_script("advance", fx["ci"])
+    check("advance: a dirty tree is REFUSED (a reset would discard it)",
+          proc.returncode == 1 and "dirty" in proc.stderr, proc.stderr)
+    check("advance: and the dirty file survives the refusal",
+          (fx["ci"] / "scratch.txt").exists(), "")
+
+
+def test_advance_refuses_a_head_with_its_own_commits(tmp: Path) -> None:
+    fx = fixture(tmp)
+    advance(fx["seed"], "moved on\n")
+    (fx["ci"] / "g.txt").write_text("local only\n")
+    git(["add", "g.txt"], fx["ci"])
+    git(["commit", "-qm", "local work"], fx["ci"])
+    proc = run_script("advance", fx["ci"])
+    check("advance: a diverged HEAD is REFUSED (behind is not the only state)",
+          proc.returncode == 1 and "STALE" in proc.stderr and "ahead" in proc.stderr, proc.stderr)
+    check("advance: and the local commit is still there",
+          "local work" in git(["log", "--oneline"], fx["ci"]).stdout, "")
+
+
 def test_check_fails_loudly_when_the_fetch_fails(tmp: Path) -> None:
     fx = fixture(tmp)
     git(["remote", "set-url", "origin", str(tmp / "gone.git")], fx["ci"])
@@ -323,12 +371,12 @@ def test_the_rulebook_states_the_rule() -> None:
 
 def test_the_makefile_is_the_one_seam() -> None:
     targets = set(re.findall(r"^([A-Za-z0-9_][A-Za-z0-9_.-]*):", MAKEFILE, re.M))
-    for target in ("base-check", "worktree-new", "worktree-resume"):
+    for target in ("base-check", "base-advance", "worktree-new", "worktree-resume"):
         check(f"Makefile: `{target}` exists (the seam CI and a human share)",
               target in targets, sorted(t for t in targets if t.startswith("worktree") or
                                         t.startswith("base")))
-    for target, script in (("base-check", "check"), ("worktree-new", "new"),
-                           ("worktree-resume", "resume")):
+    for target, script in (("base-check", "check"), ("base-advance", "advance"),
+                           ("worktree-new", "new"), ("worktree-resume", "resume")):
         recipe = re.search(rf"^{target}:.*\n((?:\t.*\n)+)", MAKEFILE, re.M)
         check(f"Makefile: `{target}` calls scripts/worktree_base.py {script}",
               bool(recipe) and f"worktree_base.py {script}" in recipe.group(1), "")
@@ -345,6 +393,10 @@ def main() -> int:
         test_check_is_fresh_on_a_fresh_checkout(tmp / "c1")
         test_check_fails_on_a_checkout_behind_the_fetched_base(tmp / "c2")
         test_check_fails_loudly_when_the_fetch_fails(tmp / "c3")
+        test_advance_fast_forwards_a_checkout_behind_the_base(tmp / "c3a")
+        test_advance_is_a_no_op_on_a_fresh_checkout(tmp / "c3b")
+        test_advance_refuses_a_dirty_tree(tmp / "c3c")
+        test_advance_refuses_a_head_with_its_own_commits(tmp / "c3d")
         test_new_creates_a_worktree_at_the_fetched_tip(tmp / "c4")
         test_new_refuses_an_existing_branch(tmp / "c5")
         test_new_never_touches_the_checkout_the_caller_stands_on(tmp / "c5b")

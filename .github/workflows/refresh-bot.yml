@@ -373,8 +373,16 @@ jobs:
       # A fresh `actions/checkout` is the latest `origin/master` only by accident of
       # the runner, and a PR built on an old base is the overlapping-PR conflict in
       # reverse: it validates a tree that has already moved.
-      - name: Assert the base is the freshly fetched origin/master
-        run: make base-check
+      #
+      # It ADVANCES rather than refusing (issue #448). The search legs above run for
+      # ~40 min while `master` routinely merges, so this checkout is behind by
+      # construction — `make base-check` would refuse here and throw away four green
+      # legs (measured: run 39329834698, HEAD 2 commits behind, whole refresh lost).
+      # Nothing has been written to the tree at this point (the raw snapshots arrive
+      # below as artifacts), so the honest answer is to move to the fetched tip;
+      # `base-advance` still refuses a dirty tree or a HEAD with its own commits.
+      - name: Advance the clean checkout onto the freshly fetched origin/master
+        run: make base-advance
 
       # BOTH images: this job's steps run test-image targets (`make data-gaps`,
       # `make test`), and preparing only the base left `data-gaps` dying with

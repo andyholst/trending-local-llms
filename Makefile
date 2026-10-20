@@ -355,6 +355,16 @@ pr-closure: ## Fail when this PR does not close the issue its branch implements 
 base-check: ## Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch)
 	python3 scripts/worktree_base.py check $(if $(BASE),--base $(BASE),)
 
+# The ADVANCE shape (issue #448): for a CI job that has written NOTHING yet. `base-check`
+# refuses a checkout that is merely behind — the right answer where the tree carries work,
+# and a scheduled data loss where it does not: refresh-bot's `aggregate` asserts its base
+# after ~40 min of searching, and `master` routinely merges in that window (measured: run
+# 39329834698, 4/4 legs green, HEAD 2 commits behind, whole refresh discarded). This
+# fast-forwards a CLEAN checkout onto the fetched tip and refuses only a dirty tree or a
+# HEAD with commits the base does not have. Same ONE implementation (rule 6d/6m).
+base-advance: ## Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet)
+	python3 scripts/worktree_base.py advance $(if $(BASE),--base $(BASE),)
+
 worktree-new: ## Start a new branch off the freshly fetched base, in a worktree (IN_PLACE=1 for the CI checkout)
 	@test -n "$(BRANCH)" || { echo "Usage: make worktree-new BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>]"; exit 1; }
 	python3 scripts/worktree_base.py new --branch "$(BRANCH)" $(if $(BASE),--base $(BASE),) $(if $(IN_PLACE),--in-place,) $(if $(DIR),--dir "$(DIR)",)
