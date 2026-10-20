@@ -774,6 +774,23 @@ The README is **generated**, not hand-maintained:
   enum is exactly those combinations). The search legs are ONE list,
   `update_trending.SEARCH_LEGS` (`nvidia`, `metal`, `cpu`, `amd`) — adding a
   leg means wiring it everywhere `tests/test_amd_backend.py` checks.
+- **A model or quant name never becomes an engine — refused at INGEST, not by a
+  PR repair (issue #458).** `ENGINE_ASK` tells the search legs, by name, that
+  `NVFP4` and `FP4-Local` must never be written as an engine (#378/#379) — and the
+  metal leg wrote `FP4-Local` anyway on 2026-10-20, reding the refresh PR for the
+  second day running. A prompt is necessary and not sufficient, so
+  `update_trending.refuse_fabricated_engines` drops such a measurement as it enters
+  the store, loudly, naming the model, the engine and the post. A name is
+  fabricated when it is absent from the engines registry AND carries a
+  quantization token in its name (`FP4`, `NVFP4`, `Q8_0`, `AWQ`, `GPTQ`, `GGUF`,
+  `EXL2`, …) — the provable shape, since an engine name never contains one. A
+  model-name SUBSTRING is deliberately NOT a rule: `WebLLM` is a real engine that
+  appears inside `Llama-3.1-8B (WebLLM)`, and treating that as proof refused a
+  legitimate measurement while this was being written. A genuinely new engine is NOT refused:
+  it stays unregistered, `make validate` still fails for a human, and the row never
+  reaches the store by being invented. This enforces rule 5 (`a t/s with no engine
+  is not a valid entry`) and keeps rule 3b intact: the refused row never became a
+  stored value, so nothing is removed.
 - **Ingest is contract-driven.** `normalize_model` / `ingest_raw_snapshots`
   prune a model's top-level `engagement` to exactly the keys declared in
   `data/model_contract.json` (read at runtime — no second list to drift) and
@@ -1313,7 +1330,7 @@ actually happened.
 | `tests/test_engagement_contract.py` | raw → ingest → store failing `model_contract.json` (the real PR #50 snapshot with model-level `reshares` is the fixture); stray keys not pruned; ingest and contract key lists drifting |
 | `tests/test_code_review.py` | the code-review bot's secret contract drifting: an undeclared secret reported with NO API read; the declared contract not matching the workflows' references in either direction; `GITHUB_TOKEN` not being exempt (it is supplied by Actions, never a repository secret); a COMMENTED reference counted as a read (issue #313) |
 | `tests/test_ci_wiring.py` | a CI entry point that never runs: the dead `python3 -m pytest … 2>/dev/null ||` branch (pytest is absent from the test image and stderr was discarded, so the intended entrypoint never executed and the suite stayed green); a hand-maintained module chain a new test file could be missed from; a runner that does not stop at the first red or does not show the failing module's output; a suite that discovers nothing and reports success (issue #192) |
-| `tests/test_engine_registry.py` (offline: `tests/fixtures/github_meta.json` = real GitHub metadata of every registered engine; `ENGINE_REGISTRY_META_FILE` switches `fetch_repo_meta` to it) | the classifier refusing ANY registered engine (it refused MLX-fast); a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting |
+| `tests/test_engine_registry.py` (offline: `tests/fixtures/github_meta.json` = real GitHub metadata of every registered engine; `ENGINE_REGISTRY_META_FILE` switches `fetch_repo_meta` to it) | the classifier refusing ANY registered engine (it refused MLX-fast); a new engine needing a fix-bot round instead of registering at ingest; a harness / agent framework / app / benchmark / unknown / unreachable / non-GitHub repo being registered (classification table + real refresh-#72 snapshot: `quillan.cpp` registered, `DeepSeekHarness` refused); `engine_repo` leaking into the store; `check_engine_kind` passing a registered harness; `engine-check` failing instead of reporting; a FABRICATED engine (a name carrying a quantization token: the measured `FP4-Local` and its `NVIDIA FP4-Local` spelling from #378 — while an engine that merely appears in a model name, `WebLLM` in `Llama-3.1-8B (WebLLM)`, must NOT be refused) reaching the store and reding the refresh PR instead of being refused at ingest with the post named — while a genuinely new engine must still pass and still red validation for a human (issue #458) |
 | `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary; the loop's `$REPORT.notes` scratch file (`: >"$NOTES"` created it in the checkout root whatever happened) reaching the tree — `.gitignore` ignored only the exact name `qa-report.txt`, so a bot's `git add -A` committed a 0-byte `qa-report.txt.notes` into PR #387, and a non-empty one would publish a hung round's notes inside the repository (`test_scratch_notes_stay_out_of_the_tree`, issue #390) |
 | `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; no git identity; pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; **a pipeline OPENING a draft PR** (`--draft`) — valid, green and permanently unmergeable, since `auto-merge` requires `draft == false` (rule 6e, issue #276); refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |

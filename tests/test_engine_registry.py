@@ -18,6 +18,7 @@ metadata is stubbed (hermetic); the real PR #72 raw snapshot is a fixture.
   - test_check_engine_kind              validator fails a registered harness / uncited auto entry
   - test_check_raw_report               --check-raw CLI reports, never fails
   - test_contracts_and_prompts          engine_repo in search contract; auto in model contract; prompts
+  - test_fabricated_engine_refused_at_ingest  a model/quant name never becomes an engine (issue #458)
 
 Run:  python3 tests/test_engine_registry.py   or   make test
 """
@@ -197,6 +198,67 @@ def test_real_pr72_snapshot():
     V.FAILURES.clear()
     check("pr72: validation now flags ONLY DeepSeekHarness (for manual review)",
           errs and all("DeepSeekHarness" in e for e in errs) and not any("quillan" in e for e in errs), errs)
+
+
+def test_fabricated_engine_refused_at_ingest():
+    """The measured shape (issue #458): the metal leg wrote engine 'FP4-Local' for a post
+    that names NO engine — while `ENGINE_ASK` forbids that token by name (#378/#379). The
+    prompt is necessary and not sufficient, so the refusal happens at ingest, where the
+    value would become data, and it is LOUD.
+    """
+    post = "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    model = {"id": "qwen3.8-flash-next-125b", "name": "Qwen3.8 Flash Next 125B"}
+
+    # When the fabricated names are judged
+    r_flat = UT.fabricated_engine_reason("FP4-Local", model, {})
+    r_nv = UT.fabricated_engine_reason("NVIDIA FP4-Local", model, {})
+    # A model-name SUBSTRING is not proof: `WebLLM` is a real engine that appears inside
+    # `Llama-3.1-8B (WebLLM)` — refusing it broke test_7day_aggregation.py while this was
+    # being written, so the rule stays on the provable shape (a quant token).
+    r_false_pos = UT.fabricated_engine_reason("WebLLM", {"id": "webllm-llama-3.1-8b-inbrowser",
+                                                         "name": "Llama-3.1-8B (WebLLM)"}, {})
+    # Then each is refused, and the reason says WHICH derivation it saw
+    check("fab: the measured 'FP4-Local' is refused", r_flat is not None and "FP4" in r_flat, r_flat)
+    check("fab: the #378 spelling 'NVIDIA FP4-Local' is refused too",
+          r_nv is not None and "FP4" in r_nv, r_nv)
+    check("fab: an engine that appears in the model name is NOT refused (WebLLM)",
+          r_false_pos is None, r_false_pos)
+    # A registered engine is untouched, and a genuinely NEW engine still passes so that
+    # `make validate` keeps failing loudly for a human (the documented behaviour).
+    check("fab: a registered engine is kept", UT.fabricated_engine_reason("vLLM", model, {"vLLM": {}}) is None)
+    check("fab: a genuine unregistered engine is NOT refused",
+          UT.fabricated_engine_reason("SomeRealServe", model, {}) is None)
+
+    # And through the REAL ingest: the model keeps its vLLM row, the fabricated row never
+    # reaches the store, and validation no longer fails on it.
+    raw = {"models": [{
+        "id": "qwen3.8-flash-next-125b", "name": "Qwen3.8 Flash Next 125B",
+        "engines": [
+            {"engine": "vLLM", "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+             "quant": "NVFP4", "tps": "191", "date": "2026-10-17", "source_post": post},
+            {"engine": "FP4-Local", "hardware": "RTX 6000 Pro (Nvidia/Qwen3.8-Flash-Next-FP4-Local)",
+             "quant": "NVFP4 (NVIDIA FP4-Local)", "tps": "191", "date": "2026-10-17",
+             "source_post": post},
+        ]}]}
+    s = _real_store()
+    with tempfile.TemporaryDirectory() as td:
+        (Path(td) / "metal-20261020-110550.json").write_text(json.dumps(raw))
+        saved = UT.RAW_DIR
+        UT.RAW_DIR = Path(td)
+        try:
+            UT.ingest_raw_snapshots(s)
+        finally:
+            UT.RAW_DIR = saved
+    stored = next((m for m in s["models"] if m["id"] == "qwen3.8-flash-next-125b"), None)
+    names = {e.get("engine") for e in (stored or {}).get("engines", [])}
+    check("fab: the fabricated measurement did NOT enter the store", stored is not None and "FP4-Local" not in names,
+          sorted(n for n in names if "FP4" in str(n)))
+    check("fab: the real vLLM row survived the same snapshot", "vLLM" in names, sorted(names)[:6])
+    V.FAILURES.clear()
+    V.check_model_fields(s)
+    errs = [e for e in V.FAILURES if "qwen3.8-flash-next-125b" in e]
+    V.FAILURES.clear()
+    check("fab: validation no longer fails that model", not errs, errs)
 
 
 def _kind_errors(s):
@@ -602,6 +664,7 @@ def main() -> int:
     test_check_engine_kind()
     test_check_raw_report()
     test_contracts_and_prompts()
+    test_fabricated_engine_refused_at_ingest()
     test_registered_engines_never_refused()
     test_classifier_signals()
     test_app_bundled_inference_server()
