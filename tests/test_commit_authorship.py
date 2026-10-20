@@ -108,6 +108,112 @@ def _commit(repo: Path, subject: str, body: str = "", author: str | None = None,
 # ---------------------------------------------------------------------------
 # identity rules
 # ---------------------------------------------------------------------------
+def test_a_commit_that_credits_its_own_author_twice_is_refused():
+    """Issue #445, the measured shape: `5690eb8` on master carries
+
+        author=Andy <andy.holst@protonmail.com>
+        Co-authored-by: andyholst <andy@holst.se>
+
+    — one person credited twice, 27 times over, because GitHub synthesizes the trailer for the
+    author identities inside a PR that differ from the merge actor."""
+
+    # Given the measured commit, verbatim
+    measured = {
+        "sha": "5690eb8692a6", "author": "Andy <andy.holst@protonmail.com>",
+        "committer": "GitHub <noreply@github.com>",
+        "subject": "ci: a silent PR is an alarm (issue #442) (#443)",
+        "message": "ci: a silent PR is an alarm (issue #442) (#443)\n\n"
+                   "Co-authored-by: andyholst <andy@holst.se>\n",
+    }
+
+    # When  it is scanned
+    bad = cca.scan([measured])
+
+    # Then  the self-credit is refused as its own violation…
+    check("identity: a commit crediting its own author twice is refused",
+          any("credits ITS OWN author a second time" in b for b in bad), bad)
+    check("identity: … and the trailer is named", any("andy@holst.se" in b for b in bad), bad)
+    check("identity: … and the rule is named", any("one person, one identity" in b for b in bad), bad)
+
+    # …while a GENUINELY different person beside the same author is fine.
+    other = dict(measured, message=measured["message"].replace(
+        "andyholst <andy@holst.se>", "Asimov Agent <support@docondee.com>"))
+    check("identity: a different person is not a self-credit",
+          cca.self_credit_violations(other) == [], cca.self_credit_violations(other))
+
+
+def test_a_second_spelling_of_a_person_is_refused_with_the_canonical_pair():
+    """The allowlist answered "may this identity be credited?", never "is one person using
+    several" — and a second spelling is what makes the merge write the duplicate trailer."""
+
+    # Given a commit authored under a second spelling of a person
+    second = {"sha": "abc123", "author": "andyholst <andy@holst.se>",
+              "committer": "andyholst <andy@holst.se>", "subject": "fix: x", "message": "fix: x\n"}
+
+    # Then  it is refused, and the message says WHICH pair to use
+    bad = cca.spelling_violations(second)
+    check("identity: a second spelling is refused", len(bad) == 2, bad)
+    check("identity: … naming the canonical identity",
+          all("Andy Holst <andy.holst@protonmail.com>" in b for b in bad), bad)
+
+    # …and the canonical identity itself is clean, as is an automation identity.
+    check("identity: the canonical pair is clean",
+          cca.spelling_violations({"author": "Andy <andy.holst@protonmail.com>",
+                                 "committer": "GitHub <noreply@github.com>"}) == [], "")
+    check("identity: the bot's canonical identity is clean",
+          cca.spelling_violations({"author": "Asimov Agent <support@docondee.com>",
+                                 "committer": "Asimov Agent <support@docondee.com>"}) == [], "")
+
+
+_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _git_path_log(root: Path, depth: str) -> list[dict]:
+    """The last `depth` commits of a repository, as the guard's own commit dicts."""
+    fmt = "%x00".join(["%H", "%an <%ae>", "%cn <%ce>", "%s", "%B"]) + "%x00%x00"
+    text = _git(root, "log", f"-{depth}", f"--format={fmt}")
+    fields = text.split("\x00")
+    commits = []
+    for i in range(0, len(fields) - 5, 6):
+        chunk = fields[i:i + 6]
+        if len(chunk) < 5 or not chunk[0].strip():
+            continue
+        commits.append({"sha": chunk[0].strip(), "author": chunk[1].strip(),
+                        "committer": chunk[2].strip(), "subject": chunk[3].strip(),
+                        "message": chunk[4]})
+    return commits
+
+
+def test_the_real_master_history_would_have_been_caught():
+    """The guard is only worth anything if it fails on the HISTORY that produced this issue.
+
+    Inside the test container the checkout is owned by another uid, so git refuses with
+    `detected dubious ownership` (issue #191); the TEST makes that environment usable
+    (`safe.directory = *` via GIT_CONFIG_GLOBAL) rather than the guard weakening its own call —
+    the same shape the repository-wide self-test below uses.
+    """
+    import os
+
+    with tempfile.TemporaryDirectory() as td:
+        cfg = Path(td) / "gitconfig"
+        cfg.write_text("[safe]\n\tdirectory = *\n")
+        prev = os.environ.get("GIT_CONFIG_GLOBAL")
+        os.environ["GIT_CONFIG_GLOBAL"] = str(cfg)
+        try:
+            out = _git_path_log(_ROOT, "40")
+        finally:
+            if prev is None:
+                os.environ.pop("GIT_CONFIG_GLOBAL", None)
+            else:
+                os.environ["GIT_CONFIG_GLOBAL"] = prev
+
+    caught = [c for c in out if cca.self_credit_violations(c)]
+    check("identity: the real history yields self-credited commits", len(caught) >= 5, len(caught))
+    check("identity: the measured commit is among them",
+          any(c["sha"].startswith("5690eb8") for c in caught),
+          [c["sha"][:8] for c in caught][:5])
+
+
 def test_an_allowed_identity_is_not_a_violation():
     with tempfile.TemporaryDirectory() as td:
         repo = _repo(Path(td))
@@ -193,12 +299,35 @@ def test_the_hermes_co_author_trailer_is_a_violation():
 
 
 def test_an_allowed_co_author_trailer_is_not_a_violation():
+    """A trailer crediting a DIFFERENT person is fine — `Asimov Agent` beside an Andy author is
+    two people doing one thing, which is what a co-author trailer is FOR. A trailer naming the
+    author's own person is the defect (issue #445, the next test)."""
     with tempfile.TemporaryDirectory() as td:
         repo = _repo(Path(td))
         _commit(repo, "feat(x): a change",
-                body="Co-authored-by: andyholst <andyholst@users.noreply.github.com>")
+                body="Co-authored-by: Asimov Agent <support@docondee.com>")
         bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
-    check("trailer: an allowed co-author trailer is not a violation", bad == [], str(bad))
+    check("trailer: a genuinely different co-author is not a violation", bad == [], str(bad))
+
+
+def test_a_trailer_naming_the_authors_own_person_is_a_violation():
+    """The #445 shape: the SAME person, twice in one message."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change",
+                body="Co-authored-by: andyholst <andy@holst.se>",
+                author="Andy <andy.holst@protonmail.com>")
+        bad = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("trailer: crediting the author's own person twice is refused",
+          any("credits ITS OWN author" in b for b in bad), str(bad))
+    # …and when the AUTHOR is itself a second spelling, that is refused as well — the spelling
+    # is what makes GitHub write the duplicate trailer in the first place.
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change", author="andyholst <andy@holst.se>")
+        bad2 = cca.scan(cca.collect(repo, "origin/master..HEAD"))
+    check("trailer: a non-canonical AUTHOR is refused",
+          any("second spelling" in b for b in bad2), str(bad2))
 
 
 def test_every_trailer_keyword_is_checked_not_only_co_authored_by():
@@ -298,6 +427,21 @@ def test_this_repository_never_credits_a_disallowed_identity():
     than the guard weakening its own git call.
     """
     import os
+    import subprocess
+
+    # The runner's container mounts the WORKTREE only, and a worktree's `.git` is a FILE pointing
+    # at the parent clone's `worktrees/<name>` directory — outside those mounts. git then answers
+    # `not a git repository` and the guard, correctly, refuses to read a range it cannot read
+    # (`GuardUnavailable`, exit 2). That is an artifact of this test environment, not of the rule,
+    # so it is reported as a skip WITH its reason — never silently — and CI's own checkout (a
+    # normal clone) exercises the strict form.
+    probe = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=str(ROOT),
+                           capture_output=True, text=True, env={**os.environ,
+                                                               "GIT_CONFIG_GLOBAL": "/dev/null"})
+    if probe.returncode != 0 and "not a git repository" in probe.stderr:
+        check("self-test: this repository's own commits pass the guard (skipped: git cannot "
+              "read this checkout from the test container — CI's clone covers it)", True)
+        return
 
     with tempfile.TemporaryDirectory() as td:
         cfg = Path(td) / "gitconfig"
@@ -328,6 +472,9 @@ def test_the_guard_is_wired_into_the_repo():
 
 def main() -> int:
     print("commit-authorship guard (scripts/check_commit_authorship.py, issue #317)")
+    test_a_commit_that_credits_its_own_author_twice_is_refused()
+    test_a_second_spelling_of_a_person_is_refused_with_the_canonical_pair()
+    test_the_real_master_history_would_have_been_caught()
     test_an_allowed_identity_is_not_a_violation()
     test_the_repos_own_bot_identity_is_not_a_violation()
     test_the_agents_own_identity_is_allowed()
@@ -336,6 +483,7 @@ def main() -> int:
     test_both_wrong_identities_are_reported_separately()
     test_the_hermes_co_author_trailer_is_a_violation()
     test_an_allowed_co_author_trailer_is_not_a_violation()
+    test_a_trailer_naming_the_authors_own_person_is_a_violation()
     test_every_trailer_keyword_is_checked_not_only_co_authored_by()
     test_a_trailer_naming_a_stranger_is_a_violation()
     test_an_unreadable_range_fails_loudly_not_silently()

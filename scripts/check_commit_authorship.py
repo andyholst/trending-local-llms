@@ -85,7 +85,8 @@ IDENTITY_RE = re.compile(r"^(?P<name>.*?)\s*<(?P<email>[^<>]*)>\s*$")
 #: automation (see the module docstring for why they cannot be refused).
 # The identity's ONE definition (issue #325): the name/email every committing job uses and
 # the sets this guard accepts. A hand-kept copy here was the fifth place to edit.
-from agent_identity import AGENT_EMAIL, AGENT_NAME, ALLOWED_EMAILS, ALLOWED_NAMES  # noqa: E402
+from agent_identity import (AGENT_EMAIL, AGENT_NAME, ALLOWED_EMAILS, ALLOWED_NAMES,  # noqa: E402
+                            canonical_for, person_of)
 
 #: Refused even when the name or the email is allowed: an identity that CLAIMS
 #: to be Hermes is the exact leak this guard exists for (issue #317).
@@ -129,6 +130,48 @@ def trailer_violations(message: str) -> list[str]:
     return bad
 
 
+def self_credit_violations(commit: dict) -> list[str]:
+    """Trailers that credit the SAME PERSON as the commit's author or committer (issue #445).
+
+    GitHub synthesizes a `Co-authored-by:` for every author inside a squashed PR that differs
+    from the merge actor — so a PR whose commits use a SECOND SPELLING of the person who
+    merges lands a commit that credits that person twice:
+
+        author=Andy <andy.holst@protonmail.com>
+        Co-authored-by: andyholst <andy@holst.se>
+
+    27 commits on master read exactly like that. A genuinely different person (Asimov Agent
+    beside an Andy author) is fine — this only refuses a message that repeats its own author.
+    """
+    people = {p["name"] for p in (person_of(commit.get("author", "")),
+                                  person_of(commit.get("committer", ""))) if p}
+    if not people:
+        return []
+    out: list[str] = []
+    for m in TRAILER_RE.finditer(commit.get("message", "")):
+        who = m.group("who")
+        person = person_of(who)
+        if person and person["name"] in people:
+            out.append(f"{m.group('key')}: {who}")
+    return out
+
+
+def spelling_violations(commit: dict) -> list[str]:
+    """Author/committer identities that are a NON-CANONICAL spelling of a known person (#445).
+
+    The allowlist answers "may this identity be credited?"; it never answered "is this one
+    person using several". A second spelling is what makes the merge synthesize the duplicate
+    trailer, so the guard names the canonical pair instead of only refusing the value.
+    """
+    out: list[str] = []
+    for role in ("author", "committer"):
+        ident = commit.get(role, "")
+        canonical = canonical_for(ident)
+        if canonical:
+            out.append(f"{role} identity {ident} is a second spelling of that person — use {canonical}")
+    return out
+
+
 def scan(commits: list[dict]) -> list[str]:
     """The violations in a list of `{sha, author, committer, subject, message}`."""
     bad: list[str] = []
@@ -146,6 +189,15 @@ def scan(commits: list[dict]) -> list[str]:
                 f"{sha}: commit message credits a disallowed co-author: {trailer} "
                 f"(subject: {c.get('subject', '')})"
             )
+        # ONE PERSON, ONE IDENTITY (issue #445): the same person twice in one message, and the
+        # non-canonical spelling that makes GitHub write that duplicate in the first place.
+        for trailer in self_credit_violations(c):
+            bad.append(
+                f"{sha}: the commit credits ITS OWN author a second time: {trailer} "
+                f"(one person, one identity — {c.get('subject', '')})"
+            )
+        for problem in spelling_violations(c):
+            bad.append(f"{sha}: {problem} (subject: {c.get('subject', '')})")
     return bad
 
 
