@@ -337,10 +337,12 @@ verify-closure:
 # target is how the sweep and a human reach it.
 .PHONY: _pr-health pr-health
 _pr-health:
-	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,)
+	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,) \
+		$(if $(REPAIR),--repair --max-fixbot-commits "$(if $(MAX_FIXBOT_COMMITS),$(MAX_FIXBOT_COMMITS),2)",)
 
 pr-health:
-	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)"
+	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)" REPAIR="$(REPAIR)" \
+		MAX_FIXBOT_COMMITS="$(MAX_FIXBOT_COMMITS)"
 
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }

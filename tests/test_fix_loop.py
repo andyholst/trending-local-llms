@@ -370,6 +370,65 @@ def test_a_round_that_changes_nothing_stops_the_loop():
     shutil.rmtree(repo, ignore_errors=True)
 
 
+def test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless():
+    """Issue #475: a base that moved onto the SAME lines used to make the loop give up at
+    once (`git merge --abort`), so the PR waited for a human. The conflict is now a REPAIR:
+    the hunks go into the report the round reads, the round runs, and the merge is completed
+    when the tree comes back clean — or aborted at the end, so nothing half-merged is pushed.
+    Real `git` in a real repository (rule 6m)."""
+    if not shutil.which("git") or not shutil.which("awk"):
+        print("  SKIP conflict repair: git/awk not installed")
+        return
+    root = Path(tempfile.mkdtemp())
+    origin, work, clone = root / "origin.git", root / "work", root / "clone"
+    ident = (("user.email", "t@example.com"), ("user.name", "t"))
+
+    def git(*args, cwd):
+        subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True)
+
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", str(work)], check=True)
+    for c in ident:
+        git("config", *c, cwd=work)
+    (work / "same-line.txt").write_text("base\n")
+    git("add", ".", cwd=work)
+    git("commit", "-qm", "base", cwd=work)
+    git("branch", "-M", "master", cwd=work)
+    git("remote", "add", "origin", str(origin), cwd=work)
+    git("push", "-q", "origin", "master", cwd=work)
+    subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
+    for c in ident:
+        git("config", *c, cwd=clone)
+
+    # The BRANCH edits the line…
+    (clone / "same-line.txt").write_text("branch wins\n")
+    git("commit", "-qam", "the branch edit", cwd=clone)
+    # …and so does the BASE, on the same line: a guaranteed conflict.
+    (work / "same-line.txt").write_text("base wins\n")
+    git("commit", "-qam", "the base edit", cwd=work)
+    git("push", "-q", "origin", "master", cwd=work)
+
+    rc, calls, report, out = run(red=99, rounds=1, base_merge="1", cwd=clone)
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=str(clone),
+                            capture_output=True, text=True).stdout
+    head = subprocess.run(["git", "log", "--oneline", "-1"], cwd=str(clone),
+                          capture_output=True, text=True).stdout
+
+    check("conflict: the loop NAMES the conflicted path", "CONFLICTED in: same-line.txt" in out, out[-600:])
+    check("conflict: a Hermes round is asked to resolve it", calls.count("fix") == 1, calls)
+    check("conflict: the report carries the hunks the round must resolve",
+          "<<<<<<<" in report and "same-line.txt" in report, report[-400:])
+    check("conflict: the report says generated artifacts are regenerated, not hand-merged",
+          "REGENERATED" in report, report[-400:])
+    check("conflict: unresolved after the rounds, the merge is ABORTED",
+          "aborted it" in out, out[-500:])
+    check("conflict: nothing half-merged is left in the tree",
+          "<<<<<<<" not in status and "UU" not in status, status)
+    check("conflict: the branch's own commit is untouched", "the branch edit" in head, head)
+    check("conflict: the loop stays red for a human", rc == 1, rc)
+    shutil.rmtree(root, ignore_errors=True)
+
+
 def main() -> int:
     if not shutil.which("bash"):
         print("SKIP: bash not available")
@@ -392,6 +451,7 @@ def main() -> int:
     test_base_merge_is_skipped_outside_a_checkout()
     test_the_base_is_merged_before_any_llm_round()
     test_a_round_that_changes_nothing_stops_the_loop()
+    test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

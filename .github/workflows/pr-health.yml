@@ -72,6 +72,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # REPAIR, not just alarm (issue #475): a silent PR on a `ci/…` branch is dispatched to
+      # fix-bot, whose loop merges the base and lets a Hermes round resolve the conflicts.
+      # This sweep is the ONLY trigger that fires for a conflicting PR — GitHub builds no
+      # merge commit, so `qa-validate` never runs and has no failure to react to. The owner
+      # PAT is required because dispatching a workflow is an Actions write.
+      - name: Dispatch the repair for a bot PR that cannot merge
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          MAX_FIXBOT_COMMITS: "2"
+        run: make pr-health REPO="$REPO" REPAIR=1 MAX_FIXBOT_COMMITS=2
+
       # The comment uses the DEFAULT token (rule 6b): the owner PAT has no Issues/PR-comment
       # scope here, and a refused comment would leave the sweep green over a silent PR.
       - name: Flag every silent open PR
