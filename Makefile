@@ -323,6 +323,14 @@ _git-identity:
 
 git-identity:
 	$(MAKE) _git-identity
+# After the MERGE: did the issue the body claimed to close actually close? `make pr-closure`
+# PREDICTS it; this proves it (issue #288 — PR #272 left #276 open with every job green).
+.PHONY: _verify-closure verify-closure
+_verify-closure:
+	python3 scripts/verify_closure.py --pr "$(PR)" $(if $(REPO),--repo "$(REPO)",)
+
+verify-closure:
+	$(MAKE) _verify-closure PR="$(PR)" REPO="$(REPO)"
 
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }

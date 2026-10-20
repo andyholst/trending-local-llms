@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **91** · archived: **0**
+Active changes: **93** · archived: **0**
 
 ## Active changes
 
@@ -42,6 +42,7 @@ Active changes: **91** · archived: **0**
 | `data-gap-measurement-dimensions` | active | #376 — `data-gap: storage_offload (38 models)` | — | [data-gap-capture](openspec/changes/data-gap-measurement-dimensions/specs/data-gap-capture/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-measurement-dimensions/proposal.md) |
 | `data-gap-storage-offload` | active | #364 — `data-gap: storage_offload (41 models)` | — | [data-gap-backfill](openspec/changes/data-gap-storage-offload/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-storage-offload/proposal.md) |
 | `engine-meta-capture-at-ingest` | active | #334 | — | [engine-meta-capture](openspec/changes/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/engine-meta-capture-at-ingest/proposal.md) |
+| `fetch-base-before-any-work` | active | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/fetch-base-before-any-work/proposal.md) |
 | `findings-field-bodies` | active | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/findings-field-bodies/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `fix-bot-announces-its-window` | active | — | — | [bot-coordination](openspec/changes/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-bot-announces-its-window/proposal.md) |
@@ -100,6 +101,7 @@ Active changes: **91** · archived: **0**
 | `unstructured-is-not-a-capacity` | active | #213 (the finding, measured while attempting its backfill) | — | [data-gap-analysis](openspec/changes/unstructured-is-not-a-capacity/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/unstructured-is-not-a-capacity/proposal.md) |
 | `verdict-hold-ceiling` | active | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | active | — | — | [ci-output-safety](openspec/changes/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/verdict-output-format/proposal.md) |
+| `verify-the-issue-closed` | active | #288 — `tech-debt: No post-merge step verifies the referenced issue actually closed` | — | [pr-ci](openspec/changes/verify-the-issue-closed/specs/pr-ci/spec.md) | 9/9 | [proposal.md](openspec/changes/verify-the-issue-closed/proposal.md) |
 | `vram-card-fit` | active | — | — | [card-fit](openspec/changes/vram-card-fit/specs/card-fit/spec.md) | 15/15 | [proposal.md](openspec/changes/vram-card-fit/proposal.md) |
 | `vram-min-prose` | active | #431 — `tech-debt: a prose vram_min is published as its first number (32GB GPU + system RAM -> 32GB)` | — | [card-fit](openspec/changes/vram-min-prose/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/vram-min-prose/proposal.md) |
 | `vram-need-cpu-marker` | active | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/vram-need-cpu-marker/proposal.md) |

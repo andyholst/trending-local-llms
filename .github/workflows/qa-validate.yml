@@ -279,6 +279,12 @@ jobs:
       group: auto-merge-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
+      # The job calls `make` (the closure proof below), and `make` needs the Makefile: a
+      # `make` call in a job that never checked the repository out dies with
+      # `No targets specified and no makefile found` (the measured class of issue #281).
+      - name: Checkout
+        uses: actions/checkout@v4
+
       # Squash-merge ONLY the exact commit that was validated (--match-head-commit):
       # a push after this run started leaves the PR open for the newer run.
       # Owner PAT, not GITHUB_TOKEN: a merge made with GITHUB_TOKEN starts no
@@ -296,4 +302,9 @@ jobs:
             exit 0
           fi
           gh pr merge "$PR_NUM" --repo "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          # Then PROVE what the merge closed (issue #288): `make pr-closure` predicts it, this
+          # reads the merged PR's own closing references a moment later. A body whose keyword
+          # did not bind (the measured `Closes #271 and #276`) leaves a red run instead of a
+          # green one over an issue that is still open.
+          make verify-closure PR="$PR_NUM" REPO="$REPO"
           echo "Merged PR #$PR_NUM at $HEAD_SHA (validate + live-smoke green)"
