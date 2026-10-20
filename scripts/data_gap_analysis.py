@@ -63,6 +63,37 @@ LABEL_DESCRIPTION = "Post-refresh data-gap analysis (missing requirement dimensi
 # Requirement dimensions the index SHOULD carry. `key` is the structured key the
 # contract must declare for the dimension to be representable at all; `text` is
 # how the figure shows up today when it is only prose (measured on the store).
+
+# A capacity that is QUALIFIED as MEMORY is not a weight footprint: `16GB on VRAM`,
+# `60GB RAM`, `256GB unified memory` name the machine, not the weights. #213 fixed
+# the BARE capacity; this piece closes the same claim when a weights word happens to
+# sit nearby — `"MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM"` put `GGUF`
+# within 24 characters of a card's VRAM and was reported as a weights figure (#456).
+_WEIGHT_CAPACITY = (r"\d[\d,]*(?:\.\d+)?\s*(?:gb|mb)\b"
+                    r"(?!\s*(?:on\s+)?(?:vram|ram|system\s+ram|unified|ddr\d|gddr\d))")
+
+# A context window is a FIGURE the number MODIFIES, never the topic word:
+# `80k context`, `256K ctx.`, `262,144-token context`, `context window 131072` and
+# `64K kv cache` state one; `context lookup`, `kv-cache q4_0` and a `25K-token
+# document reproduction` do not, and `30 tok/s` is throughput. The old pattern
+# matched ANY `context`/`kv-cache` word or a bare `NN k`, which reported four models
+# as stating a window in prose that is not there (#456).
+_CTX_TEXT = re.compile(
+    r"\b\d[\d,]*(?:\.\d+)?\s*(?:[km])?\s*[- ]?(?:tokens?\s+)?(?:context(?:\s+window)?|ctx|kv[- ]?cache)\b"
+    r"|\b(?:context(?:\s+window)?|ctx|kv[- ]?cache)\b(?:\s+size)?\s*(?:of\s+|[:=]\s*|at\s+)?"
+    r"\d[\d,]*(?:\.\d+)?\s*(?:[km]\b|[- ]?(?:tokens?|tok)(?!/s)\b)"
+    r"|\b(?:context(?:\s+window)?|ctx)\b(?:\s+size)?\s*(?:of\s+|[:=]\s*|at\s+)?\d{4,}\b",
+    re.I)
+
+# `flash` alone is not a storage medium — `Flash Attention` is an attention KERNEL,
+# and reading it as an SSD reported `"GPU offload, Flash Attention, 262,144-token
+# context"` as a storage requirement (#456).
+_STORAGE_MEDIUM = r"(?:ssd|nvme|flash[- ]?(?:storage|memory|drive)|disk|hdd|storage)"
+_STORAGE_TEXT = re.compile(
+    rf"\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b[^.\n]{{0,32}}\b{_STORAGE_MEDIUM}\b"
+    rf"|\b{_STORAGE_MEDIUM}\b[^.\n]{{0,32}}\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b",
+    re.I)
+
 DIMENSIONS = (
     {
         "key": "system_ram_min",
@@ -77,10 +108,10 @@ DIMENSIONS = (
         # 256GB" is unified memory, "67K-token prompt" is context. Counting those as
         # `unstructured` reported 18 claims that do not exist and sent a backfill hunting for
         # weights in text that never stated one (issue #213). The number must sit next to a
-        # weights word.
+        # weights word, and a capacity qualified as memory is refused whatever is beside it.
         "text": re.compile(
-            r"\b(?:weights?|gguf|quants?|on[- ]disk|file size)\b[^.\n]{0,24}\b\d+(?:\.\d+)?\s*(?:gb|mb)\b"
-            r"|\b\d+(?:\.\d+)?\s*(?:gb|mb)\b[^.\n]{0,24}\b(?:weights?|gguf|quants?|on[- ]disk)\b",
+            rf"\b(?:weights?|gguf|quants?|on[- ]disk|file size)\b[^.\n]{{0,24}}\b{_WEIGHT_CAPACITY}"
+            rf"|\b{_WEIGHT_CAPACITY}[^.\n]{{0,24}}\b(?:weights?|gguf|quants?|on[- ]disk)\b",
             re.I),
         # `hardware` names the CARD, never the weights (a GPU's VRAM would be read as a
         # footprint the run does not have).
@@ -90,7 +121,7 @@ DIMENSIONS = (
     {
         "key": "context_tokens",
         "label": "context window / KV-cache cost",
-        "text": re.compile(r"\b\d+\s*k\b|\bcontext\b|\bkv[- ]?cache\b", re.I),
+        "text": _CTX_TEXT,
         "why": "KV cache scales with context and consumes RAM and VRAM alike",
     },
     {
@@ -102,10 +133,7 @@ DIMENSIONS = (
         # (`\bssd\b|\bdisk\b|\boffload`) flagged all of them, so five models were re-filed
         # as a storage gap on every refresh and a reader could not tell a storage
         # requirement from a memory one (issues #413/#367).
-        "text": re.compile(
-            r"\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b[^.\n]{0,32}\b(?:ssd|nvme|flash|disk|hdd|storage)\b"
-            r"|\b(?:ssd|nvme|flash|disk|hdd|storage)\b[^.\n]{0,32}\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b",
-            re.I),
+        "text": _STORAGE_TEXT,
         "why": "MoE engines (Strata) run big models by streaming experts from storage",
     },
     {
@@ -185,13 +213,20 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
                 continue
             # free text lives on the model (quant/why) AND on every measurement
             # (a figure written into a measurement's `quant` is exactly the case
-            # measured on the store: "1432 MB peak RAM")
+            # measured on the store: "1432 MB peak RAM").
             fields = [f for f in TEXT_FIELDS if f not in dim.get("skip_fields", ())]
-            hay = " ".join(str(m.get(f, "")) for f in fields)
-            hay += " ".join(str(e.get(f, "")) for e in (m.get("engines") or []) for f in fields)
-            hay += " ".join(str((store.get("engines") or {}).get(n, {}).get("note", ""))
-                            for n in (m.get("supported_engines") or []))
-            if dim["text"].search(hay):
+            # One field at a time, never a CONCATENATION: a "within N characters"
+            # pattern applied to joined fields matches two words that never shared a
+            # sentence (issue #456).
+            texts = [str(m.get(f, "")) for f in fields]
+            texts += [str(e.get(f, "")) for e in (m.get("engines") or []) for f in fields]
+            # An engine's registry NOTE is not this model's prose: it is one sentence
+            # about the ENGINE, identical for every model that names it, so it cannot
+            # be evidence about a model's own footprint (#456 — the DFlash2 note's
+            # "context-lookup" made three models look like they stated a context
+            # window, and turned one engine-wide sentence into per-model signature
+            # entries).
+            if any(dim["text"].search(t) for t in texts):
                 text_models.append(m.get("id", "?"))
         unstructured[key] = text_models
 
