@@ -329,6 +329,22 @@ Triggers are `workflow_dispatch` only — no `schedule`, no `pull_request`, no
 `push`, no `workflow_run` — so a refresh can never publish the toolchain and a PR
 can never trigger a publish copy. It never merges and never pushes a branch.
 
+### `.github/workflows/pr-closure.yml` — the closure check on the artifact it reads (PR only)
+
+`make pr-closure`'s input is the PR **body**, and a body changes without a new commit
+(issue #290). `qa-validate` triggers on GitHub's default `pull_request` types, so an edit was
+never re-checked and a body that broke its closure kept a green check.
+
+- **`guard`** — the FIRST job (rule 6j); `pull_request` is a repository event, so it is admitted
+  outright (the same clause `qa-validate`'s guard carries).
+- **`closure`** (`needs: guard`) — `actions/checkout` then `make pr-closure`, which reads the
+  webhook payload by path (`$GITHUB_EVENT_PATH`, the Makefile's `PR_EVENT` default); an
+  `edited` event carries the **new** body, so the verdict always describes what is on screen.
+
+Two jobs, seconds long, read-only (no push, no comment, no merge). Its own pipeline on purpose:
+adding `edited` to `qa-validate` would re-run the image builds, the unit suite and the
+30-minute network-bound `live-smoke` — a real Firecrawl spend — because a sentence changed.
+
 ### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
 
 `concurrency: queued-alarm` (queued, never cancelled). A job whose runner label matches nothing
