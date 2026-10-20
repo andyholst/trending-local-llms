@@ -6,7 +6,8 @@ produced ... reasoning consumed the entire budget'. Root cause: the endpoint
 capped the then-current SKU at 65,536 output tokens (our 384000 was silently
 clamped) and effort 'low' still reasons; only reasoning OFF gives 0 reasoning
 tokens. Plus the prompt built one giant final payload. The pin has since moved
-to deepseek/deepseek-v4.1-flash, which declares NO max_completion_tokens — so
+to the dated deepseek/deepseek-v4.1-flash-1017, which declares NO
+max_completion_tokens — so
 HERMES_MAX_TOKENS keeps the conservative 65,536 until a live measurement.
 
   - test_makefile_budget_settings     searches --reasoning none, fix low, max_tokens <= 65536
@@ -34,7 +35,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import model_caps_check as MC  # noqa: E402
 import update_trending as UT  # noqa: E402
 
-MODEL = "deepseek/deepseek-v4.1-flash"
+MODEL = "deepseek/deepseek-v4.1-flash-1017"
+# The UNDATED family alias the endpoint ALSO serves. Pinning it lets the provider
+# repoint the model under a published image whose tag, budget and measured caps
+# all stay put — the install-URL defect (#218) one layer down — so the pin must
+# be the dated snapshot.
+FLOATING = "deepseek/deepseek-v4.1-flash"
 # The retired pin, split so THIS guard file never matches its own scan.
 OLD_MODEL = "deepseek/deepseek-v4-flash" + "-0731"
 _PASS = 0
@@ -101,6 +107,12 @@ def test_no_stale_model_pin():
              if (ROOT / rel).exists() and OLD_MODEL in (ROOT / rel).read_text(errors="ignore")]
     check("pin: no retired SKU left in the pipeline files", not stale, stale)
     check("pin: the current SKU is named in the Makefile", MODEL in (ROOT / "Makefile").read_text())
+    # The pin is the DATED snapshot, never the floating family alias: an alias can
+    # be repointed while every artifact that records the pin still says the same
+    # thing, so a bump back to it must go red here rather than silently at run time.
+    pin = mkvar("HERMES_MODEL")
+    check("pin: the pin is the dated snapshot, not the floating alias",
+          pin == MODEL and pin != FLOATING, pin)
 
 
 def test_prompts_write_per_query():

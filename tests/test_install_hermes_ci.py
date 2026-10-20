@@ -329,7 +329,7 @@ def test_the_alias_check_passes_on_the_pin_and_fails_on_a_different_one():
 
     # Given a stub hermes answering the pinned values, and one answering others
     good = ("#!/usr/bin/env bash\ncase \"$3\" in\n"
-            "  *.model) echo deepseek/deepseek-v4.1-flash;;\n"
+            "  *.model) echo deepseek/deepseek-v4.1-flash-1017;;\n"
             "  *.provider) echo custom;;\n"
             "  *.base_url) echo \"https://inference-api.nousresearch.com/v1\";;\n"
             "  *.key_env) echo NOUS_API_KEY;;\n"

@@ -637,8 +637,11 @@ The README is **generated**, not hand-maintained:
   then auto-routes to whatever provider key is in the env (`HF_TOKEN` →
   Hugging Face → HTTP 403). Prose inside a prompt uses single quotes; only the
   JSON body uses `\"`.
-- **Model budget (measured, not assumed).** The pinned model is
-  `deepseek/deepseek-v4.1-flash`.
+- **Model budget (measured, not assumed).** The pinned model is the DATED
+  snapshot `deepseek/deepseek-v4.1-flash-1017`, never the floating
+  `deepseek/deepseek-v4.1-flash` alias: the endpoint serves both, and an alias
+  can be repointed under us while the image, the tag and the measured budget
+  all say nothing changed (the same defect as the install URL pin, #218).
   The **65,536**-token cap was measured on the PREVIOUS pin of the same family
   (`/v1/models` → `max_completion_tokens`); V4.1 Flash declares no
   `max_completion_tokens`, so `HERMES_MAX_TOKENS := 65536` stays conservative
@@ -911,8 +914,8 @@ unescaped pipes only.
 ## 6. Refresh workflow — GitHub Actions invoking the Hermes CLI
 
 The refresh is driven by the **GitHub Actions pipelines** (`refresh-bot.yml`,
-`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4.1-flash via the
-Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
+`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4.1-flash-1017 via
+the Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
 this `AGENTS.md` and the `gather-data` skill, then:
 
 1. Runs the **four search groups** against **lightbrd.com only**, fetched via
