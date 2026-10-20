@@ -1927,7 +1927,6 @@ def test_gh_before_the_checkout_names_the_repo():
 
 
 
-<<<<<<< HEAD
 def test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result():
     """Issue #432: `pull_request` checks out the MERGE COMMIT by default, so `make
     openspec-check` compared the index with a tree carrying every OTHER open change and
@@ -1943,7 +1942,7 @@ def test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result():
           "github.sha" in ref, ref)
     check("qa-validate: full history is still fetched (authorship guard, #317)",
           str((checkout.get("with") or {}).get("fetch-depth")) == "0", checkout.get("with"))
-=======
+
 #: Pipelines no PR runs at all: `schedule` / `workflow_dispatch` only, so a broken edit to one
 #: is invisible to the PR that makes it — qa-validate never executes it (issue #231). Each MUST
 #: name the test module that exercises its logic inside `make test`, and the map is itself
@@ -2017,7 +2016,6 @@ def test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage():
                     if not (m.startswith("tests/test_") and m.endswith(".py"))]
     check("pipelines: every coverage module is one the test runner discovers",
           not undiscovered, undiscovered)
->>>>>>> origin/master
 
 
 def main() -> int:
