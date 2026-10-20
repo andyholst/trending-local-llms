@@ -171,12 +171,38 @@ def test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard():
     # (rule 6b): the owner PAT has no PR scope, so a refused comment would leave the sweep
     # green over a silent PR.
     check("silent: it may comment (pull-requests: write)", "pull-requests: write" in wf, "")
-    check("silent: the comment uses the default token",
-          "GH_TOKEN: ${{ github.token }}" in wf and "FIXBOT_DISPATCH_TOKEN" not in wf, "")
+    # TWO tokens, deliberately (issue #475): the COMMENT uses the default token (rule 6b —
+    # the owner PAT has no comment scope), while DISPATCHING a workflow is an Actions write
+    # and needs the PAT. Each step must carry its own.
+    comment_step = wf[wf.index("Flag every silent open PR"):]
+    repair_step = wf[wf.index("Dispatch the repair"):wf.index("Flag every silent open PR")]
+    check("silent: the comment step uses the default token",
+          "GH_TOKEN: ${{ github.token }}" in comment_step, comment_step[:300])
+    check("silent: the repair step uses the owner PAT (dispatching is an Actions write)",
+          "FIXBOT_DISPATCH_TOKEN" in repair_step, repair_step[:300])
+    check("silent: the repair step asks the target for a repair",
+          "REPAIR=1" in repair_step, repair_step[:300])
     # The #231 coverage map must name it: no PR runs a cron-only pipeline.
     tw = (ROOT / "tests" / "test_workflows.py").read_text()
     check("silent: it is classified in DISPATCH_ONLY_COVERAGE",
           '"pr-health.yml"' in tw, "")
+
+
+def test_only_a_bot_branch_is_repaired_and_the_cap_holds():
+    """Issue #475: the sweep REPAIRS a `ci/…` PR itself (a conflicting PR runs no workflows,
+    so this is the only trigger that fires) and never touches a human's branch, where the
+    bot would be pushing someone else's work."""
+    silent = [
+        {"number": 1, "head": "ci/trending-refresh-20261020-1136", "reasons": ["x"]},
+        {"number": 2, "head": "ci/data-gap-449-x", "reasons": ["x"]},
+        {"number": 3, "head": "fix/hardware-is-not-an-engine", "reasons": ["x"]},
+        {"number": 4, "head": "", "reasons": ["x"]},
+    ]
+    picked = [f["number"] for f in PH.repair_targets(silent)]
+    check("repair: both ci/ branches are dispatched", picked == [1, 2], picked)
+    check("repair: a human's branch is left alone", 3 not in picked, picked)
+    check("repair: an empty head is never dispatched", 4 not in picked, picked)
+    check("repair: every silent PR is still reported", len(silent) == 4, "")
 
 
 def main() -> int:
@@ -189,6 +215,7 @@ def main() -> int:
     test_the_decision_is_pure_and_the_reasons_are_separate()
     test_a_gh_failure_is_loud()
     test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard()
+    test_only_a_bot_branch_is_repaired_and_the_cap_holds()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

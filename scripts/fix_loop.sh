@@ -52,6 +52,11 @@ FIX_TIMEOUT="${HERMES_FIX_TIMEOUT:-1800}"
 # red because the BASE moved, not because its own data is wrong.
 BASE="${FIX_BASE:-master}"
 FIX_BASE_MERGE="${FIX_BASE_MERGE:-1}"
+# A CONFLICTED base merge is a REPAIR, not a reason to give up (issue #475): the hunks are
+# written here, a Hermes round resolves them, and the merge is completed — or aborted at the
+# very end, so a branch that could not be resolved is never pushed half-merged.
+CONFLICT_REPORT="$(mktemp "${TMPDIR:-/tmp}/fix-loop-conflict.XXXXXX")"
+BASE_CONFLICT_PENDING=0
 # Fast -> slow; stop at the FIRST red check (its output is what Hermes needs).
 # The full unit suite (make test, ~minutes) only runs once everything else is
 # green — it used to run before every Hermes round.
@@ -70,6 +75,18 @@ BUDGET_SIG='reasoning consumed the entire budget|No visible answer was produced'
 # below 40 noise lines and fed them to Hermes as if they were failures.
 run_checks() {
 	: >"$REPORT"
+	# An unresolved base merge is RED by definition (issue #475): the tree carries conflict
+	# markers, so no check on it means anything. This also keeps a lenient/stubbed check from
+	# reporting the branch GREEN while `git` still has an unmerged index.
+	if [ "${BASE_CONFLICT_PENDING:-0}" = "1" ]; then
+		{
+			echo "=== base merge conflict: unresolved ==="
+			echo "unmerged paths: $(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')"
+			[ -s "$CONFLICT_REPORT" ] && cat "$CONFLICT_REPORT"
+		} >>"$REPORT"
+		[ -s "$NOTES" ] && cat "$NOTES" >>"$REPORT"
+		return 1
+	fi
 	local t out passed=()
 	out="$(mktemp)"
 	for t in "${CHECKS[@]}" test; do
@@ -84,6 +101,8 @@ run_checks() {
 			echo "=== make $t: FAILED ==="
 		} >>"$REPORT"
 		[ -s "$NOTES" ] && cat "$NOTES" >>"$REPORT"
+		# A pending base-merge conflict is part of what this round must fix (issue #475).
+		[ "${BASE_CONFLICT_PENDING:-0}" = "1" ] && [ -s "$CONFLICT_REPORT" ] && cat "$CONFLICT_REPORT" >>"$REPORT"
 		rm -f "$out"
 		return 1
 	done
@@ -152,8 +171,26 @@ merge_base() {
 	if git merge --no-edit FETCH_HEAD >/dev/null 2>&1; then
 		echo "[fix-loop] merged origin/$BASE ($behind commit(s)) — a failure the base already fixed now needs no LLM round"
 	else
-		git merge --abort >/dev/null 2>&1 || true
-		echo "[fix-loop] merging origin/$BASE conflicted — leaving the branch as it was and repairing its own tree"
+		local conflicted
+		conflicted="$(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')"
+		echo "[fix-loop] merging origin/$BASE CONFLICTED in: ${conflicted:-<unreadable>} — a Hermes round resolves it (issue #475)"
+		{
+			echo "=== base merge conflict: origin/$BASE moved while this branch was open ==="
+			echo "Resolve these paths, keep BOTH sides' intent, and remove every conflict marker:"
+			echo "  ${conflicted:-<git could not list them>}"
+			echo
+			echo "Generated artifacts (data/models.json, README.md, data/snapshots/*) are"
+			echo "REGENERATED, never hand-merged: keep this branch's copy and re-run the"
+			echo "generator, or keep the base's and re-run make merge. Never leave a conflict"
+			echo "marker inside the store or the README."
+			echo
+			for f in $(git diff --name-only --diff-filter=U 2>/dev/null); do
+				echo "===== $f ====="
+				awk '/^<<<<<<< /,/^>>>>>>> /' "$f" 2>/dev/null | head -80
+				echo
+			done
+		} >"$CONFLICT_REPORT" 2>&1 || true
+		BASE_CONFLICT_PENDING=1
 	fi
 	return 0
 }
@@ -214,6 +251,19 @@ for ((round = 1; round <= ROUNDS; round++)); do
 	prev_sig="$sig"
 	echo "--- fix-bot round $round/$ROUNDS: hermes fix (reads $REPORT) ---"
 	run_fix || echo "[fix-loop] make fix exited non-zero; re-checking anyway"
+	# The conflict the round was asked to resolve (issue #475): if every conflicted path is
+	# clean now, COMPLETE the merge, so the branch carries the base and the next check runs on
+	# the real tree. If it is still conflicted, the next round gets it again.
+	if [ "${BASE_CONFLICT_PENDING:-0}" = "1" ]; then
+		if [ -z "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
+			git add -A >/dev/null 2>&1 || true
+			git -c core.editor=true commit --no-edit -q >/dev/null 2>&1 || true
+			echo "[fix-loop] the base merge conflict is resolved — merge completed"
+			BASE_CONFLICT_PENDING=0
+		else
+			echo "[fix-loop] still conflicted in: $(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')"
+		fi
+	fi
 done
 
 echo "--- fix-bot: final check after $ROUNDS fix round(s) ---"
@@ -222,5 +272,12 @@ if run_checks; then
 	exit 0
 fi
 echo "[fix-loop] still RED after $ROUNDS fix round(s) — leaving for manual review"
+# A merge that could not be resolved is ABORTED, so the workflow's push can never carry a
+# tree with conflict markers in it (issue #475): a half-merged branch is worse than a red PR.
+if [ "${BASE_CONFLICT_PENDING:-0}" = "1" ]; then
+	git merge --abort >/dev/null 2>&1 || true
+	echo "[fix-loop] the base merge could not be resolved in $ROUNDS round(s) — aborted it, so nothing half-merged is pushed"
+	{ echo "[fix-loop] the base merge could not be resolved — aborted; the branch is unchanged."; } >>"$REPORT"
+fi
 summary
 exit 1

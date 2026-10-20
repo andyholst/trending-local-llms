@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import subprocess
 import sys
 
@@ -68,6 +70,45 @@ def findings(prs: list[dict], runs_for: dict[int, int]) -> list[dict]:
     return out
 
 
+#: Branches this repo's bots push. A PR from one of them can be REPAIRED by the bot
+#: (issue #475); a human's branch is only reported, because the loop would push to it.
+BOT_BRANCH = re.compile(r"^ci/")
+
+
+def repair_targets(silent: list[dict]) -> list[dict]:
+    """The silent PRs a bot may repair itself — its own `ci/…` branches, nothing else.
+
+    A conflicting PR runs NO workflows (issue #442), so `qa-validate` can never dispatch
+    `fix-bot` for it: the only trigger that fires is this sweep. Naming the rule here keeps
+    it testable without a network (rule 6d), and a human's branch is left alone.
+    """
+    return [f for f in silent if BOT_BRANCH.match(str(f.get("head") or ""))]
+
+
+def fixbot_commits(repo: str, number: int) -> int:
+    """How many `fix-bot:` commits the PR already carries (the dispatcher's cap, issue #383)."""
+    commits = _gh_json(["api", f"repos/{repo}/pulls/{number}/commits?per_page=100",
+                        "--jq", '[.[] | select(.commit.message | startswith("fix-bot:"))] | length'])
+    return int(commits or 0)
+
+
+def dispatch_repair(repo: str, f: dict, cap: int) -> str:
+    """Dispatch `fix-bot` for ONE silent PR. Returns what happened, for the log."""
+    number = int(f["number"])
+    try:
+        done = fixbot_commits(repo, number)
+    except (RuntimeError, ValueError) as exc:
+        return f"could not count fix-bot commits ({exc})"
+    if done >= cap:
+        return f"{done} fix-bot commit(s) already, cap {cap} — left for a human"
+    try:
+        _gh(["workflow", "run", "fix-bot.yml", "--repo", repo,
+             "-f", f"pr_number={number}", "-f", f"branch={f['head']}"])
+    except RuntimeError as exc:
+        return f"dispatch failed ({exc})"
+    return "dispatched fix-bot"
+
+
 def comment_body(f: dict) -> str:
     lines = [f"<!-- {MARKER} -->", "**This pull request is silent** (issue #442):", ""]
     lines += [f"- {r}" for r in f["reasons"]]
@@ -88,6 +129,12 @@ def main() -> int:
     ap.add_argument("--repo", default=None, help="owner/name (default: gh's own resolution)")
     ap.add_argument("--comment", action="store_true",
                     help="leave ONE deduplicated comment per affected PR")
+    ap.add_argument("--repair", action="store_true",
+                    help="dispatch fix-bot for a silent PR on a bot branch (issue #475); "
+                         "capped at MAX_FIXBOT_COMMITS fix-bot commits per PR")
+    ap.add_argument("--max-fixbot-commits", type=int,
+                    default=int(os.environ.get("MAX_FIXBOT_COMMITS", "2")),
+                    help="fix-bot commits allowed per PR before the sweep stops (default 2)")
     args = ap.parse_args()
 
     repo_args = ["--repo", args.repo] if args.repo else []
@@ -115,14 +162,27 @@ def main() -> int:
     if not silent:
         return 0
 
+    repo = args.repo or ""
+    if not repo and (args.comment or args.repair):
+        try:
+            repo = (_gh_json(["repo", "view", "--json", "nameWithOwner"]) or {}).get(
+                "nameWithOwner", "")
+        except (RuntimeError, ValueError):
+            repo = ""
+
+    # REPAIR FIRST (issue #475): a bot-owned PR that cannot merge because its base moved is
+    # a job for the bot, not for a human — and this sweep is the only trigger that fires at
+    # all for a conflicting PR. The comment below stays as the record (and as the fallback
+    # when the cap is reached or the branch is not ours).
+    if args.repair and repo:
+        targets = repair_targets(silent)
+        others = len(silent) - len(targets)
+        print(f"[pr-health] repair: {len(targets)} bot PR(s) dispatchable"
+              + (f", {others} left for a human (not a ci/ branch)" if others else ""))
+        for f in targets:
+            print(f"  #{f['number']} {f['head']}: {dispatch_repair(repo, f, args.max_fixbot_commits)}")
+
     if args.comment:
-        repo = args.repo or ""
-        if not repo:
-            try:
-                repo = (_gh_json(["repo", "view", "--json", "nameWithOwner"]) or {}).get(
-                    "nameWithOwner", "")
-            except (RuntimeError, ValueError):
-                repo = ""
         for f in silent:
             try:
                 if repo and has_our_marker(repo, f["number"]):
