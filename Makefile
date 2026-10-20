@@ -313,6 +313,16 @@ architecture-check: ## Fail when ARCHITECTURE.md misses a make target, a workflo
 # payload by PATH so nothing is ever interpolated into a run: block.
 PR_EVENT ?= $(GITHUB_EVENT_PATH)
 
+# The repository's agent identity has ONE definition (scripts/agent_identity.py, issue #325):
+# every committing job calls this seam, and the authorship guard reads the same module. A new
+# committing workflow therefore inherits the identity by construction, and a change to the
+# address is one edit.
+.PHONY: _git-identity git-identity
+_git-identity:
+	python3 scripts/agent_identity.py --git-config
+
+git-identity:
+	$(MAKE) _git-identity
 # After the MERGE: did the issue the body claimed to close actually close? `make pr-closure`
 # PREDICTS it; this proves it (issue #288 — PR #272 left #276 open with every job green).
 .PHONY: _verify-closure verify-closure

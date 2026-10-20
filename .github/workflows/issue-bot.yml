@@ -358,8 +358,7 @@ jobs:
         run: |
           # The repo's own agent identity (issue #323, guard scripts/check_commit_authorship.py):
           # the only identities here are Andy Holst and Asimov Agent.
-          git config user.name "Asimov Agent"
-          git config user.email "support@docondee.com"
+          make git-identity
           # The container writes files as root; make them committable.
           sudo chown -R "$(id -u):$(id -g)" .
           # One branch per issue: a re-run RESUMES the issue's branch instead of
@@ -519,8 +518,7 @@ jobs:
         run: |
           # The repo's own agent identity (issue #323, guard scripts/check_commit_authorship.py):
           # the only identities here are Andy Holst and Asimov Agent.
-          git config user.name "Asimov Agent"
-          git config user.email "support@docondee.com"
+          make git-identity
           sudo chown -R "$(id -u):$(id -g)" .
           git add -A
           git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md implement.log implement.scrubbed.log 2>/dev/null || true

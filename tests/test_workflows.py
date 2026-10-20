@@ -34,6 +34,7 @@ except ImportError:  # pragma: no cover
     raise SystemExit(0)
 
 sys.path.insert(0, str(ROOT / "scripts"))
+import agent_identity as _AI  # the identity's ONE definition (issue #325)
 from update_trending import SEARCH_LEGS  # noqa: E402  ('nvidia', 'metal', 'cpu', 'amd')
 import pr_closure  # noqa: E402  the pipeline's OWN closure parser (issue #289)
 
@@ -243,11 +244,13 @@ def test_fix_bot():
           "set +e" in loop.get("run", "") and "green=" in loop.get("run", ""), "")
     push = step(job, "commit + push")
     check("fix: push gated on a green loop", "green == 'true'" in str(push.get("if", "")), push.get("if"))
-    check("fix: git identity configured before commit",
-          "git config user.name" in push.get("run", "") and "git config user.email" in push.get("run", ""), "")
+    # The identity comes through ONE seam (issue #325): `make git-identity` sets it from
+    # scripts/agent_identity.py, so the step never spells out the name or the address.
+    check("fix: the git identity is set before the commit",
+          "make git-identity" in push.get("run", ""), push.get("run", "")[:200])
     check("fix: it commits as the repo's own agent, not github-actions[bot]",
-          f'git config user.name "{AGENT_NAME}"' in push.get("run", "")
-          and f'git config user.email "{AGENT_EMAIL}"' in push.get("run", ""), push.get("run", "")[:200])
+          "github-actions" not in push.get("run", "")
+          and f'user.email "{AGENT_EMAIL}"' not in push.get("run", ""), push.get("run", "")[:200])
     check("fix: commit message prefix matches qa-validate's cap counter",
           'git commit -m "fix-bot:' in push.get("run", ""), "")
     check("fix: push step has an id (the report reads its outcome)", push.get("id") == "push", push.get("id"))
@@ -294,6 +297,16 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
         bin_.mkdir()
         (bin_ / "sudo").write_text('#!/bin/sh\nexec "$@"\n')
         (bin_ / "sudo").chmod(0o755)
+        # The identity seam (issue #325): this clone carries no Makefile (it is a minimal
+        # repo on purpose — the PUSH step is what is under test), so the one target the step
+        # calls is mapped to the real definition rather than stubbed by hand.
+        (bin_ / "make").write_text(
+            "#!/bin/sh\n"
+            'case "$1" in\n'
+            f'  git-identity) exec python3 "{ROOT / "scripts" / "agent_identity.py"}" --git-config ;;\n'
+            '  *) echo "unexpected target: $1" >&2; exit 2 ;;\n'
+            "esac\n")
+        (bin_ / "make").chmod(0o755)
         env = dict(os.environ, PATH=f"{bin_}:{os.environ['PATH']}", BRANCH="ci/x",
                    GITHUB_OUTPUT=str(td / "out"), HOME=str(td))
         p = subprocess.run(["bash", "-e", "-c", push["run"]], cwd=wc, env=env, capture_output=True, text=True)
@@ -505,6 +518,10 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
             '  worktree-new|worktree-resume)\n'
             f'    exec python3 "{ROOT / "scripts" / "worktree_base.py"}" "${{1#worktree-}}"'
             ' --branch "$BRANCH" --in-place ;;\n'
+            # The identity seam (issue #325): the push step sets the repo-local committer
+            # identity through `make git-identity`, which is a plain git config.
+            '  git-identity)\n'
+            '    git config user.name "Asimov Agent" && git config user.email "support@docondee.com" ;;\n'
             '  *)\n'
             '    echo "stub make: the push step called an unexpected target: $1" >&2; exit 2 ;;\n'
             "esac\n")
@@ -595,8 +612,8 @@ echo "$p"
     return p.returncode, p.stdout
 
 
-AGENT_NAME = "Asimov Agent"
-AGENT_EMAIL = "support@docondee.com"
+AGENT_NAME = _AI.AGENT_NAME
+AGENT_EMAIL = _AI.AGENT_EMAIL
 
 
 def test_every_committing_bot_job_commits_as_the_agent():
@@ -627,12 +644,42 @@ def test_every_committing_bot_job_commits_as_the_agent():
     # …and each one sets the agent identity, and never the generic bot account.
     for wf_name, job_name, step_name, run in committing:
         where = f"{wf_name} {job_name} / {step_name}"
-        check(f"identity: {where} commits as {AGENT_NAME}",
-              f'git config user.name "{AGENT_NAME}"' in run, run[:220])
-        check(f"identity: {where} commits as {AGENT_EMAIL}",
-              f'git config user.email "{AGENT_EMAIL}"' in run, run[:220])
+        # Issue #325: the identity is consumed through ONE seam (`make git-identity`), so a new
+        # committing job inherits it and a change to the address is a one-line edit — instead of
+        # the same two `git config` lines hand-kept in four workflows.
+        check(f"identity: {where} sets the identity through the one seam",
+              "make git-identity" in run, run[:220])
+        check(f"identity: {where} does not carry the identity as a literal",
+              f'git config user.email "{AGENT_EMAIL}"' not in run, run[:220])
         check(f"identity: {where} does not commit as github-actions[bot]",
               "github-actions" not in run, run[:220])
+
+
+
+def test_the_agent_identity_has_one_definition():
+    """Issue #325: the identity was five hand-kept copies of one fact — the same two `git
+    config` lines in four workflows plus the authorship guard's own allowed set. Nothing
+    derived one from the other, so a new committing workflow copies whatever it finds."""
+    check("identity: the agent email is in the allowed set",
+          AGENT_EMAIL in _AI.ALLOWED_EMAILS, _AI.ALLOWED_EMAILS)
+    check("identity: the agent name is in the allowed set",
+          AGENT_NAME.lower() in _AI.ALLOWED_NAMES, _AI.ALLOWED_NAMES)
+    # …and the guard reads the SAME definition rather than keeping its own copy.
+    import check_commit_authorship as CCA
+    check("identity: the authorship guard's emails ARE the one definition",
+          tuple(CCA.ALLOWED_EMAILS) == tuple(_AI.ALLOWED_EMAILS), CCA.ALLOWED_EMAILS)
+    check("identity: the authorship guard's names ARE the one definition",
+          tuple(CCA.ALLOWED_NAMES) == tuple(_AI.ALLOWED_NAMES), CCA.ALLOWED_NAMES)
+    # The workflows never spell it out.
+    offenders = [f.name for f in sorted(WF.glob("*.yml"))
+                 if AGENT_EMAIL in f.read_text() or f'user.name "{AGENT_NAME}"' in f.read_text()]
+    check("identity: no workflow carries the identity literally", not offenders, offenders)
+    # …and the seam itself exists and calls the script.
+    mk = (ROOT / "Makefile").read_text()
+    check("identity: `make git-identity` runs the one definition",
+          "python3 scripts/agent_identity.py --git-config" in mk, "")
+    check("identity: the seam is a host target (git config is host-side)",
+          "git-identity:\n\t$(MAKE) _git-identity" in mk, "")
 
 
 def test_owner_guards():
@@ -2065,6 +2112,7 @@ def main() -> int:
     test_fix_bot_push_behaviour()
     test_issue_bot_pr_body_actually_closes_the_issue()
     test_every_committing_bot_job_commits_as_the_agent()
+    test_the_agent_identity_has_one_definition()
     test_owner_guards()
     test_guard_behaviour()
     test_guard_is_before_any_secret()

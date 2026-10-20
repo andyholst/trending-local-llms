@@ -150,6 +150,33 @@ def test_a_measurement_level_value_is_captured():
           str(report["signature"]))
 
 
+def test_a_storage_offload_needs_a_medium_and_an_offload(  ):
+    """Issues #413/#367: the detector matched `ssd|disk|offload` anywhere, so a RAM offload
+    ("offloaded to the CPU"), a file size ("2.1GB on disk") and a machine's own SSD were all
+    reported as a storage requirement the model has — five models re-filed for ever."""
+
+    def unstructured(quant_text: str) -> list:
+        m = model("m")
+        m["engines"][0]["quant"] = quant_text
+        return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
+                         raw_dir=Path("/nonexistent"))["unstructured"]["storage_offload"]
+
+    # Then  a memory offload is NOT a storage offload
+    check("storage_offload: 'offloaded to the CPU' is a RAM story",
+          unstructured("Q4_K_M with 26 MoE layers offloaded to the CPU") == [], "flagged")
+    check("storage_offload: 'experts in system RAM' is a RAM story",
+          unstructured("Q4_K_M, experts in system RAM") == [], "flagged")
+    check("storage_offload: a file size on disk is not an offload requirement",
+          unstructured("4-bit MLX, 2.1GB on disk") == [], "flagged")
+    check("storage_offload: a machine's own SSD is not the model's requirement",
+          unstructured("M2 Ultra, 2TB SSD, 192GB unified memory") == [], "flagged")
+    # …while a GENUINE storage-streaming requirement still counts
+    check("storage_offload: experts streamed from NVMe SSD IS flagged",
+          unstructured("experts streamed from NVMe SSD") == ["m"],
+          unstructured("experts streamed from NVMe SSD"))
+    check("storage_offload: 'offload to SSD' IS flagged",
+          unstructured("MoE expert offload to SSD") == ["m"],
+          unstructured("MoE expert offload to SSD"))
 def test_a_capacity_mention_is_not_an_unstructured_weights_figure():
     """A card's VRAM, a Mac's unified memory and a context size are NOT weight footprints.
     Counting them as `unstructured:weight_gb` reported 18 claims that do not exist and sent a
@@ -1081,6 +1108,7 @@ def main() -> int:
     test_contract_gap_vs_stored_dimension()
     test_free_text_mention_is_unstructured_not_present()
     test_a_measurement_level_value_is_captured()
+    test_a_storage_offload_needs_a_medium_and_an_offload()
     test_a_capacity_mention_is_not_an_unstructured_weights_figure()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
