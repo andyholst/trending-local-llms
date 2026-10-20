@@ -981,6 +981,19 @@ def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> li
     return rows
 
 
+#: A `vram_min` that states a SPLIT requirement: a GPU capacity AND system RAM. Such a
+#: value is not one number, and publishing its first number as "the least VRAM needed" reads
+#: as "fits that card" — the opposite of what an offload requirement promises (issue #431).
+_SPLIT_REQUIREMENT = lambda raw: bool(re.search(r"(?<!\bno )\b(gpu|vram)\b", raw, re.I)) and bool(
+    re.search(r"\bram\b", raw, re.I))
+
+
+#: `vram_min` values that DECLARE "no GPU needed" rather than a capacity. Deliberately
+#: strict — a sentence like "system RAM holds the expert set (32GB GPU + system RAM)" is
+#: NOT this (it names a GPU too), so only the bare marker forms match (issue #343).
+CPU_ONLY_MARKER = re.compile(r"^cpu(?:[- ]?only)?$", re.I)
+
+
 def card_gap_reason(m: dict, registry: dict | None = None) -> str | None:
     """Why a model has no card-tier row (issue #342), or None when it has one.
 
@@ -1008,8 +1021,21 @@ def vram_need(m: dict) -> tuple[str, str]:
     `vram_tier`, ('>=12GB', 'measured-on') from the smallest card it ran on, else
     ('unknown', 'unknown'). `vram_tier` alone is never rendered as a requirement —
     it is a category that can sit below what the model actually needs."""
-    g = _gb_value(m.get("vram_min"))
+    raw_min = str(m.get("vram_min") or "")
+    if CPU_ONLY_MARKER.match(raw_min.strip()):
+        # `vram_min: "CPU"` is a DECLARATION — the model needs no VRAM at all — and it used
+        # to fall through to the coarse tier or to "unknown", so a reader was told the
+        # requirement was unstated when the source had stated it plainly (issue #343).
+        return "CPU only", "declared"
+    g = _gb_value(raw_min)
     if g is not None:
+        # A SPLIT requirement — "32GB GPU + system RAM" — is not one number. Reading it as
+        # its first capacity published the GPU half as "the least VRAM needed", which reads
+        # as "fits a 32 GB card" and is exactly what a MoE offload does not promise
+        # (issue #431). Only a value that names BOTH a GPU capacity and RAM is split:
+        # "16GB RAM" (a unified-memory / CPU statement) stays a plain capacity.
+        if _SPLIT_REQUIREMENT(raw_min):
+            return f"{g:g}GB + system RAM", "declared"
         return f"{g:g}GB", "declared"
     g = _gb_value(m.get("vram_tier"))
     if g is not None:

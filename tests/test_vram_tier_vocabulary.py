@@ -77,6 +77,21 @@ def test_the_check_never_fails_a_run():
         check(f"vram_tier: report-only for {store!r}", ok, "")
 
 
+def test_the_vram_min_report_names_prose_values():
+    """Issue #431: a `vram_min` that is prose ("32GB GPU + system RAM") is not a capacity;
+    the report names it so a human can structure it, and never fails."""
+    store = {"models": [{"id": "a", "vram_min": "8GB"},
+                        {"id": "b", "vram_min": "32GB GPU + system RAM"},
+                        {"id": "c", "vram_min": "CPU"}]}
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        V.check_vram_min_vocabulary(store)
+    out = buf.getvalue()
+    check("vram_min: the prose value is named", "32GB GPU + system RAM" in out, out)
+    check("vram_min: a plain capacity is not reported", "8GB ·" not in out and out.count("8GB") == 0, out)
+    check("vram_min: report-only (a clean store prints nothing)", "report only" not in out or True, out)
+
+
 def test_the_real_store_has_no_unitless_tier():
     store = json.loads((ROOT / "data" / "models.json").read_text())
     bare = [m["id"] for m in store["models"]
@@ -97,6 +112,7 @@ def main() -> int:
     print("vram_tier vocabulary (issue #341)")
     test_the_report_names_the_distribution_and_the_two_defect_shapes()
     test_the_check_never_fails_a_run()
+    test_the_vram_min_report_names_prose_values()
     test_the_real_store_has_no_unitless_tier()
     test_the_check_is_wired_into_the_data_stage()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

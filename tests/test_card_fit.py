@@ -173,6 +173,40 @@ def test_vram_need_prefers_what_the_source_states():
     check("readme: the most-loved VRAM cell carries the claim's evidence",
           "**8GB**<br><sub>stated by the source</sub>" in text)
 
+    # A SPLIT requirement is not one number: publishing its first capacity reads as "fits
+    # that card", which an offload requirement does not promise (issue #431).
+    split = model("split", "Split", [meas("Strata", "20", "RTX 4090 24GB + 128GB RAM")],
+                  vram_min="system RAM holds the expert set (32GB GPU + system RAM)")
+    check("need: a GPU+RAM split names both halves",
+          UT.vram_need(split) == ("32GB + system RAM", "declared"), UT.vram_need(split))
+    ram_only = model("ram", "RAM only", [meas("llama.cpp", "9", "M4 Max")], vram_min="16GB RAM")
+    check("need: a plain RAM capacity is not called a split",
+          UT.vram_need(ram_only) == ("16GB", "declared"), UT.vram_need(ram_only))
+    # …and a NEGATED GPU ("no GPU") is not a GPU half either.
+    negated = model("neg", "Negated", [meas("llama.cpp", "9", "Ryzen 9, CPU")],
+                    vram_min="8GB RAM (no GPU)")
+    check("need: 'no GPU' is a CPU statement, not a split",
+          UT.vram_need(negated) == ("8GB", "declared"), UT.vram_need(negated))
+
+    # `vram_min: "CPU"` DECLARES that no VRAM is needed. It used to fall through to the
+    # coarse tier (or to "unknown"), so the reader was told the requirement was unstated
+    # when the source had stated it plainly (issue #343).
+    for marker in ("CPU", "cpu only", "CPU-only"):
+        cpu = model("cpu-only", "CPU Only", [meas("llama.cpp", "12", "Ryzen 9 7950X, CPU")],
+                    vram_min=marker, vram_tier="16GB")
+        check(f"need: vram_min {marker!r} is a declaration, not a gap",
+              UT.vram_need(cpu) == ("CPU only", "declared"), UT.vram_need(cpu))
+    # …and a sentence that merely MENTIONS system RAM is not that marker: it names a GPU.
+    prose = model("moe", "MoE", [meas("Strata", "20", "32GB GPU + system RAM")],
+                  vram_min="system RAM holds the expert set (32GB GPU + system RAM)")
+    check("need: a prose vram_min is not read as CPU-only",
+          UT.vram_need(prose) != ("CPU only", "declared"), UT.vram_need(prose))
+    s2 = s
+    s2["models"].append(model("cpu-decl", "CPU Decl", [meas("llama.cpp", "9", "Ryzen 9, CPU")],
+                              vram_min="CPU", vram_tier="16GB"))
+    check("readme: a CPU-only model says so in the VRAM cell, not 'not stated'",
+          "**CPU only**" in rendered(s2), "")
+
 
 def test_the_readme_shows_the_card_view():
     s = store()

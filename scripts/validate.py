@@ -854,6 +854,25 @@ def check_card_gap_report(store: dict) -> None:
         print(f"  no card figure collected: {shown}")
 
 
+def check_vram_min_vocabulary(store: dict) -> None:
+    """REPORT ONLY (issue #431): the `vram_min` values that are prose, not a capacity.
+
+    `vram_min` is a free string and the crawl writes what the post says, so a split
+    requirement ("32GB GPU + system RAM") or a CPU marker lives next to plain `8GB`. The
+    renderer now names the split instead of publishing its first number; this prints the
+    values a human may want to structure, and never fails.
+    """
+    import update_trending as ut
+
+    prose = sorted({str(m.get("vram_min")) for m in store.get("models", [])
+                    if m.get("vram_min") and ut._gb_value(m.get("vram_min")) is not None
+                    and not re.fullmatch(r"\s*\d+(?:\.\d+)?\s*GB\s*", str(m.get("vram_min")), re.I)
+                    and not re.fullmatch(r"\s*\d+(?:\.\d+)?\s*", str(m.get("vram_min")))})
+    if prose:
+        print(f"  vram_min (report only): {len(prose)} prose value(s) — "
+              + " · ".join(p[:60] for p in prose))
+
+
 def check_backends_cover_measurements(store: dict) -> None:
     """Every backend a model has a measurement on is listed in its `backends`
     (the README table it renders in must be one the model claims). Catches an
@@ -1473,6 +1492,7 @@ def main() -> int:
     add("additive-only (no key/value loss)", "removal", lambda: check_no_value_loss(store, snap_dir))
     add("no duplicate models", "data", lambda: check_no_duplicates(store))
     add("vram_tier vocabulary (report only)", "data", lambda: check_vram_tier_vocabulary(store))
+    add("vram_min vocabulary (report only)", "data", lambda: check_vram_min_vocabulary(store))
     add("card gaps (report only)", "readme", lambda: check_card_gap_report(store))
     add("no duplicate engines", "data", lambda: check_no_duplicate_engines(store))
     add("tps starts with a numeric token", "data", lambda: check_tps_shape(store))
