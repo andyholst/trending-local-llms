@@ -104,7 +104,13 @@ def test_raw_llama_cpp_merges_into_fork_rows():
     engs = bonsai(s)["engines"]
     check("ingest: raw 'llama.cpp' stored as the fork", all(e["engine"] != "llama.cpp" for e in engs),
           [e["engine"] for e in engs])
-    check("ingest: merged into the existing fork row (no duplicate)", len(engs) == before, (before, len(engs)))
+    # The alias makes the two sides match, so the SAME figures merge rather than duplicate.
+    # Since #389 the merge may also collapse two rows one real post produced (never adds), so
+    # the assertion is "no growth, and nothing left to collapse".
+    check("ingest: merged into the existing fork row (no duplicate)", len(engs) <= before,
+          (before, len(engs)))
+    check("ingest: nothing left to collapse after the alias merge",
+          len(UT._collapse_one_post(engs)) == len(engs), len(engs))
 
 
 def test_unaliased_store_plus_raw_no_duplicates():
@@ -131,7 +137,13 @@ def test_unaliased_store_plus_raw_no_duplicates():
         finally:
             UT.RAW_DIR = saved
     engs = bonsai(s)["engines"]
-    check("ingest: unaliased store + same raw figures -> no duplicate rows", len(engs) == before, (before, len(engs)))
+    # Re-ingesting the same figures must never ADD a row. Since #389 it may COLLAPSE two
+    # rows one real post produced into one, so the count can fall — but no duplicate may
+    # survive: a second collapse has nothing left to do.
+    check("ingest: unaliased store + same raw figures -> no duplicate rows", len(engs) <= before,
+          (before, len(engs)))
+    check("ingest: nothing left to collapse (one row per post/engine/date)",
+          len(UT._collapse_one_post(engs)) == len(engs), len(engs))
     check("ingest: every llama.cpp row now the fork", all(e["engine"] != "llama.cpp" for e in engs))
 
 

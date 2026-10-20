@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **86** · archived: **0**
+Active changes: **88** · archived: **0**
 
 ## Active changes
 
@@ -66,11 +66,13 @@ Active changes: **86** · archived: **0**
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
 | `measurement-engine-min-version` | active | #371 | #374 | [measurement-source-dimensions](openspec/changes/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/measurement-engine-min-version/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
+| `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |
 | `one-slow-query-is-not-a-red-run` | active | — | — | [search-smoke](openspec/changes/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/one-slow-query-is-not-a-red-run/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `pr-body-closure-guard` | active | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-body-closure-guard/proposal.md) |
 | `pr-closure-guard` | active | — | — | [pr-lifecycle](openspec/changes/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/pr-closure-guard/proposal.md) |
+| `pr-exercises-every-pipeline` | active | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-exercises-every-pipeline/proposal.md) |
 | `prs-are-never-drafts` | active | — | — | [pr-lifecycle](openspec/changes/prs-are-never-drafts/specs/pr-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/prs-are-never-drafts/proposal.md) |
 | `publish-is-verified` | active | #228 — `tech-debt: Nothing verifies what the registry serves after a publish` | — | [agent-image-publish](openspec/changes/publish-is-verified/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/publish-is-verified/proposal.md) |
 | `qa-validate-carries-the-guard` | active | — | — | [qa-validate-carries-the-guard](openspec/changes/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/qa-validate-carries-the-guard/proposal.md) |

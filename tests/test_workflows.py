@@ -1927,6 +1927,7 @@ def test_gh_before_the_checkout_names_the_repo():
 
 
 
+<<<<<<< HEAD
 def test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result():
     """Issue #432: `pull_request` checks out the MERGE COMMIT by default, so `make
     openspec-check` compared the index with a tree carrying every OTHER open change and
@@ -1942,10 +1943,86 @@ def test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result():
           "github.sha" in ref, ref)
     check("qa-validate: full history is still fetched (authorship guard, #317)",
           str((checkout.get("with") or {}).get("fetch-depth")) == "0", checkout.get("with"))
+=======
+#: Pipelines no PR runs at all: `schedule` / `workflow_dispatch` only, so a broken edit to one
+#: is invisible to the PR that makes it — qa-validate never executes it (issue #231). Each MUST
+#: name the test module that exercises its logic inside `make test`, and the map is itself
+#: checked in both directions so it cannot lie or go stale.
+DISPATCH_ONLY_COVERAGE = {
+    "code-review-bot.yml": "tests/test_workflows.py",     # guard, issue writes, step order
+    "fix-bot.yml": "tests/test_fix_loop.py",              # the loop it runs, push gating
+    "issue-bot.yml": "tests/test_issue_review.py",        # the queue, the windows, the pick
+    "issue-review-bot.yml": "tests/test_issue_review.py",
+    "queued-alarm.yml": "tests/test_queued_run_alarm.py",  # the decision it makes
+    "publish-agent-image.yml": "tests/test_publish_agent_image.py",  # the publish decision
+    "refresh-bot.yml": "tests/test_refresh_run_block.py",  # the window block it composes
+}
+
+#: Events that mean "a pull request runs this pipeline".
+PR_EXERCISE_EVENTS = ("pull_request", "pull_request_target", "push")
+
+
+def workflow_triggers(doc: dict) -> set:
+    """The event names a workflow declares in `on:` (PyYAML turns bare `on` into True)."""
+    on = doc.get("on", doc.get(True))
+    if isinstance(on, str):
+        return {on}
+    if isinstance(on, list):
+        return {str(x) for x in on}
+    if isinstance(on, dict):
+        return {str(k) for k in on}
+    return set()
+
+
+def coverage_problems(triggers: dict, coverage: dict) -> list:
+    """Every pipeline PR-exercised, or named with the test that covers it (issue #231)."""
+    problems = []
+    for name, events in sorted(triggers.items()):
+        runs_on_pr = bool(set(events) & set(PR_EXERCISE_EVENTS))
+        cov = coverage.get(name)
+        if runs_on_pr and cov:
+            problems.append(f"{name}: a PR already runs it "
+                            f"({sorted(set(events) & set(PR_EXERCISE_EVENTS))}) — drop it from "
+                            f"DISPATCH_ONLY_COVERAGE so the map cannot claim otherwise")
+        elif not runs_on_pr and not cov:
+            problems.append(f"{name}: runs only on {sorted(events) or ['nothing']} — no PR "
+                            f"exercises it and no coverage is named (issue #231)")
+        elif cov and not (ROOT / cov).is_file():
+            problems.append(f"{name}: coverage module {cov} does not exist")
+    return problems
+
+
+def test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage():
+    """A dispatch-only pipeline ships broken (issue #231): nothing on a PR runs it, so a bad
+    step, a bad `needs:` or a renamed target is discovered by the first real run — with
+    secrets and side effects — instead of by the PR that made it."""
+    triggers = {}
+    for path in sorted(WF.glob("*.yml")):
+        triggers[path.name] = workflow_triggers(yaml.safe_load(path.read_text()) or {})
+    problems = coverage_problems(triggers, DISPATCH_ONLY_COVERAGE)
+    check("pipelines: every workflow is PR-exercised or names the test that covers it",
+          not problems, problems)
+    check("pipelines: the coverage map is not empty (a vacuous guard)", bool(DISPATCH_ONLY_COVERAGE),
+          "")
+    # A guard that cannot fail proves nothing: an unclassified dispatch-only pipeline is REFUSED.
+    fake = coverage_problems({"new-bot.yml": {"workflow_dispatch"}}, {})
+    check("pipelines: an unclassified dispatch-only workflow FAILS the guard", bool(fake), fake)
+    # …and a stale entry (PR-triggered, yet listed as dispatch-only) is refused too.
+    stale = coverage_problems({"qa-validate.yml": {"pull_request", "push"}},
+                              {"qa-validate.yml": "tests/test_workflows.py"})
+    check("pipelines: a stale coverage entry is refused", bool(stale), stale)
+    # Every named module must be discovered by the one test runner (scripts/run_tests.sh runs
+    # tests/test_*.py), so "covered" means "executed by make test".
+    undiscovered = [m for m in DISPATCH_ONLY_COVERAGE.values()
+                    if not (m.startswith("tests/test_") and m.endswith(".py"))]
+    check("pipelines: every coverage module is one the test runner discovers",
+          not undiscovered, undiscovered)
+>>>>>>> origin/master
 
 
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
+    test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
     test_refresh_bot()
     test_the_rebuild_decision_is_one_tested_unit()
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
