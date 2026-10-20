@@ -150,6 +150,38 @@ def test_a_measurement_level_value_is_captured():
           str(report["signature"]))
 
 
+def test_a_capacity_mention_is_not_an_unstructured_weights_figure():
+    """A card's VRAM, a Mac's unified memory and a context size are NOT weight footprints.
+    Counting them as `unstructured:weight_gb` reported 18 claims that do not exist and sent a
+    backfill hunting for weights in text that never stated one (issue #213)."""
+
+    # Given a model whose HARDWARE names a card, and another whose quant states a footprint
+    card = model("card")
+    card["engines"][0].update({"hardware": "RX 9070 XT 16GB", "quant": "Q4_K_M, Vulkan (RADV)"})
+    stated = model("stated")
+    stated["engines"][0].update({"hardware": "RTX 4090 24GB", "quant": "Q4_K_M, 19GB weights"})
+    mac = model("mac")
+    mac["engines"][0].update({"hardware": "M3 Ultra 256GB", "quant": "oQ4e DWQ"})
+
+    # When  the store is analysed
+    report = G.analyse(store_with([card, stated, mac]),
+                       {"model": set(), "measurement": set(), "search_model": set()},
+                       raw_dir=Path("/nonexistent"))
+    unstructured = report["unstructured"]["weight_gb"]
+
+    # Then  only the model that STATES a footprint is prose-only
+    check("weight_gb: a card's VRAM is not an unstructured weights figure",
+          "card" not in unstructured, unstructured)
+    check("weight_gb: a Mac's unified memory is not one either", "mac" not in unstructured,
+          unstructured)
+    check("weight_gb: a stated footprint IS reported as prose-only", "stated" in unstructured,
+          unstructured)
+    # …and all three still count as missing the STRUCTURED value (that is the real gap).
+    check("weight_gb: all three are still missing the structured value",
+          set(report["missing"]["weight_gb"]) == {"card", "stated", "mac"},
+          report["missing"]["weight_gb"])
+
+
 def test_signature_tracks_the_store_not_the_noise():
     """The issue-triggering signature covers what the STORE lacks; volatile items
     (empty raw legs, estimates) stay in the report and out of the signature."""
@@ -1049,6 +1081,7 @@ def main() -> int:
     test_contract_gap_vs_stored_dimension()
     test_free_text_mention_is_unstructured_not_present()
     test_a_measurement_level_value_is_captured()
+    test_a_capacity_mention_is_not_an_unstructured_weights_figure()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
