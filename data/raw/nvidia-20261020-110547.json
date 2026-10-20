@@ -1,0 +1,115 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3090 24GB",
+          "quant": "optimized MTP head (post: 'Optimized MTP: ~114 tokens/sec', up from ~82 on the initial llama.cpp setup)",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+          "likes": 10,
+          "comments": 2,
+          "reshares": 2,
+          "views": 5434,
+          "interactions": 14
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup, up to 16 verification tokens per pass (~15 accepted), prefix caching; ~25K-token document workload",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+          "likes": 10,
+          "comments": 2,
+          "reshares": 2,
+          "views": 5434,
+          "interactions": 14,
+          "context_tokens": "25K"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "23.8",
+          "hardware": "RTX 3090 + RTX 3060 12GB",
+          "quant": "Q4, 262144 context across both cards",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 0,
+          "views": 574,
+          "interactions": 4,
+          "context_tokens": "262144"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB DDR4-2400 system RAM",
+          "quant": "IQ2_XS, experts split between GPU VRAM and system RAM (IQ3_S ~70 tok/s, ~66 at 261K context); prompt processing ~1,900 tok/s",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 3,
+          "reshares": 4,
+          "views": 4471,
+          "interactions": 33,
+          "context_tokens": "261000",
+          "system_ram_min": "128GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:47Z"
+}

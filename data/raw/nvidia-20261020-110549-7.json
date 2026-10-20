@@ -1,0 +1,60 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3-235B-A22B",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "why": "Qwen3-235B-A22B — see source posts.",
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo), 128GB unified LPDDR5X",
+          "quant": "~Q3 weights (~100GB) in the ~96-110GB GPU-accessible pool; Vulkan often beats ROCm on generation; real-world 14-17 tok/s (recorded at the conservative real-world floor)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 742,
+          "interactions": 2,
+          "weight_gb": "~100GB (~Q3)",
+          "system_ram_min": "128GB unified"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "200",
+          "hardware": "NVIDIA GB10 (DGX Spark)",
+          "quant": "across 4 concurrent generations, vLLM nightly build",
+          "date": "2026-07-16",
+          "source_post": "https://lightbrd.com/orbitant/status/2077849002461016469",
+          "likes": 7,
+          "comments": 1,
+          "reshares": 0,
+          "views": 3155,
+          "interactions": 8
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:49Z"
+}

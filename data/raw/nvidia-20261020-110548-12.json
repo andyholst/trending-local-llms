@@ -1,0 +1,79 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "why": "LFM2.5-24B-A2B — see source posts.",
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (15GB used)",
+          "quant": "Liquid AI's compressed 4-bit build (14.5GB), 4K-token prompt, maker's own test (also MLX on day one)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 118,
+          "interactions": 1,
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo), 16GB used",
+          "quant": "Liquid AI's compressed 4-bit build (14.5GB), 4K-token prompt, maker's own test",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 118,
+          "interactions": 1,
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI-reported figure, 131K-token context model",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 522,
+          "interactions": 6
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

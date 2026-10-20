@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5-9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CPU"
+      ],
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "Qwen/Qwen3.5-9B"
+        }
+      ],
+      "why": "Qwen3.5-9B — see source posts.",
+      "last_seen": "2026-06-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "36",
+          "hardware": "AMD Radeon RX 5700 XT 8GB",
+          "quant": "jackrong Qwen3.5-9B DSV4 Flash distill, local run",
+          "date": "2026-06-24",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2069828515156148597",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 300,
+          "interactions": 3
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

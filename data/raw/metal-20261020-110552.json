@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (PrismML)",
+      "type": "GGUF",
+      "license": "not stated in post",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "Ternary Bonsai 2 27B stores nearly every weight as -1/0/1, fits in 8.4GB and runs 26 tok/s on a 64GB M5 Pro Mac mini; the Oct 19 post that repeats the figure names no engine, so only the measured post backs the numbers.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "26",
+          "hardware": "M5 Pro Mac mini, 64GB unified memory",
+          "quant": "Ternary weights (-1/0/1), fits in 8.4GB (about half Gemma 3 27B's footprint); 184 tok/s LFM2.5-24B-A2B and 106 tok/s Qwen3 30B from the same list are other models",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "8.4GB",
+          "system_ram_min": "64GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:52Z"
+}

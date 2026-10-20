@@ -1,0 +1,175 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2x RTX 4090 24GB",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, 128K context, 8 concurrent agent sessions (combined throughput, 'over 300 tok/s')",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 7,
+          "comments": 1,
+          "reshares": 1,
+          "views": 3230,
+          "interactions": 9,
+          "context_tokens": "128K"
+        },
+        {
+          "engine": "ExLlamaV3",
+          "tps": "181",
+          "hardware": "RTX 4090 24GB",
+          "quant": "EXL3 4.0 bpw (15.4 GiB) + DFlash2 block-diffusion drafter, up to 7 proposed tokens per pass",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2100595901006008791",
+          "likes": 9,
+          "comments": 1,
+          "reshares": 1,
+          "views": 14320,
+          "interactions": 11,
+          "weight_gb": "15.4 GiB (EXL3 4.0 bpw)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "last_seen": "2026-10-05",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB",
+          "quant": "consumer-GPU run; 70GB download, models/experts split with system RAM",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/ethanwalkerman/status/2106988896529920109",
+          "likes": 14,
+          "comments": 2,
+          "reshares": 2,
+          "views": 6318,
+          "interactions": 18,
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "formats": [
+        {
+          "name": "Llama 3.1 8B",
+          "hf": "meta-llama/Llama-3.1-8B"
+        }
+      ],
+      "why": "Llama-3.1-8B — see source posts.",
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "207",
+          "hardware": "RTX 4090 24GB",
+          "quant": "4-bit, memory-bandwidth ceiling rather than a single measured run",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/X_Cmpt/status/2104340305336270981",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 571,
+          "interactions": 1
+        }
+      ]
+    },
+    {
+      "id": "qwen2.5-32b",
+      "name": "Qwen2.5 32B",
+      "full_name": "Qwen2.5-32B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "32B",
+      "hf": "Qwen/Qwen2.5-32B-Instruct",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen2.5-32B-Instruct"
+        }
+      ],
+      "why": "",
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "90",
+          "hardware": "RTX 5090 32GB",
+          "quant": "4-bit, memory-bandwidth ceiling rather than a single measured run",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/X_Cmpt/status/2104340305336270981",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 571,
+          "interactions": 1
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:47Z"
+}

@@ -1,0 +1,108 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RTX 3060 12GB, Ryzen 5 5600X + 64GB system RAM",
+          "quant": "GSQ-RCO / IQ2_XS",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109636228937093580",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 1,
+          "views": 3510,
+          "interactions": 7,
+          "system_ram_min": "64GB",
+          "engine_min_version": "Strata 0.1.42"
+        },
+        {
+          "engine": "Strata",
+          "tps": "40",
+          "hardware": "2x RTX 3060 12GB (24GB total) + 64GB DDR5",
+          "quant": "IQ3_S GSQ-RCO, 256K context, 160940-token prompt processed at ~1308 tok/s",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106924430643302782",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 0,
+          "views": 2614,
+          "interactions": 4,
+          "context_tokens": "256000",
+          "system_ram_min": "64GB"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards.",
+      "last_seen": "2026-09-19",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary build (7.21GB file), 220K context, ~550 tok/s prefill; PTQ1_0 does 26 tok/s at 262K",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 6,
+          "comments": 6,
+          "reshares": 6,
+          "views": 15535,
+          "interactions": 24,
+          "weight_gb": "7.21GB (PQ2_0)",
+          "context_tokens": "220000",
+          "engine_min_version": "llama-server -ngl 999 -c 220000 -fa on --jinja --cache-type-k q4_0 --cache-type-v q4_0"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

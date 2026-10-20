@@ -1,0 +1,135 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-20T11:05:14Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390 (EfficientThink-based modified 27B)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Community 27B tuned to cut unproductive reasoning tails: LiveCodeBench 83 -> 90, with DFlash2 speculative decoding reaching up to 180 tokens/sec.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "GPU not stated in the post (throughput depends on GPU, quant and context)",
+          "quant": "DFlash2 speculative decoding with MTP; 'up to 180 tokens/sec' headline on the modified 27B",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 124,
+          "interactions": 127
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "DFlash2 + context lookup lifts an RTX 3090 from 82 to 381 tok/s on a 25K-token document-reproduction task; ordinary chat settles near 133 tok/s.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup, 16-token verification blocks (~15/16 accepted), on a ~25K-token document-reproduction task (context reuse); ordinary chat ~133 tok/s, baseline 82, MTP ~114",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 124,
+          "interactions": 127,
+          "context_tokens": "138K usable context (reported alongside the 133 tok/s chat figure)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "A custom llama.cpp fork with VRAM<->system-RAM KV-cache streaming holds 35-42.7 tok/s on a 16GB Radeon RX 9060 XT with 24GB DDR5, reaching 200K context it could never hold in VRAM.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "42.7",
+          "hardware": "Radeon RX 9060 XT 16GB VRAM + 24GB DDR5 (~16GB used)",
+          "quant": "IQ4_XS; Q4 KV values + Q8 keys, MTP speculative decoding + N-gram prediction, ~20K context (prefill 658 tok/s)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 11,
+          "comments": 2,
+          "reshares": 1,
+          "views": 871,
+          "interactions": 885,
+          "context_tokens": "20480",
+          "system_ram_min": "24GB DDR5 (~16GB used)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Same 16GB Radeon setup keeps ~35 tok/s at 200K context, an 18% drop from 42.7 tok/s at 20K, on a 262K-context target.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "Radeon RX 9060 XT 16GB VRAM + 24GB DDR5 (~16GB used)",
+          "quant": "IQ4_XS; KV-cache streaming between VRAM and system RAM, Q4 KV values + Q8 keys, MTP speculative decoding; ~18% slower than the 42.7 tok/s at 20K",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 11,
+          "comments": 2,
+          "reshares": 1,
+          "views": 871,
+          "interactions": 885,
+          "context_tokens": "204800",
+          "system_ram_min": "24GB DDR5 (~16GB used)"
+        }
+      ]
+    }
+  ]
+}

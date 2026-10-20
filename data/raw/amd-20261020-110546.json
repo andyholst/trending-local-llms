@@ -1,0 +1,107 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-09-15",
+      "context_tokens": "65536",
+      "weight_gb": "Q3_K_XL",
+      "engines": [
+        {
+          "engine": "llama.cpp (Nathanw1014 strix-halo-llamacpp fork)",
+          "tps": "33",
+          "hardware": "AMD Strix Halo (Radeon 8060S) 128GB unified memory, GMKtec Evo-X2",
+          "quant": "Vulkan backend (Nathanw1014 portable Strix Halo 'Vulcan' build); Q3_K_XL; 64K context; vision enabled; 33 t/s TOTAL across 4 concurrent lanes",
+          "weight_gb": "Q3_K_XL",
+          "context_tokens": "65536",
+          "engine_min_version": "Nathanw1014 portable Strix Halo Vulcan build (ggml-org llama.cpp fork, gfx1151)",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099665294285299780",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 0,
+          "views": 718,
+          "interactions": 723,
+          "engine_repo": "https://github.com/Nathanw1014/strix-halo-llamacpp"
+        }
+      ],
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "strixite",
+          "tps": "50",
+          "hardware": "AMD Strix Halo (Radeon 8060S) unified memory",
+          "quant": "HIP backend (written from scratch in HIP for Strix Halo); holds ~50 t/s out to nearly 500K context",
+          "context_tokens": "500000",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
+          "likes": 51,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 51
+        }
+      ],
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "vram_tier": "12GB",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "system_ram_min": "~96-110GB unified",
+      "weight_gb": "~Q3, ~100GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "AMD Ryzen AI Max+ 395 (Radeon 8060S) Strix Halo, 128GB unified LPDDR5X",
+          "quant": "Vulkan backend (often edges out ROCm for generation); ~Q3 quant (~100GB weights); 14-17 t/s real-world decode",
+          "weight_gb": "~Q3 (~100GB)",
+          "system_ram_min": "~96-110GB unified",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 2,
+          "comments": 262,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 264
+        }
+      ],
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "vram_tier": "128GB",
+      "vram_min": "128GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:46Z"
+}

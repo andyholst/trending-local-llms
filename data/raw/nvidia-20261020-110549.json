@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "why": "816B MoE (42B active, 1M context) that Apple's MLX distributes across four M5 Ultra Mac Studios over Thunderbolt RDMA, NVFP4 compressed to ~493GB.",
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Mac Studio M5 Ultra (512GB each, ~1TB unified memory)",
+          "quant": "Apple-tuned MLX build; 16-37 tok/s range, first token 4.8s on an 8K prompt and 40.6s on a 65K prompt",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 606,
+          "interactions": 6,
+          "system_ram_min": "1TB unified (2x 512GB)"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:49Z"
+}

@@ -1,0 +1,105 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b-swift",
+      "name": "Qwen3.8-27B Swift 1.5",
+      "full_name": "Qwen3.8-27B Swift 1.5 (GSQ-RCO GGUF)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "AMD Radeon RX 9070 XT 16GB",
+          "quant": "128K context configuration; GSQ-RCO mixed-precision GGUF; community testing",
+          "context_tokens": "131072",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
+          "likes": 779,
+          "comments": 2,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 782
+        }
+      ],
+      "type": "LLM (adapter over Qwen3.8-27B)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "system_ram_min": "24GB DDR5",
+      "context_tokens": "200K",
+      "weight_gb": "IQ4_XS",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "42.7",
+          "hardware": "AMD Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM (~16GB used)",
+          "quant": "custom llama.cpp fork streaming the KV cache between VRAM and system RAM; IQ4_XS; Q4 KV values + Q8 keys; MTP speculative decoding + N-gram prediction; 42.7 t/s at ~20K context, 35 t/s at ~200K",
+          "weight_gb": "IQ4_XS",
+          "context_tokens": "200K",
+          "system_ram_min": "24GB DDR5",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 11,
+          "comments": 2,
+          "reshares": 1,
+          "views": 871,
+          "interactions": 16
+        }
+      ],
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "LemonSeed",
+          "tps": "159",
+          "hardware": "Sapphire Radeon AI PRO R9700 32GB (eGPU over Thunderbolt, iPad Pro host)",
+          "quant": "DFlash2 draft-tree decoding; Q4 quant; Q8 DFlash2 draft; 131K context; base decode 31.2 t/s, MTP 108.7 t/s",
+          "context_tokens": "131072",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dextune/status/2109530059765858549",
+          "likes": 1,
+          "comments": 162,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 163,
+          "engine_repo": "https://github.com/Geramy/LemonSeed-Studio"
+        }
+      ],
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:04:40Z"
+}

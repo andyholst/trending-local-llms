@@ -1,0 +1,111 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "why": "Ternary 9B vision-language model in ~2GB (more than 9x smaller than full precision): 92.4% tool-calling / 98.2% math / 100% instruction-following retention vs the Qwen3.5 baseline.",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0, 262K context, Q8_0 KV cache, Flash Attention, vision projector loaded separately; ~1800 tok/s prefill",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 1,
+          "views": 454,
+          "interactions": 4,
+          "weight_gb": "~2GB (PTQ1_0)",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp fork (stock llama.cpp cannot load PTQ1_0)"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "163",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 + DFlash2 draft (draft Q8_0), 262K, q8 KV on a 190-line code-edit task; chat is 114 plain / 117 DFlash2 / 119 MTP",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 1,
+          "views": 412,
+          "interactions": 4,
+          "context_tokens": "262144",
+          "engine_min_version": "--spec-type draft-dflash, --spec-draft-n-max 1 (chat) / 2 (code)"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards.",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Offrail 27B: uncensored Bonsai 2 27B PTQ1_0 (1.75bpw) with a Qwen3.8-27B MTP head; 8GB build 6.3GB, 12GB build 7.0GB",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/aiaicreate/status/2111776181368537264",
+          "likes": 1,
+          "comments": 5,
+          "reshares": 23,
+          "views": 2565,
+          "interactions": 29,
+          "weight_gb": "7.0GB (12GB-targeted build)",
+          "engine_min_version": "PrismML llama.cpp fork, MTP enabled"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

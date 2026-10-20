@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-13",
+      "context_tokens": "131072",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Radeon 8060S) Strix Halo, unified memory",
+          "quant": "vLLM (Liquid's published benchmark); 24B total / 2B active MoE, 64 experts per MoE block, 40 layers",
+          "context_tokens": "131072",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 1,
+          "comments": 77,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 78
+        }
+      ],
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "vram_tier": "16GB",
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:06:52Z"
+}

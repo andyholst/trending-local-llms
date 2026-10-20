@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "nemotron-3.5-lightning-30b-a3b",
+      "name": "Nemotron 3.5 Lightning 30B-A3B",
+      "full_name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "OpenMDW 1.1",
+      "params": "30B (A3B MoE)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Nemotron 3.5 Lightning 30B-A3B",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+        }
+      ],
+      "why": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B — see source posts.",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "93",
+          "hardware": "A100 80GB",
+          "quant": "Nemotron-3.5 Bolt-74B-A9B 2-bit, up to 256K context, DFlash speculative decoding",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/fahdmirza/status/2111208280408355216",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 2,
+          "views": 4184,
+          "interactions": 6,
+          "context_tokens": "256K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

@@ -1,0 +1,141 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB + system RAM",
+          "quant": "Unsloth IQ4_XS 14.6GB, 25 layers offloaded, 64K context, native MTP; ~150 tok/s prefill",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107883429966533041",
+          "likes": 11,
+          "comments": 16,
+          "reshares": 4,
+          "views": 18340,
+          "interactions": 31,
+          "weight_gb": "14.6GB (IQ4_XS)",
+          "context_tokens": "64000"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop (i7-12700H, 16GB DDR4)",
+          "quant": "Unsloth IQ4_XS 14.6GB, 25 GPU layers, Q4_0 KV cache, native MTP, 64K context, 4.5K-token prompt; ~150 tok/s prefill",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 10,
+          "comments": 15,
+          "reshares": 1,
+          "views": 15068,
+          "interactions": 26,
+          "weight_gb": "14.6GB (IQ4_XS)",
+          "context_tokens": "64000",
+          "system_ram_min": "16GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "why": "Qwen3.6-35B-A3B — see source posts.",
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39",
+          "hardware": "RTX 4060 8GB laptop",
+          "quant": "Qwen3.6 35B MoE, bandwidth-adaptive CPU/GPU split; the post's own source is the FreeToken paper",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2091325799790195058",
+          "likes": 10,
+          "comments": 8,
+          "reshares": 76,
+          "views": 44940,
+          "interactions": 94
+        }
+      ]
+    },
+    {
+      "id": "ornith-1.5-9b",
+      "name": "Ornith 1.5 9B",
+      "full_name": "Ornith 1.5 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "formats": [
+        {
+          "name": "Ornith 1.5 9B",
+          "hf": "ornith-ai/Ornith-1.5-9B"
+        }
+      ],
+      "why": "Ornith 1.5 9B — see source posts.",
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "RTX 4060 8GB",
+          "quant": "q8 KV caches, Multi-Token Prediction on (draft acceptance 0.95, average draft length 2.27); ~200 tok/s prompt processing, doubles with MTP off",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+          "likes": 6,
+          "comments": 4,
+          "reshares": 1,
+          "views": 2404,
+          "interactions": 11
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

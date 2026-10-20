@@ -1,0 +1,47 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB + 64GB DDR5-5600",
+          "quant": "developer tests, compressed builds; range 53-94 tok/s (128K context: Q2_0 65.1, IQ2_XS 52.0, IQ3_XXS 44.8 tok/s)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 12,
+          "comments": 4,
+          "reshares": 3,
+          "views": 2450,
+          "interactions": 19,
+          "context_tokens": "128K",
+          "system_ram_min": "32GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}

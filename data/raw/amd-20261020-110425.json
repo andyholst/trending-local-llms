@@ -1,0 +1,101 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "AMD Ryzen AI Max+ 395 / Radeon 8060S Strix Halo laptop (128GB unified memory), 140W Performance mode",
+          "quant": "ROCm backend; Unsloth Q4 and GSQ-RCO weights; experimental Strix Halo support",
+          "context_tokens": "262144",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 5,
+          "comments": 7,
+          "reshares": 231,
+          "views": 0,
+          "interactions": 243
+        }
+      ],
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "vram_tier": "12GB",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-20",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21.11",
+          "hardware": "AMD Ryzen AI Max+ 395 / Radeon 8060S, Strix Halo (128GB unified memory)",
+          "quant": "Vulkan backend; UD-Q4_K_XL target + Qwen3.8-27B-DFlash2 Q8_0 drafter (DFlash 2 spec-decode, n=4); 26.39 t/s at 0K, 21.58 at 8K",
+          "weight_gb": "Qwen3.8-27B UD-Q4_K_XL",
+          "context_tokens": "32768",
+          "engine_min_version": "llama.cpp PR #27342 (DFlash 2, not in mainline)",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 25,
+          "views": 2562,
+          "interactions": 32
+        }
+      ],
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-17",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "AMD Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan backend; 256K context in an 8-bit KV cache; decodes ~50 t/s for short and long generation on 8-bit and 16-bit KV",
+          "context_tokens": "262144",
+          "date": "2026-08-17",
+          "source_post": "https://lightbrd.com/Mayhem4Markets/status/2089147394680111348",
+          "likes": 16,
+          "comments": 4,
+          "reshares": 53,
+          "views": 17638,
+          "interactions": 73
+        }
+      ],
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:04:25Z"
+}

@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-20T11:05:14Z",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "On a Mac MLX and llama.cpp land at about the same ~13 tok/s for Gemma 4 E2B, but MLX holds ~0.5GB RSS against llama.cpp's ~3.3GB.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "13",
+          "hardware": "Mac (Apple Silicon)",
+          "quant": "~0.5GB RSS vs ~3.3GB RSS for llama.cpp at the same throughput",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/DevOpsConsults/status/2112478471083491467",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 2,
+          "views": 12,
+          "interactions": 15
+        }
+      ]
+    }
+  ]
+}

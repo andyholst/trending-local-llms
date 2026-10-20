@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-20T11:05:14Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen/Qwen3.8-Flash-Next (125B MoE)",
+      "type": "MoE LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-17",
+      "why": "NVIDIA's FP4-Local NVFP4 build of Qwen3.8-Flash-Next on an RTX 6000 Pro: median 191 tok/s, 90th percentile 271, peak 328, against 85-88 for the older NVFP4 Docker container on the same workload.",
+      "engines": [
+        {
+          "engine": "FP4-Local",
+          "tps": "191",
+          "hardware": "RTX 6000 Pro (Nvidia/Qwen3.8-Flash-Next-FP4-Local), older NVFP4 Docker container 85-88 tok/s median on the same workload",
+          "quant": "NVFP4 (NVIDIA FP4-Local); median 191 tok/s, 90th percentile 271, peak 328",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 46,
+          "interactions": 46
+        }
+      ]
+    }
+  ]
+}

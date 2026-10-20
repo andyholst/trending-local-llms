@@ -1,0 +1,136 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "GLM-5.3-Flash",
+          "hf": "zai-org/GLM-5.3-Flash"
+        }
+      ],
+      "why": "GLM-5.3-Flash — see source posts.",
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "Project Maya",
+          "tps": "30",
+          "hardware": "RTX 5090 32GB",
+          "quant": "three-tier memory: hot experts in VRAM, warm in system RAM, cold on NVMe SSD",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 1,
+          "views": 1620,
+          "interactions": 7,
+          "storage_offload": "experts streamed from NVMe SSD"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "200",
+          "hardware": "RTX 5090 32GB",
+          "quant": "memory-hierarchy split keeping the active working set on the GPU; 'more than 2x' the 27B llama.cpp setup, so 200+ tok/s",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107391242849914934",
+          "likes": 19,
+          "comments": 4,
+          "reshares": 2,
+          "views": 9944,
+          "interactions": 25
+        },
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 5090 32GB",
+          "quant": "community figures of 70-100 tok/s decode across RTX 3090 / 4090 / 5090 (coldniko setup, cited); 1500 tok/s prefill",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 395,
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "DeepSeek-V4.1-Flash",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "why": "deepseek-ai/DeepSeek-V4.1-Flash — see source posts.",
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "110",
+          "hardware": "2x RTX 5090 32GB",
+          "quant": "production serving of the open-weight model",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/NicW_AI/status/2107444282395115718",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 1,
+          "views": 2955,
+          "interactions": 3
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:47Z"
+}

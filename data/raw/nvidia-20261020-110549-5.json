@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "formats": [
+        {
+          "name": "Bonsai 2 4B",
+          "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf"
+        }
+      ],
+      "why": "32 concurrent streams on an M5 Pro MacBook Pro, parsing 250 emails into JSON with summaries, action items and priorities, under 4GB peak memory.",
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "Apple MacBook Pro M5 Pro (peak memory <4GB)",
+          "quant": "ternary 4B (0.95GB) build, 32 concurrent streams aggregating over 700 tok/s on a 250-email JSON-extraction batch",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 87,
+          "views": 5178,
+          "interactions": 106,
+          "weight_gb": "0.95GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:49Z"
+}

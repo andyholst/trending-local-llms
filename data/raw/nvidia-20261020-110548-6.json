@@ -1,0 +1,48 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "formats": [
+        {
+          "name": "DeepSeek-V4.1-Flash",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "why": "deepseek-ai/DeepSeek-V4.1-Flash — see source posts.",
+      "last_seen": "2026-09-24",
+      "engines": [
+        {
+          "engine": "llama.cpp (hikicoder fork)",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (Ada), 128GB DDR5, Gen4 NVMe",
+          "quant": "Deepseek-V4.1-Flash-Uncensored GGUF, 32K context at fp16, thermal-throttled; prefill stable ~10 tok/s dropping from ~23",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 1,
+          "views": 981,
+          "interactions": 4,
+          "context_tokens": "32768",
+          "system_ram_min": "60GB RAM + 16GB VRAM",
+          "storage_offload": "192GB Engram on Gen4 NVMe (7GB/s)"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:05:48Z"
+}
