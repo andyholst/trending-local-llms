@@ -1,0 +1,40 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen/Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "128GB",
+      "engines": [
+        {
+          "engine": "strixite",
+          "tps": "938",
+          "hardware": "AMD Strix Halo (Ryzen AI Max+ 395, 128 GB unified memory), ROCm",
+          "quant": "New fast prefill profile on a 32K prompt (938 tok/s, was 611; 859 tok/s at 16K); distilled speculative draft ~20% faster on prose, optional 6-bit dense trunk +5-9% decode; this is a prefill figure, the decode campaign is not published yet",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/KireiStudios/status/2112075417314046172",
+          "likes": 51,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 55,
+          "system_ram_min": "128GB",
+          "context_tokens": "32768"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:50:34Z"
+}

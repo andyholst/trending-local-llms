@@ -1,0 +1,125 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b-mlx-serve-26.10.1",
+      "name": "Qwen3.8-27B (MLX-Serve 26.10.1)",
+      "full_name": "Qwen3.8-27B 4-bit on MLX-Serve 26.10.1 with a DFlash-style drafter",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "64GB",
+      "system_ram_min": "64GB+ unified memory (M4 Max)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-11",
+      "why": "26.10.1 picks MTP over the DFlash drafter by default, which made the build about 2x slower on an M4 Max, so the benchmark runs it with --no-mtp: mlx-serve lands at 115 t/s on code and 54 on a story workload, within a few t/s of TensorFold and oMLX on the same weights.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "115",
+          "hardware": "Apple M4 Max",
+          "quant": "ddalcu's 4-bit Qwen3.8-27B, drafting on, --no-mtp",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "mlx-serve 26.10.1 --no-mtp"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "54",
+          "hardware": "Apple M4 Max",
+          "quant": "ddalcu's 4-bit Qwen3.8-27B, drafting on, story workload",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "vram_min": "64GB"
+    },
+    {
+      "id": "qwen3.8-27b-mlx-serve-26.10.1",
+      "name": "Qwen3.8-27B (MLX-Serve 26.10.1, drafter on)",
+      "full_name": "Qwen3.8-27B 4-bit on MLX-Serve 26.10.1 with its drafter (M4 Max)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "64GB",
+      "system_ram_min": "64GB+ unified memory (M4 Max)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "Three Apple-Silicon engines on one Qwen3.8-27B 4-bit model and one drafter land within a few t/s of each other: TensorFold 154 t/s on numbers, mlx-serve 115 on code and 54 on a story workload, and all three fall to 29-31 t/s with drafting off, so the race is the drafter, not the engine.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "Apple M4 Max",
+          "quant": "Qwen3.8-27B 4-bit, drafting on, numbers workload",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "144",
+          "hardware": "Apple M4 Max",
+          "quant": "Qwen3.8-27B 4-bit, drafting on, JSON workload",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "oMLX 0.7.0"
+        }
+      ],
+      "vram_min": "64GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b-mlx-serve",
+      "name": "Qwen3.8-Flash-Next 125B (MLX-Serve 26.10.1)",
+      "full_name": "Qwen3.8-Flash-Next 125B served by MLX-Serve 26.10.1 on Apple Silicon",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-11",
+      "why": "The 26.10.1 release lifts Qwen Flash Next by +11 percent decode on an M4 Max and +51 percent prefill on an M5 Ultra (up to about 5,400 prompt tokens/s), and GGUF models now run on mlx-serve's own Zig/Metal engine instead of falling back to llama.cpp.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "5400",
+          "hardware": "Apple M5 Ultra (prefill, up to ~5,400 PP)",
+          "quant": "Qwen Flash Next, prefill uplift over 26.9.6 (+51%), drafting on by default",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/ddalcu/status/2105683218548559919",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "mlx-serve 26.10.1"
+        }
+      ],
+      "vram_min": "64GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:54:17Z"
+}

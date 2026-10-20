@@ -1,0 +1,50 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "128",
+          "hardware": "DGX Spark (GB10)",
+          "quant": "MTP speculative decoding on; 28 t/s with it off",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "64",
+          "hardware": "DGX Spark (GB10)",
+          "quant": "MTP speculative decoding off",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:41:07Z"
+}

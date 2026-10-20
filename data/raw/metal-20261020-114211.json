@@ -1,0 +1,223 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (Liquid AI, 24B-A2B MoE, 40 layers / 64 experts)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "15GB",
+      "context_tokens": "131072",
+      "weight_gb": "14.5GB 4-bit",
+      "system_ram_min": "15GB unified memory (M5 Max)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Liquid AI's on-device agent model: 24B total with ~2B active per token, a 131K context, and 184 t/s on an M5 Max on the 14.5GB 4-bit build with only 15GB of unified memory used, so a 16GB laptop can run it.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (15GB unified memory)",
+          "quant": "4-bit build (14.5GB), 4K-token prompt, Liquid AI's own test",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "4096",
+          "weight_gb": "14.5GB 4-bit",
+          "system_ram_min": "15GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "4-bit MLX build",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "why": "Same card, same weights: TeksEdge took Qwen3.8-27B from an 82 t/s baseline to 381 t/s on a single RTX 3090 by stacking MTP, DFlash2 context lookup and prefix caching, with ordinary chat at about 133 t/s.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup, prefix caching, 25K-token document reproduction (not ordinary chat; chat measured ~133 t/s)",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup, optimized lookup verification (document-reproduction workload)",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-twin-turbo",
+      "name": "Qwen3.8-27B Twin Turbo",
+      "full_name": "Qwen3.8-27B Twin Turbo (community tune: reasoning efficiency + MTP)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "why": "A community tune of Qwen3.8-27B that cuts reasoning tokens 2-20x and adds an MTP build: 75 t/s at Q4_K_S on an RTX 5090, over 90 t/s with the MTP build.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "90",
+          "hardware": "RTX 5090",
+          "quant": "Q4_K_S, MTP speculative-decoding build (creator-reported)",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032613405761904",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-ipad-egpu-r9700",
+      "name": "Qwen3.8-27B (iPad Pro + eGPU R9700)",
+      "full_name": "Qwen3.8-27B (iPad Pro driving a Thunderbolt Sapphire R9700 eGPU)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "why": "An iPad Pro over Thunderbolt to a Sapphire R9700 eGPU runs Qwen3.8-27B at Q4 with a 131K context: 31 t/s standard decoding, 109 with MTP and 159 with DFlash2 draft-tree decoding, plus ~1,636 t/s prefill on 4K input.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Thunderbolt-connected Sapphire R9700 eGPU",
+          "quant": "Q4, 131K context, DFlash2 draft-tree decoding",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-ps5-llamacpp",
+      "name": "Qwen3.8-27B on a jailbroken PS5",
+      "full_name": "Qwen3.8-27B (llama.cpp port to a jailbroken PlayStation 5)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "why": "cobanov's PS5LM port of llama.cpp runs Qwen3.8-27B on a jailbroken PS5's 12 GiB at a 2-bit quant (UD-IQ2_XXS): 9-21 t/s, with the Vulkan backend on Mihawk-99's RADV port and models loaded from USB straight into GPU memory.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, 12 GiB GPU memory (Vulkan via Mihawk-99 RADV port)",
+          "quant": "2-bit UD-IQ2_XXS, Vulkan backend",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2-bit UD-IQ2_XXS (~1.6GB payload limit)",
+          "system_ram_min": "12 GiB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-dgx-spark-sglang-nvfp4",
+      "name": "Qwen3.8-27B NVFP4 on DGX Spark",
+      "full_name": "Qwen3.8-27B (NVFP4 weights served by SGLang with DFlash2 drafting)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "A single DGX Spark serving NVFP4 weights through SGLang with a DFlash2 4-bit drafter holds 74 t/s at 8K context and still generates 38 t/s with 260K tokens in context (median of four runs, thinking off).",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "NVIDIA DGX Spark (128GB unified memory)",
+          "quant": "NVFP4 weights, DFlash2 speculative decoding with a 4-bit drafter (16 tokens per pass), BF16 KV cache, thinking disabled",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192",
+          "system_ram_min": "128GB unified memory"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:42:11Z"
+}

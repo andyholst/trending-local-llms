@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b-tensorfold-m3-ultra",
+      "name": "Qwen3.8-27B (TensorFold M3 Ultra)",
+      "full_name": "Qwen3.8-27B 4-bit on TensorFold + DFlash2 vs stock MLX on an M3 Ultra",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "512GB",
+      "system_ram_min": "512GiB unified memory",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "Yves LaRose's benchmark shows TensorFold finished 256-token replies only 3.8-5.3 percent sooner than stock MLX at 8K-32K on an M3 Ultra - and the real gap was context reuse, where a 64GiB cache cut a repeated 64K-context request from 632s to 16s.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "256",
+          "hardware": "M3 Ultra, 512GiB unified memory, TensorFold + DFlash2",
+          "quant": "4-bit Qwen3.8-27B (Alibaba), 256-token replies, 8K-32K context, cache-budget test",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/YvesLaRose/status/2105730083767881779",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "65536",
+          "system_ram_min": "512GiB unified memory"
+        }
+      ],
+      "vram_min": "512GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:54:17Z"
+}

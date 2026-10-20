@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "context_tokens": "262144",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM (26 MoE layers on CPU)",
+          "quant": "Q4_K_M, --n-cpu-moe 26, -c 262144, -fa on, q8_0 KV cache; ~550 tok/s prefill",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107065293684003048",
+          "likes": 21,
+          "comments": 2,
+          "reshares": 3,
+          "views": 2402,
+          "interactions": 28,
+          "system_ram_min": "16GB",
+          "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0",
+          "context_tokens": "262144"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-05"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:50:42Z"
+}

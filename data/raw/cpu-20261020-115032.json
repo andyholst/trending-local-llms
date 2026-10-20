@@ -1,0 +1,148 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen/Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "110GB",
+      "context_tokens": "262144",
+      "weight_gb": "111.4GB Q4_K_XL",
+      "why": "A 125B MoE at ~21 tok/s decode on a single RTX 4090 24GB by keeping attention on the GPU and streaming expert layers from system RAM with an experimental llama.cpp build (-cmoe), 250K context.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.52",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM (hybrid: 40 expert layers on GPU, -cmoe CPU expert offload), Ubuntu 22",
+          "quant": "Q4_K_XL GGUF ~111.4GB across 4 shards; no MTP, no DFlash2, no KV-cache quant; experimental llama.cpp build with -cmoe",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 24,
+          "comments": 6,
+          "reshares": 5,
+          "views": 9208,
+          "interactions": 40,
+          "weight_gb": "111.4GB Q4_K_XL",
+          "system_ram_min": "110GB",
+          "context_tokens": "81920"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19"
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "why": "Bonsai Oryon packages PrismML's llama.cpp fork into one .deb so Ternary Bonsai 2 9B runs CPU-only on Snapdragon X + Debian, 2.2x faster prompt processing than the stock build (34.8 vs 15.6 tok/s).",
+      "engines": [
+        {
+          "engine": "Bonsai Oryon",
+          "tps": "34.8",
+          "hardware": "Lenovo Snapdragon X laptop, CPU-only, Debian",
+          "quant": "Prompt processing 34.8 tok/s vs 15.6 stock (2.2x); PrismML llama.cpp fork + ggml, one .deb, no compiling",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/th3ycallmeibra/status/2111135412119117896",
+          "likes": 0,
+          "comments": 6,
+          "reshares": 0,
+          "views": 36,
+          "interactions": 6,
+          "engine_repo": "https://github.com/SatoruGoj0/Bonsai-Oryon"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "nemotron-3.5-super-vl-120b",
+      "name": "Nemotron 3.5 Super VL 120B",
+      "full_name": "lmstudio-community/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-GGUF",
+      "type": "LLM (MoE, VLM)",
+      "license": "NVIDIA Open Model License",
+      "params": "120B (MoE, 12B active)",
+      "hf": "lmstudio-community/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-GGUF",
+      "vram_tier": "32GB",
+      "vram_min": "29.6GB",
+      "system_ram_min": "64GB",
+      "context_tokens": "262144",
+      "weight_gb": "Q4_K_M (LM Studio GGUF)",
+      "engine_min_version": "llama.cpp b11696 (--fit, --load-mode none, --spec-type draft-mtp 3)",
+      "why": "A 120B MoE tuned in llama.cpp to a genuinely usable daily driver on one RTX 5090: mmap off plus the GGUF's built-in MTP head reaches 35.1 tok/s at 64K and 30.8 tok/s at 262K with 57 of 88 layer parts' experts on the CPU.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35.1",
+          "hardware": "RTX 5090 24GB + 64GB system RAM (29.6 GiB VRAM, 57 of 88 layer parts' experts on CPU)",
+          "quant": "Q4_K_M from LM Studio, llama.cpp b11696; --fit on, --load-mode none, --spec-type draft-mtp n 3, -ub 4096; built-in MTP head (acceptance 80-88%); stock --fit is 22.3 tok/s, 30.8 tok/s at 262K",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2112201475518533730",
+          "likes": 49,
+          "comments": 2,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 54,
+          "weight_gb": "Q4_K_M (LM Studio GGUF)",
+          "system_ram_min": "64GB",
+          "context_tokens": "65536",
+          "engine_min_version": "llama.cpp b11696, --load-mode none, --spec-type draft-mtp 3"
+        }
+      ],
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "Jailbroken PlayStation 5 Slim, 16GB unified GDDR6 (448 GB/s), native-app GPU via RADV/Mesa Vulkan on RDNA 2",
+          "quant": "UD-Q2_K_XL 9.83 GB (9.15 GiB) weight file; PS5LM native GPU app, ~64K context listed by the project",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/llmrequirements/status/2111840979485700458",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 68,
+          "interactions": 0,
+          "weight_gb": "9.83GB UD-Q2_K_XL",
+          "context_tokens": "65536"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-18"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:50:32Z"
+}

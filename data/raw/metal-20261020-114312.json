@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "nemotron-dory-4b",
+      "name": "Nemotron-Labs Dory 4B",
+      "full_name": "Nemotron-Labs Dory 4B (looped model: one shared block run 1-4 times)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "netprojects/nemotron-dory1.0-4b-mlx-8bit",
+      "vram_tier": "8GB",
+      "vram_min": "4.2GB",
+      "weight_gb": "4.2GB 8-bit MLX",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "NVIDIA's looped 4B trades speed for accuracy by running one shared block 1-4 times; the 8-bit MLX build is 4.2GB and generates about 26 t/s on an M5 Max.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "Apple M5 Max",
+          "quant": "8-bit MLX (4.2GB)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/ParisMichalas/status/2112122409381683355",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4.2GB 8-bit MLX"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:43:12Z"
+}

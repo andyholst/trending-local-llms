@@ -1,0 +1,113 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "1432MB peak",
+      "why": "Google's own edge path runs Gemma 4 E2B on a Raspberry Pi 5 through LiteRT-LM at 9 tokens/sec decode with 1432 MB peak memory, CPU-only, no cloud.",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU, no GPU used for the LLM)",
+          "quant": "LiteRT-LM, 1432 MB peak RAM; decode 9 tok/s (prefill 99 tok/s)",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 2,
+          "views": 538,
+          "interactions": 541,
+          "weight_gb": "1432MB peak resident",
+          "system_ram_min": "1432MB peak"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-05"
+    },
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "system_ram_min": "8GB",
+      "weight_gb": "769MB Q4_K_M",
+      "engine_min_version": "llama.cpp build b8816, CPU-only (ARMv8.0)",
+      "why": "Runs fully CPU-only on a Raspberry Pi 4 (8GB RAM) with llama.cpp build b8816: 769 MB Q4_K_M weights, 2.9 tok/s generation at ~6 tok/s prompt processing.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Q4_K_M, CPU-only ARMv8.0 build; prompt 5.9 tok/s, generation 2.9 tok/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 341,
+          "interactions": 3,
+          "weight_gb": "769MB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16"
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "8GB",
+      "weight_gb": "2.9GB Q4_K_M",
+      "engine_min_version": "llama.cpp build b8816, CPU-only (ARMv8.0)",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "1",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Q4_K_M, CPU-only ARMv8.0 build; prompt 2.0 tok/s, generation 1.0 tok/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 341,
+          "interactions": 3,
+          "weight_gb": "2.9GB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)"
+        }
+      ],
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16"
+    }
+  ],
+  "generated_utc": "2026-10-20T11:50:31Z"
+}

@@ -1,0 +1,179 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (PrismML, Qwen3.8-27B compressed to ~1.72 bits/weight)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB PTQ1_0",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "PrismML compresses Qwen3.8-27B to ternary weights at ~1.72 bits: the PTQ1_0 packing is 5.95GB (262K context) and the speed-first PQ2_0 is 7.21GB (220K context), so a 27B runs on a 12GB card or a 16GB Mac.",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary GGUF (7.21GB), 220K context, Q4_0 KV cache",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "220000",
+          "weight_gb": "7.21GB PQ2_0",
+          "engine_min_version": "PrismML fork required (stock llama.cpp rejects the ternary files); llama-server -ngl 999 -c 220000 -fa on --jinja -np 1 --cache-type-k q4_0 --cache-type-v q4_0"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB, 5.95GB PTQ1_0 weights",
+          "quant": "PTQ1_0 ternary GGUF (5.95GB), 125K context, 8 JS files / 328K tokens generated",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "125000",
+          "weight_gb": "5.95GB PTQ1_0"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b-mac-m4-max",
+      "name": "Bonsai 2 27B on M4 Max",
+      "full_name": "Ternary Bonsai 2 27B on a 128GB Mac Studio M4 Max",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "128GB",
+      "system_ram_min": "128GB",
+      "weight_gb": "~7GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "why": "On a 128GB M4 Max Mac Studio the ternary 27B holds 34.5 t/s for prose and 34.3 t/s for code with 242 t/s prefill, while the same model on a 24GB Mac mini M4 drops to 11 t/s decode — a 3.1x difference that tracks memory bandwidth.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34.5",
+          "hardware": "Mac Studio M4 Max, 128GB unified memory",
+          "quant": "ternary MLX weights (~7GB), 1.72 bits/weight",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~7GB ternary",
+          "system_ram_min": "128GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "11.0",
+          "hardware": "Mac mini M4, 24GB unified memory (10-core GPU)",
+          "quant": "ternary MLX weights (~7GB), 1.72 bits/weight",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~7GB ternary",
+          "system_ram_min": "24GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "9",
+          "hardware": "2021 MacBook Pro M1 Pro, 16GB unified memory",
+          "quant": "ternary MLX weights",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "16GB unified memory"
+        }
+      ],
+      "vram_min": "128GB"
+    },
+    {
+      "id": "bonsai-2-27b-mlx-fast",
+      "name": "Bonsai 2 27B (mlx.fast)",
+      "full_name": "Ternary Bonsai 2 27B on Yukon's mlx.fast leaderboard (compressed 27B on a 16GB Mac)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "16GB unified memory",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-26",
+      "why": "Yukon's open mlx.fast challenge took the ternary 27B from a ~59 t/s baseline to 237.4 t/s decode on a compressed 27B that fits a 16GB Mac, a 302.7 percent gain in two days.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Apple Silicon Mac (mlx.fast leaderboard)",
+          "quant": "ternary compressed 27B, baseline ~59 t/s",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "16GB unified memory"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b-3090-bonsai-agent",
+      "name": "Bonsai 2 27B (RTX 3090, restored MTP head)",
+      "full_name": "Bonsai 2 27B with a restored MTP head on a single RTX 3090",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-30",
+      "why": "A reproducible single-GPU agent setup: Bonsai 2 27B with kernel tweaks and a restored MTP head runs a 77-minute Hermes Agent build on one RTX 3060 12GB with the 262K context resident, at about 40 t/s decode.",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB, 262K context resident",
+          "quant": "ternary GGUF, restored MTP head, kernel-level tweaks",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:54:17Z"
+}

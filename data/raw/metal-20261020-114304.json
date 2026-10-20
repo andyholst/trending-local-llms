@@ -1,0 +1,198 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b-mlx-serve-26.10.1",
+      "name": "Qwen3.8-27B (MLX-Serve 26.10.1, drafter on)",
+      "full_name": "Qwen3.8-27B 4-bit on MLX-Serve 26.10.1 with its drafter (M4 Max)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "64GB",
+      "system_ram_min": "64GB+ unified memory (M4 Max)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "Three Apple-Silicon engines on one Qwen3.8-27B 4-bit model and one drafter land within a few t/s of each other: TensorFold 154 t/s on numbers, mlx-serve 115 on code and 54 on a story workload, and all three fall to 29-31 t/s with drafting off, so the race is the drafter, not the engine.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "115",
+          "hardware": "Apple M4 Max",
+          "quant": "Qwen3.8-27B 4-bit (ddalcu's build), drafting on, code workload, --no-mtp",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "mlx-serve 26.10.1 --no-mtp (default 26.10.1 picks MTP over the DFlash drafter)"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "54",
+          "hardware": "Apple M4 Max",
+          "quant": "Qwen3.8-27B 4-bit, drafting on, story workload",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "Apple M4 Max",
+          "quant": "Qwen3.8-27B 4-bit, drafting on, numbers workload",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "144",
+          "hardware": "Apple M4 Max",
+          "quant": "Qwen3.8-27B 4-bit, drafting on, JSON workload",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "oMLX 0.7.0"
+        }
+      ],
+      "vram_min": "64GB"
+    },
+    {
+      "id": "qwen3.8-27b-tensorfold-dflash2-macmini",
+      "name": "Qwen3.8-27B (TensorFold + DFlash2, Mac mini M6)",
+      "full_name": "Qwen3.8-27B 4-bit on TensorFold with DFlash2 drafting on a Mac mini M6",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "why": "Speculative decoding stopped being a cloud trick: the same Qwen3.8-27B MLX 4-bit on a Mac mini M6 goes from 10.1 to 61.9 t/s on code generation and 10.1 to 30.8 on chat with TensorFold's DFlash2 drafting, with every accepted token byte-identical to serial decoding.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6",
+          "quant": "MLX 4-bit, DFlash2 drafting, code generation",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-oluwaphilemon1-250k",
+      "name": "Qwen3.8-27B (Apple Silicon long-context)",
+      "full_name": "Qwen3.8-27B on Apple Silicon with the drafter enabled",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-23",
+      "why": "A runtime update alone made Qwen3.8-27B substantially faster on Apple Silicon — +66 percent on an M5 Ultra, +28 on an M4 Max, +37 on an M1 Pro with the drafter on — while MLX-Serve kept output byte-identical across 18 models.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "120",
+          "hardware": "M5 Max MacBook Pro (LM Studio Bionic serving)",
+          "quant": "Inco AI Splash engine, subagent running alongside the main agent",
+          "date": "2026-09-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2102223365268246864",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-tensorfold-m3-ultra",
+      "name": "Qwen3.8-27B (TensorFold M3 Ultra)",
+      "full_name": "Qwen3.8-27B 4-bit on TensorFold + DFlash2 vs stock MLX on an M3 Ultra",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "512GB",
+      "system_ram_min": "512GiB unified memory",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "Yves LaRose's benchmark shows TensorFold finished 256-token replies only 3.8-5.3 percent sooner than stock MLX at 8K-32K on an M3 Ultra — and the real gap was context reuse, where a 64GiB cache cut a repeated 64K-context request from 632s to 16s.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "1.2",
+          "hardware": "M3 Ultra, 512GiB unified memory",
+          "quant": "4-bit Qwen3.8-27B (Alibaba), 256-token replies, cache-budget test",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/YvesLaRose/status/2105730083767881779",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "65536",
+          "system_ram_min": "512GiB unified memory"
+        }
+      ],
+      "vram_min": "512GB"
+    },
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390 (EfficientThink-based modified 27B)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "A modified 27B coder tuned to cut unproductive reasoning tails (LiveCodeBench 83 to 90): DFlash2 speculative decoding pushes it to 180 t/s on a 24GB GPU.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "24GB GPU",
+          "quant": "DFlash2 speculative decoding, Coder390 EfficientThink-based tune",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110315086669595007",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:54:17Z"
+}

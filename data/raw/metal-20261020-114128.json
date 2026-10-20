@@ -1,0 +1,84 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (Meta, 816B-A42B)",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "context_tokens": "1048576",
+      "weight_gb": "~493GB NVFP4",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Apple's MLX stack splits Meta's 816B-A42B open model across M5 Ultra Mac Studios over Thunderbolt RDMA: four machines generate at roughly 36-37 t/s and two at about 25 t/s, and the NVFP4 weights take ~493GB of the combined unified memory.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x M5 Ultra Mac Studio (512GB each, ~1TB unified memory, RDMA over Thunderbolt)",
+          "quant": "NVFP4 (~493GB weights), 8K context, tensor parallelism",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192",
+          "weight_gb": "~493GB NVFP4",
+          "system_ram_min": "1TB unified memory (4x 512GB Mac Studio)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio (512GB each)",
+          "quant": "NVFP4 (~493GB weights), 8,192-token context, tensor parallelism",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/petranto/status/2111501005258932650",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192",
+          "weight_gb": "~493GB NVFP4",
+          "system_ram_min": "1TB unified memory (2x 512GB Mac Studio)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x M5 Ultra Mac Studio (RDMA over Thunderbolt 5)",
+          "quant": "NVFP4, 8,192-token context",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/marcel_butucea/status/2111196917803962501",
+          "likes": 19,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x M5 Ultra Mac Studio (512GB each, ~1TB unified memory)",
+          "quant": "NVFP4 (~493GB weights), 8,192-token context",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
+          "likes": 67,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "8192",
+          "weight_gb": "~493GB NVFP4",
+          "system_ram_min": "~1TB unified memory (4x 512GB Mac Studio)"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T11:41:28Z"
+}
