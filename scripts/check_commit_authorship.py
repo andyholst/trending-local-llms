@@ -83,29 +83,9 @@ IDENTITY_RE = re.compile(r"^(?P<name>.*?)\s*<(?P<email>[^<>]*)>\s*$")
 #: The identities this repo allows. Names are matched case-insensitively after
 #: whitespace is collapsed; `github-actions[bot]` and `GitHub` are the repo's own
 #: automation (see the module docstring for why they cannot be refused).
-ALLOWED_NAMES = (
-    "andy",
-    "andy holst",
-    "andyholst",
-    "asimov",
-    "asimov agent",
-    "asimov-agent",
-    "github-actions[bot]",
-    "github",
-)
-
-ALLOWED_EMAILS = (
-    "andy.holst@protonmail.com",
-    "andyholst@users.noreply.github.com",
-    "asimov@example.com",
-    "asimov@omarchy.local",
-    "asimov-agent@users.noreply.github.com",
-    #: The agent's OWN address — the identity every committing bot job uses
-    #: (issue #323). Allowed by NAME too, but listed so the pair is complete.
-    "support@docondee.com",
-    "41898282+github-actions[bot]@users.noreply.github.com",
-    "noreply@github.com",
-)
+# The identity's ONE definition (issue #325): the name/email every committing job uses and
+# the sets this guard accepts. A hand-kept copy here was the fifth place to edit.
+from agent_identity import AGENT_EMAIL, AGENT_NAME, ALLOWED_EMAILS, ALLOWED_NAMES  # noqa: E402
 
 #: Refused even when the name or the email is allowed: an identity that CLAIMS
 #: to be Hermes is the exact leak this guard exists for (issue #317).

@@ -216,8 +216,7 @@ jobs:
         run: |
           # The repo's own agent identity (issue #323, guard scripts/check_commit_authorship.py):
           # the only identities here are Andy Holst and Asimov Agent.
-          git config user.name "Asimov Agent"
-          git config user.email "support@docondee.com"
+          make git-identity
           # The container writes files as root; make them committable.
           sudo chown -R "$(id -u):$(id -g)" .
           # qa-report.txt / comment.md are in .gitignore, so a plain `add -A`
