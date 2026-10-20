@@ -462,8 +462,7 @@ jobs:
             BRANCH="ci/trending-refresh-$(date +%Y%m%d-%H%M)"
             # The repo's own agent identity (issue #323, guard scripts/check_commit_authorship.py):
             # the only identities here are Andy Holst and Asimov Agent.
-            git config user.name "Asimov Agent"
-            git config user.email "support@docondee.com"
+            make git-identity
             git checkout -b "$BRANCH"
             sudo chown -R "$(id -u):$(id -g)" .
             git add README.md data/models.json data/snapshots data/raw data/gap_baseline.json
