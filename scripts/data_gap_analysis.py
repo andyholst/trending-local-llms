@@ -85,7 +85,16 @@ DIMENSIONS = (
     {
         "key": "storage_offload",
         "label": "storage-offload requirement (experts on SSD)",
-        "text": re.compile(r"\bssd\b|\bdisk\b|\boffload", re.I),
+        # A storage offload needs a MEDIUM and an offload/streaming wording in the same
+        # sentence: "offloaded to the CPU" is a RAM story, "2.1GB on disk" is a file size,
+        # and a machine's own SSD is not a requirement of the model. The old pattern
+        # (`\bssd\b|\bdisk\b|\boffload`) flagged all of them, so five models were re-filed
+        # as a storage gap on every refresh and a reader could not tell a storage
+        # requirement from a memory one (issues #413/#367).
+        "text": re.compile(
+            r"\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b[^.\n]{0,32}\b(?:ssd|nvme|flash|disk|hdd|storage)\b"
+            r"|\b(?:ssd|nvme|flash|disk|hdd|storage)\b[^.\n]{0,32}\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b",
+            re.I),
         "why": "MoE engines (Strata) run big models by streaming experts from storage",
     },
     {
