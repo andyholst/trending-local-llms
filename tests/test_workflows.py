@@ -1926,10 +1926,29 @@ def test_gh_before_the_checkout_names_the_repo():
           "GH_REPO" in fix_env, sorted(fix_env))
 
 
+
+def test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result():
+    """Issue #432: `pull_request` checks out the MERGE COMMIT by default, so `make
+    openspec-check` compared the index with a tree carrying every OTHER open change and
+    reported it stale on branches whose index was current — a PR could not go green while a
+    sibling merged first. The gate is about the contributor's own tree."""
+    doc = load("qa-validate.yml")
+    steps = doc["jobs"]["validate"]["steps"]
+    checkout = next(s for s in steps if "actions/checkout" in str(s.get("uses", "")))
+    ref = str((checkout.get("with") or {}).get("ref", ""))
+    check("qa-validate: the validate job checks out the PR head",
+          "github.event.pull_request.head.sha" in ref, ref)
+    check("qa-validate: … and falls back to github.sha on a push to master",
+          "github.sha" in ref, ref)
+    check("qa-validate: full history is still fetched (authorship guard, #317)",
+          str((checkout.get("with") or {}).get("fetch-depth")) == "0", checkout.get("with"))
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_refresh_bot()
     test_the_rebuild_decision_is_one_tested_unit()
+    test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
     test_qa_validate()
     test_fix_bot()
     test_fix_bot_announces_its_window()

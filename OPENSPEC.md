@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **85** · archived: **0**
+Active changes: **86** · archived: **0**
 
 ## Active changes
 
@@ -55,6 +55,7 @@ Active changes: **85** · archived: **0**
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
+| `index-checked-on-the-pr-tree` | active | #432 (measured) · #304 (the related finding) | — | [pr-ci](openspec/changes/index-checked-on-the-pr-tree/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/index-checked-on-the-pr-tree/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
 | `ingest-names-a-dead-hf-link` | active | #333 | — | [hf-link-verification](openspec/changes/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/ingest-names-a-dead-hf-link/proposal.md) |
 | `ingest-new-snapshots-only` | active | #175 | — | [ingest-boundary](openspec/changes/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/ingest-new-snapshots-only/proposal.md) |

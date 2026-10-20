@@ -101,6 +101,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # The PR's OWN tree, never the merge result (issue #432). `pull_request`
+          # otherwise checks out the MERGE COMMIT, so `make openspec-check` compared the
+          # index with a tree that carries every other open change and reported
+          # "[openspec-index] FAIL … (84 active on disk)" on a branch whose index was
+          # current when it was written — three times in one session, and a PR could never
+          # be green while a sibling merged first. The index is a generated file that every
+          # change edits; it can only be verified against the tree that produced it.
+          # `master`'s own index is verified by this pipeline's `push` run, and `auto-merge`
+          # matches on the validated head SHA, so what merges is what was checked.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # FULL history: `make check-commit-authorship` reads the commits a PR
           # adds (`origin/master..HEAD`), and a shallow checkout has no base ref
           # — the guard would then fail loudly instead of checking anything
