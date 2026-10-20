@@ -322,6 +322,16 @@ _verify-closure:
 verify-closure:
 	$(MAKE) _verify-closure PR="$(PR)" REPO="$(REPO)"
 
+# A conflicting PR runs NO workflows (issue #442): its checks are ABSENT, not failed, so an
+# empty check list looks like a quiet queue. The DECISION lives in scripts/pr_health.py; this
+# target is how the sweep and a human reach it.
+.PHONY: _pr-health pr-health
+_pr-health:
+	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,)
+
+pr-health:
+	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)"
+
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
 	python3 scripts/pr_closure.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--branch "$(BRANCH)" $(if $(BODY_FILE),--body-file "$(BODY_FILE)",))
