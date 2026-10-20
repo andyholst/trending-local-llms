@@ -207,6 +207,7 @@ keep it honest (issue #207):
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
+| `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started. `scripts/pr_health.py` lists the open non-draft PRs, keeps the two reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch). Exit 1 when a PR is silent. Run by `pr-health.yml` |
 | `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
 | `code-review-file` (`REPO=` `CAP=3` `DRY=1`) | File ONE issue per NEW finding, marker-deduped and capped per run (`scripts/code_review.py file`). Its whole output is issues — it never edits code, never merges. Run by `code-review-bot.yml` |
 | `issue-verdict` (`ISSUE=` `TRIAGE_FILE=`) | Apply the implementer's TRIAGE verdict DETERMINISTICALLY (issue #210): `implement` touches nothing (the run continues to its PR), `refine` posts ONE restatement + `agent:refined`, `close` posts the reason with its cited EVIDENCE, closes and applies `agent:closed`. A close with no EVIDENCE, a refine with no restatement and an unknown verdict exit 2 with no write at all |
@@ -279,7 +280,8 @@ keep it honest (issue #207):
 
 Seven workflows in `.github/workflows/`. Five have a cron: **`refresh-bot.yml`**
 (daily), **`issue-bot.yml`** (hourly, `19`), **`issue-review-bot.yml`**
-(hourly, `41`), **`queued-alarm.yml`** (twice an hour, `7,37`) and
+(hourly, `41`), **`queued-alarm.yml`** (twice an hour, `7,37`),
+**`pr-health.yml`** (twice an hour, `23,53`) and
 **`code-review-bot.yml`** (weekly Monday `23 7`, its own slot). GitHub delays
 and sometimes **drops** on-the-hour crons, hence the odd minutes (:19, :41,
 :07/:37, 17:43, 07:23).
@@ -347,6 +349,16 @@ Two jobs, seconds long, read-only (no push, no comment, no merge). Its own pipel
 adding `edited` to `qa-validate` would re-run the image builds, the unit suite and the
 30-minute network-bound `live-smoke` — a real Firecrawl spend — because a sentence changed.
 
+### `.github/workflows/pr-health.yml` — the silent-PR alarm (twice an hour, `23,53`)
+
+A conflicting PR runs no workflows at all (issue #442), so `gh pr checks` answers "no checks
+reported" and nothing distinguishes it from a quiet queue.
+
+- **`guard`** — the FIRST job (rule 6j); the scheduled run passes it by design.
+- **`sweep`** (`needs: guard`) — `actions/checkout`, then `make pr-health REPO=… COMMENT=1`. The
+  comment uses the DEFAULT token (`pull-requests: write`, rule 6b). Exit 1 when a PR is silent, so
+  the scheduled run goes red.
+
 ### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
 
 `concurrency: queued-alarm` (queued, never cancelled). A job whose runner label matches nothing
@@ -357,6 +369,7 @@ does not fail — it stays `queued` forever, so the run never concludes and ever
 |---|---|
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
 | `alarm` | `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`): list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run. Exit 1 when a job is stuck, so the scheduled run goes red. It never edits code, never opens a PR, never merges |
+| `sweep` | `make pr-health REPO=… COMMENT=1` (`scripts/pr_health.py`): list the open non-draft PRs, flag every one that is `CONFLICTING` (no merge commit, so no workflow runs) or has no check runs on its head commit, print the head branch, and comment ONE marker-deduplicated note naming the fix. Exit 1 when any PR is silent. Read-only apart from that comment; never edits code, never opens a PR, never merges |
 
 ### `.github/workflows/code-review-bot.yml` — the tree/pipeline reviewer (weekly + dispatch)
 

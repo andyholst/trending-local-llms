@@ -1,0 +1,81 @@
+name: pr-health
+
+# Issue #442 — A SILENT PR IS AN ALARM.
+#
+# A PR whose merge commit GitHub cannot build (`CONFLICTING`) gets NO `pull_request` runs at
+# all: `validate`, `live-smoke`, `pr-closure` and `auto-merge` are ABSENT, not failed, so
+# `gh pr checks` answers `no checks reported` and the author sees an empty circle. Measured on
+# PR #439 (zero runs while conflicting) and PR #436 (green checks over a commit nobody had
+# updated, because the repair went to a differently-named local branch).
+#
+# The queue alarm (`queued-alarm.yml`, #252) covers a stuck JOB. Nothing covered a PR that
+# runs NOTHING — this sweep does, and it says what to do: `make worktree-resume`, merge the
+# base, and push to the PR's HEAD branch.
+#
+# No conditional job anywhere: the DECISION lives in scripts/pr_health.py and the workflow
+# calls it through `make pr-health` (rules 6d/6m).
+#
+# Exit contract: 1 when at least one open PR is silent, so the scheduled run goes RED instead
+# of staying quiet. Read-only apart from ONE deduplicated comment per affected PR.
+on:
+  schedule:
+    - cron: "23,53 * * * *"   # twice an hour (an odd minute; GitHub drops top-of-hour runs)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+concurrency:
+  group: pr-health
+  cancel-in-progress: false
+
+jobs:
+  # Rule 6j: the guard is the FIRST job, before any secret is read, and the scheduled run
+  # passes it by design (its identity is GitHub's, not a caller's).
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            echo "The scheduled sweep is GitHub's own event - allowed."
+            exit 0
+          fi
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            if [ "$u" = "github-actions[bot]" ]; then echo "The bot itself ($u) - allowed."; continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner, the bot, or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  sweep:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # `gh` resolves the repository from the remote, so the sweep needs a checkout (and the
+      # Makefile — every call goes through `make`, rule 6m).
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The comment uses the DEFAULT token (rule 6b): the owner PAT has no Issues/PR-comment
+      # scope here, and a refused comment would leave the sweep green over a silent PR.
+      - name: Flag every silent open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: make pr-health REPO="$REPO" COMMENT=1
