@@ -1696,6 +1696,58 @@ def _concordant(a: float, b: float, tol: float = 0.12) -> bool:
         return a == 0
     return abs(a - b) <= tol * max(a, b)
 
+def _real_post(m: dict) -> str:
+    """The model-agnostic identity of a POST: its `/status/<id>` URL, or '' when the row
+    carries a placeholder (a bare mirror link, a profile page, nothing at all)."""
+    url = str(m.get("source_post") or "")
+    return url if re.search(r"/status/\d+", url) else ""
+
+
+def _collapse_one_post(rows: list[dict]) -> list[dict]:
+    """One real post states ONE measurement per (engine, date) — collapse the rest.
+
+    `merge_engines` groups by engine + GPU-size identity + a CONCORDANT t/s, so the same
+    post captured twice with different hardware wording (or a different t/s) stayed several
+    store rows, carrying contradictory dimension values into the card-fit and traceability
+    views: `qwen3.6-35b-a3b` had four Ollama rows dated 2026-10-16 from one post (two
+    `context_tokens` 66000 and two 67000), `qwen3.8-27b` two llama.cpp rows from one post
+    (8192 and 65536) — issue #389.
+
+    A row whose `source_post` is a REAL post URL collapses with its siblings on
+    `(engine, date, source_post)`: the HIGHER t/s is kept (never averaged down, never
+    lowered), engagement counters are kept at their max (never shrunk), and `MEASUREMENT_
+    DIMENSION_FIELDS` fill only (a stated value is never overwritten, an unstated one never
+    invented) — the additive rule (AGENTS.md §2.3b) at measurement level. A placeholder post
+    is NOT a key: two rows that both carry '' are not evidence of one measurement.
+    """
+    out: list[dict] = []
+    by_key: dict[tuple, dict] = {}
+    for m in rows:
+        post = _real_post(m)
+        if not post:
+            out.append(m)
+            continue
+        key = (m.get("engine"), str(m.get("date") or ""), post)
+        keep = by_key.get(key)
+        if keep is None:
+            keep = dict(m)
+            by_key[key] = keep
+            out.append(keep)
+            continue
+        if _tps_core(m.get("tps")) > _tps_core(keep.get("tps")):
+            keep["tps"] = m.get("tps")
+        for k in COUNTER_FIELDS:
+            keep[k] = max(int(keep.get(k) or 0), int(m.get(k) or 0))
+        for k in MEASUREMENT_DIMENSION_FIELDS:
+            if keep.get(k) in (None, "", [], {}):
+                v = m.get(k)
+                # NEVER write an explicit null: the contract types these as strings, and a
+                # `weight_gb: null` in the store fails model_contract (measured here).
+                if v not in (None, "", [], {}):
+                    keep[k] = coerce_additive(v)
+    return out
+
+
 def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
     """Merge incoming engine measurements into current, engagement-weighted.
 
@@ -1707,7 +1759,9 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
     highest-engagement measurement (newest date tie-break). Non-concordant t/s
     (a genuinely different measurement, e.g. a different quant) stays a distinct
     row. Never drops a current entry."""
-    combined = list(current) + incoming
+    # FIRST collapse the rows a single real post produced (issue #389), then group the
+    # rest by the existing engine/GPU-size/concordant-t/s identity.
+    combined = _collapse_one_post(list(current) + incoming)
     out: list[dict] = []
     used = set()
     for i, m in enumerate(combined):
@@ -1833,6 +1887,10 @@ _ADDITIVE_MODEL_FIELDS = (
 # snapshot that states none yields none, and `tests/test_measurement_footprint.py`
 # drives one that does through the real ingest. ONE definition (rule 6d) — the keys
 # are declared in both contracts, which the same test proves.
+#: Engagement counters that live on a measurement. Collapsing one post's rows may only
+#: RAISE one (AGENTS.md §2.3b): the post's signal is the post's, not one capture's.
+COUNTER_FIELDS = ("likes", "comments", "reshares", "views", "interactions")
+
 MEASUREMENT_DIMENSION_FIELDS = (
     "weight_gb", "context_tokens", "system_ram_min", "storage_offload", "engine_min_version")
 
