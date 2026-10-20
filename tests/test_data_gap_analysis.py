@@ -209,6 +209,174 @@ def test_a_capacity_mention_is_not_an_unstructured_weights_figure():
           report["missing"]["weight_gb"])
 
 
+def test_an_engine_note_is_not_per_model_prose_evidence():
+    """An engine's registry note describes the ENGINE, and every model that names it
+    shares it — so it can never be evidence about ONE model's footprint.
+
+    Measured on the store (issue #456): the `DFlash2` note reads "Speculative decoding
+    + context-lookup … up to ~381 tok/s context-lookup on 24 GB RTX 3090", and every
+    model naming DFlash2 was reported as stating a context window in prose — three
+    entries in `unstructured:context_tokens` and three `…:context_tokens:<model>`
+    signature lines, from one sentence about an engine."""
+
+    # Given a store whose engine note mentions a context window…
+    store = store_with([model("silent", supported_engines=["DFlash2"])])
+    store["engines"]["DFlash2"] = {
+        "backend": "CUDA", "url": "https://github.com/x/dflash2",
+        "note": "Speculative decoding + context-lookup; up to ~381 tok/s context-lookup on 24 GB RTX 3090 (128K context)"}
+    # …and a model whose OWN quant states one
+    speaking = model("speaking", supported_engines=["DFlash2"])
+    speaking["engines"][0]["quant"] = "Q4_K_M, 128K context"
+    store["models"].append(speaking)
+
+    # When  the store is analysed
+    report = G.analyse(store, {"model": set(), "measurement": set(), "search_model": set()},
+                       raw_dir=Path("/nonexistent"))
+    unstructured = report["unstructured"]["context_tokens"]
+
+    # Then  the engine's sentence is NOT read as the silent model's prose…
+    check("context_tokens: an engine note is not per-model prose evidence",
+          "silent" not in unstructured, str(unstructured))
+    # …the silent model is still a real COVERAGE gap…
+    check("context_tokens: a model with no figure is still 'missing'",
+          "silent" in report["missing"]["context_tokens"], str(report["missing"]["context_tokens"]))
+    check("context_tokens: the engine note adds no UNSTRUCTURED signature entry for the model",
+          not any(s.startswith("unstructured:") and s.endswith(":silent")
+                  for s in report["signature"]), str(report["signature"]))
+    # …and the guard is not vacuous: the model that states one IS reported.
+    check("context_tokens: a model's own stated window is still reported as prose",
+          "speaking" in unstructured, str(unstructured))
+
+
+def test_a_context_window_needs_a_figure():
+    """`context` is a TOPIC, not a figure. Issue #456: the detector matched any
+    `context` / `kv-cache` word or a bare `NN k`, so a KV-cache QUANT
+    (`"kv-cache q4_0"`), a feature name (`"DFlash2 context lookup"`) and a
+    document-size test (`"25K-token document reproduction"`) were reported as
+    context windows the store had left unstructured."""
+
+    def unstructured(field_text: str) -> list:
+        m = model("m")
+        m["engines"][0]["quant"] = field_text
+        return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
+                         raw_dir=Path("/nonexistent"))["unstructured"]["context_tokens"]
+
+    # Then  a topic word with no figure is NOT a context window
+    check("context_tokens: 'kv-cache q4_0' is a cache QUANT, not a window",
+          unstructured("Q4_K_M, + flash-attention + kv-cache q4_0; 30 tok/s at 70B Q4") == [], "flagged")
+    check("context_tokens: 'context lookup' is a feature, not a window",
+          unstructured("DFlash2 context lookup, 25K-token document reproduction") == [], "flagged")
+    check("context_tokens: 'NX-token document' is not a model's context window",
+          unstructured("prefix caching, 25K-token document reproduction") == [], "flagged")
+    check("context_tokens: a capacity near the word 'context' is not a window",
+          unstructured("a long context on 24 GB, RTX 3090") == [], "flagged")
+    # …while a stated window IS one, in every wording the posts use
+    for text in ("80k context, model fully in VRAM", "Multimodal + audio, 256K ctx.",
+                 "llama-server, 262,144-token context", "context window 131072",
+                 "ctx 32K", "64K kv cache"):
+        check(f"context_tokens: {text!r} IS a stated window", unstructured(text) == ["m"],
+              f"{text!r} -> {unstructured(text)}")
+
+
+def test_flash_attention_is_not_a_storage_medium():
+    """`flash` in the medium list made an attention KERNEL answer for an SSD.
+
+    Measured on the store (issue #456): `bonsai-2-9b` was reported as
+    `unstructured:storage_offload` for "llama-server with GPU offload, Flash
+    Attention, 262,144-token context" — no storage medium is named at all."""
+
+    def unstructured(field_text: str) -> list:
+        m = model("m")
+        m["engines"][0]["quant"] = field_text
+        return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
+                         raw_dir=Path("/nonexistent"))["unstructured"]["storage_offload"]
+
+    # Then  Flash Attention is not a storage offload
+    check("storage_offload: 'Flash Attention' is an attention kernel, not an SSD",
+          unstructured("llama-server with GPU offload, Flash Attention, 262,144-token context") == [],
+          "flagged")
+    # …while flash STORAGE still is
+    check("storage_offload: 'flash storage' is still a medium",
+          unstructured("experts streamed from flash storage") == ["m"],
+          str(unstructured("experts streamed from flash storage")))
+    check("storage_offload: 'NVMe flash drive' is still a medium",
+          unstructured("MoE expert offload to an NVMe flash drive") == ["m"],
+          str(unstructured("MoE expert offload to an NVMe flash drive")))
+
+
+def test_a_vram_capacity_is_not_a_weights_figure_even_beside_gguf():
+    """A capacity qualified as MEMORY is the machine, not the weights — even when a
+    weights word sits close enough to satisfy the proximity rule.
+
+    Measured on the store (issue #456): `deepseek-v4.1-flash` was reported for
+    "MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM" — `GGUF` is 24
+    characters from `16GB`, but that 16GB is the card's VRAM (#213's class, surviving
+    through a nearby format word)."""
+
+    def unstructured(field_text: str) -> list:
+        m = model("m")
+        m["engines"][0]["quant"] = field_text
+        return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
+                         raw_dir=Path("/nonexistent"))["unstructured"]["weight_gb"]
+
+    # Then  a VRAM / RAM / unified-memory capacity is not a weight footprint
+    check("weight_gb: '16GB on VRAM' beside GGUF is not a weights figure",
+          unstructured("MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM") == [],
+          "flagged")
+    check("weight_gb: '60GB RAM' beside a quant word is not a weights figure",
+          unstructured("Q4_K_M GGUF, 60GB RAM for the KV cache") == [], "flagged")
+    check("weight_gb: '256GB unified memory' is not a weights figure",
+          unstructured("GGUF, 256GB unified memory") == [], "flagged")
+    # …while a stated footprint still IS one
+    check("weight_gb: 'Q4_K_M (16.8GB weights)' IS a stated footprint",
+          unstructured("Q4_K_M (16.8GB weights), + flash-attention") == ["m"], "not flagged")
+    check("weight_gb: '<20GB weights' IS a stated footprint",
+          unstructured("Fits 24/32 GB at 4-bit (<20GB weights + KV)") == ["m"], "not flagged")
+
+
+def test_the_real_store_reports_only_figures_it_can_point_at():
+    """On the store this change ships against, every `unstructured` claim is a figure
+    in that model's OWN text, and the coverage counts are untouched.
+
+    Measured before/after (issue #456): `unstructured:context_tokens` 6 -> 2,
+    `unstructured:weight_gb` 3 -> 2, `unstructured:storage_offload` 1 -> 0, while
+    `missing` stayed 30 / 36 / 44 / 58 / 35 — those are real acquisition gaps."""
+
+    # Given the real store and contracts
+    store = G.load(G.STORE)
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    by_id = {m.get("id"): m for m in store["models"]}
+
+    def own_text(m: dict) -> list:
+        fields = ("quant", "hardware", "why")
+        return [str(m.get(f, "")) for f in fields] + [
+            str(e.get(f, "")) for e in (m.get("engines") or []) for f in fields]
+
+    # Then  every claim can be pointed at a figure in the model's own text …
+    unpinned = [f"{k}:{mid}" for k, ids in report["unstructured"].items() for mid in ids
+                if not any(next(d for d in G.DIMENSIONS if d["key"] == k)["text"].search(t)
+                           for t in own_text(by_id[mid]))]
+    check("real store: every 'unstructured' claim is a figure in the model's own text",
+          unpinned == [], str(unpinned))
+
+    # … the set is no larger than the measured, figure-bearing set …
+    check("real store: context_tokens prose claims are the 2 stated windows",
+          set(report["unstructured"]["context_tokens"]) <= {"qwen-3.6-27b", "gemma-4-12b"},
+          str(report["unstructured"]["context_tokens"]))
+    check("real store: weight_gb prose claims are the 2 stated footprints",
+          set(report["unstructured"]["weight_gb"]) <= {"qwen3.6-27b", "muse-glimmer-30b"},
+          str(report["unstructured"]["weight_gb"]))
+    check("real store: no storage offload is claimed from 'Flash Attention'",
+          report["unstructured"]["storage_offload"] == [],
+          str(report["unstructured"]["storage_offload"]))
+
+    # … and the COVERAGE gaps are still reported in full (the report did not go quiet).
+    for key, count in (("system_ram_min", 30), ("weight_gb", 36), ("context_tokens", 44),
+                       ("storage_offload", 58), ("engine_min_version", 35)):
+        check(f"real store: {key} still reports its missing coverage",
+              len(report["missing"][key]) == count, str(len(report["missing"][key])))
+
+
 def test_signature_tracks_the_store_not_the_noise():
     """The issue-triggering signature covers what the STORE lacks; volatile items
     (empty raw legs, estimates) stay in the report and out of the signature."""
@@ -1146,6 +1314,11 @@ def main() -> int:
     test_a_measurement_level_value_is_captured()
     test_a_storage_offload_needs_a_medium_and_an_offload()
     test_a_capacity_mention_is_not_an_unstructured_weights_figure()
+    test_an_engine_note_is_not_per_model_prose_evidence()
+    test_a_context_window_needs_a_figure()
+    test_flash_attention_is_not_a_storage_medium()
+    test_a_vram_capacity_is_not_a_weights_figure_even_beside_gguf()
+    test_the_real_store_reports_only_figures_it_can_point_at()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))

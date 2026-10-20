@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **101** · archived: **0**
+Active changes: **102** · archived: **0**
 
 ## Active changes
 
@@ -107,6 +107,7 @@ Active changes: **101** · archived: **0**
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `unique-rule-numbers` | active | — | — | [rulebook-integrity](openspec/changes/unique-rule-numbers/specs/rulebook-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/unique-rule-numbers/proposal.md) |
 | `unstructured-is-not-a-capacity` | active | #213 (the finding, measured while attempting its backfill) | — | [data-gap-analysis](openspec/changes/unstructured-is-not-a-capacity/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/unstructured-is-not-a-capacity/proposal.md) |
+| `unstructured-needs-a-figure` | active | #456 — `data-gap: storage_offload (40 models)` | — | [data-gap-reporting](openspec/changes/unstructured-needs-a-figure/specs/data-gap-reporting/spec.md) | 10/10 | [proposal.md](openspec/changes/unstructured-needs-a-figure/proposal.md) |
 | `verdict-hold-ceiling` | active | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | active | — | — | [ci-output-safety](openspec/changes/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/verdict-output-format/proposal.md) |
 | `verify-the-issue-closed` | active | #288 — `tech-debt: No post-merge step verifies the referenced issue actually closed` | — | [pr-ci](openspec/changes/verify-the-issue-closed/specs/pr-ci/spec.md) | 9/9 | [proposal.md](openspec/changes/verify-the-issue-closed/proposal.md) |
