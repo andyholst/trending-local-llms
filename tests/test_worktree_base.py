@@ -305,6 +305,16 @@ def test_the_rulebook_states_the_rule() -> None:
           "make worktree-new BRANCH=" in rule and "make worktree-resume BRANCH=" in rule, "")
     check("AGENTS.md: 6n says the base is fetched and asserted",
           "freshly\n   fetched base" in rule and "make base-check" in rule, "")
+    # The always-fetch half: EVERY run fetches before it starts and says which base it
+    # read — the rule the worktree seam only implements for worktrees (issue #440).
+    check("AGENTS.md: 6n requires a fetch before ANY work",
+          "Before ANY work" in rule and "git fetch origin" in rule, "")
+    check("AGENTS.md: 6n requires a fast-forward pull in a checkout you own",
+          "git pull" in rule and "--ff-only" in rule, "")
+    check("AGENTS.md: 6n requires the base SHA to be STATED",
+          "states the base" in rule and "SHA it read" in rule, "")
+    check("AGENTS.md: 6n names the machinery for a checkout you own",
+          "make base-check" in rule, "")
     check("AGENTS.md: 6n pins one implementation (rule 6d)",
           "scripts/worktree_base.py" in rule and "tests/test_worktree_base.py" in rule, "")
     check("AGENTS.md: the section-8 guard table carries the row",
