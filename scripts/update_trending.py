@@ -1532,7 +1532,19 @@ def note_unresolved_hf(model: dict) -> None:
 
 #: Shapes that can only be a QUANT or a format, never an inference-engine name.
 _QUANT_SHAPE = re.compile(
-    r"(?:nv|mx)?fp\d+|bf16|fp16|fp32|int[48]|awq|gptq|gguf|exl\d*|w\d+a\d+", re.I
+    # `exl\d+` needs a DIGIT: `ExLlamaV3` is a real registered engine, and a bare `exl`
+    # with zero-or-more digits refused it whenever the registry was not consulted.
+    r"(?:nv|mx)?fp\d+|bf16|fp16|fp32|int[48]|awq|gptq|gguf|exl\d+|w\d+a\d+|q[2-8](?:_[a-z0-9]+)*", re.I
+)
+#: Shapes that can only be HARDWARE, never an inference-engine name (issue #458, second
+#: measured shape). `Bonsai Oryon` was written for `bonsai-2-9b` on 2026-10-20: Oryon is
+#: Qualcomm's CPU core, so the name was manufactured from the model plus the CPU — and it
+#: carries no quant token, so `_QUANT_SHAPE` alone could not see it. The boundaries matter
+#: in BOTH directions: `strixite` is a real engine and must not match `strix`.
+_HW_SHAPE = re.compile(
+    r"\b(?:oryon|snapdragon|ryzen|epyc|xeon|radeon|geforce|rtx|gtx|instinct|dgx|"
+    r"strix(?![a-z])|halo|apple\s+m\d|m[1-5]\s*(?:max|ultra|pro))\b",
+    re.I,
 )
 
 
@@ -1563,6 +1575,9 @@ def fabricated_engine_reason(engine: object, model: dict, registry: dict) -> str
     quant = _QUANT_SHAPE.search(name)
     if quant:
         return f"the name carries the quantization token {quant.group(0)!r}"
+    hw = _HW_SHAPE.search(name)
+    if hw:
+        return f"the name carries the hardware token {hw.group(0)!r}"
     return None
 
 

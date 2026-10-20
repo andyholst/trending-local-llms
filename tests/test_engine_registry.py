@@ -223,6 +223,16 @@ def test_fabricated_engine_refused_at_ingest():
           r_nv is not None and "FP4" in r_nv, r_nv)
     check("fab: an engine that appears in the model name is NOT refused (WebLLM)",
           r_false_pos is None, r_false_pos)
+    # Second measured shape (issue #458): the name carries HARDWARE, not a quant —
+    # `Bonsai Oryon` (Oryon is Qualcomm's CPU core) red PR #461 on 2026-10-20.
+    r_hw = UT.fabricated_engine_reason("Bonsai Oryon", {"id": "bonsai-2-9b", "name": "Ternary Bonsai 2 9B"}, {})
+    check("fab: the measured 'Bonsai Oryon' is refused as hardware",
+          r_hw is not None and "hardware" in r_hw, r_hw)
+    check("fab: a quant token in a Q-name is refused", UT.fabricated_engine_reason("Q8_0 llama", model, {}) is not None)
+    # ...and the boundary holds in both directions: these are REAL engines, not hardware.
+    for real in ("strixite", "ExLlamaV3", "MLX", "mlx-serve", "llama.cpp"):
+        check(f"fab: the real engine {real!r} is never refused",
+              UT.fabricated_engine_reason(real, model, {}) is None, UT.fabricated_engine_reason(real, model, {}))
     # A registered engine is untouched, and a genuinely NEW engine still passes so that
     # `make validate` keeps failing loudly for a human (the documented behaviour).
     check("fab: a registered engine is kept", UT.fabricated_engine_reason("vLLM", model, {"vLLM": {}}) is None)
