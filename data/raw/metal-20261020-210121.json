@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (125B-class MoE, ~177B per the Strata write-up)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Strata runs Qwen3.8-Flash-Next on a 12GB RTX 5070 at 53-94 t/s by splitting experts between VRAM and system RAM, needing 32GB RAM and about 80GB of disk — a 125B-class MoE on a gaming PC.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB",
+          "quant": "compressed Strata build; developers' tests, NVIDIA RTX 20-50 series and recent Radeon",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 22,
+          "comments": 10,
+          "reshares": 109,
+          "views": 57493,
+          "system_ram_min": "32GB"
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T21:47:45Z"
+}

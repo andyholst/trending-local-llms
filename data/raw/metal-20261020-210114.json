@@ -1,0 +1,55 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-09-19",
+      "why": "Ternary Bonsai 2 27B on a single 12GB RTX 3060: the PQ2_0 build decodes at ~35 t/s with 220K context resident and 7.21GB of weights, the PTQ1_0 build trades down to 26 t/s for the full 262K context in 5.95GB. Both need PrismML's llama.cpp fork — stock llama.cpp rejects the files.",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary packing (~1.72 bits/weight), Q4_0 KV cache; -ngl 999 -c 220000 -fa on --jinja -np 1",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2101411003724689516",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 429,
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "220000",
+          "engine_min_version": "PrismML llama.cpp fork, llama-server -ngl 999 -c 220000 -fa on --jinja -np 1 --cache-type-k q4_0 --cache-type-v q4_0"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "26",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary packing, full 262K context resident",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2101411003724689516",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 429,
+          "weight_gb": "5.95GB PTQ1_0",
+          "context_tokens": "262K",
+          "engine_min_version": "PrismML llama.cpp fork (stock llama.cpp rejects the ternary files)"
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T21:47:45Z"
+}

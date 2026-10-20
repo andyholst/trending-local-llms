@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B",
+      "type": "LLM (A4B, MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "4GB per node",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "0.39",
+          "hardware": "15x $55 off-brand Android TV boxes (4GB RAM each), pipeline parallelism",
+          "quant": "Anthropic Frontier Red Team sharded Gemma-4-26B-A4B across 15 nodes with pipeline parallelism; distributed inference at ~0.39 tok/s",
+          "system_ram_min": "4GB per node",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Milo_AIx/status/2110069604961620027",
+          "likes": 38,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 39
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T20:59:05Z"
+}

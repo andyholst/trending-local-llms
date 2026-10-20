@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "1GB",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16",
+      "why": "Trelis Research's Raspberry Pi 4 benchmark: the only model on that board that comes close to usable, 2.9 tok/s generation from a 769 MB Q4_K_M file.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Q4_K_M (769 MB); llama.cpp build b8816, CPU-only (ARMv8.0); prompt 5.9 t/s",
+          "weight_gb": "769MB Q4_K_M",
+          "engine_min_version": "b8816 (CPU-only, ARMv8.0)",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T20:57:33Z"
+}

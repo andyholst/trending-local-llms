@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-25",
+      "why": "Yukon Research mlx.fast challenge: builders pushed the ternary 27B from a ~59 t/s baseline to 237.4 t/s decode on a 16GB Mac in two days, which is the case for running an open-weight 27B where it should not fit at all.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "Apple Silicon Mac, 16GB unified memory",
+          "quant": "ternary 27B on mlx.fast, Yukon Research challenge (302.7% over the frozen baseline of ~59 t/s)",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 22,
+          "comments": 25,
+          "reshares": 340,
+          "views": 94726,
+          "system_ram_min": "16GB unified memory"
+        }
+      ],
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-20T21:00:52Z"
+}

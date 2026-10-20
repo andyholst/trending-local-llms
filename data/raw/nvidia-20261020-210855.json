@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "128",
+          "hardware": "RTX 3060 12GB",
+          "quant": "core-v2 eval sheet, 1.21 GiB of ternary weights (3/12 tasks solved)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/1101hati/status/2112324564634001684",
+          "likes": 21,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 21,
+          "weight_gb": "1.21 GiB (ternary)",
+          "engine_min_version": "PrismML llama.cpp fork (ternary loader)"
+        }
+      ],
+      "last_seen": "2026-10-19"
+    }
+  ],
+  "generated_utc": "2026-10-20T21:08:55Z"
+}

@@ -1,0 +1,55 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b-bonsai-2",
+      "name": "Qwen3.8-27B Bonsai 2 (ternary)",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8-27B as ternary weights)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB ternary (PTQ1_0)",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-02",
+      "why": "PrismML's ternary 27B built the whole game in five hours on a 12GB RTX 3060 (328K tokens generated), then ran the same weights on a 16GB M1 Pro Mac at 9 tok/s.",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary PTQ1_0 weights, 5.95GB, 125K context; ~50 tok/s fresh and ~22 tok/s average over a five-hour agent session (Hermes Agent, 328K tokens generated); stock llama.cpp rejects the format so the PrismML fork ran it",
+          "weight_gb": "5.95GB PTQ1_0",
+          "context_tokens": "131072",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 48,
+          "comments": 3,
+          "reshares": 6,
+          "views": 7104,
+          "interactions": 57
+        },
+        {
+          "engine": "MLX",
+          "tps": "9",
+          "hardware": "M1 Pro MacBook Pro 16GB",
+          "quant": "ternary 1.72 bits per weight",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-20T20:59:10Z"
+}
