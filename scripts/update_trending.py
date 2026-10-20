@@ -1530,6 +1530,60 @@ def note_unresolved_hf(model: dict) -> None:
                   f"— the link check will fail this PR")
 
 
+#: Shapes that can only be a QUANT or a format, never an inference-engine name.
+_QUANT_SHAPE = re.compile(
+    r"(?:nv|mx)?fp\d+|bf16|fp16|fp32|int[48]|awq|gptq|gguf|exl\d*|w\d+a\d+", re.I
+)
+
+
+def _flat_token(value: object) -> str:
+    """Case-folded, punctuation-free form, so `FP4-Local` and `Qwen3.8-Flash-Next-FP4-Local`
+    are compared as tokens instead of spellings."""
+    return re.sub(r"[^a-z0-9]", "", str(value or "").lower())
+
+
+def fabricated_engine_reason(engine: object, model: dict, registry: dict) -> str | None:
+    """Why `engine` cannot be a real engine name — or None when it could be (issue #458).
+
+    Only a name that is PROVABLY derived from the model or the quant is refused. A genuine
+    engine that is simply not registered yet (`SomeRealServe`, engine_repo fetched or not)
+    returns None and keeps reding `make validate` for a human — that is the documented
+    behaviour and this guard must not swallow it.
+    """
+    name = str(engine or "").strip()
+    if not name or name in (registry or {}):
+        return None
+    # ONLY a provable shape is refused: a QUANTIZATION token in the engine name. An
+    # engine name never contains FP4/NVFP4/Q4_K_M/AWQ/GGUF, so that alone proves the name
+    # was manufactured from the quant. A model-name SUBSTRING is NOT proof — measured while
+    # building this: `WebLLM` is a real engine that appears inside
+    # `Llama-3.1-8B (WebLLM)` and heads `webllm-llama-3.1-8b-inbrowser`, and a substring
+    # rule refused a legitimate measurement (tests/test_7day_aggregation.py). A genuinely
+    # unknown engine must keep failing validation for a human instead.
+    quant = _QUANT_SHAPE.search(name)
+    if quant:
+        return f"the name carries the quantization token {quant.group(0)!r}"
+    return None
+
+
+def refuse_fabricated_engines(
+    model: dict, registry: dict
+) -> tuple[list[dict], list[tuple[str, str, str]]]:
+    """Split a model's measurements into (kept, [(engine, why, source_post)] refused).
+
+    The post travels with the refusal so the log line names the thing a human can open.
+    """
+    kept: list[dict] = []
+    refused: list[tuple[str, str, str]] = []
+    for e in model.get("engines") or []:
+        why = fabricated_engine_reason(e.get("engine"), model, registry)
+        if why:
+            refused.append((str(e.get("engine")), why, str(e.get("source_post") or model.get("source_post") or "unknown")))
+        else:
+            kept.append(e)
+    return kept, refused
+
+
 def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                          verify_hf: bool = False) -> tuple[int, int]:
     """Merge the data/raw/*.json snapshots NEWER than `since` into the store.
@@ -1568,6 +1622,22 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             sys.path.pop(0)
         for d in _er.register_new_engines(store, data.get("models", [])):
             print(f"[ingest] engine {d['engine']!r}: {d['decision']} — {d['reason']}")
+        # A FABRICATED engine never becomes data (issue #458). The search legs are told by
+        # NAME never to write a model name or a quantization as the engine (Makefile
+        # ENGINE_ASK, #378), and the metal leg wrote `FP4-Local` for
+        # bdambrosio/status/2111548404866433346 anyway on 2026-10-20 — reding the refresh
+        # PR for the second day running. A prompt is necessary and not sufficient, so the
+        # refusal happens where the value would enter the store, loudly and by name.
+        for m in data.get("models", []):
+            kept, refused = refuse_fabricated_engines(m, store.get("engines", {}))
+            if refused:
+                m["engines"] = kept
+                for name, why, post in refused:
+                    print(
+                        f"[ingest] REFUSED fabricated engine {name!r} on {m.get('id')}: {why}; "
+                        f"post {post} — a t/s with no engine named by the post is not a valid "
+                        f"entry (rule 5)"
+                    )
         for m in data.get("models", []):
             mid = m.get("id")
             if not mid:
