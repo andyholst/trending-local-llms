@@ -77,6 +77,26 @@ _EVIDENCE_SHAPES = (
 )
 
 
+#: `--state` exit codes (issue #520): the caller branches on these, so they are a contract.
+STATE_OPEN, STATE_CLOSED, STATE_UNREADABLE = 0, 4, 2
+
+
+def issue_state(repo: str, number: str) -> str:
+    """The issue's state as GitHub reports it: 'OPEN', 'CLOSED', or '' when unreadable.
+
+    Used by the implementer's final step: an issue that got CLOSED while the run was in flight
+    (its PR merged) is a finished outcome, not a failed implementation — and a state we cannot
+    read is never a guess (issue #520).
+    """
+    proc = _gh("issue", "view", number, "--repo", repo, "--json", "state", check=False)
+    if proc.returncode != 0:
+        return ""
+    try:
+        return str(json.loads(proc.stdout or "{}").get("state") or "").upper()
+    except ValueError:
+        return ""
+
+
 def evidence_is_checkable(text: str) -> bool:
     """Does this EVIDENCE block point at something in the tree a reviewer can re-run or re-read?"""
     return any(p.search(text or "") for p in _EVIDENCE_SHAPES)
@@ -219,7 +239,26 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--now", default=None)
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and validate, print what WOULD happen, touch nothing")
+    ap.add_argument("--state", action="store_true",
+                    help="print the issue's state and exit 0 (open) / 4 (closed) / 2 (unreadable)")
     args = ap.parse_args(argv)
+
+    if args.state:
+        # The FINAL check, after the implementation: an issue closed mid-run is a finished
+        # outcome (issue #520), and an unreadable state is never a pass.
+        number = (args.issue or os.environ.get("ISSUE", "")).strip()
+        if not number:
+            raise SystemExit("[state] REFUSED: no issue number (--issue or ISSUE=...)")
+        repo = resolve_repo(args.repo)
+        state = issue_state(repo, number)
+        print(f"state={state.lower() or 'unknown'}")
+        if state == "OPEN":
+            return STATE_OPEN
+        if state == "CLOSED":
+            return STATE_CLOSED
+        print(f"[state] could not read #{number}'s state from {repo} — silence is not evidence",
+              file=sys.stderr)
+        return STATE_UNREADABLE
 
     path = Path(args.file)
     if not path.is_file():

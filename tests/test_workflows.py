@@ -1788,6 +1788,44 @@ def test_no_pipeline_opens_a_draft_pr() -> None:
           "draft == false" in cond, cond)
 
 
+def test_the_fail_loudly_step_asks_whether_the_issue_still_needs_doing():
+    """Issue #520: a run whose issue was closed mid-flight is a finished outcome, not a failure.
+
+    Measured on run 39612330011: #183 picked at 14:37, PR #517 merged and closed it at 14:38, and
+    the run ended RED at 14:41 over work that had been done. The step must ask the ONE seam
+    (`make issue-state`) FIRST, treat 4 (closed) as GREEN with a comment on the thread, and leave
+    every other outcome exactly as red as it was.
+    """
+    # Given the implementer pipeline's final failure step
+    wf = load("issue-bot.yml")
+    failing = step(wf["jobs"]["implement"], "Fail loudly when the implementation did not happen")
+    body = failing.get("run", "")
+
+    # Then  the state read comes first, and cannot abort the step before it branches
+    check("issue-bot: the failure step asks the issue's state FIRST (issue #520)",
+          "make issue-state" in body
+          and body.index("make issue-state") < body.index('SCOPE_ERROR:-'),
+          body[:200])
+    check("issue-bot: the state read runs under `set +e` so the step can branch on it",
+          "set +e" in body and "STATE_RC=$?" in body, "")
+
+    # And  a CLOSED issue ends the run GREEN, with ONE marker-deduplicated comment
+    check("issue-bot: a CLOSED issue (exit 4) ends the run GREEN",
+          'if [ "$STATE_RC" = "4" ]' in body, body[:300])
+    closed_branch = body.split('if [ "$STATE_RC" = "4" ]')[1].split("\n          fi")[0]
+    check("issue-bot: …and says so on the issue thread with the default token",
+          "gh issue comment" in closed_branch and "issue-bot-already-fixed" in closed_branch
+          and str(failing.get("env", {}).get("GH_TOKEN")) == "${{ github.token }}",
+          failing.get("env"))
+    check("issue-bot: an unreadable state (exit 2) is NOT excused as closed", '= "2"' not in closed_branch,
+          closed_branch[:200])
+
+    # And  the red paths are untouched: a still-open issue with no work, and the token scope
+    check("issue-bot: a still-open issue keeps BOTH red paths",
+          "produced no implementation" in body and "SCOPE_ERROR" in body
+          and body.rstrip().endswith("exit 1"), body[-160:])
+
+
 def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
     """Issue #271 / AGENTS.md rule 6n: a branch is cut from the FETCHED base, asserted.
 
@@ -2155,6 +2193,7 @@ def main() -> int:
     test_implement_prompt_requires_openspec_and_findings()
     test_issue_bot_files_findings_only_when_green()
     test_issue_bot_announces_its_window()
+    test_the_fail_loudly_step_asks_whether_the_issue_still_needs_doing()
     test_the_queue_rule_has_one_implementation()
     test_issue_review_bot()
     test_the_reviewer_never_edits_an_issue_inside_a_window()

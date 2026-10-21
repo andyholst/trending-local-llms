@@ -613,7 +613,35 @@ jobs:
           # without it the message reads "the push of the # branch" (measured on
           # run 38517245659)
           ISSUE: ${{ steps.iss.outputs.issue }}
+          REPO: ${{ github.repository }}
+          # The default token: this branch comments, and the owner PAT cannot (rule 6e).
+          GH_TOKEN: ${{ github.token }}
         run: |
+          # BEFORE anything is called a failure, ask whether the issue still needs doing (issue
+          # #520): `auto-merge` lands PRs continuously, so the issue this run picked can be
+          # CLOSED by its own PR while the run still works. Measured on run 39612330011: #183 was
+          # picked at 14:37, PR #517 merged and closed it at 14:38, and the run ended RED at
+          # 14:41 with "produced no implementation" over work that had been done.
+          # Exit codes are the contract: 0 = open (a real failure, below), 4 = closed (a finished
+          # outcome, GREEN), 2 = unreadable (never a pass).
+          set +e
+          make issue-state ISSUE="$ISSUE" REPO="$REPO"
+          STATE_RC=$?
+          set -e
+          if [ "$STATE_RC" = "4" ]; then
+            echo "::notice::#$ISSUE was CLOSED while this run was in flight (its PR merged) - nothing left to implement, so this run is GREEN."
+            cat > already-fixed.md <<EOF
+          <!-- issue-bot-already-fixed: ${GITHUB_RUN_ID} -->
+
+          This sweep picked #$ISSUE, and by the time it finished the issue had been **closed** - its
+          PR merged while the run was still in flight. Nothing is left to implement, so this run is
+          a correct no-op rather than a failure; if that merge did not actually do what the issue
+          asked, reopen it and the next sweep will pick it up again.
+          EOF
+            gh issue comment "$ISSUE" --repo "$REPO" --body-file already-fixed.md || true
+            rm -f already-fixed.md
+            exit 0
+          fi
           if [ "${SCOPE_ERROR:-}" = "true" ]; then
             echo "::error::token scope: the push of the #$ISSUE branch was rejected because it edits"
             echo ".github/workflows/**. Grant FIXBOT_DISPATCH_TOKEN the 'Workflows: Read and write'"

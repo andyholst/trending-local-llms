@@ -63,7 +63,7 @@ d="@D@"; echo "$*" >> "$d/calls.log"
 case "$1 $2" in
   "api repos/o/r/issues/42") cat "$d/issue.json" ;;
   "api repos/o/r/issues/42/comments") cat "$d/comments.jsonl" ;;
-  "issue view") cat "$d/labels.json" ;;
+  "issue view") case "$*" in *"--json state"*) cat "$d/state.json" ;; *) cat "$d/labels.json" ;; esac ;;
   "issue edit")  # --add-label L
     for a in "$@"; do case "$prev" in --add-label) echo "{\\"labels\\":[{\\"name\\":\\"$a\\"}]}" > "$d/labels.json";; esac; prev="$a"; done ;;
   "label create") : ;;
@@ -82,7 +82,8 @@ def check(name, cond, detail: object = ""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
-def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verdict=None):
+def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verdict=None,
+        state="OPEN"):
     """Run a script for real with the gh CLI faked; return (rc, out, calls, td)."""
     td = Path(tempfile.mkdtemp())
     bindir = td / "bin"
@@ -93,6 +94,7 @@ def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verd
     (td / "issue.json").write_text(json.dumps(issue))
     (td / "comments.jsonl").write_text("\n".join(json.dumps(c) for c in comments))
     (td / "labels.json").write_text(json.dumps({"labels": [{"name": n} for n in labels]}))
+    (td / "state.json").write_text(json.dumps({"state": state}))
     if verdict is not None:
         (td / "triage.md").write_text(verdict)
     env = {**os.environ, "PATH": f"{bindir}:{os.environ['PATH']}", "REPO": "o/r", "ISSUE": "42",
@@ -305,6 +307,30 @@ def test_three_mock_issues_decide_implement_refine_or_close_against_the_tree():
           rc != 0 and "REFUSED" in out, (rc, out[-200:]))
 
 
+def test_the_state_check_tells_a_finished_issue_from_a_failed_run():
+    """Issue #520: the sweep must not go RED over an issue a merged PR already closed.
+
+    The decision is one seam (`make issue-state` -> `issue_verdict.py --state`), and its exit
+    codes are the contract: 0 = still open (a real failure), 4 = closed (a finished outcome),
+    2 = unreadable (never a pass).
+    """
+    # Given  an issue a merged PR has closed
+    rc, out, calls, _ = run(VERDICT, ["--state"], state="CLOSED")
+    check("state: a CLOSED issue exits 4, so the run ends GREEN", rc == 4 and "state=closed" in out,
+          (rc, out))
+    check("state: it reads the state from GitHub, not from the triage file",
+          any("issue view" in c for c in calls.splitlines()) and "triage.md" not in calls, calls)
+
+    # And  an issue that is still open: a real failure keeps its red
+    rc, out, _, _ = run(VERDICT, ["--state"], state="OPEN")
+    check("state: a still-OPEN issue exits 0, so the red path stays red", rc == 0
+          and "state=open" in out, (rc, out))
+
+    # And  a gh we cannot read is a loud 2, never an excuse
+    rc, out, _, _ = run(VERDICT, ["--state"], state="OPEN", rc="1")
+    check("state: an unreadable state exits 2, never a pass", rc == 2, (rc, out[-200:]))
+
+
 def test_the_workflow_renders_the_thread_and_applies_the_verdict():
     """Rule 6d + the honest outcome: a refine/close is green with no PR."""
 
@@ -358,6 +384,7 @@ def main() -> int:
     test_an_unreadable_verdict_is_never_guessed_at()
     test_the_label_is_verified_not_assumed()
     test_three_mock_issues_decide_implement_refine_or_close_against_the_tree()
+    test_the_state_check_tells_a_finished_issue_from_a_failed_run()
     test_the_workflow_renders_the_thread_and_applies_the_verdict()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
