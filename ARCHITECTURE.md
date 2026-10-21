@@ -321,12 +321,13 @@ sometimes **drops** on-the-hour crons, hence the odd minutes (:13, :19, :41,
 The **living inventory** of every pipeline — its triggers, its jobs and the
 `make` targets those jobs call, with the Makefile's own description of each — is
 generated, not written by hand: §10 is derived from the tree by
-`scripts/architecture_bot.py` (`make architecture-refresh`), refreshed daily by
-`architecture-bot.yml` and gated by `make architecture-check`. What follows is
+`scripts/architecture_bot.py` (`make architecture-refresh`), refreshed hourly by
+`architecture-bot.yml` — which also regenerates `OPENSPEC.md` (`make openspec-index`, issue #526)
+— and gated by `make architecture-check`. What follows is
 the prose that explains *why* each pipeline exists; §10 is the part that cannot
 drift.
 
-### `.github/workflows/architecture-bot.yml` — the description's keeper (daily `13 5` + dispatch)
+### `.github/workflows/architecture-bot.yml` — the generated documents' keeper (hourly `13` + dispatch)
 
 `concurrency: architecture-bot` (queued, never cancelled). `ARCHITECTURE.md` is part of
 every change (rule 6h), but its mechanical half — which bot has which job, which `make`
@@ -614,8 +615,11 @@ Filed, not fixed (each is its own issue, per rule 6g):
 ## 10. The living inventory (generated)
 
 The block below is **derived from the tree itself** by `scripts/architecture_bot.py` and
-rewritten by `make architecture-refresh` — the daily `architecture-bot.yml` runs it and
-opens a PR only when the block actually changed. It is the mechanical half of this
+rewritten by `make architecture-refresh` — the hourly `architecture-bot.yml` runs it and
+opens a PR only when the block actually changed. The same bot keeps `OPENSPEC.md` current
+(issue #526): a squash merge of two concurrent `openspec/changes/**` entries keeps one index
+file and leaves the other change's row out, which reds every `qa-validate` push run on master
+until something regenerates it, so the keeper gates on either file and commits both. It is the mechanical half of this
 document: every pipeline with the triggers, jobs and `make` targets that make it up, the
 product end to end (how an X post becomes a `README.md` row), one line per script from
 that script's own docstring, and the README sections a refresh rewrites. Every reference
@@ -634,9 +638,9 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/architecture-bot.yml` — architecture-bot
 
-- **when:** cron `13 5 * * *`, `workflow_dispatch`
+- **when:** cron `13 * * * *`, `workflow_dispatch`
 - **jobs:** `guard`, `refresh` (needs `guard`)
-- **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`
+- **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make openspec-index` — Regenerate the root OPENSPEC.md index from openspec/changes/**; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317)
 
 #### `.github/workflows/code-review-bot.yml` — code-review-bot
 
