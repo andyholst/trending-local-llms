@@ -10,7 +10,17 @@ what makes the description part of the change. It fails when
   * a target the §3 tables name is not a make target any more,
   * a workflow under `.github/workflows/` is not described,
   * a script under `scripts/` is not described,
-  * the description references a workflow/script path that does not exist.
+  * the description references a workflow/script path that does not exist,
+  * a `--only` stage list of a Makefile target names a stage
+    `scripts/validate.py` does not register, or a registered stage no `--only`
+    list selects (issue #182),
+  * §4's job tables/bullets name a job the workflow does not define, a real job
+    no §4 section names, or a workflow has no §4 section at all (issue #182).
+
+**The boundary is part of the contract** (issue #182): this guard proves PRESENCE
+and these two STRUCTURAL cross-checks. It cannot read prose, so a sentence that
+is wrong about a real target (`make merge` runs in the test image) passes.
+`ARCHITECTURE.md` states the same boundary where the promise is made (rule 6h).
 
 Wired into `make architecture-check`, which `qa-validate`'s `validate` job and
 `make test` run, and required of every implementation run by the prompt (rule 6h)
@@ -24,11 +34,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import sys
 from pathlib import Path
 
+#: The workflow's real `jobs:` keys have ONE parser — the one the generated
+#: inventory already uses (rule 6d: never a second copy of the same rule).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from architecture_bot import workflow_jobs  # noqa: E402
+
 DOC_NAME = "ARCHITECTURE.md"
+VALIDATOR = "scripts/validate.py"
 TARGET_SECTION = "## 3."
 NEXT_SECTION = "## 4."
 #: The human-readable SCRIPT inventory. §10's generated block names every script
@@ -48,6 +65,16 @@ _TICKED = re.compile(r"`([^`]+)`")
 _NAME = re.compile(r"^[a-z][a-z0-9-]*$")
 _WF_REF = re.compile(r"\.github/workflows/([A-Za-z0-9_.-]+\.yml)")
 _SCRIPT_REF = re.compile(r"scripts/([A-Za-z0-9_.-]+\.(?:py|sh))")
+#: Any make target line (internal ones included) — only used to name the target
+#: that carries a `--only` list in a failure message.
+_ANY_TARGET = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):(?!=)")
+#: A `validate.py --only <stages>` call, and the stage list it carries.
+_ONLY_CALL = re.compile(r"scripts/validate\.py\s+--only\s+([\w,-]+)")
+#: A §4 subsection that describes ONE workflow, and a job written as a bold
+#: bullet (`- **`guard`** — …`, the shape the two-job pipelines use).
+_WF_HEADING = re.compile(r"^###\s+.*\.github/workflows/([A-Za-z0-9_.-]+\.yml)")
+_JOB_BULLET = re.compile(r"^\s*[-*]\s+\*\*`([A-Za-z0-9_-]+)`\*\*")
+
 
 
 def public_targets(makefile: Path) -> list[str]:
@@ -104,6 +131,107 @@ def described_scripts(doc: Path) -> set[str]:
     return names
 
 
+def validate_stages(script: Path) -> set[str]:
+    """Every stage `scripts/validate.py` registers, read from its own source.
+
+    `main()` registers each check as `add(<label>, <stage>, <fn>)`; the map is read
+    by AST, so the guard compares against the validator itself and never a copy
+    of its stage list (issue #182).
+    """
+    if not script.is_file():
+        return set()
+    try:
+        tree = ast.parse(script.read_text(encoding="utf-8"))
+    except SyntaxError:
+        return set()
+    stages: set[str] = set()
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == "add" and len(node.args) >= 2):
+            continue
+        label, stage = node.args[0], node.args[1]
+        if (isinstance(label, ast.Constant) and isinstance(label.value, str)
+                and isinstance(stage, ast.Constant) and isinstance(stage.value, str)):
+            stages.add(stage.value)
+    return stages
+
+
+def stage_lists(makefile: Path) -> list[tuple[str, list[str]]]:
+    """`(target, stages)` for every `validate.py --only …` list in the Makefile."""
+    if not makefile.is_file():
+        return []
+    out: list[tuple[str, list[str]]] = []
+    target = ""
+    for line in makefile.read_text(encoding="utf-8").splitlines():
+        if not line.lstrip().startswith("#"):
+            m = _ANY_TARGET.match(line)
+            if m:
+                target = m.group(1)
+            m = _ONLY_CALL.search(line)
+            if m:
+                out.append((target or "?", [s.strip() for s in m.group(1).split(",") if s.strip()]))
+    return out
+
+
+def described_jobs(doc: Path) -> dict[str, set[str]]:
+    """The job names §4 claims, per workflow file (its `Job` tables + bold bullets).
+
+    A §4 subsection is the one whose heading names `.github/workflows/<file>.yml`;
+    it ends at the next `##`/`###` heading. Inside it, a table whose header cell is
+    `Job` contributes the backticked names in its first cells, and a bold bullet
+    (`- **`guard`** — …`) contributes its name (issue #182).
+    """
+    if not doc.is_file():
+        return {}
+    out: dict[str, set[str]] = {}
+    current: str | None = None
+    rows: list[str] = []
+
+    def flush() -> None:
+        if current is None:
+            return
+        names = out.setdefault(current, set())
+        block: list[str] = []
+        for row in rows:
+            if row.lstrip().startswith("|"):
+                block.append(row)
+                continue
+            _table_jobs(block, names)
+            block = []
+            m = _JOB_BULLET.match(row)
+            if m:
+                names.add(m.group(1))
+        _table_jobs(block, names)
+
+    for line in doc.read_text(encoding="utf-8").splitlines():
+        m = _WF_HEADING.match(line)
+        if m:
+            flush()
+            current, rows = m.group(1), []
+            continue
+        if re.match(r"^#{2,3}\s", line):
+            flush()
+            current, rows = None, []
+            continue
+        if current is not None:
+            rows.append(line)
+    flush()
+    return out
+
+
+def _table_jobs(block: list[str], names: set[str]) -> None:
+    """Add the first-cell backticked names of a `| Job | Does |` table block."""
+    if len(block) < 2:
+        return
+    cells = block[0].split("|")
+    if len(cells) < 2 or "Job" not in cells[1]:
+        return
+    for row in block[2:]:
+        parts = row.split("|")
+        if len(parts) >= 2:
+            names.update(_TICKED.findall(parts[1]))
+
+
 def findings(root: Path) -> list[str]:
     """Every way the description and the repository disagree."""
     doc = root / DOC_NAME
@@ -136,7 +264,37 @@ def findings(root: Path) -> list[str]:
     out += [f"script `scripts/{s}` has no row in {DOC_NAME} §6 (the generated block "
             f"names it, but a reader has no role for it)" for s in scripts
             if f"scripts/{s}" not in roles]
+
+    # The `--only` stage lists are a CLAIM about the validator's stage map, and a
+    # closed one: an unknown stage, or a stage no list selects, is a description
+    # that has rotted without any name disappearing (issue #182).
+    stages = validate_stages(root / VALIDATOR)
+    lists = stage_lists(root / "Makefile")
+    if stages and lists:
+        selected = {s for _, stages_in_list in lists for s in stages_in_list}
+        out += [f"make target `{t}` runs `--only {s}`, which {VALIDATOR} does not register"
+                for t, stages_in_list in lists for s in stages_in_list if s not in stages]
+        out += [f"stage `{s}` of {VALIDATOR} is selected by no `--only` list in the Makefile"
+                for s in sorted(stages - selected)]
+
+    # §4's job lists are the same kind of claim about the workflows' real `jobs:`
+    # keys — a renamed job, or one the table invented, is invisible to a
+    # presence-only check (issue #182: §4 listed a `sweep` job for `queued-alarm`,
+    # which defines `guard` and `alarm`).
+    claimed = described_jobs(doc)
+    for w in workflows:
+        if w not in claimed:
+            out.append(f"workflow `{w}` has no §4 section of its own in {DOC_NAME} "
+                       f"(its job list cannot be checked)")
+            continue
+        real = {name for name, _ in workflow_jobs((root / ".github" / "workflows" / w)
+                                                  .read_text(encoding="utf-8"))}
+        out += [f"{DOC_NAME} §4 names job `{j}` in `{w}`, which that workflow does not define"
+                for j in sorted(claimed[w] - real)]
+        out += [f"workflow `{w}`'s job `{j}` is not named in its {DOC_NAME} §4 section"
+                for j in sorted(real - claimed[w])]
     return out
+
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -154,7 +312,8 @@ def main(argv: list[str] | None = None) -> int:
               "`make architecture-check`", file=sys.stderr)
         return 1
     print(f"[architecture] OK {DOC_NAME} describes every make target "
-          f"({len(public_targets(root / 'Makefile'))}), workflow and script")
+          f"({len(public_targets(root / 'Makefile'))}), workflow and script — and its "
+          f"`--only` stage lists and §4 job names match the tree")
     return 0
 
 

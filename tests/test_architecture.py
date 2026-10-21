@@ -46,22 +46,36 @@ def _module():
 
 def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify"),
           workflows=("ci.yml",), scripts=("thing.py",), doci_wf=True, doc_script=True,
-          doc_roles=None):
+          doc_roles=None, jobs=("build",), doc_jobs=None,
+          validate_stages=None, only=()):
     """A minimal repo fixture: Makefile + ARCHITECTURE.md + workflows + scripts.
 
     `doc_roles` writes the §6 script table: since issue #506 a script needs a ROLE
     there, and naming it in the generated §10 block does not count.
+    `jobs` / `doc_jobs` are the workflow's real jobs and the §4 job names claimed
+    for it; `validate_stages` writes a `scripts/validate.py` registering them and
+    `only` writes `--only` lists into the fixture Makefile (issue #182).
     """
     (td / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (td / "scripts").mkdir(parents=True, exist_ok=True)
+    if validate_stages is not None and "validate.py" not in scripts:
+        scripts = tuple(scripts) + ("validate.py",)
+    only_target = "".join(f"validate-list:\n\tpython3 scripts/validate.py --only {o}\n" for o in only)
     (td / "Makefile").write_text(
-        ".PHONY: build verify\n" + "".join(f"{t}:\n\techo {t}\n" for t in targets),
+        ".PHONY: build verify\n" + "".join(f"{t}:\n\techo {t}\n" for t in targets) + only_target,
         encoding="utf-8",
     )
     for w in workflows:
-        (td / ".github" / "workflows" / w).write_text("name: ci\n", encoding="utf-8")
+        (td / ".github" / "workflows" / w).write_text(
+            "name: ci\njobs:\n" + "".join(f"  {j}:\n    runs-on: ubuntu-latest\n" for j in jobs),
+            encoding="utf-8")
     for s in scripts:
         (td / "scripts" / s).write_text("# fixture\n", encoding="utf-8")
+    if validate_stages is not None:
+        adds = "".join(f'    add("a check", "{s}", lambda: None)\n' for s in validate_stages)
+        (td / "scripts" / "validate.py").write_text(
+            "def main():\n    checks = []\n\n    def add(label, name, fn):\n"
+            "        checks.append((label, fn))\n" + adds, encoding="utf-8")
     rows = "\n".join(f"| `{t}` | does the thing |" for t in doc_targets)
     body = [f"# ARCHITECTURE", "", "## 3. Every `make` target", "", "| Target | What |", "|---|---|", rows, ""]
     body += ["## 4. Pipelines", ""]
@@ -69,12 +83,18 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
         body += [f"- `.github/workflows/{w}` — a pipeline" for w in workflows]
     if doc_script:
         body += [f"- `scripts/{s}` — a script" for s in scripts]
+    claimed = jobs if doc_jobs is None else doc_jobs
+    if doci_wf:
+        for w in workflows:
+            body += ["", f"### `.github/workflows/{w}` — a pipeline", "", "| Job | Does |", "|---|---|"]
+            body += [f"| `{j}` | does it |" for j in claimed]
     body += ["", "## 6. The scripts", "", "| Script | Role |", "|---|---|"]
     if doc_script if doc_roles is None else doc_roles:
         body += [f"| `scripts/{s}` | what it does |" for s in scripts]
     body += ["", "## 7. Guards", ""]
     (td / "ARCHITECTURE.md").write_text("\n".join(body) + "\n", encoding="utf-8")
     return td
+
 
 
 def test_missing_doc_is_a_failure():
@@ -230,6 +250,88 @@ def test_a_script_named_only_in_the_generated_block_has_no_role():
         check("section 6: the row makes it green", not _module().findings(root))
 
 
+def test_validate_only_stage_lists_match_the_validator():
+    """#182: a `--only` list is a claim about scripts/validate.py's stage map."""
+
+    # Given a Makefile whose --only list names a stage the validator does not register
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), validate_stages=("data", "schema"), only=("data,gone",))
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the unregistered stage is named, and so is the stage no list selects
+    check("stages: an unregistered stage is reported",
+          any("`--only gone`" in p and "does not register" in p for p in problems), problems)
+    check("stages: a registered stage selected by no list is reported",
+          any("stage `schema`" in p and "selected by no `--only` list" in p for p in problems), problems)
+
+    # And   the same fixture with the list corrected reports neither
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), validate_stages=("data", "schema"), only=("data,schema",))
+        problems = _module().findings(root)
+    check("stages: the corrected list is green",
+          not any("--only" in p or "selected by no" in p for p in problems), problems)
+
+
+def test_pipeline_job_names_match_the_workflow_job_keys():
+    """#182: §4's job lists are a claim about the workflows' real `jobs:` keys."""
+
+    # Given §4 naming a job the workflow does not define
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), jobs=("guard", "alarm"), doc_jobs=("guard", "alarm", "sweep"))
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the invented job is named with its workflow
+    check("jobs: an invented job is reported",
+          any("`sweep` in `ci.yml`" in p and "does not define" in p for p in problems), problems)
+
+    # And   a real job no §4 section names
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), jobs=("guard", "review"), doc_jobs=("guard",))
+        problems = _module().findings(root)
+    check("jobs: an undescribed job is reported",
+          any("job `review` is not named" in p for p in problems), problems)
+
+    # And   a workflow with no §4 section of its own (so the coverage cannot be vacuous)
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), jobs=("guard",))
+        doc = root / "ARCHITECTURE.md"
+        doc.write_text(doc.read_text().replace(
+            "### `.github/workflows/ci.yml` — a pipeline", "Pipeline prose"), encoding="utf-8")
+        problems = _module().findings(root)
+    check("jobs: a workflow with no §4 section is reported",
+          any("no §4 section of its own" in p for p in problems), problems)
+
+    # And   the fixture in step reports nothing about jobs
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), jobs=("guard", "alarm"), doc_jobs=("guard", "alarm"))
+        problems = _module().findings(root)
+    check("jobs: the corrected fixture is green",
+          not any("does not define" in p or "is not named" in p or "no §4 section" in p
+                  for p in problems), problems)
+
+
+def test_doc_states_what_the_guard_does_not_prove():
+    """#182: the boundary is part of the promise, in the doc and in the guard."""
+
+    # Given the description and the guard's own docstring
+    doc = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    module_doc = _module().__doc__ or ""
+
+    # When  the boundary is read
+    # Then  it names what is proved, what is not, and the two structure claims
+    check("boundary: the doc states what the guard proves",
+          "What the guard proves — and what it does not" in doc, "")
+    check("boundary: the doc says a wrong sentence about a real target passes",
+          "cannot read prose" in doc, "")
+    check("boundary: the two structural claims are named",
+          "`--only`" in doc and "`jobs:`" in doc, "")
+    check("boundary: the guard's own docstring states it", "cannot read prose" in module_doc, "")
+
+
 def main() -> int:
     print("architecture description + its guard (ARCHITECTURE.md, rule 6h)")
     test_missing_doc_is_a_failure()
@@ -239,6 +341,9 @@ def main() -> int:
     test_phantom_reference_is_reported()
     test_fixture_tree_passes_when_in_step()
     test_a_script_named_only_in_the_generated_block_has_no_role()
+    test_validate_only_stage_lists_match_the_validator()
+    test_pipeline_job_names_match_the_workflow_job_keys()
+    test_doc_states_what_the_guard_does_not_prove()
     test_real_repo_description_is_current()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

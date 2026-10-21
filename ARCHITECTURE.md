@@ -14,6 +14,25 @@ through `tests/test_architecture.py` — by `make test`) fails when a public tar
 is not described here — or when this file describes something that no longer
 exists.
 
+**What the guard proves — and what it does not** (issue #182). It compares
+**names and two structure claims**, never prose:
+
+* every public `make` target, every workflow file and every script is named here
+  (and §6 gives each script a role), and nothing named here is gone;
+* every stage a Makefile target passes to `scripts/validate.py --only` is a stage
+  the validator registers, and every registered stage is selected by one such list
+  (both sides read from `scripts/validate.py` itself, by AST);
+* every job §4 claims for a workflow — its `Job` table rows and its bold job
+  bullets — is a real `jobs:` key of that workflow, every real job is claimed, and
+  every workflow has a §4 section of its own (one parser:
+  `scripts/architecture_bot.workflow_jobs`).
+
+It **cannot read prose**: a sentence that is wrong about a real target (`make
+merge` runs in the test image), a step renamed inside a job, or a claim about an
+image's contents all pass. That boundary is deliberate — the paragraph a reader
+needs is the one a generator cannot write — so "the guard keeps this file true"
+means exactly the three bullets above and no more.
+
 **Contents**
 
 1. [What the repository produces](#1-what-the-repository-produces)
@@ -226,7 +245,7 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) — and when the generated inventory block (§10) no longer matches the tree (`scripts/architecture_bot.py --check`, issue #479) |
+| `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) — and when the generated inventory block (§10) no longer matches the tree (`scripts/architecture_bot.py --check`, issue #479). Two structural claims are checked too (issue #182): every `--only` stage list of the `validate*` targets against `scripts/validate.py`'s stage map (both directions), and every job §4 claims for a workflow against that workflow's real `jobs:` keys (both directions, plus "no §4 section"). Prose is NOT read — see the boundary at the top of this file |
 | `architecture-refresh` | Regenerate the inventory block in §10 from the tree itself: every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script from its own docstring, and the README sections a refresh rewrites (`scripts/architecture_bot.py --write`, issue #479). Host target, stdlib only; `architecture-bot.yml` runs it daily and opens a PR only when the block changed |
 
 ### PR lifecycle (rule 6e)
@@ -401,8 +420,7 @@ does not fail — it stays `queued` forever, so the run never concludes and ever
 | Job | Does |
 |---|---|
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
-| `alarm` | `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`): list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run. Exit 1 when a job is stuck, so the scheduled run goes red. It never edits code, never opens a PR, never merges. A second step runs `make sweep-alarm REPO=… MAX_AGE_HOURS=3`, so a sweep the cron never delivered is red here too (issue #497) |
-| `sweep` | `make pr-health REPO=… COMMENT=1` (`scripts/pr_health.py`): list the open non-draft PRs, flag every one that is `CONFLICTING` (no merge commit, so no workflow runs) or has no check runs on its head commit, print the head branch, and comment ONE marker-deduplicated note naming the fix. Exit 1 when any PR is silent. Read-only apart from that comment; never edits code, never opens a PR, never merges |
+| `alarm` | Two steps, no other job: `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`) — list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run; exit 1 when a job is stuck, so the scheduled run goes red — then `make sweep-alarm REPO=… MAX_AGE_HOURS=3`, so a sweep the cron never delivered is red here too (issue #497). It never edits code, never opens a PR, never merges. The silent-PR sweep (`make pr-health`) is its own pipeline, `pr-health.yml`, below |
 
 ### `.github/workflows/code-review-bot.yml` — the tree/pipeline reviewer (weekly + dispatch)
 
@@ -492,7 +510,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/bot_markers.py` | The ONE definition of every bot start/end marker — its name, its shape, its parser and its writer (issue #197, AGENTS.md rule 6j). Every reader (`scripts/issue_queue.py`) goes through it, so a renamed or reworded marker can never silently read as "no bot has started"; the registry also records which markers are already written and which land with #198/#199. `tests/test_bot_markers.py` holds its table in step with AGENTS.md rule 6j |
 | `scripts/issue_review.py` | The reviewer's deterministic core (issue #179): `--pick` (one issue, `body`/`window`/`none`), `--mark`/`--finish` (the `review-in-progress` label + the run-stamped marker), `--guard` (the TOCTOU re-check before a write), `--body-hash` (the proof the window path edited nothing) and `--check-markers` (a rewrite may not drop an invisible dedup marker). It imports `issue_queue` — the queue rule has one implementation |
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (#206); `decide` returns the rebuild rule as data (#208) |
-| `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is) |
+| `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is), every `--only` stage list matches the validator's stage map, and every job §4 claims is a real one (issues #178, #182) |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
 | `scripts/lint_syntax.py` | The syntax-warning lint (`make lint`, issue #190): every tracked `*.py` module must compile without a `SyntaxWarning`; compiled from source so no import side effect runs, the tracked-file set so an untracked module is never a finding |
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation. Writes a snapshot only when it actually changed it and then refreshes its `generated_utc`, so a corrected snapshot is re-merged by the next `make merge` instead of being skipped as old (issue #175) |
