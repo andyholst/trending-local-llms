@@ -22,7 +22,10 @@ name: architecture-bot
 
 on:
   schedule:
-    - cron: "13 5 * * *"   # daily, an odd minute (GitHub drops/delays top-of-hour crons)
+    # HOURLY, an odd minute (issue #526): a stale OPENSPEC.md reds every `qa-validate` push run on
+    # master, so a daily sweep would leave master red for up to a day. The run is cheap — two
+    # generators and two checks, no model — and it opens a PR only when a file actually changed.
+    - cron: "13 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -89,6 +92,14 @@ jobs:
       - name: Regenerate the inventory from the tree
         run: make architecture-refresh
 
+      # The SAME keeper, a second generated artifact (issue #526): `OPENSPEC.md` is derived from
+      # `openspec/changes/**` by `scripts/openspec_index.py`, and a squash merge of two concurrent
+      # changes keeps ONE of the two files — so master's index ends up listing 111 while the disk
+      # holds 112, and every `qa-validate` push run on master is red until someone regenerates it by
+      # hand (measured: run 39625708799, #521 + #524 merged an hour apart).
+      - name: Regenerate the OpenSpec index from the tree
+        run: make openspec-index
+
       - name: Prove ARCHITECTURE.md is true to the repository
         run: make architecture-check
 
@@ -99,12 +110,14 @@ jobs:
         id: drift
         run: |
           set -euo pipefail
-          if git diff --quiet -- ARCHITECTURE.md; then
+          # BOTH generated descriptions (issue #526): a stale `OPENSPEC.md` reds master exactly
+          # like a stale `ARCHITECTURE.md`, and this bot is the only thing that regenerates either.
+          if git diff --quiet -- ARCHITECTURE.md OPENSPEC.md; then
             printf 'changed=%s\n' "false" >> "$GITHUB_OUTPUT"
-            echo "ARCHITECTURE.md already matches the tree - nothing to open."
+            echo "ARCHITECTURE.md and OPENSPEC.md already match the tree - nothing to open."
           else
             printf 'changed=%s\n' "true" >> "$GITHUB_OUTPUT"
-            git --no-pager diff --stat -- ARCHITECTURE.md
+            git --no-pager diff --stat -- ARCHITECTURE.md OPENSPEC.md
           fi
 
       # The branch name must not END in digits: `scripts/pr_closure.py` reads a trailing
@@ -121,14 +134,16 @@ jobs:
           branch="ci/architecture-$(date -u +%Y%m%dT%H%M%SZ)"
           make git-identity
           git switch -c "$branch"
-          git add ARCHITECTURE.md
-          git commit -m "docs(architecture): refresh the generated inventory (refs #479)"
+          git add ARCHITECTURE.md OPENSPEC.md
+          # One commit per artifact family; the message says which files it may contain, because
+          # `make check-commit-authorship` and the PR body both describe the SAME change.
+          git commit -m "docs(generated): refresh the architecture inventory and the OpenSpec index (refs #479, refs #526)"
           git push origin "HEAD:refs/heads/$branch"
           # The body arrives on stdin (`--body-file -`), so no scratch file exists for a later
           # `git add -A` to commit. It carries NO closing keyword: this PR implements no issue,
           # and `scripts/pr_closure.py` refuses a PR that closes an issue it does not implement.
           {
-            printf '%s\n\n' '`make architecture-refresh` rewrote the generated block in `ARCHITECTURE.md` §10, because the tree moved and the description had not: a pipeline'"'"'s triggers, jobs or `make` targets changed, a script appeared, or the `README.md` sections changed.'
+            printf '%s\n\n' 'A generated description was stale, so `make architecture-refresh` and/or `make openspec-index` rewrote it: `ARCHITECTURE.md` §10 when a pipeline'"'"'s triggers, jobs or `make` targets changed, a script appeared, or the `README.md` sections changed — and `OPENSPEC.md` when a change landed on disk without its row (issue #526: two concurrent changes merge into ONE index, so master lists one change fewer than the tree holds).'
             printf '%s\n\n' 'The block is derived from the tree (`scripts/architecture_bot.py`), so nothing here is invented. `make architecture-check` is green on this commit — the whole document, not only the regenerated block.'
             printf 'Run: %s\n' "$RUN_URL"
             printf '%s\n' 'Tracking issue: #479 (referenced, never closed: this PR implements no issue)'

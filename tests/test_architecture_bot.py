@@ -243,7 +243,10 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
     remote = td / "remote.git"
     (repo / "scripts").mkdir(parents=True)
     (repo / "bin").mkdir()
+    # BOTH generated descriptions (issue #526): the publish step stages ARCHITECTURE.md AND
+    # OPENSPEC.md, so a fixture carrying only one would fail on `git add`.
     for name, src in (("ARCHITECTURE.md", ROOT / "ARCHITECTURE.md"),
+                      ("OPENSPEC.md", ROOT / "OPENSPEC.md"),
                       ("Makefile", ROOT / "Makefile"),
                       ("scripts/agent_identity.py", ROOT / "scripts" / "agent_identity.py")):
         (repo / name).write_bytes(src.read_bytes())
@@ -261,6 +264,53 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
         "cat >> \"$GH_LOG.body\"\n", encoding="utf-8")
     (repo / "bin" / "gh").chmod(0o755)
     return repo, remote
+
+
+def test_the_keeper_regenerates_both_generated_documents():
+    """Issue #526: `OPENSPEC.md` is generated too, and a merge is what stales it.
+
+    Measured on master (run 39625708799): #521 and #524 each regenerated the index over a tree
+    holding ITS OWN new change, so both wrote `111`; the squash merge kept one file, the disk held
+    `112`, and every `qa-validate` push run on master was red. `architecture-bot` already has the
+    right shape — regenerate, verify, PR only when changed — so it keeps BOTH artifacts, on a slot
+    that converges within the hour instead of a day.
+    """
+    text = (ROOT / ".github" / "workflows" / "architecture-bot.yml").read_text()
+    try:
+        import yaml
+        doc = yaml.safe_load(text)
+    except ImportError:  # pragma: no cover
+        print("  SKIP the wiring was not read: PyYAML is missing")
+        return
+    jobs = doc["jobs"]
+    refresh = next(j for j in jobs.values() if any(
+        "Regenerate the inventory" in str(s.get("name", "")) for s in j.get("steps", [])))
+    runs = [str(s.get("run", "")) for s in refresh["steps"]]
+    body = "\n".join(runs)
+
+    check("index: the keeper regenerates ARCHITECTURE.md", "make architecture-refresh" in body, "")
+    check("index: …and OPENSPEC.md (issue #526)", "make openspec-index" in body, "")
+    check("index: both are regenerated BEFORE the drift gate decides",
+          body.index("make openspec-index") < body.index("--quiet -- ARCHITECTURE.md OPENSPEC.md")
+          if "--quiet -- ARCHITECTURE.md OPENSPEC.md" in body else False, body[-200:])
+
+    drift = next(s for s in refresh["steps"] if s.get("id") == "drift")
+    check("index: the drift gate covers BOTH files",
+          "git diff --quiet -- ARCHITECTURE.md OPENSPEC.md" in str(drift.get("run")), str(drift)[:160])
+    check("index: the gate names both files when it reports the change",
+          "diff --stat -- ARCHITECTURE.md OPENSPEC.md" in str(drift.get("run")), "")
+
+    publish = next(s for s in refresh["steps"] if "Commit, push and open the PR" in str(s.get("name")))
+    check("index: the commit stages both files",
+          "git add ARCHITECTURE.md OPENSPEC.md" in str(publish.get("run")), "")
+    check("index: the PR it opens still carries NO closing keyword",
+          "closes #" not in str(publish.get("run")).lower()
+          and "Track" in str(publish.get("run")), "")
+
+    on = doc.get("on") or doc.get(True) or {}   # YAML 1.1 parses a bare `on:` as True
+    crons = [c.get("cron") for c in (on.get("schedule") or [])]
+    check("index: the slot is HOURLY, so a stale index converges in an hour (issue #526)",
+          crons == ["13 * * * *"], str(crons))
 
 
 def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
@@ -358,6 +408,7 @@ def main() -> int:
     test_a_flow_the_tree_does_not_back_is_refused()
     test_real_repository_inventory_is_current()
     test_wired_into_the_makefile_the_guard_and_the_pipeline()
+    test_the_keeper_regenerates_both_generated_documents()
     test_the_shipped_steps_actually_commit_push_and_open_a_pr()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
