@@ -83,6 +83,13 @@ from env_int import env_int  # noqa: E402  (empty means missing — issue #487)
 #: The implementer's OUTCOME comment is still matched by prose (issue #197 flags it). It is pinned
 #: to the writer's sentence by `tests/test_bot_markers.py`, so a copy edit turns CI red instead of
 #: silently stopping this reader's 3 h clock.
+#: The labels the implementer's sweep reads, in the order it reads them (issue #494). ONE issue
+#: per run either way: the queue is oldest-first across BOTH labels, so a data gap and a piece of
+#: tech debt compete on age, not on label. `data-gap` stays first only as the label the analysis
+#: files, and `tech-debt` is what the bots' own findings file — 48 of those had no reader at all
+#: until this list existed (issue #345: "no queue ever reads it").
+QUEUE_LABELS: tuple[str, ...] = ("data-gap-analysis", "tech-debt")
+
 OUTCOME_TEXT = "issue-bot ran for this issue"
 REVIEW_LABEL = "review-in-progress"
 # The reviewer's VERDICT labels (issue #200): it looks at an issue and says what
@@ -189,11 +196,22 @@ def resolve_repo(explicit: str | None = None) -> str:
     return out.strip()
 
 
-def _issues(repo: str, label: str) -> list[dict]:
-    out = _gh(["issue", "list", "--repo", repo, "--label", label, "--state", "open",
-               "--limit", "100", "--json", "number,createdAt,labels"])
-    items = json.loads(out or "[]")
-    return sorted(items, key=lambda i: i.get("createdAt") or "")
+def _issues(repo: str, label: str | list[str] | tuple[str, ...]) -> list[dict]:
+    """Every OPEN issue carrying ANY of `labels`, oldest first, once each (issue #494).
+
+    `gh issue list --label a --label b` is an AND, so a multi-label queue needs one call per
+    label and a union by number: an issue the analysis labelled `data-gap-analysis` and one the
+    bots' findings labelled `tech-debt` must compete on AGE, not on which list was read first.
+    """
+    labels = ([label] if isinstance(label, str) else list(label))
+    seen: dict[int, dict] = {}
+    for name in labels:
+        for item in (json.loads(_gh(["issue", "list", "--repo", repo, "--label", name,
+                                     "--state", "open", "--limit", "100",
+                                     "--json", "number,createdAt,labels"]) or "[]")):
+            key = int(item.get("number") or 0)
+            seen.setdefault(key, item)
+    return sorted(seen.values(), key=lambda i: i.get("createdAt") or "")
 
 
 def _branches(repo: str) -> set[str]:
@@ -241,7 +259,7 @@ def marker_run_id(body: str) -> str | None:
     return None
 
 
-def build(repo: str, label: str, gap_hours: int, now: dt.datetime,
+def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, now: dt.datetime,
           run: str | None = None, verdict_ttl_hours: int = 24,
           max_hold_hours: int = VERDICT_MAX_HOLD_HOURS) -> list[dict]:
     """Every review candidate, in pick order, with its implementer window.
@@ -409,7 +427,7 @@ def render(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int,
+def post_skip_note(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, verdict_ttl_hours: int,
                    now: dt.datetime, run: str | None) -> int:
     """Say on EVERY issue the implementer skipped — a fresh VERDICT or a DECISION.
 
@@ -506,7 +524,9 @@ def post_skip_note(repo: str, label: str, gap_hours: int, verdict_ttl_hours: int
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="The implementer's queue, for both bots (issue #179)")
     ap.add_argument("--repo", default=None)
-    ap.add_argument("--label", default="data-gap-analysis")
+    ap.add_argument("--label", default=",".join(QUEUE_LABELS),
+                    help="comma-separated labels; an issue carrying ANY of them is queued "
+                         "(default: %(default)s)")
     ap.add_argument("--gap-hours", type=int, default=env_int("REVIEW_GAP_HOURS", 3))
     ap.add_argument("--verdict-ttl-hours", type=int,
                     default=env_int("VERDICT_TTL_HOURS", 24))
@@ -521,11 +541,14 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     repo = resolve_repo(args.repo)
+    # One queue, several labels (issue #494): a comma/space list is split HERE so every caller
+    # (`make issue-queue`, `make issue-skip-note`) reads the same set.
+    labels = [x for x in re.split(r"[,\s]+", args.label or "") if x]
     now = now_utc(args.now)
     run = args.run or current_run()
     if args.skip_note:
-        return post_skip_note(repo, args.label, args.gap_hours, args.verdict_ttl_hours, now, run)
-    rows = build(repo, args.label, args.gap_hours, now, run, args.verdict_ttl_hours,
+        return post_skip_note(repo, labels, args.gap_hours, args.verdict_ttl_hours, now, run)
+    rows = build(repo, labels, args.gap_hours, now, run, args.verdict_ttl_hours,
                  args.verdict_max_hold_hours)
     text = render(rows)
     if text:
