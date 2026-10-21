@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **107** · archived: **0**
+Active changes: **108** · archived: **0**
 
 ## Active changes
 
@@ -61,6 +61,7 @@ Active changes: **107** · archived: **0**
 | `fixbot-gh-repo-before-checkout` | active | #331 | — | [fixbot-before-checkout](openspec/changes/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/fixbot-gh-repo-before-checkout/proposal.md) |
 | `force-flag-parsing` | active | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/force-flag-parsing/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
+| `gap-files-once-per-dimension` | active | #472 (the measured re-file loop) | — | [data-gap-baseline](openspec/changes/gap-files-once-per-dimension/specs/data-gap-baseline/spec.md) | 9/9 | [proposal.md](openspec/changes/gap-files-once-per-dimension/proposal.md) |
 | `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `hardware-is-not-an-engine` | active | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/hardware-is-not-an-engine/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
