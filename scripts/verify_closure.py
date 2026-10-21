@@ -17,11 +17,16 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from env_int import env_int, env_float  # noqa: E402  (empty means missing — issue #487)
 
 #: How long to let GitHub finish closing the issues a merge just closed (its own operation
 #: trails the merge call by a moment). Injectable so the guard does not sleep for real.
-ATTEMPTS = int(os.environ.get("VERIFY_CLOSURE_ATTEMPTS", "3"))
-DELAY_S = float(os.environ.get("VERIFY_CLOSURE_DELAY_S", "2"))
+ATTEMPTS = env_int("VERIFY_CLOSURE_ATTEMPTS", 3)
+DELAY_S = env_float("VERIFY_CLOSURE_DELAY_S", 2)
 
 
 def _gh(*args: str) -> dict:

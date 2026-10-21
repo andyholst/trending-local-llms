@@ -205,6 +205,93 @@ def test_only_a_bot_branch_is_repaired_and_the_cap_holds():
     check("repair: every silent PR is still reported", len(silent) == 4, "")
 
 
+def test_an_empty_setting_means_missing():
+    """#487: `MAX_FIXBOT_COMMITS=` (set, empty) crashed `int("")` on every sweep."""
+    from env_int import EnvSettingError, env_float, env_int
+    os.environ.pop("PH_TEST_INT", None)
+    check("env_int: unset -> the default", env_int("PH_TEST_INT", 2) == 2)
+    os.environ["PH_TEST_INT"] = ""
+    check("env_int: EMPTY -> the default (the measured bug)", env_int("PH_TEST_INT", 2) == 2)
+    os.environ["PH_TEST_INT"] = "   "
+    check("env_int: whitespace -> the default", env_int("PH_TEST_INT", 2) == 2)
+    os.environ["PH_TEST_INT"] = "3"
+    check("env_int: a value is read", env_int("PH_TEST_INT", 2) == 3)
+    os.environ["PH_TEST_INT"] = " 3 "
+    check("env_int: a padded value is read", env_int("PH_TEST_INT", 2) == 3)
+    os.environ["PH_TEST_INT"] = "2.5"
+    try:
+        env_int("PH_TEST_INT", 2)
+        raised = ""
+    except EnvSettingError as exc:
+        raised = str(exc)
+    check("env_int: garbage fails LOUDLY and names the variable",
+          "PH_TEST_INT" in raised and "not a number" in raised, raised)
+    os.environ.pop("PH_TEST_INT", None)
+    os.environ["PH_TEST_FLOAT"] = ""
+    check("env_float: EMPTY -> the default", env_float("PH_TEST_FLOAT", 2.5) == 2.5)
+    os.environ.pop("PH_TEST_FLOAT", None)
+
+
+def test_the_real_target_survives_an_empty_max():
+    """The EXACT production call: `make pr-health REPO=… COMMENT=1` with no MAX.
+
+    Measured on run 39530945300: the public target forwarded
+    `MAX_FIXBOT_COMMITS=""`, `int("")` raised, and the sweep — the alarm for a
+    silent PR — was itself silently refused. This runs the real Makefile, the real
+    script, and only stands in for the network (a stub `gh` on PATH).
+    """
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        stub_dir = td / "bin"
+        stub_dir.mkdir()
+        stub = stub_dir / "gh"
+        stub.write_text(STUB, encoding="utf-8")
+        stub.chmod(0o755)
+        prs = td / "prs.json"
+        prs.write_text("[]", encoding="utf-8")
+        env = {k: v for k, v in os.environ.items() if k not in
+               ("MAX_FIXBOT_COMMITS", "FAKE_COMMENTS", "FAKE_POSTED")}
+        env.update({"PATH": f"{stub_dir}:{env['PATH']}", "FAKE_PRS": str(prs),
+                    "FAKE_POSTED": str(td / "posted")})
+        env.pop("GH_TOKEN", None)
+        r = subprocess.run(["make", "pr-health", "REPO=x/y", "COMMENT=1"], cwd=str(ROOT),
+                           capture_output=True, text=True, env=env)
+        check("make pr-health: an UNSET max does not crash the sweep", r.returncode == 0,
+              (r.stdout + r.stderr)[-400:])
+        check("make pr-health: it actually ran and reported", "[pr-health]" in r.stdout,
+              r.stdout[-200:])
+        check("make pr-health: no traceback anywhere", "Traceback" not in (r.stdout + r.stderr))
+        r = subprocess.run(["make", "pr-health", "REPO=x/y", "COMMENT=1", "MAX_FIXBOT_COMMITS="],
+                           cwd=str(ROOT), capture_output=True, text=True, env=env)
+        check("make pr-health: an EXPLICITLY empty max is the same no-crash", r.returncode == 0,
+              (r.stdout + r.stderr)[-400:])
+        r = subprocess.run(["make", "pr-health", "REPO=x/y", "MAX_FIXBOT_COMMITS=abc"],
+                           cwd=str(ROOT), capture_output=True, text=True, env=env)
+        check("make pr-health: a non-numeric max stays LOUD", r.returncode != 0
+              and "MAX_FIXBOT_COMMITS" in (r.stdout + r.stderr), (r.stdout + r.stderr)[-300:])
+
+
+def test_no_script_reads_a_number_straight_from_the_environment():
+    """One implementation: a new `int(os.environ…)` would reintroduce #487 elsewhere."""
+    bare = []
+    for path in sorted((ROOT / "scripts").glob("*.py")):
+        if path.name == "env_int.py":
+            continue
+        text = path.read_text(encoding="utf-8")
+        for n, line in enumerate(text.splitlines(), 1):
+            if "int(os.environ" in line or "float(os.environ" in line:
+                bare.append(f"scripts/{path.name}:{n}")
+    check("env_int: no script reads an int/float straight from the environment",
+          not bare, bare)
+
+
+def test_sweep_never_exports_an_empty_setting():
+    mk = (ROOT / "Makefile").read_text(encoding="utf-8")
+    check("wiring: the public target forwards MAX_FIXBOT_COMMITS only when SET",
+          'MAX_FIXBOT_COMMITS="$(MAX_FIXBOT_COMMITS)"\n' not in mk.split("pr-health:", 1)[-1],
+          mk.split("pr-health:", 1)[-1][:300])
+
+
 def main() -> int:
     print("silent PR alarm (issue #442)")
     test_a_conflicting_pr_is_silent_and_named()
@@ -216,6 +303,10 @@ def main() -> int:
     test_a_gh_failure_is_loud()
     test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard()
     test_only_a_bot_branch_is_repaired_and_the_cap_holds()
+    test_an_empty_setting_means_missing()
+    test_the_real_target_survives_an_empty_max()
+    test_no_script_reads_a_number_straight_from_the_environment()
+    test_sweep_never_exports_an_empty_setting()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

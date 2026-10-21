@@ -47,6 +47,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import issue_queue as iq  # noqa: E402  (one queue, one window — rule 6d)
+from env_int import env_int  # noqa: E402  (empty means missing — issue #487)
 
 REVIEW_LABEL = iq.REVIEW_LABEL
 LABEL_DESCRIPTION = "An issue reviewer is working this issue (issue-bot defers to it)"
@@ -206,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="The issue reviewer's deterministic core (issue #179)")
     ap.add_argument("--repo", default=None)
     ap.add_argument("--now", default=None)
-    ap.add_argument("--gap-hours", type=int, default=int(os.environ.get("REVIEW_GAP_HOURS", "3")))
+    ap.add_argument("--gap-hours", type=int, default=env_int("REVIEW_GAP_HOURS", 3))
     ap.add_argument("--run", default=None, help="this run's id (a run never blocks itself)")
     ap.add_argument("--pick", action="store_true")
     ap.add_argument("--mark", type=int, metavar="ISSUE")

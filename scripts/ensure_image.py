@@ -53,6 +53,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from env_int import env_float, env_int  # noqa: E402  (empty means missing — issue #487)
+
 ROOT = Path(__file__).resolve().parents[1]
 
 # Files whose CONTENTS define each image, in a fixed order. A change to any of
@@ -72,7 +76,7 @@ IMAGE = os.environ.get("IMAGE", "trending-local-llms:latest")
 # already use for the `docker` CLI) — ghcr.io/https are the defaults.
 REGISTRY_HOST = os.environ.get("IMAGE_REGISTRY_HOST", "ghcr.io")
 REGISTRY_SCHEME = os.environ.get("IMAGE_REGISTRY_SCHEME", "https")
-PUSH_TIMEOUT = int(os.environ.get("IMAGE_PUSH_TIMEOUT", "60"))
+PUSH_TIMEOUT = env_int("IMAGE_PUSH_TIMEOUT", 60)
 TEST_IMAGE = os.environ.get("TEST_IMAGE", "trending-local-llms-test:latest")
 OPENSPEC_IMAGE = os.environ.get("OPENSPEC_IMAGE", "trending-local-llms-openspec:latest")
 
@@ -292,7 +296,7 @@ def push_check(host: str = "", scheme: str = "", token: str = "") -> str:
 #: A fresh push is re-probed this many times before the publish is called UNVERIFIED: a
 #: registry's read path can trail its write path by a moment.
 VERIFY_ATTEMPTS = 3
-VERIFY_DELAY_S = float(os.environ.get("ENSURE_VERIFY_DELAY_S", "2"))
+VERIFY_DELAY_S = env_float("ENSURE_VERIFY_DELAY_S", 2)
 
 
 class PublishUnverified(Exception):

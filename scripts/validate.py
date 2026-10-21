@@ -36,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition)
+from env_int import env_float, env_int  # noqa: E402  (empty means missing — issue #487)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))  # import update_trending helpers
@@ -1188,8 +1189,8 @@ _INDETERMINATE = {403, 429, 500, 502, 503, 504}
 # as "does not resolve", so the fix-bot never pushed its (correct) fix.
 _RETRYABLE = {429, 500, 502, 503, 504}
 LINK_OK, LINK_DEAD, LINK_UNVERIFIED = "ok", "dead", "unverified"
-_LINK_RETRIES = int(os.environ.get("LINKCHECK_RETRIES", "3"))
-_LINK_BACKOFF = float(os.environ.get("LINKCHECK_BACKOFF", "2"))
+_LINK_RETRIES = env_int("LINKCHECK_RETRIES", 3)
+_LINK_BACKOFF = env_float("LINKCHECK_BACKOFF", 2)
 _LINK_MAX_WAIT = 30.0
 _sleep = time.sleep  # patched in tests
 # One result per URL per process. models.json + raw snapshots repeat the same
