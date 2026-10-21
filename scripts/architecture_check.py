@@ -31,6 +31,12 @@ from pathlib import Path
 DOC_NAME = "ARCHITECTURE.md"
 TARGET_SECTION = "## 3."
 NEXT_SECTION = "## 4."
+#: The human-readable SCRIPT inventory. §10's generated block names every script
+#: too, so "the name appears somewhere" (the old rule) was satisfied by the block
+#: while §6 — the table a reader actually uses to learn what a script does — lost
+#: 9 of 46 entries (issue #506).
+SCRIPT_SECTION = "## 6."
+SCRIPT_NEXT_SECTION = "## 7."
 
 # A public target: `name:` at column 0. `.PHONY`, comments, `:=` assignments,
 # `%`-patterns and `_`-prefixed internals are not public targets.
@@ -78,6 +84,26 @@ def described_text(doc: Path) -> str:
     return doc.read_text(encoding="utf-8") if doc.is_file() else ""
 
 
+def section(text: str, start_marker: str, end_marker: str) -> str:
+    """The document's `start_marker` … `end_marker` section (empty when absent)."""
+    start = text.find(start_marker)
+    end = text.find(end_marker, start + 1)
+    return text[start:end] if start >= 0 and end > start else ""
+
+
+def described_scripts(doc: Path) -> set[str]:
+    """The script paths §6's table claims a role for (its FIRST cell only)."""
+    if not doc.is_file():
+        return set()
+    body = section(doc.read_text(encoding="utf-8"), SCRIPT_SECTION, SCRIPT_NEXT_SECTION)
+    names = set()
+    for cell in _TABLE_ROW.findall(body):
+        for token in _TICKED.findall(cell):
+            if token.startswith("scripts/"):
+                names.add(token)
+    return names
+
+
 def findings(root: Path) -> list[str]:
     """Every way the description and the repository disagree."""
     doc = root / DOC_NAME
@@ -102,6 +128,14 @@ def findings(root: Path) -> list[str]:
     out += [f"script `scripts/{s}` is not described in {DOC_NAME}" for s in scripts if s not in text]
     out += [f"{DOC_NAME} references `scripts/{r}`, which does not exist"
             for r in sorted(set(_SCRIPT_REF.findall(text))) if r not in scripts]
+
+    # §6 is the inventory a READER uses; naming a script in the generated §10
+    # block does not give it a role (issue #506 — 9 of 46 scripts were in the
+    # block and absent here, and the old check was satisfied by the block).
+    roles = described_scripts(doc)
+    out += [f"script `scripts/{s}` has no row in {DOC_NAME} §6 (the generated block "
+            f"names it, but a reader has no role for it)" for s in scripts
+            if f"scripts/{s}" not in roles]
     return out
 
 

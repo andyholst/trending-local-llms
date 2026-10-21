@@ -45,8 +45,13 @@ def _module():
 
 
 def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify"),
-          workflows=("ci.yml",), scripts=("thing.py",), doci_wf=True, doc_script=True):
-    """A minimal repo fixture: Makefile + ARCHITECTURE.md + workflows + scripts."""
+          workflows=("ci.yml",), scripts=("thing.py",), doci_wf=True, doc_script=True,
+          doc_roles=None):
+    """A minimal repo fixture: Makefile + ARCHITECTURE.md + workflows + scripts.
+
+    `doc_roles` writes the §6 script table: since issue #506 a script needs a ROLE
+    there, and naming it in the generated §10 block does not count.
+    """
     (td / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (td / "scripts").mkdir(parents=True, exist_ok=True)
     (td / "Makefile").write_text(
@@ -64,6 +69,10 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
         body += [f"- `.github/workflows/{w}` — a pipeline" for w in workflows]
     if doc_script:
         body += [f"- `scripts/{s}` — a script" for s in scripts]
+    body += ["", "## 6. The scripts", "", "| Script | Role |", "|---|---|"]
+    if doc_script if doc_roles is None else doc_roles:
+        body += [f"| `scripts/{s}` | what it does |" for s in scripts]
+    body += ["", "## 7. Guards", ""]
     (td / "ARCHITECTURE.md").write_text("\n".join(body) + "\n", encoding="utf-8")
     return td
 
@@ -203,6 +212,24 @@ def test_wired_into_ci_the_loop_the_suite_and_the_prompt():
           "ARCHITECTURE.md" in prompt and "make architecture-check" in prompt, prompt[:300])
 
 
+def test_a_script_named_only_in_the_generated_block_has_no_role():
+    """#506: §10 naming every script satisfied the old rule while §6 lost 9 of 46."""
+
+    # Given a script the document names in §4 but gives no §6 row
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), scripts=("thing.py",), doc_roles=False)
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+        # Then  it is reported as having no role, naming the section
+        # And   fixing the row turns it green
+        check("section 6: a script with no row is reported",
+              any("scripts/thing.py" in p and "no row" in p for p in problems), problems)
+        _tree(root, scripts=("thing.py",))
+        check("section 6: the row makes it green", not _module().findings(root))
+
+
 def main() -> int:
     print("architecture description + its guard (ARCHITECTURE.md, rule 6h)")
     test_missing_doc_is_a_failure()
@@ -211,6 +238,7 @@ def main() -> int:
     test_undocumented_workflow_and_script_are_reported()
     test_phantom_reference_is_reported()
     test_fixture_tree_passes_when_in_step()
+    test_a_script_named_only_in_the_generated_block_has_no_role()
     test_real_repo_description_is_current()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
