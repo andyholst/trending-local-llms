@@ -94,6 +94,12 @@ jobs:
   validate:
     needs: guard
     runs-on: ubuntu-latest
+    # `contents: read` is the workflow default; the lifecycle guard (rule 6f,
+    # issue #183) also reads PR STATE, which needs pull-requests read and a token
+    # in the environment. Nothing here writes.
+    permissions:
+      contents: read
+      pull-requests: read
     # 20 -> 30: when the revision's Dockerfile is not published yet this job
     # builds the base from source before the suite (issue #135).
     timeout-minutes: 30
@@ -190,6 +196,16 @@ jobs:
       # this revision's openspec/Dockerfile hash, built here when unpublished.
       - name: OpenSpec gate (changes validate, tasks ticked, index current)
         run: make openspec-check
+
+      # The lifecycle's END (rule 6f, issue #183): a change whose PR is merged must
+      # be archived in the PR that completes it, so an ACTIVE change naming a
+      # merged PR is a defect. PR state is a GitHub fact, read on the HOST with the
+      # workflow token — `gh` is absent from the agent container, which is why this
+      # is its own step rather than part of `make openspec-check`.
+      - name: OpenSpec lifecycle (no active change names a merged PR)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make openspec-archive-check
 
       # The description is part of the change (rule 6h): every public make
       # target, workflow and script must be in ARCHITECTURE.md, and nothing it

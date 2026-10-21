@@ -210,6 +210,7 @@ keep it honest (issue #207):
 | `openspec-tasks-check` (`NAME=`) | Fail while an ACTIVE change has an unticked `- [ ]` (`scripts/check_openspec_tasks.py`) |
 | `openspec-index` | Regenerate the root `OPENSPEC.md` (`scripts/openspec_index.py --write`) |
 | `openspec-index-check` | Fail when `OPENSPEC.md` is stale or a change has no row |
+| `openspec-archive-check` | Fail when an ACTIVE change's `PR:` line names a MERGED PR — the change should have been archived in that PR (`scripts/openspec_archive_check.py`; host-side, needs `gh`) |
 | `openspec-check` | The gate: `openspec validate --changes` + the task check + the index check |
 
 ### Findings → issues (rule 6g)
@@ -357,7 +358,7 @@ competing PRs over the same generated files).
 | Job | Does |
 |---|---|
 | `guard` | FIRST job (issue #279): owner / write+ collaborator / `github-actions[bot]` for BOTH actor and triggering actor; a `pull_request`/`push` run is admitted outright (GitHub starts it for the repository itself, and a PR must be validated whatever its author). The 30-minute network-bound DISPATCH is what this guards |
-| `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make architecture-check`, `make test` |
+| `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make openspec-archive-check` (the lifecycle guard: an active change may not name a merged PR, rule 6f — its own step because `gh` lives on the host, not in the agent container), `make architecture-check`, `make test` |
 | `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `agent-shell-keys-check` (the real secrets are visible in the agent's shell, issue #359), `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
 | `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides, and then runs `make verify-closure` so a body whose keyword did not bind leaves a RED run (issue #288) |
@@ -502,7 +503,8 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/data_gap_analysis.py` | The post-refresh gap analysis (§3) — `analyse`, `rank_impact`, `render`, `file_issue`, `ensure_label`. The issue body LEADS with the refresh run's window block (#199) |
 | `scripts/refresh_run_block.py` | The refresh run's WINDOW block (#199): `render` is pure (a fixed fixture renders the exact expected block), `fetch` reads the run's REAL job timestamps via `gh api`, `current_block()` is the one composer both the PR body and the gap issue embed. Its marker line comes from `scripts/bot_markers.py`, so the shared parser reads it |
 | `scripts/check_openspec_tasks.py` | Fails an active OpenSpec change with an unticked task box |
-| `scripts/openspec_index.py` | Renders / verifies the root `OPENSPEC.md` from `openspec/changes/**` |
+| `scripts/openspec_index.py` | Renders / verifies the root `OPENSPEC.md` from `openspec/changes/**`; `discover()` takes the changes directory (the lifecycle guard reads the same layout through it) |
+| `scripts/openspec_archive_check.py` | The lifecycle's end (rule 6f, issue #183): fails when an ACTIVE change's `PR:` line names a MERGED pull request, naming the change, the PR and the two commands (`make openspec-archive`, `make openspec-index`); skips a change with no `PR:` line and archived changes; exits 2 — never 0 — when the GitHub read fails. PR state via `gh api …/pulls/<n> --jq .merged` |
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |
 | `scripts/issue_thread.py` | Render an issue's whole thread for the implementer (#210): title, body, every comment oldest-first with author + ISO8601Z, then the decision instruction (`TRIAGE`/`REFINED`/`EVIDENCE`/`REASON`). `--paginate` + `.[]` so a multi-page thread parses |
 | `scripts/issue_verdict.py` | Apply the implementer's verdict, deterministically (#210): the grammar with its refusals (close without evidence, refine without a restatement, unknown verdict), ONE comment + a verified label, or a close with the evidence posted. No model, no network beyond the `gh` calls it is told to make |
@@ -571,6 +573,9 @@ GitHub issue  →  its own worktree, cut off the freshly fetched origin/master
                  Given/When/Then scenarios, each with a - **Test:** line · tasks)
               →  code + tests (+ ARCHITECTURE.md, AGENTS.md §8, README via its template)
               →  PR (closes #<issue>; qa-validate runs validate + live-smoke)
+              →  the change's PR: # line is recorded, and the PR that completes it
+                 runs `make openspec-archive NAME=<change>` + `make openspec-index`
+                 (the change moves to openspec/changes/archive/, listed as archived)
               →  green  →  auto-merge (squash, branch deleted)
               →  OPENSPEC.md regenerated (the change is listed)  +  findings filed
                  as their own issues (tech-debt)
@@ -579,6 +584,15 @@ GitHub issue  →  its own worktree, cut off the freshly fetched origin/master
 `make openspec-check` is the gate a change must pass before its PR is ready;
 `make openspec-index` keeps `OPENSPEC.md` as the one file that lists every change
 this repo has ever made.
+
+A change's life ENDS in the PR that completes it: once its `PR: #<n>` line is
+known, that PR runs `make openspec-archive NAME=<change>` (moving the directory
+to `openspec/changes/archive/<name>`) and `make openspec-index`, so the archive
+and the regenerated index land in one commit — the merge is still `auto-merge`'s.
+`make openspec-archive-check` enforces it: every ACTIVE change's `PR:` line is
+read, and a PR GitHub reports as merged fails the check (qa-validate's `validate`
+job runs it with `pull-requests: read`). A change with no `PR:` line cannot be
+asserted about and is skipped; an archived change is the expected state.
 
 ---
 
@@ -613,7 +627,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 146 make targets, 46 files in `scripts/`)
+### Bots in the tree (11 pipelines, 147 make targets, 47 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -669,7 +683,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `pull_request`, `push`, `workflow_dispatch`
 - **jobs:** `guard`, `validate` (needs `guard`), `live-smoke` (needs `guard`), `dispatch-fixbot` (needs `validate`), `auto-merge` (needs `validate`, `live-smoke`)
-- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, or a tracked Python module raises a SyntaxWarning; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
+- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, or a tracked Python module raises a SyntaxWarning; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make openspec-archive-check` — Fail when an ACTIVE change names a MERGED PR (rule 6f; host-side: needs gh); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
 
 #### `.github/workflows/queued-alarm.yml` — queued-alarm
 
@@ -742,6 +756,7 @@ One line each, taken from the script's own docstring.
 - `scripts/lint_syntax.py` — No tracked Python module raises a `SyntaxWarning` (issue #190).
 - `scripts/model_caps_check.py` — Live model-catalog guard for the Hermes search/fix model.
 - `scripts/nerve_key_check.py` — The nerve-plugin credential guard (issue #120).
+- `scripts/openspec_archive_check.py` — An ACTIVE OpenSpec change must not name a MERGED pull request (issue #183).
 - `scripts/openspec_index.py` — Generate / verify the root OpenSpec index (`OPENSPEC.md`).
 - `scripts/pr_closure.py` — Does this PR close the issue it implements? (issue #284, AGENTS.md rule 6e)
 - `scripts/pr_health.py` — Report OPEN pull requests that are SILENT — and say what to do about it (issue #442).
