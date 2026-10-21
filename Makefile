@@ -1044,6 +1044,9 @@ issue-skip-note: ## Say on the held issue why the sweep skipped it (one comment 
 # EVIDENCE, a refine with no restatement, and an unknown verdict all exit 2.
 # The sweep skips a decided issue through the SHARED queue rule (#210), never a
 # second copy in shell.
+issue-state: ## Print the issue's state: exit 0 = open, 4 = closed, 2 = unreadable (ISSUE=<n>, REPO=) (issue #520)
+	python3 scripts/issue_verdict.py --state --issue "$(ISSUE)" $(if $(REPO),--repo "$(REPO)",)
+
 issue-verdict: ## Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>)
 	@python3 scripts/issue_verdict.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(TRIAGE_FILE),--file $(TRIAGE_FILE),)
 
