@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27.8B (ternary, ~1.72 bits per weight, based on Qwen3.8-27B)",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "weight_gb": "5.95GB PTQ1_0 / 7.21GB PQ2_0",
+      "context_tokens": "262144",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 27B compressed 9x to ~5.9GB of ternary weights that still keeps 98.2% of full-precision scores; the author's 4GB-VRAM/32GB-RAM box runs it in llama.cpp at 2.5 tok/s while a 12GB RTX 3060 holds a 220K context at ~35 tok/s with the PQ2_0 build.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.5",
+          "hardware": "4GB VRAM + 32GB system RAM (llama-server slot log: tg 2.50 t/s, ~12 tok/s prompt processing; the same machine runs Qwen 3.8 35B MoE faster)",
+          "quant": "quantized-down Bonsai 2 27B / Qwen3.8-27B build in llama-server",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2111038392578310446",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 120,
+          "interactions": 121,
+          "system_ram_min": "32GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:53Z"
+}

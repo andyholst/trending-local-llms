@@ -1,0 +1,53 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "A 2020 RTX 3090 reaches ~382 tok/s on a document-reproduction task (25K-token prompt) and ~133 tok/s in ordinary chat once MTP, DFlash2 speculative decoding, a context-lookup drafter and 16-token verification batches are stacked - 4.6x the ~82 tok/s stock figure on the same card.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB (document reproduction of a 25K-token prompt; ~133 tok/s in ordinary chat - the context-lookup drafter only pays off on reproduction; MTP + DFlash2 drafter + 16-token verification batches)",
+          "quant": "Qwen3.8-27B GGUF; MTP, DFlash2 speculative decoding, context lookup, larger verification batches (16 tokens per step)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112385215423193459",
+          "likes": 3,
+          "comments": 4,
+          "reshares": 25,
+          "views": 3321,
+          "interactions": 3353,
+          "context_tokens": "25600",
+          "engine_min_version": "MTP + DFlash2 drafter + context lookup, verification batch of 16 tokens"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "70",
+          "hardware": "NVIDIA DGX Spark (single node)",
+          "quant": "reproducible SGLang launch configuration released with a Dockerfile",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 22,
+          "views": 554,
+          "interactions": 583
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:58:23Z"
+}

@@ -1,0 +1,66 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Liquid AI's on-device agent MoE: 24B total, ~2B active, 184 tok/s on an M5 Max.",
+      "name": "LFM2.5-24B-A2B",
+      "id": "lfm2.5-24b-a2b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid-reported inference speed; 14.5GB 4-bit build",
+          "weight_gb": "14.5GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/Zunbeamzero/status/2110372863530160297",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid-reported on-device agent run"
+        },
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/VT_zero1/status/2110256835647197378",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid-reported speed"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:01:04Z"
+}

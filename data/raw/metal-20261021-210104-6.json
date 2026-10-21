@@ -1,0 +1,150 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Qwen's 35B MoE with ~3B active; the mid-size local agent workhorse.",
+      "name": "Qwen3.6-35B-A3B",
+      "id": "qwen3.6-35b-a3b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "154",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Pro MacBook Pro, 48GB unified memory (2024)",
+          "quant": "4-bit, Kapitsa engine + DFlash2 speculative decoding",
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Pro MacBook Pro, 48GB unified memory (2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B, MTP speculative decoding",
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Pro MacBook Pro, 48GB unified memory (2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B + DFlash2",
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Pro MacBook Pro, 48GB unified memory (2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B, MTP",
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "100",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "RTX 3090 24GB",
+          "quant": "Q4 on the 3090 (Qwen 3.6 27B at Q4_K_M runs ~37 tok/s)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP spec decoding N=5, 291W",
+          "engine_min_version": "llama.cpp b9292"
+        },
+        {
+          "engine": "Magnitude",
+          "tps": "128",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "DGX Spark (GB10)",
+          "quant": "Magnitude with MTP speculative decoding on (llama.cpp 64 tok/s off)"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "239",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Max",
+          "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
+          "engine_min_version": "MLX-Serve 26.9.5"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "64",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "DGX Spark (GB10)",
+          "quant": "MTP speculative decoding off"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:01:04Z"
+}

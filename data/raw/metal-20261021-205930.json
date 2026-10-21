@@ -1,0 +1,133 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "Ternary-Bonsai-2-2B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "1GB",
+      "vram_min": "1GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "The smallest ternary Bonsai 2, small enough to run on a phone.",
+      "name": "Bonsai 2 2B",
+      "id": "bonsai-2-2b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Max (browser demo)",
+          "quant": "ternary 2B, browser demo; PrismML figure",
+          "weight_gb": "0.43GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "90",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/pratikg/status/2110834170587238488",
+          "likes": 14,
+          "comments": 15,
+          "reshares": 265,
+          "views": 17440,
+          "interactions": 294,
+          "hardware": "iPhone 17 Pro Max",
+          "quant": "ternary 2B on device, reasoning + vision + tool calling",
+          "weight_gb": "0.43GB"
+        }
+      ]
+    },
+    {
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM (MoE)",
+      "license": "Meta Community License",
+      "params": "816B (42B active)",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "493GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Meta's 816B open MoE; distributed MLX inference across linked Mac Studios.",
+      "name": "Muse Spark Open",
+      "id": "muse-spark-open",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 69,
+          "interactions": 0,
+          "hardware": "2x M5 Ultra Mac Studio, 512GB each, Thunderbolt 5 + RDMA",
+          "quant": "Apple MLX tensor parallelism across two Studios; generation speed",
+          "system_ram_min": "1TB (512GB per Mac Studio)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Chahatusharma/status/2111173528838103533",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 34,
+          "interactions": 1,
+          "hardware": "4x Mac Studio M5 Ultra (Thunderbolt 5 RDMA)",
+          "quant": "MLX tensor parallelism over Thunderbolt 5 RDMA"
+        }
+      ]
+    },
+    {
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A sparse 125B MoE that runs on consumer cards and Macs through expert offload.",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "id": "qwen3.8-flash-next-125b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "97.1",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 8,
+          "views": 974,
+          "interactions": 12,
+          "hardware": "Mac Studio M3 Ultra",
+          "quant": "4-bit MTP build via oMLX +66% over previous",
+          "context_tokens": "23K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:30Z"
+}

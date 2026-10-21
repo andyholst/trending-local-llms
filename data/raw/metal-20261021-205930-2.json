@@ -1,0 +1,129 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Alibaba's flagship dense 27B; the local-agent default on Mac and RTX cards alike.",
+      "name": "Qwen3.8-27B",
+      "id": "qwen3.8-27b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382721876005179",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 688,
+          "interactions": 6,
+          "hardware": "Apple M6, 32GB unified memory",
+          "quant": "ANEMLL Forge 0.2.1, INT8 KV cache, smaller draft model",
+          "context_tokens": "192K",
+          "system_ram_min": "32GB"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Max (64GB-class unified memory)",
+          "quant": "MLX-Serve 26.10.1 4-bit + DFlash drafter (numbers workload); mlx-serve used ddalcu's 4-bit build",
+          "engine_min_version": "mlx-serve 26.10.1"
+        },
+        {
+          "engine": "MLX",
+          "tps": "44.6",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M3 Max 96GB (Apple Silicon)",
+          "quant": "MLX 4-bit, z-lab DFlash2 8-bit drafter (numbers workload)",
+          "system_ram_min": "96GB"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Max",
+          "quant": "MLX 4-bit + DFlash drafter, spec decode (numbers workload)"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "M4 Max",
+          "quant": "oMLX 0.7.0 4-bit + DFlash drafter (numbers workload)",
+          "engine_min_version": "oMLX 0.7.0"
+        }
+      ]
+    },
+    {
+      "full_name": "Qwen3.8-27B (TensorFold + DFlash2, Mac mini M6)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-27",
+      "name": "Qwen3.8-27B (TensorFold + DFlash2, Mac mini M6)",
+      "id": "qwen3.8-27b-tensorfold-dflash2-macmini",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Mac mini M6 (Apple Silicon, 32GB unified memory)",
+          "quant": "MLX 4-bit, DFlash2 drafting, code generation (chat 30.8 tok/s, baseline 10.1)",
+          "system_ram_min": "32GB"
+        }
+      ],
+      "why": "TensorFold with DFlash2 drafting on a 32GB Mac mini M6: code generation 10.1 to 61.9 tok/s, chat 10.1 to 30.8."
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:30Z"
+}

@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B",
+      "type": "LLM",
+      "license": "not stated",
+      "params": "26B total / 4B active (MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "16GB",
+      "vram_min": "4GB",
+      "system_ram_min": "4GB per box",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Anthropic's Frontier Red Team sharded this 26B MoE across 15 off-brand Android TV boxes (~$55 each, 4GB RAM each, two layers per box) and got working inference - the first real hardware floor for the model, though at 0.39 tok/s.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "0.39",
+          "hardware": "15 off-brand Android TV boxes (~$55 each, 4GB RAM each, two of the model's layers per box), distributed inference",
+          "quant": "not stated",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Johnson_Zhu/status/2112694979890213284",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 997,
+          "interactions": 1000,
+          "system_ram_min": "4GB per box"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:00:59Z"
+}

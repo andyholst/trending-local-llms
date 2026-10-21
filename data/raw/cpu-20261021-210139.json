@@ -1,0 +1,156 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "raon-1-mini",
+      "name": "Raon-1 mini",
+      "full_name": "Raon-1-mini-preview",
+      "type": "LLM",
+      "license": "not stated",
+      "params": "28.8B total / 4.3B active (MoE)",
+      "hf": "KRAFTON/Raon-1-mini-preview",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Hybrid sparse/linear attention: only 7 of its 25 layers keep a KV cache, so a full 262K context costs about 1-2 GiB and a 30B-class MoE stops being context-bound on an 8GB card; experts offloaded to CPU in both measured runs.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "23.6",
+          "hardware": "RTX 3070 8GB + 64GB DDR4 (experts from 20 of 25 layers on CPU, 262K context loaded, 6.4GB VRAM)",
+          "quant": "Q4_K_M, 19.7GB GGUF file; KV at q8; KRAFTON's own llama.cpp branch (upstream does not load it yet)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/bountyAIhunter/status/2112908741972553898",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 383,
+          "interactions": 389,
+          "weight_gb": "Q4_K_M, 19.7GB file",
+          "context_tokens": "262144",
+          "system_ram_min": "64GB",
+          "engine_min_version": "KRAFTON's llama.cpp branch (upstream does not load it yet)"
+        }
+      ]
+    },
+    {
+      "id": "nemotron-3.5-bolt-74b-a9b",
+      "name": "Nemotron-3.5-Bolt-74B-A9B",
+      "full_name": "Nemotron-3.5-Bolt-74B-A9B",
+      "type": "LLM",
+      "license": "not stated",
+      "params": "74B total / 9B active (MoE)",
+      "hf": "unsloth/Nemotron-3.5-Bolt-74B-A9B-GGUF",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Reported 74B MoE on a 12GB RTX 3060 + 16GB RAM: Unsloth's UD-IQ1_S 1-bit GGUF beat NVIDIA's official 2-bit file by 3.5GB in size while matching perplexity (report; task benchmarks not shown).",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "30",
+          "hardware": "RTX 3060 12GB + 16GB system RAM (262K context; ~800 tok/s prefill, which is prompt processing, never the decode figure)",
+          "quant": "Unsloth UD-IQ1_S 1-bit GGUF",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112705410389901480",
+          "likes": 2,
+          "comments": 6,
+          "reshares": 23,
+          "views": 3312,
+          "interactions": 3343,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active (MoE)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "262K",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Reported 35B-A3B at ~50 tok/s on a 12GB RTX 3060 with 16GB RAM via MoE expert offload; only ~3B parameters active per token.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB VRAM + 16GB system RAM (~550 tok/s prompt processing, which is prefill, never the decode figure)",
+          "quant": "Q4_K_M, 262K context configured, Flash Attention + 8-bit KV cache",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112030236590137348",
+          "likes": 4,
+          "comments": 5,
+          "reshares": 44,
+          "views": 7945,
+          "interactions": 7998,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "Flash Attention + 8-bit KV cache"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "not stated",
+      "params": "125B total / ~6B active (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "system_ram_min": "110GB",
+      "context_tokens": "250K",
+      "weight_gb": "Q4_K_XL GGUF, ~111.4GB across four shards",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Hybrid GPU + system-RAM expert offload puts a 125B MoE on a single 24GB RTX 4090 at ~21 tok/s with no MTP, no DFlash2 and no KV-cache quantization (developer report).",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.52",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 (hybrid offload, 40 expert layers on GPU; 384 tok/s prefill is prompt processing, never the decode figure; Ubuntu 22)",
+          "quant": "Q4_K_XL GGUF ~111.4GB across four shards; hybrid offload, no MTP, no DFlash2, no KV-cache quantization",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 6,
+          "comments": 9,
+          "reshares": 40,
+          "views": 18945,
+          "interactions": 19000,
+          "weight_gb": "Q4_K_XL ~111.4GB across four shards",
+          "context_tokens": "81920",
+          "system_ram_min": "110GB",
+          "engine_min_version": "experimental llama.cpp hybrid expert-offload build"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:01:39Z"
+}

@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B (Empero distillation)",
+      "type": "LLM (MoE, 3B active)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Q4_K_M, Flash Attention, Q8_0 KV cache, 26 MoE layers on CPU (--n-cpu-moe 26); ~550 t/s prompt processing excluded",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning on",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107065293684003048",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 0,
+          "views": 3060
+        }
+      ],
+      "last_seen": "2026-10-05",
+      "why": "Empero's distilled 35B-A3B does ~50 tok/s decode on a 12GB RTX 3060 with 26 MoE layers pushed to CPU, holding a 262K context in 16GB system RAM."
+    }
+  ],
+  "generated_utc": "2026-10-21T21:01:45Z"
+}

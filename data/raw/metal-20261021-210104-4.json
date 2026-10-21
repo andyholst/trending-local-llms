@@ -1,0 +1,100 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM (MoE)",
+      "license": "Meta Community License",
+      "params": "816B (42B active)",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "493GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Meta's 816B open MoE; distributed MLX inference across linked Mac Studios.",
+      "name": "Muse Spark Open",
+      "id": "muse-spark-open",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "4x Mac Studio M5 Ultra (Thunderbolt 5 RDMA)",
+          "quant": "816B MoE NVFP4 open weights across four Studios",
+          "weight_gb": "493GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "4x Mac Studio M5 Ultra 512GB (Thunderbolt 5, RDMA)",
+          "quant": "Apple MLX tensor parallelism, compressed weights"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "543",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/VaseGod/status/2110864545413788150",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "8x NVIDIA B300",
+          "quant": "NVFP4 checkpoint with DFlash V2 speculative decoding"
+        }
+      ]
+    },
+    {
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Alibaba's flagship dense 27B; the local-agent default on Mac and RTX cards alike.",
+      "name": "Qwen3.8-27B",
+      "id": "qwen3.8-27b",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14.06",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AgoristQuest/status/2111038392578310446",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "iPhone 16e / iPhone 17 Pro Max Plus (on device, print_timing slot lines)",
+          "quant": "quantized-down Qwen3.8-27B / Bonsai 2, prompt processing 3709 tokens",
+          "context_tokens": "3709"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:01:04Z"
+}

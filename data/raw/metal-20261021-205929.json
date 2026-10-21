@@ -1,0 +1,242 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Alibaba's flagship dense 27B; the local-agent default on Mac and RTX cards alike.",
+      "name": "Qwen3.8-27B",
+      "id": "qwen3.8-27b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382721876005179",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 688,
+          "interactions": 6,
+          "hardware": "Apple M6, 32GB unified memory",
+          "quant": "ANEMLL Forge 0.2.1, INT8 KV cache, smaller draft model",
+          "context_tokens": "192K",
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "full_name": "Qwen3-30B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B (3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "A 30B MoE that activates ~3B per token, so it decodes like a small model on a Mac.",
+      "name": "Qwen3-30B-A3B",
+      "id": "qwen3-30b-a3b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "106",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 13,
+          "comments": 10,
+          "reshares": 307,
+          "views": 51611,
+          "interactions": 330,
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "MLX build, ~3B active parameters per token",
+          "system_ram_min": "64GB"
+        }
+      ]
+    },
+    {
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB.",
+      "name": "Bonsai 2 27B",
+      "id": "bonsai-2-27b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 13,
+          "comments": 10,
+          "reshares": 307,
+          "views": 51611,
+          "interactions": 330,
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "ternary weights (-1/0/+1) measured with Apple's MLX",
+          "weight_gb": "8.4GB",
+          "system_ram_min": "64GB"
+        }
+      ]
+    },
+    {
+      "full_name": "Ternary-Bonsai-2-27B on mlx.fast",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-26",
+      "why": "The same ternary 27B run through Yukon's mlx.fast track on a 16 GB Mac.",
+      "name": "Bonsai 2 27B (mlx.fast)",
+      "id": "bonsai-2-27b-mlx-fast",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "600",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/ddalcu/status/2104267108893000033",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Mac mini (Apple Silicon)",
+          "quant": "mlx.fast Yukon challenge run, ~600 tokens per second"
+        }
+      ]
+    },
+    {
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A sparse 125B MoE that runs on consumer cards and Macs through expert offload.",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "id": "qwen3.8-flash-next-125b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "126.5",
+          "date": "2026-09-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100499328376713348",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 8,
+          "views": 974,
+          "interactions": 12,
+          "hardware": "MacBook M5 Max",
+          "quant": "MTPLX V2.11.3 (MLX with multi-token prediction); 126.5 TPS peak, 61 TPS avg at 100K, 50 TPS avg at 200K",
+          "engine_min_version": "MTPLX V2.11.3",
+          "context_tokens": "200K"
+        }
+      ]
+    },
+    {
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM (MoE)",
+      "license": "Meta Community License",
+      "params": "816B (42B active)",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "493GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Meta's 816B open MoE; distributed MLX inference across linked Mac Studios.",
+      "name": "Muse Spark Open",
+      "id": "muse-spark-open",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/marcel_butucea/status/2111196917803962501",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 19,
+          "interactions": 0,
+          "hardware": "4x Mac Studio with MLX RDMA over Thunderbolt (Apple research setup)",
+          "quant": "distributed MLX inference across four Mac Studios",
+          "context_tokens": "8192"
+        }
+      ]
+    },
+    {
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "6GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "PrismML's new ternary 9B: reasoning, vision and tool calling in about 2 GB. Vendor figure: up to 179 tok/s on an M5 Max Pro.",
+      "name": "Bonsai 2 9B",
+      "id": "bonsai-2-9b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 8,
+          "reshares": 0,
+          "views": 982,
+          "interactions": 13,
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales; PrismML-reported figure",
+          "weight_gb": "2GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:29Z"
+}

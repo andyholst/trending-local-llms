@@ -1,0 +1,60 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "not stated",
+      "params": "125B total / ~6B active (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "system_ram_min": "64GB",
+      "weight_gb": "IQ3_S / IQ2_XS GGUFs",
+      "context_tokens": "261K",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Strata splits the 125B MoE between a single 24GB RTX 3090 and system RAM: ~87 tok/s at IQ2_XS and ~70 tok/s at IQ3_S, still ~66 tok/s at 261K context (developer report, 64GB system RAM recommended).",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 (GPU keeps the hot experts, the rest in system RAM; ~1,900 tok/s prompt processing is prefill, never the decode figure)",
+          "quant": "IQ2_XS GGUF",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 3,
+          "comments": 4,
+          "reshares": 21,
+          "views": 2175,
+          "interactions": 2203,
+          "weight_gb": "IQ2_XS",
+          "system_ram_min": "64GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 (GPU keeps the hot experts, the rest in system RAM; still ~66 tok/s at 261K context)",
+          "quant": "IQ3_S GGUF",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 3,
+          "comments": 4,
+          "reshares": 21,
+          "views": 2175,
+          "interactions": 2203,
+          "weight_gb": "IQ3_S",
+          "context_tokens": "267264",
+          "system_ram_min": "64GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:58:36Z"
+}

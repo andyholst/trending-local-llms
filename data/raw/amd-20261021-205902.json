@@ -1,0 +1,99 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm (HIP backend, Linux), sustained 52-60 output t/s; k8v4 KV cache +10%; prompt processing 1250 t/s excluded",
+          "engine_min_version": "./setup.sh --backend hip (ROCm install, no sudo, experimental)",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 508,
+          "comments": 43,
+          "reshares": 58,
+          "views": 41135
+        }
+      ],
+      "last_seen": "2026-09-29",
+      "why": "AMD RX 7900 XTX runs the 125B MoE at a sustained 52-60 output tok/s through Strata's HIP backend."
+    },
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE, MTP head)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan, llama.cpp b9292, MTP on (MTP off 129 t/s), N=5 with warmup discarded, card power capped at 291W",
+          "engine_min_version": "b9292 with MTP head (--mtp)",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-07-11",
+      "why": "On one RX 7900 XTX through llama.cpp Vulkan: 190 t/s with the MTP head on, 129 t/s with it off."
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "full_name": "Llama-3.1-8B",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "96",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "ROCm 7.2, vLLM with continuous batching and PagedAttention",
+          "engine_min_version": "ROCm 7.2",
+          "date": "2026-07-06",
+          "source_post": "https://lightbrd.com/IdleProtocol/status/2074186476779078137",
+          "likes": 67,
+          "comments": 6,
+          "reshares": 16,
+          "views": 3567
+        }
+      ],
+      "last_seen": "2026-07-06",
+      "why": "RX 7900 XTX serves Llama 3.1 8B at 96 tok/s on vLLM over ROCm 7.2, 75% of RTX 4090 throughput."
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:02Z"
+}

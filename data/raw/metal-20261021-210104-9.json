@@ -1,0 +1,79 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "1GB",
+      "vram_min": "1GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "The 4B ternary Bonsai 2, small enough for a laptop or a phone.",
+      "name": "Bonsai 2 4B",
+      "id": "bonsai-2-4b",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "5.5",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "CMF Phone 2 Pro (Android, on-device)",
+          "quant": "ternary 4B in a local chat UI (2B runs 10-11 tok/s)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 87,
+          "interactions": 0,
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary weights, 0.95GB footprint; 250 emails parsed, <4GB peak memory",
+          "weight_gb": "0.95GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 87,
+          "interactions": 0,
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary weights; 32 parallel streams parsing emails",
+          "weight_gb": "0.95GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "6",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "CMF Phone 2 Pro (on-device)",
+          "quant": "ternary 4B in a Nothing-OS-style local chat UI"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:01:04Z"
+}

@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "custom Muse Model License",
+      "params": "816B total / 42B active (MoE)",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "48GB",
+      "vram_min": "512GB",
+      "system_ram_min": "1TB unified memory across two machines",
+      "context_tokens": "1M",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Apple's MLX toolkit runs Meta's 816B-parameter open-weight model across Mac Studios over Thunderbolt 5/RDMA: ~25 gen tok/s on two 512GB M5 Ultra Mac Studios and 36+ tok/s on four, with time-to-first-token of 4.8s at an 8K prompt and 40.6s at 65K.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Mac Studio M5 Ultra, 512GB each (1TB unified memory across two machines, Thunderbolt 5 + RDMA; Apple measured ~25 generated tok/s, four-machine setup 36+; 8K prompt first token 4.8s, 65K prompt 40.6s)",
+          "quant": "compressed Muse Spark Open weights",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 11,
+          "comments": 0,
+          "reshares": 15,
+          "views": 412,
+          "interactions": 427,
+          "system_ram_min": "1TB unified memory across two machines",
+          "context_tokens": "1048576"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:27Z"
+}

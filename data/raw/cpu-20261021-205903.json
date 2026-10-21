@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "open weights (free to ship under $10M revenue)",
+      "params": "24B total / ~2B active (MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "14.5GB Q4_K_M",
+      "context_tokens": "131072",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Liquid AI's own-architecture 24B MoE (2B active, 64 experts top-4) that runs on llama.cpp and MLX from day one; 14.5GB at Q4_K_M fits an 8GB card with expert layers offloaded to CPU, and Liquid reports 184 tok/s on an M5 Max.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (vendor-reported figure; the 14.5GB Q4_K_M build fits an 8GB card with expert layers offloaded to CPU)",
+          "quant": "Q4_K_M, 131K-token context",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 7,
+          "views": 244,
+          "interactions": 257,
+          "weight_gb": "14.5GB Q4_K_M",
+          "context_tokens": "131072"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:59:03Z"
+}

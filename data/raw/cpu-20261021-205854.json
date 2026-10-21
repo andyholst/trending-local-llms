@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B (ternary weights, based on Qwen3.5)",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "2.0GB ternary (GGUF/MLX)",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "A 9B vision-language model squeezed into ~2GB of ternary weights, and an open optimization challenge (PrismML + DarkbloomAI on Yukon, mlx.fast) took Apple Silicon from 144.9 to 913.1 tok/s in five days while the DGX Spark/CUDA track gained ~401%.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (Yukon optimization leaderboard, best promoted run)",
+          "quant": "ternary 2.0GB weights on mlx.fast; up from 144.9 tok/s five days earlier (+442.3% decode)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 5,
+          "views": 511,
+          "interactions": 518,
+          "weight_gb": "2.0GB ternary",
+          "engine_min_version": "mlx.fast"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T20:58:54Z"
+}

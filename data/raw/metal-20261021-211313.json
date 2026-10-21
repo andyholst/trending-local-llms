@@ -1,0 +1,141 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "ROCm",
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "A 35B MoE distilling Qwen3.8 with ~3B active, so it decodes like a small model on a 12GB card or a laptop iGPU.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 262K context configured; Flash Attention; ~550 tok/s prompt processing",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "25.4",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2110246672166699354",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo)",
+          "quant": "Agon bench run; Q4_K_M 14.5GB, median 5,506 generated tokens"
+        },
+        {
+          "engine": "Janas",
+          "tps": "19",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5",
+          "quant": "Q4_K_M on the Janas runtime (llama.cpp reached 15 tok/s)",
+          "system_ram_min": "32GB"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "8GB GPU",
+          "quant": "MoE, experts in system RAM + GPU cache"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "RTX 4060 laptop 8GB",
+          "quant": "official checkpoints, no extreme quantization"
+        }
+      ]
+    },
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "A 35B MoE coding model retaining the MTP head, so speculative decoding works without a separate drafter.",
+      "engines": [
+        {
+          "engine": "strixite",
+          "tps": "50",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "strixite inference engine written from scratch for gfx1151"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Q4_K_M, Vulkan, MTP head N=5",
+          "engine_min_version": "llama.cpp b9292"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:13:13Z"
+}

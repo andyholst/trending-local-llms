@@ -1,0 +1,52 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "not stated",
+      "params": "35B total / 3B active (MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "On one DGX Spark (GB10, 128GB) with default drafters, Magnitude copies a 66K-token passage at 188.9 tok/s against Ollama's 87.2, but writes a NEW story at 50.4 vs Ollama's 63.4 - the speculative drafter only wins when output repeats the prompt.",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "ASUS Ascent GX10 (GB10, 128GB), GPU clock capped 2200 MHz; 66K-token Moby-Dick prompt, copying a passage; 63.4 tok/s on a NEW story after a 67K prompt",
+          "quant": "Ollama 0.40.5 registry tag Q4_K_M with built-in MTP, f16 KV cache, greedy, thinking off, median of 3 runs",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 9,
+          "views": 1362,
+          "interactions": 1378
+        },
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "ASUS Ascent GX10 (GB10, 128GB), GPU clock capped 2200 MHz; 66K-token Moby-Dick prompt, copying a passage; 50.4 tok/s on a NEW story (0.79x Ollama)",
+          "quant": "unsloth UD-Q4_K_XL GGUF with Magnitude's DFlash drafter and quantized KV cache, greedy, median of 3 runs",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 9,
+          "views": 1362,
+          "interactions": 1378,
+          "engine_min_version": "Magnitude 0.2.9"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T21:00:23Z"
+}
