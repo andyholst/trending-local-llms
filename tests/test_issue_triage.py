@@ -41,6 +41,7 @@ from wiring import wired  # noqa: E402  (issues #176/#192)
 ROOT = Path(__file__).resolve().parent.parent
 THREAD = ROOT / "scripts" / "issue_thread.py"
 VERDICT = ROOT / "scripts" / "issue_verdict.py"
+QUEUE = ROOT / "scripts" / "issue_queue.py"
 WF = ROOT / ".github" / "workflows" / "issue-bot.yml"
 MAKEFILE = ROOT / "Makefile"
 
@@ -259,6 +260,51 @@ def test_the_label_is_verified_not_assumed():
 
 # -------------------------------------------------------------- the wiring -----
 
+def test_three_mock_issues_decide_implement_refine_or_close_against_the_tree():
+    """Issue #494, the decision the owner asked to see proven: the sweep re-reads each issue
+    against the FETCHED BASE and picks one of three verdicts. A mock issue per verdict, driven
+    through the real scripts (no mocks of the logic itself):
+
+      - still valid on the base  -> implement: nothing applied, the issue stays queued
+      - stale text, real gap     -> refine: ONE restatement + `agent:refined` (held, not expired)
+      - already fixed on the base-> close: reason + tree evidence, closed and labelled `agent:closed`
+    …and the evidence has to POINT AT THE TREE, or the close/refine is refused.
+    """
+    # Given  a mock issue that is still valid, and a verdict of implement
+    rc, out, calls, _ = run(VERDICT, [], verdict="TRIAGE: implement\n")
+    check("decide: implement applies nothing, edits no label, closes nothing",
+          rc == 0 and "verdict=implement" in out
+          and "issue close" not in calls and "--add-label" not in calls, (rc, out[-200:], calls))
+
+    # And  a mock issue whose text is stale, but whose gap is real: refine
+    rc, out, calls, _ = run(VERDICT, [], verdict=(
+        "TRIAGE: refine\nREFINED: the guard lives in scripts/update_trending.py:1412 — restate "
+        "the acceptance as 'refuse a fabricated engine at ingest'\n"
+        "EVIDENCE: scripts/update_trending.py:1412\n"))
+    check("decide: refine posts ONE restatement and labels agent:refined",
+          rc == 0 and "agent:refined" in calls and calls.count("issue comment") == 1,
+          (rc, calls))
+    check("decide: refine does NOT close the issue", "issue close" not in calls, calls)
+
+    # And  a mock issue the fetched base has ALREADY fixed: close, with evidence from the tree
+    rc, out, calls, _ = run(VERDICT, [], verdict=(
+        "TRIAGE: close\nREASON: fixed on the base\n"
+        "EVIDENCE: make validate is green and scripts/update_trending.py:1440 carries the rule\n"))
+    check("decide: close closes the issue and labels agent:closed",
+          rc == 0 and "issue close" in calls and "agent:closed" in calls, (rc, calls))
+
+    # And  the same verdict with PROSE ONLY is refused — a lazy close must not bury a live gap
+    rc, out, calls, _ = run(VERDICT, [], verdict=(
+        "TRIAGE: close\nREASON: looks obsolete to me\nEVIDENCE: it is old and probably fixed\n"))
+    check("decide: a close whose evidence points at nothing is REFUSED",
+          rc != 0 and "REFUSED" in out and "issue close" not in calls, (rc, out[-200:]))
+    # …and the same gate holds for refine, so a park cannot be justified by prose either
+    rc, out, _, _ = run(VERDICT, [], verdict=(
+        "TRIAGE: refine\nREFINED: unclear\nEVIDENCE: it feels stale\n"))
+    check("decide: a refine whose evidence points at nothing is REFUSED",
+          rc != 0 and "REFUSED" in out, (rc, out[-200:]))
+
+
 def test_the_workflow_renders_the_thread_and_applies_the_verdict():
     """Rule 6d + the honest outcome: a refine/close is green with no PR."""
 
@@ -311,6 +357,7 @@ def main() -> int:
     test_close_requires_evidence_and_posts_reason_with_it()
     test_an_unreadable_verdict_is_never_guessed_at()
     test_the_label_is_verified_not_assumed()
+    test_three_mock_issues_decide_implement_refine_or_close_against_the_tree()
     test_the_workflow_renders_the_thread_and_applies_the_verdict()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

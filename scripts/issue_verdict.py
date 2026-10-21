@@ -64,6 +64,24 @@ def _gh(*args: str, check: bool = True, stdin: str | None = None) -> subprocess.
     return out
 
 
+#: What a "close" or "refine" EVIDENCE block has to look like (issue #494): the decision is now
+#: taken against the CURRENT tree, so the proof must point INTO that tree — a `file:line`, a path
+#: with an extension, or a `make <target>` / `python3 scripts/…` command. "It is obsolete" is not
+#: evidence: a lazy close buries a real gap, and a lazy refine wastes a round.
+_EVIDENCE_SHAPES = (
+    re.compile(r"[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:\d+"),            # path/to/file.py:1412
+    re.compile(r"\b[\w.-]+/[\w./-]+\.[A-Za-z0-9]{1,6}\b"),         # scripts/update_trending.py
+    re.compile(r"\bmake\s+[a-z][\w-]*"),                            # make validate
+    re.compile(r"\bpython3?\s+[\w./-]+\.py"),                       # python3 scripts/x.py
+    re.compile(r"\bgh\s+(?:api|pr|issue)\b"),                       # a gh read that was run
+)
+
+
+def evidence_is_checkable(text: str) -> bool:
+    """Does this EVIDENCE block point at something in the tree a reviewer can re-run or re-read?"""
+    return any(p.search(text or "") for p in _EVIDENCE_SHAPES)
+
+
 def parse(text: str) -> dict:
     """The verdict as data. Raises SystemExit(2) on anything unreadable."""
     found = _FIELD["TRIAGE"].search(text)
@@ -84,6 +102,14 @@ def parse(text: str) -> dict:
     if kind == "refine" and not verdict["refined"]:
         raise SystemExit("[verdict] REFUSED: `TRIAGE: refine` without a `REFINED:` "
                          "restatement — the comment IS the deliverable")
+    # A fix/refine verdict is a judgement about the CURRENT tree (issue #494): the proof has to
+    # name something in it. An evidence block that is only prose is REFUSED, so the sweep cannot
+    # close a live issue — or park one — on the strength of the issue's own words.
+    if verdict["evidence"] and not evidence_is_checkable(verdict["evidence"]):
+        raise SystemExit("[verdict] REFUSED: `EVIDENCE:` points at nothing in the tree — give a "
+                         "`path:line`, a checkable path, or the `make`/`python3`/`gh` command you "
+                         "ran. The verdict is judged against the fetched base, so the proof has "
+                         "to come from it.")
     if kind == "close":
         if not verdict["evidence"]:
             raise SystemExit("[verdict] REFUSED: `TRIAGE: close` without an "

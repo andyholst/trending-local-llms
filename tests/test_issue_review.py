@@ -705,6 +705,31 @@ def test_a_decided_hold_is_announced_on_the_issue():
           and f"since={applied}" in posted[0]["body"], str(posted))
 
 
+def test_the_queue_reads_both_labels_as_one_oldest_first_list():
+    """Issue #494: the sweep reads `data-gap-analysis` AND `tech-debt` — one issue per run, and
+    the two labels compete on AGE, not on which list was read first."""
+
+    # Given  one issue under each label (the stub answers every `issue list` with all of them,
+    #        which is exactly the double-return a multi-label union has to dedupe)
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        env = env_for(fixture, issues=[candidate(163, labels=["data-gap-analysis"]),
+                                       candidate(174, labels=["tech-debt"])])
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        calls = [json.loads(l) for l in (fixture / "calls.log").read_text().splitlines()]
+
+    # Then  both labels were asked for, once each
+    asked = [c[c.index("--label") + 1] for c in calls if "--label" in c and len(c) > c.index("--label") + 1]
+    check("queue: it asks for BOTH labels",
+          sorted(asked) == ["data-gap-analysis", "tech-debt"], str(asked))
+    rows = [line for line in proc.stdout.splitlines() if line.startswith("issue=")]
+    # …and the result is ONE list: each issue once, one head, however many labels returned it
+    check("queue: each issue appears once, even though both lists returned it",
+          len({r.split()[0] for r in rows}) == len(rows) == 2, str(rows))
+    check("queue: exactly one position=0 (ONE issue per run)",
+          sum("position=0" in r for r in rows) == 1, str(rows))
+
+
 def test_skip_note_is_posted_once_per_review_round():
     """`--skip-note` says it ON the issue, once per reviewer timestamp, and edits no label."""
 
@@ -858,6 +883,7 @@ def main() -> int:
     test_a_stale_verdict_releases_the_issue()
     test_a_label_without_any_reviewer_marker_never_holds()
     test_a_decided_hold_is_announced_on_the_issue()
+    test_the_queue_reads_both_labels_as_one_oldest_first_list()
     test_skip_note_is_posted_once_per_review_round()
     test_the_skip_note_covers_every_held_issue()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
