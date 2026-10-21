@@ -397,12 +397,27 @@ def test_signature_tracks_the_store_not_the_noise():
 
     # Then  the signature is stable
     check("same data -> same signature", a["signature"] == b["signature"])
-    check("signature covers the missing dimensions",
-          "missing:system_ram_min:m1" in a["signature"], str(a["signature"]))
+    check("signature covers the missing DIMENSION, not a model",
+          "missing:system_ram_min" in a["signature"]
+          and not any(s.count(":") > 1 for s in a["signature"]), str(a["signature"]))
 
-    # And  a new model missing a dimension changes it
+    # And  a SECOND model with the SAME gap does NOT change it (issue #472: that is what
+    # re-filed `storage_offload` twelve times as the store grew), while the model is still
+    # named in the report body a human reads.
     c = G.analyse(store_with([model("m1"), model("m2")]), contract, raw_dir=Path("/nonexistent"))
-    check("a new model changes the signature", c["signature"] != a["signature"])
+    check("a model joining an existing gap does NOT change the signature",
+          c["signature"] == a["signature"], (a["signature"], c["signature"]))
+    check("…and both models are still named in the report",
+          sorted(c["missing"]["system_ram_min"]) == ["m1", "m2"],
+          c["missing"].get("system_ram_min"))
+    check("…and the issue body still carries the count",
+          "m1" in G.render(c) and "m2" in G.render(c), G.render(c)[:400])
+
+    # And  a NEW DIMENSION does change it
+    e = G.analyse(store_with([model("m1"), model("m2")]), contract, raw_dir=Path("/nonexistent"))
+    e["signature"] = sorted(e["signature"] + ["missing:engine_min_version"])
+    check("a new dimension changes the signature",
+          e["signature"] != a["signature"], e["signature"])
 
     # And  an estimate-only difference does NOT (it is report-only)
     d = store_with([model("m1")])
@@ -461,12 +476,24 @@ def _one_issue_per_changed_gap_set(tmp_path):
         second = G.main(["--baseline", str(baseline), "--issue"])
         check("unchanged gap set files no second issue", second == 0 and log.read_text() == "")
 
-        # And  a changed gap set files again, and `--check` turns it into a signal
+        # And  more models with the SAME gaps do NOT file again (issue #472: the per-model
+        # signature is what re-filed `storage_offload` twelve times as the store grew)
         store.write_text(json.dumps(store_with([model("m1"), model("m2"), model("m3")])))
         third = G.main(["--baseline", str(baseline), "--check"])
-        check("a changed gap set exits 1 under --check", third == 1)
-        fourth = G.main(["--baseline", str(baseline)])
-        check("report-only runs stay exit 0", fourth == 0)
+        check("models joining an existing gap keep the signature (issue #472)", third == 0, third)
+
+        # And  a gap set that really CHANGES still fires: a baseline carrying an entry the
+        # store no longer has is a change, and `--check` must turn it into a signal.
+        base_report = G.analyse(store_with([model("m1")]), G.contract_keys(),
+                                raw_dir=Path("/nonexistent"))
+        baseline.write_text(json.dumps({
+            "as_of": "2026-10-01T00:00:00Z",
+            "signature": sorted(base_report["signature"] + ["contract:gone_dimension"]),
+        }))
+        fifth = G.main(["--baseline", str(baseline), "--check"])
+        check("a changed gap set exits 1 under --check", fifth == 1, fifth)
+        sixth = G.main(["--baseline", str(baseline)])
+        check("report-only runs stay exit 0", sixth == 0)
     finally:
         G.STORE, G.CONTRACT = saved_store, saved_contract
         os.environ["PATH"] = saved_path

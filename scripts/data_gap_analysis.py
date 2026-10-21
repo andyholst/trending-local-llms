@@ -276,13 +276,20 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         informational.append(f"{len(empty_legs)} raw leg(s) captured 0 models "
                              f"(a query with no hits — informational)")
 
-    # signature = what the STORE lacks (stable across refreshes), so a day with
-    # identical gaps opens no second issue; volatile findings (raw legs, estimates)
-    # stay in the report only.
+    # signature = what the STORE cannot hold STRUCTURALLY — one entry per DIMENSION, never
+    # one per model (issue #472). It used to be per model (`missing:storage_offload:<id>`),
+    # so every model the store gained that lacked the key GREW the signature, the filer read
+    # that as "the gap set changed", and it filed the SAME dimension again: 12
+    # `storage_offload` issues since 2026-10-15, counts 31 → 38 → 39 → 40 → 41 → 42 → 59,
+    # each one triaged to refine/close and re-filed the next day. A dimension now files
+    # ONCE and stays one issue until it closes — `already_filed()` still refuses a second
+    # while one is open, and a NEW dimension still changes the signature and files.
+    # The per-model detail (`missing`, `unstructured`) stays in the report and in the issue
+    # BODY, so a human still sees which models and how many.
     signature = sorted(
         [f"contract:{k}" for k in contract_gaps]
-        + [f"missing:{k}:{mid}" for k, ids in missing.items() for mid in ids]
-        + [f"unstructured:{k}:{mid}" for k, ids in unstructured.items() for mid in ids]
+        + [f"missing:{k}" for k in missing]
+        + [f"unstructured:{k}" for k in unstructured]
     )
     return {
         "as_of": gen,
