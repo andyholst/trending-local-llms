@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **114** · archived: **0**
+Active changes: **115** · archived: **0**
 
 ## Active changes
 
@@ -25,6 +25,7 @@ Active changes: **114** · archived: **0**
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
 | `announce-the-decided-hold` | active | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/announce-the-decided-hold/proposal.md) |
 | `architecture-bot-write-path` | active | #485 — arch-bot: the drift→commit→PR path has no behavioural test | — | [architecture-bot-write-path](openspec/changes/architecture-bot-write-path/specs/architecture-bot-write-path/spec.md) | 10/10 | [proposal.md](openspec/changes/architecture-bot-write-path/proposal.md) |
+| `architecture-check-presence-boundary` | active | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/architecture-check-presence-boundary/proposal.md) |
 | `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
 | `architecture-inventory` | active | #479 — architecture-bot: a daily, deterministic refresh of ARCHITECTURE.md's living inventory | — | [architecture-inventory](openspec/changes/architecture-inventory/specs/architecture-inventory/spec.md) | 11/11 | [proposal.md](openspec/changes/architecture-inventory/proposal.md) |
 | `baseline-age-visible` | active | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/baseline-age-visible/proposal.md) |
