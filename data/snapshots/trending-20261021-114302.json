@@ -3974,8 +3974,7 @@
           "comments": 1,
           "reshares": 1,
           "views": 0,
-          "interactions": 0,
-          "storage_offload": "each machine needs storage for a complete copy of the compressed model"
+          "interactions": 0
         },
         {
           "engine": "SGLang",
@@ -4141,8 +4140,7 @@
         "speed_bonus": 2.2,
         "trend_score": 41.7
       },
-      "system_ram_min": "1024GB",
-      "storage_offload": "each machine needs storage for a complete copy of the compressed model"
+      "system_ram_min": "1024GB"
     },
     {
       "id": "bonsai-2-27b",

@@ -14,7 +14,6 @@
       "system_ram_min": "1TB unified memory across two machines",
       "weight_gb": "493GB NVFP4 / ~510GB checkpoint, ~114GB VQ-compressed",
       "context_tokens": "1M",
-      "storage_offload": "each machine needs storage for a complete copy of the compressed model",
       "backends": [
         "Metal",
         "CUDA"
@@ -34,8 +33,7 @@
           "reshares": 0,
           "views": 0,
           "interactions": 0,
-          "system_ram_min": "1TB unified memory across two machines",
-          "storage_offload": "each machine needs storage for a complete copy of the compressed model"
+          "system_ram_min": "1TB unified memory across two machines"
         },
         {
           "engine": "MLX",

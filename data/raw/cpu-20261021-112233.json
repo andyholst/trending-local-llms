@@ -8,7 +8,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "35B total / 3B active (MoE)",
-      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
       "vram_tier": "8GB",
       "vram_min": "12GB",
       "system_ram_min": "16GB",

@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-21T11:43:02Z",
+  "generated_utc": "2026-10-21T12:38:06Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -3360,7 +3360,7 @@
           "views": 982,
           "interactions": 995,
           "date": "2026-10-16",
-          "engine_min_version": "mlx.fast track"
+          "engine_min_version": "MLX (Bonsai 2 pack); ternary GGUF packings need PrismML's llama.cpp fork"
         },
         {
           "engine": "MLX",
@@ -3974,8 +3974,7 @@
           "comments": 1,
           "reshares": 1,
           "views": 0,
-          "interactions": 0,
-          "storage_offload": "each machine needs storage for a complete copy of the compressed model"
+          "interactions": 0
         },
         {
           "engine": "SGLang",
@@ -4141,8 +4140,7 @@
         "speed_bonus": 2.2,
         "trend_score": 41.7
       },
-      "system_ram_min": "1024GB",
-      "storage_offload": "each machine needs storage for a complete copy of the compressed model"
+      "system_ram_min": "1024GB"
     },
     {
       "id": "bonsai-2-27b",
@@ -5235,7 +5233,7 @@
           "weight_gb": "Q4_K_M",
           "context_tokens": "262K",
           "system_ram_min": "16GB",
-          "engine_min_version": "llama.cpp (llama-server) with Flash Attention and 26 MoE layers offloaded to CPU"
+          "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0"
         },
         {
           "engine": "llama.cpp",
