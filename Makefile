@@ -388,6 +388,21 @@ base-rebase: ## Fetch the base and rebase BRANCH onto it; a conflict ABORTS and 
 base-advance: ## Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet)
 	python3 scripts/worktree_base.py advance $(if $(BASE),--base $(BASE),)
 
+# A refresh PR is entirely GENERATED files that every merge rewrites, so a branch cut
+# from a base the queue has already left is a whole-file conflict waiting for
+# `auto-merge` (issue #177: PR #164 rebased twice in one hour, then `GraphQL: Pull
+# Request has merge conflicts` while `validate` + `live-smoke` were green).
+# `refresh-sync` moves the generated tree onto the fetched tip and KEEPS the raw
+# snapshots, so the caller re-runs `make merge` and re-derives the store/README/baseline
+# instead of applying a stale copy of them; `refresh-require-tip` is the guard that then
+# refuses to publish a branch the base has left. Host targets, like their `base-*` kin:
+# git lives on the runner, not in the container.
+refresh-sync: ## Move a refresh's generated tree onto the fetched <BASE>, keeping its raw snapshots (issue #177)
+	python3 scripts/refresh_base.py sync $(if $(BASE),--base $(BASE),)
+
+refresh-require-tip: ## Fail unless the refresh branch contains the freshly fetched <BASE> (issue #177)
+	python3 scripts/refresh_base.py require-tip $(if $(BASE),--base $(BASE),)
+
 worktree-new: ## Start a new branch off the freshly fetched base, in a worktree (IN_PLACE=1 for the CI checkout)
 	@test -n "$(BRANCH)" || { echo "Usage: make worktree-new BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>]"; exit 1; }
 	python3 scripts/worktree_base.py new --branch "$(BRANCH)" $(if $(BASE),--base $(BASE),) $(if $(IN_PLACE),--in-place,) $(if $(DIR),--dir "$(DIR)",)
@@ -555,8 +570,12 @@ _fix:
 	python3 scripts/validate.py --only links  # fail-fast: confirm the fix actually resolved the links
 
 .PHONY: _merge
+# SINCE is forwarded only when it is SET (rule 3d: an empty value is missing). A refresh
+# that re-derives its store on a moved base (issue #177) passes the oldest capture stamp it
+# gathered: the base's own `generated_utc` can be NEWER than that snapshot, and the derived
+# boundary would then skip the very data the run collected (issue #175).
 _merge:
-	python3 scripts/update_trending.py
+	python3 scripts/update_trending.py $(if $(SINCE),--since "$(SINCE)",)
 
 .PHONY: _merge-fetch
 _merge-fetch:
@@ -779,7 +798,7 @@ fix:
 
 .PHONY: merge
 merge:
-	$(DOCKER_RUN) make _merge
+	$(DOCKER_RUN) make _merge SINCE="$(SINCE)"
 
 # Render the README from the store WITHOUT merging raws: no `generated_utc` bump, no
 # snapshot (issue #195). A template or docs change uses this, so the PR carries the
