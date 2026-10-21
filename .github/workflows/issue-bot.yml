@@ -35,6 +35,11 @@ on:
   # data-gap issue that has no implementer yet.
   schedule:
     - cron: "19 * * * *"
+    # A SECOND slot, for the same reason refresh-bot carries a backup (issue #497): GitHub drops
+    # and delays scheduled runs, and the recorded deliveries of the :19 slot were 3–6 h apart —
+    # ~5 a day out of 24. `concurrency: issue-bot-<…>` serialises the sweeps and a run with
+    # nothing to do is a green no-op, so the spare slot costs nothing and buys coverage.
+    - cron: "49 * * * *"
   workflow_dispatch:
     inputs:
       issue_number:
