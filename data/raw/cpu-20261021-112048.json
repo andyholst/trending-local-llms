@@ -1,0 +1,107 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "system_ram_min": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "32GB laptop worth of RAM runs it, but generation is slow",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "6.73",
+          "hardware": "32GB laptop, CPU only",
+          "quant": "first real test on a 32GB laptop; ~10 minutes for one response with reasoning overhead",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
+          "likes": 3,
+          "comments": 5,
+          "reshares": 0,
+          "views": 356,
+          "interactions": 364,
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "llama-3.1-8b-webllm",
+      "name": "Llama 3.1 8B (WebLLM)",
+      "full_name": "Llama-3.1-8B-Instruct on WebLLM",
+      "type": "LLM",
+      "license": "Llama 3.1 Community",
+      "params": "8B",
+      "hf": "meta-llama/Llama-3.1-8B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-29",
+      "why": "an 8B model running inside a browser tab, no server and no API key",
+      "engines": [
+        {
+          "engine": "WebLLM",
+          "tps": "41.1",
+          "hardware": "Apple M3 Max, in-browser (WebGPU)",
+          "quant": "about 71% of native speed; WebGPU kernels compiled through MLC-LLM and Apache TVM",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/ossphere_dev/status/2104934233366241296",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 0,
+          "views": 288,
+          "interactions": 294,
+          "context_tokens": "4096"
+        }
+      ]
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash (Uncensored GGUF, hikicoder llama.cpp fork)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "284B (MoE)",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "system_ram_min": "60GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-09-24",
+      "engines": [
+        {
+          "engine": "llama.cpp (hikicoder fork)",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (~17GB VRAM used) + 128GB DDR5, MoE experts streamed from a Gen4 7GB/s NVMe",
+          "quant": "full-precision Uncensored GGUF with --moe-stream; 192GB engram on fast disk; 32K context at fp16; prefill ~23 tk/s (23.89 tok/s on a 2048-token prompt), which is prompt processing, never the decode figure",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 0,
+          "views": 277,
+          "interactions": 282,
+          "context_tokens": "32768",
+          "system_ram_min": "60GB",
+          "storage_offload": "192GB engram on Gen4 7GB/s NVMe",
+          "engine_min_version": "hikicoder/llama.cpp dsv41-ada-medvram branch, --moe-stream"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:48Z"
+}

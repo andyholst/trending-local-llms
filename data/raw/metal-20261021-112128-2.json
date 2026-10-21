@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "35B MoE with 3B active: two engines on one DGX Spark with default drafters, and 22 tok/s on an iPad Pro M4 in MiniCPM-V 4.7's LES comparison of the same 35B-A3B shape.",
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "NVIDIA DGX Spark (one), both engines with default drafters",
+          "quant": "Magnitude 0.2.9 on an independent rebuild of the vendor's copy-a-passage test with default drafters",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "NVIDIA DGX Spark (one), Ollama 0.40.5 with its default drafter",
+          "quant": "Ollama 0.40.5 with its default drafter, generation of a new story after a 67K-token prompt",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "67K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:28Z"
+}

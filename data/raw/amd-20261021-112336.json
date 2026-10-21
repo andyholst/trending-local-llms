@@ -1,0 +1,72 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "minicpm-v-4.7",
+      "name": "MiniCPM-V 4.7",
+      "full_name": "MiniCPM-V-4.7-35B-A3B",
+      "type": "LLM (multimodal, MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "openbmb/MiniCPM-V-4.7-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "3GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "69.8",
+          "hardware": "DGX Spark (GB10, 128GB unified memory)",
+          "quant": "SAGE EXL3 3.74 bpw, ExLlamaV3 + Hermes Agent, shared Q4 KV pool of 1,048,576 tokens across 8 concurrent workers; measured with Qwen3.8-Flash-Next also loaded and idle",
+          "weight_gb": "3.74 bpw EXL3 (~3 GB runtime on phones per OpenBMB)",
+          "system_ram_min": "128GB unified",
+          "context_tokens": "1048576",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+          "likes": 157,
+          "comments": 25,
+          "reshares": 24,
+          "views": 8884
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "A 35B-A3B multimodal MoE served as 8 concurrent workers at ~69.8 tok/s on one DGX Spark via EXL3."
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE, 3B active)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, Flash Attention, Q8 KV cache, 26 MoE layers offloaded to CPU; 262K context configured (~550 tok/s prefill excluded)",
+          "system_ram_min": "16GB",
+          "context_tokens": "262144",
+          "engine_min_version": "llama.cpp llama-server (-ngl offload, 26 MoE layers on CPU)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 50,
+          "comments": 5,
+          "reshares": 5,
+          "views": 15024
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "A 12GB RTX 3060 with 16GB RAM reportedly sustains ~50 tok/s on this 35B-A3B with 26 MoE layers on the CPU."
+    }
+  ],
+  "generated_utc": "2026-10-21T13:26:00Z"
+}

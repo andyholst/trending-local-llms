@@ -1,0 +1,43 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "177B / 125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "24GB",
+      "system_ram_min": "64GB",
+      "storage_offload": "experts split between GPU VRAM and system RAM",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "66",
+          "hardware": "RTX 3090 24GB (used) + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ3_S, GPU keeps hot experts and system RAM holds the rest; still ~66 tok/s at 261K context (~70 tok/s at short context); ~1,900 tok/s prompt processing (prefill, never decode); developer recommends 64GB system RAM",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 4,
+          "reshares": 3,
+          "views": 4508,
+          "interactions": 4541,
+          "context_tokens": "261K",
+          "system_ram_min": "128GB (64GB recommended)",
+          "storage_offload": "experts split between GPU VRAM and system RAM"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:34Z"
+}

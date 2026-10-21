@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB DDR4-2400 system RAM",
+          "quant": "IQ2_XS (~87 tok/s); IQ3_S ~70 tok/s and ~66 tok/s at 261K context; prompt processing ~1,900 tok/s excluded",
+          "weight_gb": "IQ2_XS / IQ3_S compressed builds",
+          "system_ram_min": "64GB (tested on 128GB dual-channel DDR4-2400)",
+          "context_tokens": "261000",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 4,
+          "reshares": 4,
+          "views": 4508
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "why": "Strata splits the 125B MoE across a 24GB RTX 3090 and system RAM: ~87 tok/s (IQ2_XS), ~66 tok/s still at 261K context (IQ3_S)."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:30:00Z"
+}

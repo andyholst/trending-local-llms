@@ -1,0 +1,54 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "816B MoE (42B active, 1M context) that Apple's MLX distributes across two to four M5 Ultra Mac Studios over Thunderbolt RDMA; NVFP4 compresses it to ~493GB and four machines generate 36+ tok/s.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
+          "quant": "NVFP4 (~493GB weights); generation barely moves between 8K and 65K prompts",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 105,
+          "interactions": 107,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
+          "quant": "NVFP4 (~493GB weights); Apple's measured 16-37 tok/s range on two Mac Studios, 40s to first token on long prompts",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/BenjieMalinao/status/2111432762519605441",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 666,
+          "interactions": 672,
+          "weight_gb": "~493GB NVFP4"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:55Z"
+}

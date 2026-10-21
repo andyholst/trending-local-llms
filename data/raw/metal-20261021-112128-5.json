@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "Gemma 4 26B A4B MoE (instruction-tuned, QAT): 663 t/s on an H100 with a DFlash-family drafter and 50.7 t/s on a 10GB RTX 3080 with its QAT GGUF.",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "663",
+          "hardware": "H100 80GB",
+          "quant": "best speculative setting measured on Gemma-4-26B (DFlash-family drafter), single stream",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "DFlash-family speculative drafter"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50.7",
+          "hardware": "RTX 3080 10GB",
+          "quant": "QAT GGUF, Q4",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2110275665408704970",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:28Z"
+}

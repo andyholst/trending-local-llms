@@ -1,0 +1,40 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b-twin-turbo",
+      "name": "Qwen3.8-27B Twin Turbo",
+      "full_name": "Qwen3.8-27B Twin Turbo (community tune with MTP)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Community tune that combines shorter reasoning (2x-20x fewer reasoning tokens) with MTP speculative decoding; creator-reported RTX 5090 numbers 75 tok/s at Q4_K_S and 90+ with the MTP build.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "90",
+          "hardware": "RTX 5090 32GB (MTP build)",
+          "quant": "Q4_K_S ~75 tok/s; MTP speculative-decoding build 90+ tok/s; creator-reported; Q4 weights 16-18GB, Q5 19-21GB, Q6 22-24GB; 256K context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032613405761904",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4: 16-18GB",
+          "context_tokens": "256K",
+          "engine_min_version": "MTP speculative-decoding build"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:55Z"
+}

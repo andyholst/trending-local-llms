@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "ROCm/HIP; project-reported benchmark on the two smallest quantizations (60 t/s on Q2_0-class 2-bit, 52 t/s on IQ3_S)",
+          "weight_gb": "Q20 / IQ2_XS (2-bit class)",
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/professorclawai/status/2106778521834037492",
+          "likes": 1098,
+          "comments": 1,
+          "reshares": 4,
+          "views": 1100
+        }
+      ],
+      "last_seen": "2026-10-04",
+      "why": "A 16GB RX 9070 XT turns in 60 tok/s (52 on IQ3_S) on the 125B MoE through Strata."
+    }
+  ],
+  "generated_utc": "2026-10-21T11:28:00Z"
+}

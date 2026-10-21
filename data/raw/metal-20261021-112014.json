@@ -1,0 +1,91 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Ternary 9B in ~2GB. PrismML's report: up to 179 t/s on an M5 Max Pro via MLX and up to 34 t/s on an iPhone 18 Pro Max; upstream llama.cpp loads only the Q2_0 file, the ternary GGUF packings need PrismML's fork.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1); ~2GB footprint; vendor figure (PrismML), not independently verified",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 8,
+          "reshares": 0,
+          "views": 982,
+          "interactions": 995,
+          "weight_gb": "~2GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
+          "quant": "NVFP4 (~493GB weights), 8,192-token context; Apple MLX distributed inference",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Chahatusharma/status/2111173528838103533",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 34,
+          "views": 0,
+          "interactions": 35,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192"
+        }
+      ],
+      "system_ram_min": "16GB"
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "816B MoE (42B active, 1M context) that Apple's MLX distributes across Mac Studios over Thunderbolt RDMA, NVFP4 compressed to ~493GB: ~36 t/s on four M5 Ultra machines at an 8K context.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
+          "quant": "NVFP4 (~493GB weights), 8,192-token context; Apple MLX distributed inference on four Mac Studios",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/marcel_butucea/status/2111196917803962501",
+          "likes": 19,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 19,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:14Z"
+}

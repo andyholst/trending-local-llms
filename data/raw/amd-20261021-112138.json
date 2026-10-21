@@ -1,0 +1,50 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "full_name": "Muse-Glimmer-30B",
+      "type": "LLM (dense, multimodal)",
+      "license": "Apache 2.0",
+      "params": "30B",
+      "hf": "meta-models/Muse-Glimmer-30B",
+      "vram_tier": "32GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "53",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan backend + DFlash speculative decoding, Windows 11 Pro 25H2, averaged over multiple runs (AMD day-0 blog)",
+          "engine_min_version": "llama.cpp with Vulkan backend and DFlash support",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/MikeLongTerm/status/2086789931725197720",
+          "likes": 45209,
+          "comments": 5,
+          "reshares": 51,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "24",
+          "hardware": "Radeon 8060S / Strix Halo (Ryzen AI Max+ 395, unified memory)",
+          "quant": "Vulkan backend + DFlash speculative decoding, Windows 11 Pro 25H2, averaged over multiple runs (AMD day-0 blog)",
+          "engine_min_version": "llama.cpp with Vulkan backend and DFlash support",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/MikeLongTerm/status/2086789931725197720",
+          "likes": 45209,
+          "comments": 5,
+          "reshares": 51,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-08-10",
+      "why": "AMD's day-0 blog reports up to 53 tok/s on a Radeon AI PRO R9700 and 24 tok/s on Strix Halo through Vulkan llama.cpp with DFlash."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:05:00Z"
+}

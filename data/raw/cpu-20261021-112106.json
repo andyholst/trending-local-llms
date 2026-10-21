@@ -1,0 +1,141 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active (MoE)",
+      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "262K",
+      "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "hybrid inference offloads 26 MoE layers to the CPU, so a 35B model runs on a 12GB card",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM, 26 MoE layers offloaded to CPU",
+          "quant": "Q4_K_M; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing (prefill, never the decode figure)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112030236590137348",
+          "likes": 44,
+          "comments": 4,
+          "reshares": 5,
+          "views": 7876,
+          "interactions": 7929,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM, 26 MoE layers offloaded to CPU",
+          "quant": "Q4_K_M; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111253038035812402",
+          "likes": 29,
+          "comments": 2,
+          "reshares": 7,
+          "views": 2954,
+          "interactions": 2992,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM, 26 MoE layers offloaded to CPU",
+          "quant": "Q4_K_M; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/_elenajoseph_/status/2111218125567869207",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 85,
+          "interactions": 87,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "24GB",
+      "system_ram_min": "110GB",
+      "weight_gb": "Q4_K_XL, 4 GGUF shards (~111.4GB)",
+      "context_tokens": "250K",
+      "storage_offload": "MoE experts in system RAM (CPU expert offloading), attention on GPU",
+      "engine_min_version": "experimental llama.cpp build, -cmoe, -b 4096 -ub 4096",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "hybrid GPU+RAM inference via -cmoe keeps a 125B model on one 24GB card",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.52",
+          "hardware": "RTX 4090 24GB + 110GB DDR4, 40 expert layers kept on GPU",
+          "quant": "Q4_K_XL GGUF (~111.4GB across four shards); hybrid offloading; at 80K context (384 tok/s prefill, prompt processing only)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 40,
+          "comments": 6,
+          "reshares": 9,
+          "views": 18776,
+          "interactions": 18831,
+          "weight_gb": "Q4_K_XL, ~111.4GB across four shards",
+          "context_tokens": "80000",
+          "system_ram_min": "110GB",
+          "storage_offload": "MoE experts in system RAM (CPU expert offloading), attention on GPU",
+          "engine_min_version": "experimental llama.cpp build, -cmoe, -b 4096 -ub 4096"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "20.97",
+          "hardware": "RTX 4090 24GB + 110GB DDR4, CPU expert offloading",
+          "quant": "Q4_K_XL GGUF; -cmoe with experts in system RAM; at 250K context, 18.3GB VRAM used (364 tok/s prefill)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 40,
+          "comments": 6,
+          "reshares": 9,
+          "views": 18776,
+          "interactions": 18831,
+          "weight_gb": "Q4_K_XL, ~111.4GB across four shards",
+          "context_tokens": "250K",
+          "system_ram_min": "110GB",
+          "storage_offload": "MoE experts in system RAM (CPU expert offloading), attention on GPU",
+          "engine_min_version": "experimental llama.cpp build, -cmoe, -b 4096 -ub 4096"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:06Z"
+}

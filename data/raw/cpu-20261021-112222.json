@@ -1,0 +1,61 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active (MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "262K",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing (prefill, never decode); AgentPerf-Local agent workload finishes in 8.08 minutes on RTX Spark, 10.12 on M5 Max, 13.29 on Ryzen AI Max+ 395 (Tom's Hardware)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 50,
+          "comments": 5,
+          "reshares": 5,
+          "views": 15024,
+          "interactions": 15084,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:22:22Z"
+}

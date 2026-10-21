@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (A2B MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI's reported figure (vendor benchmark); 24B total, ~2B active per token",
+          "context_tokens": "131072",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
+          "likes": 70,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-18",
+      "why": "24B MoE with ~2B active runs agents at 184 tok/s on an M5 Max and ships day-0 support in llama.cpp, MLX, vLLM and SGLang."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:35:00Z"
+}

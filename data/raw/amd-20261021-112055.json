@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "single 32GB Radeon GPU + ~90GB system RAM",
+          "quant": "EXL3 5.05 bpw, Q8 KV cache, patched ExLlamaV3 ROCm fork; 112 of 512 experts per layer on GPU, 400 on CPU/RAM; ~863 tok/s prefill excluded",
+          "weight_gb": "EXL3 5.05 bpw (does not fit entirely in VRAM)",
+          "system_ram_min": "~90GB",
+          "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
+          "context_tokens": "230000",
+          "engine_min_version": "patched ExLlamaV3 ROCm fork",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 119,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-04",
+      "why": "A single 32GB Radeon decodes the 125B MoE at 34.7 tok/s by splitting experts across VRAM (~90GB RAM) and NVMe with patched ExLlamaV3."
+    }
+  ],
+  "generated_utc": "2026-10-21T11:44:00Z"
+}

@@ -1,0 +1,44 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active (MoE)",
+      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "262K",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 262K context configured; ~550 tok/s prompt processing (prefill, never the decode figure)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+          "likes": 278,
+          "comments": 26,
+          "reshares": 26,
+          "views": 28079,
+          "interactions": 28409,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:22:33Z"
+}

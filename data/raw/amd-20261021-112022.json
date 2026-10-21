@@ -1,0 +1,56 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM (dense)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "42.7",
+          "hardware": "Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM",
+          "quant": "IQ4_XS; custom llama.cpp fork streaming the KV cache between VRAM and system RAM (Q4 values / Q8 keys), MTP speculative decoding + n-gram prediction; ~20K context",
+          "weight_gb": "IQ4_XS (27B, does not fit in 16GB VRAM)",
+          "system_ram_min": "24GB DDR5",
+          "context_tokens": "20000",
+          "engine_min_version": "custom llama.cpp fork with KV-cache streaming (VRAM <-> system RAM)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM",
+          "quant": "IQ4_XS; custom llama.cpp fork streaming the KV cache between VRAM and system RAM (Q4 values / Q8 keys), MTP speculative decoding + n-gram prediction; ~200K context (~262K target)",
+          "weight_gb": "IQ4_XS (27B, does not fit in 16GB VRAM)",
+          "system_ram_min": "24GB DDR5",
+          "context_tokens": "200000",
+          "engine_min_version": "custom llama.cpp fork with KV-cache streaming (VRAM <-> system RAM)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "A 16GB RX 9060 XT holds 42.7 tok/s at 20K context and 35 tok/s at 200K by streaming the KV cache into system RAM with llama.cpp."
+    }
+  ],
+  "generated_utc": "2026-10-21T11:36:00Z"
+}

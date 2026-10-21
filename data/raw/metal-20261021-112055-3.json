@@ -1,0 +1,112 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "Ternary 4B in ~0.95GB; 32 concurrent streams on an M5 Pro MacBook Pro parsing 250 emails into JSON with summaries, action items and priority scoring, over 700 tok/s aggregate under 4GB peak memory.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary weights (-1/0/+1), ~0.95GB footprint, over 700 tok/s aggregate across 32 streams, <4GB peak memory",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 0,
+          "views": 5204,
+          "interactions": 5223,
+          "weight_gb": "~0.95GB"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Ternary 9B in ~2GB; PrismML reports up to 179 tok/s on an M5 Max Pro via MLX, 170+ on a Mac as the floor of Yukon's speed challenge, and 34 tok/s on an iPhone 18 Pro Max.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint; vendor figure (PrismML)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 8,
+          "reshares": 0,
+          "views": 982,
+          "interactions": 995,
+          "weight_gb": "~2GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint; vendor figure (PrismML)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~2GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track)",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint; Yukon states the Mac figure STARTS at 170+ tok/s",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~2GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "22",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint; Yukon's iPhone figure",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~2GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:55Z"
+}

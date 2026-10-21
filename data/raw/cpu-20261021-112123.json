@@ -1,0 +1,173 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "24GB",
+      "system_ram_min": "32GB",
+      "context_tokens": "192K",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "Apple M6, 32GB unified memory",
+          "quant": "ANEMLL Forge 0.2.1, INT8 KV cache (halves cache memory); up to 192K context",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382721876005179",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 0,
+          "views": 534,
+          "interactions": 545,
+          "context_tokens": "192K",
+          "system_ram_min": "32GB",
+          "engine_min_version": "ANEMLL Forge 0.2.1, INT8 KV cache"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390 (EfficientThink fine-tune)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "LiveCodeBench 83 to 90 while cutting unproductive reasoning tails",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "not stated in the post",
+          "quant": "DFlash2 speculative decoding, up to 180 tokens/sec; LiveCodeBench 90/100 (up from 83), GPQA 178/198, MMLU 450/500",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-twin-turbo",
+      "name": "Qwen3.8-27B Twin Turbo",
+      "full_name": "Qwen3.8-27B Twin Turbo (reasoning-efficiency + MTP tune)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "2x to 20x fewer reasoning tokens, plus MTP speculative decoding",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "90",
+          "hardware": "RTX 5090 24GB",
+          "quant": "MTP build, more than 90 tokens/sec (Q4_K_S baseline around 75 tokens/sec, so 20%+ from MTP); creator-reported",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032613405761904",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-ps5-llamacpp",
+      "name": "Qwen3.8-27B on a jailbroken PS5",
+      "full_name": "Qwen3.8-27B (UD-IQ2_XXS) on PS5LM, jailbroken PS5",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "UD-IQ2_XXS (2-bit)",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "a 27B model answers at 9-21 tok/s on a console GPU via a llama.cpp Vulkan port",
+      "engines": [
+        {
+          "engine": "llama.cpp (strix-llama.cpp fork)",
+          "tps": "21",
+          "hardware": "jailbroken PS5, 12 GiB unified GDDR6, Vulkan on Mihawk-99's RADV port",
+          "quant": "UD-IQ2_XXS 2-bit, answers at 9 to 21 tok/s; models load from USB straight into GPU memory (no mmap); PS5LM native app, Vulkan (not CUDA)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 193,
+          "interactions": 199,
+          "weight_gb": "UD-IQ2_XXS 2-bit",
+          "system_ram_min": "12 GiB unified (PS5)",
+          "engine_min_version": "PS5LM native app, llama.cpp Vulkan backend on RADV/Mesa"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.5-0.8b",
+      "name": "Qwen3.5 0.8B",
+      "full_name": "Qwen3.5-0.8B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "0.8B",
+      "hf": "Qwen/Qwen3.5-0.8B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "llama.cpp (strix-llama.cpp fork)",
+          "tps": "21",
+          "hardware": "jailbroken PS5, 12 GiB unified GDDR6, Vulkan on Mihawk-99's RADV port",
+          "quant": "small payload, 13 to 21 tok/s; Vulkan, loads from USB into GPU memory (no mmap)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 193,
+          "interactions": 199,
+          "system_ram_min": "12 GiB unified (PS5)",
+          "engine_min_version": "PS5LM native app, llama.cpp Vulkan backend on RADV/Mesa"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:23Z"
+}

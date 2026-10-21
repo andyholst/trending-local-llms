@@ -1,0 +1,54 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse-Spark-Open-816B-A42B",
+      "type": "LLM (multimodal, MoE)",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Mac Studio M5 Ultra 512GB (Thunderbolt 5, RDMA)",
+          "quant": "Apple MLX tensor parallelism, compressed NVFP4 weights ~493GB; 8K context",
+          "weight_gb": "~493GB NVFP4 compressed",
+          "system_ram_min": "1TB unified memory across 2-4 Mac Studios",
+          "context_tokens": "8192",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 906,
+          "comments": 6,
+          "reshares": 11,
+          "views": 907
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Mac Studio M5 Ultra 512GB (Thunderbolt 5, RDMA)",
+          "quant": "Apple MLX tensor parallelism, compressed NVFP4 weights ~493GB; 8,192-token context",
+          "weight_gb": "~493GB NVFP4 compressed",
+          "system_ram_min": "1TB unified memory across two Macs",
+          "context_tokens": "8192",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 105,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Meta's 816B-A42B open-weight model runs on desk-side Mac Studios through MLX: ~25 tok/s on two 512GB M5 Ultras, over 36 on four."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:56:00Z"
+}

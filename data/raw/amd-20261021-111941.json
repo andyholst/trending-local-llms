@@ -1,0 +1,54 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "ROCm/HIP (Linux, experimental AMD path); 2-3 bit compressed experts with the least-used experts paged from system RAM/SSD",
+          "weight_gb": "39.2GB IQ2_XS (Q2_0 37.6GB)",
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk (SSD recommended)",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 878,
+          "comments": 52,
+          "reshares": 64,
+          "views": 122203
+        },
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "ROCm/HIP; same 16GB Radeon figure restated in a long-form install guide (2-3 bit compressed, experts from RAM, SSD for lookup tables)",
+          "weight_gb": "37.6GB Q2_0 / 39.2GB IQ2_XS",
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB SSD",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+          "likes": 243,
+          "comments": 26,
+          "reshares": 36,
+          "views": 16947
+        }
+      ],
+      "last_seen": "2026-10-05",
+      "why": "A 16GB RX 9070 XT writes at 60 tok/s on the 125B MoE through Strata, with experts paged from RAM/SSD."
+    }
+  ],
+  "generated_utc": "2026-10-21T11:25:00Z"
+}

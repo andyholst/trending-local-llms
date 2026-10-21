@@ -1,0 +1,101 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. The Yukon mlx.fast challenge lifted Mac decode from ~59 tok/s baseline to 237.4 tok/s on a 16GB Mac.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "Apple Silicon Mac with 16GB (mlx.fast track)",
+          "quant": "compressed ternary 27B (~5.9GB); decode up from ~59 tok/s at baseline",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~5.9GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "Apple Silicon Mac with 16GB (mlx.fast track)",
+          "quant": "compressed ternary 27B (~5.9GB); +125.8% over baseline",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 22,
+          "comments": 25,
+          "reshares": 340,
+          "views": 94726,
+          "interactions": 95113,
+          "weight_gb": "~5.9GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "9",
+          "hardware": "MacBook Pro 2021, M1 Pro, 16GB RAM",
+          "quant": "ternary weights (-1/0/+1), ~5.9GB footprint",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~5.9GB",
+          "system_ram_min": "16GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-ipad-egpu-r9700",
+      "name": "Qwen3.8-27B (iPad Pro + eGPU R9700)",
+      "full_name": "Qwen3.8-27B (iPad Pro driving a Thunderbolt Sapphire R9700 eGPU)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "An iPad Pro driving a Thunderbolt Sapphire R9700 eGPU reaches 159 tok/s on Qwen3.8-27B at Q4 with DFlash2 draft-tree decoding, 5.1x the 31 tok/s standard decode.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Thunderbolt-connected Sapphire R9700 eGPU",
+          "quant": "Q4, 131K context, DFlash2 draft-tree decoding (standard decode 31 tok/s, MTP speculative 109 tok/s)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "131072"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:28Z"
+}
