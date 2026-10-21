@@ -199,6 +199,49 @@ def test_write_raw_never_overwrites():
         check("raw: backend is still the first '-' token", all(n.split("-")[0] == "metal" for n in names))
 
 
+def test_the_model_id_matches_the_contract():
+    """Issue #464: a search leg wrote `qwen3.8-27b-mlx_srv`, whose `_` violates the store
+    contract's `^[a-z0-9][a-z0-9.\\-]*$`. It reached `data/models.json` AND the raw snapshot,
+    so the refresh PR went red twice, and the id could never merge with its own model —
+    every lookup is by id. The id is now normalised where it is WRITTEN (`--write-raw`) and
+    again at ingest, and an id that already matches is never touched (rule 3b)."""
+    check("id: the measured 'mlx_srv' becomes a legal id",
+          UT.contract_id("qwen3.8-27b-mlx_srv") == "qwen3.8-27b-mlx-srv")
+    check("id: uppercase, spaces and repeats are folded",
+          UT.contract_id("Qwen3.8-27B_MLX srv") == "qwen3.8-27b-mlx-srv")
+    check("id: a legal id is unchanged", UT.contract_id("good.id-2") == "good.id-2")
+    check("id: a value with nothing legal left yields empty (caller falls back)",
+          UT.contract_id("___") == "")
+    for v in ("qwen3.8-27b-mlx_srv", "Qwen3.8-27B_MLX srv", "___", "ÄÖ x"):
+        check(f"id: {v!r} normalises INTO the contract pattern",
+              bool(UT.ID_PATTERN.match(UT.contract_id(v) or "unknown")))
+
+    # And  ingest applies the same rule to a raw row that predates it
+    m = UT.normalize_model({"id": "qwen3.8-27b-mlx_srv", "name": "Qwen3.8 27B mlx_srv",
+                            "engines": [{"engine": "mlx-serve", "tps": "20", "hardware": "M5",
+                                         "quant": "Q4", "date": "2026-10-20",
+                                         "source_post": "https://lightbrd.com/u/status/1"}]},
+                           {"models": [], "engines": {}})
+    check("id: ingest normalises the id it stores", m["id"] == "qwen3.8-27b-mlx-srv", m["id"])
+    # …and an existing model's id is never rewritten (ingest matches it by id first)
+    good = UT.normalize_model({"id": "qwen3.8-27b", "name": "Qwen3.8 27B", "engines": [
+        {"engine": "vLLM", "tps": "40", "hardware": "RTX 4090", "quant": "NVFP4",
+         "date": "2026-10-20", "source_post": "https://lightbrd.com/u/status/2"}]},
+        {"models": [], "engines": {}})
+    check("id: a legal id is left byte-identical", good["id"] == "qwen3.8-27b", good["id"])
+
+    with tempfile.TemporaryDirectory() as td:
+        saved_dir, saved_now = UT.RAW_DIR, UT.now_utc
+        UT.RAW_DIR = Path(td)
+        try:
+            path = UT.write_raw_snapshot("metal", {"models": [
+                {"id": "qwen3.8-27b-mlx_srv", "name": "Qwen3.8 27B mlx_srv"}]})
+            written = json.loads(Path(path).read_text())["models"][0]["id"]
+        finally:
+            UT.RAW_DIR, UT.now_utc = saved_dir, saved_now
+    check("id: the RAW SNAPSHOT itself is written legal", written == "qwen3.8-27b-mlx-srv", written)
+
+
 def test_write_raw_normalizes_hf_ref():
     """An `hf` field is a bare repo id: validate/README build the URL by
     prefixing it themselves, so a full URL (or the doubled prefix the search
@@ -260,6 +303,7 @@ def main() -> int:
     test_model_caps_evaluate()
     test_model_caps_cli()
     test_write_raw_never_overwrites()
+    test_the_model_id_matches_the_contract()
     test_write_raw_normalizes_hf_ref()
     test_normalize_model_collapses_hf()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
