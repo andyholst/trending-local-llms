@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **113** · archived: **0**
+Active changes: **114** · archived: **0**
 
 ## Active changes
 
@@ -104,6 +104,7 @@ Active changes: **113** · archived: **0**
 | `render-only-readme` | active | #195 — `tech-debt: A generated-README change forces a store timestamp bump and a snapshot write` | — | [readme-render](openspec/changes/render-only-readme/specs/readme-render/spec.md) | 10/10 | [proposal.md](openspec/changes/render-only-readme/proposal.md) |
 | `repair-a-conflicted-pr` | active | #475 (the owner's ask: *"they should always auto-merge and rebase and resolve conflicts with help off llm"*) | — | [fix-bot-repair-loop](openspec/changes/repair-a-conflicted-pr/specs/fix-bot-repair-loop/spec.md) | 12/12 | [proposal.md](openspec/changes/repair-a-conflicted-pr/proposal.md) |
 | `scope-gate-total-vram` | active | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/scope-gate-total-vram/proposal.md) |
+| `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
 | `search-engine-must-be-named` | active | #378 | #379 | [search-engine-rule](openspec/changes/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/search-engine-must-be-named/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
