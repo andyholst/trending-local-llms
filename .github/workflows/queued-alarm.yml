@@ -81,3 +81,10 @@ jobs:
           set -euo pipefail
           make queued-alarm REPO="${{ github.repository }}" \
             MINUTES="${{ inputs.minutes || '30' }}" COMMENT=1
+      # A dropped cron has no run to look at, so the queue alarm above cannot see it: this reads
+      # the ARTIFACT (the newest `schedule` delivery of the sweep) and goes RED when the hourly
+      # sweep has not been delivered for MAX_AGE_HOURS (issue #497).
+      - name: Fail loudly when the hourly sweep has not been delivered
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make sweep-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=3

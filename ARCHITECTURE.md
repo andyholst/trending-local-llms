@@ -207,6 +207,7 @@ keep it honest (issue #207):
 | `issue-queue` | Print the implementer's queue (oldest first) with each candidate's window, its reviewer-verdict hold **and its decided hold** (`agent:refined`/`agent:closed`, applied by `make issue-verdict`, no TTL — a human clears the label) — the ONE rule both bots read (`scripts/issue_queue.py`) |
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
+| `sweep-alarm` (`REPO=` `MAX_AGE_HOURS=3`) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the newest `schedule` run of `issue-bot.yml` and exits 1 when it is older than `MAX_AGE_HOURS`, naming the age, the missed `:19` slots, the gaps and the last conclusion (2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
 | `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started. `scripts/pr_health.py` lists the open non-draft PRs, keeps the two reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch). Exit 1 when a PR is silent. Run by `pr-health.yml` |
 | `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
@@ -396,7 +397,7 @@ does not fail — it stays `queued` forever, so the run never concludes and ever
 | Job | Does |
 |---|---|
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
-| `alarm` | `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`): list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run. Exit 1 when a job is stuck, so the scheduled run goes red. It never edits code, never opens a PR, never merges |
+| `alarm` | `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`): list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run. Exit 1 when a job is stuck, so the scheduled run goes red. It never edits code, never opens a PR, never merges. A second step runs `make sweep-alarm REPO=… MAX_AGE_HOURS=3`, so a sweep the cron never delivered is red here too (issue #497) |
 | `sweep` | `make pr-health REPO=… COMMENT=1` (`scripts/pr_health.py`): list the open non-draft PRs, flag every one that is `CONFLICTING` (no merge commit, so no workflow runs) or has no check runs on its head commit, print the head branch, and comment ONE marker-deduplicated note naming the fix. Exit 1 when any PR is silent. Read-only apart from that comment; never edits code, never opens a PR, never merges |
 
 ### `.github/workflows/code-review-bot.yml` — the tree/pipeline reviewer (weekly + dispatch)
@@ -581,7 +582,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 141 make targets, 44 files in `scripts/`)
+### Bots in the tree (11 pipelines, 142 make targets, 45 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -605,7 +606,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/issue-bot.yml` — issue-bot
 
-- **when:** cron `19 * * * *`, `issues`, `workflow_dispatch`
+- **when:** cron `19 * * * *`, `49 * * * *`, `issues`, `workflow_dispatch`
 - **jobs:** `guard`, `pick` (needs `guard`), `implement` (needs `guard`, `pick`)
 - **calls:** `make issue-queue` — Print the implementer's queue (oldest first) with each issue's window and its reviewer verdict hold; `make issue-skip-note` — Say on the held issue why the sweep skipped it (one comment per review round); `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make image-ensure`; `make hermes-smoke`; `make issue-thread` — Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>); `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make implement-issue`; `make issue-verdict` — Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>); `make git-identity`; `make worktree-resume` — Resume an existing branch — fetched first, so a re-run of a one-ref checkout works; `make worktree-new` — Start a new branch off the freshly fetched base, in a worktree (IN_PLACE=1 for the CI checkout); `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo)
 
@@ -643,7 +644,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** cron `7,37 * * * *`, `workflow_dispatch`
 - **jobs:** `guard`, `alarm` (needs `guard`)
-- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1)
+- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1); `make sweep-alarm` — Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
 
 #### `.github/workflows/refresh-bot.yml` — refresh-bot
 
@@ -723,6 +724,7 @@ One line each, taken from the script's own docstring.
 - `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122).
 - `scripts/self_correct_raw.py` — Self-correct raw search snapshots so they conform to data/search_contract.json.
 - `scripts/smoke_search.py` — Bounded reachability smoke for the four Hermes search targets.
+- `scripts/sweep_alarm.py` — Fail loudly when the hourly sweep has not been DELIVERED (issue #497).
 - `scripts/update_trending.py` — Update the trending-local-llms data store and regenerate README.md.
 - `scripts/validate.py` — QA validation for the trending-local-llms data store + README.
 - `scripts/verify_closure.py` — Did the issue a merged PR claimed to close ACTUALLY close? (issue #288)

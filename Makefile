@@ -1025,6 +1025,10 @@ issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, R
 # The DECISION lives in scripts/queued_run_alarm.py (rule 6d); the workflow calls this target.
 # Exit 1 when a job is stuck, so the scheduled run goes red.
 .PHONY: queued-alarm
+sweep-alarm: ## Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
+	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=3]"; exit 1; }
+	python3 scripts/sweep_alarm.py --repo "$(REPO)" --max-age-hours "$(if $(MAX_AGE_HOURS),$(MAX_AGE_HOURS),3)"
+
 queued-alarm: ## Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1)
 	@test -n "$(REPO)" || { echo "Usage: make queued-alarm REPO=<owner/repo> [MINUTES=30] [COMMENT=1]"; exit 1; }
 	python3 scripts/queued_run_alarm.py --repo "$(REPO)" --minutes "$(if $(MINUTES),$(MINUTES),30)" $(if $(COMMENT),--comment,)

@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **110** · archived: **0**
+Active changes: **111** · archived: **0**
 
 ## Active changes
 
@@ -110,6 +110,7 @@ Active changes: **110** · archived: **0**
 | `setup-output-visible` | active | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/setup-output-visible/proposal.md) |
 | `skip-note-every-hold` | active | #204 — `tech-debt: The skip note covers ONE held issue per run` | — | [issue-queue](openspec/changes/skip-note-every-hold/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/skip-note-every-hold/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
+| `sweep-delivery-alarm` | active | #497 (measured: the hourly sweep asks GitHub for 24 slots a day and gets ~5) | — | [bot-coordination](openspec/changes/sweep-delivery-alarm/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-delivery-alarm/proposal.md) |
 | `sweep-reverifies-against-the-base` | active | #494 (the owner's ruling: *"the sweep bot analyzes each issue again against the latest | — | [bot-coordination](openspec/changes/sweep-reverifies-against-the-base/specs/bot-coordination/spec.md) | 11/11 | [proposal.md](openspec/changes/sweep-reverifies-against-the-base/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
