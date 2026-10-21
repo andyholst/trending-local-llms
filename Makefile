@@ -377,6 +377,14 @@ base-check: ## Fail unless this checkout IS the freshly fetched <BASE> (CI runs 
 # 39329834698, 4/4 legs green, HEAD 2 commits behind, whole refresh discarded). This
 # fast-forwards a CLEAN checkout onto the fetched tip and refuses only a dirty tree or a
 # HEAD with commits the base does not have. Same ONE implementation (rule 6d/6m).
+branch-adopt: ## Cut or attach BRANCH at COMMIT time, reporting behind_base=N and asserting NO base (issue #500) (BRANCH=, BASE=)
+	@test -n "$(BRANCH)" || { echo "Usage: make branch-adopt BRANCH=<branch> [BASE=master]"; exit 1; }
+	python3 scripts/worktree_base.py adopt --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)"
+
+base-rebase: ## Fetch the base and rebase BRANCH onto it; a conflict ABORTS and KEEPS the work (exit 3) (BRANCH=, BASE=)
+	@test -n "$(BRANCH)" || { echo "Usage: make base-rebase BRANCH=<branch> [BASE=master]"; exit 1; }
+	python3 scripts/worktree_base.py rebase --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)"
+
 base-advance: ## Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet)
 	python3 scripts/worktree_base.py advance $(if $(BASE),--base $(BASE),)
 

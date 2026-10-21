@@ -339,6 +339,81 @@ def test_resume_of_a_missing_branch_points_at_new(tmp: Path) -> None:
           proc.stderr)
 
 
+def test_adopt_cuts_the_branch_from_a_behind_head_and_keeps_the_work(tmp: Path) -> None:
+    """Issue #500: the run that died. master moves while the agent works; the branch is still cut
+    and the work is kept — no base assertion at COMMIT time."""
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    (ci / "impl.py").write_text("print(42)\n")   # uncommitted, as the agent leaves it
+    advance(fx["seed"], "moved\n")                               # a merge lands during the run
+    proc = run_script("adopt", ci, "--branch", "ci/data-gap-2-x")
+    check("adopt: a base that moved during the run does NOT refuse (issue #500)",
+          proc.returncode == 0, proc.stderr[-300:])
+    check("adopt: the branch is cut from HEAD and behind_base is REPORTED",
+          "how=cut-from-head" in proc.stdout and "behind_base=1" in proc.stdout, proc.stdout)
+    check("adopt: the agent's uncommitted work is still in the tree",
+          (ci / "impl.py").exists(), "")
+    check("adopt: HEAD is on the new branch",
+          git(["rev-parse", "--abbrev-ref", "HEAD"], ci).stdout.strip() == "ci/data-gap-2-x",
+          git(["rev-parse", "--abbrev-ref", "HEAD"], ci).stdout)
+
+
+def test_adopt_attaches_an_existing_branch_instead_of_recutting_it(tmp: Path) -> None:
+    """A re-run resumes; it never re-cuts (that would discard the earlier commits)."""
+    fx = fixture(tmp)
+    proc = run_script("adopt", fx["ci"], "--branch", "ci/data-gap-1-x")
+    check("adopt: an existing remote branch is ATTACHED, not re-cut",
+          proc.returncode == 0 and "how=existing-remote" in proc.stdout, proc.stdout)
+    check("adopt: HEAD is that branch's tip, work intact",
+          (fx["ci"] / "f.txt").read_text().endswith("work\n"), (fx["ci"] / "f.txt").read_text())
+
+
+def test_rebase_brings_the_commit_onto_the_fetched_tip(tmp: Path) -> None:
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    advance(fx["seed"], "moved\n")
+    run_script("adopt", ci, "--branch", "b1")
+    (ci / "impl.py").write_text("x\n")
+    git(["add", "-A"], ci)
+    git(["commit", "-qm", "impl"], ci)
+    proc = run_script("rebase", ci, "--branch", "b1")
+    check("rebase: a behind branch is rebased onto the fetched tip",
+          proc.returncode == 0 and "rebase=rebased" in proc.stdout, proc.stdout + proc.stderr[-200:])
+    check("rebase: it falls back to the repo's bot identity when the checkout has none",
+          "identity=fallback" in proc.stdout, proc.stdout[:300])
+    check("rebase: the base's new commit is an ancestor of HEAD",
+          git(["merge-base", "--is-ancestor", "origin/master", "HEAD"], ci).returncode == 0, "")
+
+
+def test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp: Path) -> None:
+    """The work is NEVER lost: a conflicted rebase is aborted, and the caller pushes anyway."""
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    run_script("adopt", ci, "--branch", "b2")
+    (ci / "f.txt").write_text("base\nMINE\n")
+    git(["commit", "-qam", "mine"], ci)
+    advance(fx["seed"], "THEIRS\n")          # same line: a real conflict
+    before = git(["rev-parse", "HEAD"], ci).stdout.strip()
+    proc = run_script("rebase", ci, "--branch", "b2")
+    check("rebase: a conflict exits 3, so the caller still pushes",
+          proc.returncode == 3, (proc.returncode, proc.stderr[-300:]))
+    check("rebase: it says rebase=conflict and names the conflicted path",
+          "rebase=conflict" in proc.stdout and "f.txt" in proc.stdout, proc.stdout)
+    check("rebase: every commit is intact and no rebase is left in progress",
+          git(["rev-parse", "HEAD"], ci).stdout.strip() == before
+          and not (ci / ".git" / "rebase-merge").exists()
+          and not (ci / ".git" / "rebase-apply").exists(), before)
+
+
+def test_rebase_refuses_a_tree_with_uncommitted_changes(tmp: Path) -> None:
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    run_script("adopt", ci, "--branch", "b3")
+    (ci / "f.txt").write_text("base\ndirty\n")
+    proc = run_script("rebase", ci, "--branch", "b3")
+    check("rebase: a dirty tree is REFUSED (commit first), never silently skipped",
+          proc.returncode == 1 and "REFUSED" in proc.stderr, (proc.returncode, proc.stderr[-200:]))
+
 def test_the_rulebook_states_the_rule() -> None:
     """The rule is only a rule if the rulebook carries it (llgenie's `test_agents_worktree`
     shape: AGENTS.md is the promise, this suite the machinery). Dropping the wording —
@@ -363,6 +438,13 @@ def test_the_rulebook_states_the_rule() -> None:
           "states the base" in rule and "SHA it read" in rule, "")
     check("AGENTS.md: 6n names the machinery for a checkout you own",
           "make base-check" in rule, "")
+    check("AGENTS.md: 6n says a job whose tree carries the work ADOPTS and REBASES (issue #500)",
+          "make branch-adopt" in rule and "make base-rebase" in rule
+          and "MUST NOT re-assert the base" in rule, "")
+    check("AGENTS.md: 6e names the adopt -> commit -> rebase order (issue #500)",
+          "brings the commit onto the base\n  as it is NOW" in text, "")
+    check("AGENTS.md: 6e says the patch artifact is uploaded on ANY rejected push",
+          "on ANY rejected push, never only the workflow-scope one" in text, "")
     check("AGENTS.md: 6n pins one implementation (rule 6d)",
           "scripts/worktree_base.py" in rule and "tests/test_worktree_base.py" in rule, "")
     check("AGENTS.md: the section-8 guard table carries the row",
@@ -371,19 +453,37 @@ def test_the_rulebook_states_the_rule() -> None:
 
 def test_the_makefile_is_the_one_seam() -> None:
     targets = set(re.findall(r"^([A-Za-z0-9_][A-Za-z0-9_.-]*):", MAKEFILE, re.M))
-    for target in ("base-check", "base-advance", "worktree-new", "worktree-resume"):
+    for target in ("base-check", "base-advance", "worktree-new", "worktree-resume",
+                   "branch-adopt", "base-rebase"):
         check(f"Makefile: `{target}` exists (the seam CI and a human share)",
               target in targets, sorted(t for t in targets if t.startswith("worktree") or
                                         t.startswith("base")))
     for target, script in (("base-check", "check"), ("base-advance", "advance"),
-                           ("worktree-new", "new"), ("worktree-resume", "resume")):
+                           ("worktree-new", "new"), ("worktree-resume", "resume"),
+                           ("branch-adopt", "adopt"), ("base-rebase", "rebase")):
         recipe = re.search(rf"^{target}:.*\n((?:\t.*\n)+)", MAKEFILE, re.M)
         check(f"Makefile: `{target}` calls scripts/worktree_base.py {script}",
               bool(recipe) and f"worktree_base.py {script}" in recipe.group(1), "")
     check("Makefile: the test is in the `_test` chain (rule 6d — a guard nothing runs)",
           wired(__file__), "")
-    check("issue-bot: the branch is cut through the Makefile seam, never a bare checkout",
-          "make worktree-new" in ISSUE_BOT and 'git checkout -b "$BRANCH"' not in ISSUE_BOT, "")
+    # Issue #500: the commit step cuts the branch AND brings it onto the base as it is NOW.
+    # It must not call a BASE-ASSERTING target there — that is what discarded run 39548077538.
+    commit = ISSUE_BOT[ISSUE_BOT.find("name: Commit + push the branch"):]
+    commit = commit[:commit.find("name: Open the PR")]
+    check("issue-bot: the commit step cuts the branch through the seam, never a bare checkout",
+          "make branch-adopt" in commit and 'git checkout -b "$BRANCH"' not in commit, "")
+    check("issue-bot: the commit step NEVER re-asserts the base after the work exists (issue #500)",
+          "make worktree-new" not in commit and "make worktree-resume" not in commit
+          and "make base-check" not in commit, commit[:400])
+    check("issue-bot: the commit is rebased onto the fetched tip BEFORE the push",
+          0 <= commit.find("make base-rebase") < commit.find("git push"), "")
+    check("issue-bot: a conflicted rebase (exit 3) still pushes the work",
+          "REBASE_RC" in commit and '= "3"' in commit, "")
+    artifact = ISSUE_BOT[ISSUE_BOT.find("name: Upload the unpushed implementation as a patch"):]
+    artifact = artifact[:artifact.find("with:")]
+    check("issue-bot: the patch artifact is not gated on the workflow-scope error alone",
+          "steps.push.outputs.pushed != 'true'" in artifact
+          and "scope_error" not in artifact, artifact)
 
 
 def main() -> int:
@@ -408,6 +508,11 @@ def main() -> int:
         test_resume_reports_how_far_behind_the_base_it_is(tmp / "c8")
         test_resume_refuses_to_discard_local_commits(tmp / "c9")
         test_resume_of_a_missing_branch_points_at_new(tmp / "c10")
+        test_adopt_cuts_the_branch_from_a_behind_head_and_keeps_the_work(tmp / "c11")
+        test_adopt_attaches_an_existing_branch_instead_of_recutting_it(tmp / "c12")
+        test_rebase_brings_the_commit_onto_the_fetched_tip(tmp / "c13")
+        test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp / "c14")
+        test_rebase_refuses_a_tree_with_uncommitted_changes(tmp / "c15")
         test_the_rulebook_states_the_rule()
         test_the_makefile_is_the_one_seam()
     finally:
