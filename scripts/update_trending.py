@@ -1422,6 +1422,14 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
             continue
         if _m.get("hf"):
             _m["hf"] = normalize_hf_ref(_m["hf"])
+        # The id must satisfy the store contract, or the raw snapshot fails
+        # `search_contract` before ingest can even see it (issue #464: a leg wrote
+        # `qwen3.8-27b-mlx_srv`).
+        _id = str(_m.get("id") or "")
+        if _id and not ID_PATTERN.match(_id):
+            _fixed = contract_id(_id) or _slug(_m.get("name") or _id)
+            print(f"[write-raw] id normalised {_id!r} -> {_fixed!r} (contract pattern)")
+            _m["id"] = _fixed
         for _f in _m.get("formats") or []:
             if isinstance(_f, dict) and _f.get("hf"):
                 _f["hf"] = normalize_hf_ref(_f["hf"])
@@ -1939,6 +1947,28 @@ def prune_engagement(eng: dict, model_id: str = "?") -> dict:
         out[k] = v
     return out
 
+#: The store contract's `id` pattern (`data/model_contract.json`): lowercase, digits, dots and
+#: hyphens. A search leg writes ids by hand, so a single `_` (`qwen3.8-27b-mlx_srv`, measured on
+#: PR #461) turned a whole refresh PR red — and the id never merged with its own model, because
+#: everything matches on it. Normalising where the value is WRITTEN (and again at ingest) keeps
+#: the contract true without ever renaming a stored model (rule 3b).
+ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.\-]*$")
+
+
+def contract_id(value: object) -> str:
+    """`value` as a contract-legal model id (`_`→`-`, lowercase, only [a-z0-9.-]).
+
+    Returns "" when nothing usable is left, so a caller can fall back to `_slug(name)` instead
+    of writing an empty id.
+    """
+    s = str(value or "").strip().lower()
+    s = s.replace("_", "-").replace(" ", "-")
+    s = re.sub(r"[^a-z0-9.\-]+", "-", s)
+    s = re.sub(r"-{2,}", "-", s)
+    s = re.sub(r"^[^a-z0-9]+", "", s).strip("-")
+    return s
+
+
 def _slug(name: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
     return s or "unknown"
@@ -2023,6 +2053,15 @@ def normalize_model(m: dict, store: dict) -> dict:
         if isinstance(_f, dict) and _f.get("hf"):
             _f["hf"] = normalize_hf_ref(_f["hf"])
     m.setdefault("id", _slug(m.get("name", "")))
+    # A raw snapshot written before this rule (or by a leg that skipped `--write-raw`) can
+    # still carry an id the contract forbids: normalise it HERE too, so the store is never
+    # handed one (issue #464). An id that already matches is left byte-identical, and an
+    # EXISTING model never reaches this function — ingest matches it by id first (rule 3b).
+    if not ID_PATTERN.match(str(m.get("id") or "")):
+        _fixed = contract_id(m.get("id")) or _slug(m.get("name") or m.get("id") or "")
+        if _fixed != m.get("id"):
+            print(f"[ingest] id normalised {m.get('id')!r} -> {_fixed!r} (contract pattern)")
+            m["id"] = _fixed
     m.setdefault("full_name", m.get("name", ""))
     m.setdefault("license", "Unknown")
     m.setdefault("params", "unknown")
