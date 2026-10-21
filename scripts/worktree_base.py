@@ -56,6 +56,25 @@ class Refused(RuntimeError):
     """The decision does not hold. Exit 1; the message says what to do instead."""
 
 
+try:  # the ONE definition of who a bot commits as (scripts/agent_identity.py, §7)
+    from agent_identity import AGENT_EMAIL
+except ImportError:  # pragma: no cover - only when run outside scripts/
+    AGENT_EMAIL = "support@docondee.com"
+
+#: The bot's name, used only when the checkout has NO configured identity. The workflow runs
+#: `make git-identity` first; a bare container has nothing, and a rebase re-applies commits, so it
+#: needs one (measured: `fatal: unable to auto-detect email address (got 'root@…')`).
+AGENT_NAME = "Asimov Agent"
+
+
+def _identity_args(cwd: str | Path | None) -> list[str]:
+    """`-c user.*` only when the repo has no identity of its own — never a silent override."""
+    if git(["config", "user.email"], cwd).stdout.strip():
+        return []
+    print("identity=fallback (no user.email configured; the rebase needs a committer)")
+    return ["-c", f"user.name={AGENT_NAME}", "-c", f"user.email={AGENT_EMAIL}"]
+
+
 def git(args: list[str], cwd: str | Path | None = None) -> subprocess.CompletedProcess:
     """The real `git` (the external system), never a stand-in."""
     return subprocess.run(["git", *args], cwd=str(cwd) if cwd else None,
@@ -395,7 +414,124 @@ def mode_resume(args: argparse.Namespace) -> int:
     return 0
 
 
-MODES = {"check": mode_check, "new": mode_new, "resume": mode_resume, "advance": mode_advance}
+def mode_adopt(args: argparse.Namespace) -> int:
+    """Cut or attach the branch at COMMIT time, without re-asserting the base (issue #500).
+
+    The implementer asserts its base at the START of a run (`mode_check`), then spends 20-30
+    minutes implementing. `master` merges in the meantime — `auto-merge` runs on every green PR —
+    so re-asserting `HEAD == fetched tip` at the end refused a fully implemented run and threw it
+    away (run 39548077538 / issue #177: HEAD 1 commit behind, implementation lost, no PR).
+
+    So this mode never asserts the base. It cuts the branch from the CURRENT HEAD (carrying the
+    agent's uncommitted edits in place), or attaches to the branch if it already exists (a re-run),
+    and REPORTS `behind_base=N` so the caller can rebase deliberately (`mode_rebase`) instead of
+    being refused. The start-of-run assertion stays where it belongs (`make base-check`).
+    """
+    cwd = os.getcwd()
+    root = repo_root(cwd)
+    _base_is_not_a_target(args.branch, args.base)
+    tip = fetch_base(args.base, args.remote, cwd)
+    branch = args.branch
+    local_ref = f"refs/heads/{branch}"
+    remote_ref = f"refs/remotes/{args.remote}/{branch}"
+    local_exists = git(["show-ref", "--verify", "--quiet", local_ref], cwd).returncode == 0
+    remote_exists = git(["ls-remote", "--exit-code", "--heads", args.remote, branch],
+                        cwd).returncode == 0
+
+    if local_exists:
+        git_out(["checkout", branch], cwd)          # carries the working tree as it is
+        how = "existing-local"
+    elif remote_exists:
+        git_out(["fetch", args.remote, f"+refs/heads/{branch}:{remote_ref}"], cwd)
+        git_out(["checkout", "-B", branch, remote_ref], cwd)
+        how = "existing-remote"
+    else:
+        git_out(["checkout", "-b", branch], cwd)    # from whatever HEAD holds — the agent's tree
+        how = "cut-from-head"
+
+    head = git_out(["rev-parse", "HEAD"], cwd)
+    behind = _count(head, tip, cwd)
+    print("mode=adopt")
+    print(f"base={args.remote}/{args.base}")
+    print(f"base_sha={tip}")
+    print(f"branch={branch}")
+    print(f"how={how}")
+    print(f"head={head}")
+    print(f"behind_base={behind}")
+    if behind:
+        print(f"NOTE: HEAD is {behind} commit(s) behind {args.remote}/{args.base} "
+              f"({tip[:12]}) — the work is KEPT; `make base-rebase BRANCH={branch}` brings it "
+              f"forward before the push.", file=sys.stderr)
+    print(f"OK: adopted {branch} on {head[:12]} ({how}).")
+    return 0
+
+
+def mode_rebase(args: argparse.Namespace) -> int:
+    """Fetch the base and rebase the branch's commits onto it; a conflict KEEPS the work.
+
+    Exit codes are the contract the caller branches on: 0 = up to date or rebased, 3 = the base
+    moved and the rebase conflicted (aborted — every commit is still there, the caller pushes and
+    lets the PR's fix loop repair the conflict, #475), 1 = refused (dirty tree, detached HEAD),
+    2 = usage. Never a lost commit, never a silent skip.
+    """
+    cwd = os.getcwd()
+    repo_root(cwd)
+    branch = args.branch or git_out(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
+    if branch in ("HEAD", "", args.base):
+        raise Refused(
+            f"refusing to rebase {branch or 'a detached HEAD'!r}: check the branch out first "
+            f"(the base itself is never rebased by a bot)."
+        )
+    dirty = git(["status", "--porcelain"], cwd).stdout.strip()
+    if dirty:
+        raise Refused(
+            "the tree has uncommitted changes, so a rebase would move work it cannot see.\n"
+            "  Commit first, then rebase:\n"
+            f"    git add -A && git commit -m …  &&  make base-rebase BRANCH={branch}\n"
+            f"  (uncommitted: {dirty.splitlines()[0][:80]})"
+        )
+    tip = fetch_base(args.base, args.remote, cwd)
+    head = git_out(["rev-parse", "HEAD"], cwd)
+    behind = _count(head, tip, cwd)
+    ahead = _count(tip, head, cwd)
+    print("mode=rebase")
+    print(f"base={args.remote}/{args.base}")
+    print(f"base_sha={tip}")
+    print(f"branch={branch}")
+    print(f"head_before={head}")
+    print(f"behind_base={behind}")
+    print(f"ahead_base={ahead}")
+    if not behind:
+        print("rebase=up-to-date")
+        print(f"OK: {branch} already contains {args.remote}/{args.base} ({tip[:12]}).")
+        return 0
+    proc = git([*_identity_args(cwd), "rebase", tip], cwd)
+    if proc.returncode != 0:
+        # Say WHY: a rebase that fails for a reason other than a conflict (a missing identity,
+        # a hook, a permission) must be diagnosable from the step's own output.
+        detail = " ".join((proc.stderr or proc.stdout or "").strip().splitlines()[-4:])
+        if detail:
+            print(f"rebase_detail={detail[:600]}")
+        conflicted = git(["diff", "--name-only", "--diff-filter=U"], cwd).stdout.split()
+        git(["rebase", "--abort"], cwd)
+        # A conflict and a rebase that failed for another reason (no identity, a hook, a
+        # permission) are labelled differently — both KEEP the work and push, but a reader of the
+        # step's log must be able to tell which happened.
+        print(f"rebase={'conflict' if conflicted else 'failed'}")
+        print("conflicted=" + (",".join(conflicted) if conflicted else "none"))
+        print(f"KEPT: the rebase was ABORTED — every commit on {branch} is intact at {head[:12]}, "
+              f"and the push goes ahead. The PR carries the conflict, and the fix loop repairs it "
+              f"(#475).", file=sys.stderr)
+        return 3
+    after = git_out(["rev-parse", "HEAD"], cwd)
+    print("rebase=rebased")
+    print(f"head_after={after}")
+    print(f"OK: {branch} rebased onto {args.remote}/{args.base} ({tip[:12]}).")
+    return 0
+
+
+MODES = {"check": mode_check, "new": mode_new, "resume": mode_resume, "advance": mode_advance,
+         "adopt": mode_adopt, "rebase": mode_rebase}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -403,7 +539,8 @@ def main(argv: list[str] | None = None) -> int:
         prog="worktree_base.py",
         description="Fetch the base and assert where work starts (AGENTS.md rule 6n).",
         epilog="Run through the Makefile: `make base-check`, `make base-advance`, "
-               "`make worktree-new BRANCH=…`, `make worktree-resume BRANCH=…`.",
+               "`make worktree-new BRANCH=…`, `make worktree-resume BRANCH=…`, "
+               "`make branch-adopt BRANCH=…`, `make base-rebase BRANCH=…`.",
     )
     parser.add_argument("mode", choices=sorted(MODES))
     parser.add_argument("--branch", help="the branch to start (new) or resume")
@@ -414,7 +551,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dir", help="the worktree directory (default: beside the checkout)")
     args = parser.parse_args(argv)
 
-    if args.mode in ("new", "resume") and not args.branch:
+    if args.mode in ("new", "resume", "adopt") and not args.branch:
         print(f"Usage: worktree_base.py {args.mode} --branch <branch> "
               f"[--base {DEFAULT_BASE}] [--remote {DEFAULT_REMOTE}] [--in-place] [--dir <path>]",
               file=sys.stderr)

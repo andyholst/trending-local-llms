@@ -366,19 +366,15 @@ jobs:
           make git-identity
           # The container writes files as root; make them committable.
           sudo chown -R "$(id -u):$(id -g)" .
-          # One branch per issue: a re-run RESUMES the issue's branch instead of
-          # failing on an existing one (never force-pushes). Both paths go through the
-          # Makefile's ONE implementation of the rule (issue #271, rule 6n): `checkout
-          # -b` here asserted nothing, and the resume could not work at all — the clone
-          # held ONE ref (`actions/checkout` + `ref: master`), so `git checkout
-          # "$BRANCH"` died with `pathspec ... did not match any file(s) known to git`.
-          # `worktree-resume` fetches the branch first; `worktree-new` asserts this
-          # checkout is still the fetched base tip before it cuts the branch from it.
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            make worktree-resume BRANCH="$BRANCH" IN_PLACE=1
-          else
-            make worktree-new BRANCH="$BRANCH" IN_PLACE=1
-          fi
+          # One branch per issue, cut at COMMIT time — and NO base assertion here (issue #500).
+          # This step used to call `worktree-new IN_PLACE=1`, which re-asserts
+          # `HEAD == fetched origin/master`. The run asserted its base correctly at step 4, then
+          # spent ~25 minutes implementing; `master` merged once in the meantime (#499), and the
+          # re-assertion refused a fully implemented run and threw it away (run 39548077538,
+          # issue #177: "1 commit behind" -> Error 1 -> no commit, no push, no PR).
+          # `branch-adopt` cuts or resumes the branch from the CURRENT HEAD and reports
+          # `behind_base=N`; `base-rebase` (after the commit, below) brings the work forward.
+          make branch-adopt BRANCH="$BRANCH"
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
@@ -395,6 +391,16 @@ jobs:
             [ -n "$f" ] && { echo "dropping scratch file $f"; git rm -q --cached "$f" 2>/dev/null || true; rm -f "$f"; }
           done
           git commit -m "feat(data-gap): implement #$ISSUE from the post-refresh gap analysis"
+          # Bring the commit onto the base as it is NOW. A conflict is not a failure of the
+          # work: `base-rebase` aborts the rebase, every commit stays, and the push goes ahead —
+          # the PR carries the conflict and the fix loop repairs it (#475). Exit 3 = conflicted.
+          make base-rebase BRANCH="$BRANCH" || REBASE_RC=$?
+          if [ "${REBASE_RC:-0}" = "3" ]; then
+            echo "rebase=conflict (work kept; the PR will carry it and the fix loop repairs it)"
+          elif [ "${REBASE_RC:-0}" != "0" ]; then
+            echo "::error::make base-rebase failed (rc=${REBASE_RC}) — refusing to push a tree whose base could not be established."
+            exit 1
+          fi
           # A push may be REJECTED by the remote even with a valid token: a
           # fine-grained PAT without `Workflows: Read and write` cannot create or
           # update .github/workflows/** ("refusing to allow a Personal Access
@@ -415,7 +421,13 @@ jobs:
             exit 0
           fi
           if [ "${PUSH_RC:-0}" != "0" ]; then
-            echo "::error::git push failed for reasons other than the workflow scope (rc=${PUSH_RC})."
+            # ANY rejected push loses the work unless it is handed over as a patch (issue #500:
+            # the old code only did this for the workflow-scope rejection, and the #177 run left
+            # 25 minutes of implementation on an ephemeral runner with no artifact).
+            git format-patch HEAD~1 --stdout > issue-implementation.patch 2>/dev/null || true
+            ls -l issue-implementation.patch 2>/dev/null || echo "no patch produced"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "::error::git push failed for reasons other than the workflow scope (rc=${PUSH_RC}) — the commit is preserved as the issue-implementation-patch artifact."
             exit 1
           fi
           echo "pushed=true" >> "$GITHUB_OUTPUT"
@@ -507,7 +519,10 @@ jobs:
       # .github/workflows/** (measured on #120, run 38509118147 — the work was
       # lost with the ephemeral runner).
       - name: Upload the unpushed implementation as a patch
-        if: always() && steps.push.outputs.scope_error == 'true'
+        # ANY rejected push (issue #500), not only the workflow-scope one: `push` now writes the
+        # patch and `pushed=false` on every non-zero push, so the artifact always exists when
+        # the branch did not reach the remote.
+        if: always() && steps.push.outputs.pushed != 'true'
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:

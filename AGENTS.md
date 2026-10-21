@@ -565,6 +565,19 @@ retains 30 days of history.
      cuts a branch runs `make base-check` first (`--in-place` is the CI shape of
      `worktree-new`/`worktree-resume`), and refuses to cut anything when the
      checkout is not the fetched tip.
+   - **A job whose tree CARRIES the work ADOPTS and REBASES instead of refusing**
+     (issue #500): the implementer asserts its base at the START of a run, then
+     spends 20–30 minutes implementing while `master` merges under it — so it
+     MUST NOT re-assert the base when it cuts the branch. `make branch-adopt
+     BRANCH=<branch>` cuts the branch from the CURRENT `HEAD` (or attaches it on
+     a re-run) and reports `behind_base=N`; the commit follows; `make base-rebase
+     BRANCH=<branch>` then rebases that commit onto the fetched tip, and a
+     **conflict aborts the rebase, keeps every commit and exits 3** so the push
+     still happens and the PR's fix loop repairs it (§6b). Measured: run
+     39548077538 implemented issue #177 for ~25 minutes, `master` gained one
+     commit (#499), the commit step re-asserted `HEAD == tip`, and the finished
+     implementation was discarded with no commit, no push, no PR and no patch
+     artifact.
    - **A job that has written NOTHING yet ADVANCES instead of refusing** (issue
      #448): `make base-advance` fetches the base and fast-forwards a CLEAN
      checkout onto it. `make base-check`'s refusal is right where the tree
@@ -1078,8 +1091,10 @@ this `AGENTS.md` and the `gather-data` skill, then:
   defers to), implements through `make implement-issue` — the
   prompt requires, per rules 6f/6g, the TRACKED OpenSpec change (created first,
   capability spec + task checklist, `OPENSPEC.md` refreshed, `make openspec-check`
-  green) and a `findings.md` analysis — pushes `ci/data-gap-<n>-<slug>` (resuming
-  it on a re-run — never a force-push), opens the PR against `master` with
+  green) and a `findings.md` analysis — adopts `ci/data-gap-<n>-<slug>` (resuming
+  it on a re-run — never a force-push), commits, brings the commit onto the base
+  as it is NOW (`make base-rebase`, rule 6n: a moved base is rebased, never
+  refused), opens the PR against `master` with
   `closes #<n>`, then runs the SAME fix loop as fix-bot against that PR (the job
   sets `REQUIRE_FINDINGS=1`, so a run that skipped the analysis is RED) and pushes
   only when green. Once the loop is green it files the findings as their OWN
@@ -1100,7 +1115,8 @@ this `AGENTS.md` and the `gather-data` skill, then:
   the bot now detects that, reports the missing permission on the issue and stays
   red on purpose, and it strips scratch artifacts (`*.patch`, `*.rej`, `*.orig`)
   — a change written into a patch file is not an implementation. A rejected push
-  also uploads the committed work as the `issue-implementation-patch` artifact
+  also uploads the committed work as the `issue-implementation-patch` artifact —
+  on ANY rejected push, never only the workflow-scope one (issue #500) —
   (`git am` it once the permission is granted), so 30 minutes of agent work are
   never thrown away with the ephemeral runner.
 
@@ -1354,7 +1370,7 @@ actually happened.
 | `tests/test_card_fit.py` + `check_card_tables` (validate, `readme` stage) — what fits YOUR card (issue #337) | a card owner misled about their VRAM: the most-loved `VRAM` cell publishing the coarse `vram_tier` (it disagreed with the model's own `vram_min` for 20 of 46 models and sat below the smallest card a measurement had run on for 17); a per-backend "best" cell showing a figure measured on a datacenter part or a bigger card than the column claims (#260); a bare `B300` passing `in_scope()` because `_DATACENTER_HW` named `b200`/`gb300` but not `b300`, so a 21,000 t/s cluster figure earned `speed +11` and ranked 3rd; a card tier placed from a measurement on a BIGGER card (a guessed fit) or from a run whose own hardware names no card; a `weights-only` row sold as a proven fit; an Apple Silicon / CPU figure landing in a card tier; a tier silently dropped from the README, unsorted, missing its anchor, or rendered empty instead of as a named collection gap; the search legs no longer asking for the low-end cards (3060/4060/4060 Ti/4070, Radeon 6600/7600/9060 XT, `8gb`/`16gb vram`) |
 | `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
 | `make pr-closure` + `tests/test_pr_closure.py` (rule 6e, issue #284) | a merged PR that does NOT close the issue it implements: a chained reference (`Closes #271 and #276` closes only #271 — the measured PR #272, where the change landed and the issue stayed open), a branch that implements an issue whose body carries no closing keyword for it, a PR that closes an issue it does not implement (the refresh PR's `Closes #1` — the long-closed meta issue), and the checker not running on every PR (rule 6d) |
-| `tests/test_worktree_base.py` (rule 6n, issue #271) | work starting from an unverified base: a checkout that is behind the fetched tip passing `make base-check`, an unfetchable base passing at all; a worktree cut from the clone's own stale tip (so the fetch never happened) or created INSIDE the repository where `git add -A` would commit it; an existing branch silently RE-CUT (`worktree-new`) instead of resumed; the caller's checkout being switched or the local `master` moved by the seam that is supposed to leave it alone; the base branch itself becoming a worktree target; a resume that cannot work in a one-ref clone (the measured #271 `pathspec … did not match`, while a bare `git checkout` still fails on the same fixture); a resumed branch resetting local-only commits (`-B`) instead of reporting drift; a job that has written nothing REFUSING to advance and discarding its whole run (`base-advance`, issue #448 — the measured refresh where 4/4 search legs went green and `aggregate` refused a checkout 2 commits behind), an advance that resets a dirty tree or a HEAD with its own commits, or an advance reported as having moved when it did not; the rule missing from AGENTS.md's own wording (including the always-fetch half — a run that starts from a base it never fetched, or never reports the base it read), the three targets missing from the Makefile, or the guard unwired from `make _test` (rule 6d) |
+| `tests/test_worktree_base.py` (rule 6n, issue #271) | work starting from an unverified base: a checkout that is behind the fetched tip passing `make base-check`, an unfetchable base passing at all; a worktree cut from the clone's own stale tip (so the fetch never happened) or created INSIDE the repository where `git add -A` would commit it; an existing branch silently RE-CUT (`worktree-new`) instead of resumed; the caller's checkout being switched or the local `master` moved by the seam that is supposed to leave it alone; the base branch itself becoming a worktree target; a resume that cannot work in a one-ref clone (the measured #271 `pathspec … did not match`, while a bare `git checkout` still fails on the same fixture); a resumed branch resetting local-only commits (`-B`) instead of reporting drift; a job that has written nothing REFUSING to advance and discarding its whole run (`base-advance`, issue #448 — the measured refresh where 4/4 search legs went green and `aggregate` refused a checkout 2 commits behind), an advance that resets a dirty tree or a HEAD with its own commits, or an advance reported as having moved when it did not; the rule missing from AGENTS.md's own wording (including the always-fetch half — a run that starts from a base it never fetched, or never reports the base it read), the three targets missing from the Makefile, or the guard unwired from `make _test` (rule 6d); **a run that re-asserts its base AFTER the work exists** (`branch-adopt`/`base-rebase`, issue #500 — the measured run 39548077538, where a moved `master` refused the commit step and discarded a finished implementation), an `adopt` that refuses a branch cut from a behind HEAD or discards the uncommitted work, a re-run that re-cuts an existing branch instead of attaching it, a `rebase` that loses a commit on conflict instead of exiting 3, or a rebase that runs on a dirty tree |
 | `tests/test_workflows.py::test_bot_verification_protocol_is_documented_and_guarded` (rules 6d/6j) | the one-bot-at-a-time protocol leaving AGENTS.md (the order, the fix-PR-carries-its-guard contract, the `auto-merge`-only merge rule, the post-merge verification pass); a guard no longer being the FIRST step of the job that carries it in a pipeline `BOT_GUARDS` names — the reorder that silently invalidates every claim the protocol makes about who may start a bot |
 | `tests/test_queued_run_alarm.py` — the queued-run alarm | a job stuck in `queued` reported without its runner label; a second sweep commenting again (marker dedup broken); a run counted twice because both the `queued` and `in_progress` queries return it; the sweep still green while a job is stuck |
 | `tests/test_hermes_prompts.py` — prompt shell strings | an unescaped `"` in a `-z` prompt closing the string early (every search dies) |

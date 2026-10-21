@@ -518,6 +518,13 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
             '  worktree-new|worktree-resume)\n'
             f'    exec python3 "{ROOT / "scripts" / "worktree_base.py"}" "${{1#worktree-}}"'
             ' --branch "$BRANCH" --in-place ;;\n'
+            # Issue #500: the commit step adopts the branch and rebases it at COMMIT time.
+            '  branch-adopt)\n'
+            f'    exec python3 "{ROOT / "scripts" / "worktree_base.py"}" adopt'
+            ' --branch "$BRANCH" ;;\n'
+            '  base-rebase)\n'
+            f'    exec python3 "{ROOT / "scripts" / "worktree_base.py"}" rebase'
+            ' --branch "$BRANCH" ;;\n'
             # The identity seam (issue #325): the push step sets the repo-local committer
             # identity through `make git-identity`, which is a plain git config.
             '  git-identity)\n'
@@ -1101,10 +1108,13 @@ def test_issue_bot():
           "make implement-issue" in body and "hermes -z" not in body, "")
     check("issue-bot: checks the issue is still OPEN before implementing", ".state" in body, "")
     check("issue-bot: one branch per issue (ci/data-gap-<n>-<slug>)", "ci/data-gap-" in body, "")
-    check("issue-bot: resumes the issue's branch on a re-run (no force-push)",
-          "ls-remote" in body and "--force" not in body, "")
-    check("issue-bot: both branch paths go through the Makefile seam, never a bare checkout",
-          "make worktree-new" in body and "make worktree-resume" in body
+    # Issue #500: attaching an existing branch moved INTO `branch-adopt` (the script fetches the
+    # remote branch and checks it out), so the step no longer spells `ls-remote` itself — the
+    # contract here is that it goes through that seam and never force-pushes.
+    check("issue-bot: a re-run attaches the issue's branch through the seam, never a force-push",
+          "make branch-adopt" in body and "--force" not in body, "")
+    check("issue-bot: the branch goes through the Makefile seam, never a bare checkout",
+          "make branch-adopt" in body and "make base-rebase" in body
           and 'git checkout "$BRANCH"' not in body and 'git checkout -b "$BRANCH"' not in body, "")
     check("issue-bot: commits + pushes the implementation", "git commit" in body and "git push -u origin" in body, "")
 
@@ -1245,9 +1255,9 @@ def test_issue_bot():
     # thrown away with the ephemeral runner (the file itself is proven to be
     # produced by test_issue_bot_push_scope_rejection).
     upload = step(impl, "Upload the unpushed implementation")
-    check("issue-bot: a scope-rejected implementation is uploaded as an artifact",
+    check("issue-bot: ANY rejected push uploads the implementation as an artifact",
           "issue-implementation.patch" in str(upload.get("with", {}).get("path", ""))
-          and "scope_error" in str(upload.get("if", "")), upload)
+          and "pushed != 'true'" in str(upload.get("if", "")), upload)
     comment_run = run_text(impl)
     check("issue-bot: the issue comment explains the token scope and the fix",
           "Workflows: Read and write" in comment_run and "workflow" in comment_run, "")
@@ -1801,10 +1811,10 @@ def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
           and names.index(str(base.get("name"))) < names.index("Implement the issue (Hermes, through make)"),
           names)
     body = run_text(impl)
-    check("issue-bot: the fresh branch goes through `make worktree-new` (IN_PLACE=1)",
-          "make worktree-new" in body and "IN_PLACE=1" in body, "")
-    check("issue-bot: the re-run goes through `make worktree-resume` (IN_PLACE=1)",
-          "make worktree-resume" in body, "")
+    check("issue-bot: the branch is adopted at commit time, never a bare checkout (issue #500)",
+          "make branch-adopt" in body and "git switch -c" not in body, "")
+    check("issue-bot: the commit is rebased onto the fetched tip before the push (issue #500)",
+          0 <= body.find("make base-rebase") < body.find("git push"), "")
     rb = load("refresh-bot.yml")
     # `aggregate` cuts `ci/trending-refresh-<UTC>` after ~40 min of searching, so its
     # checkout is behind by construction and the STRICT refusal would discard the run
