@@ -26,6 +26,11 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from env_int import env_int  # noqa: E402  (one reading of an integer setting — issue #487)
 
 MARKER = "pr-health-alarm"
 
@@ -133,7 +138,7 @@ def main() -> int:
                     help="dispatch fix-bot for a silent PR on a bot branch (issue #475); "
                          "capped at MAX_FIXBOT_COMMITS fix-bot commits per PR")
     ap.add_argument("--max-fixbot-commits", type=int,
-                    default=int(os.environ.get("MAX_FIXBOT_COMMITS", "2")),
+                    default=env_int("MAX_FIXBOT_COMMITS", 2),
                     help="fix-bot commits allowed per PR before the sweep stops (default 2)")
     args = ap.parse_args()
 

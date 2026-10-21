@@ -581,7 +581,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 141 make targets, 43 files in `scripts/`)
+### Bots in the tree (11 pipelines, 141 make targets, 44 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -695,6 +695,7 @@ One line each, taken from the script's own docstring.
 - `scripts/data_gap_analysis.py` — Post-refresh data-gap analysis (issue #115).
 - `scripts/engine_registry.py` — Engine registry: classify + auto-register new inference engines at ingest.
 - `scripts/ensure_image.py` — Prepare the runner images for THIS revision — one code path, CI and local.
+- `scripts/env_int.py` — Read an integer setting from the environment — EMPTY means MISSING (issue #487).
 - `scripts/file_findings.py` — File ONE GitHub issue per finding an implementation run recorded.
 - `scripts/fix_loop.sh` — fix_loop.sh — the fix-bot's repair loop (runs on the CI runner / host).
 - `scripts/hermes_smoke.sh` — hermes_smoke.sh — prove the search alias is ROUTED and ANSWERS, in seconds.

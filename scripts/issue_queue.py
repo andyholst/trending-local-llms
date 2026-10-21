@@ -78,6 +78,7 @@ BRANCH_PREFIX = "ci/data-gap-"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bot_markers as bm  # noqa: E402
+from env_int import env_int  # noqa: E402  (empty means missing — issue #487)
 
 #: The implementer's OUTCOME comment is still matched by prose (issue #197 flags it). It is pinned
 #: to the writer's sentence by `tests/test_bot_markers.py`, so a copy edit turns CI red instead of
@@ -506,12 +507,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="The implementer's queue, for both bots (issue #179)")
     ap.add_argument("--repo", default=None)
     ap.add_argument("--label", default="data-gap-analysis")
-    ap.add_argument("--gap-hours", type=int, default=int(os.environ.get("REVIEW_GAP_HOURS", "3")))
+    ap.add_argument("--gap-hours", type=int, default=env_int("REVIEW_GAP_HOURS", 3))
     ap.add_argument("--verdict-ttl-hours", type=int,
-                    default=int(os.environ.get("VERDICT_TTL_HOURS", "24")))
+                    default=env_int("VERDICT_TTL_HOURS", 24))
     ap.add_argument("--verdict-max-hold-hours", type=int,
-                    default=int(os.environ.get("VERDICT_MAX_HOLD_HOURS",
-                                               str(VERDICT_MAX_HOLD_HOURS))),
+                    default=env_int("VERDICT_MAX_HOLD_HOURS",
+                                    VERDICT_MAX_HOLD_HOURS),
                     help="how long a verdict may be held in total, across re-reviews (issue #203)")
     ap.add_argument("--skip-note", action="store_true",
                     help="post the ONE 'skipped: the reviewer holds this issue' comment (issue #200)")
