@@ -15,6 +15,7 @@ Wired into `make test` (rule 6d).
 """
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -205,18 +206,148 @@ def test_wired_into_the_makefile_the_guard_and_the_pipeline():
           wf.index("  guard:") < wf.index("  refresh:"))
     check("wiring: the scheduled run passes the guard",
           'if [ "$EVENT" = "schedule" ]' in wf)
-    check("wiring: the branch name cannot look like an issue reference",
-          "TRAILING" not in wf and "%Y%m%dT%H%M%SZ" in wf)
-    check("wiring: the PR body carries no closing keyword",
-          "Closes #" not in wf and "closes #" not in wf)
     check("wiring: it never pushes master", "refs/heads/master" not in wf)
-    check("wiring: it opens a PR only when the block changed",
-          "steps.drift.outputs.changed == 'true'" in wf)
     check("wiring: the guard is registered in tests/test_workflows.py",
           '"architecture-bot.yml", "guard"' in (ROOT / "tests" / "test_workflows.py").read_text())
     check("wiring: qa-validate gates on the same check",
           "make architecture-check" in (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text())
     check("wiring: this module is discovered by the ONE test runner", wired(__file__))
+
+
+def _shipped_step(doc: dict, *, step_id: str = "", name_prefix: str = "") -> dict:
+    """The shipped step, read OUT of the workflow file — never a copy of it."""
+    for step in doc["jobs"]["refresh"]["steps"]:
+        if (step_id and str(step.get("id")) == step_id) or (
+                name_prefix and str(step.get("name", "")).startswith(name_prefix)):
+            return step
+    raise AssertionError(f"no step id={step_id!r} name={name_prefix!r} in architecture-bot.yml")
+
+
+def _git(repo: Path, *args: str, env: dict | None = None) -> str:
+    import os
+    e = {**os.environ, **(env or {})}
+    return subprocess.run(["git", *args], cwd=str(repo), capture_output=True, text=True,
+                          env=e, check=True).stdout
+
+
+def _fixture_repo(td: Path) -> tuple[Path, Path]:
+    """A real git repo + a real bare remote, the repo's own Makefile and identity seam.
+
+    Nothing of the PRODUCT is faked: `make git-identity` is the shipped one
+    (`scripts/agent_identity.py`), `git` is the real one, and the "remote" is a real
+    local repository. The single stand-in is a stub `gh` on PATH — the network
+    boundary, which rule 6m allows when the test asserts on what the real code
+    sends it.
+    """
+    repo = td / "repo"
+    remote = td / "remote.git"
+    (repo / "scripts").mkdir(parents=True)
+    (repo / "bin").mkdir()
+    for name, src in (("ARCHITECTURE.md", ROOT / "ARCHITECTURE.md"),
+                      ("Makefile", ROOT / "Makefile"),
+                      ("scripts/agent_identity.py", ROOT / "scripts" / "agent_identity.py")):
+        (repo / name).write_bytes(src.read_bytes())
+    _git(repo, "init", "-q", "-b", "master")
+    _git(repo, "add", "-A")
+    _git(repo, "-c", "user.name=Fixture", "-c", "user.email=f@example.com",
+         "commit", "-q", "-m", "fixture")
+    _git(td, "init", "-q", "--bare", str(remote))
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "-q", "origin", "master")
+    # The stub CLI records what it was asked and what arrived on stdin.
+    (repo / "bin" / "gh").write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '%s\\n' \"$*\" >> \"$GH_LOG.args\"\n"
+        "cat >> \"$GH_LOG.body\"\n", encoding="utf-8")
+    (repo / "bin" / "gh").chmod(0o755)
+    return repo, remote
+
+
+def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
+    """Issue #485: the write path was only ever asserted as TEXT.
+
+    The bot's first production run was the no-op (the block already matched), so
+    the branch that commits, pushes and opens a PR had never executed anywhere.
+    A grep cannot see a `$GITHUB_OUTPUT` line `make`'s echo corrupts (#346), a
+    branch stamp that lost its `Z` (and so reads as an issue reference to
+    `pr_closure`), or a body that grew a closing keyword. So run the SHIPPED
+    steps: real `git`, a real bare remote, the repo's own `make git-identity`,
+    and a stub `gh` standing in only for the network.
+    """
+    try:
+        import yaml
+    except ImportError:  # pragma: no cover — the test image ships PyYAML
+        print("  SKIP the shipped steps were not executed: PyYAML is missing")
+        return
+    doc = yaml.safe_load((ROOT / ".github" / "workflows" / "architecture-bot.yml").read_text())
+    drift, publish = _shipped_step(doc, step_id="drift"), _shipped_step(
+        doc, name_prefix="Commit, push and open the PR")
+    check("shipped: the commit step runs only when the drift step says so",
+          "steps.drift.outputs.changed" in str(publish.get("if", "")), str(publish.get("if")))
+
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        repo, remote = _fixture_repo(td)
+        env = {"PATH": f"{repo / 'bin'}:{__import__('os').environ['PATH']}",
+               "GH_LOG": str(td / "gh.log"), "GH_TOKEN": "stub",
+               "REPO": "owner/name", "RUN_URL": "https://example.invalid/run/1"}
+
+        # --- no drift: changed=false, no branch, gh never called ---------------
+        out = td / "output-nodrift"
+        out.write_text("", encoding="utf-8")
+        r = subprocess.run(["bash", "-euo", "pipefail", "-c", drift["run"]], cwd=str(repo),
+                           capture_output=True, text=True, env={**env, "GITHUB_OUTPUT": str(out)})
+        check("shipped: the drift step succeeds on a clean tree", r.returncode == 0,
+              (r.stdout + r.stderr)[-300:])
+        check("shipped: a clean tree writes exactly `changed=false`",
+              out.read_text().strip() == "changed=false", out.read_text())
+        check("shipped: a clean tree opens no branch",
+              _git(td, "ls-remote", "--heads", str(remote)).strip().count("\n") == 0,
+              _git(td, "ls-remote", "--heads", str(remote)))
+        check("shipped: a clean tree never calls gh", not (td / "gh.log.args").exists())
+
+        # --- drift: changed=true, a real branch and commit, a body with no claim
+        (repo / "ARCHITECTURE.md").write_text(
+            (repo / "ARCHITECTURE.md").read_text(encoding="utf-8") + "\n<!-- drifted -->\n",
+            encoding="utf-8")
+        out = td / "output-drift"
+        out.write_text("", encoding="utf-8")
+        r = subprocess.run(["bash", "-euo", "pipefail", "-c", drift["run"]], cwd=str(repo),
+                           capture_output=True, text=True, env={**env, "GITHUB_OUTPUT": str(out)})
+        check("shipped: the drift step reports the change", "changed=true" in out.read_text(),
+              out.read_text() + (r.stdout + r.stderr)[-200:])
+
+        r = subprocess.run(["bash", "-euo", "pipefail", "-c", publish["run"]], cwd=str(repo),
+                           capture_output=True, text=True, env=env)
+        check("shipped: the publish step succeeds", r.returncode == 0,
+              (r.stdout + r.stderr)[-400:])
+        heads = [h.split("refs/heads/")[-1]
+                 for h in _git(td, "ls-remote", "--heads", str(remote)).split("\n") if h.strip()]
+        import re as _re
+        branch = next((h for h in heads if h != "master"), "")
+        check("shipped: it pushes ONE branch named ci/architecture-<UTC>Z",
+              bool(_re.fullmatch(r"ci/architecture-\d{8}T\d{6}Z", branch)), str(heads))
+        # Ask the guard that would REFUSE the PR, not a re-spelling of its rule: a branch
+        # whose name encodes an issue makes `pr-closure` demand a closing keyword for it.
+        closure = importlib.util.module_from_spec(
+            importlib.util.spec_from_file_location("pr_closure", ROOT / "scripts" / "pr_closure.py"))
+        closure.__spec__.loader.exec_module(closure)
+        check("shipped: pr_closure reads no issue out of the branch name",
+              not closure.TRAILING_ISSUE.search(branch)
+              and not closure.DATA_GAP_BRANCH.match(branch), branch)
+        author = _git(repo, "log", "-1", "--format=%an <%ae>", branch)
+        check("shipped: the commit is authored by the repo's canonical identity",
+              author.strip() == "Asimov Agent <support@docondee.com>", author)
+        args = (td / "gh.log.args").read_text()
+        check("shipped: it asks gh for a PR against master on that branch",
+              "pr create" in args and "--base master" in args and branch in args, args)
+        body = (td / "gh.log.body").read_text()
+        check("shipped: the body is not empty and carries the run", "https://example.invalid/run/1" in body)
+        check("shipped: the body carries NO closing keyword",
+              not _re.search(r"(?i)\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s*#\d+", body),
+              body)
+        check("shipped: the branch ends up on the remote with the document committed",
+              "ARCHITECTURE.md" in _git(repo, "show", "--stat", "--oneline", branch))
 
 
 def main() -> int:
@@ -227,6 +358,7 @@ def main() -> int:
     test_a_flow_the_tree_does_not_back_is_refused()
     test_real_repository_inventory_is_current()
     test_wired_into_the_makefile_the_guard_and_the_pipeline()
+    test_the_shipped_steps_actually_commit_push_and_open_a_pr()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
