@@ -25,6 +25,7 @@ exists.
 7. [Guards](#7-guards)
 8. [The life of a change](#8-the-life-of-a-change)
 9. [Known gaps](#9-known-gaps)
+10. [The living inventory (generated)](#10-the-living-inventory-generated)
 
 ---
 
@@ -224,7 +225,8 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) |
+| `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) — and when the generated inventory block (§10) no longer matches the tree (`scripts/architecture_bot.py --check`, issue #479) |
+| `architecture-refresh` | Regenerate the inventory block in §10 from the tree itself: every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script from its own docstring, and the README sections a refresh rewrites (`scripts/architecture_bot.py --write`, issue #479). Host target, stdlib only; `architecture-bot.yml` runs it daily and opens a PR only when the block changed |
 
 ### PR lifecycle (rule 6e)
 
@@ -279,13 +281,38 @@ keep it honest (issue #207):
 
 ## 4. The pipelines
 
-Seven workflows in `.github/workflows/`. Five have a cron: **`refresh-bot.yml`**
-(daily), **`issue-bot.yml`** (hourly, `19`), **`issue-review-bot.yml`**
-(hourly, `41`), **`queued-alarm.yml`** (twice an hour, `7,37`),
-**`pr-health.yml`** (twice an hour, `23,53`) and
-**`code-review-bot.yml`** (weekly Monday `23 7`, its own slot). GitHub delays
-and sometimes **drops** on-the-hour crons, hence the odd minutes (:19, :41,
-:07/:37, 17:43, 07:23).
+Eleven workflows in `.github/workflows/`. Seven have a cron: **`refresh-bot.yml`**
+(daily `06:00`, backup `17:43`), **`issue-bot.yml`** (hourly, `19`),
+**`issue-review-bot.yml`** (hourly, `41`), **`queued-alarm.yml`** (twice an hour,
+`7,37`), **`pr-health.yml`** (twice an hour, `23,53`),
+**`code-review-bot.yml`** (weekly Monday `23 7`, its own slot) and
+**`architecture-bot.yml`** (daily `05:13`, issue #479). GitHub delays and
+sometimes **drops** on-the-hour crons, hence the odd minutes (:13, :19, :41,
+:07/:37, :23/:53, 17:43, 07:23). The other four are event- or dispatch-driven:
+`qa-validate.yml` (`pull_request`/`push`/dispatch), `fix-bot.yml` and
+`publish-agent-image.yml` (dispatch only) and `pr-closure.yml` (`pull_request`).
+
+The **living inventory** of every pipeline — its triggers, its jobs and the
+`make` targets those jobs call, with the Makefile's own description of each — is
+generated, not written by hand: §10 is derived from the tree by
+`scripts/architecture_bot.py` (`make architecture-refresh`), refreshed daily by
+`architecture-bot.yml` and gated by `make architecture-check`. What follows is
+the prose that explains *why* each pipeline exists; §10 is the part that cannot
+drift.
+
+### `.github/workflows/architecture-bot.yml` — the description's keeper (daily `13 5` + dispatch)
+
+`concurrency: architecture-bot` (queued, never cancelled). `ARCHITECTURE.md` is part of
+every change (rule 6h), but its mechanical half — which bot has which job, which `make`
+target each job calls, how a model reaches `README.md` — rots silently: prose is only
+noticed when a name is *missing* (`scripts/architecture_check.py`), never when a
+description has moved on. **No model anywhere**: the block is derived from the tree, so
+the bot cannot invent a claim about the system.
+
+| Job | Does |
+|---|---|
+| `guard` | The same owner/collaborator/bot guard as the other bots, plus the `schedule` bypass, as the FIRST job (rule 6j) |
+| `refresh` | `needs: guard`. Checkout master with the owner PAT → `make base-check` (rule 6n: the branch is cut from the fetched tip, never assumed) → `make architecture-refresh` (`scripts/architecture_bot.py --write`: every workflow's triggers/crons/jobs + the `make` targets each calls, the product end to end, one line per script from its own docstring, the README sections a refresh rewrites) → `make architecture-check` (the WHOLE document, not only the block) → when the block changed, commit `docs(architecture): …` on `ci/architecture-<UTC ending in Z>`, push, and open a PR whose body carries NO closing keyword (it implements no issue, and `pr_closure` refuses a claim over an issue it does not implement). A run where the block already matches the tree is a GREEN no-op: no branch, no PR |
 
 ### `.github/workflows/refresh-bot.yml` — the crawler (schedule + owner dispatch)
 
@@ -534,3 +561,170 @@ Filed, not fixed (each is its own issue, per rule 6g):
 * Overlapping refresh PRs conflict on the generated store/README/baseline every
   time `master` moves (#177).
 * No bot reviews an issue that nobody has opened a PR for (#179).
+
+---
+
+## 10. The living inventory (generated)
+
+The block below is **derived from the tree itself** by `scripts/architecture_bot.py` and
+rewritten by `make architecture-refresh` — the daily `architecture-bot.yml` runs it and
+opens a PR only when the block actually changed. It is the mechanical half of this
+document: every pipeline with the triggers, jobs and `make` targets that make it up, the
+product end to end (how an X post becomes a `README.md` row), one line per script from
+that script's own docstring, and the README sections a refresh rewrites. Every reference
+in it is verified against the tree by `make architecture-check`, which fails when the
+block is stale — so a change that adds a target, a workflow, a script or a README section
+either regenerates this block or turns CI red.
+
+Do not edit between the markers by hand: change the code it describes, then run the target.
+
+<!-- architecture-bot:begin -->
+_Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
+
+### Bots in the tree (11 pipelines, 141 make targets, 43 files in `scripts/`)
+
+Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
+
+#### `.github/workflows/architecture-bot.yml` — architecture-bot
+
+- **when:** cron `13 5 * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `refresh` (needs `guard`)
+- **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`
+
+#### `.github/workflows/code-review-bot.yml` — code-review-bot
+
+- **when:** cron `23 7 * * 1`, `workflow_dispatch`
+- **jobs:** `guard`, `review` (needs `guard`)
+- **calls:** `make code-review-scan` — The code-review bot's checks: tree + pipelines -> findings (REPO=<owner/name>, STATIC=1 skips the checks that read the GitHub API, JSON=1 machine output; writes nothing); `make code-review-file` — File ONE issue per NEW code-review finding, capped per run (REPO=<owner/name>, CAP= issues per run, DRY=1 previews) — never edits code, never merges
+
+#### `.github/workflows/fix-bot.yml` — fix-bot
+
+- **when:** `workflow_dispatch`
+- **jobs:** `guard`, `fix` (needs `guard`)
+- **calls:** `make image-ensure`; `make hermes-smoke`; `make git-identity`
+
+#### `.github/workflows/issue-bot.yml` — issue-bot
+
+- **when:** cron `19 * * * *`, `issues`, `workflow_dispatch`
+- **jobs:** `guard`, `pick` (needs `guard`), `implement` (needs `guard`, `pick`)
+- **calls:** `make issue-queue` — Print the implementer's queue (oldest first) with each issue's window and its reviewer verdict hold; `make issue-skip-note` — Say on the held issue why the sweep skipped it (one comment per review round); `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make image-ensure`; `make hermes-smoke`; `make issue-thread` — Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>); `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make implement-issue`; `make issue-verdict` — Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>); `make git-identity`; `make worktree-resume` — Resume an existing branch — fetched first, so a re-run of a one-ref checkout works; `make worktree-new` — Start a new branch off the freshly fetched base, in a worktree (IN_PLACE=1 for the CI checkout); `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo)
+
+#### `.github/workflows/issue-review-bot.yml` — issue-review-bot
+
+- **when:** cron `41 * * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `pick` (needs `guard`), `review` (needs `guard`, `pick`)
+- **calls:** `make review-issue-guard` — Re-check that ISSUE= may still be written (PATH=body|window); `make review-issue-pick` — Choose the ONE issue this review run works (action=/issue=/path=); `make image-ensure`; `make hermes-smoke`; `make review-issue-mark` — Open the reviewer's window on ISSUE= (PATH=body|window); `make review-issue`; `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make review-issue-check-markers` — Fail when FILE= dropped an invisible marker from ISSUE='s body; `make review-issue-window`; `make review-issue-body-hash` — Print the body hash of ISSUE= (proves the window path edited nothing); `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo); `make review-issue-finish` — Close the reviewer's window on ISSUE=
+
+#### `.github/workflows/pr-closure.yml` — pr-closure
+
+- **when:** `pull_request`
+- **jobs:** `guard`, `closure` (needs `guard`)
+- **calls:** `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e)
+
+#### `.github/workflows/pr-health.yml` — pr-health
+
+- **when:** cron `23,53 * * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `sweep` (needs `guard`)
+- **calls:** `make pr-health`
+
+#### `.github/workflows/publish-agent-image.yml` — publish-agent-image
+
+- **when:** `workflow_dispatch`
+- **jobs:** `guard`, `publish` (needs `guard`)
+- **calls:** `make agent-image-ref` — Print the GHCR refs of the agent image for this revision's Dockerfile; `make agent-image-push-check` — CI: prove the ambient credential can PUSH the agent image, before the build; `make publish-agent-image` — Build + push the agent image when its hash tag is absent (FORCE=1 rebuilds the same inputs)
+
+#### `.github/workflows/qa-validate.yml` — qa-validate
+
+- **when:** `pull_request`, `push`, `workflow_dispatch`
+- **jobs:** `guard`, `validate` (needs `guard`), `live-smoke` (needs `guard`), `dispatch-fixbot` (needs `validate`), `auto-merge` (needs `validate`, `live-smoke`)
+- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, or a tracked Python module raises a SyntaxWarning; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
+
+#### `.github/workflows/queued-alarm.yml` — queued-alarm
+
+- **when:** cron `7,37 * * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `alarm` (needs `guard`)
+- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1)
+
+#### `.github/workflows/refresh-bot.yml` — refresh-bot
+
+- **when:** cron `0 6 * * *`, `43 17 * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `build` (needs `guard`), `test-image` (needs `guard`, `build`), `openspec-image` (needs `guard`), `search` (needs `build`), `aggregate` (needs `guard`, `build`, `search`)
+- **calls:** `make rebuild-decision` — Print built/test_built/publish_openspec + tags + reasons (FORCE=<bool>, DOW=<1-7>); `make image-ensure-base`; `make _search-smoke`; `make model-caps`; `make hermes-smoke`; `make search-*`; `make engine-check`; `make base-advance` — Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet); `make image-ensure`; `make merge-fetch`; `make test`; `make engine-meta-capture` — Capture GitHub metadata for registry engines the offline test fixture lacks; `make correct-raw`; `make qa-report`; `make data-gaps`; `make data-gap-issue`; `make git-identity`; `make refresh-run-block`
+
+### The product, end to end
+
+How a model gets from an X post to a `README.md` row. Every step below is a real target and a real artifact (`make architecture-check` fails when one is gone).
+
+| Stage | Runs | Reads | Writes | Why it is that way |
+|---|---|---|---|---|
+| 1. Search | make search | lightbrd.com mirror, via the Firecrawl scrape API | data/raw/<backend>-<UTC>.json | One leg per backend (`SEARCH_LEGS`: nvidia, metal, cpu, amd — `search-<backend>` runs one); every call writes its own snapshot, so a later call never overwrites an earlier one. |
+| 2. Ingest | make merge | data/raw/*.json | data/models.json | `scripts/update_trending.py` folds the raw snapshots into the store (`ingest_raw_snapshots`): adds models and measurements, fills absent keys and never removes or shrinks one (rule 3b). |
+| 3. Rank | make merge | data/models.json | trend_score / buzz_7d (derived fields in the store) | `recompute_7d_engagement` scores the last 7 days of real posts (`buzz`) plus the fastest in-scope measurement (`speed`), then `sort_models` orders trending → recent → stale (rule 4: engagement first, t/s as the tie-breaker). |
+| 4. Render | make merge (or make render-readme for a template-only change) | data/models.json | README.md | `render_readme(store, as_of=generated_utc)` rewrites every table — most loved, pick-your-card, engine matrix, the four backend tables, the engine guide — so the README is never hand-edited. |
+| 5. Snap | make merge | data/models.json | data/snapshots/trending-<UTC>.json | The full store after each merge; it is what proves no model was ever removed (`check_no_removal`) or lost a value (`check_no_value_loss`). |
+
+### `README.md` — the sections a refresh rewrites
+
+- Trending Local LLMs
+- ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)
+- 🖥️ Pick your card — what fits your VRAM
+- 🧭 Which inference engine runs what
+- 🟦 CUDA — NVIDIA GPUs (8–48 GB)
+- 🟪 ROCm — AMD GPUs (8–48 GB)
+- 🟨 CPU — no GPU
+- 🟩 Metal — Apple Silicon (unified memory)
+- ⚙️ Inference engine / server guide
+- How to contribute
+- License
+
+`README.md` is generated, never hand-edited (`AGENTS.md` §5b): a change goes into the store or the renderer's template, then `make merge` or `make render-readme`.
+
+### Every script
+
+One line each, taken from the script's own docstring.
+
+- `scripts/agent_identity.py` — ONE definition of the repository's agent identity (issue #325).
+- `scripts/agent_shell_keys_check.py` — Prove that every credential a container receives is visible in the AGENT's shell.
+- `scripts/architecture_bot.py` — Keep ARCHITECTURE.md's living inventory true to the tree (issue #479, rule 6h).
+- `scripts/architecture_check.py` — Keep ARCHITECTURE.md true to the repository (rule 6h, issue #178).
+- `scripts/bot_markers.py` — ONE definition of every bot start/end marker — its name, its shape, its parser, its writer
+- `scripts/check_commit_authorship.py` — commit-authorship guard — `make check-commit-authorship` (issue #317).
+- `scripts/check_openspec_tasks.py` — Ensure active OpenSpec changes have ALL task checkboxes completed.
+- `scripts/check_secret_output.py` — No secret VALUE may reach a log, a summary or a process list — for every key, not just one.
+- `scripts/code_review.py` — A code-review bot for this repo: read the TREE and the PIPELINES, file ONE issue per finding
+- `scripts/data_gap_analysis.py` — Post-refresh data-gap analysis (issue #115).
+- `scripts/engine_registry.py` — Engine registry: classify + auto-register new inference engines at ingest.
+- `scripts/ensure_image.py` — Prepare the runner images for THIS revision — one code path, CI and local.
+- `scripts/file_findings.py` — File ONE GitHub issue per finding an implementation run recorded.
+- `scripts/fix_loop.sh` — fix_loop.sh — the fix-bot's repair loop (runs on the CI runner / host).
+- `scripts/hermes_smoke.sh` — hermes_smoke.sh — prove the search alias is ROUTED and ANSWERS, in seconds.
+- `scripts/hermes_update_needed.sh` — Decide whether a Hermes update should run on this invocation.
+- `scripts/hf_id.py` — One definition of a Hugging Face identifier: `owner/repo`.
+- `scripts/install_hermes_ci.sh` — install_hermes_ci.sh — the ONE way the Hermes CLI enters this repo's image.
+- `scripts/issue_queue.py` — The implementer's queue — ONE implementation, read by both bots (issue #179).
+- `scripts/issue_review.py` — The issue reviewer's deterministic core (issue #179).
+- `scripts/issue_thread.py` — Render an issue's WHOLE thread for the implementer (issue #210).
+- `scripts/issue_verdict.py` — Apply the implementer's TRIAGE verdict (issue #210).
+- `scripts/lint_linefeeds.py` — Every tracked text file ends with a newline (issue #186).
+- `scripts/lint_syntax.py` — No tracked Python module raises a `SyntaxWarning` (issue #190).
+- `scripts/model_caps_check.py` — Live model-catalog guard for the Hermes search/fix model.
+- `scripts/nerve_key_check.py` — The nerve-plugin credential guard (issue #120).
+- `scripts/openspec_index.py` — Generate / verify the root OpenSpec index (`OPENSPEC.md`).
+- `scripts/pr_closure.py` — Does this PR close the issue it implements? (issue #284, AGENTS.md rule 6e)
+- `scripts/pr_health.py` — Report OPEN pull requests that are SILENT — and say what to do about it (issue #442).
+- `scripts/qa_report.sh` — Run the QA targets of a refresh and tell apart the two kinds of "not zero":
+- `scripts/query_coverage.py` — Do the searches ask for the models we rank? (issue #264)
+- `scripts/queued_run_alarm.py` — Report jobs that have been queued far too long, so a stuck runner is loud (issue #252).
+- `scripts/refresh_run_block.py` — The refresh run's WINDOW as a machine-readable block (issue #199).
+- `scripts/require_env.py` — Fail LOUDLY when an environment variable a leg needs is missing or empty.
+- `scripts/run_tests.sh` — run_tests.sh — the ONE test runner (issues #176 and #192).
+- `scripts/scrub_log.py` — Redact a captured agent log before any of it reaches a bot job's console.
+- `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122).
+- `scripts/self_correct_raw.py` — Self-correct raw search snapshots so they conform to data/search_contract.json.
+- `scripts/smoke_search.py` — Bounded reachability smoke for the four Hermes search targets.
+- `scripts/update_trending.py` — Update the trending-local-llms data store and regenerate README.md.
+- `scripts/validate.py` — QA validation for the trending-local-llms data store + README.
+- `scripts/verify_closure.py` — Did the issue a merged PR claimed to close ACTUALLY close? (issue #288)
+- `scripts/worktree_base.py` — Where does work start? (issue #271, AGENTS.md rule 6n)
+<!-- architecture-bot:end -->
+

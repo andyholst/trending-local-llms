@@ -302,8 +302,18 @@ file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh
 findings-check: ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
 	python3 scripts/file_findings.py --check
 
-architecture-check: ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script (rule 6h)
+architecture-check: ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h)
 	python3 scripts/architecture_check.py
+	python3 scripts/architecture_bot.py --check
+
+# The LIVING half of this document (issue #479): the inventory of every pipeline
+# (its triggers, its jobs, the make targets they call), the product end to end and
+# one line per script is DERIVED from the tree, between two markers, so it cannot
+# rot into prose nobody re-reads. `architecture-bot.yml` runs this daily and opens
+# a PR only when the block changed; `architecture-check` above fails while it is
+# stale, so the daily bot repairs drift instead of the drift living for weeks.
+architecture-refresh: ## Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479)
+	python3 scripts/architecture_bot.py --write
 
 # ---- the PR closes the issue it implements (rule 6e, issue #284) -------------
 # The PR body is the only artifact in the pipeline whose whole purpose is "this merge
