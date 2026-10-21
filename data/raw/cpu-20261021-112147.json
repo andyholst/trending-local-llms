@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B total / 2B active (MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "weight_gb": "14.5GB at Q4_K_M",
+      "context_tokens": "131K",
+      "engine_min_version": "SGLang day-0 (Liquid's own benchmarks run on vLLM/Liquid inference stack)",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50.7",
+          "hardware": "RTX 3080 10GB",
+          "quant": "Q4; prefill 644 tok/s in (prompt processing, never the decode figure), 50.7 tok/s out; no bespoke engine (FreeToken/Strata not used)",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2110275665408704970",
+          "likes": 61,
+          "comments": 10,
+          "reshares": 6,
+          "views": 4160,
+          "interactions": 77,
+          "weight_gb": "14.5GB at Q4_K_M"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:21:47Z"
+}

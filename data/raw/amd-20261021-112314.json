@@ -1,0 +1,114 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "54",
+          "hardware": "RTX 4070 Ti 12GB",
+          "quant": "Bonsai 2 27B PQ2, 64-token reasoning budget, 8K context, ~9.0GB VRAM (strict-agent test; 13/15 tasks correct)",
+          "weight_gb": "PQ2_0",
+          "context_tokens": "8192",
+          "engine_min_version": "PrismML llama.cpp fork (ternary packings)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/brokevibecoder/status/2104236304099881362",
+          "likes": 153,
+          "comments": 4,
+          "reshares": 1,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 compression, full 262K context resident, Hermes Agent with 25 tools, 77-minute agent build",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp fork with restored MTP head (kernel tweaks)",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary at ~1.72 bits/weight; 220K context, 7.21GB model file, Q4_0 KV cache, flash attention (~550 tok/s prefill excluded)",
+          "weight_gb": "PQ2_0, 7.21GB",
+          "context_tokens": "220000",
+          "engine_min_version": "PrismML llama.cpp fork (stock llama.cpp rejects the ternary files)",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "26",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary at 5.95GB; full native 262K context, ~260 tok/s prefill excluded",
+          "weight_gb": "PTQ1_0, 5.95GB",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp fork (stock llama.cpp rejects the ternary files)",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-09-27",
+      "why": "A 12GB RTX 3060 decodes the ternary 27B at 35-40 tok/s with 220K-262K context, and an RTX 4070 Ti runs it at ~54 tok/s."
+    },
+    {
+      "id": "bonsai-2-27b-mlx-fast",
+      "name": "Bonsai 2 27B (mlx.fast)",
+      "full_name": "Ternary-Bonsai-2-27B (mlx.fast)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "mlx.fast tuned build, 302.7% over the frozen baseline (4x faster), compressed 27B that fits a 16GB Mac",
+          "weight_gb": "compressed 27B (fits 16GB Mac)",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 360,
+          "comments": 14,
+          "reshares": 12,
+          "views": 55512
+        }
+      ],
+      "last_seen": "2026-09-26",
+      "why": "mlx.fast tuning took the compressed 27B to 237.4 tok/s decode on a 16GB Mac, 4x its frozen baseline."
+    }
+  ],
+  "generated_utc": "2026-10-21T13:10:00Z"
+}

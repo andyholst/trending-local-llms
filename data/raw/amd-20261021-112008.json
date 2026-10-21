@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5 4B",
+      "full_name": "Qwen3.5-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3.5-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62",
+          "hardware": "RX 6750 XT 12GB",
+          "quant": "native vLLM + ROCm 7.15 for RDNA2 on Windows 11 (custom rocBLAS built via TheRock, no WSL2); Qwen3.5-4B",
+          "engine_min_version": "vLLM + ROCm 7.15 Windows build v2.0 (TheRock rocBLAS), Windows 11 23H2, Adrenalin 24.x",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/GameGPU_com/status/2089735525330485464",
+          "likes": 641,
+          "comments": 7,
+          "reshares": 2,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-08-18",
+      "why": "Native vLLM on ROCm 7.15 for RX 6000 cards under Windows 11 reaches 62 tok/s on Qwen3.5-4B."
+    }
+  ],
+  "generated_utc": "2026-10-21T11:32:00Z"
+}

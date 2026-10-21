@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "250",
+          "hardware": "single RTX 5090",
+          "quant": "Strata expert offload across GPU/RAM/SSD; reported 3-5x faster than Qwen 3.8 Flash in the cloud",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/BetterStackHQ/status/2112529266479100239",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 407,
+          "interactions": 3
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:33:40Z"
+}

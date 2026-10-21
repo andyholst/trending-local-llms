@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen3.6-27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-03",
+      "why": "Dense 27B on a 16GB M4 mini via mlx-lm: JSON 21.5 t/s, story 12.5 t/s, code ~11 t/s, ~364 t/s prefill.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "21.5",
+          "hardware": "Mac mini M4 16GB",
+          "quant": "mlx-lm; JSON workload 21.5 tok/s, story 12.5, code 11; ~364 tok/s prefill",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "16GB"
+        }
+      ],
+      "system_ram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:15Z"
+}

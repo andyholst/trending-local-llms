@@ -1,0 +1,71 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM (dense)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, console GPU, 12 GiB",
+          "quant": "UD-IQ2_XXS, Vulkan backend on Mihawk-99's RADV port, native app (9-21 tok/s range)",
+          "weight_gb": "UD-IQ2_XXS",
+          "system_ram_min": "12 GiB (console memory)",
+          "engine_min_version": "cobanov/PS5LM native app (llama.cpp Vulkan on RADV), GPL-3.0, v0.1",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 193
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "why": "llama.cpp ported to a jailbroken PS5 answers at 9-21 tok/s on Qwen3.8-27B with 12 GiB of console memory."
+    },
+    {
+      "id": "qwen3.5-0.8b",
+      "name": "Qwen3.5 0.8B",
+      "full_name": "Qwen3.5-0.8B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "0.8B",
+      "hf": "Qwen/Qwen3.5-0.8B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "Jailbroken PlayStation 5, console GPU, 12 GiB",
+          "quant": "Vulkan backend on Mihawk-99's RADV port, payload mode; 13-21 tok/s range",
+          "system_ram_min": "12 GiB (console memory)",
+          "engine_min_version": "cobanov/PS5LM payload mode (llama.cpp Vulkan on RADV)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/laky_fx/status/2111512795803988237",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 193
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "why": "A jailbroken PS5 runs Qwen3.5-0.8B at 13-21 tok/s through llama.cpp's Vulkan backend."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:22:00Z"
+}

@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "24B MoE with ~2B active per token, 131K context; Liquid reports 184 tok/s on an M5 Max and 114 on a Ryzen AI Max+ 395.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "vendor figure (Liquid AI), 131K-token context model",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/liquidai/status/2110055810940428387",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "MLX",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "vendor figure (Liquid AI), 131K-token context model",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 77,
+          "interactions": 78,
+          "context_tokens": "131072"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-21T11:20:55Z"
+}

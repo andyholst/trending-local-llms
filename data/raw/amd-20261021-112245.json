@@ -1,0 +1,101 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B",
+      "type": "LLM (ternary, vision-language)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales, 2.0GB pack; MLX on Mac (PrismML vendor figure)",
+          "weight_gb": "2.0GB (ternary)",
+          "engine_min_version": "MLX (Bonsai 2 pack); ternary GGUF packings need PrismML's llama.cpp fork",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 979,
+          "comments": 5,
+          "reshares": 8,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 9B vision-language model squeezed into 2GB of ternary weights, running up to 179 tok/s on an M5 Max Pro."
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "21.9",
+          "hardware": "MacBook Pro M5 Pro",
+          "quant": "ternary 0.95GB pack; 32 concurrent streams generating over 700 tokens per second in total (~21.9 tok/s per stream), peak memory under 4GB",
+          "weight_gb": "0.95GB (ternary)",
+          "system_ram_min": "under 4GB peak",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 4,
+          "reshares": 15,
+          "views": 5204
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "0.95GB ternary 4B ran 32 concurrent email-parsing streams on an M5 Pro, over 700 tok/s aggregate under 4GB peak memory."
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "Apple M4 Max (browser demo)",
+          "quant": "ternary 0.43GB pack, up to 500 tok/s in a browser demo on an M4 Max (PrismML vendor figure; 120 tok/s on an iPhone 18 Pro Max)",
+          "weight_gb": "0.43GB (ternary)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "The 0.43GB ternary 2B reaches up to 500 tok/s in a browser demo on an M4 Max."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:42:00Z"
+}

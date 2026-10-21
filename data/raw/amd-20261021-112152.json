@@ -1,0 +1,52 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM (dense)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (LaurentZuijdwijk fork)",
+          "tps": "65",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "ROCm fp4-class requant for Strix Halo; adaptive speculative decoding (up to +50% generation vs 44 t/s mainline); 440 t/s prefill excluded",
+          "engine_min_version": "LaurentZuijdwijk llama.cpp fork with adaptive speculation",
+          "date": "2026-08-25",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2092215141144162519",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 352
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "33",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtec Evo-X2)",
+          "quant": "Nathanw1014 portable Strix Halo Vulkan build, Q3_K_XL, 64K context, vision enabled; ~33 tok/s total shared across four concurrent lanes",
+          "weight_gb": "Q3_K_XL",
+          "context_tokens": "65536",
+          "engine_min_version": "Nathanw1014 portable Strix Halo Vulkan llama.cpp build",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099665294285299780",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 718
+        }
+      ],
+      "last_seen": "2026-09-15",
+      "why": "Strix Halo runs Qwen3.8-27B at 65 tok/s with adaptive speculation and ~33 tok/s across four lanes; a 24GB card holds 65K-262K context depending on KV precision."
+    }
+  ],
+  "generated_utc": "2026-10-21T12:15:00Z"
+}

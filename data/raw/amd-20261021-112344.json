@@ -1,0 +1,99 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "5.5",
+          "hardware": "CMF Phone 2 Pro (Android)",
+          "quant": "ternary 0.95GB pack running in a custom Nothing-OS-style app; 5-6 tok/s with the 4B (the 2B reached 10-11 tok/s on the same phone)",
+          "weight_gb": "0.95GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 99,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The 0.95GB ternary 4B runs a chat UI on a CMF Phone 2 Pro at 5-6 tok/s."
+    },
+    {
+      "id": "bonsai-2-2b-phone",
+      "name": "Bonsai 2 2B (Android)",
+      "full_name": "Ternary-Bonsai-2-2B (CMF Phone 2 Pro)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "CMF Phone 2 Pro (Android)",
+          "quant": "ternary 0.43GB pack in a custom Nothing-OS-style app, 10-11 tok/s",
+          "weight_gb": "0.43GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 99,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The 0.43GB ternary 2B reaches 10-11 tok/s on an Android phone in a local chat app."
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma-4-26B-A4B",
+      "type": "LLM (A4B, MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "0.39",
+          "hardware": "15x off-brand Android TV boxes ($55 each)",
+          "quant": "sharded two layers per box in Anthropic's self-replication demo; distributed inference only, 0.39 tok/s",
+          "system_ram_min": "15 networked $55 Android TV boxes",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/botnewsnetwork/status/2110545043744555486",
+          "likes": 0,
+          "comments": 50,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "Anthropic sharded Gemma 4 26B A4B across 15 cheap Android TV boxes and got working inference at 0.39 tok/s."
+    }
+  ],
+  "generated_utc": "2026-10-21T13:34:00Z"
+}
