@@ -261,7 +261,7 @@ OPENSPEC_IMAGE := trending-local-llms-openspec:latest
 # root-owned change directory the working tree could not write to).
 OS_OPTS := --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE)
 
-.PHONY: openspec-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-check file-findings findings-check
+.PHONY: openspec-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -291,6 +291,14 @@ openspec-index: ## Regenerate the root OPENSPEC.md index from openspec/changes/*
 
 openspec-index-check: ## Fail when OPENSPEC.md is stale, or a change on disk has no row
 	python3 scripts/openspec_index.py --check
+
+# The lifecycle's END (rule 6f, issue #183): a change whose PR merged must be
+# archived in that PR, so an ACTIVE change naming a merged PR is a defect. Needs
+# `gh` (PR state is a GitHub fact); run on the host, where the token lives —
+# inside the agent container `gh` is absent, so it is NOT part of `openspec-check`
+# (which the fix loop runs in the container) but its own step in qa-validate.
+openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR (rule 6f; host-side: needs gh)
+	python3 scripts/openspec_archive_check.py
 
 openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI gate: every active change validates, every task ticked, the index current
 	docker run $(OS_OPTS) openspec validate --changes

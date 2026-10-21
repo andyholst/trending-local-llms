@@ -96,13 +96,19 @@ def _row(name: str, change: Path, archived: bool) -> str:
     )
 
 
-def discover() -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
-    """(active, archived) as sorted (name, path) pairs — every change dir."""
+def discover(changes: Path | None = None) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
+    """(active, archived) as sorted (name, path) pairs — every change dir.
+
+    `changes` defaults to this checkout's `openspec/changes/`; the lifecycle
+    guard (`scripts/openspec_archive_check.py`) passes its own, so the layout is
+    read by ONE implementation (rule 6d).
+    """
+    changes = changes or CHANGES
     active: list[tuple[str, Path]] = []
     archived: list[tuple[str, Path]] = []
-    if not CHANGES.is_dir():
+    if not changes.is_dir():
         return active, archived
-    for p in sorted(CHANGES.iterdir()):
+    for p in sorted(changes.iterdir()):
         if not p.is_dir():
             continue
         if p.name == "archive":

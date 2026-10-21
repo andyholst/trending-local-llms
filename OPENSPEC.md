@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **115** · archived: **0**
+Active changes: **110** · archived: **6**
 
 ## Active changes
 
@@ -19,14 +19,12 @@ Active changes: **115** · archived: **0**
 | `agent-identity-one-definition` | active | #325 — `tech-debt: The agent identity is a literal repeated in every committing workflow` | — | [agent-identity](openspec/changes/agent-identity-one-definition/specs/agent-identity/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-identity-one-definition/proposal.md) |
 | `agent-image-publish` | active | — | — | [agent-image-publish](openspec/changes/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/agent-image-publish/proposal.md) |
 | `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
-| `agent-openspec-and-debt-issues` | active | #172 | #173 | [analysis-findings-issues](openspec/changes/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/agent-openspec-and-debt-issues/proposal.md) |
 | `agent-shell-keys` | active | — | — | [bot-agent-run-safety](openspec/changes/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-shell-keys/proposal.md) |
 | `alias-one-definition` | active | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/alias-one-definition/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
 | `announce-the-decided-hold` | active | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/announce-the-decided-hold/proposal.md) |
 | `architecture-bot-write-path` | active | #485 — arch-bot: the drift→commit→PR path has no behavioural test | — | [architecture-bot-write-path](openspec/changes/architecture-bot-write-path/specs/architecture-bot-write-path/spec.md) | 10/10 | [proposal.md](openspec/changes/architecture-bot-write-path/proposal.md) |
 | `architecture-check-presence-boundary` | active | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/architecture-check-presence-boundary/proposal.md) |
-| `architecture-doc-and-guard` | active | #178 | #180 | [architecture-doc](openspec/changes/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/architecture-doc-and-guard/proposal.md) |
 | `architecture-inventory` | active | #479 — architecture-bot: a daily, deterministic refresh of ARCHITECTURE.md's living inventory | — | [architecture-inventory](openspec/changes/architecture-inventory/specs/architecture-inventory/spec.md) | 11/11 | [proposal.md](openspec/changes/architecture-inventory/proposal.md) |
 | `baseline-age-visible` | active | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/baseline-age-visible/proposal.md) |
 | `bot-agent-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 19/19 | [proposal.md](openspec/changes/bot-agent-output-scrubbed/proposal.md) |
@@ -54,7 +52,6 @@ Active changes: **115** · archived: **0**
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `fix-bot-announces-its-window` | active | — | — | [bot-coordination](openspec/changes/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-bot-announces-its-window/proposal.md) |
 | `fix-bot-guard-own-job` | active | — | — | [bot-dispatch-guards](openspec/changes/fix-bot-guard-own-job/specs/bot-dispatch-guards/spec.md) | 10/10 | [proposal.md](openspec/changes/fix-bot-guard-own-job/proposal.md) |
-| `fix-bot-repairs-with-the-base` | active | #383 | #384 | [fix-bot-repair-loop](openspec/changes/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/fix-bot-repairs-with-the-base/proposal.md) |
 | `fix-loop-notes-outside-tree` | active | #390 — `tech-debt: the fix loop leaves qa-report.txt.notes in the repo tree and git add -A commits it` | — | [fix-loop-scratch](openspec/changes/fix-loop-notes-outside-tree/specs/fix-loop-scratch/spec.md) | 9/9 | [proposal.md](openspec/changes/fix-loop-notes-outside-tree/proposal.md) |
 | `fix-publish-agent-image-push-check` | active | #229 | — | [agent-image-publish](openspec/changes/fix-publish-agent-image-push-check/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/fix-publish-agent-image-push-check/proposal.md) |
 | `fix-publish-latest-tag` | active | #232 | — | [agent-image-publish](openspec/changes/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/fix-publish-latest-tag/proposal.md) |
@@ -74,9 +71,7 @@ Active changes: **115** · archived: **0**
 | `issue-bot-checks-out-before-make` | active | — | — | [issue-bot-checks-out-before-make](openspec/changes/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/issue-bot-checks-out-before-make/proposal.md) |
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |
-| `lint-trailing-newlines` | active | #186 | #189 | [lint-linefeeds](openspec/changes/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
-| `measurement-engine-min-version` | active | #371 | #374 | [measurement-source-dimensions](openspec/changes/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/measurement-engine-min-version/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
@@ -84,6 +79,7 @@ Active changes: **115** · archived: **0**
 | `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |
 | `one-slow-query-is-not-a-red-run` | active | — | — | [search-smoke](openspec/changes/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/one-slow-query-is-not-a-red-run/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
+| `openspec-archive-lifecycle` | active | #183 | — | [openspec-lifecycle](openspec/changes/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-archive-lifecycle/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `pin-flash-1017-snapshot` | active | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/pin-flash-1017-snapshot/proposal.md) |
 | `pr-body-closure-guard` | active | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-body-closure-guard/proposal.md) |
@@ -106,7 +102,6 @@ Active changes: **115** · archived: **0**
 | `repair-a-conflicted-pr` | active | #475 (the owner's ask: *"they should always auto-merge and rebase and resolve conflicts with help off llm"*) | — | [fix-bot-repair-loop](openspec/changes/repair-a-conflicted-pr/specs/fix-bot-repair-loop/spec.md) | 12/12 | [proposal.md](openspec/changes/repair-a-conflicted-pr/proposal.md) |
 | `scope-gate-total-vram` | active | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/scope-gate-total-vram/proposal.md) |
 | `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
-| `search-engine-must-be-named` | active | #378 | #379 | [search-engine-rule](openspec/changes/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/search-engine-must-be-named/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
 | `secret-guard-derived-names` | active | #223 — `the no-secret-VALUE guard's key set is a hand-maintained allowlist — a new key added to a workflow is invisible until added to SECRET_VARS` | — | [secret-output-guard](openspec/changes/secret-guard-derived-names/specs/secret-output-guard/spec.md) | 9/9 | [proposal.md](openspec/changes/secret-guard-derived-names/proposal.md) |
@@ -134,7 +129,12 @@ Active changes: **115** · archived: **0**
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
+| `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
+| `fix-bot-repairs-with-the-base` | archived | #383 | #384 | [fix-bot-repair-loop](openspec/changes/archive/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/fix-bot-repairs-with-the-base/proposal.md) |
+| `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
+| `measurement-engine-min-version` | archived | #371 | #374 | [measurement-source-dimensions](openspec/changes/archive/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/measurement-engine-min-version/proposal.md) |
+| `search-engine-must-be-named` | archived | #378 | #379 | [search-engine-rule](openspec/changes/archive/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/search-engine-must-be-named/proposal.md) |
 
 ## How this file stays honest
 
