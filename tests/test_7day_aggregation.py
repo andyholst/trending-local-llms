@@ -194,6 +194,49 @@ def test_correct_raw_fills_missing_backend():
         check("corrected snapshot validates against search_contract.json", valid)
 
 
+def test_a_measured_footprint_is_raised_never_pinned():
+    """Issue #530: a footprint may only be RAISED — "fill only" forbade that too.
+
+    Measured: post `qvac/status/2107139441425014846` states 5.95GB ternary; one leg captured
+    5.93GB for the same post first, `merge_engines` filled the row from it, and every later
+    capture of the SAME post was refused — so the store understated the model's footprint and
+    the refresh PR was red on the guard that exists to catch exactly this.
+    """
+    post = "https://lightbrd.com/qvac/status/2107139441425014846"
+    base = {"engine": "llama.cpp (PrismML fork)", "hardware": "RTX 5090", "tps": "146",
+            "date": "2026-10-05", "source_post": post, "likes": 10,
+            "quant": "5.95GB ternary (PTQ1_0), SDK runtime"}
+
+    # Given  a store row carrying the smaller figure …
+    older = dict(base, weight_gb="5.93GB")
+    # When   a later capture of the SAME post states the larger one
+    newer = dict(base, weight_gb="5.95GB", date="2026-10-21", likes=20)
+    out = UT.merge_engines([older], [newer])
+    check("footprint: a stated 5.95GB RAISES a stored 5.93GB (issue #530)",
+          any(e.get("weight_gb") == "5.95GB" for e in out), out)
+
+    # And   the order does not matter — the larger figure wins either way
+    out_rev = UT.merge_engines([newer], [older])
+    check("footprint: the same answer when the capture arrives first",
+          any(e.get("weight_gb") == "5.95GB" for e in out_rev), out_rev)
+
+    # And   a SMALLER incoming value never wins (§2.3b: never shrunk)
+    out_small = UT.merge_engines([dict(base, weight_gb="5.95GB")],
+                                 [dict(base, weight_gb="5.13GB", date="2026-10-21")])
+    check("footprint: a smaller incoming value never shrinks a stored one",
+          all(e.get("weight_gb") != "5.13GB" for e in out_small), out_small)
+
+    # And   an empty row still adopts a stated value (the fill half still works)
+    out_fill = UT.merge_engines([dict(base)], [dict(base, weight_gb="5.95GB")])
+    check("footprint: an unstated row still adopts the stated value",
+          any(e.get("weight_gb") == "5.95GB" for e in out_fill), out_fill)
+
+    # And   an unstated value is never INVENTED
+    out_none = UT.merge_engines([dict(base)], [dict(base, weight_gb=None)])
+    check("footprint: an unstated value is never invented",
+          all(not e.get("weight_gb") for e in out_none), out_none)
+
+
 def test_merge_engines_dedup_same_gpu_vram():
     """Same model + same engine + same t/s + same GPU card/VRAM must collapse to
     ONE engine row — the same measurement reported by two different X posts
@@ -812,6 +855,7 @@ def main() -> int:
     test_prune_posts_retains_30d_removes_older()
     test_ingest_seeds_and_dedupes_seen_posts()
     test_correct_raw_fills_missing_backend()
+    test_a_measured_footprint_is_raised_never_pinned()
     test_merge_engines_dedup_same_gpu_vram()
     test_validate_catches_duplicate_engine_same_gpu_vram()
     test_validate_allows_same_engine_different_gpu()

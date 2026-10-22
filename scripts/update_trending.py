@@ -1890,10 +1890,9 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
         # invented): the additive-only rule (AGENTS.md §2.3b) at measurement level.
         for member in group:
             for k in MEASUREMENT_DIMENSION_FIELDS:
-                if row.get(k) in (None, "", [], {}):
-                    v = member.get(k)
-                    if v not in (None, "", [], {}):
-                        row[k] = coerce_additive(v)
+                kept = _raised_dimension(row.get(k), member.get(k))
+                if kept is not None:          # an unstated dimension is never stored
+                    row[k] = kept
         for k in ("likes", "comments", "reshares", "views", "interactions"):
             row.setdefault(k, 0)
         out.append(row)
@@ -2008,6 +2007,34 @@ COUNTER_FIELDS = ("likes", "comments", "reshares", "views", "interactions")
 
 MEASUREMENT_DIMENSION_FIELDS = (
     "weight_gb", "context_tokens", "system_ram_min", "storage_offload", "engine_min_version")
+
+
+def _raised_dimension(stored, incoming):
+    """The stated footprint to keep: the LARGER figure, never a smaller one (issue #530).
+
+    §2.3b says a value may only be RAISED, never shrunk. The old code filled a dimension
+    ONLY when the row had none, which is stricter than the rule and wrong in the other
+    direction: it also forbade raising — so the first figure that ever landed for a run was
+    pinned for ever. Measured: post `qvac/status/2107139441425014846` states 5.95GB, one leg
+    captured 5.93GB first, and every later refresh was red on the guard that exists to catch
+    exactly that (`weight_gb` is what the card-fit tables publish as the budget a run needs).
+
+    Two comparables (a GB figure on either side) → the larger wins, so 5.95GB beats 5.93GB and
+    950MB never beats 1.2GB. A non-numeric dimension (`engine_min_version`, a prose
+    `storage_offload`) is text: an unstated value is filled from any member, a stated one is
+    never replaced by a different spelling — "later" is not evidence that a version or a
+    medium changed.
+    """
+    stored_empty = stored in (None, "", [], {})
+    incoming_empty = incoming in (None, "", [], {})
+    if incoming_empty:
+        return stored
+    if stored_empty:
+        return coerce_additive(incoming)
+    a, b = _gb_value(stored), _gb_value(incoming)
+    if a is not None and b is not None:
+        return coerce_additive(incoming) if b > a else stored
+    return stored
 
 
 def coerce_additive(v):
