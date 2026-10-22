@@ -1,0 +1,223 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (35B MoE, 3B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "A new Mac engine lands on Qwen3.6-35B-A3B: Kapitsa + DFlash2 reaches 154 tok/s on a 4-bit build on an M4 Pro 48GB, against 127 for oMLX + DFlash2 and 69 for llama.cpp + MTP on the same benchmark.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B with DFlash2 drafting; developer-reported, same benchmark: oMLX+DFlash2 127, Ollama+MTP 89, LM Studio 86, MTPLX 80, llama.cpp+MTP 69",
+          "system_ram_min": "48GB",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "DFlash2 drafter on",
+          "engine_repo": "https://github.com/nace-ai/kapitsa"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B, DFlash2 drafter; same benchmark as Kapitsa 154, Ollama+MTP 89, LM Studio 86, MTPLX 80, llama.cpp+MTP 69",
+          "system_ram_min": "48GB",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "DFlash2 drafter on"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit weights with MTP speculative decoding; the same comparison puts Kapitsa at 154, oMLX at 127, Ollama+MTP 89 and LM Studio 86",
+          "system_ram_min": "48GB",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "MTP speculative decoding on"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B (MoE, 4B active)",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "context_tokens": "250000",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Gemma 4 26B-A4B at 22.9 tok/s on an RTX 3080 10GB with a Q2 quant, and 0.39 tok/s when Anthropic sharded it across fifteen $55 Android TV boxes - the same model, two very different edges.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "Mac mini M4 (base chip, 32GB unified memory), Metal backend",
+          "quant": "Gemma 4 26B-A4B (MoE) at 20-22 tok/s, ~1s first token, 14.6 GB footprint; same bench: Qwen3-30B-A3B 24-30 tok/s (17.3 GB), Qwen3.8-27B dense 4.4 tok/s",
+          "weight_gb": "14.6GB",
+          "system_ram_min": "32GB",
+          "date": "2026-08-29",
+          "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "llama.cpp on Metal via LM Studio"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21.4",
+          "hardware": "Apple M5 (16GB RAM)",
+          "quant": "Gemma 4 26B at ~2GB of RAM usage via drumih/turbo-fieldfare (Metal, any M-series MacBook)",
+          "system_ram_min": "16GB",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 175,
+          "interactions": 4
+        }
+      ]
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3-30B-A3B",
+      "full_name": "Qwen3-30B-A3B (MoE, 3B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "CPU",
+      "vram_min": "CPU",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-08-29",
+      "why": "A 30B MoE still leads a Mac mini bench: 24-30 tok/s on the base M4 while the dense Qwen3.8-27B crawls at 4.4 tok/s on the same fanless box.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "30",
+          "hardware": "Mac mini M4 (base chip, 32GB unified memory), Metal backend",
+          "quant": "Q4, 17.3 GB; first token 1.35s, tool call 1.9s; upper bound of the measured 24-30 tok/s",
+          "weight_gb": "17.3GB",
+          "system_ram_min": "32GB",
+          "date": "2026-08-29",
+          "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "llama.cpp on Metal via LM Studio"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8 based, ternary)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "On the same M5 Pro 64GB as six other models the ternary 27B decodes at 26 tok/s while fitting in 8.4GB, about half of what Gemma 3 27B needs.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "M5 Pro MacBook Pro, 64GB unified memory",
+          "quant": "Apple MLX run: ternary Bonsai 2 27B at 26 tok/s in 8.4GB, vs Qwen3 30B 106, Qwen3 8B 61, Laguna XS 2.1 56, Qwen3 14B 34, Gemma 3 27B 18",
+          "weight_gb": "8.4GB",
+          "system_ram_min": "64GB",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T12:01:05Z"
+}

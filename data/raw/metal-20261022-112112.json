@@ -1,0 +1,88 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-19",
+      "why": "PrismML's Ternary Bonsai 2 27B at 1.72 bits per weight (PTQ1_0 is 5.95 GB) runs on Apple Silicon from a 16GB M1 Pro MacBook to an M4 Max Mac Studio, with an iPhone-class context window of 262K in the smallest packing.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34.5",
+          "hardware": "Mac Studio M4 Max, 128GB unified memory",
+          "quant": "ternary (~1.72 bits per weight); prose 34.5 / code 34.3 tok/s, 242 tok/s prefill",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 12,
+          "comments": 2,
+          "reshares": 2,
+          "views": 2108,
+          "interactions": 16,
+          "system_ram_min": "128GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "Mac mini M4, 24GB unified memory, 10-core GPU",
+          "quant": "ternary (~1.72 bits per weight); 11.0 tok/s decode, 33 tok/s prefill",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 12,
+          "comments": 2,
+          "reshares": 2,
+          "views": 2108,
+          "interactions": 16,
+          "system_ram_min": "24GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "At a 262K context window the 27B class is a bandwidth problem on a Mac: the same ternary-compressed weights give 34.5 tok/s on an M4 Max Studio and 11 tok/s on a 24GB Mac mini, a 3.1x decode gap that tracks memory bandwidth.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34.5",
+          "hardware": "Mac Studio M4 Max, 128GB unified memory",
+          "quant": "ternary 1.72-bit compression of Qwen3.8-27B; prose workload, 262K context capacity",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 12,
+          "comments": 2,
+          "reshares": 2,
+          "views": 2108,
+          "interactions": 16,
+          "context_tokens": "262144",
+          "system_ram_min": "128GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:21:12Z"
+}

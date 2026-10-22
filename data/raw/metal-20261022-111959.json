@@ -1,0 +1,67 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "PrismML's ternary Bonsai 2 9B (about 2 GB) is the focus of the PrismML x DarkbloomAI x Yukon mlx.fast optimization challenge; Apple Silicon decode went from 144.9 to 913.1 tokens/sec in five days, and the Mac track leads the CUDA track again.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (mlx.fast leaderboard track)",
+          "quant": "ternary 2GB model; best promoted mlx.fast run, +442.3% over the 144.9 tok/s baseline",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/pratikg/status/2112561683420061907",
+          "likes": 265,
+          "comments": 14,
+          "reshares": 15,
+          "views": 17456,
+          "interactions": 294,
+          "weight_gb": "2GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
+          "quant": "ternary 2GB model; launch floor on the Mac track",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/pratikg/status/2110834170587238488",
+          "likes": 105,
+          "comments": 10,
+          "reshares": 17,
+          "views": 23458,
+          "interactions": 132,
+          "weight_gb": "2GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track)",
+          "quant": "ternary 2GB model; challenge floor before optimization",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 34,
+          "comments": 3,
+          "reshares": 12,
+          "views": 4036,
+          "interactions": 49,
+          "weight_gb": "2GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:19:59Z"
+}

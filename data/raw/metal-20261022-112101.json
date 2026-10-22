@@ -1,0 +1,112 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "On one M4 Max three Mac inference engines — TensorFold, oMLX 0.7.0 and mlx-serve 26.10.1 — land within a few tok/s of each other with a drafter enabled, and all fall to 29-31 tok/s with drafting off: the drafter is the difference, not the engine.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "Apple M4 Max, same client, thinking off",
+          "quant": "Qwen3.8-27B 4-bit with drafter; numbers workload (code 114, JSON 146, story 51 tok/s)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 12,
+          "comments": 0,
+          "reshares": 3,
+          "views": 1987,
+          "interactions": 15
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "Apple M4 Max, same client, thinking off",
+          "quant": "Qwen3.8-27B 4-bit with drafter, oMLX 0.7.0; numbers workload (code 111, JSON 144, story 53 tok/s)",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 35,
+          "comments": 5,
+          "reshares": 1,
+          "views": 4191,
+          "interactions": 41,
+          "engine_min_version": "oMLX 0.7.0"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "Apple M4 Max, same client, thinking off",
+          "quant": "Qwen3.8-27B 4-bit (ddalcu build) with drafter, mlx-serve 26.10.1, --no-mtp; numbers workload (code 115, JSON 139, story 54 tok/s)",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 35,
+          "comments": 5,
+          "reshares": 1,
+          "views": 4191,
+          "interactions": 41,
+          "engine_min_version": "mlx-serve 26.10.1, --no-mtp"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Apple Mac mini M6, 32GB",
+          "quant": "MLX 4-bit with DFlash2 drafting; code generation workload (chat went 10.1 -> 30.8 tok/s, serial decode 10.1)",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 420,
+          "interactions": 6,
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE, ~6B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "weight_gb": "103GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "Qwen3.8-Flash-Next 125B at 4-bit (about 103 GB) was part of a three-model local agent test on a DGX Spark, served through TensorFold with MTP and scored on tool calling, prompt injection and a timed agent loop.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "",
+          "hardware": "DGX Spark (GB10, 128GB unified memory)",
+          "quant": "Qwen3.8 Flash Next 4-bit, about 103GB, TensorFold + MTP",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
+          "likes": 9,
+          "comments": 10,
+          "reshares": 0,
+          "views": 998,
+          "interactions": 19,
+          "weight_gb": "103GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:21:01Z"
+}
