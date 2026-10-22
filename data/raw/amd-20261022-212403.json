@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:55:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "ROCm, Q4_K_M with Flash Attention and Q8 KV cache, --n-cpu-moe 26 -c 262144; ~550 t/s prompt processing is prefill and is not recorded",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2100346050473074805",
+          "likes": 26,
+          "comments": 26,
+          "reshares": 278,
+          "views": 28021,
+          "interactions": 330,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "268288",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp --n-cpu-moe 26 -c 262144 (Flash Attention, Q8 KV)"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "The Qwen3.8-35B-A3B query this window returns no AMD card run; the AMD figure kept in the store is 50 tok/s on an RX 9070 XT 16GB in llama.cpp with 26 MoE layers on CPU."
+    }
+  ]
+}

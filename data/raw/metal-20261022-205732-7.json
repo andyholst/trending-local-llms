@@ -1,0 +1,123 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "600",
+          "hardware": "Mac mini (Apple Silicon), mlx.fast leaderboard",
+          "quant": "ternary 27B (~5.9GB); run quoted as almost 600 tok/s on a Mac mini",
+          "likes": 12,
+          "comments": 0,
+          "reshares": 14,
+          "views": 55535,
+          "interactions": 26,
+          "source_post": "https://lightbrd.com/pratikg/status/2104262730404495581",
+          "date": "2026-09-27",
+          "weight_gb": "5.9GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "Mac (16GB Apple Silicon), mlx.fast leaderboard",
+          "quant": "ternary 27B that fits a 16GB Mac; +125.8% over baseline",
+          "likes": 7,
+          "comments": 0,
+          "reshares": 11,
+          "views": 46013,
+          "interactions": 18,
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "date": "2026-09-25",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "Mac (16GB Apple Silicon), mlx.fast leaderboard",
+          "quant": "ternary 27B; 237.4 tok/s decode up from ~59 baseline (+302.7%)",
+          "likes": 22,
+          "comments": 0,
+          "reshares": 25,
+          "views": 94746,
+          "interactions": 47,
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "date": "2026-09-26",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "M1 Pro MacBook Pro, 16GB unified memory",
+          "quant": "ternary 1.72 bits/weight PrismML MLX build; fits in 8.4GB",
+          "likes": 13,
+          "comments": 0,
+          "reshares": 10,
+          "views": 51611,
+          "interactions": 23,
+          "source_post": "https://lightbrd.com/pratikg/status/2112217547366088851",
+          "date": "2026-10-19",
+          "system_ram_min": "16GB",
+          "weight_gb": "8.4GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34.5",
+          "hardware": "Mac Studio M4 Max, 128GB unified memory",
+          "quant": "ternary (~1.72 bits per weight); prose 34.5 / code 34.3 tok/s, 242 tok/s prefill",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 2,
+          "views": 2108,
+          "interactions": 4,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "date": "2026-09-18",
+          "system_ram_min": "128GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "Mac mini M4, 24GB unified memory, 10-core GPU",
+          "quant": "ternary (~1.72 bits per weight); 11.0 tok/s decode, 33 tok/s prefill",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 2,
+          "views": 2108,
+          "interactions": 4,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "date": "2026-09-18",
+          "system_ram_min": "24GB"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "system_ram_min": "16GB",
+      "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
+      "context_tokens": "262144",
+      "storage_offload": "expert layers offloaded to CPU/SSD on 4GB-VRAM machines",
+      "engine_min_version": "llama.cpp (PrismML fork) + bonsai-ada-surgery serve patch"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

@@ -1,0 +1,67 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-22T20:56:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "TokenSpeed",
+          "engine_repo": "https://github.com/lightseekorg/tokenspeed",
+          "tps": "961.6",
+          "hardware": "4x NVIDIA B300 288GB (TP4), datacenter",
+          "quant": "BF16 weights + EAGLE-4 speculative decoding, SPEED-Bench single request at temperature 0; DFlash 2 in the same run 672.6 tok/s, DSpark 618.6, vanilla 240.5",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112881687000404310",
+          "likes": 431,
+          "comments": 2,
+          "reshares": 5,
+          "views": 0,
+          "interactions": 438
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + optimized context-lookup verification (16-token blocks, ~15/16 accepted on the target workload), reproducing a ~25K-token document from its own prompt; ordinary conversation in the same report ~133 tok/s, and an earlier DFlash2 setup ~260 tok/s on the same task",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+          "likes": 792,
+          "comments": 3,
+          "reshares": 6,
+          "views": 0,
+          "interactions": 801
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:59:00Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo APU)",
+          "quant": "ROCm; 14.5GB 4-bit build, 4K-token prompt; Liquid AI's own reported figure",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/HaMohX/status/2110372554154168649",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 198,
+          "interactions": 1,
+          "weight_gb": "14.5GB (4-bit)",
+          "context_tokens": "4096",
+          "system_ram_min": "16GB unified memory"
+        }
+      ],
+      "last_seen": "2026-10-18",
+      "why": "The LFM2.5-24B-A2B query this window returns Apple Silicon and datacenter runs; the AMD figure kept in the store is Liquid AI's 184 tok/s on a Strix Halo Ryzen AI Max+ 395 in llama.cpp."
+    }
+  ]
+}

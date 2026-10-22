@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:53:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "56",
+          "hardware": "RTX 4070 12GB",
+          "quant": "PrismML llama.cpp fork (required for the ternary PTQ1_0/PQ2_0 GGUFs); decode t/s",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/localai_lab/status/2109533645279199248",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The Bonsai 2 27B query this window returns Apple Silicon and RTX runs only; the latest CUDA figure kept in the store is 56 tok/s on an RTX 4070 12GB through the PrismML llama.cpp fork."
+    }
+  ]
+}

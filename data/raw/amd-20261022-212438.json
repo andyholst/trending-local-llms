@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:57:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Vulkan, Q4_K_M, MTP head on with 97% draft acceptance (MTP off 129 t/s); N=5, warmup discarded; card capped at 291W",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 117,
+          "weight_gb": "Q4_K_M",
+          "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "why": "The Qwen3.6-35B-A3B query this window returns no AMD card run of this model; the ROCm-side figure kept in the store is 190 tok/s on an RX 7900 XTX with the MTP head on."
+    }
+  ]
+}

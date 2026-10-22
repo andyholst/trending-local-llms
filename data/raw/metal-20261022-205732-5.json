@@ -1,0 +1,67 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (mlx.fast leaderboard track)",
+          "quant": "ternary ~2GB model; best promoted mlx .fast run, up from a 144.9 tok/s baseline (+442.3%)",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 5,
+          "views": 554,
+          "interactions": 7,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "date": "2026-10-21",
+          "weight_gb": "~2GB",
+          "engine_min_version": "mlx.fast (PrismML/DarkbloomAI Yukon Research challenge)"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Mac (Apple Silicon, mlx.fast track)",
+          "quant": "ternary 9B in 2GB; challenge floor before any optimization (iPhone up to 22 tok/s on the same post)",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 12,
+          "views": 4034,
+          "interactions": 15,
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "date": "2026-10-15",
+          "weight_gb": "2GB",
+          "engine_min_version": "mlx.fast (Yukon Research challenge)"
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "system_ram_min": "4GB",
+      "weight_gb": "2.0GB (ternary)",
+      "context_tokens": "131072",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

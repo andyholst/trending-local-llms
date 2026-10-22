@@ -1,0 +1,45 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "Bonsai 2 4B",
+          "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "21.875",
+          "hardware": "MacBook Pro M5 Pro",
+          "quant": "ternary 4B, 32 concurrent streams; >700 tokens per second aggregate over 32 streams (~4GB peak memory), ~21.9 tok/s per stream",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 15,
+          "views": 5257,
+          "interactions": 19,
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "date": "2026-10-15",
+          "weight_gb": "<4GB peak memory"
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "system_ram_min": "4GB",
+      "weight_gb": "0.95GB"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

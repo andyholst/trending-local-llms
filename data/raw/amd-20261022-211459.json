@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:32:00Z",
+  "models": [
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Vulkan, Q4_K_M, MTP head on with 97% draft acceptance (MTP off 129 t/s); N=5 with warmup discarded; card power capped at 291W; a second card reproduced 194.7 t/s",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 117,
+          "weight_gb": "Q4_K_M",
+          "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
+        }
+      ],
+      "last_seen": "2026-07-11",
+      "why": "The MoE Qwen3.6-35B-A3B coder with an MTP head hits 153-190 t/s on an RX 7900 XTX under llama.cpp Vulkan at Q4_K_M, 129 t/s with MTP off."
+    }
+  ]
+}
