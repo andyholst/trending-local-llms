@@ -215,6 +215,11 @@
       "description": "Project Maya - GLM-5.3-Flash (321B MoE) on your own NVIDIA GPU(s): engine, server, dashboard, quant tools. Built on Strata.",
       "topics": []
     },
+    "nace-ai/kapitsa": {
+      "full_name": "nace-ai/kapitsa",
+      "description": "Blazing fast Apple Silicon optimized inference engine built for Qwen, Nemotron & Flint. OpenAI + Anthropic API compatible. Built by folks from nace.ai",
+      "topics": []
+    },
     "niko1221/strata": {
       "full_name": "Niko1221/Strata",
       "description": "Qwen3.8-Flash-Next on any consumer hardware: one-click install for Windows / Linux. Strata inference engine, OpenAI/Anthropic API on localhost, optional image input.",

@@ -40,7 +40,8 @@
           "reshares": 0,
           "views": 0,
           "interactions": 0,
-          "engine_min_version": "DFlash2 drafter on"
+          "engine_min_version": "DFlash2 drafter on",
+          "engine_repo": "https://github.com/nace-ai/kapitsa"
         },
         {
           "engine": "oMLX",

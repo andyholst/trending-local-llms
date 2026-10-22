@@ -81,7 +81,7 @@
       "type": "LLM (MoE)",
       "license": "Apache 2.0",
       "params": "125B total / ~6B active",
-      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "96GB",
       "vram_min": "96GB",
       "weight_gb": "103GB",

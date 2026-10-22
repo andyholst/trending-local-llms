@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-22T12:08:39Z",
+  "generated_utc": "2026-10-22T13:18:36Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -166,6 +166,12 @@
       "backend": "CUDA",
       "url": "https://github.com/hikicoder/llama.cpp",
       "note": "Auto-registered from https://lightbrd.com/HikiCoder/status/2103043114277486893 — DeepSeek-V4.1-Flash expert streaming on a ~20 GB GPU: faster prefill for JigSawPT's dsv41-porte branch (fork of JigSawPT",
+      "auto": true
+    },
+    "Kapitsa": {
+      "backend": "Metal",
+      "url": "https://github.com/nace-ai/kapitsa",
+      "note": "Auto-registered from https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438 — Blazing fast Apple Silicon optimized inference engine built for Qwen, Nemotron & Flint. OpenAI + Anthropic API compatibl",
       "auto": true
     }
   },
@@ -3710,7 +3716,8 @@
           "comments": 12,
           "reshares": 1,
           "views": 3622,
-          "interactions": 45
+          "interactions": 45,
+          "engine_min_version": "mlx.fast track"
         },
         {
           "engine": "MLX-fast (Bonsai 2)",
