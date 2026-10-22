@@ -1,0 +1,94 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-22T12:10:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "206.1",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4 quantization + DSpark speculative decoding, Day-0 SGLang support (DGX Spark on the same post: 38.28 tok/s)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113065943605649611",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 520,
+          "interactions": 6
+        },
+        {
+          "engine": "oMLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "MTP speculative decoding, code generation (prose: 53 tok/s, 78% draft acceptance vs 48% on the DGX Spark)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "250",
+          "hardware": "RTX 3090 (single)",
+          "quant": "HyperQwen serving build (vLLM) with agent-generated CUDA kernels; prefill throughput, still below llama.cpp's ~700 tok/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113063508166189466",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 6,
+          "views": 577,
+          "interactions": 11
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM (MoE)",
+      "license": "not stated in the posts",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "1TB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio, 512GB each, Thunderbolt 5 + RDMA",
+          "quant": "compressed weights, one full copy of the model per machine; Apple-measured generation speed for Meta's documented Mac setup",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 73,
+          "interactions": 0,
+          "system_ram_min": "1TB (2x 512GB unified)"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "8.4GB",
+      "system_ram_min": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "why": "PrismML's 1.72-bit ternary Bonsai 2 27B fits in 8.4 GB, about half what Gemma 3 27B needs; on a Mac mini M5 Pro with 64GB it ran 26 tok/s through Apple's MLX next to Qwen3 30B and Gemma 3 27B.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "Mac mini M5 Pro, 64GB unified memory",
+          "quant": "ternary (~1.72 bits per weight), 8.4GB footprint",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 177,
+          "comments": 30,
+          "reshares": 6,
+          "views": 61993,
+          "interactions": 213,
+          "weight_gb": "8.4GB",
+          "system_ram_min": "64GB"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B (Qwen3.5 based)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "weight_gb": "0.95GB",
+      "system_ram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "The ternary Bonsai 2 4B (0.95 GB) ran 32 concurrent streams on an M5 Pro MacBook Pro, parsing 250 emails into JSON with summaries and priorities, at over 700 tokens per second in aggregate under 4 GB peak memory.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro, under 4GB peak memory",
+          "quant": "ternary 0.95GB weights; 32 concurrent streams on 250 emails, aggregate generation throughput",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 4,
+          "reshares": 15,
+          "views": 5247,
+          "interactions": 106,
+          "weight_gb": "0.95GB",
+          "system_ram_min": "4GB"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "PrismML's ternary Bonsai 2 9B packs reasoning, vision and tool calling into about 2 GB; on a Mac the mlx.fast challenge starts at 170+ tok/s, and the vendor reports up to 179 tok/s on an M5 Max Pro.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track)",
+          "quant": "ternary 2GB model; Mac challenge floor before optimization",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 34,
+          "comments": 3,
+          "reshares": 12,
+          "views": 4036,
+          "interactions": 49,
+          "weight_gb": "2GB"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B-A4B",
+      "type": "LLM (MoE)",
+      "license": "Gemma license",
+      "params": "26B total / 4B active",
+      "hf": "google/gemma-4-26b-a4b",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-20",
+      "why": "Gemma 4 26B A4B ran 21.4 tok/s on an M5 with 16GB of RAM using turbo-fieldfare, which the author reports at only about 2GB of RAM usage.",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "21.4",
+          "hardware": "Apple M5, 16GB unified memory",
+          "quant": "turbo-fieldfare build (drumih/turbo-fieldfare), ~2GB RAM usage reported",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 175,
+          "interactions": 4,
+          "system_ram_min": "16GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:20:25Z"
+}

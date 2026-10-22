@@ -1,0 +1,296 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Qwen3.8-27B on the DGX Spark: SGLang with a 4-bit drafter plus a kernel-tuning cache reaches ~70 tok/s, and AgentPerf-Local finishes an agent workload in 18.9 minutes on RTX Spark versus 24.7 on M5 Max and 42.1 on Ryzen AI Max+ 395.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "70",
+          "hardware": "single NVIDIA DGX Spark (GB10, CUDA)",
+          "quant": "SGLang launch config with a 4-bit speculative-decoding drafter, kernel-tuning cache reuse ('boot lottery' fix, +16%); six benchmarks + CSV published with the recipe",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 0,
+          "views": 554,
+          "interactions": 7,
+          "engine_min_version": "SGLang with drafter + cached kernel-tuning results"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "56",
+          "hardware": "NVIDIA RTX Spark 15\" laptop (140W), native CUDA build",
+          "quant": "AgentPerf-Local agent workload: 18.9 minutes to finish (vs 24.7 min on Apple M5 Max, 42.1 min on Ryzen AI Max+ 395); all three systems ran llama.cpp built natively for CUDA/Metal/ROCm",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 688,
+          "interactions": 6
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "42",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo, ROCm), llama.cpp built natively for ROCm",
+          "quant": "AgentPerf-Local agent workload: 42.1 minutes to finish (vs 18.9 min RTX Spark, 24.7 min M5 Max); llama.cpp compiled natively for each backend",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 0,
+          "views": 688,
+          "interactions": 6
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Strata keeps Qwen3.8-Flash-Next at 100-140 tok/s on a single RTX 5090 and 50-70 tok/s on an RTX 5070 Ti, with its experimental speed-projection option cutting the refusal rate from 73% to 0% at flat GSM8K accuracy.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "NVIDIA RTX 5090 32GB",
+          "quant": "Strata expert offload; upper bound of the reported 100-140 tok/s; experimental censorship-removal option enabled (rejection rate 73% to 0%, GSM8K 95% to 95%); experimental censorship-removal option enabled (rejection rate 73% to 0%, GSM8K 95% to 95%)",
+          "context_tokens": "262144",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "Strata setup with --experimental-speed-projection on"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "NVIDIA RTX 5070 Ti 16GB",
+          "quant": "Strata expert offload; upper bound of the reported 50-70 tok/s",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2.0GB (ternary)",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "5 days into the Yukon challenge Bonsai 2 9B went from 144.9 to 913.1 tok/s on Apple Silicon (+442.3%) and posted a +401.1% CUDA jump on the DGX Spark, with the ~2GB ternary pack doing reasoning, vision and tool calling.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon Mac (Yukon challenge, Apple Silicon track)",
+          "quant": "mlx.fast leaderboard run on the ~2GB ternary pack; +442.3% over the 144.9 tok/s five days into the challenge (113 promoted runs, 13 solvers)",
+          "weight_gb": "2.0GB (ternary)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "mlx.fast (Yukon Research challenge)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "22",
+          "hardware": "Apple iPhone 18 Pro Max (on-device)",
+          "quant": "ternary 2GB pack; Yukon challenge baseline 'on an iPhone at up to 22 tokens per second'",
+          "weight_gb": "2.0GB (ternary)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 32,
+          "comments": 12,
+          "reshares": 1,
+          "views": 3622,
+          "interactions": 45
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (Liquid AI, 24B MoE with ~2B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-18",
+      "why": "Liquid AI's laptop agent model: Liquid reports 184 tok/s on an M5 Max with llama.cpp and MLX from day one, and SGLang has day-0 support for the 24B/2B-active MoE on 131K context.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "runs through llama.cpp and MLX from day one; Liquid-reported figure",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 7,
+          "views": 244,
+          "interactions": 13
+        },
+        {
+          "engine": "SGLang",
+          "tps": "21000",
+          "hardware": "single NVIDIA B300 GPU (datacenter, batched)",
+          "quant": "peak reported output throughput with batching/concurrency - not single-user speed",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110561774541959348",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "SGLang day-0 LFM2.5 support"
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (Meta, 816B MoE, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Two M5 Ultra Mac Studios with 512GB each (Apple measured about 25 generated tok/s) or four 256GB Studios (over 36 tok/s) hold Meta's 816B open-weight model, linked over Thunderbolt 5 with RDMA.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Mac Studio M5 Ultra 512GB (1TB combined, Thunderbolt 5 + RDMA)",
+          "quant": "Meta's documented Mac recipe: two 512GB machines (four 256GB also allowed), each holding a full copy of the compressed model; Apple measured ~25 generated tok/s",
+          "weight_gb": "493GB NVFP4",
+          "system_ram_min": "1024GB",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 69,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 69
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (Thunderbolt-linked)",
+          "quant": "816B parameters across four machines; 8K prompt first token in 4.8s, 65K prompt in 40.6s",
+          "weight_gb": "493GB NVFP4",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 130,
+          "interactions": 2
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T12:01:05Z"
+}

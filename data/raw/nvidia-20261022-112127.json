@@ -1,0 +1,192 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-22T12:05:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (ternary quantization of Qwen3.8-27B)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB PTQ1_0",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "34",
+          "hardware": "RTX 3060 12GB (one card)",
+          "quant": "PQ2_0 ternary pack, core-v2 benchmark, 16,384-token context, no CPU offload, 19,251 tokens per task",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/1101hati/status/2112575113044381956",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 72,
+          "interactions": 1,
+          "weight_gb": "7.2GB PQ2_0",
+          "context_tokens": "16384"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "NVIDIA B300 (4x, TP4)",
+          "quant": "BF16, EAGLE-4 run reported for comparison; DFlash 2 reaches 672.6 tok/s against EAGLE-4's 961.6",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/himanshu_aror/status/2112819899814772993",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 1557,
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-coder390",
+      "name": "Qwen3.8-27B Coder390",
+      "full_name": "Qwen3.8-27B Coder390 (EfficientThink base, SFT + RLOO, MTP)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "consumer GPU (not stated)",
+          "quant": "DFlash2 speculative decoding with the model's built-in MTP head; 'up to' figure, GPU/quant/context not stated",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-twin-turbo",
+      "name": "Qwen3.8-27B Twin Turbo",
+      "full_name": "Qwen3.8-27B Twin Turbo (community tune: reasoning efficiency + MTP)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "TokenSpeed",
+          "tps": "961.6",
+          "hardware": "4x NVIDIA B300",
+          "quant": "BF16, TP4, one request, T=0, EAGLE-4 acceleration, SPEED-Bench qualitative (vanilla decoding 240.5 tok/s on the same setup)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/EagleCorp/status/2112660683670323531",
+          "likes": 27,
+          "comments": 1,
+          "reshares": 127,
+          "views": 15391,
+          "interactions": 155
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (based on Qwen3.5)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "2.0GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "94.75",
+          "hardware": "RTX 3060 (WebGPU backend of llama.cpp)",
+          "quant": "ternary Bonsai generation on the llama.cpp WebGPU path, build b11809; tg128 after the WebGPU matmul fix (14.02 tok/s before), pp512 1,915.91 tok/s for the 2B",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/dsoch8c/status/2113166671364211092",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 24,
+          "interactions": 0,
+          "engine_min_version": "llama.cpp b11809 (WebGPU matmul support, PR #30914)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "167.3",
+          "hardware": "single consumer GPU (not named in the excerpt)",
+          "quant": "GSQ-RCO weights, Strata; median decode near 262K context (EXL3/TabbyAPI on the same test: 81.2 tok/s)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/MarcelHolter/status/2112906753134461067",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 40,
+          "interactions": 1,
+          "context_tokens": "262K"
+        }
+      ]
+    }
+  ]
+}

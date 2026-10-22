@@ -1,0 +1,76 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "PrismML's Bonsai 2 9B is a ternary (Qwen3.5 based) vision-language model in about 2 GB; the vendor reports up to 179 tok/s on an M5 Max Pro via MLX, and a Mac starts at 170+ tok/s.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple Silicon M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint; vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 0,
+          "views": 986,
+          "interactions": 13,
+          "weight_gb": "2GB"
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "493GB (NVFP4)",
+      "system_ram_min": "1TB unified memory across four M5 Ultra Mac Studios",
+      "context_tokens": "65536",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Apple's MLX stack splits the 816B Muse Spark Open across linked M5 Ultra Mac Studios over Thunderbolt RDMA; four machines reportedly pass 36 tok/s, at the cost of a 40.6 s first token on a 65K prompt.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "four M5 Ultra Mac Studios linked by Thunderbolt 5 RDMA, ~1TB unified memory",
+          "quant": "NVFP4 (~493GB); distributed inference, 65,536-token prompt had a 40.6 s time-to-first-token",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/aka_ssy/status/2111140048259403948",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 76,
+          "interactions": 0,
+          "weight_gb": "493GB (NVFP4)",
+          "context_tokens": "65536",
+          "system_ram_min": "1TB unified across four M5 Ultra Mac Studios"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:19:49Z"
+}

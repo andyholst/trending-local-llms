@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B (Qwen3.5 based)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "0.43GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "The ternary Bonsai 2 2B (0.43 GB) reached up to 500 tok/s in a browser demo on an M4 Max, and up to 120 tok/s on an iPhone 18 Pro Max, per PrismML.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "Apple M4 Max (in-browser demo)",
+          "quant": "ternary 0.43GB weights; vendor browser demo figure",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 1,
+          "views": 1691,
+          "interactions": 7,
+          "weight_gb": "0.43GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:21:38Z"
+}

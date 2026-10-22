@@ -1,0 +1,201 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "32GB",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "Ran on a 32GB laptop with no dedicated GPU at 6.73 tokens/sec, about 10 minutes for one response - a real first-hand datapoint on whether a laptop CPU can actually use a 9B model.",
+      "engagement": {
+        "likes": 5,
+        "comments": 3,
+        "views": 368,
+        "last_7d_likes": 5
+      },
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "6.73",
+          "hardware": "32GB laptop (CPU, no dedicated GPU)",
+          "quant": "CPU inference on a memory-constrained laptop; the author notes RAM pressure and reasoning overhead",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
+          "likes": 5,
+          "comments": 3,
+          "reshares": 0,
+          "views": 368,
+          "interactions": 8,
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-05",
+      "why": "The edge runtime path on a Raspberry Pi 5: LiteRT-LM runs Gemma 4 E2B at 9 tok/s decode on the board CPU with 1432 MB peak, enough for the Reachy Mini offline voice demo.",
+      "engagement": {
+        "likes": 1,
+        "comments": 2,
+        "views": 547,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU, VideoCore VII GPU kept for vision/audio models)",
+          "quant": "Gemma 4 E2B via LiteRT-LM; 99 tok/s prefill, 1432 MB peak RSS, ~4.2 chars/token (~300 words/min voice demo)",
+          "weight_gb": "1432 MB peak memory",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 547,
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16",
+      "why": "The small-model floor on a Raspberry Pi 4: llama.cpp CPU-only generates 2.9 t/s at a 769 MB Q4_K_M footprint, versus 1.0 t/s for the 2.9 GB Gemma 4 E2B on the same board.",
+      "engagement": {
+        "likes": 3,
+        "comments": 0,
+        "views": 341,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM)",
+          "quant": "Q4_K_M (769 MB); CPU-only ARMv8.0 build",
+          "weight_gb": "769 MB (Q4_K_M)",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 341,
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16",
+      "why": "Same Raspberry Pi 4 as Gemma 3 1B, 3.8x the weights and 2.9x slower decode: 1.0 t/s generation on a CPU-only llama.cpp build, which is why the Pi voice-agent recipe does not clear the token budget yet.",
+      "engagement": {
+        "likes": 3,
+        "comments": 0,
+        "views": 341,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "1.0",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM)",
+          "quant": "Q4_K_M (2.9 GB); CPU-only ARMv8.0 build",
+          "weight_gb": "2.9 GB (Q4_K_M)",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 341,
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "2GB",
+      "vram_min": "1GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-06-25",
+      "why": "A $35 Raspberry Pi 4B with 2GB of RAM boots Ollama and serves DeepSeek R1 1.5B at 4 tokens per second with no internet and no API key, drawing about 5 W under load.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B (2GB LPDDR4, ARM CPU, no GPU)",
+          "quant": "Quantized 1.5B weights served offline from the board; ~5 W under load",
+          "system_ram_min": "2GB",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:19:33Z"
+}

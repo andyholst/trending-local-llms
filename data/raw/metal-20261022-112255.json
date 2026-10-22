@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Liquid AI's LFM2.5-24B-A2B is a 24B MoE with about 2B active per token and a 131K context; Liquid reports 184 tok/s on an M5 Max and says it ships for llama.cpp, MLX, vLLM, SGLang and ONNX from day one.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "vendor-reported figure (Liquid AI); 131K-token context window",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 72,
+          "interactions": 2,
+          "context_tokens": "131072"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T11:22:55Z"
+}

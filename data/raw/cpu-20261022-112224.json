@@ -1,0 +1,194 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B (35B MoE with ~3B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "A 35B/3B-active MoE at ~50 tok/s on an RTX 3060 12GB with 16GB of RAM: Flash Attention plus a Q8 KV cache keep the full 262K context while ~550 tok/s prompt processing feeds it.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "NVIDIA RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; Flash Attention + Q8 KV cache, 262K context configured; ~550 tok/s prompt processing",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "llama.cpp with Flash Attention and Q8 KV cache"
+        },
+        {
+          "engine": "ExLlamaV3",
+          "tps": "35.3",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "Qwen3.8-Flash-Next EXL3 3.05 bpw as the main agent while MiniCPM-V 4.7 35B-A3B EXL3 3.74 bpw served 8 subagents (both loaded); 35.3 tok/s while both models were actively generating code (26.2 tok/s under the 8-worker synthetic test)",
+          "system_ram_min": "128GB",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+          "likes": 26,
+          "comments": 10,
+          "reshares": 0,
+          "views": 8444,
+          "interactions": 36,
+          "engine_min_version": "ExLlamaV3 + Hermes Agent profile"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8 based, ternary)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "why": "The ternary 27B keeps a full 262K context resident on a 12GB card: 50 tok/s fresh and 22 tok/s average across a five-hour, 328K-token agent build on an RTX 3060.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "54",
+          "hardware": "NVIDIA RTX 4070 Ti 12GB",
+          "quant": "PQ2 packing, 64-token reasoning budget, 8K context, ~9.0GB VRAM used; scored 13/15 strict vs LFM2.5-VL-3B's 10/15 on the same card; ~9.0GB VRAM used (not enough headroom left for the model-level vram_min)",
+          "weight_gb": "7.21GB (PQ2)",
+          "context_tokens": "8192",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/brokevibecoder/status/2104236304099881362",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 0,
+          "views": 153,
+          "interactions": 5
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "NVIDIA RTX 3060 12GB",
+          "quant": "PTQ1_0 5.95GB weights, 125K context, Hermes Agent; ~22 tok/s average across a five-hour build that generated 328K tokens and a playable game",
+          "weight_gb": "5.95GB (PTQ1_0)",
+          "context_tokens": "125000",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "26",
+          "hardware": "NVIDIA RTX 3060 12GB",
+          "quant": "PTQ1_0 5.95GB; full native 262K context, ~260 tok/s prefill (PQ2_0 on the same card gives ~35 tok/s at 220K)",
+          "weight_gb": "5.95GB (PTQ1_0)",
+          "context_tokens": "262144",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "llama-server with -ngl 999"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B (MoE, 4B active)",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "context_tokens": "250000",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Gemma 4 26B-A4B at 22.9 tok/s on an RTX 3080 10GB with a Q2 quant, and 0.39 tok/s when Anthropic sharded it across fifteen $55 Android TV boxes - the same model, two very different edges.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.9",
+          "hardware": "NVIDIA RTX 3080 10GB",
+          "quant": "IQ2_M (Q2 quant); prompt processing 442.2 tok/s, vs 1,816.5 tok/s for Gemma 4 12B IQ4_XS on the same card",
+          "date": "2026-09-06",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2096528833998356946",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "0.39",
+          "hardware": "15x off-brand Android TV boxes (~$55 each, 4GB RAM each, two layers per box)",
+          "quant": "distributed inference sharded across 15 TV boxes (Anthropic Frontier Red Team self-replication study); each box holds two of the model's layers",
+          "system_ram_min": "4GB per box",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/JaydenChoe/status/2110370329487167740",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T12:01:05Z"
+}
