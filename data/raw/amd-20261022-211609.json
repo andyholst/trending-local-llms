@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:36:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21.11",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "Vulkan, UD-Q4_K_XL target + Q8_0 DFlash2 drafter (n=4), speculative decode; decode at 32K context (26.39 t/s at 0K, 21.58 at 8K); stock decoding on the same box: 11.81 / 11.44 / 10.54 t/s at 0K/8K/32K",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 25,
+          "comments": 5,
+          "reshares": 2,
+          "views": 2562,
+          "interactions": 32,
+          "weight_gb": "UD-Q4_K_XL target + DFlash2 Q8_0 drafter",
+          "context_tokens": "32768",
+          "system_ram_min": "128GB unified memory",
+          "engine_min_version": "llama.cpp PR #27342 (DFlash 2 speculative decoding, not in mainline yet)"
+        }
+      ],
+      "last_seen": "2026-08-20",
+      "why": "On a 128GB Strix Halo, llama.cpp Vulkan with a DFlash2 drafter doubles Qwen3.8-27B decode at 32K context (10.54 to 21.11 tok/s); the same post's strix-llama.cpp figure (312 t/s) is prefill."
+    }
+  ]
+}

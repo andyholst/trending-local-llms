@@ -1,0 +1,47 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "RTX 5090 32GB",
+          "quant": "uncensored/experimental speed-projection setup reported for Strata; 100-140 tok/s on the 5090, 50-70 tok/s on an RTX 5070 Ti",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 3,
+          "views": 570,
+          "interactions": 5,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "date": "2026-10-21"
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "system_ram_min": "32GB",
+      "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
+      "context_tokens": "250K",
+      "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

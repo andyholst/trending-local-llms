@@ -1,0 +1,47 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "51",
+          "hardware": "M5 Ultra Mac Studio",
+          "quant": "Qwen3.8-27B at Q4; 8K context, 1,800 tok/s prefill",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 5,
+          "views": 1488,
+          "interactions": 7,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100630175260045820",
+          "date": "2026-09-17",
+          "context_tokens": "8192"
+        }
+      ],
+      "last_seen": "2026-09-17",
+      "system_ram_min": "128GB",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

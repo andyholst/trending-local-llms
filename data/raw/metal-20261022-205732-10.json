@@ -1,0 +1,64 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "M5 Max Mac",
+          "quant": "24B total / ~2B active MoE; vendor-reported 184 tok/s",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 3,
+          "views": 541,
+          "interactions": 6,
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "date": "2026-10-15"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "21000",
+          "hardware": "NVIDIA B300 (single)",
+          "quant": "peak reported batched throughput (batching/concurrency dependent), not single-user speed",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 3,
+          "views": 993,
+          "interactions": 4,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110561774541959348",
+          "date": "2026-10-15",
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "system_ram_min": "unified memory (Strix Halo APU)",
+      "weight_gb": "14.5GB 4-bit",
+      "context_tokens": "131K",
+      "engine_min_version": "SGLang day-0 (Liquid's own benchmarks run on vLLM/Liquid inference stack)"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

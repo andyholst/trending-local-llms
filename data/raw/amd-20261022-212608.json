@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T22:01:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "128",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PrismML llama.cpp fork (required for the ternary PTQ1_0/PQ2_0 GGUFs); core-v2 eval sheet, 1.21 GiB of ternary weights",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/1101hati/status/2112324564634001684",
+          "likes": 21,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 21,
+          "weight_gb": "1.21 GiB ternary"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "The Bonsai 2 4B query this window returns Mac and phone runs; the CUDA figure kept in the store is 128 tok/s on an RTX 3060 12GB through the PrismML llama.cpp fork."
+    }
+  ]
+}

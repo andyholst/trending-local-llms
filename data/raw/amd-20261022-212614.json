@@ -1,0 +1,40 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T22:03:00Z",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B MoE (instruction-tuned, QAT)",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "32",
+          "hardware": "RTX 4060 24GB (post's own wording)",
+          "quant": "gemma-4-26B-A4B-it UD-Q8_K_XL.gguf, -c 250000 -fa on, 22.8GB VRAM; 40 t/s at 128K context on the same card",
+          "date": "2026-06-05",
+          "source_post": "https://lightbrd.com/analogalok/status/2062908393816510813",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "22.8GB UD-Q8_K_XL",
+          "context_tokens": "250000",
+          "engine_min_version": "llama.cpp built from source, -c 250000 -fa on"
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "The Gemma 4 26B A4B query this window returns Apple Silicon runs only; the CUDA figure kept in the store is 32 tok/s at 250K context under llama.cpp."
+    }
+  ]
+}

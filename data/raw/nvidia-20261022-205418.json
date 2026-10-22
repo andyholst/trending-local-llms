@@ -1,0 +1,102 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-22T20:55:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "34",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary quant; core-v2 agentic benchmark 59.4% (6/12 solved), 19,251 tokens per task including prompts",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/1101hati/status/2112575113044381956",
+          "likes": 71,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 72,
+          "weight_gb": "ternary PQ2_0 (fits one 12GB card where Qwen3.8-27B Q4 needs two)"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "88",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary weights; core-v2 agentic benchmark 46.2% (4/12 solved), 2.56 GiB of weights",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/1101hati/status/2112343979568038169",
+          "likes": 27,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 27,
+          "weight_gb": "2.56 GiB ternary"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b-4090-hybrid",
+      "name": "Qwen3.8-Flash-Next 125B (RTX 4090 hybrid)",
+      "full_name": "Qwen3.8-Flash-Next 125B (hybrid GPU/CPU expert split from a raw llama.cpp log)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20.97",
+          "hardware": "RTX 4090 24GB, 110GB DDR4 system RAM",
+          "quant": "Q4_K_XL GGUF (~111.4GB) hybrid GPU + system-RAM inference; 250K context decode, 364 tok/s prefill, 18.3GB of the 24GB VRAM; 80K context: 22.52 tok/s with 40 expert layers on the GPU (23.85GB VRAM), 20.84 tok/s with CPU expert offload (11.66GB VRAM), 384/356 tok/s prefill; no MTP, no DFlash2, no KV-cache quantization",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112706809773338757",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 3,
+          "views": 575,
+          "interactions": 9,
+          "context_tokens": "250K",
+          "system_ram_min": "110GB",
+          "weight_gb": "111.4GB Q4_K_XL",
+          "engine_min_version": "llama.cpp -cmoe expert offload, -b 4096 -ub 4096"
+        }
+      ]
+    }
+  ]
+}

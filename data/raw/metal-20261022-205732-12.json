@@ -1,0 +1,50 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B A4B",
+      "full_name": "Gemma 4 26B A4B MoE (instruction-tuned, QAT)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Gemma 4 26B A4B",
+          "hf": "google/gemma-4-26B-A4B-it"
+        }
+      ],
+      "license": "Gemma",
+      "params": "26B (A4B, MoE)",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "turbo-fieldfare",
+          "tps": "21.4",
+          "hardware": "Apple M5 with 16GB RAM",
+          "quant": "Gemma 4 26B at ~2GB RAM usage, Metal backend of turbo-fieldfare (drumih/turbo-fieldfare)",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 175,
+          "interactions": 4,
+          "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
+          "date": "2026-09-20",
+          "system_ram_min": "16GB",
+          "weight_gb": "~2GB runtime RAM",
+          "engine_repo": "https://github.com/drumih/turbo-fieldfare"
+        }
+      ],
+      "last_seen": "2026-09-20",
+      "system_ram_min": "12GB",
+      "weight_gb": "unsloth UD-Q4_K_XL (QAT) GGUF; 18.4GB VRAM at 80k ctx, 22.0GB at 250k",
+      "context_tokens": "250000",
+      "storage_offload": "experts streamed from phone flash storage",
+      "engine_min_version": "llama.cpp MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:32Z"
+}

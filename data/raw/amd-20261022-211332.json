@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-22T21:27:00Z",
+  "models": [
+    {
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5 4B",
+      "full_name": "Qwen3.5-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3.5-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62",
+          "hardware": "RX 6750 XT 12GB",
+          "quant": "ROCm 7.15 native vLLM Windows build (TheRock rocBLAS, no WSL2); 26 TFLOPS FP16; Qwen3.5-4B",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/GameGPU_com/status/2089735525330485464",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 7,
+          "views": 641,
+          "interactions": 650,
+          "system_ram_min": "8GB",
+          "engine_min_version": "vLLM v2.0 + ROCm 7.15 Windows build, Adrenalin 24.x, Windows 11 23H2"
+        }
+      ],
+      "last_seen": "2026-08-18",
+      "why": "The ROCm 7.15 native vLLM Windows build runs Qwen3.5-4B at up to 62 tok/s on an RX 6750 XT without WSL2."
+    }
+  ]
+}

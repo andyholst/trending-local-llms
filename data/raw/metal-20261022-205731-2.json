@@ -1,0 +1,47 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (unified memory, Thunderbolt-linked)",
+          "quant": "816B MoE distributed across four Mac Studios; over 36 tokens per second, 8K-token prompt",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 19,
+          "interactions": 0,
+          "source_post": "https://lightbrd.com/marcel_butucea/status/2111196917803962501",
+          "date": "2026-10-16",
+          "context_tokens": "8192",
+          "system_ram_min": "~1TB combined unified memory across 2-4 M5 Ultra Mac Studios"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "system_ram_min": "1024GB",
+      "weight_gb": "493GB NVFP4",
+      "context_tokens": "1048576"
+    }
+  ],
+  "generated_utc": "2026-10-22T20:57:31Z"
+}

@@ -1,0 +1,43 @@
+{
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE, ~6B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "11.66GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "A 125B-class MoE that serves 64 concurrent users from one vLLM instance at over 100 tok/s each, and still decodes ~21 tok/s on a single 24GB RTX 4090 with hybrid expert offload.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "134.4",
+          "hardware": "NVIDIA GB300 workstation (ASUS ET900N G3)",
+          "quant": "NVFP4 weights, vLLM, a single instance serving 64 concurrent users from one request each; 134.4 tok/s per user with no extra acceleration techniques (same instance: Nemotron 3.5 Super VL 120B NVFP4 at 142.2 tok/s per user)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/AlicanKiraz0/status/2112630102366499175",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-22T21:29:59Z",
+  "backend": "cpu"
+}
