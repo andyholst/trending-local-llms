@@ -1,0 +1,72 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "full_name": "Gemma 4 E4B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "E4B",
+      "hf": "google/gemma-4-E4B-it",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "SonicBoom",
+          "engine_repo": "https://github.com/hardenedlinux/SonicBoom",
+          "tps": "53.6",
+          "hardware": "RTX 3050 8GB",
+          "quant": "Q3_K_M GGUF, median of three runs; same post: llama.cpp 44.8 tokens/s on the identical GGUF (SonicBoom ~20% faster)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 82,
+          "interactions": 1
+        }
+      ],
+      "why": "SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) beats llama.cpp on a consumer RTX 3050 8GB: 53.6 vs 44.8 tokens/s.",
+      "last_seen": "2026-10-23"
+    },
+    {
+      "id": "qwen2.5-0.5b",
+      "name": "Qwen2.5-0.5B",
+      "full_name": "Qwen2.5-0.5B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "0.5B",
+      "hf": "Qwen/Qwen2.5-0.5B-Instruct",
+      "vram_tier": "CPU",
+      "vram_min": "1GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "SonicBoom",
+          "engine_repo": "https://github.com/hardenedlinux/SonicBoom",
+          "tps": "345.9",
+          "hardware": "RTX 3050 8GB",
+          "quant": "Q4_K_M GGUF, median of three runs; same post: llama.cpp 306.9 tokens/s on the identical GGUF",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 82,
+          "interactions": 1,
+          "context_tokens": "512"
+        }
+      ],
+      "why": "Tiny Qwen2.5 model used as the SonicBoom benchmark baseline: 345.9 vs llama.cpp's 306.9 tokens/s on an RTX 3050 8GB.",
+      "last_seen": "2026-10-23"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:52:17Z"
+}

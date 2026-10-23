@@ -1,0 +1,93 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "Meta open weights (commercial use free under $20M revenue)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt 5, ~1TB unified memory)",
+          "quant": "NVFP4 open weights over MLX tensor parallelism; about 1TB of combined unified memory; 42B active, 1M-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 73,
+          "system_ram_min": "~1TB (4x 512GB Mac Studios)",
+          "context_tokens": "1M"
+        },
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Mac Studio M5 Ultra (512GB each)",
+          "quant": "Apple MLX tensor parallelism; ~1TB unified memory across linked Studios; 8,192-token context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 4,
+          "reshares": 11,
+          "views": 967,
+          "system_ram_min": "~1TB (4x 512GB Mac Studios)",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Apple M5 Ultra Mac Studio (512GB each)",
+          "quant": "Apple MLX tensor parallelism; ~1TB unified memory across linked Studios",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 4,
+          "reshares": 11,
+          "views": 967,
+          "system_ram_min": "~1TB (2x 512GB Mac Studios)"
+        }
+      ],
+      "vram_min": "512GB"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "open weights (Liquid AI)",
+      "params": "24B total / 2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "vendor day-1 figure: runs through llama.cpp and MLX from day one; 184 tok/s on an M5 Max (Liquid AI)",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 7,
+          "comments": 5,
+          "reshares": 1,
+          "views": 258
+        }
+      ],
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

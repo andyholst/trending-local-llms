@@ -1,0 +1,36 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B DFlash2 (TekSedge 3090)",
+      "full_name": "Qwen3.8-27B with DFlash2 speculative decoding on RTX 3090",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
+          "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 12,
+          "views": 958
+        }
+      ],
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

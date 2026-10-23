@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:08:36Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "273",
+          "hardware": "NVIDIA GPU (card not named in post)",
+          "quant": "TQ3_4S-v2 quantization; custom LLM engine decode",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576861102768525",
+          "likes": 27,
+          "comments": 0,
+          "reshares": 4,
+          "views": 3296,
+          "interactions": 3327
+        }
+      ],
+      "last_seen": "2026-10-04",
+      "why": "Qwen3.8-27B hit 273 tok/s decode on a custom LLM engine with the TQ3_4S-v2 quant format, cited as proof of how much the inference stack (not just hardware) decides throughput; the 16GB RTX 5060 Ti-class model tease followed in the same thread."
+    }
+  ]
+}

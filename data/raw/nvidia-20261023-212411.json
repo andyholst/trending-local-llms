@@ -1,0 +1,56 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:37:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup + optimized lookup verification, prefix caching, quantized KV; progression 82 -> 114 (optimized MTP) -> 138 (DFlash2 + lookup) -> 381 tok/s, same GPU, entirely inference-stack work",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 110,
+          "comments": 3,
+          "reshares": 9,
+          "views": 11065,
+          "interactions": 11187
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "same 82 -> 381 tok/s stack progression reported on the developer's own thread (445 likes); context-lookup verification is the step that takes 138 to 381",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+          "likes": 445,
+          "comments": 14,
+          "reshares": 33,
+          "views": 32747,
+          "interactions": 33239
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "82 to 381 tok/s on the same single RTX 3090, with no hardware change: DFlash2 plus context lookup and longer verification blocks, and the clearest evidence in the set that the serving stack, not the card, sets the ceiling for a 27B dense model."
+    }
+  ]
+}

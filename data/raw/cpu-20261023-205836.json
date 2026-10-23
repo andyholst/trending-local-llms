@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "MTP + DFlash2 speculative decoding + context lookup + 16-token verification batches; document-reproduction task, up from ~82 tok/s on the same 2020 GPU",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112385215423193459",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 2,
+          "views": 658,
+          "interactions": 6,
+          "engine_min_version": "inference stack with MTP, DFlash2 drafter, 16-token verification batches"
+        }
+      ],
+      "why": "Qwen3.8-27B 82 -> ~382 tok/s on one RTX 3090 via MTP + DFlash2 + context lookup and 16-token verification batches.",
+      "last_seen": "2026-10-20"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:58:36Z"
+}

@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:39:00Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Open weights",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1415",
+          "hardware": "one A100 SXM4, 32 concurrent requests",
+          "quant": "LFM2.5-24B-A2B served by vLLM; 1,415 output tokens per second at 32 concurrent requests (an L40S gave the best tokens per second per dollar at 1,110); benchmark code public",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 19,
+          "interactions": 19,
+          "engine_repo": "https://github.com/Massed-Compute/gpu-benchmark"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "A 1,000-token aggregate figure the store did not have: 1,415 output tokens per second at 32 concurrent requests on one A100 SXM4 under vLLM, with the benchmark published rather than quoted — the serving end of the same 24B A2B model that does 184 tok/s single-stream on an M5 Max."
+    }
+  ]
+}

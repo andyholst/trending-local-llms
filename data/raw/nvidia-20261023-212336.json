@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:36:00Z",
+  "models": [
+    {
+      "id": "minicpm-v-4.7",
+      "name": "MiniCPM-V 4.7",
+      "full_name": "MiniCPM-V 4.7 35B-A3B (SAGE EXL3)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "EXL3",
+          "hf": "openbmb/MiniCPM-V-4.7-35B-A3B"
+        }
+      ],
+      "license": "Open weights",
+      "params": "35B total / ~3B active",
+      "hf": "openbmb/MiniCPM-V-4.7-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "69.8",
+          "hardware": "NVIDIA DGX Spark (GB10, 128GB unified memory), shared with Qwen3.8-Flash-Next",
+          "quant": "MiniCPM-V 4.7 35B-A3B SAGE EXL3 3.74 bpw as the worker model under Hermes Agent, shared Q4 KV pool of 1,048,576 tokens over 8 concurrent 131K workers; ~69.8 tok/s while the main model is loaded but idle, 40.0 tok/s with both models generating",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+          "likes": 157,
+          "comments": 25,
+          "reshares": 25,
+          "views": 9014,
+          "interactions": 9221,
+          "context_tokens": "1048576 shared KV pool (131072 per worker)"
+        }
+      ],
+      "last_seen": "2026-10-14",
+      "why": "A 35B-A3B worker model kept loaded beside a 125B main model on ONE DGX Spark under ExLlamaV3: ~69.8 tok/s idle-neighbour decode, 40.0 tok/s with both generating, serving eight concurrent subagents off a shared 1M-token KV pool instead of eight model copies."
+    }
+  ]
+}

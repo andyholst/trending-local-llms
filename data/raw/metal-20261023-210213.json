@@ -1,0 +1,51 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0 (free to ship under $10M revenue)",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "44.2",
+          "hardware": "one A100 SXM4 (Massed Compute cloud)",
+          "quant": "1,415 output tokens/s at 32 concurrent requests; single-request figure derived from that batch rate; L40S was best value at 1,110 tok/s per dollar",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 15
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "vendor-reported Liquid AI figure; runs via llama.cpp and MLX from day one; 131K context; Q4 GGUF ~14.5GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110561774541959348",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 8,
+          "views": 995,
+          "context_tokens": "131072",
+          "weight_gb": "14.5GB Q4_GGUF"
+        }
+      ],
+      "vram_min": "16GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

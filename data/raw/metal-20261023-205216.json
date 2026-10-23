@@ -1,0 +1,167 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B dense",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "MTP speculative decoding, 78% draft acceptance; code generation; prose generation 53 tok/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 8,
+          "comments": 4,
+          "reshares": 2,
+          "views": 934
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "MacBook Pro M5 Max",
+          "quant": "DFlash 2 speculative decoding, reported figure; up to 4.6x claimed over autoregressive decoding",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113186919760707688",
+          "likes": 14,
+          "comments": 3,
+          "reshares": 3,
+          "views": 1300
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter (Q4_K_M), Q8_0 KV cache, 90K context, --spec-draft-n-max 3; dev build with PR #27342; native MTP hit 70.83 tok/s at 100K",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 1,
+          "views": 815,
+          "context_tokens": "90000",
+          "engine_min_version": "llama.cpp PR #27342 build, --spec-type draft-dflash --spec-draft-n-max 3, -ctv q4_0 -ctk q4_0"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "250",
+          "hardware": "RTX 3090 24GB",
+          "quant": "HyperQwen serving Qwen3.8-27B through vLLM; ~250 tok/s prefill vs ~700 tok/s for llama.cpp in the reported comparison; decode figure not stated in the post",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113063508166189466",
+          "likes": 2,
+          "comments": 4,
+          "reshares": 8,
+          "views": 934
+        },
+        {
+          "engine": "TokenSpeed",
+          "tps": "961.6",
+          "hardware": "4x NVIDIA B300 288GB (TP4), datacenter",
+          "quant": "BF16, EAGLE-4 speculative decoding, single-request benchmark, temperature 0",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112881687000404310",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 5,
+          "views": 497
+        },
+        {
+          "engine": "SGLang",
+          "tps": "28340",
+          "hardware": "datacenter GPUs, 512 concurrent requests",
+          "quant": "EAGLE-4 with the same trained Qwen3.8-27B drafter, temperature 0; AGGREGATE throughput across 512 concurrent requests, not a single-user decode",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882263629181238",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 5,
+          "views": 584
+        },
+        {
+          "engine": "SGLang",
+          "tps": "70",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB)",
+          "quant": "4-bit speculative-decoding drafter; SGLang launch config, Dockerfile and six benchmarks published for reproduction",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 2,
+          "views": 584
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "TeksEdge DFlash2 + context lookup; 82 tok/s baseline -> 114 MTP -> 138 DFlash2 -> 381 tok/s; the 381 figure came from reproducing text already in the prompt (ordinary chat ~133 tok/s); up to 16 tokens verified per block, ~15 accepted; prefix caching cut TTFT from 22.4s to 0.56s",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112703209978359906",
+          "likes": 2,
+          "comments": 5,
+          "reshares": 2,
+          "views": 584
+        },
+        {
+          "engine": "StairCut",
+          "tps": "49.89",
+          "hardware": "single NVIDIA DGX Spark (GB10)",
+          "quant": "TandemLLM v0.12.2 with StairCut speculative decoding; single-stream benchmark up from 13.69 tok/s",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/crazyMLguy/status/2112762558348513637",
+          "likes": 39,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "engine_repo": "https://github.com/0xBakeer/TandemLLM"
+        }
+      ],
+      "vram_min": "16GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "183B MoE",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "67",
+          "hardware": "one NVIDIA DGX Spark (GB10)",
+          "quant": "4-bit MLX on TensorFold + MTP; ~103 GB for the whole server",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
+          "likes": 9,
+          "comments": 10,
+          "reshares": 0,
+          "views": 998
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

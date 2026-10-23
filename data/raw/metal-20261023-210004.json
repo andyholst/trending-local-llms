@@ -1,0 +1,75 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M, Flash Attention, Q8 KV cache, 262K context configured, 26 MoE layers assigned to CPU; ~550 tok/s prompt processing",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+          "likes": 26,
+          "comments": 26,
+          "reshares": 278,
+          "views": 28122,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "storage_offload": "26 MoE layers assigned to CPU",
+          "engine_min_version": "Flash Attention, Q8 KV cache"
+        }
+      ],
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "64GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "35.3",
+          "hardware": "NVIDIA DGX Spark (GB10), 128GB unified memory",
+          "quant": "EXL3 3.05 bpw; ~31GB n-gram embedding table streams from NVMe; both models loaded concurrently with MiniCPM-V 4.7 35B-A3B; 88.6 tok/s code and 55.9 tok/s prose when generating alone; 26.2 tok/s while the worker model ran too; 262144-token Q8 KV cache",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+          "likes": 25,
+          "comments": 24,
+          "reshares": 157,
+          "views": 9001,
+          "context_tokens": "262144",
+          "system_ram_min": "128GB unified memory",
+          "storage_offload": "~31GB n-gram embedding table streams from NVMe",
+          "engine_min_version": "ExLlamaV3"
+        }
+      ],
+      "vram_min": "64GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

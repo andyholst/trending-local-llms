@@ -1,0 +1,58 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:18:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "53.2",
+          "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+          "quant": "125B MoE at 60K context; best llama.cpp number 27 tok/s on the same box, so this is a comparison of complete serving setups at different quants/settings, not a controlled run",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 124,
+          "interactions": 126,
+          "context_tokens": "60000"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "27",
+          "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+          "quant": "125B MoE at 60K context; the general-purpose baseline Strata's 53.2 tok/s was measured against",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 124,
+          "interactions": 126,
+          "context_tokens": "60000"
+        }
+      ],
+      "last_seen": "2026-10-04",
+      "why": "Kartikey Chauhan's 125B MoE run on a 12GB RTX 4070 went from 27 tok/s on llama.cpp to 53.2 tok/s on Strata at 60K context — nearly double from swapping the runtime, not the card; the post itself flags the different quants/settings."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:38:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro, 32 concurrent streams",
+          "quant": "ternary 4B (Qwen3.5 based); the batch processed 250 emails into JSON summaries, action items, calendar events and priority scores, peak memory <4GB, over 700 tok/s aggregate",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 4,
+          "reshares": 15,
+          "views": 5269,
+          "interactions": 5325,
+          "weight_gb": "<4GB peak memory"
+        }
+      ],
+      "last_seen": "2026-10-15",
+      "why": "The 4B ternary model runs 32 concurrent streams on an M5 Pro inside <4GB peak memory and generates over 700 tok/s aggregate while turning 250 emails into structured JSON — the high-volume, on-device shape the size is built for."
+    }
+  ]
+}

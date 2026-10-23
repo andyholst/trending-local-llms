@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary Bonsai 2 4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "22",
+          "hardware": "MacBook Pro M5 Pro",
+          "quant": "ternary weights (-1/0/+1); 32 concurrent streams parsing 250 emails into JSON with summaries, action items and priority scoring; 700 tok/s aggregate across the 32 streams; under 4GB peak memory",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 87,
+          "views": 5259,
+          "weight_gb": "0.95GB (ternary)"
+        }
+      ],
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

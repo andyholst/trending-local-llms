@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "100-140",
+          "hardware": "RTX 5090 32GB",
+          "quant": "Strata with experimental speed projection enabled (START-HERE.bat --setup --experimental-speed-projection on); same post: RTX 5070 Ti 16GB reaches around 50-70 tokens/s",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 621,
+          "interactions": 2,
+          "engine_min_version": "Strata --setup --experimental-speed-projection on"
+        }
+      ],
+      "why": "Strata serves Qwen3.8-Flash-Next at 100-140 tok/s on an RTX 5090, with an experimental setting that drops refusals 73% -> 0%.",
+      "last_seen": "2026-10-21"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:52:44Z"
+}

@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "OpenJet",
+          "tps": "140",
+          "hardware": "RTX 3090 24GB",
+          "quant": "code generation; L-Forster's OpenJet benchmark vs 73 tok/s in the same llama.cpp test (about 1.9x); offline coding agent; engine code and benchmarks public",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 257,
+          "engine_repo": "https://github.com/L-Forster/open-jet"
+        }
+      ],
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}
