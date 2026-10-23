@@ -1,0 +1,43 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "32GB",
+      "weight_gb": "39.2GB IQ2_XS",
+      "storage_offload": "~80GB free disk, SSD strongly recommended",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "High-engagement Strata benchmark roundup lists RX 9070 XT (16GB) at 60 tok/s on the 125B MoE, next to an RTX 5070's 94 tok/s; Strata keeps the hot experts on the GPU, the rest in RAM, at 2-3 bits.",
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "HIP (ROCm), 2-3 bit compressed experts, 39.2GB weights",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 878,
+          "comments": 52,
+          "reshares": 64,
+          "views": 122284,
+          "interactions": 1274,
+          "system_ram_min": "32GB",
+          "weight_gb": "39.2GB IQ2_XS",
+          "storage_offload": "~80GB free disk, SSD strongly recommended"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T11:13:38Z"
+}

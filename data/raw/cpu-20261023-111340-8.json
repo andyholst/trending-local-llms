@@ -1,0 +1,54 @@
+{
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "MacBook Pro M4 Pro 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B with DFlash2 drafting; same comparison: oMLX+DFlash2 127, Ollama+MTP 89, LM Studio 86, MTPLX 80, llama.cpp+MTP 69 t/s",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "MacBook Pro M4 Pro 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B with MTP multi-token prediction, reported comparison row (Kapitsa+DFlash2 154 t/s leads the same test)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "48GB"
+        }
+      ],
+      "last_seen": "2026-10-23"
+    }
+  ],
+  "generated_utc": "2026-10-23T11:13:40Z",
+  "backend": "cpu"
+}

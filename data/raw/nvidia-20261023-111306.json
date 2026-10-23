@@ -1,0 +1,136 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b-twin-turbo",
+      "name": "Qwen3.8-27B Twin Turbo",
+      "full_name": "Qwen3.8-27B Twin Turbo (MTP + reasoning-efficiency community tune)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "90",
+          "hardware": "RTX 5090 24GB",
+          "quant": "MTP speculative-decoding build (Q4_K_S baseline ~75 tok/s); creator-reported",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032613405761904",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "why": "Community tune for Qwen3.8-27B: cut reasoning tokens 2-20x and keep MTP spec-decode; llama.cpp MTP build on a 24 GB RTX 5090 posts 90 tok/s (Q4_K_S ~75), creator-reported in the post's own table."
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (177B-parameter MoE runtime profile)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "177B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-17",
+      "system_ram_min": "64GB",
+      "context_tokens": "262144",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM (64GB recommended)",
+          "quant": "IQ2_XS",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 4,
+          "reshares": 3,
+          "views": 4595,
+          "interactions": 33,
+          "system_ram_min": "64GB",
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB + system RAM (GPU holds hot experts)",
+          "quant": "IQ3_S; ~66 tok/s with 261K context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 26,
+          "comments": 4,
+          "reshares": 3,
+          "views": 4595,
+          "interactions": 33,
+          "system_ram_min": "64GB",
+          "context_tokens": "262144"
+        }
+      ],
+      "engagement": {
+        "likes": 26,
+        "comments": 4,
+        "views": 4595,
+        "last_7d_likes": 26
+      },
+      "why": "177B-parameter MoE run on a single used 24 GB RTX 3090 by splitti-ng weights between VRAM and system RAM in Strata: ~87 tok/s (IQ2_XS), ~70 tok/s (IQ3_S), still ~66 tok/s at 261K context."
+    },
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge stack: DFlash2 + context lookup + prefix caching)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 spec-decode + optimized lookup verification (16 tokens verified per pass, ~15 accepted) + prefix caching; the 381 figure is a document-reproduction task, ordinary chat ~133 tok/s, MTP ~114",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 110,
+          "comments": 3,
+          "reshares": 9,
+          "views": 11061,
+          "interactions": 122
+        }
+      ],
+      "engagement": {
+        "likes": 110,
+        "comments": 3,
+        "views": 11061,
+        "last_7d_likes": 110
+      },
+      "why": "Same 24 GB card taken from 82 tok/s to 381 tok/s entirely by stack optimisation (MTP 114, DFlash2 + context lookup 138, optimised lookup verification 381); ordinary chat sits around 133 tok/s."
+    }
+  ]
+}

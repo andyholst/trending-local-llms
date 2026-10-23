@@ -1,0 +1,43 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "24GB DDR5 (~16GB used in the run)",
+      "weight_gb": "IQ4_XS",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "A 16GB Radeon RX 9060 XT runs the 27B model at 35 tok/s at a 200K context (42.7 tok/s at 20K) by streaming the KV cache into 24GB DDR5; the whole model does not fit in VRAM, and the 262K target needs the RAM tier.",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "Radeon RX 9060 XT 16GB + 24GB DDR5 (KV cache streamed to system RAM)",
+          "quant": "ROCm, IQ4_XS, Q4 V / Q8 K cache, MTP + N-gram speculation, 200K context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "24GB DDR5 (~16GB used in the run)",
+          "weight_gb": "IQ4_XS",
+          "context_tokens": "200000"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T11:14:04Z"
+}
