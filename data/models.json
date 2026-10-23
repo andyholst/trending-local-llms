@@ -2360,6 +2360,7 @@
           "tps": "53.2",
           "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
           "quant": "at 60K context; comparison of complete serving setups, different quants from the llama.cpp run",
+          "weight_gb": "39.2GB IQ2_XS",
           "context_tokens": "60000",
           "date": "2026-10-19",
           "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
@@ -7785,7 +7786,7 @@
       "type": "LLM",
       "license": "NVIDIA Open Model License",
       "params": "74B (MoE, 9B active)",
-      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
       "vram_tier": "8GB",
       "vram_min": "12GB",
       "backends": [
@@ -7845,7 +7846,7 @@
       "formats": [
         {
           "name": "Nemotron-3.5-Bolt-74B-A9B",
-          "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B"
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16"
         }
       ]
     },
