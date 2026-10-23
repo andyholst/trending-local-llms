@@ -54,14 +54,44 @@ def bonsai(s):
     return next(m for m in s["models"] if m["id"] == "bonsai-2-27b")
 
 
+def _bonsai_rows(md: str) -> list[str]:
+    """The README rows whose MODEL cell names Bonsai 2 27B (all its variants).
+
+    Attribution is by the model cell (the first one), never by the whole line: a
+    DIFFERENT model's row can mention the name in prose — Qwen3.8-27B's engine
+    row records 'PrismML Bonsai 2 27B ternary (~1.72 bits/weight)' in its quant
+    and legitimately links stock llama.cpp for its own CUDA figure — and a
+    whole-line match read that as "a Bonsai row links stock llama.cpp"
+    (false positive, measured on the 2026-10-23 refresh).
+    """
+    rows: list[str] = []
+    for ln in md.split("\n"):
+        if not ln.startswith("|"):
+            continue
+        cells = ln.split("|")
+        if len(cells) > 1 and "Bonsai 2 27B" in cells[1]:
+            rows.append(ln)
+    return rows
+
+
 def test_real_store_bonsai_links_the_fork():
     s = real_store()
     check("store: Bonsai 2 27B declares the fork alias", bonsai(s).get("engine_aliases") == {"llama.cpp": FORK})
     md = UT.render_readme(copy.deepcopy(s), V._as_of(s))
-    rows = [ln for ln in md.split("\n") if "Bonsai 2 27B" in ln and ln.startswith("|")]
+    rows = _bonsai_rows(md)
     check("readme: Bonsai rows exist", len(rows) >= 3, len(rows))
     check("readme: no Bonsai row links stock ggml-org/llama.cpp",
           not any("ggml-org/llama.cpp" in r for r in rows), [r[:80] for r in rows if "ggml-org" in r])
+    # The attribution itself is the guard: another model's PROSE mention is not a
+    # Bonsai row, while a real Bonsai row linking stock llama.cpp is still caught.
+    prose = ("| [**Qwen3.8-27B**](https://huggingface.co/Qwen/Qwen3.8-27B) | 27B | PrismML Bonsai 2 27B ternary "
+             "| [llama.cpp](https://github.com/ggml-org/llama.cpp) **14.06** |")
+    bad = ("| [**Bonsai 2 27B**](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) | 300 | 🟦 CUDA "
+           "| [llama.cpp](https://github.com/ggml-org/llama.cpp) **300** |")
+    check("readme: a prose mention in another model's row is not a Bonsai row",
+          _bonsai_rows(prose) == [], _bonsai_rows(prose))
+    check("readme: a Bonsai row linking stock llama.cpp is still caught",
+          any("ggml-org/llama.cpp" in r for r in _bonsai_rows(bad)), _bonsai_rows(bad))
     check("readme: Bonsai CUDA figures link the PrismML fork", any(f"]({FORK_URL})" in r for r in rows))
     guide = md.split("## ⚙️", 1)[1]
     # The guide lists how many models carry a measurement ON the fork — read

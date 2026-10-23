@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-23T21:45:40Z",
+  "generated_utc": "2026-10-23T23:25:40Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -191,6 +191,11 @@
       "url": "https://github.com/L-Forster/open-jet",
       "note": "Auto-registered from https://lightbrd.com/JeremyCMorgan/status/2113375294207746365 — An offline coding agent for local models. One command sets up the best model your GPU can run, and on 24 GB+ RTX 30/40/5",
       "auto": true
+    },
+    "TandemLLM": {
+      "backend": "CUDA",
+      "url": "https://github.com/0xBakeer/TandemLLM",
+      "note": "TandemLLM (agent harness + its own inference engine, StairCut speculative decoding) on one NVIDIA DGX Spark: 49.89 tok/s single-stream for Qwen3.8-27B — https://lightbrd.com/crazyMLguy/status/2112762558348513637; the post's 'StairCut' is the technique, so the runtime it ran in is what is registered"
     }
   },
   "models": [
@@ -360,7 +365,8 @@
           "comments": 2,
           "reshares": 2,
           "views": 584,
-          "interactions": 0
+          "interactions": 0,
+          "engine_min_version": "SGLang with drafter + cached kernel-tuning results"
         },
         {
           "engine": "llama.cpp",
@@ -376,7 +382,7 @@
           "interactions": 0
         },
         {
-          "engine": "StairCut",
+          "engine": "TandemLLM",
           "tps": "49.89",
           "hardware": "single NVIDIA DGX Spark (GB10)",
           "quant": "TandemLLM v0.12.2 with StairCut speculative decoding; single-stream benchmark up from 13.69 tok/s",
@@ -2452,6 +2458,9 @@
         "trend_score": 129.4
       },
       "last_seen": "2026-10-23",
+      "engine_aliases": {
+        "StairCut": "TandemLLM"
+      },
       "supported_engines": [
         "TensorFold",
         "llama.cpp"
@@ -3932,7 +3941,7 @@
           "engine_min_version": "llama.cpp b11809 (WebGPU matmul support, PR #30914)"
         },
         {
-          "engine": "mlx.fast",
+          "engine": "MLX-fast (Bonsai 2)",
           "tps": "913.1",
           "hardware": "Apple Silicon",
           "quant": "mlx.fast, Yukon Research open-optimization leaderboard (PrismML + DarkbloomAI challenge), promoted run; baseline when the challenge started: 144.9 tokens/s",
@@ -3942,7 +3951,9 @@
           "comments": 0,
           "reshares": 0,
           "views": 552,
-          "interactions": 2
+          "interactions": 2,
+          "weight_gb": "~2GB",
+          "engine_min_version": "mlx.fast (PrismML/DarkbloomAI Yukon Research challenge)"
         },
         {
           "engine": "llama.cpp (PrismML fork)",
@@ -4307,7 +4318,8 @@
       "context_tokens": "131072",
       "system_ram_min": "4GB",
       "engine_aliases": {
-        "Bonsai Oryon": "llama.cpp (PrismML fork)"
+        "Bonsai Oryon": "llama.cpp (PrismML fork)",
+        "mlx.fast": "MLX-fast (Bonsai 2)"
       }
     },
     {
@@ -5521,6 +5533,7 @@
           "reshares": 0,
           "views": 593,
           "system_ram_min": "48GB unified memory",
+          "engine_min_version": "Kapitsa with DFlash2 speculative decoding",
           "interactions": 0
         },
         {
@@ -5563,6 +5576,22 @@
           "reshares": 4,
           "views": 706,
           "interactions": 716
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing (prefill, never decode); AgentPerf-Local agent workload finishes in 8.08 minutes on RTX Spark, 10.12 on M5 Max, 13.29 on Ryzen AI Max+ 395 (Tom's Hardware)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262K",
+          "system_ram_min": "16GB"
         },
         {
           "engine": "Magnitude",
@@ -6556,7 +6585,7 @@
           "context_tokens": "262K",
           "system_ram_min": "16GB",
           "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0",
-          "storage_offload": "26 MoE layers offloaded to CPU"
+          "storage_offload": "26 MoE layers assigned to CPU"
         },
         {
           "engine": "llama.cpp",

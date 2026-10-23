@@ -8,7 +8,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "35B total / 3B active",
-      "hf": "Qwen/Qwen3.8-35B-A3B",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
       "vram_tier": "12GB",
       "backends": [
         "CUDA",
@@ -44,7 +44,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "125B total / ~6B active",
-      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "64GB",
       "backends": [
         "CUDA"

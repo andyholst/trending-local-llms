@@ -1,6 +1,23 @@
 {
   "_source": "GitHub /repos API, captured 2026-10-02 for tests (offline)",
   "repos": {
+    "0xbakeer/tandemllm": {
+      "full_name": "0xBakeer/TandemLLM",
+      "description": "An environment where open models work as agents: a first-level harness with routing, skills, memory and sandboxed tools, on an engine that drafts and verifies its own tokens.",
+      "topics": [
+        "ai-agents",
+        "dgx-spark",
+        "exl3",
+        "inference-engine",
+        "llm-inference",
+        "local-ai",
+        "nvfp4",
+        "quantization",
+        "qwen",
+        "self-hosted",
+        "speculative-decoding"
+      ]
+    },
     "asf0/strix-llama.cpp": {
       "full_name": "asf0/strix-llama.cpp",
       "description": "LLM inference in C/C++",
@@ -113,6 +130,28 @@
       "description": "llama.cpp – Adaptive Speculation + Fastest Vulkan on AMD Strix Halo",
       "topics": []
     },
+    "hardenedlinux/sonicboom": {
+      "full_name": "hardenedlinux/SonicBoom",
+      "description": "A compiler-first PyTorch alternative. MLIR-based Boom IR, Guile scripting, CUDA and CPU. On consumer GPUs it already beats llama.cpp’s LLM decode with the same kernels; the compiler makes the difference. GPLv3.",
+      "topics": [
+        "deep-learning-compiler",
+        "deepseek",
+        "gemma",
+        "gguf",
+        "guile",
+        "inference-engine",
+        "lisp",
+        "llama-cpp",
+        "llm-inference",
+        "local-llm",
+        "ml-compiler",
+        "mlir",
+        "pytorch-alternative",
+        "quantization",
+        "qwen",
+        "scheme"
+      ]
+    },
     "hikicoder/llama.cpp": {
       "full_name": "hikicoder/llama.cpp",
       "description": "DeepSeek-V4.1-Flash expert streaming on a ~20 GB GPU: faster prefill for JigSawPT's dsv41-porte branch (fork of JigSawPT/llama.cpp). See README-dsv41.md.",
@@ -154,6 +193,32 @@
         "macos",
         "mlx",
         "openai-api"
+      ]
+    },
+    "l-forster/open-jet": {
+      "full_name": "L-Forster/open-jet",
+      "description": "An offline coding agent for local models. One command sets up the best model your GPU can run, and on 24 GB+ RTX 30/40/50-series cards Qwen3.8-27B runs up to 1.9x faster than llama.cpp.",
+      "topics": [
+        "agent",
+        "ai",
+        "ai-agents",
+        "claude-code",
+        "codex",
+        "coding-agent",
+        "cuda",
+        "inference",
+        "inference-engine",
+        "llama-cpp",
+        "llm",
+        "llm-inference",
+        "local-first",
+        "local-llm",
+        "offline-ai",
+        "ollama",
+        "open-jet",
+        "openai",
+        "openjet",
+        "self-hosted"
       ]
     },
     "laurentzuijdwijk/llama.cpp": {
