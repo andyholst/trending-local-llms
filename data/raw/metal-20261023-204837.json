@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (M-series Mac), MLX track",
+          "quant": "ternary 2GB weights, speculative decoding; MLX track of the PrismML x Darkbloom mlx.fast open-optimization challenge; +442.3% over the 144.9 tok/s launch baseline",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/pratikg/status/2112561683420061907",
+          "likes": 16,
+          "comments": 14,
+          "reshares": 16,
+          "views": 17712,
+          "weight_gb": "2GB (ternary)",
+          "engine_min_version": "mlx.fast (Yukon Research) MLX track"
+        }
+      ],
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Tom's Hardware AgentPerf-Local run on an AMD Ryzen AI Max+ 395 (Strix Halo) in llama.cpp built natively for ROCm; the post reports end-to-end agent task time (13.29 min), not a per-card t/s",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "56",
+          "hardware": "AMD Ryzen AI Max+ 395",
+          "quant": "ROCm build; AgentPerf-Local agent workload (13.29 min end-to-end, vs 8.08 min on RTX Spark and 10.12 min on M5 Max; post states no t/s)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 4,
+          "views": 706,
+          "interactions": 716
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T20:56:19Z"
+}

@@ -379,6 +379,44 @@ def test_app_bundled_inference_server():
           c("Desktop app chat UI", ["inference-server"]) == "not-engine")
 
 
+def test_engine_topics_beat_a_bundled_harness():
+    """A repo that ships its OWN inference engine next to a bundled harness IS an
+    engine — and the tool is registered under the RUNTIME's name, never the
+    technique's.
+
+    Measured (the 2026-10-23 refresh): 0xBakeer/TandemLLM — "An environment where
+    open models work as agents: a first-level harness with routing, skills, memory
+    and sandboxed tools, on an engine that drafts and verifies its own tokens",
+    topics `inference-engine` / `llm-inference` — was refused on the word
+    'harness', so the measurement recorded the TECHNIQUE as its engine
+    (`StairCut`) and no registry entry for the repo the post names could survive
+    `test_registered_engines_never_refused`. The post: "TandemLLM: Combining AI
+    Agents and Inference in One Stack … using StairCut speculative decoding to
+    speed up Qwen3.8-27B on a single NVIDIA DGX Spark".
+    """
+    kind, why = ER.classify_repo(real_meta()["0xbakeer/tandemllm"], "TandemLLM")
+    check("topics: a repo whose topics declare an inference engine is an engine", kind == "engine", f"{kind}: {why}")
+    check("topics: the reason names the declared engine and the bundled layer",
+          "inference engine" in why and "harness" in why, why)
+    # The boundary holds in both directions: a harness with NO engine topic stays
+    # refused, and the deny-list still wins over any topic.
+    plain = {"full_name": "acme/agentbox", "description": "An agent harness with routing, skills and tools.",
+             "topics": ["ai-agents", "local-ai"]}
+    check("topics: a harness with no engine topic stays refused",
+          ER.classify_repo(plain, "AgentBox")[0] == "not-engine", ER.classify_repo(plain, "AgentBox"))
+    denied = {"full_name": "deepseek-ai/deepseek-harness",
+              "description": "An agent harness on top of an inference engine", "topics": ["inference-engine"]}
+    check("topics: the deny-list still wins over an engine topic",
+          ER.classify_repo(denied, "DeepSeekHarness")[0] == "not-engine", ER.classify_repo(denied, "DeepSeekHarness"))
+    # And the data the rule exists for: the RUNTIME is registered, the technique is not.
+    s = _real_store()
+    check("topics: TandemLLM is registered from the post that names it",
+          s["engines"].get("TandemLLM", {}).get("url") == "https://github.com/0xBakeer/TandemLLM",
+          s["engines"].get("TandemLLM"))
+    check("topics: no measurement records the technique as an engine",
+          not any(e.get("engine") == "StairCut" for m in s["models"] for e in m.get("engines") or []))
+
+
 def test_search_prompts_look_up_missing_repos():
     """mlx-serve's post linked no repo, so engine_repo was empty and ingest
     could not register it. The prompts must ask for ONE verified lookup."""
@@ -678,6 +716,7 @@ def main() -> int:
     test_registered_engines_never_refused()
     test_classifier_signals()
     test_app_bundled_inference_server()
+    test_engine_topics_beat_a_bundled_harness()
     test_search_prompts_look_up_missing_repos()
     test_repo_slug_edges()
     test_invalid_name_never_registered()

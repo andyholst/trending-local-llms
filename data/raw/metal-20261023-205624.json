@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "Apple Mac mini (M5 Pro, 64GB unified memory)",
+          "quant": "ternary weights (-1/0/+1); fits in 8.4GB, about half what Gemma 3 27B needs; measured with Apple's MLX vs Gemma 3 27B at 18 tok/s",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/pratikg/status/2112217547366088851",
+          "likes": 51,
+          "comments": 307,
+          "reshares": 10,
+          "views": 51898,
+          "weight_gb": "8.4GB (ternary)",
+          "system_ram_min": "64GB unified memory"
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

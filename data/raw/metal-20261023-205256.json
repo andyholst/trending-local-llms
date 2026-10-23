@@ -1,0 +1,36 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "183B MoE",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "134.4",
+          "hardware": "NVIDIA GB300 workstation (ASUS ET900N G3)",
+          "quant": "NVFP4, no additional acceleration techniques; single request with 64 concurrent users, per-user tok/s",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/AlicanKiraz0/status/2112630102366499175",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 621
+        }
+      ],
+      "vram_min": "12GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

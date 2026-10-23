@@ -1,0 +1,60 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:23:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "77.44",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q4_0 KV cache, --spec-draft-n-max 3, development llama.cpp PR #27342; native MTP on the same card/context gives 66.85 tok/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 9,
+          "comments": 1,
+          "reshares": 2,
+          "views": 820,
+          "interactions": 832,
+          "context_tokens": "150000",
+          "engine_min_version": "llama.cpp PR #27342 (--spec-type draft-dflash --spec-draft-n-max 3)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "75.93",
+          "hardware": "RTX 4090 24GB",
+          "quant": "custom Q2_K DFlash2 drafter (700MB vs 1.1GB Q4_K_M), 28K prompt, max draft length 3, ~93.7% acceptance; speed unchanged vs the official drafter",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113069180664832019",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 2,
+          "views": 591,
+          "interactions": 598,
+          "context_tokens": "28000",
+          "engine_min_version": "DFlash2 drafter quantized Q4_K_M -> Q2_K"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "On a single 24GB RTX 4090, swapping native MTP for DFlash2 in llama.cpp lifts decode from 66.85 to 77.44 tok/s at 150K context (at the cost of prefill, 1,750 vs 2,360 tok/s), and a 700MB Q2_K drafter keeps 75.93 tok/s while saving ~450MB of VRAM."
+    }
+  ]
+}

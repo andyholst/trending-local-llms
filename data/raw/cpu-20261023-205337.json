@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "493GB NVFP4",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio, 512GB each (Thunderbolt 5 + RDMA)",
+          "quant": "compressed weights, one complete copy per machine; Apple-measured generation speed for Meta's documented Mac setup (four 256GB Mac Studios also allowed)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 82,
+          "interactions": 0,
+          "system_ram_min": "1TB (2x 512GB unified)"
+        }
+      ],
+      "why": "816B MoE (42B active, 1M context) whose Mac recipe needs 1TB of unified memory across two M5 Ultra Mac Studios: 25 tok/s generated.",
+      "last_seen": "2026-10-19"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:53:37Z"
+}

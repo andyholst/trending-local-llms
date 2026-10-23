@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "MacBook Pro M4 Pro 2024, 48GB unified memory",
+          "quant": "4-bit model with DFlash2 speculative decoding; dev-reported comparison on the same box: oMLX+DFlash2 127, Ollama+MTP 89, LM Studio 86, MTPLX 80, llama.cpp+MTP 69 tok/s",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 3,
+          "comments": 4,
+          "reshares": 0,
+          "views": 593,
+          "system_ram_min": "48GB unified memory"
+        },
+        {
+          "engine": "Kapitsa",
+          "tps": "281",
+          "hardware": "M5 Max Mac, 128GB unified memory",
+          "quant": "same engine, M5 Max run; second model on the same box, Nemotron 3.5 Super-VL 120B, at 85 tok/s",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 3,
+          "comments": 4,
+          "reshares": 0,
+          "views": 593,
+          "system_ram_min": "128GB unified memory"
+        }
+      ],
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:33:00Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio, 512GB unified memory each (1TB total), Thunderbolt 5 + RDMA",
+          "quant": "Meta's documented Mac recipe for the compressed Muse Spark Open weights; each machine needs storage for a complete copy of the model",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 83,
+          "interactions": 83,
+          "system_ram_min": "1024GB (2x512GB, two machines)"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Meta's own Mac guide for Muse Spark Open needs two 512GB M5 Ultra Mac Studios linked over Thunderbolt 5 with RDMA (or four 256GB machines) and generates about 25 tok/s generation — the open 816B model runs locally, but only as a cluster on a desk."
+    }
+  ]
+}

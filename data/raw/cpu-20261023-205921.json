@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "free to ship under $10M revenue",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "80GB",
+      "vram_min": "not stated",
+      "context_tokens": "131072",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1415",
+          "hardware": "A100 SXM4 80GB (single)",
+          "quant": "vLLM at 32 concurrent requests; Massed Compute published benchmark, live numbers public (L40S value comparison: 1,110 tokens per second per dollar)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 15,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 15
+        }
+      ],
+      "why": "Liquid AI's 24B MoE (2B active): 1,415 output tok/s at 32 concurrent requests on one A100 with vLLM.",
+      "last_seen": "2026-10-22"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:59:21Z"
+}

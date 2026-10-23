@@ -1,0 +1,40 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "E2B",
+      "hf": "google/gemma-4-E2B-it",
+      "vram_tier": "CPU / iGPU",
+      "vram_min": "1.5GB",
+      "system_ram_min": "1432 MB peak (Pi 5)",
+      "weight_gb": "1432 MB peak memory on Pi 5 (LiteRT)",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU, LiteRT-LM)",
+          "quant": "LiteRT-LM; 99 tokens/sec prefill reported on the same run",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 548,
+          "interactions": 3,
+          "system_ram_min": "1432 MB peak (Pi 5)"
+        }
+      ],
+      "why": "Google's edge path: Gemma 4 E2B on a Raspberry Pi 5 via LiteRT-LM at 9 tok/s decode (99 tok/s prefill), 1432 MB peak.",
+      "last_seen": "2026-09-05"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:49:39Z"
+}

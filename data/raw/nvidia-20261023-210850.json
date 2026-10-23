@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:08:50Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB",
+          "quant": "Qwen3.8-Flash-Next 125B; established 70-100 tok/s decode and 1,500 tok/s prefill across RTX 3090/4090/5090 (per Niko Veit's measurements)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101",
+          "likes": 184,
+          "comments": 51,
+          "reshares": 3,
+          "views": 15935,
+          "interactions": 16173
+        }
+      ],
+      "last_seen": "2026-10-03",
+      "why": "Coldniko's cross-card 125B MoE figures were quoted as 70-100 tok/s decode and 1,500 tok/s prefill on RTX 3090, 4090 and 5090 — the 3090 figure taken as the 24GB-class entry; prefill figures excluded from the decode rank."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "why": "Reported 100-140 t/s range for the RTX 5090 run; the AMD evidence is the RX 7900 XTX at 52-60 output t/s (post states 8GB+ AMD GPU) with Strata's experimental HIP backend",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "AMD RX 7900 XTX (24GB GDDR6)",
+          "quant": "HIP (ROCm) backend, KV cache k8v4; post states 8GB+ AMD GPU",
+          "date": "2026-09-29",
+          "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+          "likes": 509,
+          "comments": 43,
+          "reshares": 58,
+          "views": 41183,
+          "interactions": 41793
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T20:55:19Z"
+}

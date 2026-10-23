@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:19:00Z",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5-9B (jackrong DSV4 Flash distill)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.5-9B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "36",
+          "hardware": "AMD RX 5700 XT 8GB (Vulkan on Linux)",
+          "quant": "jackrong Qwen3.5-9B DSV4 Flash distill, ~36 tok/s, full-day coding session against a ~30-file codebase",
+          "date": "2026-06-24",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2069828515156148597",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 614,
+          "interactions": 624
+        }
+      ],
+      "last_seen": "2026-06-24",
+      "why": "A 9B DSV4 Flash distill wrapped in Hermes/Pi/OverCR ran a full day of coding at ~36 tok/s through llama.cpp on an 8GB AMD RX 5700 XT — the low-VRAM setup people are told does not work; it hit the 64K context wall on the hardest task instead of running out of speed."
+    }
+  ]
+}

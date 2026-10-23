@@ -1,0 +1,83 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:15:05Z",
+  "models": [
+    {
+      "id": "ornith-1.5-9b",
+      "name": "Ornith 1.5 9B",
+      "full_name": "Ornith 1.5 9B (MTP head on)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "ornith-ai/Ornith-1.5-9B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "RTX 4060 8GB",
+          "quant": "MTP on (draft acceptance 0.95, mean draft length 2.27), q8 KV caches; memory bandwidth and GPU utilisation halved vs MTP off",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+          "likes": 33,
+          "comments": 34,
+          "reshares": 0,
+          "views": 242,
+          "interactions": 309
+        }
+      ],
+      "last_seen": "2026-10-13",
+      "why": "Ornith 1.5 9B through llama.cpp with Multi-Token Prediction hit only ~15 tok/s generation and ~200 tok/s prompt processing on an 8GB RTX 4060: the MTP head's own KV cache and activations pushed a layer or two across PCIe into system RAM, so near-perfect 0.95 draft acceptance still cost half the speed."
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB gaming laptop, i7-12700H, 16GB DDR4",
+          "quant": "Unsloth IQ4_XS, 25 GPU layers offloaded, Q4_0 KV cache, native MTP",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 131,
+          "comments": 10,
+          "reshares": 15,
+          "views": 15074,
+          "interactions": 15230,
+          "weight_gb": "14.6GB IQ4_XS",
+          "context_tokens": "64000",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "last_seen": "2026-10-13",
+      "why": "Qwen3.8-27B runs a 64,000-token context on an 8GB RTX 4060 laptop by splitting the 14.6GB IQ4_XS weights between 25 GPU layers and system RAM, at ~5 tok/s decode and 150 tok/s prefill — slow, but proof the 27B dense model fits a mainstream 8GB card without VRAM overflow."
+    }
+  ]
+}

@@ -70,6 +70,20 @@ _ENGINE = re.compile(
     r"gguf|ggml|llama\.cpp|bitnet|cuda kernels?|metal kernels?|quantized inference|"
     r"speculative decoding|token(?:s)? per second|tensorrt|mlx|onnx runtime|vllm|sglang|"
     r"rocm|hip kernels?|vulkan (?:backend|inference|compute))\b", re.I)
+# Author-declared ENGINE topics — the exception to "a strong not-engine signal
+# always wins", and the same shape as the app rule above: a repo that SHIPS an
+# inference engine next to a bundled layer is an engine. 0xBakeer/TandemLLM
+# describes itself as "An environment where open models work as agents: a
+# first-level harness with routing, skills, memory and sandboxed tools, on an
+# engine that drafts and verifies its own tokens" while its own TOPICS are
+# `inference-engine`, `llm-inference` — and the post it came from says
+# "TandemLLM: Combining AI Agents and Inference in One Stack … using StairCut
+# speculative decoding to speed up Qwen3.8-27B" (issue: the refresh recorded the
+# TECHNIQUE as the engine, `StairCut`, because the classifier refused the repo
+# the post actually names). The deny-list still wins, and a harness that does
+# NOT declare an engine in its topics stays refused.
+_TOPIC_ENGINE = re.compile(
+    r"\b(inference[ -]engine|inference[ -]server|llm[ -]inference|model[ -]serving)\b", re.I)
 
 
 def repo_slug(url: str) -> str | None:
@@ -91,6 +105,15 @@ def classify_repo(meta: dict | None, name: str = "") -> tuple[str, str]:
                      " ".join(t.replace("-", " ") for t in (meta.get("topics") or []))])
     neg = _NOT_ENGINE.search(text)
     if neg:
+        # A repo whose own TOPICS declare an inference engine is an engine even
+        # when the description also names a bundled harness (see _TOPIC_ENGINE);
+        # the deny-list above still wins, and a harness with no engine topic
+        # stays refused.
+        topics = " ".join(t.replace("-", " ") for t in (meta.get("topics") or []))
+        own_topic = _TOPIC_ENGINE.search(topics)
+        if own_topic:
+            return "engine", (f"repo declares an {own_topic.group(0).lower()!r} in its topics "
+                              f"(its {neg.group(0).lower()!r} is a bundled layer)")
         return "not-engine", f"repo describes a {neg.group(0).lower()!r}, not an inference engine"
     app = _APP_NOT_ENGINE.search(text)
     if app:

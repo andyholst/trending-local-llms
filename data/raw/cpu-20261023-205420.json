@@ -1,0 +1,55 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8-27B based, ternary)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "5.93GB (ternary)",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "143",
+          "hardware": "RTX 5090 32GB",
+          "quant": "Ternary 1.72-bit weights compressed 53.8GB -> 5.93GB; 98.2% of Qwen3.8-27B's aggregate score",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2101718479250264407",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 444,
+          "interactions": 5,
+          "weight_gb": "5.93GB (ternary)"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "mlx.fast via the Yukon Research open challenge (302.7% over the frozen baseline, which was ~59 tok/s)",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 22,
+          "comments": 25,
+          "reshares": 340,
+          "views": 94771,
+          "interactions": 387,
+          "system_ram_min": "16GB"
+        }
+      ],
+      "why": "Ternary 27B at 5.93GB: 143 tok/s on one RTX 5090 and 237.4 tok/s on a 16GB Mac (mlx.fast).",
+      "last_seen": "2026-09-26"
+    }
+  ],
+  "generated_utc": "2026-10-23T20:54:20Z"
+}

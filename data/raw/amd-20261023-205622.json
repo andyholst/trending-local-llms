@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 stack, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Ordinary-conversation decode is ~133 tok/s; the 381 tok/s headline reproduces text already in the 25K-token prompt (context lookup), and the baseline is 82 tok/s",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "NVIDIA RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup + prefix caching, RTX 3090 (no CUDA); ordinary conversation figure (381 tok/s only on text copied from the prompt, baseline 82 tok/s)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 0,
+          "views": 584,
+          "interactions": 591,
+          "context_tokens": "25K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T20:56:22Z"
+}

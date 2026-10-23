@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "Meta Muse Model License (label requirement; separate agreement if >$20M revenue via API)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio, 512GB each (Thunderbolt 5 + RDMA)",
+          "quant": "compressed weights, one full copy per machine; Apple-measured generation speed for Meta's documented Mac setup; 1M-token context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 82,
+          "views": 0,
+          "system_ram_min": "1TB (2x 512GB unified)",
+          "context_tokens": "1M"
+        }
+      ],
+      "vram_min": "512GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

@@ -1,0 +1,78 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B (vision-language)",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (mlx.fast track, Mac)",
+          "quant": "ternary 2GB weights; MLX track of the PrismML x DarkbloomAI mlx.fast open-optimization challenge; 144.9 -> 913.1 tok/s over five days (+442.3%)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 5,
+          "views": 552,
+          "weight_gb": "2GB (ternary)",
+          "engine_min_version": "mlx.fast challenge (Yukon Research)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales; ~2GB footprint, over 9x smaller than the full-precision Qwen3.5 original; vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 8,
+          "views": 986,
+          "weight_gb": "2.0GB (ternary)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "Apple iPhone 18 Pro Max (on-device)",
+          "quant": "ternary 2GB pack, agent tasks on-device; PrismML vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 52,
+          "views": 0,
+          "weight_gb": "2.0GB (ternary)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
+          "quant": "ternary 2GB model; Yukon's stated launch floor on the Mac track",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 12,
+          "comments": 3,
+          "reshares": 1,
+          "views": 3622,
+          "weight_gb": "2GB (ternary)",
+          "engine_min_version": "mlx.fast (Yukon Research challenge)"
+        }
+      ],
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-23T21:39:41Z"
+}

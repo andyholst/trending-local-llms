@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:32:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "179",
+          "hardware": "M5 Max Pro (Apple Silicon)",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint, ~9x smaller than full precision; vendor figure, per-benchmark retention 92-100% on the 9B; the ternary GGUF packings need PrismML's llama.cpp fork (upstream loads only Q2_0)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 0,
+          "views": 986,
+          "interactions": 999,
+          "weight_gb": "2GB ternary"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "PrismML's ternary Bonsai 2 9B puts reasoning, vision and tool calling in ~2GB and reports up to 179 tok/s on an M5 Max Pro (34 tok/s on an iPhone 18 Pro Max) — vendor numbers, but with per-benchmark retention published (92.4% tool calling, 100% instruction following)."
+    }
+  ]
+}

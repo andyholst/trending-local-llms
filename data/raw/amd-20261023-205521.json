@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Faster AMD variant reported on an M5 Max (281 tok/s, Kapitsa) is Apple hardware; the AMD-side figure is llama.cpp on a Ryzen AI Max+ 395",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "57",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "ROCm build (per the post)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 4,
+          "views": 706,
+          "interactions": 716
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T20:55:21Z"
+}

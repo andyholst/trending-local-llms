@@ -1,0 +1,98 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:21:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b-mlx-fast",
+      "name": "Bonsai 2 27B (mlx.fast)",
+      "full_name": "Ternary Bonsai 2 27B on mlx.fast",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "114",
+          "hardware": "Mac Studio M3 Ultra (Apple Silicon)",
+          "quant": "Ternary Bonsai 2 27B (5.9GB in memory) on gbx v0.8.2, 2.7x the official MLX runtime",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/GreenBitAI/status/2113307890522214885",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 1,
+          "views": 66,
+          "interactions": 72,
+          "weight_gb": "5.9GB ternary"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "GreenBitAI's gbx v0.8.2 runs the 5.9GB ternary Bonsai 2 27B at 114 tok/s on an M3 Ultra — 2.7x the official MLX runtime — and 62 tok/s on a DGX Spark at 2.1x llama.cpp, the same weights in every case."
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "85",
+          "hardware": "RTX 5070 Ti 16GB, 32GB system RAM",
+          "quant": "PrismML runtime, 8K context; short replies ~85 tok/s and a tool call passed, but a real Pi agent session at 64K left the machine unusable (GPU at 95%)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/rlarguesa/status/2113251561371513205",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 63,
+          "interactions": 64,
+          "context_tokens": "8192",
+          "system_ram_min": "32GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "62",
+          "hardware": "DGX Spark (GB10, 128GB unified)",
+          "quant": "Ternary Bonsai 2 27B on gbx v0.8.2, 2.1x llama.cpp on the same machine",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/GreenBitAI/status/2113307890522214885",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 1,
+          "views": 66,
+          "interactions": 72,
+          "weight_gb": "5.9GB ternary"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "A sceptical real-world check on a 16GB RTX 5070 Ti: the Prism runtime gave ~85 tok/s short replies at 8K context, but at 64K inside a Pi coding agent the machine became unusable — the counter-example to the speed demos, and the reason Bonsai 2 remains a context/VRAM trade rather than a free win."
+    }
+  ]
+}

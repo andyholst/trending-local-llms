@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:31:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "134.4",
+          "hardware": "ASUS ET900N G3 desktop workstation (NVIDIA GPU, single instance)",
+          "quant": "Qwen3.8-Flash-Next-NVFP4, single request with 64 concurrent users, no extra acceleration: 134.4 tok/s per user",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/AlicanKiraz0/status/2112630102366499175",
+          "likes": 82,
+          "comments": 6,
+          "reshares": 2,
+          "views": 6628,
+          "interactions": 6718
+        }
+      ],
+      "last_seen": "2026-10-20",
+      "why": "Qwen3.8-Flash-Next-NVFP4 on vLLM held 134.4 tok/s per user with 64 concurrent users on one desktop workstation instance and no speculative tricks — the serving-side figure for the 125B MoE rather than a single-user demo."
+    }
+  ]
+}

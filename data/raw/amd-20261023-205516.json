@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "LFM Open License",
+      "params": "24B (2.5B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "weight_gb": "14.5GB Q4 GGUF",
+      "why": "Liquid AI's reported 114 tok/s on an AMD Ryzen AI Max+ 395 (Strix Halo), from the post naming the card; Q4 GGUF ~14.5GB, 24B params with ~2.5B active",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "Q4 GGUF, ROCm",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113073556321886241",
+          "likes": 8,
+          "comments": 1,
+          "reshares": 2,
+          "views": 744,
+          "interactions": 755,
+          "weight_gb": "14.5GB Q4 GGUF"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T20:55:16Z"
+}

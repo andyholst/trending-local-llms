@@ -1,0 +1,51 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:20:00Z",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "system_ram_min": "60GB",
+      "context_tokens": "32768",
+      "storage_offload": "192GB engram on Gen4 7GB/s NVMe, MoE experts streamed from disk",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (hikicoder fork)",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (~17GB VRAM) + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe",
+          "quant": "DeepSeek-V4.1-Flash-Uncensored GGUF at full precision, hikicoder/llama.cpp branch dsv41-ada-medvram, fp16 KV at 32K context, thermally throttled",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 0,
+          "views": 288,
+          "interactions": 293,
+          "weight_gb": "192GB engram on NVMe",
+          "context_tokens": "32768",
+          "system_ram_min": "128GB",
+          "storage_offload": "192GB engram on Gen4 7GB/s NVMe",
+          "engine_min_version": "hikicoder/llama.cpp branch dsv41-ada-medvram"
+        }
+      ],
+      "last_seen": "2026-09-24",
+      "why": "The same run now reports 2 tok/s generation (down from 17) with prefill falling from ~23 to ~10-14.5 tok/s as the A4500 thermally throttles — full-precision DeepSeek-V4.1-Flash still runs on a 20GB Ampere card by streaming its 192GB engram from NVMe, just not fast enough for agentic use."
+    }
+  ]
+}

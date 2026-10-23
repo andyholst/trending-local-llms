@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T21:35:00Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "63.4",
+          "hardware": "NVIDIA DGX Spark (single, 128GB unified), both engines with default drafters",
+          "quant": "write-a-new-story round after a 67K-token prompt; Magnitude gives 50.4 tok/s (0.79x) on the same box, while on Magnitude's own copy-a-passage test Ollama is 87.2 vs 188.9 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 9,
+          "comments": 5,
+          "reshares": 2,
+          "views": 1380,
+          "interactions": 1396,
+          "context_tokens": "67000",
+          "engine_min_version": "Ollama 0.40.5 (Magnitude 0.2.9 on the comparison side)"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "why": "An independent rebuild of Magnitude's '2x faster than Ollama' claim on one DGX Spark: the 2.17x holds for copying a 66K-token passage (87.2 vs 188.9 tok/s) but flips to 0.79x for writing a new story (63.4 vs 50.4), so the headline is workload-shaped rather than general."
+    }
+  ]
+}
