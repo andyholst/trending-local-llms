@@ -1,0 +1,86 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-23T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "UD-Q4_K_XL + Qwen3.8-27B-DFlash2-Q4_K_M drafter, Q8_0 KV cache at 90K context; 79.71 tok/s at 120K with --spec-draft-n-max 4 (native MTP 70.83 at 100K)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "90000",
+          "engine_min_version": "llama.cpp PR #27342 build, --spec-type draft-dflash --spec-draft-n-max 3 -c 150000 -ngl 99 -ctv q4_0 -ctk q4_0"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0
+      },
+      "why": "Single RTX 4090, llama.cpp PR #27342: DFlash2 beats native MTP on decode at equal KV precision (80.76 vs 70.83 tok/s at ~100K, 77.44 vs 66.85 at 150K with Q4_0 KV) while giving up prefill speed (~1,750 vs ~2,360 tok/s)."
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (PrismML, built on Qwen3.8-27B)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "60.4",
+          "hardware": "RTX 4070 12GB (display on the iGPU)",
+          "quant": "5.9GB ternary weights with Q4_0/Q3_0 KV cache; bonsai-ada-surgery recipe, 60.4 tok/s at 245K context",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/SympathyLabs/status/2113376897598116121",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 3,
+          "interactions": 0,
+          "engine_repo": "https://github.com/professorpalmer/bonsai-ada-surgery",
+          "weight_gb": "5.9GB ternary",
+          "context_tokens": "245000"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 3,
+        "last_7d_likes": 0
+      },
+      "why": "5.9GB ternary 27B serving its trained 262K context on a 12GB card: the MIT-licensed bonsai-ada-surgery recipe hits 60.4 tok/s at 245K on an RTX 4070 12GB with Q4_0/Q3_0 KV and 158/164 on HumanEval."
+    }
+  ]
+}

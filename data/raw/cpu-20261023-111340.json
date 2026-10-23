@@ -1,0 +1,81 @@
+{
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp with PR #27342; 90K context; native MTP at 100K context: 70.83 t/s; MTP prefill ~2,360 t/s vs DFlash2 ~1,750 t/s; --spec-draft-n-max 4 gives 79.71 t/s at 120K",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "90K",
+          "weight_gb": "UD-Q4_K_XL",
+          "engine_min_version": "development llama.cpp build containing PR #27342, --spec-draft-n-max 3"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "206.1",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4 quantization + DSpark speculative decoding, Day-0 SGLang support; NVIDIA DGX Spark on the same post: 38.28 t/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113065943605649611",
+          "likes": 8,
+          "comments": 1,
+          "reshares": 2,
+          "views": 744,
+          "interactions": 16
+        },
+        {
+          "engine": "MLX",
+          "tps": "70",
+          "hardware": "M5 Max MacBook Pro",
+          "quant": "DFlash 2 speculative decoding (block-diffusion drafter), reported for Qwen3.8-27B on Apple Silicon",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113186919760707688",
+          "likes": 14,
+          "comments": 0,
+          "reshares": 3,
+          "views": 1300,
+          "interactions": 23
+        },
+        {
+          "engine": "vLLM",
+          "tps": "250",
+          "hardware": "RTX 3090 (single)",
+          "quant": "HyperQwen serving build (vLLM) with agent-generated CUDA kernels; PRE-FILL throughput, still below llama.cpp's ~700 tok/s prefill — not a decode figure; llama.cpp prefill on the same post ~700 t/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113063508166189466",
+          "likes": 8,
+          "comments": 4,
+          "reshares": 2,
+          "views": 934,
+          "interactions": 22
+        }
+      ],
+      "last_seen": "2026-10-23"
+    }
+  ],
+  "generated_utc": "2026-10-23T11:13:39Z",
+  "backend": "cpu"
+}

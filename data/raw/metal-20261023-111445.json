@@ -1,0 +1,122 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B + DFlash2 speculative decoding (developer-reported; Kapitsa's own benchmark)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 17,
+          "comments": 5,
+          "reshares": 4,
+          "views": 1142,
+          "interactions": 22,
+          "engine_repo": "https://github.com/nace-ai/kapitsa",
+          "system_ram_min": "48GB unified memory"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit + DFlash2 speculative decoding (same reported benchmark)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 17,
+          "comments": 5,
+          "reshares": 4,
+          "views": 1142,
+          "interactions": 22,
+          "system_ram_min": "48GB unified memory"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit + MTP speculative decoding (same reported benchmark)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 17,
+          "comments": 5,
+          "reshares": 4,
+          "views": 1142,
+          "interactions": 22,
+          "system_ram_min": "48GB unified memory"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit + MTP speculative decoding (same reported benchmark)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 17,
+          "comments": 5,
+          "reshares": 4,
+          "views": 1142,
+          "interactions": 22,
+          "system_ram_min": "48GB unified memory"
+        }
+      ],
+      "last_seen": "2026-10-23"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "MTP speculative decoding, code generation (prose 53 tok/s, draft acceptance 78%)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 934,
+          "comments": 8,
+          "reshares": 2,
+          "views": 4,
+          "interactions": 944
+        }
+      ],
+      "last_seen": "2026-10-23"
+    }
+  ],
+  "generated_utc": "2026-10-23T11:14:45Z"
+}

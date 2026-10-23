@@ -1,0 +1,79 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (PrismML / DarkbloomAI)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "959.6",
+          "hardware": "Apple Silicon (Apple M5 Max verification rig, mlx.fast open-optimization leaderboard)",
+          "quant": "ternary weights frozen (same model as the 144.8 tok/s reference), DFlash 2 drafter shrunk to 4-bit, speculative decoding; exact-token verified against the frozen reference engine",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/0xkydo/status/2113382850687009185",
+          "likes": 8998,
+          "comments": 41,
+          "reshares": 14,
+          "views": 8,
+          "interactions": 8998,
+          "engine_min_version": "mlx.fast challenge submission (Yukon CLI, verified on Apple M5 Max)"
+        }
+      ],
+      "last_seen": "2026-10-23"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "MacBook Pro M5 Max",
+          "quant": "DFlash 2 speculative decoding (Z Lab / Inco AI; DFlash 2 drafter for Qwen3.8-27B released day one for SGLang, vLLM, llama.cpp and oMLX)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113186919760707688",
+          "likes": 666,
+          "comments": 3,
+          "reshares": 2,
+          "views": 1,
+          "interactions": 668
+        }
+      ],
+      "last_seen": "2026-10-23"
+    }
+  ],
+  "generated_utc": "2026-10-23T11:13:23Z"
+}

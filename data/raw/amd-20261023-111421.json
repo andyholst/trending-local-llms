@@ -1,0 +1,53 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary-Bonsai-2-4B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "A phone-sized ternary model (0.95GB) running in a custom CMF Phone 2 Pro app at 5-6 tok/s on the 4B and 10-11 tok/s on the 2B; on an M5 Pro it streams 32 concurrent requests while peaking under 4GB and generating over 700 tok/s in total.",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "5",
+          "hardware": "Nothing CMF Phone 2 Pro (Android, custom app UI)",
+          "quant": "ternary 0.95GB weights, on-device app build",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 115,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 121,
+          "weight_gb": "0.95GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "21.875",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary weights, peak memory under 4GB, 700+ tok/s aggregate over 32 streams",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 4,
+          "reshares": 15,
+          "views": 5259,
+          "interactions": 136,
+          "weight_gb": "0.95GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T11:14:21Z"
+}

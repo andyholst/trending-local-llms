@@ -1,0 +1,77 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Strata's experimental Strix Halo support scales to a 1M context without a big decode drop; a balanced 100W profile holds ~27 tok/s at 168K-262K context while 140W performance mode reaches 55-58 tok/s decode.",
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "Radeon 8060S / Strix Halo laptop (Bosgame M5, balanced mode)",
+          "quant": "ROCm (experimental Strix Halo support), Unsloth Q4 and GSQ-RCO weights",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 16,
+          "comments": 8,
+          "reshares": 0,
+          "views": 580,
+          "interactions": 32,
+          "system_ram_min": "128GB unified",
+          "context_tokens": "262144"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "64GB",
+      "weight_gb": "39.2GB IQ2_XS",
+      "context_tokens": "128000",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Same 125B MoE switching runtimes instead of hardware: llama.cpp managed 27 tok/s at 60K context on an RTX 4070 where Strata reached 53.2, and Strata's AMD install path is ./setup.sh --backend hip on RX 7900 XT/XTX, 9070/9070 XT or R9700.",
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "53.2",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "HIP (ROCm, experimental, no image input yet), 60K context",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 123,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 127,
+          "system_ram_min": "64GB",
+          "weight_gb": "39.2GB IQ2_XS"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T11:14:10Z"
+}

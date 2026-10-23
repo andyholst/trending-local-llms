@@ -1,0 +1,342 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE, MTP)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "190 tok/s on a single RX 7900 XTX at a 291W power cap on a Vulkan build at Q4_K_M, 97% draft acceptance with MTP on; a second identical card reproduced 194.7 tok/s and the lower figure was posted.",
+      "last_seen": "2026-07-11",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "190",
+          "hardware": "RX 7900 XTX 24GB",
+          "quant": "Vulkan, Q4_K_M, MTP on (97% draft acceptance), 291W power cap, N=5 warmup discarded",
+          "date": "2026-07-11",
+          "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+          "likes": 114,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 117,
+          "engine_min_version": "llama.cpp b9292"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-swift",
+      "name": "Qwen3.8-27B Swift 1.5",
+      "full_name": "Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Community testing of the GSQ-RCO GGUF family reports a 16GB Radeon RX 9070 XT running Swift 1.5 at around 45 tok/s with a 128K context configuration.",
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "GSQ-RCO GGUF",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "131072"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "AMD's own preliminary validation runs Qwen3.8 27B dense on a Radeon AI PRO R9700 at up to 51.8 tok/s on Windows with llama.cpp's Vulkan backend and MTP=2; AMD's Tokenomics Calculator then bases its local-throughput assumptions on Qwen3.6-35B-A3B at Q4_K_M with llama.cpp + Vulkan.",
+      "last_seen": "2026-09-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "51.8",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan backend, MTP=2, AMD-published preliminary validation on Windows",
+          "date": "2026-09-06",
+          "source_post": "https://lightbrd.com/xfxjapan/status/2096715285923520644",
+          "likes": 37,
+          "comments": 2,
+          "reshares": 0,
+          "views": 4276,
+          "interactions": 406
+        }
+      ]
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "full_name": "Muse Glimmer 30B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B",
+      "hf": "meta-models/Muse-Glimmer-30B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "AMD announced day-zero local support for Meta's open-weight Muse Glimmer 30B on Ryzen AI Max+ Agentic PCs and Radeon AI PRO GPUs, with results quoted for Ryzen AI Max+ silicon.",
+      "last_seen": "2026-08-10",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "34.5",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "ROCm",
+          "date": "2026-08-10",
+          "source_post": "https://lightbrd.com/MikeLongTerm/status/2086789931725197720",
+          "likes": 51,
+          "comments": 5,
+          "reshares": 0,
+          "views": 45212,
+          "interactions": 252
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "DFlash2 speculative decoding on Strix Halo under llama.cpp + Vulkan lifts 32K-context decode from 10.54 to 21.11 tok/s; it needs two GGUFs (a UD-Q4_K_XL target plus a DFlash2 Q8_0 drafter) and PR #27342, which is not in mainline yet.",
+      "last_seen": "2026-09-20",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21.11",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395)",
+          "quant": "Vulkan backend, Qwen3.8-27B UD-Q4_K_XL target + DFlash2 Q8_0 drafter, DFlash 2 n=4, 32K context",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 25,
+          "comments": 5,
+          "reshares": 2,
+          "views": 2562,
+          "interactions": 135,
+          "context_tokens": "32768",
+          "engine_min_version": "llama.cpp PR #27342 (DFlash 2 spec decode, still open, not in mainline)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "235B (MoE, ~22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified LPDDR5X",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "A single Strix Halo (128GB unified LPDDR5X) generates 14-17 tok/s on this 235B MoE at roughly Q3, with Vulkan often edging out ROCm for generation; smaller 3-5B-active MoEs reach 50-80+ tok/s on the same box.",
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "14",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (Ryzen AI Max+ 395, 96-110GB usable)",
+          "quant": "Vulkan (often edges out ROCm for generation), ~Q3, ~100GB weights",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 272,
+          "interactions": 2,
+          "system_ram_min": "128GB unified LPDDR5X",
+          "weight_gb": "~100GB at ~Q3"
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (A2B MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "14.5GB Q4_K_M",
+      "context_tokens": "131072",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Liquid AI's own benchmark puts this 24B/2.5B-active MoE at 114 tok/s on an AMD Ryzen AI Max+ 395 (184 tok/s on an Apple M5 Max), with a 131K context window.",
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "ROCm, Q4 GGUF 14.5GB",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113073556321886241",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "14.5GB Q4_K_M",
+          "context_tokens": "131072"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "system_ram_min": "~90GB",
+      "weight_gb": "EXL3 5.05 bpw",
+      "context_tokens": "230000",
+      "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Three-tier memory setup on a 32GB Radeon: 112 experts per MoE layer on the GPU, 400 in CPU RAM, and a ~102GB BF16 n-gram table streamed from NVMe, holding ~230K context at 34.7 tok/s.",
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "engine_repo": "https://github.com/CarouselAether/rocm_exl3",
+          "tps": "34.7",
+          "hardware": "32GB Radeon GPU",
+          "quant": "ROCm, EXL3 5.05 bpw, Q8 KV cache",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "~90GB",
+          "weight_gb": "EXL3 5.05 bpw",
+          "context_tokens": "230000",
+          "storage_offload": "~102GB BF16 n-gram table streamed from NVMe"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Adaptive speculation in a Strix Halo llama.cpp fork reaches 65 tok/s decode (440 tok/s prefill) on Qwen3.8 27B, up from 44 tok/s on mainline.",
+      "last_seen": "2026-08-25",
+      "engines": [
+        {
+          "engine": "llama.cpp (LaurentZuijdwijk fork)",
+          "engine_repo": "https://github.com/LaurentZuijdwijk/llama.cpp",
+          "tps": "65",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "ROCm, adaptive speculative decoding",
+          "date": "2026-08-25",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2092215141144162519",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 1,
+          "views": 352,
+          "interactions": 7
+        }
+      ]
+    },
+    {
+      "id": "qwen3-next-80b-a3b",
+      "name": "Qwen3-Next-80B-A3B",
+      "full_name": "Qwen3-Next-80B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "80B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "Requantised to rocmfp4 (a deliberately low-quality quant) with MTP enabled, Qwen3-Next reaches 32 tok/s on Strix Halo; the same fork now keeps the n-gram table in GPU memory, cutting CPU use with no speed cost.",
+      "last_seen": "2026-08-27",
+      "engines": [
+        {
+          "engine": "llama.cpp (LaurentZuijdwijk fork)",
+          "engine_repo": "https://github.com/LaurentZuijdwijk/llama.cpp",
+          "tps": "32",
+          "hardware": "Radeon 8060S / Strix Halo 128GB",
+          "quant": "ROCm (rocmfp4), MTP on",
+          "date": "2026-08-27",
+          "source_post": "https://lightbrd.com/laurent_zw/status/2092765822494110061",
+          "likes": 12,
+          "comments": 2,
+          "reshares": 1,
+          "views": 711,
+          "interactions": 29,
+          "system_ram_min": "128GB unified"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-23T11:13:56Z"
+}
