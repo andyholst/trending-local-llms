@@ -1,0 +1,99 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-24T10:28:43Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "single RTX 4090 24GB (DFlash2 speculative decoding in llama.cpp replacing native MTP)",
+          "quant": "Unsloth UD-Q4_K_XL weights + Q8_0 KV cache, 90K context, --spec-draft-n-max 3, nat-spec MTP baseline 70.83 tok/s at 100K",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "llama.cpp dev build containing PR #27342 (--spec-type draft-dflash --spec-draft-n-max 3)"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "DFlash2 speculative decoding inside a dev llama.cpp build (PR #27342) took Qwen3.8-27B from 70.83 to 80.76 tok/s at 90-100K context on one RTX 4090 with Q8_0 KV cache, ~14% over native MTP, and 79.71 tok/s at 120K with --spec-draft-n-max 4 - at the cost of slower prefill (1750 vs 2360 tok/s)."
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "167.3",
+          "hardware": "RTX 5090 32GB (Strata Flash-Next GSQ-RCO, near 262K input context)",
+          "quant": "GSQ-RCO build, thinking off, 10 requests per condition; median decode near 262K was 81.2 tok/s on the EXL3/TabbyAPI side",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/MarcelHolter/status/2112906753134461067",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 46
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Same RTX 5090, 1K to ~262K input tokens: Strata (Flash-Next GSQ-RCO) held 167.3 tok/s median decode near 262K where the EXL3/TabbyAPI setup fell to 81.2, and cut first-token wait at 128K from 52.55s to 21.08s."
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "97",
+          "hardware": "RTX 4070 12GB (bonsai-ada-surgery recipe)",
+          "quant": "5.9GB ternary weights, q8_0 KV cache; 60.4 tok/s reported at 245K context with q4_0/q3_0 KV, 158/164 HumanEval",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/SympathyLabs/status/2113376897598116121",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 17,
+          "weight_gb": "5.9GB",
+          "context_tokens": "262144"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "bonsai-ada-surgery serves the same 5.9GB ternary Bonsai 2 27B weights at 262K-trained context on a 12GB RTX 4070: 60.4 tok/s at 245K with q4_0/q3_0 KV cache and 54 to 97 tok/s decode with q8_0 KV, with the display driven by the iGPU to leave VRAM for the context."
+    }
+  ]
+}

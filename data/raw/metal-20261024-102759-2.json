@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (35B MoE, ~3B active, hybrid Mamba)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B / ~3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Runs as a local backup lane for a Hermes agent stack on a Mac mini M4 Pro 64GB (~19GB model), where tokens/s is not the finish line but agent reliability is.",
+      "last_seen": "2026-07-04",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "19",
+          "hardware": "Mac mini M4 Pro 64GB",
+          "quant": "Qwen3.6-35B-A3B-4bit (~19GB model), Rapid-MLX upgraded to v0.9.12, used as a local backup agent lane",
+          "date": "2026-07-04",
+          "source_post": "https://lightbrd.com/Topaz750/status/2073331746217538012",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 4,
+          "views": 605,
+          "interactions": 6,
+          "system_ram_min": "64GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:27:59Z"
+}

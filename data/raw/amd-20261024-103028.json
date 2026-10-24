@@ -1,0 +1,83 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Ternary Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Qwen3.8-27B, ternary −1/0/+1)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "5.93GB (ternary, ~1.72 bits/weight)",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Ternary Bonsai 2 27B is Qwen3.8-27B compressed 9x with 98.2% of the benchmark score; a 12GB RTX 4070 Ti decodes ~54 tok/s at ~9GB VRAM, an RTX 3060 12GB ~35-40 tok/s with 220K-262K context resident, and a 16GB M1 Pro runs it at 9 tok/s",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "54",
+          "hardware": "RTX 4070 Ti 12GB",
+          "quant": "PQ2; 64-token reasoning budget; 8K context; ~9.0GB VRAM",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/brokevibecoder/status/2104236304099881362",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 154,
+          "interactions": 159,
+          "context_tokens": "8K"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0; 220K context; ~550 t/s prefill excluded; MTP head restored",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 43,
+          "comments": 6,
+          "reshares": 6,
+          "views": 15550,
+          "interactions": 15605,
+          "context_tokens": "220K",
+          "weight_gb": "7.21GB model file (PQ2_0)"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2 ternary; full 262K context resident; 77-minute Hermes agent build with 25 tools",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "MLX",
+          "tps": "9",
+          "hardware": "MacBook Pro M1 Pro, 16GB unified memory",
+          "quant": "ternary (~7GB weights); runs entirely on a 16GB Mac",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 153,
+          "interactions": 153,
+          "system_ram_min": "16GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:30:28Z"
+}

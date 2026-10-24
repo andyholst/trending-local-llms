@@ -1,0 +1,55 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b-strix-halo-strata",
+      "name": "Qwen3.8-Flash-Next 125B on Strix Halo (Strata)",
+      "full_name": "Qwen3.8-Flash-Next 125B via Strata on a Strix Halo laptop (Unsloth Q4 / GSQ-RCO weights)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "96GB",
+      "vram_min": "16GB",
+      "system_ram_min": "96GB",
+      "context_tokens": "1000000",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "why": "Eugene Smarts on Strata's experimental Strix Halo support: a 16GB VRAM + 96GB RAM Strix Halo laptop sustains 27 t/s decode at 168K-262K context on Qwen3.8-Flash-Next, and 55-58 t/s decode at 140W performance mode; context scales to 1M without a big decode drop",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "Strix Halo laptop, 16GB VRAM + 96GB RAM (Bosgame M5), 140W performance mode",
+          "quant": "Unsloth Q4 / GSQ-RCO weights; ROCm; 55-58 t/s decode at performance mode, 1400-1500 t/s prefill excluded",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 16,
+          "comments": 8,
+          "reshares": 0,
+          "views": 586,
+          "interactions": 610,
+          "system_ram_min": "96GB (with 16GB VRAM)"
+        },
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "AMD Strix Halo laptop, 16GB VRAM + 96GB RAM",
+          "quant": "Unsloth Q4 / GSQ-RCO weights; real DeepSeek-harness work at 168K-262K context; Linux-only experimental Strix Halo build",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 16,
+          "comments": 8,
+          "reshares": 0,
+          "views": 586,
+          "interactions": 610,
+          "system_ram_min": "96GB (with 16GB VRAM)",
+          "context_tokens": "262144"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:29:24Z"
+}

@@ -1,0 +1,98 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-24T10:41:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "250",
+          "hardware": "single consumer GPU (RTX 5090, per the companion post on the same run)",
+          "quant": "Flash-Next GSQ-RCO build near 262K input context, EXL3/TabbyAPI comparison held 81.2 tok/s at the same length",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/BetterStackHQ/status/2112529266479100239",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "why": "Strata served Qwen3.8-Flash-Next at 250 tok/s on a single consumer GPU in the same 262K-input comparison where the EXL3/TabbyAPI setup managed 81.2 tok/s."
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "OpenVINO",
+          "tps": "30",
+          "hardware": "LattePanda Sigma 2 single-board computer (Intel Core Ultra X7 358H, Arc B390 graphics, up to 64GB LPDDR5X-8533)",
+          "quant": "INT4",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2113876566547845590",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 55,
+          "system_ram_min": "64GB LPDDR5X (up to 59GB usable for AI work)",
+          "engine_repo": "https://github.com/openvinotoolkit/openvino"
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "LattePanda measured Qwen3.6-35B-A3B at around 30 tok/s in INT4 through OpenVINO on its Sigma 2 board (Core Ultra X7 358H + Arc B390, up to 64GB LPDDR5X), which it pitches as room for 35B-class quantized MoE models plus long-context KV cache."
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1415",
+          "hardware": "one A100 SXM4 (Massed Compute); L40S was the best value at 1110 tok/s per dollar",
+          "quant": "",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 21
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "Massed Compute's public benchmark measured LFM2.5-24B-A2B at 1415 output tok/s with 32 concurrent requests on one A100 SXM4 through vLLM, with an L40S the best value at 1110 tok/s per dollar."
+    }
+  ]
+}

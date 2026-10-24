@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-23T23:25:40Z",
+  "generated_utc": "2026-10-24T11:03:21Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -196,6 +196,18 @@
       "backend": "CUDA",
       "url": "https://github.com/0xBakeer/TandemLLM",
       "note": "TandemLLM (agent harness + its own inference engine, StairCut speculative decoding) on one NVIDIA DGX Spark: 49.89 tok/s single-stream for Qwen3.8-27B — https://lightbrd.com/crazyMLguy/status/2112762558348513637; the post's 'StairCut' is the technique, so the runtime it ran in is what is registered"
+    },
+    "llama.cpp (custom KV-streaming fork)": {
+      "backend": "ROCm",
+      "url": "https://github.com/ggml-org/llama.cpp",
+      "note": "Auto-registered from https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747 — LLM inference in C/C++",
+      "auto": true
+    },
+    "OpenVINO": {
+      "backend": "CPU",
+      "url": "https://github.com/openvinotoolkit/openvino",
+      "note": "Auto-registered from https://lightbrd.com/AIQuanting/status/2113876566547845590 — OpenVINO™ is an open source toolkit for optimizing and deploying AI inference",
+      "auto": true
     }
   },
   "models": [
@@ -222,6 +234,23 @@
       ],
       "engines": [
         {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "2x RTX 5060 Ti 16GB (32GB total, all layers split across both cards, MTP draft head)",
+          "quant": "IQ4_XS weights, q4_0 KV cache with flash attention, 262k context in two 128k slots; IQ4_XS also 20% faster than Q5_K_M at the same score",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/laky_fx/status/2113901739170501046",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 4,
+          "views": 106,
+          "weight_gb": "15.5GB",
+          "context_tokens": "262144",
+          "system_ram_min": "32GB",
+          "engine_min_version": "-fa (flash attention) with q4_0 KV cache; built-in MTP draft head (--spec-type mtp)",
+          "interactions": 0
+        },
+        {
           "engine": "oMLX",
           "tps": "72",
           "hardware": "Mac Studio M4 Max",
@@ -246,6 +275,20 @@
           "reshares": 2,
           "views": 1,
           "interactions": 668
+        },
+        {
+          "engine": "OpenJet",
+          "tps": "140",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "code generation, 140 tok/s vs 73 in OpenJet's own llama.cpp test",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
+          "likes": 0,
+          "comments": 257,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "OpenJet engine build (github.com/L-Forster/open-jet)"
         },
         {
           "engine": "SGLang",
@@ -301,19 +344,6 @@
           "reshares": 3,
           "views": 1300,
           "interactions": 23
-        },
-        {
-          "engine": "OpenJet",
-          "tps": "140",
-          "hardware": "single RTX 3090 24GB",
-          "quant": "L-Forster's OpenJet coding agent build, code workload, vs 73 tok/s in its llama.cpp test; the engine code and benchmarks are public (github.com/L-Forster/open-jet) and the poster is asking for reproductions",
-          "date": "2026-10-22",
-          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 278,
-          "interactions": 278
         },
         {
           "engine": "DFlash2",
@@ -1478,7 +1508,7 @@
         "likes": 4120,
         "comments": 890,
         "views": 384000,
-        "last_7d_likes": 35,
+        "last_7d_likes": 30,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
@@ -2416,15 +2446,15 @@
           },
           {
             "url": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
-            "date": "2026-10-22",
+            "date": "2026-10-23",
             "engine": "OpenJet",
             "tps": "140",
             "hardware": "single RTX 3090 24GB",
-            "quant": "L-Forster's OpenJet coding agent build, code workload, vs 73 tok/s in its llama.cpp test; the engine code and benchmarks are public (github.com/L-Forster/open-jet) and the poster is asking for reproductions",
+            "quant": "code generation, 140 tok/s vs 73 in OpenJet's own llama.cpp test",
             "likes": 0,
-            "comments": 0,
+            "comments": 257,
             "reshares": 0,
-            "views": 278
+            "views": 0
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2112882263629181238",
@@ -2449,15 +2479,39 @@
             "comments": 1,
             "reshares": 0,
             "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/AGTPinsights/status/2110336928159784961",
+            "date": "2026-10-14",
+            "engine": "llama.cpp",
+            "tps": "20",
+            "hardware": "Jailbroken PS5 (RDNA 2 GPU, ~12 GiB memory available with the GPU)",
+            "quant": "2-bit Qwen 3.8 27B; PS5LM llama.cpp port; ~20 tok/s on the console GPU vs about 1 token per minute on its CPU",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/laky_fx/status/2113901739170501046",
+            "date": "2026-10-24",
+            "engine": "llama.cpp",
+            "tps": "45",
+            "hardware": "2x RTX 5060 Ti 16GB (32GB total, all layers split across both cards, MTP draft head)",
+            "quant": "IQ4_XS weights, q4_0 KV cache with flash attention, 262k context in two 128k slots; IQ4_XS also 20% faster than Q5_K_M at the same score",
+            "likes": 4,
+            "comments": 1,
+            "reshares": 4,
+            "views": 106
           }
         ],
-        "posts_7d": 35,
-        "score_7d": 117.9,
-        "buzz_7d": 117.9,
+        "posts_7d": 30,
+        "score_7d": 106.2,
+        "buzz_7d": 106.2,
         "speed_bonus": 11.5,
-        "trend_score": 129.4
+        "trend_score": 117.7
       },
-      "last_seen": "2026-10-23",
+      "last_seen": "2026-10-24",
       "engine_aliases": {
         "StairCut": "TandemLLM"
       },
@@ -2486,7 +2540,7 @@
         "ROCm",
         "Metal"
       ],
-      "last_seen": "2026-10-21",
+      "last_seen": "2026-10-23",
       "engines": [
         {
           "engine": "Strata",
@@ -2496,7 +2550,7 @@
           "date": "2026-10-21",
           "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
           "likes": 2,
-          "comments": 0,
+          "comments": 2,
           "reshares": 3,
           "views": 621,
           "interactions": 5,
@@ -2513,7 +2567,7 @@
           "likes": 1,
           "comments": 0,
           "reshares": 0,
-          "views": 40,
+          "views": 46,
           "interactions": 1,
           "context_tokens": "262K"
         },
@@ -3021,8 +3075,8 @@
           "likes": 880,
           "comments": 64,
           "reshares": 64,
-          "views": 122284,
-          "interactions": 1448,
+          "views": 122319,
+          "interactions": 123313,
           "context_tokens": "131072"
         },
         {
@@ -3196,7 +3250,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 17,
+        "last_7d_likes": 12,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/TraffAlex/status/2105745724444930467",
@@ -3798,15 +3852,15 @@
           },
           {
             "url": "https://lightbrd.com/BetterStackHQ/status/2112529266479100239",
-            "date": "2026-10-20",
+            "date": "2026-10-23",
             "engine": "Strata",
             "tps": "250",
-            "hardware": "single RTX 5090",
-            "quant": "Strata expert offload across GPU/RAM/SSD; reported 3-5x faster than Qwen 3.8 Flash in the cloud",
-            "likes": 2,
-            "comments": 1,
+            "hardware": "single consumer GPU (RTX 5090, per the companion post on the same run)",
+            "quant": "Flash-Next GSQ-RCO build near 262K input context, EXL3/TabbyAPI comparison held 81.2 tok/s at the same length",
+            "likes": 0,
+            "comments": 0,
             "reshares": 0,
-            "views": 407
+            "views": 0
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
@@ -3816,7 +3870,7 @@
             "hardware": "RTX 5090 32GB",
             "quant": "Strata MoE offload; upper bound of the post's reported 100-140 tok/s range (an RTX 5070 Ti reaches 50-70 tok/s on the same setup)",
             "likes": 2,
-            "comments": 0,
+            "comments": 2,
             "reshares": 3,
             "views": 621
           },
@@ -3825,12 +3879,12 @@
             "date": "2026-10-21",
             "engine": "Strata",
             "tps": "167.3",
-            "hardware": "single consumer GPU (not named in the excerpt)",
-            "quant": "GSQ-RCO weights, Strata; median decode near 262K context (EXL3/TabbyAPI on the same test: 81.2 tok/s)",
+            "hardware": "RTX 5090 32GB (Strata Flash-Next GSQ-RCO, near 262K input context)",
+            "quant": "GSQ-RCO build, thinking off, 10 requests per condition; median decode near 262K was 81.2 tok/s on the EXL3/TabbyAPI side",
             "likes": 1,
             "comments": 0,
             "reshares": 0,
-            "views": 40
+            "views": 46
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2112706809773338757",
@@ -3869,458 +3923,17 @@
             "views": 9001
           }
         ],
-        "posts_7d": 17,
-        "score_7d": 68.4,
-        "buzz_7d": 68.4,
+        "posts_7d": 12,
+        "score_7d": 48.5,
+        "buzz_7d": 48.5,
         "speed_bonus": 6.6,
-        "trend_score": 75.0
+        "trend_score": 55.1
       },
       "system_ram_min": "32GB",
       "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
       "context_tokens": "250K",
       "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
       "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7"
-    },
-    {
-      "id": "bonsai-2-9b",
-      "name": "Bonsai 2 9B",
-      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
-      "type": "LLM (ternary, VLM)",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
-        },
-        {
-          "name": "MLX",
-          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
-        }
-      ],
-      "license": "Apache 2.0",
-      "params": "9B",
-      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
-      "vram_tier": "8GB",
-      "vram_min": "6GB",
-      "weight_gb": "2.0GB (ternary)",
-      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
-      "backends": [
-        "Metal",
-        "CUDA",
-        "CPU"
-      ],
-      "last_seen": "2026-10-23",
-      "why": "Ternary 9B vision-language model in ~2GB (more than 9x smaller than full precision): 92.4% tool-calling / 98.2% math / 100% instruction-following retention vs the Qwen3.5 baseline.",
-      "engines": [
-        {
-          "engine": "MLX-fast (Bonsai 2)",
-          "tps": "959.6",
-          "hardware": "Apple Silicon (Apple M5 Max verification rig, mlx.fast open-optimization leaderboard)",
-          "quant": "ternary weights frozen (same model as the 144.8 tok/s reference), DFlash 2 drafter shrunk to 4-bit, speculative decoding; exact-token verified against the frozen reference engine",
-          "date": "2026-10-23",
-          "source_post": "https://lightbrd.com/0xkydo/status/2113382850687009185",
-          "likes": 8998,
-          "comments": 41,
-          "reshares": 14,
-          "views": 8,
-          "interactions": 8998,
-          "engine_min_version": "mlx.fast challenge submission (Yukon CLI, verified on Apple M5 Max)",
-          "weight_gb": "2GB"
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "94.75",
-          "hardware": "RTX 3060 (WebGPU backend of llama.cpp)",
-          "quant": "ternary Bonsai generation on the llama.cpp WebGPU path, build b11809; tg128 after the WebGPU matmul fix (14.02 tok/s before), pp512 1,915.91 tok/s for the 2B",
-          "date": "2026-10-22",
-          "source_post": "https://lightbrd.com/dsoch8c/status/2113166671364211092",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 24,
-          "interactions": 0,
-          "engine_min_version": "llama.cpp b11809 (WebGPU matmul support, PR #30914)"
-        },
-        {
-          "engine": "MLX-fast (Bonsai 2)",
-          "tps": "913.1",
-          "hardware": "Apple Silicon",
-          "quant": "mlx.fast, Yukon Research open-optimization leaderboard (PrismML + DarkbloomAI challenge), promoted run; baseline when the challenge started: 144.9 tokens/s",
-          "date": "2026-10-21",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
-          "likes": 2,
-          "comments": 0,
-          "reshares": 0,
-          "views": 552,
-          "interactions": 2,
-          "weight_gb": "~2GB",
-          "engine_min_version": "mlx.fast (PrismML/DarkbloomAI Yukon Research challenge)"
-        },
-        {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "88",
-          "hardware": "RTX 3060 12GB",
-          "quant": "ternary weights; core-v2 agentic benchmark 46.2% (4/12 solved), 2.56 GiB of weights",
-          "date": "2026-10-20",
-          "source_post": "https://lightbrd.com/1101hati/status/2112343979568038169",
-          "likes": 27,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 27,
-          "weight_gb": "2.56 GiB ternary"
-        },
-        {
-          "engine": "MLX",
-          "tps": "913.1",
-          "hardware": "Apple Silicon (M-series Mac), MLX track",
-          "quant": "ternary 2GB weights, speculative decoding; MLX track of the PrismML x Darkbloom mlx.fast open-optimization challenge; +442.3% over the 144.9 tok/s launch baseline",
-          "date": "2026-10-20",
-          "source_post": "https://lightbrd.com/pratikg/status/2112561683420061907",
-          "likes": 16,
-          "comments": 14,
-          "reshares": 16,
-          "views": 17712,
-          "weight_gb": "2GB (ternary)",
-          "engine_min_version": "mlx.fast (Yukon Research) MLX track",
-          "interactions": 0
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "114",
-          "hardware": "RTX 3060 12GB",
-          "quant": "PTQ1_0 ternary quant; llama-server with GPU offload, Flash Attention, 262,144-token context, Q8_0 K/V cache (Q8_0 cache for both keys and values), vision projector loaded separately; ~1,800 tok/s prefill; ~7.5GB reported memory footprint",
-          "weight_gb": "~7.5GB runtime footprint (PTQ1_0)",
-          "context_tokens": "262144",
-          "engine_min_version": "llama-server, GPU offload, Flash Attention, Q8_0 K/V cache",
-          "date": "2026-10-19",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
-          "likes": 2,
-          "comments": 1,
-          "reshares": 7,
-          "views": 454,
-          "interactions": 10
-        },
-        {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "114",
-          "hardware": "RTX 3060 12GB",
-          "quant": "PTQ1_0 requires PrismML's llama.cpp fork (stock llama.cpp rejects the format); ~1,800 tok/s prefill, 262K context",
-          "weight_gb": "~7.5GB runtime footprint (PTQ1_0)",
-          "context_tokens": "262144",
-          "engine_min_version": "PrismML llama.cpp fork (PTQ1_0 loader)",
-          "date": "2026-10-19",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
-          "likes": 2,
-          "comments": 1,
-          "reshares": 7,
-          "views": 454,
-          "interactions": 10
-        },
-        {
-          "engine": "MLX",
-          "tps": "179",
-          "hardware": "Apple M5 Max Pro",
-          "quant": "ternary weights (-1/0/+1) with group-wise scales; ~2GB footprint, over 9x smaller than the full-precision Qwen3.5 original",
-          "weight_gb": "2.0GB (ternary)",
-          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
-          "likes": 979,
-          "comments": 8,
-          "reshares": 8,
-          "views": 986,
-          "interactions": 995,
-          "date": "2026-10-16",
-          "engine_min_version": "MLX (Bonsai 2 pack); ternary GGUF packings need PrismML's llama.cpp fork"
-        },
-        {
-          "engine": "MLX",
-          "tps": "34",
-          "hardware": "iPhone 18 Pro Max",
-          "quant": "ternary weights, on-device agent tasks; the 2B reaches up to 120 tok/s on the same phone",
-          "weight_gb": "2.0GB (ternary)",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-          "likes": 1,
-          "comments": 1,
-          "reshares": 52,
-          "views": 39,
-          "interactions": 47
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "163",
-          "hardware": "RTX 3060 12GB",
-          "quant": "Ternary Bonsai 2 9B weights running on NVIDIA via llama.cpp",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
-          "likes": 965,
-          "comments": 8,
-          "reshares": 5,
-          "views": 0,
-          "interactions": 978,
-          "weight_gb": "2.0GB (ternary)",
-          "context_tokens": "262000",
-          "engine_min_version": "-m Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf --spec-type draft-mtp --spec-draft-n-max 2"
-        },
-        {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "34.8",
-          "hardware": "Lenovo Snapdragon X laptop, CPU-only, Debian",
-          "quant": "Prompt processing 34.8 tok/s vs 15.6 stock (2.2x); PrismML llama.cpp fork + ggml, one .deb, no compiling",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/th3ycallmeibra/status/2111135412119117896",
-          "likes": 0,
-          "comments": 6,
-          "reshares": 0,
-          "views": 36,
-          "interactions": 6
-        },
-        {
-          "engine": "MLX",
-          "tps": "36",
-          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
-          "quant": "NVFP4 (~493GB weights), 8,192-token context; Apple MLX distributed inference",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/Chahatusharma/status/2111173528838103533",
-          "likes": 1,
-          "comments": 0,
-          "reshares": 34,
-          "views": 0,
-          "interactions": 35,
-          "weight_gb": "~493GB NVFP4",
-          "context_tokens": "8192"
-        },
-        {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "179",
-          "hardware": "M5 Max Pro (Apple Silicon)",
-          "quant": "ternary weights (-1/0/+1), ~2GB footprint, ~9x smaller than full precision; vendor figure, per-benchmark retention 92-100% on the 9B; the ternary GGUF packings need PrismML's llama.cpp fork (upstream loads only Q2_0)",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
-          "likes": 8,
-          "comments": 5,
-          "reshares": 0,
-          "views": 986,
-          "interactions": 999,
-          "weight_gb": "2GB ternary"
-        },
-        {
-          "engine": "MLX-fast (Bonsai 2)",
-          "tps": "170",
-          "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
-          "quant": "ternary 2GB model; launch floor on the Mac track",
-          "date": "2026-10-15",
-          "source_post": "https://lightbrd.com/pratikg/status/2110834170587238488",
-          "likes": 105,
-          "comments": 10,
-          "reshares": 17,
-          "views": 23458,
-          "interactions": 132,
-          "weight_gb": "2GB",
-          "engine_min_version": "mlx.fast (Yukon Research challenge)"
-        }
-      ],
-      "supported_engines": [
-        "MLX"
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 11,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/lmoroney/status/2111199452228723159",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "179",
-            "hardware": "Apple M5 Max Pro",
-            "quant": "ternary weights (-1/0/+1) with group-wise scales; ~2GB footprint, over 9x smaller than the full-precision Qwen3.5 original",
-            "likes": 979,
-            "comments": 8,
-            "reshares": 8,
-            "views": 986
-          },
-          {
-            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "34",
-            "hardware": "iPhone 18 Pro Max",
-            "quant": "ternary weights, on-device agent tasks; the 2B reaches up to 120 tok/s on the same phone",
-            "likes": 1,
-            "comments": 1,
-            "reshares": 52,
-            "views": 39
-          },
-          {
-            "url": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
-            "date": "2026-10-15",
-            "engine": "MLX-fast (Bonsai 2)",
-            "tps": "170",
-            "hardware": "Apple Silicon Mac (mlx.fast track)",
-            "quant": "ternary 2GB model; challenge floor before optimization",
-            "likes": 34,
-            "comments": 3,
-            "reshares": 12,
-            "views": 4036
-          },
-          {
-            "url": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
-            "date": "2026-10-15",
-            "engine": "llama.cpp",
-            "tps": "163",
-            "hardware": "RTX 3060 12GB",
-            "quant": "PTQ1_0 + DFlash2 draft, 262K context with Q8_0 KV; code-edit workload (rewriting a 190-line file)",
-            "likes": 2,
-            "comments": 0,
-            "reshares": 0,
-            "views": 4
-          },
-          {
-            "url": "https://lightbrd.com/lmoroney/status/2111529085382553733",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "179",
-            "hardware": "Apple M5 Max Pro",
-            "quant": "ternary weights (-1, 0, +1) with group-wise scales, ~2GB footprint; 9x smaller than full precision; PrismML reports up to 179 tok/s for the 9B on an M5 Max Pro and up to 34 on an iPhone 18 Pro Max",
-            "likes": 8,
-            "comments": 5,
-            "reshares": 0,
-            "views": 965
-          },
-          {
-            "url": "https://lightbrd.com/yukonresearch/status/2110227501633102068",
-            "date": "2026-10-15",
-            "engine": "MLX",
-            "tps": "170",
-            "hardware": "Apple Silicon Mac (mlx.fast, Yukon challenge rig)",
-            "quant": "ternary 2GB Bonsai 2 9B on mlx.fast; 'on a Mac, it starts at 170+' - the beachhead figure before optimisation; the 2GB pack runs reasoning, vision and tool calling",
-            "likes": 12,
-            "comments": 1,
-            "reshares": 32,
-            "views": 3622
-          },
-          {
-            "url": "https://lightbrd.com/th3ycallmeibra/status/2111135412119117896",
-            "date": "2026-10-16",
-            "engine": "Bonsai Oryon",
-            "tps": "34.8",
-            "hardware": "Lenovo Snapdragon X laptop, CPU-only, Debian",
-            "quant": "Prompt processing 34.8 tok/s vs 15.6 stock (2.2x); PrismML llama.cpp fork + ggml, one .deb, no compiling",
-            "likes": 0,
-            "comments": 6,
-            "reshares": 0,
-            "views": 36
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
-            "date": "2026-10-19",
-            "engine": "llama.cpp",
-            "tps": "114",
-            "hardware": "RTX 3060 12GB",
-            "quant": "PTQ1_0 ternary quant; llama-server with GPU offload, Flash Attention, 262,144-token context, Q8_0 K/V cache (Q8_0 cache for both keys and values), vision projector loaded separately; ~1,800 tok/s prefill; ~7.5GB reported memory footprint",
-            "likes": 2,
-            "comments": 1,
-            "reshares": 7,
-            "views": 454
-          },
-          {
-            "url": "https://lightbrd.com/Chahatusharma/status/2111173528838103533",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "36",
-            "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
-            "quant": "NVFP4 (~493GB weights), 8,192-token context; Apple MLX distributed inference",
-            "likes": 1,
-            "comments": 0,
-            "reshares": 34,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
-            "date": "2026-10-21",
-            "engine": "MLX",
-            "tps": "913.1",
-            "hardware": "Apple Silicon (mlx.fast track, Mac)",
-            "quant": "ternary 2GB weights; MLX track of the PrismML x DarkbloomAI mlx.fast open-optimization challenge; 144.9 -> 913.1 tok/s over five days (+442.3%)",
-            "likes": 0,
-            "comments": 2,
-            "reshares": 5,
-            "views": 552
-          },
-          {
-            "url": "https://lightbrd.com/pratikg/status/2112561683420061907",
-            "date": "2026-10-20",
-            "engine": "MLX-fast (Bonsai 2)",
-            "tps": "913.1",
-            "hardware": "Apple Silicon (mlx.fast leaderboard track)",
-            "quant": "ternary 2GB model; best promoted mlx.fast run, +442.3% over the 144.9 tok/s baseline",
-            "likes": 265,
-            "comments": 14,
-            "reshares": 15,
-            "views": 17456
-          },
-          {
-            "url": "https://lightbrd.com/pratikg/status/2110834170587238488",
-            "date": "2026-10-15",
-            "engine": "MLX-fast (Bonsai 2)",
-            "tps": "170",
-            "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
-            "quant": "ternary 2GB model; launch floor on the Mac track",
-            "likes": 105,
-            "comments": 10,
-            "reshares": 17,
-            "views": 23458
-          },
-          {
-            "url": "https://lightbrd.com/dsoch8c/status/2113166671364211092",
-            "date": "2026-10-22",
-            "engine": "llama.cpp",
-            "tps": "94.75",
-            "hardware": "RTX 3060 (WebGPU backend of llama.cpp)",
-            "quant": "ternary Bonsai generation on the llama.cpp WebGPU path, build b11809; tg128 after the WebGPU matmul fix (14.02 tok/s before), pp512 1,915.91 tok/s for the 2B",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 24
-          },
-          {
-            "url": "https://lightbrd.com/1101hati/status/2112343979568038169",
-            "date": "2026-10-20",
-            "engine": "llama.cpp (PrismML fork)",
-            "tps": "88",
-            "hardware": "RTX 3060 12GB",
-            "quant": "ternary weights; core-v2 agentic benchmark 46.2% (4/12 solved), 2.56 GiB of weights",
-            "likes": 27,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/0xkydo/status/2113382850687009185",
-            "date": "2026-10-23",
-            "engine": "MLX-fast (Bonsai 2)",
-            "tps": "959.6",
-            "hardware": "Apple Silicon (Apple M5 Max verification rig, mlx.fast open-optimization leaderboard)",
-            "quant": "ternary weights frozen (same model as the 144.8 tok/s reference), DFlash 2 drafter shrunk to 4-bit, speculative decoding; exact-token verified against the frozen reference engine",
-            "likes": 8998,
-            "comments": 41,
-            "reshares": 14,
-            "views": 8
-          }
-        ],
-        "posts_7d": 11,
-        "buzz_7d": 50.0,
-        "score_7d": 50.0,
-        "speed_bonus": 6.6,
-        "trend_score": 56.6
-      },
-      "context_tokens": "131072",
-      "system_ram_min": "4GB",
-      "engine_aliases": {
-        "Bonsai Oryon": "llama.cpp (PrismML fork)",
-        "mlx.fast": "MLX-fast (Bonsai 2)"
-      }
     },
     {
       "id": "bonsai-2-27b",
@@ -4375,6 +3988,21 @@
           "views": 66,
           "interactions": 72,
           "weight_gb": "5.9GB ternary"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "97",
+          "hardware": "RTX 4070 12GB (bonsai-ada-surgery recipe)",
+          "quant": "5.9GB ternary weights, q8_0 KV cache; 60.4 tok/s reported at 245K context with q4_0/q3_0 KV, 158/164 HumanEval",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/SympathyLabs/status/2113376897598116121",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 17,
+          "weight_gb": "5.9GB ternary",
+          "context_tokens": "245000",
+          "interactions": 0
         },
         {
           "engine": "MLX",
@@ -4595,9 +4223,10 @@
           "likes": 361,
           "comments": 14,
           "reshares": 12,
-          "views": 55494,
+          "views": 55552,
           "interactions": 401,
-          "weight_gb": "5.9GB (ternary)"
+          "weight_gb": "5.9GB (ternary)",
+          "system_ram_min": "16GB"
         },
         {
           "engine": "llama.cpp (PrismML fork)",
@@ -4612,21 +4241,8 @@
           "likes": 153,
           "comments": 4,
           "reshares": 1,
-          "views": 153,
-          "interactions": 5
-        },
-        {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "91",
-          "hardware": "RTX 4070 12GB",
-          "quant": "PTQ1_0-mtp-lean (6.3 GB)",
-          "date": "2026-09-26",
-          "source_post": "https://lightbrd.com/MarkRijckenberg",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
+          "views": 154,
+          "interactions": 159
         },
         {
           "engine": "MLX-fast (Bonsai 2)",
@@ -4689,22 +4305,6 @@
           "engine_min_version": "PrismML llama.cpp fork with restored MTP head (kernel tweaks)"
         },
         {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "26",
-          "hardware": "NVIDIA RTX 3060 12GB",
-          "quant": "PTQ1_0 5.95GB; full native 262K context, ~260 tok/s prefill (PQ2_0 on the same card gives ~35 tok/s at 220K)",
-          "weight_gb": "5.95GB (PTQ1_0)",
-          "context_tokens": "262144",
-          "date": "2026-09-19",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0,
-          "engine_min_version": "llama-server with -ngl 999"
-        },
-        {
           "engine": "MLX",
           "tps": "34.5",
           "hardware": "Mac Studio M4 Max 128GB",
@@ -4728,7 +4328,7 @@
           "likes": 153,
           "comments": 3,
           "reshares": 1,
-          "views": 0,
+          "views": 153,
           "system_ram_min": "16GB",
           "interactions": 161,
           "weight_gb": "5.9GB (ternary)"
@@ -4752,7 +4352,7 @@
         "likes": 2750,
         "comments": 640,
         "views": 84563,
-        "last_7d_likes": 14,
+        "last_7d_likes": 10,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/sudoingX/status/2105701032420687988",
@@ -5036,7 +4636,7 @@
             "likes": 361,
             "comments": 14,
             "reshares": 12,
-            "views": 55494
+            "views": 55552
           },
           {
             "url": "https://lightbrd.com/aiaicreate/status/2111776181368537264",
@@ -5060,7 +4660,7 @@
             "likes": 153,
             "comments": 4,
             "reshares": 1,
-            "views": 153
+            "views": 154
           },
           {
             "url": "https://lightbrd.com/pratikg/status/2108994425166967019",
@@ -5113,14 +4713,14 @@
           {
             "url": "https://lightbrd.com/SympathyLabs/status/2113376897598116121",
             "date": "2026-10-22",
-            "engine": "llama.cpp (PrismML fork)",
-            "tps": "60.4",
-            "hardware": "RTX 4070 12GB (display on the iGPU)",
-            "quant": "5.9GB ternary weights with Q4_0/Q3_0 KV cache; bonsai-ada-surgery recipe, 60.4 tok/s at 245K context",
-            "likes": 0,
+            "engine": "llama.cpp",
+            "tps": "97",
+            "hardware": "RTX 4070 12GB (bonsai-ada-surgery recipe)",
+            "quant": "5.9GB ternary weights, q8_0 KV cache; 60.4 tok/s reported at 245K context with q4_0/q3_0 KV, 158/164 HumanEval",
+            "likes": 1,
             "comments": 0,
             "reshares": 0,
-            "views": 3
+            "views": 17
           },
           {
             "url": "https://lightbrd.com/rlarguesa/status/2113251561371513205",
@@ -5145,25 +4745,13 @@
             "comments": 2,
             "reshares": 1,
             "views": 66
-          },
-          {
-            "url": "https://lightbrd.com/MarkRijckenberg",
-            "date": "2026-09-26",
-            "engine": "llama.cpp (PrismML fork)",
-            "tps": "91",
-            "hardware": "RTX 4070 12GB",
-            "quant": "PTQ1_0-mtp-lean (6.3 GB)",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
           }
         ],
-        "posts_7d": 14,
-        "score_7d": 41.7,
-        "buzz_7d": 41.7,
+        "posts_7d": 10,
+        "score_7d": 32.5,
+        "buzz_7d": 32.5,
         "speed_bonus": 5.9,
-        "trend_score": 47.6
+        "trend_score": 38.4
       },
       "last_seen": "2026-10-22",
       "supported_engines": [
@@ -5229,11 +4817,11 @@
           "likes": 82,
           "comments": 0,
           "reshares": 82,
-          "views": 0,
+          "views": 82,
           "system_ram_min": "1TB (2x 512GB unified)",
           "context_tokens": "1M",
           "weight_gb": "~493GB NVFP4 compressed",
-          "interactions": 0,
+          "interactions": 5,
           "engine_min_version": "Thunderbolt 5 + RDMA configured"
         },
         {
@@ -5304,7 +4892,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 11,
+        "last_7d_likes": 8,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
@@ -5436,7 +5024,7 @@
             "likes": 82,
             "comments": 0,
             "reshares": 82,
-            "views": 0
+            "views": 82
           },
           {
             "url": "https://lightbrd.com/aka_ssy/status/2111140048259403948",
@@ -5451,13 +5039,658 @@
             "views": 76
           }
         ],
-        "posts_7d": 11,
-        "buzz_7d": 40.6,
-        "score_7d": 40.6,
+        "posts_7d": 8,
+        "buzz_7d": 34.5,
+        "score_7d": 34.5,
         "speed_bonus": 2.2,
-        "trend_score": 42.8
+        "trend_score": 36.7
       },
       "system_ram_min": "1024GB"
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2.0GB (ternary)",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-23",
+      "why": "Ternary 9B vision-language model in ~2GB (more than 9x smaller than full precision): 92.4% tool-calling / 98.2% math / 100% instruction-following retention vs the Qwen3.5 baseline.",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "959.6",
+          "hardware": "Apple Silicon (Apple M5 Max verification rig, mlx.fast open-optimization leaderboard)",
+          "quant": "ternary weights frozen (same model as the 144.8 tok/s reference), DFlash 2 drafter shrunk to 4-bit, speculative decoding; exact-token verified against the frozen reference engine",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/0xkydo/status/2113382850687009185",
+          "likes": 8998,
+          "comments": 41,
+          "reshares": 14,
+          "views": 8,
+          "interactions": 8998,
+          "engine_min_version": "mlx.fast challenge submission (Yukon CLI, verified on Apple M5 Max)",
+          "weight_gb": "2GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "94.75",
+          "hardware": "RTX 3060 (WebGPU backend of llama.cpp)",
+          "quant": "ternary Bonsai generation on the llama.cpp WebGPU path, build b11809; tg128 after the WebGPU matmul fix (14.02 tok/s before), pp512 1,915.91 tok/s for the 2B",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/dsoch8c/status/2113166671364211092",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 24,
+          "interactions": 0,
+          "engine_min_version": "llama.cpp b11809 (WebGPU matmul support, PR #30914)"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (mlx.fast track of the Yukon challenge)",
+          "quant": "ternary GGUF (~2GB); decode speed only, prompt processing excluded",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "88",
+          "hardware": "RTX 3060 12GB",
+          "quant": "ternary weights; core-v2 agentic benchmark 46.2% (4/12 solved), 2.56 GiB of weights",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/1101hati/status/2112343979568038169",
+          "likes": 27,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 27,
+          "weight_gb": "2.56 GiB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "959.6",
+          "hardware": "Apple Silicon (M-series Mac), MLX track",
+          "quant": "ternary 2GB weights, speculative decoding; MLX track of the PrismML x Darkbloom mlx.fast open-optimization challenge; +442.3% over the 144.9 tok/s launch baseline",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/pratikg/status/2112561683420061907",
+          "likes": 16,
+          "comments": 14,
+          "reshares": 16,
+          "views": 17712,
+          "weight_gb": "2GB (ternary)",
+          "engine_min_version": "mlx.fast (Yukon Research) MLX track",
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 ternary quant; llama-server with GPU offload, Flash Attention, 262,144-token context, Q8_0 K/V cache (Q8_0 cache for both keys and values), vision projector loaded separately; ~1,800 tok/s prefill; ~7.5GB reported memory footprint",
+          "weight_gb": "~7.5GB runtime footprint (PTQ1_0)",
+          "context_tokens": "262144",
+          "engine_min_version": "llama-server, GPU offload, Flash Attention, Q8_0 K/V cache",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 7,
+          "views": 454,
+          "interactions": 10
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "114",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PTQ1_0 requires PrismML's llama.cpp fork (stock llama.cpp rejects the format); ~1,800 tok/s prefill, 262K context",
+          "weight_gb": "~7.5GB runtime footprint (PTQ1_0)",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp fork (PTQ1_0 loader)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 7,
+          "views": 454,
+          "interactions": 10
+        },
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary weights (-1/0/+1) with group-wise scales; ~2GB footprint, over 9x smaller than the full-precision Qwen3.5 original",
+          "weight_gb": "2.0GB (ternary)",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 979,
+          "comments": 8,
+          "reshares": 8,
+          "views": 986,
+          "interactions": 995,
+          "date": "2026-10-16",
+          "engine_min_version": "MLX (Bonsai 2 pack); ternary GGUF packings need PrismML's llama.cpp fork"
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, on-device agent tasks; the 2B reaches up to 120 tok/s on the same phone",
+          "weight_gb": "2.0GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 52,
+          "views": 39,
+          "interactions": 47
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "163",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Ternary Bonsai 2 9B weights running on NVIDIA via llama.cpp",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 965,
+          "comments": 8,
+          "reshares": 5,
+          "views": 0,
+          "interactions": 978,
+          "weight_gb": "2.0GB (ternary)",
+          "context_tokens": "262000",
+          "engine_min_version": "-m Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf --spec-type draft-mtp --spec-draft-n-max 2"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "34.8",
+          "hardware": "Lenovo Snapdragon X laptop, CPU-only, Debian",
+          "quant": "Prompt processing 34.8 tok/s vs 15.6 stock (2.2x); PrismML llama.cpp fork + ggml, one .deb, no compiling",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/th3ycallmeibra/status/2111135412119117896",
+          "likes": 0,
+          "comments": 6,
+          "reshares": 0,
+          "views": 36,
+          "interactions": 6
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
+          "quant": "NVFP4 (~493GB weights), 8,192-token context; Apple MLX distributed inference",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Chahatusharma/status/2111173528838103533",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 34,
+          "views": 0,
+          "interactions": 35,
+          "weight_gb": "~493GB NVFP4",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "179",
+          "hardware": "M5 Max Pro (Apple Silicon)",
+          "quant": "ternary weights (-1/0/+1), ~2GB footprint, ~9x smaller than full precision; vendor figure, per-benchmark retention 92-100% on the 9B; the ternary GGUF packings need PrismML's llama.cpp fork (upstream loads only Q2_0)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 0,
+          "views": 986,
+          "interactions": 999,
+          "weight_gb": "2GB ternary"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
+          "quant": "ternary 2GB model; launch floor on the Mac track",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/pratikg/status/2110834170587238488",
+          "likes": 105,
+          "comments": 10,
+          "reshares": 17,
+          "views": 23458,
+          "interactions": 132,
+          "weight_gb": "2GB",
+          "engine_min_version": "mlx.fast (Yukon Research challenge)"
+        }
+      ],
+      "supported_engines": [
+        "MLX"
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 7,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "179",
+            "hardware": "Apple M5 Max Pro",
+            "quant": "ternary weights (-1/0/+1) with group-wise scales; ~2GB footprint, over 9x smaller than the full-precision Qwen3.5 original",
+            "likes": 979,
+            "comments": 8,
+            "reshares": 8,
+            "views": 986
+          },
+          {
+            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "34",
+            "hardware": "iPhone 18 Pro Max",
+            "quant": "ternary weights, on-device agent tasks; the 2B reaches up to 120 tok/s on the same phone",
+            "likes": 1,
+            "comments": 1,
+            "reshares": 52,
+            "views": 39
+          },
+          {
+            "url": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+            "date": "2026-10-15",
+            "engine": "MLX-fast (Bonsai 2)",
+            "tps": "170",
+            "hardware": "Apple Silicon Mac (mlx.fast track)",
+            "quant": "ternary 2GB model; challenge floor before optimization",
+            "likes": 34,
+            "comments": 3,
+            "reshares": 12,
+            "views": 4036
+          },
+          {
+            "url": "https://lightbrd.com/DogukanUrker/status/2110824600087240829",
+            "date": "2026-10-15",
+            "engine": "llama.cpp",
+            "tps": "163",
+            "hardware": "RTX 3060 12GB",
+            "quant": "PTQ1_0 + DFlash2 draft, 262K context with Q8_0 KV; code-edit workload (rewriting a 190-line file)",
+            "likes": 2,
+            "comments": 0,
+            "reshares": 0,
+            "views": 4
+          },
+          {
+            "url": "https://lightbrd.com/lmoroney/status/2111529085382553733",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "179",
+            "hardware": "Apple M5 Max Pro",
+            "quant": "ternary weights (-1, 0, +1) with group-wise scales, ~2GB footprint; 9x smaller than full precision; PrismML reports up to 179 tok/s for the 9B on an M5 Max Pro and up to 34 on an iPhone 18 Pro Max",
+            "likes": 8,
+            "comments": 5,
+            "reshares": 0,
+            "views": 965
+          },
+          {
+            "url": "https://lightbrd.com/yukonresearch/status/2110227501633102068",
+            "date": "2026-10-15",
+            "engine": "MLX",
+            "tps": "170",
+            "hardware": "Apple Silicon Mac (mlx.fast, Yukon challenge rig)",
+            "quant": "ternary 2GB Bonsai 2 9B on mlx.fast; 'on a Mac, it starts at 170+' - the beachhead figure before optimisation; the 2GB pack runs reasoning, vision and tool calling",
+            "likes": 12,
+            "comments": 1,
+            "reshares": 32,
+            "views": 3622
+          },
+          {
+            "url": "https://lightbrd.com/th3ycallmeibra/status/2111135412119117896",
+            "date": "2026-10-16",
+            "engine": "Bonsai Oryon",
+            "tps": "34.8",
+            "hardware": "Lenovo Snapdragon X laptop, CPU-only, Debian",
+            "quant": "Prompt processing 34.8 tok/s vs 15.6 stock (2.2x); PrismML llama.cpp fork + ggml, one .deb, no compiling",
+            "likes": 0,
+            "comments": 6,
+            "reshares": 0,
+            "views": 36
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112166797256372718",
+            "date": "2026-10-19",
+            "engine": "llama.cpp",
+            "tps": "114",
+            "hardware": "RTX 3060 12GB",
+            "quant": "PTQ1_0 ternary quant; llama-server with GPU offload, Flash Attention, 262,144-token context, Q8_0 K/V cache (Q8_0 cache for both keys and values), vision projector loaded separately; ~1,800 tok/s prefill; ~7.5GB reported memory footprint",
+            "likes": 2,
+            "comments": 1,
+            "reshares": 7,
+            "views": 454
+          },
+          {
+            "url": "https://lightbrd.com/Chahatusharma/status/2111173528838103533",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "36",
+            "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt RDMA)",
+            "quant": "NVFP4 (~493GB weights), 8,192-token context; Apple MLX distributed inference",
+            "likes": 1,
+            "comments": 0,
+            "reshares": 34,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+            "date": "2026-10-21",
+            "engine": "MLX",
+            "tps": "913.1",
+            "hardware": "Apple Silicon (mlx.fast track, Mac)",
+            "quant": "ternary 2GB weights; MLX track of the PrismML x DarkbloomAI mlx.fast open-optimization challenge; 144.9 -> 913.1 tok/s over five days (+442.3%)",
+            "likes": 0,
+            "comments": 2,
+            "reshares": 5,
+            "views": 552
+          },
+          {
+            "url": "https://lightbrd.com/pratikg/status/2112561683420061907",
+            "date": "2026-10-20",
+            "engine": "MLX-fast (Bonsai 2)",
+            "tps": "913.1",
+            "hardware": "Apple Silicon (mlx.fast leaderboard track)",
+            "quant": "ternary 2GB model; best promoted mlx.fast run, +442.3% over the 144.9 tok/s baseline",
+            "likes": 265,
+            "comments": 14,
+            "reshares": 15,
+            "views": 17456
+          },
+          {
+            "url": "https://lightbrd.com/pratikg/status/2110834170587238488",
+            "date": "2026-10-15",
+            "engine": "MLX-fast (Bonsai 2)",
+            "tps": "170",
+            "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
+            "quant": "ternary 2GB model; launch floor on the Mac track",
+            "likes": 105,
+            "comments": 10,
+            "reshares": 17,
+            "views": 23458
+          },
+          {
+            "url": "https://lightbrd.com/dsoch8c/status/2113166671364211092",
+            "date": "2026-10-22",
+            "engine": "llama.cpp",
+            "tps": "94.75",
+            "hardware": "RTX 3060 (WebGPU backend of llama.cpp)",
+            "quant": "ternary Bonsai generation on the llama.cpp WebGPU path, build b11809; tg128 after the WebGPU matmul fix (14.02 tok/s before), pp512 1,915.91 tok/s for the 2B",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 24
+          },
+          {
+            "url": "https://lightbrd.com/1101hati/status/2112343979568038169",
+            "date": "2026-10-20",
+            "engine": "llama.cpp (PrismML fork)",
+            "tps": "88",
+            "hardware": "RTX 3060 12GB",
+            "quant": "ternary weights; core-v2 agentic benchmark 46.2% (4/12 solved), 2.56 GiB of weights",
+            "likes": 27,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/0xkydo/status/2113382850687009185",
+            "date": "2026-10-23",
+            "engine": "MLX-fast (Bonsai 2)",
+            "tps": "959.6",
+            "hardware": "Apple Silicon (Apple M5 Max verification rig, mlx.fast open-optimization leaderboard)",
+            "quant": "ternary weights frozen (same model as the 144.8 tok/s reference), DFlash 2 drafter shrunk to 4-bit, speculative decoding; exact-token verified against the frozen reference engine",
+            "likes": 8998,
+            "comments": 41,
+            "reshares": 14,
+            "views": 8
+          },
+          {
+            "url": "https://lightbrd.com/Mahone_AI/status/2113585648435163209",
+            "date": "2026-10-23",
+            "engine": "MLX",
+            "tps": "959.6",
+            "hardware": "Apple Silicon Mac (Yukon mlx.fast leaderboard)",
+            "quant": "ternary 2GB weights, frozen; exact-token leaderboard run, speculative decoding (DFlash 2 drafter shrunk to 4-bit); up from 144.8 tok/s on the challenge's mlx.fast track",
+            "likes": 2,
+            "comments": 1,
+            "reshares": 3,
+            "views": 147
+          }
+        ],
+        "posts_7d": 7,
+        "buzz_7d": 30.1,
+        "score_7d": 30.1,
+        "speed_bonus": 6.6,
+        "trend_score": 36.7
+      },
+      "context_tokens": "131072",
+      "system_ram_min": "4GB",
+      "engine_aliases": {
+        "Bonsai Oryon": "llama.cpp (PrismML fork)",
+        "mlx.fast": "MLX-fast (Bonsai 2)"
+      }
+    },
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "why": "Same card, same weights: TeksEdge took Qwen3.8-27B from an 82 t/s baseline to 381 t/s on a single RTX 3090 by stacking MTP, DFlash2 context lookup and prefix caching, with ordinary chat at about 133 t/s.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp build with PR #27342, 90K context",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 9,
+          "views": 815,
+          "interactions": 12,
+          "weight_gb": "UD-Q4_K_XL",
+          "context_tokens": "90K",
+          "engine_min_version": "development llama.cpp build containing PR #27342, --spec-draft-n-max 3"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "NVIDIA RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup + prefix caching, RTX 3090 (no CUDA); ordinary conversation figure (381 tok/s only on text copied from the prompt, baseline 82 tok/s)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+          "likes": 5,
+          "comments": 2,
+          "reshares": 0,
+          "views": 584,
+          "interactions": 591,
+          "context_tokens": "25K"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + optimized context-lookup verification (16-token blocks, ~15/16 accepted on the target workload), reproducing a ~25K-token document from its own prompt; ordinary conversation in the same report ~133 tok/s, and an earlier DFlash2 setup ~260 tok/s on the same task",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+          "likes": 792,
+          "comments": 3,
+          "reshares": 6,
+          "views": 0,
+          "interactions": 801,
+          "context_tokens": "138K"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "180",
+          "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
+          "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 12,
+          "views": 958,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "DFlash2"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 5,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+            "date": "2026-10-16",
+            "engine": "DFlash2",
+            "tps": "381",
+            "hardware": "single RTX 3090 24GB",
+            "quant": "DFlash2 speculative decoding + context lookup + optimized lookup verification, prefix caching, quantized KV; progression 82 -> 114 (optimized MTP) -> 138 (DFlash2 + lookup) -> 381 tok/s, same GPU, entirely inference-stack work",
+            "likes": 110,
+            "comments": 3,
+            "reshares": 9,
+            "views": 11065
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
+            "date": "2026-10-13",
+            "engine": "DFlash2",
+            "tps": "381",
+            "hardware": "RTX 3090 24GB",
+            "quant": "DFlash2 + context lookup, optimized lookup verification (document-reproduction workload)",
+            "likes": 1,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+            "date": "2026-10-20",
+            "engine": "DFlash2",
+            "tps": "382",
+            "hardware": "RTX 3090 24GB",
+            "quant": "DFlash2 speculative decode + optimized context-lookup verification (16-token blocks, ~15/16 accepted on the target workload), reproducing a ~25K-token document from its own prompt; ordinary conversation in the same report ~133 tok/s, and an earlier DFlash2 setup ~260 tok/s on the same task",
+            "likes": 792,
+            "comments": 3,
+            "reshares": 6,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+            "date": "2026-10-21",
+            "engine": "DFlash2",
+            "tps": "133",
+            "hardware": "NVIDIA RTX 3090 24GB",
+            "quant": "DFlash2 speculative decoding + context lookup + prefix caching, RTX 3090 (no CUDA); ordinary conversation figure (381 tok/s only on text copied from the prompt, baseline 82 tok/s)",
+            "likes": 5,
+            "comments": 2,
+            "reshares": 0,
+            "views": 584
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+            "date": "2026-10-13",
+            "engine": "DFlash2",
+            "tps": "381",
+            "hardware": "single RTX 3090 24GB",
+            "quant": "same 82 -> 381 tok/s stack progression reported on the developer's own thread (445 likes); context-lookup verification is the step that takes 138 to 381",
+            "likes": 445,
+            "comments": 14,
+            "reshares": 33,
+            "views": 32747
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
+            "date": "2026-10-20",
+            "engine": "DFlash2",
+            "tps": "180",
+            "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
+            "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
+            "likes": 1,
+            "comments": 3,
+            "reshares": 12,
+            "views": 958
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112385215423193459",
+            "date": "2026-10-20",
+            "engine": "DFlash2",
+            "tps": "382",
+            "hardware": "RTX 3090 24GB",
+            "quant": "MTP + DFlash2 speculative decoding + context lookup + larger verification batches, on a document reproduction task; initial generation ~82 tok/s before stack optimization (r/LocalLLaMA reproduction)",
+            "likes": 1,
+            "comments": 3,
+            "reshares": 2,
+            "views": 658
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+            "date": "2026-10-22",
+            "engine": "llama.cpp",
+            "tps": "80.76",
+            "hardware": "RTX 4090 24GB",
+            "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp build with PR #27342, 90K context",
+            "likes": 1,
+            "comments": 2,
+            "reshares": 9,
+            "views": 815
+          }
+        ],
+        "posts_7d": 5,
+        "buzz_7d": 21.5,
+        "score_7d": 21.5,
+        "speed_bonus": 5.3,
+        "trend_score": 26.8
+      }
     },
     {
       "id": "qwen3.6-35b-a3b",
@@ -5475,8 +5708,22 @@
         "Metal",
         "CPU"
       ],
-      "last_seen": "2026-10-23",
+      "last_seen": "2026-10-24",
       "engines": [
+        {
+          "engine": "OpenVINO",
+          "tps": "30",
+          "hardware": "LattePanda Sigma 2 single-board computer (Intel Core Ultra X7 358H, Arc B390 graphics, up to 64GB LPDDR5X-8533)",
+          "quant": "INT4",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2113876566547845590",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 55,
+          "system_ram_min": "64GB LPDDR5X (up to 59GB usable for AI work)",
+          "interactions": 0
+        },
         {
           "engine": "oMLX",
           "tps": "127",
@@ -5543,13 +5790,13 @@
           "quant": "4-bit model with DFlash2 speculative decoding; hand-optimized Metal kernels, model-aware caching, optimized MoE execution; ~2.2x llama.cpp+MTP (69 tok/s) in the same reported benchmark; also 281 tok/s on M5 Max 128GB",
           "date": "2026-10-21",
           "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
-          "likes": 5,
-          "comments": 4,
+          "likes": 17,
+          "comments": 5,
           "reshares": 17,
           "views": 1141,
           "system_ram_min": "48GB unified memory",
           "engine_min_version": "DFlash2 drafter on",
-          "interactions": 0
+          "interactions": 1167
         },
         {
           "engine": "mlx-serve",
@@ -5575,20 +5822,7 @@
           "comments": 2,
           "reshares": 4,
           "views": 706,
-          "interactions": 716
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "50",
-          "hardware": "RTX 3060 12GB + 16GB system RAM",
-          "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing (prefill, never decode); AgentPerf-Local agent workload finishes in 8.08 minutes on RTX Spark, 10.12 on M5 Max, 13.29 on Ryzen AI Max+ 395 (Tom's Hardware)",
-          "date": "2026-10-20",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0,
+          "interactions": 716,
           "weight_gb": "Q4_K_M",
           "context_tokens": "262K",
           "system_ram_min": "16GB"
@@ -5801,6 +6035,20 @@
           "interactions": 117,
           "weight_gb": "Q4_K_M",
           "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "19",
+          "hardware": "Mac mini M4 Pro 64GB",
+          "quant": "Qwen3.6-35B-A3B-4bit (~19GB model), Rapid-MLX upgraded to v0.9.12, used as a local backup agent lane",
+          "date": "2026-07-04",
+          "source_post": "https://lightbrd.com/Topaz750/status/2073331746217538012",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 4,
+          "views": 605,
+          "interactions": 6,
+          "system_ram_min": "64GB"
         }
       ],
       "supported_engines": [
@@ -5817,7 +6065,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 5,
+        "last_7d_likes": 4,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/kumard_3/status/2104882430364815555",
@@ -5934,8 +6182,8 @@
             "tps": "154",
             "hardware": "MacBook Pro M4 Pro 2024, 48GB unified memory",
             "quant": "4-bit model with DFlash2 speculative decoding; hand-optimized Metal kernels, model-aware caching, optimized MoE execution; ~2.2x llama.cpp+MTP (69 tok/s) in the same reported benchmark; also 281 tok/s on M5 Max 128GB",
-            "likes": 5,
-            "comments": 4,
+            "likes": 17,
+            "comments": 5,
             "reshares": 17,
             "views": 1141
           },
@@ -5950,171 +6198,30 @@
             "comments": 5,
             "reshares": 4,
             "views": 1142
+          },
+          {
+            "url": "https://lightbrd.com/AIQuanting/status/2113876566547845590",
+            "date": "2026-10-24",
+            "engine": "OpenVINO",
+            "tps": "30",
+            "hardware": "LattePanda Sigma 2 single-board computer (Intel Core Ultra X7 358H, Arc B390 graphics, up to 64GB LPDDR5X-8533)",
+            "quant": "INT4",
+            "likes": 2,
+            "comments": 0,
+            "reshares": 0,
+            "views": 55
           }
         ],
-        "posts_7d": 5,
-        "buzz_7d": 21.9,
-        "score_7d": 21.9,
+        "posts_7d": 4,
+        "buzz_7d": 15.5,
+        "score_7d": 15.5,
         "speed_bonus": 4.9,
-        "trend_score": 26.8
+        "trend_score": 20.4
       },
       "system_ram_min": "32GB",
       "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
       "context_tokens": "66000",
       "weight_gb": "Q4_K_M"
-    },
-    {
-      "id": "qwen3.8-27b-dflash2-teksedge3090",
-      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
-      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
-      "type": "LLM",
-      "license": "Apache 2.0",
-      "params": "27B",
-      "hf": "Qwen/Qwen3.8-27B",
-      "vram_tier": "24GB",
-      "vram_min": "24GB",
-      "backends": [
-        "Metal",
-        "CUDA"
-      ],
-      "last_seen": "2026-10-21",
-      "why": "Same card, same weights: TeksEdge took Qwen3.8-27B from an 82 t/s baseline to 381 t/s on a single RTX 3090 by stacking MTP, DFlash2 context lookup and prefix caching, with ordinary chat at about 133 t/s.",
-      "engines": [
-        {
-          "engine": "DFlash2",
-          "tps": "133",
-          "hardware": "NVIDIA RTX 3090 24GB",
-          "quant": "DFlash2 speculative decoding + context lookup + prefix caching, RTX 3090 (no CUDA); ordinary conversation figure (381 tok/s only on text copied from the prompt, baseline 82 tok/s)",
-          "date": "2026-10-21",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
-          "likes": 5,
-          "comments": 2,
-          "reshares": 0,
-          "views": 584,
-          "interactions": 591,
-          "context_tokens": "25K"
-        },
-        {
-          "engine": "DFlash2",
-          "tps": "382",
-          "hardware": "RTX 3090 24GB",
-          "quant": "DFlash2 speculative decode + optimized context-lookup verification (16-token blocks, ~15/16 accepted on the target workload), reproducing a ~25K-token document from its own prompt; ordinary conversation in the same report ~133 tok/s, and an earlier DFlash2 setup ~260 tok/s on the same task",
-          "date": "2026-10-20",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
-          "likes": 792,
-          "comments": 3,
-          "reshares": 6,
-          "views": 0,
-          "interactions": 801
-        },
-        {
-          "engine": "DFlash2",
-          "tps": "180",
-          "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
-          "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
-          "date": "2026-10-20",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
-          "likes": 1,
-          "comments": 3,
-          "reshares": 12,
-          "views": 958,
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "DFlash2"
-      ],
-      "formats": [
-        {
-          "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
-          "hf": "Qwen/Qwen3.8-27B"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 4,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
-            "date": "2026-10-16",
-            "engine": "DFlash2",
-            "tps": "381",
-            "hardware": "single RTX 3090 24GB",
-            "quant": "DFlash2 speculative decoding + context lookup + optimized lookup verification, prefix caching, quantized KV; progression 82 -> 114 (optimized MTP) -> 138 (DFlash2 + lookup) -> 381 tok/s, same GPU, entirely inference-stack work",
-            "likes": 110,
-            "comments": 3,
-            "reshares": 9,
-            "views": 11065
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112029745097408668",
-            "date": "2026-10-13",
-            "engine": "DFlash2",
-            "tps": "381",
-            "hardware": "RTX 3090 24GB",
-            "quant": "DFlash2 + context lookup, optimized lookup verification (document-reproduction workload)",
-            "likes": 1,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
-            "date": "2026-10-20",
-            "engine": "DFlash2",
-            "tps": "382",
-            "hardware": "RTX 3090 24GB",
-            "quant": "DFlash2 speculative decode + optimized context-lookup verification (16-token blocks, ~15/16 accepted on the target workload), reproducing a ~25K-token document from its own prompt; ordinary conversation in the same report ~133 tok/s, and an earlier DFlash2 setup ~260 tok/s on the same task",
-            "likes": 792,
-            "comments": 3,
-            "reshares": 6,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
-            "date": "2026-10-21",
-            "engine": "DFlash2",
-            "tps": "133",
-            "hardware": "NVIDIA RTX 3090 24GB",
-            "quant": "DFlash2 speculative decoding + context lookup + prefix caching, RTX 3090 (no CUDA); ordinary conversation figure (381 tok/s only on text copied from the prompt, baseline 82 tok/s)",
-            "likes": 5,
-            "comments": 2,
-            "reshares": 0,
-            "views": 584
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
-            "date": "2026-10-13",
-            "engine": "DFlash2",
-            "tps": "381",
-            "hardware": "single RTX 3090 24GB",
-            "quant": "same 82 -> 381 tok/s stack progression reported on the developer's own thread (445 likes); context-lookup verification is the step that takes 138 to 381",
-            "likes": 445,
-            "comments": 14,
-            "reshares": 33,
-            "views": 32747
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582",
-            "date": "2026-10-20",
-            "engine": "DFlash2",
-            "tps": "180",
-            "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
-            "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
-            "likes": 1,
-            "comments": 3,
-            "reshares": 12,
-            "views": 958
-          }
-        ],
-        "posts_7d": 4,
-        "buzz_7d": 19.3,
-        "score_7d": 19.3,
-        "speed_bonus": 5.3,
-        "trend_score": 24.6
-      }
     },
     {
       "id": "lfm2.5-24b-a2b",
@@ -6168,7 +6275,7 @@
           "likes": 15,
           "comments": 0,
           "reshares": 0,
-          "views": 19,
+          "views": 21,
           "interactions": 19
         },
         {
@@ -6349,7 +6456,7 @@
         "likes": 2,
         "comments": 0,
         "views": 6322,
-        "last_7d_likes": 5,
+        "last_7d_likes": 3,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/liquidai/status/2110055810940428387",
@@ -6441,11 +6548,11 @@
             "engine": "llama.cpp",
             "tps": "184",
             "hardware": "Apple M5 Max",
-            "quant": "runs through llama.cpp and MLX from day one; Liquid-reported figure",
+            "quant": "Liquid AI's reported 184 tok/s on an M5 Max (vendor figure); the weights run through llama.cpp and MLX from day one, 131K context, Q4 GGUF ~14.5GB",
             "likes": 5,
             "comments": 1,
             "reshares": 7,
-            "views": 244
+            "views": 258
           },
           {
             "url": "https://lightbrd.com/GuideboardLabs/status/2110246672166699354",
@@ -6505,14 +6612,14 @@
             "likes": 15,
             "comments": 0,
             "reshares": 0,
-            "views": 19
+            "views": 21
           }
         ],
-        "posts_7d": 5,
-        "buzz_7d": 16.8,
-        "score_7d": 16.8,
+        "posts_7d": 3,
+        "buzz_7d": 11.1,
+        "score_7d": 11.1,
         "speed_bonus": 4.3,
-        "trend_score": 21.1
+        "trend_score": 15.4
       },
       "supported_engines": [
         "MLX"
@@ -6556,18 +6663,19 @@
         },
         {
           "engine": "ExLlamaV3",
-          "tps": "35.3",
+          "tps": "88.6",
           "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
           "quant": "Qwen3.8-Flash-Next EXL3 3.05 bpw as the main agent while MiniCPM-V 4.7 35B-A3B EXL3 3.74 bpw served 8 subagents (both loaded); 35.3 tok/s while both models were actively generating code (26.2 tok/s under the 8-worker synthetic test)",
           "system_ram_min": "128GB",
           "date": "2026-10-14",
           "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
           "likes": 26,
-          "comments": 10,
+          "comments": 25,
           "reshares": 0,
           "views": 8444,
           "interactions": 36,
-          "engine_min_version": "ExLlamaV3 + Hermes Agent profile"
+          "engine_min_version": "ExLlamaV3 + Hermes Agent profile",
+          "context_tokens": "262144"
         },
         {
           "engine": "llama.cpp",
@@ -6633,7 +6741,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 5,
+        "last_7d_likes": 2,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
@@ -6652,12 +6760,12 @@
             "date": "2026-10-05",
             "engine": "llama.cpp",
             "tps": "50",
-            "hardware": "RTX 3060 12GB + 16GB system RAM (26 MoE layers on CPU)",
-            "quant": "Q4_K_M, --n-cpu-moe 26, -c 262144, -fa on, q8_0 KV cache; ~550 tok/s prefill",
-            "likes": 21,
+            "hardware": "RTX 3060 12GB + 16GB system RAM",
+            "quant": "Empero Qwen3.8-35B-A3B distillation (35B total, ~3B active), 262K context, ~550 tok/s prefill",
+            "likes": 3,
             "comments": 2,
-            "reshares": 3,
-            "views": 2402
+            "reshares": 21,
+            "views": 2404
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2110911597937885683",
@@ -6759,177 +6867,25 @@
             "url": "https://lightbrd.com/ViC305/status/2110318699186208930",
             "date": "2026-10-14",
             "engine": "ExLlamaV3",
-            "tps": "35.3",
+            "tps": "88.6",
             "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
             "quant": "Qwen3.8-Flash-Next EXL3 3.05 bpw as the main agent while MiniCPM-V 4.7 35B-A3B EXL3 3.74 bpw served 8 subagents (both loaded); 35.3 tok/s while both models were actively generating code (26.2 tok/s under the 8-worker synthetic test)",
             "likes": 26,
-            "comments": 10,
+            "comments": 25,
             "reshares": 0,
             "views": 8444
           }
         ],
-        "posts_7d": 5,
-        "buzz_7d": 15.6,
-        "score_7d": 15.6,
+        "posts_7d": 2,
+        "buzz_7d": 9.8,
+        "score_7d": 9.8,
         "speed_bonus": 2.6,
-        "trend_score": 18.2
+        "trend_score": 12.4
       },
       "system_ram_min": "16GB",
       "context_tokens": "262K",
       "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU",
       "weight_gb": "14.6GB IQ4_XS"
-    },
-    {
-      "id": "bonsai-2-4b",
-      "name": "Bonsai 2 4B",
-      "full_name": "PrismML Ternary Bonsai 2 4B",
-      "type": "LLM (ternary)",
-      "license": "Apache 2.0",
-      "params": "4B",
-      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
-      "vram_tier": "8GB",
-      "vram_min": "1GB",
-      "weight_gb": "0.95GB",
-      "system_ram_min": "4GB",
-      "backends": [
-        "Metal",
-        "CUDA"
-      ],
-      "last_seen": "2026-10-19",
-      "why": "32 concurrent streams on an M5 Pro MacBook Pro, parsing 250 emails into JSON with summaries, action items and priorities, under 4GB peak memory.",
-      "engines": [
-        {
-          "engine": "llama.cpp (PrismML fork)",
-          "tps": "128",
-          "hardware": "RTX 3060 12GB",
-          "quant": "core-v2 eval sheet, 1.21 GiB of ternary weights (3/12 tasks solved)",
-          "date": "2026-10-19",
-          "source_post": "https://lightbrd.com/1101hati/status/2112324564634001684",
-          "likes": 21,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 21,
-          "weight_gb": "1.21 GiB (ternary)",
-          "engine_min_version": "PrismML llama.cpp fork (ternary loader)"
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "6",
-          "hardware": "CMF Phone 2 Pro (on-device)",
-          "quant": "ternary 4B in a Nothing-OS-style local chat UI with web search and cross-chat memory (the 2B does 10-11 tok/s on the same phone)",
-          "weight_gb": "0.95GB (ternary)",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 97,
-          "views": 0,
-          "interactions": 97
-        },
-        {
-          "engine": "MLX",
-          "tps": "6",
-          "hardware": "CMF Phone 2 Pro (Android, on-device)",
-          "quant": "ternary 4B",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
-          "likes": 115,
-          "comments": 3,
-          "reshares": 0,
-          "views": 115,
-          "interactions": 121,
-          "weight_gb": "0.95GB (ternary)"
-        },
-        {
-          "engine": "MLX",
-          "tps": "700",
-          "hardware": "MacBook Pro M5 Pro (32 concurrent streams, <4GB peak memory)",
-          "quant": "ternary weights, 0.95GB footprint",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
-          "likes": 4,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "weight_gb": "0.95GB ternary",
-          "system_ram_min": "<4GB peak",
-          "interactions": 0
-        },
-        {
-          "engine": "MLX",
-          "tps": "700",
-          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
-          "quant": "ternary weights; 32 parallel streams parsing 250 emails to JSON with summaries, action items and calendar events, under 4GB peak memory in total",
-          "weight_gb": "0.95GB (ternary)",
-          "system_ram_min": "4GB",
-          "date": "2026-10-15",
-          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
-          "likes": 87,
-          "comments": 15,
-          "reshares": 87,
-          "views": 5269,
-          "interactions": 5325
-        }
-      ],
-      "supported_engines": [
-        "MLX"
-      ],
-      "formats": [
-        {
-          "name": "Bonsai 2 4B",
-          "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 3,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "700",
-            "hardware": "MacBook Pro M5 Pro (32 concurrent streams, <4GB peak memory)",
-            "quant": "ternary weights, 0.95GB footprint",
-            "likes": 4,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
-            "date": "2026-10-16",
-            "engine": "llama.cpp",
-            "tps": "6",
-            "hardware": "CMF Phone 2 Pro (on-device)",
-            "quant": "ternary 4B in a Nothing-OS-style local chat UI with web search and cross-chat memory (the 2B does 10-11 tok/s on the same phone)",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 97,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/1101hati/status/2112324564634001684",
-            "date": "2026-10-19",
-            "engine": "llama.cpp (PrismML fork)",
-            "tps": "128",
-            "hardware": "RTX 3060 12GB",
-            "quant": "core-v2 eval sheet, 1.21 GiB of ternary weights (3/12 tasks solved)",
-            "likes": 21,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 3,
-        "buzz_7d": 10.5,
-        "score_7d": 10.5,
-        "speed_bonus": 6.1,
-        "trend_score": 16.6
-      }
     },
     {
       "id": "qwen3.8-27b-twin-turbo",
@@ -7039,49 +6995,96 @@
       }
     },
     {
-      "id": "bonsai-2-2b-phone",
-      "name": "Bonsai 2 2B (iPhone)",
-      "full_name": "Ternary Bonsai 2 2B on iPhone 18 Pro Max via MLX",
-      "type": "GGUF",
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "PrismML Ternary Bonsai 2 4B",
+      "type": "LLM (ternary)",
       "license": "Apache 2.0",
-      "params": "2B",
-      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
       "vram_tier": "8GB",
-      "vram_min": "0.43GB",
-      "weight_gb": "0.43GB ternary",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB",
+      "system_ram_min": "4GB",
       "backends": [
-        "Metal"
+        "Metal",
+        "CUDA"
       ],
-      "last_seen": "2026-10-16",
-      "why": "The 2B reaches up to 120 t/s on an iPhone 18 Pro Max, with 0.43GB of ternary weights and the same Apache 2.0 release as the rest of the Bonsai 2 family.",
+      "last_seen": "2026-10-19",
+      "why": "32 concurrent streams on an M5 Pro MacBook Pro, parsing 250 emails into JSON with summaries, action items and priorities, under 4GB peak memory.",
       "engines": [
         {
-          "engine": "MLX",
-          "tps": "120",
-          "hardware": "iPhone 18 Pro Max",
-          "quant": "ternary weights, 0.43GB footprint",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-          "likes": 1,
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "128",
+          "hardware": "RTX 3060 12GB",
+          "quant": "core-v2 eval sheet, 1.21 GiB of ternary weights (3/12 tasks solved)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/1101hati/status/2112324564634001684",
+          "likes": 21,
           "comments": 0,
           "reshares": 0,
           "views": 0,
-          "weight_gb": "0.43GB ternary",
+          "interactions": 21,
+          "weight_gb": "1.21 GiB (ternary)",
+          "engine_min_version": "PrismML llama.cpp fork (ternary loader)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (on-device)",
+          "quant": "ternary 4B in a Nothing-OS-style local chat UI with web search and cross-chat memory (the 2B does 10-11 tok/s on the same phone)",
+          "weight_gb": "0.95GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 97,
+          "views": 0,
+          "interactions": 97
+        },
+        {
+          "engine": "MLX",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (Android, on-device)",
+          "quant": "ternary 4B",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 115,
+          "comments": 3,
+          "reshares": 0,
+          "views": 115,
+          "interactions": 121,
+          "weight_gb": "0.95GB (ternary)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams, <4GB peak memory)",
+          "quant": "ternary weights, 0.95GB footprint",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.95GB ternary",
+          "system_ram_min": "<4GB peak",
           "interactions": 0
         },
         {
           "engine": "MLX",
-          "tps": "11",
-          "hardware": "CMF Phone 2 Pro (Android)",
-          "quant": "ternary 0.43GB pack in a custom Nothing-OS-style app, 10-11 tok/s",
-          "weight_gb": "0.43GB (ternary)",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
-          "likes": 99,
-          "comments": 2,
-          "reshares": 0,
-          "views": 107,
-          "interactions": 2
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro (32 concurrent streams)",
+          "quant": "ternary weights; 32 parallel streams parsing 250 emails to JSON with summaries, action items and calendar events, under 4GB peak memory in total",
+          "weight_gb": "0.95GB (ternary)",
+          "system_ram_min": "4GB",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 87,
+          "comments": 15,
+          "reshares": 87,
+          "views": 5269,
+          "interactions": 5365
         }
       ],
       "supported_engines": [
@@ -7089,24 +7092,24 @@
       ],
       "formats": [
         {
-          "name": "Bonsai 2 2B (iPhone)",
-          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
+          "name": "Bonsai 2 4B",
+          "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf"
         }
       ],
       "engagement": {
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 2,
+        "last_7d_likes": 1,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+            "url": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
             "date": "2026-10-16",
             "engine": "MLX",
-            "tps": "120",
-            "hardware": "iPhone 18 Pro Max",
-            "quant": "ternary weights, 0.43GB footprint",
-            "likes": 1,
+            "tps": "700",
+            "hardware": "MacBook Pro M5 Pro (32 concurrent streams, <4GB peak memory)",
+            "quant": "ternary weights, 0.95GB footprint",
+            "likes": 4,
             "comments": 0,
             "reshares": 0,
             "views": 0
@@ -7114,21 +7117,33 @@
           {
             "url": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
             "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "11",
-            "hardware": "CMF Phone 2 Pro (Android)",
-            "quant": "ternary 0.43GB pack in a custom Nothing-OS-style app, 10-11 tok/s",
-            "likes": 99,
-            "comments": 2,
+            "engine": "llama.cpp",
+            "tps": "6",
+            "hardware": "CMF Phone 2 Pro (on-device)",
+            "quant": "ternary 4B in a Nothing-OS-style local chat UI with web search and cross-chat memory (the 2B does 10-11 tok/s on the same phone)",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 97,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/1101hati/status/2112324564634001684",
+            "date": "2026-10-19",
+            "engine": "llama.cpp (PrismML fork)",
+            "tps": "128",
+            "hardware": "RTX 3060 12GB",
+            "quant": "core-v2 eval sheet, 1.21 GiB of ternary weights (3/12 tasks solved)",
+            "likes": 21,
+            "comments": 0,
             "reshares": 0,
-            "views": 107
+            "views": 0
           }
         ],
-        "posts_7d": 2,
-        "buzz_7d": 6.4,
-        "score_7d": 6.4,
-        "speed_bonus": 3.7,
-        "trend_score": 10.1
+        "posts_7d": 1,
+        "buzz_7d": 3.2,
+        "score_7d": 3.2,
+        "speed_bonus": 6.1,
+        "trend_score": 9.3
       }
     },
     {
@@ -7332,6 +7347,74 @@
       ]
     },
     {
+      "id": "qwen3.8-27b-ipad-egpu-r9700",
+      "name": "Qwen3.8-27B (iPad Pro + eGPU R9700)",
+      "full_name": "Qwen3.8-27B (iPad Pro driving a Thunderbolt Sapphire R9700 eGPU)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "An iPad Pro over Thunderbolt to a Sapphire R9700 eGPU runs Qwen3.8-27B at Q4 with a 131K context: 31 t/s standard decoding, 109 with MTP and 159 with DFlash2 draft-tree decoding, plus ~1,636 t/s prefill on 4K input.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Thunderbolt-connected Sapphire R9700 eGPU",
+          "quant": "Q4, 131K context, DFlash2 draft-tree decoding (standard decode 31 tok/s, MTP speculative 109 tok/s)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 4,
+          "views": 878,
+          "interactions": 7,
+          "context_tokens": "131072"
+        }
+      ],
+      "supported_engines": [
+        "DFlash2"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B (iPad Pro + eGPU R9700)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+            "date": "2026-10-19",
+            "engine": "DFlash2",
+            "tps": "159",
+            "hardware": "iPad Pro + Sapphire R9700 eGPU over Thunderbolt (LemonSeed Engine)",
+            "quant": "Q4, 131K context, DFlash2 draft-tree decoding; standard decoding 31 tok/s, MTP speculative 109 tok/s",
+            "likes": 1,
+            "comments": 2,
+            "reshares": 4,
+            "views": 878
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 3.8,
+        "score_7d": 3.8,
+        "speed_bonus": 4.1,
+        "trend_score": 7.9
+      }
+    },
+    {
       "id": "bonsai-2-27b-mlx-fast",
       "name": "Bonsai 2 27B (mlx.fast)",
       "full_name": "Ternary Bonsai 2 27B on Yukon's mlx.fast leaderboard (compressed 27B on a 16GB Mac)",
@@ -7426,87 +7509,6 @@
       }
     },
     {
-      "id": "laya-mlx-decision-models",
-      "name": "Laya (MLX decision models)",
-      "full_name": "laya-mlx 421M English / 322M multilingual decision models",
-      "type": "Decision LLM (MLX port)",
-      "formats": [
-        {
-          "name": "MLX",
-          "hf": "aac6fef/laya-mlx"
-        }
-      ],
-      "license": "Apache 2.0",
-      "params": "421M / 322M",
-      "hf": "aac6fef/laya-mlx",
-      "vram_tier": "8GB",
-      "vram_min": "8GB",
-      "system_ram_min": "943.6 MiB peak MLX memory (421M) / 687.6 MiB (322M)",
-      "context_tokens": "512-1024",
-      "backends": [
-        "Metal"
-      ],
-      "last_seen": "2026-10-16",
-      "why": "Tiny MLX decision layer that offloads routing/urgency/jailbreak/tool-choice calls from a big LLM to millisecond local latency (P50 7.39-13.42 ms on an M3 Max).",
-      "engines": [
-        {
-          "engine": "MLX",
-          "tps": "75.4",
-          "hardware": "Mac M3 Max",
-          "quant": "Snake demo: 75.4 moves/s over 2,400 moves; P50 13.42ms (421M) / 7.39ms (322M); peak MLX memory 943.6MiB / 687.6MiB",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976",
-          "likes": 5,
-          "comments": 4,
-          "reshares": 12,
-          "views": 2365,
-          "interactions": 2386
-        },
-        {
-          "engine": "MLX",
-          "tps": "19",
-          "hardware": "Mac M3 Max",
-          "quant": "MLX decision models, P50 13.42 ms (421M) / 7.39 ms (322M); 75.4 moves/second over 2,400 Snake demo moves; Apple Silicon only, macOS 14+",
-          "date": "2026-10-14",
-          "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976",
-          "likes": 4,
-          "comments": 4,
-          "reshares": 13,
-          "views": 2351,
-          "interactions": 2372
-        }
-      ],
-      "supported_engines": [
-        "MLX"
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/iamrexei/status/2102282038988484976",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "75.4",
-            "hardware": "Mac M3 Max",
-            "quant": "Snake demo: 75.4 moves/s over 2,400 moves; P50 13.42ms (421M) / 7.39ms (322M); peak MLX memory 943.6MiB / 687.6MiB",
-            "likes": 5,
-            "comments": 4,
-            "reshares": 12,
-            "views": 2365
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 4.7,
-        "score_7d": 4.7,
-        "speed_bonus": 3.1,
-        "trend_score": 7.8
-      },
-      "engine_min_version": "MLX, Apple Silicon only, macOS 14+"
-    },
-    {
       "id": "qwen2.5-0.5b",
       "name": "Qwen2.5-0.5B",
       "full_name": "Qwen2.5-0.5B-Instruct",
@@ -7534,6 +7536,19 @@
           "views": 82,
           "interactions": 1,
           "context_tokens": "512"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "306.9",
+          "hardware": "RTX 3050 8GB",
+          "quant": "Q4_K_M GGUF, median of three runs; same post: SonicBoom 345.9 tokens/s on the identical GGUF",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         }
       ],
       "why": "Tiny Qwen2.5 model used as the SonicBoom benchmark baseline: 345.9 vs llama.cpp's 306.9 tokens/s on an RTX 3050 8GB.",
@@ -7574,78 +7589,43 @@
       }
     },
     {
-      "id": "bonsai-2-2b",
-      "name": "Bonsai 2 2B",
-      "full_name": "Ternary-Bonsai-2-2B (Qwen3.5 based)",
-      "type": "LLM (ternary)",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
-        },
-        {
-          "name": "MLX",
-          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
-        }
-      ],
+      "id": "qwen3-1.7b-mlx-woodcock",
+      "name": "Qwen3-1.7B (Woodcock on MLX)",
+      "full_name": "Qwen3-1.7B running AtomicBot's Woodcock speculative drafter on MLX",
+      "type": "LLM",
       "license": "Apache 2.0",
-      "params": "2B",
-      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
-      "vram_tier": "6GB",
-      "vram_min": "4GB",
-      "weight_gb": "0.43GB (ternary)",
-      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork",
+      "params": "1.7B",
+      "hf": "Qwen/Qwen3-1.7B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
       "backends": [
         "Metal"
       ],
-      "last_seen": "2026-10-16",
-      "why": "Smallest Bonsai 2 ternary model at 0.43GB; PrismML reports 120 tok/s on an iPhone 18 Pro Max and up to 500 tok/s in an M4 Max browser demo.",
+      "why": "AtomicBot's MIT clean-room alternative to Eagle 4 uses a single-layer speculative-decoding hidden-state drafter on MLX; reported to lift SMALL_MODEL generation from 120 to 300 tok/s on an M4 Max.",
+      "last_seen": "2026-10-23",
       "engines": [
         {
           "engine": "MLX",
-          "tps": "500",
-          "hardware": "iPhone 18 Pro Max",
-          "quant": "ternary weights, 0.43GB; PrismML vendor figure",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0,
-          "weight_gb": "0.43GB ternary"
-        },
-        {
-          "engine": "MLX",
-          "tps": "500",
-          "hardware": "M4 Max (browser demo)",
-          "quant": "0.43GB ternary (Qwen3.5 base, -1/0/+1 weights); MLX in a browser demo; PrismML vendor figure",
-          "date": "2026-10-15",
-          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
-          "likes": 5,
-          "comments": 1,
-          "reshares": 1,
-          "views": 1691,
-          "interactions": 7,
-          "weight_gb": "0.43GB ternary"
-        },
-        {
-          "engine": "MLX",
-          "tps": "120",
-          "hardware": "iPhone 18 Pro Max",
-          "quant": "Ternary (up to 120 tokens per second on iPhone 18 Pro Max)",
-          "date": "2026-10-15",
-          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "tps": "300",
+          "hardware": "Apple M4 Max",
+          "quant": "lossless single-layer speculative-decoding hidden-state drafter (Woodcock, MIT), up from 120 tok/s mlx.fast leaderboard run",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/0xPascual/status/2113646362289905754",
           "likes": 1,
           "comments": 0,
           "reshares": 0,
-          "views": 52,
-          "interactions": 1,
-          "weight_gb": "0.43GB (ternary)"
+          "views": 73,
+          "interactions": 1
         }
       ],
       "supported_engines": [
         "MLX"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3-1.7B (Woodcock on MLX)",
+          "hf": "Qwen/Qwen3-1.7B"
+        }
       ],
       "engagement": {
         "likes": 0,
@@ -7654,35 +7634,23 @@
         "last_7d_likes": 1,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
-            "date": "2026-10-16",
+            "url": "https://lightbrd.com/0xPascual/status/2113646362289905754",
+            "date": "2026-10-23",
             "engine": "MLX",
-            "tps": "120",
-            "hardware": "iPhone 18 Pro Max",
-            "quant": "ternary weights, 0.43GB; PrismML vendor figure",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-            "date": "2026-10-15",
-            "engine": "MLX",
-            "tps": "120",
-            "hardware": "iPhone 18 Pro Max",
-            "quant": "Ternary (up to 120 tokens per second on iPhone 18 Pro Max)",
+            "tps": "300",
+            "hardware": "Apple M4 Max",
+            "quant": "lossless single-layer speculative-decoding hidden-state drafter (Woodcock, MIT), up from 120 tok/s mlx.fast leaderboard run",
             "likes": 1,
             "comments": 0,
             "reshares": 0,
-            "views": 52
+            "views": 73
           }
         ],
         "posts_7d": 1,
-        "buzz_7d": 1.0,
-        "score_7d": 1.0,
-        "speed_bonus": 5.7,
-        "trend_score": 6.7
+        "buzz_7d": 2.0,
+        "score_7d": 2.0,
+        "speed_bonus": 5.0,
+        "trend_score": 7.0
       }
     },
     {
@@ -7958,6 +7926,18 @@
             "comments": 0,
             "reshares": 0,
             "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/AGTPinsights/status/2110336928159784961",
+            "date": "2026-10-14",
+            "engine": "llama.cpp",
+            "tps": "20",
+            "hardware": "Jailbroken PS5, RDNA 2 GPU, about 12 GiB memory available with the GPU",
+            "quant": "2-bit Qwen 3.8 27B (PS5LM, llama.cpp port); about 20 tok/s on the console GPU vs about 1 token per minute on its CPU",
+            "likes": 0,
+            "comments": 2,
+            "reshares": 0,
+            "views": 0
           }
         ],
         "posts_7d": 1,
@@ -7982,6 +7962,19 @@
           "reshares": 0,
           "views": 0,
           "interactions": 84
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "Jailbroken PS5, RDNA 2 GPU, about 12 GiB memory available with the GPU",
+          "quant": "2-bit Qwen 3.8 27B (PS5LM, llama.cpp port); about 20 tok/s on the console GPU vs about 1 token per minute on its CPU",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110336928159784961",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         }
       ],
       "vram_min": "9.83GB",
@@ -8198,188 +8191,6 @@
       }
     },
     {
-      "id": "deepseek-v4.1-flash",
-      "name": "DeepSeek-V4.1-Flash",
-      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
-      "type": "LLM (MoE)",
-      "license": "MIT",
-      "params": "MoE",
-      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
-      "vram_tier": "CPU",
-      "vram_min": "16GB",
-      "system_ram_min": "60GB",
-      "context_tokens": "32768",
-      "storage_offload": "MoE experts streamed from SSD to CPU; 192GB engram on Gen4 NVMe",
-      "backends": [
-        "CPU",
-        "CUDA",
-        "Metal"
-      ],
-      "engines": [
-        {
-          "engine": "MLX",
-          "tps": "26.87",
-          "hardware": "Mac M5 Max",
-          "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326",
-          "likes": 4,
-          "comments": 2,
-          "reshares": 0,
-          "views": 468,
-          "interactions": 474
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "2",
-          "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
-          "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
-          "date": "2026-09-24",
-          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
-          "likes": 274,
-          "comments": 3,
-          "reshares": 2,
-          "views": 252,
-          "interactions": 279
-        },
-        {
-          "engine": "llama.cpp (hikicoder fork)",
-          "tps": "2",
-          "hardware": "RTX A4500 20GB (~17GB VRAM used) + 128GB DDR5",
-          "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM; 192GB Engram on a Gen4 7GB/s NVMe with --moe-stream; generation slowed by thermal/IO pacing",
-          "date": "2026-09-24",
-          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
-          "likes": 3,
-          "comments": 2,
-          "reshares": 2,
-          "views": 288,
-          "system_ram_min": "128GB (60GB used by the run)",
-          "storage_offload": "192GB Engram on Gen4 7GB/s NVMe (--moe-stream)",
-          "context_tokens": "32K",
-          "engine_min_version": "-ngl 99 -c 32768 -nkvo --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 --moe-stream-direct",
-          "interactions": 293,
-          "weight_gb": "192GB engram on NVMe"
-        }
-      ],
-      "last_seen": "2026-10-16",
-      "engine_min_version": "llama.cpp (hikicoder fork, dsv41-ada-medvram) --moe-stream",
-      "supported_engines": [
-        "llama.cpp"
-      ],
-      "why": "deepseek-ai/DeepSeek-V4.1-Flash — see source posts.",
-      "formats": [
-        {
-          "name": "DeepSeek-V4.1-Flash",
-          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
-            "date": "2026-09-24",
-            "engine": "llama.cpp",
-            "tps": "2",
-            "hardware": "RTX A4500 20GB (16GB VRAM) + 60GB RAM, 192GB Engram on Gen4 7GB/s NVMe",
-            "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32k context at fp16, MoE experts streamed from NVMe at ~3GB/s with --moe-stream",
-            "likes": 274,
-            "comments": 3,
-            "reshares": 2,
-            "views": 252
-          },
-          {
-            "url": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "26.87",
-            "hardware": "Mac M5 Max",
-            "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
-            "likes": 4,
-            "comments": 2,
-            "reshares": 0,
-            "views": 468
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 3.3,
-        "score_7d": 3.3,
-        "speed_bonus": 1.9,
-        "trend_score": 5.2
-      }
-    },
-    {
-      "id": "qwen3.8-27b-ipad-egpu-r9700",
-      "name": "Qwen3.8-27B (iPad Pro + eGPU R9700)",
-      "full_name": "Qwen3.8-27B (iPad Pro driving a Thunderbolt Sapphire R9700 eGPU)",
-      "type": "LLM",
-      "license": "Apache 2.0",
-      "params": "27B",
-      "hf": "Qwen/Qwen3.8-27B",
-      "vram_tier": "32GB",
-      "vram_min": "32GB",
-      "context_tokens": "131072",
-      "backends": [
-        "Metal",
-        "ROCm"
-      ],
-      "last_seen": "2026-10-19",
-      "why": "An iPad Pro over Thunderbolt to a Sapphire R9700 eGPU runs Qwen3.8-27B at Q4 with a 131K context: 31 t/s standard decoding, 109 with MTP and 159 with DFlash2 draft-tree decoding, plus ~1,636 t/s prefill on 4K input.",
-      "engines": [
-        {
-          "engine": "DFlash2",
-          "tps": "159",
-          "hardware": "iPad Pro + Thunderbolt-connected Sapphire R9700 eGPU",
-          "quant": "Q4, 131K context, DFlash2 draft-tree decoding (standard decode 31 tok/s, MTP speculative 109 tok/s)",
-          "date": "2026-10-19",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0,
-          "context_tokens": "131072"
-        }
-      ],
-      "supported_engines": [
-        "DFlash2"
-      ],
-      "formats": [
-        {
-          "name": "Qwen3.8-27B (iPad Pro + eGPU R9700)",
-          "hf": "Qwen/Qwen3.8-27B"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
-            "date": "2026-10-19",
-            "engine": "DFlash2",
-            "tps": "159",
-            "hardware": "iPad Pro + Thunderbolt-connected Sapphire R9700 eGPU",
-            "quant": "Q4, 131K context, DFlash2 draft-tree decoding (standard decode 31 tok/s, MTP speculative 109 tok/s)",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 1.0,
-        "score_7d": 1.0,
-        "speed_bonus": 4.1,
-        "trend_score": 5.1
-      }
-    },
-    {
       "id": "nemotron-3.5-bolt-74b-a9b",
       "name": "Nemotron-3.5-Bolt-74B-A9B",
       "full_name": "NVIDIA Nemotron-3.5-Bolt-74B-A9B",
@@ -8449,257 +8260,6 @@
           "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16"
         }
       ]
-    },
-    {
-      "id": "glm-5.3-flash",
-      "name": "GLM-5.3-Flash",
-      "full_name": "GLM-5.3-Flash",
-      "type": "LLM (MoE)",
-      "license": "MIT",
-      "params": "320B (18B active)",
-      "hf": "zai-org/GLM-5.3-Flash",
-      "vram_tier": "24GB",
-      "vram_min": "24GB",
-      "backends": [
-        "CUDA",
-        "Metal"
-      ],
-      "last_seen": "2026-10-16",
-      "engines": [
-        {
-          "engine": "vLLM",
-          "tps": "62.2",
-          "hardware": "served endpoint (Artificial Analysis comparison)",
-          "quant": "served GLM-5.3-Flash, compared against DeepSeek V4.1 Flash (Max) at 173.9 tok/s on the same source",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 4038,
-          "interactions": 0
-        },
-        {
-          "engine": "MLX",
-          "tps": "27.8",
-          "hardware": "Mac Studio (M-series)",
-          "quant": "Rapid-MLX with speculative decoding, ~4x Apple MLX on the same chip; weights ~306GB at FP8",
-          "date": "2026-10-14",
-          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "27.5",
-          "hardware": "NVIDIA DGX Spark (one Spark), 2.49bpw, 97.4 GiB",
-          "quant": "RED-SNOW-5.3-FLASH, an abliterated 321B build by Blackfrost AI quantized by Cruz at 2.49bpw, 262K context; decode by workload - structured output 45.2 tok/s, JSON 45.7, code 35.9, prose 27.5 (the honest floor), harness-shaped research turn at 33k context 32 tok/s",
-          "date": "2026-10-14",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2110193379342786881",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "Project Maya",
-          "tps": "30",
-          "hardware": "RTX 5090 32GB",
-          "quant": "dedicated quants kept at 97.7-99.2% of FP8 zero-shot accuracy up to 1M context; three-tier GPU VRAM / system RAM / NVMe expert placement",
-          "date": "2026-10-12",
-          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
-          "likes": 35,
-          "comments": 33,
-          "reshares": 1,
-          "views": 270,
-          "storage_offload": "NVMe SSD holds the experts that do not fit VRAM or RAM, swapped mid-generation",
-          "interactions": 0
-        },
-        {
-          "engine": "glm-flash-lite",
-          "tps": "20",
-          "hardware": "RTX 3090 24GB",
-          "quant": "GLM-5.3-Flash 20B distilled build with CPU-offloaded MoE layers, 32k context, 0.55-0.58 acceptance on the spec-decode drafter",
-          "context_tokens": "32768",
-          "date": "2026-10-10",
-          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
-          "likes": 34,
-          "comments": 3,
-          "reshares": 3,
-          "views": 415,
-          "interactions": 38,
-          "weight_gb": "125GB"
-        },
-        {
-          "engine": "ExLlamaV3",
-          "tps": "35",
-          "hardware": "RTX 3090 24GB + 50GB DDR4 + 100GB NVMe",
-          "quant": "EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/0xSero/status/2107737091199435072",
-          "likes": 0,
-          "comments": 3,
-          "reshares": 804,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "TensorFold",
-          "tps": "27.8",
-          "hardware": "Mac Studio (Apple Silicon)",
-          "quant": "Rapid-MLX spec-decode profile, 4x Apple MLX on same chip",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
-          "likes": 0,
-          "comments": 3,
-          "reshares": 0,
-          "views": 1079,
-          "interactions": 0
-        },
-        {
-          "engine": "FreeToken",
-          "tps": "20",
-          "hardware": "RTX 6000 Pro",
-          "quant": "MoE offload, PCIe 3.0",
-          "date": "2026-10-04",
-          "source_post": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
-          "likes": 50,
-          "comments": 3,
-          "reshares": 3,
-          "views": 12819,
-          "interactions": 12875,
-          "system_ram_min": "572GB"
-        },
-        {
-          "engine": "FreeToken",
-          "tps": "20",
-          "hardware": "RTX PRO 6000 (6000 Pro) + 572GB system RAM, PCIe 3.0",
-          "quant": "FreeToken (FlashML-org); >20 tok/s on prose prompts",
-          "system_ram_min": "572GB",
-          "date": "2026-10-04",
-          "source_post": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
-          "likes": 50,
-          "comments": 3,
-          "reshares": 3,
-          "views": 12870,
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "ExLlamaV3"
-      ],
-      "why": "GLM-5.3-Flash — see source posts.",
-      "formats": [
-        {
-          "name": "GLM-5.3-Flash",
-          "hf": "zai-org/GLM-5.3-Flash"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/0xSero/status/2107737091199435072",
-            "date": "2026-10-07",
-            "engine": "ExLlamaV3",
-            "tps": "35",
-            "hardware": "RTX 3090 24GB + 50GB DDR4 + 100GB NVMe",
-            "quant": "EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s",
-            "likes": 0,
-            "comments": 3,
-            "reshares": 804,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
-            "date": "2026-10-14",
-            "engine": "MLX",
-            "tps": "27.8",
-            "hardware": "Mac Studio (M-series)",
-            "quant": "Rapid-MLX with speculative decoding, ~4x Apple MLX on the same chip; weights ~306GB at FP8",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
-            "date": "2026-10-10",
-            "engine": "glm-flash-lite",
-            "tps": "20",
-            "hardware": "RTX 3090 24GB",
-            "quant": "GLM-5.3-Flash 20B distilled build with CPU-offloaded MoE layers, 32k context, 0.55-0.58 acceptance on the spec-decode drafter",
-            "likes": 34,
-            "comments": 3,
-            "reshares": 3,
-            "views": 415
-          },
-          {
-            "url": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
-            "date": "2026-10-04",
-            "engine": "FreeToken",
-            "tps": "20",
-            "hardware": "RTX PRO 6000 (6000 Pro) + 572GB system RAM, PCIe 3.0",
-            "quant": "FreeToken (FlashML-org); >20 tok/s on prose prompts",
-            "likes": 50,
-            "comments": 3,
-            "reshares": 3,
-            "views": 12870
-          },
-          {
-            "url": "https://lightbrd.com/loudchirper/status/2109588037214642210",
-            "date": "2026-10-12",
-            "engine": "Project Maya",
-            "tps": "30",
-            "hardware": "RTX 5090 32GB",
-            "quant": "dedicated quants kept at 97.7-99.2% of FP8 zero-shot accuracy up to 1M context; three-tier GPU VRAM / system RAM / NVMe expert placement",
-            "likes": 35,
-            "comments": 33,
-            "reshares": 1,
-            "views": 270
-          },
-          {
-            "url": "https://lightbrd.com/yume_arasaki/status/2110193379342786881",
-            "date": "2026-10-14",
-            "engine": "llama.cpp",
-            "tps": "27.5",
-            "hardware": "NVIDIA DGX Spark (one Spark), 2.49bpw, 97.4 GiB",
-            "quant": "RED-SNOW-5.3-FLASH, an abliterated 321B build by Blackfrost AI quantized by Cruz at 2.49bpw, 262K context; decode by workload - structured output 45.2 tok/s, JSON 45.7, code 35.9, prose 27.5 (the honest floor), harness-shaped research turn at 33k context 32 tok/s",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
-            "date": "2026-10-16",
-            "engine": "vLLM",
-            "tps": "62.2",
-            "hardware": "served endpoint (Artificial Analysis comparison)",
-            "quant": "served GLM-5.3-Flash, compared against DeepSeek V4.1 Flash (Max) at 173.9 tok/s on the same source",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 4038
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 1.9,
-        "score_7d": 1.9,
-        "speed_bonus": 2.9,
-        "trend_score": 4.8
-      },
-      "system_ram_min": "50GB",
-      "storage_offload": "100GB NVMe, MoE experts on SSD",
-      "weight_gb": "~306GB at FP8",
-      "context_tokens": "262144"
     },
     {
       "id": "qwen3.5-0.8b",
@@ -8896,6 +8456,19 @@
           "reshares": 0,
           "views": 82,
           "interactions": 1
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "44.8",
+          "hardware": "RTX 3050 8GB",
+          "quant": "Q3_K_M GGUF, median of three runs; same post: SonicBoom 53.6 tokens/s on the identical GGUF",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         }
       ],
       "why": "SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) beats llama.cpp on a consumer RTX 3050 8GB: 53.6 vs 44.8 tokens/s.",
@@ -8936,165 +8509,44 @@
       }
     },
     {
-      "id": "bonsai-2-9b-phone",
-      "name": "Bonsai 2 9B (iPhone)",
-      "full_name": "Ternary Bonsai 2 9B on iPhone 18 Pro Max via MLX",
-      "type": "GGUF",
-      "license": "Apache 2.0",
-      "params": "9B",
-      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
-      "vram_tier": "8GB",
-      "vram_min": "2GB",
-      "weight_gb": "2GB ternary",
-      "backends": [
-        "Metal"
-      ],
-      "last_seen": "2026-10-16",
-      "why": "The same 2GB ternary 9B that hits 179 t/s on an M5 Max Pro still runs agent tasks on an iPhone 18 Pro Max at 34 t/s, which is the point of the family: a capable VLM in a phone-sized footprint.",
-      "engines": [
-        {
-          "engine": "MLX",
-          "tps": "34",
-          "hardware": "iPhone 18 Pro Max",
-          "quant": "ternary weights, 2GB footprint (PrismML figure)",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-          "likes": 1,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "weight_gb": "2GB ternary",
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "MLX"
-      ],
-      "formats": [
-        {
-          "name": "Bonsai 2 9B (iPhone)",
-          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 2,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "34",
-            "hardware": "iPhone 18 Pro Max",
-            "quant": "ternary weights, 2GB footprint",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "34",
-            "hardware": "iPhone 18 Pro Max",
-            "quant": "ternary weights, 2GB footprint (PrismML figure)",
-            "likes": 1,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 2,
-        "buzz_7d": 2.5,
-        "score_7d": 2.5,
-        "speed_bonus": 2.1,
-        "trend_score": 4.6
-      }
-    },
-    {
-      "id": "qwen3.6-27b",
-      "name": "Qwen3.6 27B",
-      "full_name": "Qwen3.6-27B",
+      "id": "qwen3.8-27b-dgx-spark-sglang",
+      "name": "Qwen3.8-27B on DGX Spark (SGLang + DFlash2)",
+      "full_name": "Qwen3.8-27B on a single NVIDIA DGX Spark with SGLang and DFlash2 speculative decoding",
       "type": "LLM",
-      "formats": [
-        {
-          "name": "GGUF",
-          "hf": "unsloth/Qwen3.6-27B-GGUF"
-        }
-      ],
       "license": "Apache 2.0",
       "params": "27B",
-      "hf": "unsloth/Qwen3.6-27B-GGUF",
-      "vram_tier": "18GB",
-      "vram_min": "18GB",
-      "engine_min_version": "llama.cpp + flash-attention + kv-cache q4_0; MTP needs the unsloth MTP GGUF",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified memory",
       "backends": [
-        "Metal"
+        "CUDA"
       ],
-      "last_seen": "2026-10-16",
-      "why": "Qwen3.6-27B is the model the Mac-vs-GPU bakeoffs are run on: 38 tok/s on an M4 Max 128GB, 58 on an M3 Ultra 256GB, all via llama.cpp.",
+      "last_seen": "2026-10-22",
+      "why": "FHILY's Mac Studio M4 Max (oMLX, MTP) vs DGX Spark (SGLang, DFlash2) comparison: the Spark decodes 42 t/s for a single request with a 0.2 s TTFT and 114 t/s aggregate at concurrency 8; the Mac's 78% draft acceptance beats the Spark's 48% on single-request speed",
       "engines": [
         {
-          "engine": "MLX",
-          "tps": "32",
-          "hardware": "Mac mini M4 Pro 64GB",
-          "quant": "Q4 via MLX; ~17 tok/s without MTP, ~32 with MTP",
-          "date": "2026-10-16",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        },
-        {
-          "engine": "MLX",
-          "tps": "21.5",
-          "hardware": "Mac mini M4 16GB",
-          "quant": "mlx-lm; JSON workload 21.5 tok/s, story 12.5, code 11; ~364 tok/s prefill",
-          "date": "2026-10-03",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0,
-          "system_ram_min": "16GB"
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "58",
-          "hardware": "Mac Studio M3 Ultra 256GB",
-          "quant": "Q4_K_M (16.8GB weights), + flash-attention + kv-cache q4_0; 30 tok/s at 70B Q4",
-          "date": "2026-07-15",
-          "source_post": "https://lightbrd.com/TraffAlex/status/2070234634684715492",
-          "likes": 4,
-          "comments": 8,
-          "reshares": 45,
-          "views": 6189,
-          "interactions": 6246
-        },
-        {
-          "engine": "MLX",
-          "tps": "17",
-          "hardware": "Mac mini M4 Pro 48GB",
-          "quant": "Qwen3.6 27B at Q4 via MLX (~32 tok/s with MTP); the same box runs Qwen3.6 35B-A3B continuously for crons",
-          "date": "2026-07-15",
-          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
+          "engine": "SGLang",
+          "tps": "42",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "DFlash2 speculative decoding; single-request decode (114 t/s aggregate at concurrency 8); reported 1.86M-token KV capacity",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 8,
+          "comments": 2,
+          "reshares": 4,
+          "views": 934,
+          "interactions": 948
         }
       ],
       "supported_engines": [
-        "llama.cpp",
-        "llama.cpp",
-        "MLX"
+        "SGLang"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B on DGX Spark (SGLang + DFlash2)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
       ],
       "engagement": {
         "likes": 0,
@@ -9103,24 +8555,81 @@
         "last_7d_likes": 1,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
-            "date": "2026-10-16",
-            "engine": "MLX",
-            "tps": "32",
-            "hardware": "Mac mini M4 Pro 64GB",
-            "quant": "Q4 via MLX; ~17 tok/s without MTP, ~32 with MTP",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+            "date": "2026-10-22",
+            "engine": "SGLang",
+            "tps": "42",
+            "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+            "quant": "DFlash2 speculative decoding; single-request decode (114 t/s aggregate at concurrency 8); reported 1.86M-token KV capacity",
+            "likes": 8,
+            "comments": 2,
+            "reshares": 4,
+            "views": 934
+          }
+        ],
+        "posts_7d": 1,
+        "buzz_7d": 4.1,
+        "score_7d": 4.1,
+        "speed_bonus": 0.0,
+        "trend_score": 4.1
+      }
+    },
+    {
+      "id": "qwen3.8-27b-qwen38-27b-9060xt-kvstream",
+      "name": "Qwen3.8-27B (RX 9060 XT KV-streaming llama.cpp fork)",
+      "full_name": "Qwen3.8-27B IQ4_XS on a 16GB RX 9060 XT with KV-cache streaming to system RAM",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "24GB",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "reported run of Qwen3.8-27B IQ4_XS on a 16GB Radeon RX 9060 XT: a custom llama.cpp fork streams the KV cache between VRAM and 24GB system RAM; 42.7 t/s at ~20K context and 35 t/s at ~200K, targeting 262K, with MTP speculative decoding and Q4 KV values / Q8 keys",
+      "engines": [
+        {
+          "engine": "llama.cpp (custom KV-streaming fork)",
+          "tps": "42.7",
+          "hardware": "Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM",
+          "quant": "IQ4_XS; Q4 KV values / Q8 keys; MTP speculative decoding + n-gram prediction; ~18-20K context (35 t/s at ~200K context, 262K target)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "24GB (~16GB used in the reported run)",
+          "context_tokens": "262144 (target); 42.7 t/s at ~20K, 35 t/s at ~200K"
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp (custom KV-streaming fork)"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B (RX 9060 XT KV-streaming llama.cpp fork)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "seen_posts": [
           {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
-            "date": "2026-10-03",
-            "engine": "MLX",
-            "tps": "21.5",
-            "hardware": "Mac mini M4 16GB",
-            "quant": "mlx-lm; JSON workload 21.5 tok/s, story 12.5, code 11; ~364 tok/s prefill",
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+            "date": "2026-10-19",
+            "engine": "llama.cpp (custom KV-streaming fork)",
+            "tps": "42.7",
+            "hardware": "Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM",
+            "quant": "IQ4_XS; Q4 KV values / Q8 keys; MTP speculative decoding + n-gram prediction; ~18-20K context (35 t/s at ~200K context, 262K target)",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -9130,10 +8639,9 @@
         "posts_7d": 1,
         "buzz_7d": 1.0,
         "score_7d": 1.0,
-        "speed_bonus": 2.8,
-        "trend_score": 3.8
-      },
-      "system_ram_min": "48GB"
+        "speed_bonus": 2.4,
+        "trend_score": 3.4
+      }
     },
     {
       "id": "qwen3.8-flash-next-125b-mlx-serve",
@@ -9504,6 +9012,118 @@
       "engine_min_version": "llama.cpp MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on",
       "system_ram_min": "12GB",
       "storage_offload": "experts streamed from phone flash storage"
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B (Qwen3.5 based)",
+      "type": "LLM (ternary)",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "6GB",
+      "vram_min": "4GB",
+      "weight_gb": "0.43GB (ternary)",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Smallest Bonsai 2 ternary model at 0.43GB; PrismML reports 120 tok/s on an iPhone 18 Pro Max and up to 500 tok/s in an M4 Max browser demo.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, 0.43GB; PrismML vendor figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "0.43GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "M4 Max (browser demo)",
+          "quant": "0.43GB ternary (Qwen3.5 base, -1/0/+1 weights); MLX in a browser demo; PrismML vendor figure",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 1,
+          "views": 1691,
+          "interactions": 7,
+          "weight_gb": "0.43GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "120",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "Ternary (up to 120 tokens per second on iPhone 18 Pro Max)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 52,
+          "interactions": 1,
+          "weight_gb": "0.43GB (ternary)"
+        }
+      ],
+      "supported_engines": [
+        "MLX"
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "120",
+            "hardware": "iPhone 18 Pro Max",
+            "quant": "ternary weights, 0.43GB; PrismML vendor figure",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+            "date": "2026-10-15",
+            "engine": "MLX",
+            "tps": "120",
+            "hardware": "iPhone 18 Pro Max",
+            "quant": "Ternary (up to 120 tokens per second on iPhone 18 Pro Max)",
+            "likes": 1,
+            "comments": 0,
+            "reshares": 0,
+            "views": 52
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
     },
     {
       "id": "qwen3.8-27b-tensorfold-m3-ultra",
@@ -10071,42 +9691,58 @@
       "engine_min_version": "TensorFold 0.6.5"
     },
     {
-      "id": "qwen3.8-27b-oluwaphilemon1-250k",
-      "name": "Qwen3.8-27B (Apple Silicon long-context)",
-      "full_name": "Qwen3.8-27B on Apple Silicon with the drafter enabled",
-      "type": "LLM",
+      "id": "bonsai-2-2b-phone",
+      "name": "Bonsai 2 2B (iPhone)",
+      "full_name": "Ternary Bonsai 2 2B on iPhone 18 Pro Max via MLX",
+      "type": "GGUF",
       "license": "Apache 2.0",
-      "params": "27B",
-      "hf": "Qwen/Qwen3.8-27B",
-      "vram_tier": "16GB",
-      "vram_min": "16GB",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "0.43GB",
+      "weight_gb": "0.43GB ternary",
       "backends": [
         "Metal"
       ],
-      "last_seen": "2026-09-23",
-      "why": "A runtime update alone made Qwen3.8-27B substantially faster on Apple Silicon — +66 percent on an M5 Ultra, +28 on an M4 Max, +37 on an M1 Pro with the drafter on — while MLX-Serve kept output byte-identical across 18 models.",
+      "last_seen": "2026-10-16",
+      "why": "The 2B reaches up to 120 t/s on an iPhone 18 Pro Max, with 0.43GB of ternary weights and the same Apache 2.0 release as the rest of the Bonsai 2 family.",
       "engines": [
         {
-          "engine": "mlx-serve",
+          "engine": "MLX",
           "tps": "120",
-          "hardware": "M5 Max MacBook Pro (LM Studio Bionic serving)",
-          "quant": "Inco AI Splash engine, subagent running alongside the main agent",
-          "date": "2026-09-23",
-          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2102223365268246864",
-          "likes": 5,
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, 0.43GB footprint",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
           "comments": 0,
           "reshares": 0,
           "views": 0,
+          "weight_gb": "0.43GB ternary",
           "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "11",
+          "hardware": "CMF Phone 2 Pro (Android)",
+          "quant": "ternary 0.43GB pack in a custom Nothing-OS-style app, 10-11 tok/s",
+          "weight_gb": "0.43GB (ternary)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 99,
+          "comments": 2,
+          "reshares": 0,
+          "views": 107,
+          "interactions": 2
         }
       ],
       "supported_engines": [
-        "mlx-serve"
+        "MLX"
       ],
       "formats": [
         {
-          "name": "Qwen3.8-27B (Apple Silicon long-context)",
-          "hf": "Qwen/Qwen3.8-27B"
+          "name": "Bonsai 2 2B (iPhone)",
+          "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf"
         }
       ],
       "engagement": {
@@ -10116,16 +9752,28 @@
         "last_7d_likes": 0,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2102223365268246864",
-            "date": "2026-09-23",
-            "engine": "mlx-serve",
+            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+            "date": "2026-10-16",
+            "engine": "MLX",
             "tps": "120",
-            "hardware": "M5 Max MacBook Pro (LM Studio Bionic serving)",
-            "quant": "Inco AI Splash engine, subagent running alongside the main agent",
-            "likes": 5,
+            "hardware": "iPhone 18 Pro Max",
+            "quant": "ternary weights, 0.43GB footprint",
+            "likes": 1,
             "comments": 0,
             "reshares": 0,
             "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "11",
+            "hardware": "CMF Phone 2 Pro (Android)",
+            "quant": "ternary 0.43GB pack in a custom Nothing-OS-style app, 10-11 tok/s",
+            "likes": 99,
+            "comments": 2,
+            "reshares": 0,
+            "views": 107
           }
         ],
         "posts_7d": 0,
@@ -10419,6 +10067,87 @@
       }
     },
     {
+      "id": "laya-mlx-decision-models",
+      "name": "Laya (MLX decision models)",
+      "full_name": "laya-mlx 421M English / 322M multilingual decision models",
+      "type": "Decision LLM (MLX port)",
+      "formats": [
+        {
+          "name": "MLX",
+          "hf": "aac6fef/laya-mlx"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "421M / 322M",
+      "hf": "aac6fef/laya-mlx",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "943.6 MiB peak MLX memory (421M) / 687.6 MiB (322M)",
+      "context_tokens": "512-1024",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Tiny MLX decision layer that offloads routing/urgency/jailbreak/tool-choice calls from a big LLM to millisecond local latency (P50 7.39-13.42 ms on an M3 Max).",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "75.4",
+          "hardware": "Mac M3 Max",
+          "quant": "Snake demo: 75.4 moves/s over 2,400 moves; P50 13.42ms (421M) / 7.39ms (322M); peak MLX memory 943.6MiB / 687.6MiB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976",
+          "likes": 5,
+          "comments": 4,
+          "reshares": 12,
+          "views": 2365,
+          "interactions": 2386
+        },
+        {
+          "engine": "MLX",
+          "tps": "19",
+          "hardware": "Mac M3 Max",
+          "quant": "MLX decision models, P50 13.42 ms (421M) / 7.39 ms (322M); 75.4 moves/second over 2,400 Snake demo moves; Apple Silicon only, macOS 14+",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976",
+          "likes": 4,
+          "comments": 4,
+          "reshares": 13,
+          "views": 2351,
+          "interactions": 2372
+        }
+      ],
+      "supported_engines": [
+        "MLX"
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/iamrexei/status/2102282038988484976",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "75.4",
+            "hardware": "Mac M3 Max",
+            "quant": "Snake demo: 75.4 moves/s over 2,400 moves; P50 13.42ms (421M) / 7.39ms (322M); peak MLX memory 943.6MiB / 687.6MiB",
+            "likes": 5,
+            "comments": 4,
+            "reshares": 12,
+            "views": 2365
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      },
+      "engine_min_version": "MLX, Apple Silicon only, macOS 14+"
+    },
+    {
       "id": "qwen3.8-27b-dgx-spark-sglang-nvfp4",
       "name": "Qwen3.8-27B NVFP4 on DGX Spark",
       "full_name": "Qwen3.8-27B (NVFP4 weights served by SGLang with DFlash2 drafting)",
@@ -10474,6 +10203,74 @@
             "tps": "74",
             "hardware": "NVIDIA DGX Spark (128GB unified memory)",
             "quant": "NVFP4 weights, DFlash2 speculative decoding with a 4-bit drafter (16 tokens per pass), BF16 KV cache, thinking disabled",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "qwen3.8-27b-dgx-spark-nvfp4-dflash2",
+      "name": "Qwen3.8-27B on DGX Spark (SGLang NVFP4 + DFlash2, long context)",
+      "full_name": "Qwen3.8-27B NVFP4 on a single NVIDIA DGX Spark with SGLang and a 4-bit DFlash2 drafter, 320 to 260K context",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified memory",
+      "context_tokens": "260000",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "context sweep on one DGX Spark with SGLang, NVFP4 weights, a 4-bit DFlash2 drafter proposing 16 tokens per pass and a BF16 KV cache: 73-74 t/s at 320 to 8K context, 67 at 65K, 56 at 130K, 38 at 260K; repeated prompts cut TTFT from 277 s to 1.2 s via prefix caching",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "NVFP4 weights; DFlash2 speculative decoding with 4-bit drafter (16 proposed tokens/pass); BF16 KV cache; thinking off; median of 4 runs; 8K context (67 t/s at 65K, 38 t/s at 260K)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "8192"
+        }
+      ],
+      "supported_engines": [
+        "SGLang"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B on DGX Spark (SGLang NVFP4 + DFlash2, long context)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+            "date": "2026-10-15",
+            "engine": "SGLang",
+            "tps": "74",
+            "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+            "quant": "NVFP4 weights; DFlash2 speculative decoding with 4-bit drafter (16 proposed tokens/pass); BF16 KV cache; thinking off; median of 4 runs; 8K context (67 t/s at 65K, 38 t/s at 260K)",
             "likes": 0,
             "comments": 0,
             "reshares": 0,
@@ -10763,6 +10560,366 @@
       "engine_min_version": "llama.cpp b11177"
     },
     {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62.2",
+          "hardware": "served endpoint (Artificial Analysis comparison)",
+          "quant": "served GLM-5.3-Flash, compared against DeepSeek V4.1 Flash (Max) at 173.9 tok/s on the same source",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 4038,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "27.8",
+          "hardware": "Mac Studio (M-series)",
+          "quant": "Rapid-MLX with speculative decoding, ~4x Apple MLX on the same chip; weights ~306GB at FP8",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "27.5",
+          "hardware": "NVIDIA DGX Spark (one Spark), 2.49bpw, 97.4 GiB",
+          "quant": "RED-SNOW-5.3-FLASH, an abliterated 321B build by Blackfrost AI quantized by Cruz at 2.49bpw, 262K context; decode by workload - structured output 45.2 tok/s, JSON 45.7, code 35.9, prose 27.5 (the honest floor), harness-shaped research turn at 33k context 32 tok/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2110193379342786881",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "Project Maya",
+          "tps": "30",
+          "hardware": "RTX 5090 32GB",
+          "quant": "dedicated quants kept at 97.7-99.2% of FP8 zero-shot accuracy up to 1M context; three-tier GPU VRAM / system RAM / NVMe expert placement",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+          "likes": 35,
+          "comments": 33,
+          "reshares": 1,
+          "views": 270,
+          "storage_offload": "NVMe SSD holds the experts that do not fit VRAM or RAM, swapped mid-generation",
+          "interactions": 0
+        },
+        {
+          "engine": "glm-flash-lite",
+          "tps": "20",
+          "hardware": "RTX 3090 24GB",
+          "quant": "GLM-5.3-Flash 20B distilled build with CPU-offloaded MoE layers, 32k context, 0.55-0.58 acceptance on the spec-decode drafter",
+          "context_tokens": "32768",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+          "likes": 34,
+          "comments": 3,
+          "reshares": 3,
+          "views": 415,
+          "interactions": 38,
+          "weight_gb": "125GB"
+        },
+        {
+          "engine": "ExLlamaV3",
+          "tps": "35",
+          "hardware": "RTX 3090 24GB + 50GB DDR4 + 100GB NVMe",
+          "quant": "EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/0xSero/status/2107737091199435072",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 804,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "27.8",
+          "hardware": "Mac Studio (Apple Silicon)",
+          "quant": "Rapid-MLX spec-decode profile, 4x Apple MLX on same chip",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 1079,
+          "interactions": 0
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "20",
+          "hardware": "RTX 6000 Pro",
+          "quant": "MoE offload, PCIe 3.0",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
+          "likes": 50,
+          "comments": 3,
+          "reshares": 3,
+          "views": 12819,
+          "interactions": 12875,
+          "system_ram_min": "572GB"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "20",
+          "hardware": "RTX PRO 6000 (6000 Pro) + 572GB system RAM, PCIe 3.0",
+          "quant": "FreeToken (FlashML-org); >20 tok/s on prose prompts",
+          "system_ram_min": "572GB",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
+          "likes": 50,
+          "comments": 3,
+          "reshares": 3,
+          "views": 12870,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "ExLlamaV3"
+      ],
+      "why": "GLM-5.3-Flash — see source posts.",
+      "formats": [
+        {
+          "name": "GLM-5.3-Flash",
+          "hf": "zai-org/GLM-5.3-Flash"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/0xSero/status/2107737091199435072",
+            "date": "2026-10-07",
+            "engine": "ExLlamaV3",
+            "tps": "35",
+            "hardware": "RTX 3090 24GB + 50GB DDR4 + 100GB NVMe",
+            "quant": "EXL3 quant, decode 26->35 tok/s, prefill 1018->1136 tok/s, concurrency 4 = 76.5 tok/s",
+            "likes": 0,
+            "comments": 3,
+            "reshares": 804,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+            "date": "2026-10-14",
+            "engine": "MLX",
+            "tps": "27.8",
+            "hardware": "Mac Studio (M-series)",
+            "quant": "Rapid-MLX with speculative decoding, ~4x Apple MLX on the same chip; weights ~306GB at FP8",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Ferm0s/status/2108789403325714735",
+            "date": "2026-10-10",
+            "engine": "glm-flash-lite",
+            "tps": "20",
+            "hardware": "RTX 3090 24GB",
+            "quant": "GLM-5.3-Flash 20B distilled build with CPU-offloaded MoE layers, 32k context, 0.55-0.58 acceptance on the spec-decode drafter",
+            "likes": 34,
+            "comments": 3,
+            "reshares": 3,
+            "views": 415
+          },
+          {
+            "url": "https://lightbrd.com/HealthRanger/status/2106614991549862304",
+            "date": "2026-10-04",
+            "engine": "FreeToken",
+            "tps": "20",
+            "hardware": "RTX PRO 6000 (6000 Pro) + 572GB system RAM, PCIe 3.0",
+            "quant": "FreeToken (FlashML-org); >20 tok/s on prose prompts",
+            "likes": 50,
+            "comments": 3,
+            "reshares": 3,
+            "views": 12870
+          },
+          {
+            "url": "https://lightbrd.com/loudchirper/status/2109588037214642210",
+            "date": "2026-10-12",
+            "engine": "Project Maya",
+            "tps": "30",
+            "hardware": "RTX 5090 32GB",
+            "quant": "dedicated quants kept at 97.7-99.2% of FP8 zero-shot accuracy up to 1M context; three-tier GPU VRAM / system RAM / NVMe expert placement",
+            "likes": 35,
+            "comments": 33,
+            "reshares": 1,
+            "views": 270
+          },
+          {
+            "url": "https://lightbrd.com/yume_arasaki/status/2110193379342786881",
+            "date": "2026-10-14",
+            "engine": "llama.cpp",
+            "tps": "27.5",
+            "hardware": "NVIDIA DGX Spark (one Spark), 2.49bpw, 97.4 GiB",
+            "quant": "RED-SNOW-5.3-FLASH, an abliterated 321B build by Blackfrost AI quantized by Cruz at 2.49bpw, 262K context; decode by workload - structured output 45.2 tok/s, JSON 45.7, code 35.9, prose 27.5 (the honest floor), harness-shaped research turn at 33k context 32 tok/s",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/AGTPinsights/status/2111053502550274091",
+            "date": "2026-10-16",
+            "engine": "vLLM",
+            "tps": "62.2",
+            "hardware": "served endpoint (Artificial Analysis comparison)",
+            "quant": "served GLM-5.3-Flash, compared against DeepSeek V4.1 Flash (Max) at 173.9 tok/s on the same source",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 4038
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      },
+      "system_ram_min": "50GB",
+      "storage_offload": "100GB NVMe, MoE experts on SSD",
+      "weight_gb": "~306GB at FP8",
+      "context_tokens": "262144"
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5-9B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "Qwen/Qwen3.5-9B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "32GB",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "6.73",
+          "hardware": "32GB laptop, CPU",
+          "quant": "local run on a 32GB laptop, system RAM bound (RAM-bound, no GPU)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
+          "likes": 3,
+          "comments": 5,
+          "reshares": 0,
+          "views": 356,
+          "interactions": 364,
+          "system_ram_min": "32GB"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "6.73",
+          "hardware": "32GB laptop (CPU, no dedicated GPU)",
+          "quant": "CPU inference on a memory-constrained laptop; the author notes RAM pressure and reasoning overhead",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
+          "likes": 5,
+          "comments": 3,
+          "reshares": 0,
+          "views": 368,
+          "interactions": 8,
+          "system_ram_min": "32GB"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "62",
+          "hardware": "RX 6750 XT",
+          "quant": "ROCm 7.15 native Windows runtime (custom rocBLAS via TheRock); requested engine build",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/GameGPU_com/status/2089735525330485464",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 0,
+          "views": 641,
+          "interactions": 650,
+          "engine_min_version": "vLLM v2.0 ROCm 7.15 Windows build (TheRock rocBLAS)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "36",
+          "hardware": "AMD RX 5700 XT 8GB (Vulkan on Linux)",
+          "quant": "jackrong Qwen3.5-9B DSV4 Flash distill, ~36 tok/s, full-day coding session against a ~30-file codebase",
+          "date": "2026-06-24",
+          "source_post": "https://lightbrd.com/GuideboardLabs/status/2069828515156148597",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 614,
+          "interactions": 624
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "Qwen3.5-9B — see source posts.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
+            "date": "2026-10-15",
+            "engine": "llama.cpp",
+            "tps": "6.73",
+            "hardware": "32GB laptop, CPU only",
+            "quant": "first real test on a 32GB laptop; ~10 minutes for one response with reasoning overhead",
+            "likes": 3,
+            "comments": 5,
+            "reshares": 0,
+            "views": 356
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
       "id": "qwen3.8-27b-tensorfold-dflash2-macmini",
       "name": "Qwen3.8-27B (TensorFold + DFlash2, Mac mini M6)",
       "full_name": "Qwen3.8-27B 4-bit on TensorFold with DFlash2 drafting on a Mac mini M6",
@@ -10818,6 +10975,196 @@
             "comments": 0,
             "reshares": 0,
             "views": 0
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "unsloth/Qwen3.6-27B-GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "unsloth/Qwen3.6-27B-GGUF",
+      "vram_tier": "18GB",
+      "vram_min": "18GB",
+      "engine_min_version": "llama.cpp + flash-attention + kv-cache q4_0; MTP needs the unsloth MTP GGUF",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Qwen3.6-27B is the model the Mac-vs-GPU bakeoffs are run on: 38 tok/s on an M4 Max 128GB, 58 on an M3 Ultra 256GB, all via llama.cpp.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "32",
+          "hardware": "Mac mini M4 Pro 64GB",
+          "quant": "Q4 via MLX; ~17 tok/s without MTP, ~32 with MTP",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "21.5",
+          "hardware": "Mac mini M4 16GB",
+          "quant": "mlx-lm; JSON workload 21.5 tok/s, story 12.5, code 11; ~364 tok/s prefill",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "58",
+          "hardware": "Mac Studio M3 Ultra 256GB",
+          "quant": "Q4_K_M (16.8GB weights), + flash-attention + kv-cache q4_0; 30 tok/s at 70B Q4",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/TraffAlex/status/2070234634684715492",
+          "likes": 4,
+          "comments": 8,
+          "reshares": 45,
+          "views": 6189,
+          "interactions": 6246
+        },
+        {
+          "engine": "MLX",
+          "tps": "17",
+          "hardware": "Mac mini M4 Pro 48GB",
+          "quant": "Qwen3.6 27B at Q4 via MLX (~32 tok/s with MTP); the same box runs Qwen3.6 35B-A3B continuously for crons",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp",
+        "llama.cpp",
+        "MLX"
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "32",
+            "hardware": "Mac mini M4 Pro 64GB",
+            "quant": "Q4 via MLX; ~17 tok/s without MTP, ~32 with MTP",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+            "date": "2026-10-03",
+            "engine": "MLX",
+            "tps": "21.5",
+            "hardware": "Mac mini M4 16GB",
+            "quant": "mlx-lm; JSON workload 21.5 tok/s, story 12.5, code 11; ~364 tok/s prefill",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      },
+      "system_ram_min": "48GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b-strix-halo-strata",
+      "name": "Qwen3.8-Flash-Next 125B on Strix Halo (Strata)",
+      "full_name": "Qwen3.8-Flash-Next 125B via Strata on a Strix Halo laptop (Unsloth Q4 / GSQ-RCO weights)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "96GB",
+      "vram_min": "16GB",
+      "system_ram_min": "96GB",
+      "context_tokens": "1000000",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-07",
+      "why": "Eugene Smarts on Strata's experimental Strix Halo support: a 16GB VRAM + 96GB RAM Strix Halo laptop sustains 27 t/s decode at 168K-262K context on Qwen3.8-Flash-Next, and 55-58 t/s decode at 140W performance mode; context scales to 1M without a big decode drop",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "58",
+          "hardware": "Strix Halo laptop, 16GB VRAM + 96GB RAM (Bosgame M5), 140W performance mode",
+          "quant": "Unsloth Q4 / GSQ-RCO weights; ROCm; 55-58 t/s decode at performance mode, 1400-1500 t/s prefill excluded",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 16,
+          "comments": 8,
+          "reshares": 0,
+          "views": 586,
+          "interactions": 610,
+          "system_ram_min": "96GB (with 16GB VRAM)",
+          "context_tokens": "262144"
+        }
+      ],
+      "supported_engines": [
+        "Strata"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B on Strix Halo (Strata)",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+            "date": "2026-10-07",
+            "engine": "Strata",
+            "tps": "58",
+            "hardware": "Strix Halo laptop, 16GB VRAM + 96GB RAM (Bosgame M5), 140W performance mode",
+            "quant": "Unsloth Q4 / GSQ-RCO weights; ROCm; 55-58 t/s decode at performance mode, 1400-1500 t/s prefill excluded",
+            "likes": 16,
+            "comments": 8,
+            "reshares": 0,
+            "views": 586
           }
         ],
         "posts_7d": 0,
@@ -11120,8 +11467,8 @@
           "likes": 779,
           "comments": 2,
           "reshares": 1,
-          "views": 0,
-          "interactions": 782
+          "views": 1650,
+          "interactions": 1698
         }
       ],
       "supported_engines": [
@@ -11155,7 +11502,7 @@
             "likes": 779,
             "comments": 2,
             "reshares": 1,
-            "views": 0
+            "views": 1650
           }
         ],
         "posts_7d": 0,
@@ -11467,74 +11814,50 @@
       "weight_gb": "2.9GB Q4_K_M"
     },
     {
-      "id": "qwen3.5-9b",
-      "name": "Qwen3.5 9B",
-      "full_name": "Qwen3.5-9B",
+      "id": "qwen3.8-flash-next-125b-amd-32gb",
+      "name": "Qwen3.8-Flash-Next 125B on a 32GB Radeon (EXL3)",
+      "full_name": "Qwen3.8-Flash-Next 125B · EXL3 5.05 bpw on a 32GB Radeon with 90GB RAM and NVMe expert streaming",
       "type": "LLM",
-      "formats": [
-        {
-          "name": "LLM",
-          "hf": "Qwen/Qwen3.5-9B"
-        }
-      ],
       "license": "Apache 2.0",
-      "params": "9B",
-      "hf": "Qwen/Qwen3.5-9B",
-      "vram_tier": "16GB",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
       "vram_min": "32GB",
-      "system_ram_min": "32GB",
+      "system_ram_min": "90GB",
+      "context_tokens": "230000",
+      "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
       "backends": [
-        "CPU",
         "ROCm"
       ],
-      "last_seen": "2026-10-15",
+      "last_seen": "2026-10-04",
+      "why": "reported 34.7 tok/s decode on one 32GB Radeon with a patched ExLlamaV3 ROCm fork: 112 of 512 experts per layer on GPU, 400 in ~90GB RAM, the ~102GB n-gram table on NVMe, Q8 KV cache at ~230K context",
       "engines": [
         {
-          "engine": "llama.cpp",
-          "tps": "6.73",
-          "hardware": "32GB laptop, CPU",
-          "quant": "local run on a 32GB laptop, system RAM bound (RAM-bound, no GPU)",
-          "date": "2026-10-15",
-          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
-          "likes": 3,
-          "comments": 5,
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "32GB Radeon GPU + ~90GB system RAM + NVMe",
+          "quant": "EXL3 5.05 bpw; Q8 KV cache; ~230K context; 112/512 experts on GPU, 400 in RAM, n-gram table on NVMe",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 0,
+          "comments": 0,
           "reshares": 0,
-          "views": 356,
-          "interactions": 364,
-          "system_ram_min": "32GB"
-        },
-        {
-          "engine": "Ollama",
-          "tps": "6.73",
-          "hardware": "32GB laptop (CPU, no dedicated GPU)",
-          "quant": "CPU inference on a memory-constrained laptop; the author notes RAM pressure and reasoning overhead",
-          "date": "2026-10-15",
-          "source_post": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
-          "likes": 5,
-          "comments": 3,
-          "reshares": 0,
-          "views": 368,
-          "interactions": 8,
-          "system_ram_min": "32GB"
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "36",
-          "hardware": "AMD RX 5700 XT 8GB (Vulkan on Linux)",
-          "quant": "jackrong Qwen3.5-9B DSV4 Flash distill, ~36 tok/s, full-day coding session against a ~30-file codebase",
-          "date": "2026-06-24",
-          "source_post": "https://lightbrd.com/GuideboardLabs/status/2069828515156148597",
-          "likes": 5,
-          "comments": 5,
-          "reshares": 0,
-          "views": 614,
-          "interactions": 624
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "~90GB",
+          "context_tokens": "~230K",
+          "storage_offload": "~102GB BF16 n-gram table streamed from NVMe"
         }
       ],
       "supported_engines": [
-        "llama.cpp"
+        "ExLlamaV3 (ROCm fork)"
       ],
-      "why": "Qwen3.5-9B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B on a 32GB Radeon (EXL3)",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
       "engagement": {
         "likes": 0,
         "comments": 0,
@@ -11542,16 +11865,16 @@
         "last_7d_likes": 0,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/ImDennisZhou/status/2110684180388741282",
-            "date": "2026-10-15",
-            "engine": "llama.cpp",
-            "tps": "6.73",
-            "hardware": "32GB laptop, CPU only",
-            "quant": "first real test on a 32GB laptop; ~10 minutes for one response with reasoning overhead",
-            "likes": 3,
-            "comments": 5,
+            "url": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+            "date": "2026-10-04",
+            "engine": "ExLlamaV3 (ROCm fork)",
+            "tps": "34.7",
+            "hardware": "32GB Radeon GPU + ~90GB system RAM + NVMe",
+            "quant": "EXL3 5.05 bpw; Q8 KV cache; ~230K context; 112/512 experts on GPU, 400 in RAM, n-gram table on NVMe",
+            "likes": 0,
+            "comments": 0,
             "reshares": 0,
-            "views": 356
+            "views": 0
           }
         ],
         "posts_7d": 0,
@@ -11633,6 +11956,85 @@
             "hardware": "Mac Studio M4 Max, 128GB unified memory",
             "quant": "ternary MLX weights (~7GB), 1.72 bits/weight",
             "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "bonsai-2-9b-phone",
+      "name": "Bonsai 2 9B (iPhone)",
+      "full_name": "Ternary Bonsai 2 9B on iPhone 18 Pro Max via MLX",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "2GB",
+      "weight_gb": "2GB ternary",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "The same 2GB ternary 9B that hits 179 t/s on an M5 Max Pro still runs agent tasks on an iPhone 18 Pro Max at 34 t/s, which is the point of the family: a capable VLM in a phone-sized footprint.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max",
+          "quant": "ternary weights, 2GB footprint (PrismML figure)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2GB ternary",
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "MLX"
+      ],
+      "formats": [
+        {
+          "name": "Bonsai 2 9B (iPhone)",
+          "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "34",
+            "hardware": "iPhone 18 Pro Max",
+            "quant": "ternary weights, 2GB footprint",
+            "likes": 0,
+            "comments": 0,
+            "reshares": 0,
+            "views": 0
+          },
+          {
+            "url": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "34",
+            "hardware": "iPhone 18 Pro Max",
+            "quant": "ternary weights, 2GB footprint (PrismML figure)",
+            "likes": 1,
             "comments": 0,
             "reshares": 0,
             "views": 0
@@ -11743,6 +12145,120 @@
       "system_ram_min": "32GB",
       "storage_offload": "experts streamed from NVMe SSD",
       "engine_min_version": "Janas draft block; llama.cpp cpu-moe Q4_K_M baseline"
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "system_ram_min": "60GB",
+      "context_tokens": "32768",
+      "storage_offload": "MoE experts streamed from SSD to CPU; 192GB engram on Gen4 NVMe",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26.87",
+          "hardware": "Mac M5 Max",
+          "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 0,
+          "views": 468,
+          "interactions": 474
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "2",
+          "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
+          "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 274,
+          "comments": 3,
+          "reshares": 2,
+          "views": 252,
+          "interactions": 279
+        },
+        {
+          "engine": "llama.cpp (hikicoder fork)",
+          "tps": "2",
+          "hardware": "RTX A4500 20GB (~17GB VRAM used) + 128GB DDR5",
+          "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM; 192GB Engram on a Gen4 7GB/s NVMe with --moe-stream; generation slowed by thermal/IO pacing",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 2,
+          "views": 288,
+          "system_ram_min": "128GB (60GB used by the run)",
+          "storage_offload": "192GB Engram on Gen4 7GB/s NVMe (--moe-stream)",
+          "context_tokens": "32K",
+          "engine_min_version": "-ngl 99 -c 32768 -nkvo --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 --moe-stream-direct",
+          "interactions": 293,
+          "weight_gb": "192GB engram on NVMe"
+        }
+      ],
+      "last_seen": "2026-10-16",
+      "engine_min_version": "llama.cpp (hikicoder fork, dsv41-ada-medvram) --moe-stream",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "deepseek-ai/DeepSeek-V4.1-Flash — see source posts.",
+      "formats": [
+        {
+          "name": "DeepSeek-V4.1-Flash",
+          "hf": "deepseek-ai/DeepSeek-V4.1-Flash"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+            "date": "2026-09-24",
+            "engine": "llama.cpp",
+            "tps": "2",
+            "hardware": "RTX A4500 20GB (16GB VRAM) + 60GB RAM, 192GB Engram on Gen4 7GB/s NVMe",
+            "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32k context at fp16, MoE experts streamed from NVMe at ~3GB/s with --moe-stream",
+            "likes": 274,
+            "comments": 3,
+            "reshares": 2,
+            "views": 252
+          },
+          {
+            "url": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326",
+            "date": "2026-10-16",
+            "engine": "MLX",
+            "tps": "26.87",
+            "hardware": "Mac M5 Max",
+            "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
+            "likes": 4,
+            "comments": 2,
+            "reshares": 0,
+            "views": 468
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
     },
     {
       "id": "deepseek-v4-flash",
@@ -11994,6 +12510,73 @@
             "comments": 6,
             "reshares": 226,
             "views": 38759
+          }
+        ],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "qwen3-235b-a22b-strix-halo",
+      "name": "Qwen3-235B-A22B on Strix Halo",
+      "full_name": "Qwen3-235B-A22B (Q3, 128GB Ryzen AI Max+ 395 Strix Halo)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "235B (22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "96GB",
+      "weight_gb": "~100GB at ~Q3",
+      "system_ram_min": "128GB unified LPDDR5X",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Richard Baird's reality check on the Strix Halo demo: the 128GB Ryzen AI Max+ 395 runs Qwen3-235B-A22B at a real-world 14-17 tok/s decode across the unified pool (~96-110GB accessible), Vulkan often edging out ROCm",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo) 128GB unified LPDDR5X, Radeon 8060S",
+          "quant": "~Q3 (~100GB weights); Vulkan often edges out ROCm for generation; real-world decode 14-17 t/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 277,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 279
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3-235B-A22B on Strix Halo",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [
+          {
+            "url": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+            "date": "2026-10-14",
+            "engine": "llama.cpp",
+            "tps": "17",
+            "hardware": "Ryzen AI Max+ 395 (Strix Halo) 128GB unified LPDDR5X, Radeon 8060S",
+            "quant": "~Q3 (~100GB weights); Vulkan often edges out ROCm for generation; real-world decode 14-17 t/s",
+            "likes": 277,
+            "comments": 2,
+            "reshares": 0,
+            "views": 0
           }
         ],
         "posts_7d": 0,
@@ -12513,6 +13096,58 @@
       "vram_min": "12GB"
     },
     {
+      "id": "qwen3.8-27b-oluwaphilemon1-250k",
+      "name": "Qwen3.8-27B (Apple Silicon long-context)",
+      "full_name": "Qwen3.8-27B on Apple Silicon with the drafter enabled",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-23",
+      "why": "A runtime update alone made Qwen3.8-27B substantially faster on Apple Silicon — +66 percent on an M5 Ultra, +28 on an M4 Max, +37 on an M1 Pro with the drafter on — while MLX-Serve kept output byte-identical across 18 models.",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "120",
+          "hardware": "M5 Max MacBook Pro (LM Studio Bionic serving)",
+          "quant": "Inco AI Splash engine, subagent running alongside the main agent",
+          "date": "2026-09-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2102223365268246864",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "supported_engines": [
+        "mlx-serve"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B (Apple Silicon long-context)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
       "id": "gemma-4-12b",
       "name": "Gemma 4 12B",
       "full_name": "gemma-4-12B-it",
@@ -12661,6 +13296,114 @@
         {
           "name": "Qwen3.5 4B",
           "hf": "Qwen/Qwen3.5-4B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "qwen3.8-27b-radeon-pro-r9700",
+      "name": "Qwen3.8-27B on Radeon AI PRO R9700 (llama.cpp Vulkan)",
+      "full_name": "Qwen3.8-27B 27B dense on a 32GB Radeon AI PRO R9700",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-17",
+      "why": "AMD's own day-0 validation relayed by XFX Japan: the 27B dense model on one Radeon AI PRO R9700 32GB under Windows ran llama.cpp with the Vulkan backend and MTP=2 at up to 51.8 tok/s generation; Mayhem4Markets measured close to 50 t/s on the same card at 256K context with an 8-bit KV cache",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "51.8",
+          "hardware": "Radeon AI PRO R9700 32GB",
+          "quant": "Vulkan; 256K context with 8-bit KV cache (16-bit KV similar)",
+          "date": "2026-08-17",
+          "source_post": "https://lightbrd.com/Mayhem4Markets/status/2089147394680111348",
+          "likes": 52,
+          "comments": 16,
+          "reshares": 5,
+          "views": 17644,
+          "interactions": 17717,
+          "context_tokens": "262144"
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B on Radeon AI PRO R9700 (llama.cpp Vulkan)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "qwen3.8-27b-strix-halo-dflash2",
+      "name": "Qwen3.8-27B DFlash2 on Strix Halo",
+      "full_name": "Qwen3.8-27B UD-Q4_K_XL + DFlash2 Q8_0 drafter on Ryzen AI Max+ 395 / Radeon 8060S",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "system_ram_min": "128GB unified memory",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-20",
+      "why": "TeksEdge on the DFlash 2 speculative-decoding PR for llama.cpp (PR #27342, still open, needs the PR/fork build): on a Ryzen AI Max+ 395 / Radeon 8060S Strix Halo, Qwen3.8-27B UD-Q4_K_XL decodes at 26.39 t/s at 0K and 21.11 t/s at 32K with DFlash 2 (n=4), versus 11.81 and 10.54 t/s without it",
+      "engines": [
+        {
+          "engine": "llama.cpp (strix-llama.cpp fork)",
+          "tps": "26.39",
+          "hardware": "Ryzen AI Max+ 395 / Radeon 8060S (Strix Halo), Vulkan backend",
+          "quant": "UD-Q4_K_XL target + Qwen3.8-27B-DFlash2 Q8_0 drafter; DFlash 2 speculative decoding n=4; 0K context (21.11 t/s at 32K, 21.58 at 8K)",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 25,
+          "comments": 5,
+          "reshares": 2,
+          "views": 2564,
+          "interactions": 2596,
+          "engine_min_version": "llama.cpp PR #27342 (DFlash 2 speculative decoding, not yet merged — PR/fork build)"
+        }
+      ],
+      "supported_engines": [
+        "llama.cpp (strix-llama.cpp fork)"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B DFlash2 on Strix Halo",
+          "hf": "Qwen/Qwen3.8-27B"
         }
       ],
       "engagement": {

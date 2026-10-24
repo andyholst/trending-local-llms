@@ -1,0 +1,39 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B (24B MoE, 64 experts top-4, ~2B active)",
+      "type": "LLM",
+      "license": "free to ship under $10M revenue",
+      "params": "24B (2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "weight_gb": "~14.5GB Q4_K_M",
+      "context_tokens": "131072",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "why": "Liquid AI's own figures relayed by FHILY: 184 t/s on an Apple M5 Max and 114 t/s on an AMD Ryzen AI Max+ 395 Strix Halo; Q4 GGUF is ~14.5GB and fits an 8GB card with expert layers offloaded; leads Qwen3.6-35B-A3B on LiveClaw (48.1 vs 38.2) and AutomationBench (27.7 vs 8.7)",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "vendor-reported figure; quantization not stated in the post (Q4_K_M GGUF is ~14.5GB, fits an 8GB card with experts offloaded to CPU)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113073556321886241",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:31:42Z"
+}

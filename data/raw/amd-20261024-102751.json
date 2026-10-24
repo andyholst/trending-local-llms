@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-4B",
+      "full_name": "Qwen3.5-4B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3.5-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-08-18",
+      "why": "GameGPU relay of the native vLLM + ROCm 7.15 runtime for RX 6000 on Windows 11 (no WSL2, TheRock-built rocBLAS): up to 62 tokens/s with Qwen3.5-4B on an RX 6750 XT",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "62",
+          "hardware": "RX 6750 XT",
+          "quant": "ROCm 7.15 native Windows runtime (custom rocBLAS via TheRock); requested engine build",
+          "date": "2026-08-18",
+          "source_post": "https://lightbrd.com/GameGPU_com/status/2089735525330485464",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 0,
+          "views": 641,
+          "interactions": 650,
+          "engine_min_version": "vLLM v2.0 ROCm 7.15 Windows build (TheRock rocBLAS)"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:27:51Z"
+}

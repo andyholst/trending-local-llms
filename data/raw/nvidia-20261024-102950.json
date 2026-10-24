@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-24T10:36:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "2x RTX 5060 Ti 16GB (32GB total, all layers split across both cards, MTP draft head)",
+          "quant": "IQ4_XS weights, q4_0 KV cache with flash attention, 262k context in two 128k slots; IQ4_XS also 20% faster than Q5_K_M at the same score",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/laky_fx/status/2113901739170501046",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 4,
+          "views": 106,
+          "weight_gb": "15.5GB",
+          "context_tokens": "262144",
+          "system_ram_min": "32GB",
+          "engine_min_version": "-fa (flash attention) with q4_0 KV cache; built-in MTP draft head (--spec-type mtp)"
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "Siim Tolk's overnight harness ran his production Qwen3.8-27B at 45 tok/s decode on a short prompt on two RTX 5060 Ti cards (IQ4_XS 15.5GB, 262k context in two 128k slots); the built-in MTP draft head alone took it from 25 to 41 tok/s for 1.2GB of extra memory, decode falls to 26.5 tok/s after 90k tokens, and each card needs ~2.8GB of compute buffer."
+    }
+  ]
+}

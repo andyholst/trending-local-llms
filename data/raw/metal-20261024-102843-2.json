@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Bonsai 2 4B",
+      "full_name": "Ternary Bonsai 2 4B (Qwen3.5-based, ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "1GB",
+      "weight_gb": "0.95GB (ternary weights)",
+      "system_ram_min": "4GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Bonsai 2 4B (under 1GB of ternary weights) runs 32 concurrent email-parsing streams on a MacBook Pro M5 Pro with peak memory under 4GB and over 700 tok/s in aggregate.",
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "700",
+          "hardware": "MacBook Pro M5 Pro",
+          "quant": "ternary Bonsai 2 4B, 32 concurrent streams processing 250 emails to JSON; aggregate over 700 tok/s, peak memory <4GB (Apple Silicon Mac, core count of the M5 Pro build)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874",
+          "likes": 4,
+          "comments": 15,
+          "reshares": 87,
+          "views": 5259,
+          "interactions": 106,
+          "weight_gb": "0.95GB",
+          "system_ram_min": "4GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:43Z"
+}

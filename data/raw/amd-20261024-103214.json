@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-4b",
+      "name": "Ternary Bonsai 2 4B",
+      "full_name": "Ternary Bonsai 2 4B (Qwen3.5-4B, ternary −1/0/+1)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
+      "vram_tier": "4GB",
+      "vram_min": "2GB",
+      "weight_gb": "0.95GB (ternary GGUF)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "why": "Sambhav Jain runs Bonsai 2 4B on a CMF Phone 2 Pro at 5-6 tokens/s (10-11 with the 2B) behind a Nothing-OS-style UI with web search and cross-chat memory; a 0.95GB ternary footprint is what makes the phone run possible",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "6",
+          "hardware": "CMF Phone 2 Pro (Android phone, on-device)",
+          "quant": "ternary weights (0.95GB); 5-6 t/s on the phone (2B model: 10-11 t/s)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 115,
+          "interactions": 118
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:32:14Z"
+}

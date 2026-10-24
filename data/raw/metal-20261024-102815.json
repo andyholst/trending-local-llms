@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (Qwen3.5-based, ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB (ternary weights)",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The mlx.fast open optimization challenge took ternary Bonsai 2 9B from 144.9 to 913.1 tok/s on Apple Silicon in five days with the weights frozen - a 442% decode gain from engine work alone.",
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "913.1",
+          "hardware": "Apple Silicon Mac (Yukon mlx.fast leaderboard)",
+          "quant": "ternary 2GB weights, frozen; 5 days of open optimization (13 solvers, 113 submissions), up from 144.9 tok/s (+442.3% decode); DGX Spark CUDA track +401.1%",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 5,
+          "views": 552,
+          "interactions": 7,
+          "weight_gb": "2GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:15Z"
+}
