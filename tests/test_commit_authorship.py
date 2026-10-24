@@ -168,10 +168,11 @@ def test_a_second_spelling_of_a_person_is_refused_with_the_canonical_pair():
 _ROOT = Path(__file__).resolve().parent.parent
 
 
-def _git_path_log(root: Path, depth: str) -> list[dict]:
-    """The last `depth` commits of a repository, as the guard's own commit dicts."""
+def _git_path_log(root: Path, depth: str | None = None) -> list[dict]:
+    """A repository's commits — all of them, or only the newest `depth` — as the guard's dicts."""
     fmt = "%x00".join(["%H", "%an <%ae>", "%cn <%ce>", "%s", "%B"]) + "%x00%x00"
-    text = _git(root, "log", f"-{depth}", f"--format={fmt}")
+    args = ["log"] + ([f"-{depth}"] if depth else []) + [f"--format={fmt}"]
+    text = _git(root, *args)
     fields = text.split("\x00")
     commits = []
     for i in range(0, len(fields) - 5, 6):
@@ -200,13 +201,24 @@ def test_the_real_master_history_would_have_been_caught():
         prev = os.environ.get("GIT_CONFIG_GLOBAL")
         os.environ["GIT_CONFIG_GLOBAL"] = str(cfg)
         try:
-            out = _git_path_log(_ROOT, "40")
+            shallow = _git(_ROOT, "rev-parse", "--is-shallow-repository").strip()
+            out = _git_path_log(_ROOT)  # the WHOLE history — see the note below
         finally:
             if prev is None:
                 os.environ.pop("GIT_CONFIG_GLOBAL", None)
             else:
                 os.environ["GIT_CONFIG_GLOBAL"] = prev
 
+    # The scan covers the WHOLE history, never the newest N commits. It used to read
+    # the last 40, and that window SLIDES: every refresh merge pushes an older
+    # self-credited commit out of it, so the expectation expired — measured on the
+    # #287 PR, where the newest 40 commits carried 4 self-credited ones (FAIL against
+    # a floor of 5) while the history carried 58. A guard that goes red because its
+    # sample shrank is measuring the merge rate, not the rule.
+    check("identity: the checkout carries the whole history (fetch-depth: 0)",
+          shallow == "false",
+          f"is-shallow-repository={shallow} — this guard reads the full log, so the job "
+          "that runs `make test` must check out with `fetch-depth: 0` (issue #317)")
     caught = [c for c in out if cca.self_credit_violations(c)]
     check("identity: the real history yields self-credited commits", len(caught) >= 5, len(caught))
     check("identity: the measured commit is among them",
