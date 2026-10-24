@@ -8,7 +8,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "4B",
-      "hf": "prism-ml/bonsai-2-4b",
+      "hf": "prism-ml/Ternary-Bonsai-2-4B-gguf",
       "vram_tier": "4GB",
       "vram_min": "2GB",
       "weight_gb": "0.95GB (ternary GGUF)",

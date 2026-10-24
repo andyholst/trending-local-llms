@@ -359,12 +359,22 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
     check("real store: every 'unstructured' claim is a figure in the model's own text",
           unpinned == [], str(unpinned))
 
-    # … the set is no larger than the measured, figure-bearing set …
-    check("real store: context_tokens prose claims are the 2 stated windows",
-          set(report["unstructured"]["context_tokens"]) <= {"qwen-3.6-27b", "gemma-4-12b"},
+    # … the set is no larger than the measured, figure-bearing set — plus the models a
+    # REFRESH has added since it was measured (AGENTS.md rule 6b: the assertion tracks
+    # the data, it is never widened to make a report go quiet). A brand-new model is
+    # legitimately figure-bearing in prose only: the 2026-10-24 refresh added
+    # `qwen3.8-27b-strix-halo-dflash2`, whose post sweeps 0K/8K/32K as benchmark
+    # POINTS rather than stating one context window, so the figure is real and
+    # unstructured and there is no single window to fill. Naming each added model
+    # keeps the check exact: a new prose claim on ANY other model still fails.
+    added_since_measurement = {"qwen3.8-27b-strix-halo-dflash2"}
+    check("real store: context_tokens prose claims are the stated windows + models added since",
+          set(report["unstructured"]["context_tokens"])
+          <= {"qwen-3.6-27b", "gemma-4-12b"} | added_since_measurement,
           str(report["unstructured"]["context_tokens"]))
-    check("real store: weight_gb prose claims are the 2 stated footprints",
-          set(report["unstructured"]["weight_gb"]) <= {"qwen3.6-27b", "muse-glimmer-30b"},
+    check("real store: weight_gb prose claims are the stated footprints + models added since",
+          set(report["unstructured"]["weight_gb"])
+          <= {"qwen3.6-27b", "muse-glimmer-30b"} | added_since_measurement,
           str(report["unstructured"]["weight_gb"]))
     check("real store: no storage offload is claimed from 'Flash Attention'",
           report["unstructured"]["storage_offload"] == [],

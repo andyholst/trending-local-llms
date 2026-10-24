@@ -4000,8 +4000,8 @@
           "comments": 0,
           "reshares": 0,
           "views": 17,
-          "weight_gb": "5.9GB",
-          "context_tokens": "262144",
+          "weight_gb": "5.9GB ternary",
+          "context_tokens": "245000",
           "interactions": 0
         },
         {
@@ -11112,7 +11112,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "125B",
-      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "96GB",
       "vram_min": "16GB",
       "system_ram_min": "96GB",
@@ -11145,7 +11145,7 @@
       "formats": [
         {
           "name": "Qwen3.8-Flash-Next 125B on Strix Halo (Strata)",
-          "hf": "Qwen/Qwen3.8-Flash-Next-125B"
+          "hf": "Qwen/Qwen3.8-Flash-Next"
         }
       ],
       "engagement": {
@@ -11820,7 +11820,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "125B",
-      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "32GB",
       "vram_min": "32GB",
       "system_ram_min": "90GB",
@@ -11855,7 +11855,7 @@
       "formats": [
         {
           "name": "Qwen3.8-Flash-Next 125B on a 32GB Radeon (EXL3)",
-          "hf": "Qwen/Qwen3.8-Flash-Next-125B"
+          "hf": "Qwen/Qwen3.8-Flash-Next"
         }
       ],
       "engagement": {

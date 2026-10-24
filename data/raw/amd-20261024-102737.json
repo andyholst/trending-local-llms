@@ -8,7 +8,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "125B",
-      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "vram_tier": "16GB",
       "vram_min": "12GB",
       "system_ram_min": "32GB",
