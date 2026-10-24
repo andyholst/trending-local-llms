@@ -232,6 +232,68 @@ def test_an_unreadable_verdict_is_never_guessed_at():
               "issue comment" not in calls and "issue close" not in calls, calls)
 
 
+def test_a_decorated_verdict_is_read_and_a_near_miss_is_not_guessed_at():
+    """Issue #245: the verdict grammar is answered by a MODEL, so the parser reads the
+    formatting a model actually produces — a near-miss must not fail the run AFTER the
+    implementation. Tolerance is DECORATION, not guessing: an unknown verdict still refuses.
+    """
+    # Given  the shapes a model actually writes instead of a bare `TRIAGE: implement`
+    decorated = {
+        "bold": "**TRIAGE: implement**\n",
+        "heading": "## TRIAGE: implement\n",
+        "bullet": "- TRIAGE: implement\n",
+        "bold key": "**TRIAGE:** implement\n",
+        "bold key, colon outside": "**TRIAGE**: implement\n",
+        "blockquote, italic value": "> **TRIAGE:** *implement*\n",
+        "spaced colon": "TRIAGE : implement\n",
+        "lowercase key": "triage: implement\n",
+        "trailing reason": "TRIAGE: implement — the thread matches the body\n",
+        "trailing period": "TRIAGE: implement.\n",
+        "backticked": "`TRIAGE: implement`\n",
+        "indented": "  TRIAGE: implement\n",
+        "bold value": "TRIAGE: **implement**\n",
+    }
+
+    # When/Then  each is read as `implement`, applies nothing and publishes the verdict
+    for name, text in decorated.items():
+        rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=text)
+        check(f"decorated({name}): read as implement", rc == 0 and "verdict=implement" in out,
+              (rc, out[-200:]))
+        check(f"decorated({name}): writes NOTHING", "issue comment" not in calls, calls)
+
+    # And  a decorated refine keeps its restatement
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "### **TRIAGE: refine**\n"
+        "**REFINED:** scope it to the ROCm table only\n"))
+    check("decorated(refine): read and applied", rc == 0 and "verdict=refine" in out
+          and "agent:refined" in calls, (rc, out[-200:], calls))
+
+    # And  a decorated close keeps its evidence and reason
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "**TRIAGE: close**\n\n"
+        "**EVIDENCE:** `scripts/issue_verdict.py:56`\n"
+        "**REASON:** fixed on the base\n"))
+    check("decorated(close): read and applied", rc == 0 and "verdict=close" in out
+          and "issue close" in calls and "agent:closed" in calls, (rc, out[-200:], calls))
+
+    # And  a near-miss that names NO real verdict is still refused, not guessed at
+    for name, text in {"unknown": "TRIAGE: maybe\n",
+                       "no key": "I implemented it.\n",
+                       "prose only": "The verdict should be to implement this.\n",
+                       "grammar copied back": "    TRIAGE: implement | refine | close\n"}.items():
+        rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=text)
+        check(f"near-miss({name}): REFUSED", rc != 0 and "REFUSED" in out, (rc, out[-200:]))
+        check(f"near-miss({name}): no write", "issue comment" not in calls
+              and "issue close" not in calls, calls)
+
+    # And  a pasted grammar line does not swallow the decision written below it
+    rc, out, _, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "    TRIAGE: implement | refine | close\n\n"
+        "**TRIAGE: refine**\n**REFINED:** scope it to the ROCm table only\n"))
+    check("grammar copy + a real decision: the decision wins",
+          rc == 0 and "verdict=refine" in out, (rc, out[-200:]))
+
+
 def test_the_label_is_verified_not_assumed():
     """Measured on #161: --add-label can exit 0 having applied nothing."""
 
@@ -382,6 +444,7 @@ def main() -> int:
     test_refine_posts_one_restatement_and_labels_the_issue()
     test_close_requires_evidence_and_posts_reason_with_it()
     test_an_unreadable_verdict_is_never_guessed_at()
+    test_a_decorated_verdict_is_read_and_a_near_miss_is_not_guessed_at()
     test_the_label_is_verified_not_assumed()
     test_three_mock_issues_decide_implement_refine_or_close_against_the_tree()
     test_the_state_check_tells_a_finished_issue_from_a_failed_run()

@@ -26,6 +26,13 @@ restatement, a missing/unknown TRIAGE, unreadable file. "It is done" without
 proof is how a real gap gets buried, and a verdict nobody understands must not
 be guessed at.
 
+The grammar is answered by a MODEL, so the reader takes the DECORATION a model
+puts around it (issue #245): leading markdown, a bold/backticked/spaced key and
+colon, a case-different key, emphasis or quotes around the value, and a trailing
+reason after the verdict word all still read. That is formatting tolerance, not
+guessing — an unknown verdict (`TRIAGE: maybe`), a file with no TRIAGE-shaped
+line, and a copied grammar line (`implement | refine | close`) are still refused.
+
 Exit codes: 0 = the verdict was applied (or `implement`, which applies nothing),
 2 = refused / misconfigured, so the workflow can tell the two apart.
 
@@ -53,8 +60,42 @@ LABELS = {"refine": "agent:refined", "close": "agent:closed"}
 LABEL_COLORS = {"agent:refined": "fbca04", "agent:closed": "0e8a16"}
 
 KINDS = ("implement", "refine", "close")
-_FIELD = {name: re.compile(rf"^{name}:\s*(?P<v>.+?)\s*$", re.MULTILINE)
-          for name in ("TRIAGE", "REFINED", "EVIDENCE", "REASON")}
+
+# The grammar is answered by a MODEL, so the parser reads the formatting a model
+# actually produces instead of only a bare line (issue #245). A near-miss used to
+# fail the whole run AFTER the implementation: `**TRIAGE: implement**`, a `##`
+# heading, a `- ` bullet, an indented line, a backticked key, `**TRIAGE:**`,
+# `TRIAGE : implement`, `triage: implement`, or a trailing reason
+# (`TRIAGE: implement — the thread matches the body`) were all "unknown TRIAGE"
+# or "no TRIAGE: line". The cost is asymmetric and invisible in the run summary:
+# 20 minutes of work thrown away over decoration.
+#
+# Tolerance is DECORATION, not guessing: the key still has to start a line (after
+# leading markdown), the value's FIRST word is the verdict and must be one of
+# KINDS, and a line that names an unknown verdict still REFUSES — "TRIAGE: maybe"
+# remains unreadable. A verdict buried in prose is not read.
+_DECOR = r"(?:[#>*+\-_`~]+\s*|\d+[.)]\s*)*"          # ## , - , > , 1. , ** , `
+_EMPH = r"(?:\*+|_+|`+)?"                            # **bold**, *italic*, `code`
+_FIELD = {name: re.compile(
+    rf"^\s*{_DECOR}{_EMPH}{name}\s*{_EMPH}\s*:\s*{_EMPH}\s*(?P<v>.+?)\s*$",
+    re.MULTILINE | re.IGNORECASE)
+    for name in ("TRIAGE", "REFINED", "EVIDENCE", "REASON")}
+#: The decoration a model puts around a VALUE: emphasis, backticks, quotes, a
+#: trailing full stop. Stripped so `**implement**`, `implement.` and `implement`
+#: are the same word — while the word itself is still what decides.
+_VALUE_DECOR = " \t*_`\"'.,;:"
+
+#: A copied GRAMMAR line is not a decision: `TRIAGE: implement | refine | close`
+#: (or `… / …`) names every verdict, so it is skipped instead of read as the first
+#: one. A model that pastes the instruction block and answers below it still
+#: decides, and a model that pastes ONLY the block is refused (no decision at all).
+_CHOICE_LIST = re.compile(r"\b(?:implement|refine|close)\b\s*[|/]\s*\b(?:implement|refine|close)\b",
+                          re.IGNORECASE)
+
+
+def _word(value: str) -> str:
+    """The first word of a decorated value: the verdict, or an evidence token."""
+    return value.strip(_VALUE_DECOR).split()[0].strip(_VALUE_DECOR) if value.strip() else ""
 
 
 def _gh(*args: str, check: bool = True, stdin: str | None = None) -> subprocess.CompletedProcess:
@@ -104,18 +145,34 @@ def evidence_is_checkable(text: str) -> bool:
 
 def parse(text: str) -> dict:
     """The verdict as data. Raises SystemExit(2) on anything unreadable."""
-    found = _FIELD["TRIAGE"].search(text)
-    kind = found.group("v").strip().lower() if found else ""
+    # Every TRIAGE-shaped line is a candidate; the first one whose FIRST word is a
+    # real verdict wins (a decorated `**TRIAGE: implement**` still reads), and a
+    # thread where the only TRIAGE line names nothing usable still REFUSES. A line
+    # that lists the whole grammar (`implement | refine | close`) is a copy of the
+    # instruction, not a decision, so it is not a candidate at all.
+    matches = list(_FIELD["TRIAGE"].finditer(text))
+    candidates = [_word(m.group("v")).lower() for m in matches
+                  if not _CHOICE_LIST.search(m.group("v"))]
+    kind = next((c for c in candidates if c in KINDS), "")
     if not kind:
-        raise SystemExit("[verdict] REFUSED: triage.md carries no `TRIAGE:` line "
-                         f"(expected one of {', '.join(KINDS)})")
-    if kind not in KINDS:
-        raise SystemExit(f"[verdict] REFUSED: unknown TRIAGE '{kind}' "
+        if not matches:
+            raise SystemExit("[verdict] REFUSED: triage.md carries no `TRIAGE:` line "
+                             f"(expected one of {', '.join(KINDS)})")
+        if not candidates:
+            raise SystemExit("[verdict] REFUSED: every `TRIAGE:` line names the whole grammar "
+                             f"({' | '.join(KINDS)}) — that is the instruction copied back, "
+                             f"not a decision; answer with ONE of {', '.join(KINDS)}")
+        raise SystemExit(f"[verdict] REFUSED: unknown TRIAGE '{candidates[0]}' "
                          f"(expected one of {', '.join(KINDS)})")
 
     def field(name: str) -> str:
         found = _FIELD[name].search(text)
-        return found.group("v").strip() if found else ""
+        if not found:
+            return ""
+        value = found.group("v").strip()
+        # A trailing markdown wrapper is decoration, not content: `**implement**`
+        # and "`scripts/x.py:12`" keep their word/path without the backticks.
+        return value.strip().strip("*").strip()
 
     verdict = {"triage": kind, "refined": field("REFINED"), "evidence": field("EVIDENCE"),
                "reason": field("REASON")}
