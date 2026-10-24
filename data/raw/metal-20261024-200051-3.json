@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:00:51Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "512GB unified memory per Mac Studio",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra 512GB (Thunderbolt 5 + RDMA)",
+          "quant": "Apple MLX distributed inference over RDMA (the Apple research blog's setup). Apple publicly released NO single tok/s figure in the announcement itself; the widely-quoted 'over 36 tokens per second' (see the 2026-10-23/24 captures) comes from Apple's distributed-inference write-up on four Studios. Two Studios are Meta's documented minimum for ~1TB of unified memory, four reach 16-37 tok/s depending on count",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/zcbenz/status/2110885882404467166",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 1,
+          "views": 28,
+          "interactions": 3,
+          "system_ram_min": "512GB unified memory per Mac Studio",
+          "context_tokens": "1048576",
+          "engine_min_version": "mlx-lm with Muse Spark Open (vision) support, 0-day"
+        }
+      ]
+    }
+  ]
+}

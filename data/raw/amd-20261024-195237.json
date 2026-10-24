@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "why": "Strata runs the 125B MoE on a 16GB RX 9070 XT at 60 tokens per second and on 24GB Radeon cards at 100-140, with compressed 2-3 bit experts held partly in system RAM",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "2-3 bit compressed experts, part of the model in system RAM, 12GB+ GPU / 32GB RAM / ~80GB disk; project-reported benchmark figure",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 878,
+          "comments": 64,
+          "reshares": 52,
+          "views": 122319,
+          "interactions": 123313
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T19:52:37Z"
+}

@@ -1,0 +1,36 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:58:58Z",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash (320B MoE, 18B active)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (MoE, 18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-06",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "27.8",
+          "hardware": "Mac Studio (Apple Silicon)",
+          "quant": "Rapid-MLX with speculative decoding, 4x faster than Apple's own MLX library on the same chip",
+          "date": "2026-10-06",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

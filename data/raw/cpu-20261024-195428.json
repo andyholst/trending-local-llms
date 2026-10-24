@@ -1,0 +1,40 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B (Q4_K_M, llama.cpp CPU-only on a Raspberry Pi 4)",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "why": "The same Pi 4 that decodes Gemma 3 1B at 2.9 tok/s manages 1.0 tok/s on Gemma 4 E2B's 2.9 GB Q4_K_M — the size cliff on ARM CPU.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "1",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 4 E2B Q4_K_M (2.9 GB); prompt 2.0 t/s, gen 1.0 t/s",
+          "weight_gb": "2.9 GB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only ARMv8.0 build",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 3
+        }
+      ],
+      "vram_min": "2GB",
+      "last_seen": "2026-04-16"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

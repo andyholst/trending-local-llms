@@ -1,0 +1,103 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:58:58Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-08",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "Mac Studio M5 Ultra 80-core, 256GB",
+          "quant": "TensorFold 0.3.4 decode on Qwen3.8 Flash (independent issue #22 run), prefill 471 tok/s; matched oMLX 147 decode / 3,300-3,600 prefill and mlx-serve 160 decode / 3,000-3,800 prefill; TensorFold serves 353 tok/s across 8 streams against oMLX's 226 on the same M5 Ultra",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "256GB unified memory",
+          "engine_min_version": "TensorFold 0.3.4"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "157.7",
+          "hardware": "Mac Studio M5 Ultra 80-core, 256GB",
+          "quant": "tuned oMLX recipe; holds 96.6 tok/s at 195k context; same chip measured 108 median on short prompts and 74.7 at 256k by an independent review; 226 tok/s across 8 streams",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "256GB unified memory"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "90",
+          "hardware": "Mac Studio M5 Max 128GB",
+          "quant": "mlx-serve on the Sushi-4 hybrid pack (the viral 'fast MacBook' run measured 73.5 at 262k context)",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "128GB unified memory"
+        },
+        {
+          "engine": "MLX",
+          "tps": "44.6",
+          "hardware": "M4 Pro 64GB (Mac mini)",
+          "quant": "Qwen3.8 Flash stock serve; best public recipe also 11 tok/s (expert offload is the only lane)",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB unified memory"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "40",
+          "hardware": "M3 Ultra",
+          "quant": "prose 40.0 / code 41.5, MLX 4-bit + z-lab DFlash2 8-bit drafter, same weights as the other engines on the same board; MLX-fast / inference-engine benchmark, t=0 and t=1, thinking off",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/redp314/status/2104265073946464326",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 9,
+          "views": 802,
+          "interactions": 11
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp with PR #27342; 90K context; native MTP at 100K context 70.83 t/s; MTP prefill ~2,360 t/s vs DFlash2 ~1,750 t/s; --spec-draft-n-max 4 gives 79.71 t/s at 120K",
+          "date": "2026-10-08",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "90000",
+          "engine_min_version": "llama.cpp PR #27342, --spec-draft-n-max 3"
+        }
+      ]
+    }
+  ]
+}

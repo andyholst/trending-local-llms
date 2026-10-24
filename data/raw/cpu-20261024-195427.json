@@ -1,0 +1,105 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B (LiteRT-LM on Raspberry Pi 5)",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "why": "Gemma 4 E2B on a Raspberry Pi 5 through LiteRT-LM: the decode figure is once again 9 tokens/sec, with the 1432 MB peak RAM and the 99 tok/s prefill stated in the same post.",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU)",
+          "quant": "Gemma 4 E2B through LiteRT-LM; 99 tok/s prefill; tokenizer ~4.2 chars/token; VideoCore VII GPU kept for vision/audio so the CPU stays free for the LLM",
+          "weight_gb": "1432 MB peak RAM",
+          "system_ram_min": "1432 MB peak",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 549,
+          "interactions": 1
+        }
+      ],
+      "vram_min": "2GB",
+      "last_seen": "2026-09-05"
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek-R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill 1.5B (Ollama on a Raspberry Pi 4B, 2GB)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "why": "A 7-year-old Raspberry Pi 4B with 2GB of RAM serving DeepSeek R1 1.5B offline at 4 tokens/sec on a 5W budget — the CPU-only floor of what still answers.",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B, 2GB LPDDR4, ARM CPU only",
+          "quant": "boots Ollama on the Pi and serves DeepSeek R1 1.5B quantized; no internet required; ~5W under load",
+          "system_ram_min": "2GB",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 0,
+          "views": 47,
+          "interactions": 5
+        }
+      ],
+      "vram_min": "2GB",
+      "last_seen": "2026-06-25"
+    },
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B (Q4_K_M, llama.cpp on a Raspberry Pi 4)",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "CPU",
+      "backends": [
+        "CPU"
+      ],
+      "why": "Trelis Research's CPU-only Pi 4 baseline: Gemma 3 1B Q4_K_M decodes at 2.9 tok/s and Gemma 4 E2B at 1.0 — the honest numbers for voice agents on a Pi.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 3 1B Q4_K_M (769 MB); prompt 5.9 t/s, gen 2.9 t/s",
+          "weight_gb": "769 MB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only ARMv8.0 build",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 3
+        }
+      ],
+      "vram_min": "1GB",
+      "last_seen": "2026-04-16"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

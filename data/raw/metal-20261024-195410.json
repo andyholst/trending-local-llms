@@ -1,0 +1,54 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:54:10Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "NVIDIA DGX Spark (GB10, 128GB unified)",
+          "quant": "TensorFold on one DGX Spark with MiaAI_lab's recipe, 4-bit",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113064463427354699",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 831,
+          "interactions": 834,
+          "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
+          "system_ram_min": "128GB unified memory"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "80",
+          "hardware": "Mac (256GB unified memory)",
+          "quant": "oMLX on a 256GB-unified-memory Mac, 4-bit",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113064463427354699",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 831,
+          "interactions": 834,
+          "system_ram_min": "256GB unified memory"
+        }
+      ]
+    }
+  ]
+}

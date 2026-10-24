@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:57:54Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-30",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "39.3",
+          "hardware": "DGX Spark (GB10, 128GB), TP1 (decode tests on two Sparks)",
+          "quant": "Vontra MLX 4-bit weights + MTP drafts, 131K context; serial decoding with drafts DISABLED, TensorFold 0.3.6.3 (commit 1911880) vs 0.3.4 (2f8e514): 36.1 -> 39.3 tok/s; with drafts: average 108.5 tok/s (median of five runs), sequence 129.1, code 87.9, at 48.8K context 67.9; 48.8K prompt prefill 107 -> 1,953 tok/s",
+          "date": "2026-09-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105480372578292054",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072",
+          "engine_min_version": "TensorFold 0.3.6.3 (commit 1911880)"
+        }
+      ]
+    }
+  ]
+}

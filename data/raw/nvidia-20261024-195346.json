@@ -1,0 +1,37 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "PrismML/Ternary-Bonsai-2-2B-gguf",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "2B (ternary)",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "4GB",
+      "vram_min": "1GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB on the native Dawn WebGPU backend",
+          "quant": "Q2_0 ternary, WebGPU backend with PR #30914 (GET_ROWS + F32 activations); reported pp512 prompt processing 35 t/s -> 1900+ t/s, tg128 generation ~6-7x faster, baseline generation figure itself not stated",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/ai_hakase_/status/2113529362133762535",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 1,
+          "views": 928,
+          "engine_min_version": "llama.cpp PR #30914 (Q2_0 on the WebGPU backend)"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "why": "llama.cpp's Q2_0 support on the WebGPU backend took Bonsai 2 2B from CPU fallback to native GPU matrix multiplies: on an RTX 3060, prompt processing jumped from ~35 t/s to over 1900 t/s and tg128 generation got roughly 6-7x faster (the 35 t/s captured here is the prompt-processing baseline)."
+    }
+  ],
+  "generated_utc": "2026-10-24T19:53:46Z"
+}

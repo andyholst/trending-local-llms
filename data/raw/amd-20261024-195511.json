@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "why": "The Kapitsa engine reportedly decodes Qwen3.6-35B-A3B at 154 tok/s with DFlash2 on a 48GB M4 Pro, about 2.2x llama.cpp with MTP (69 tok/s) on the same class of hardware",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "281",
+          "hardware": "Apple M4 Pro 48GB MacBook Pro",
+          "quant": "4-bit Qwen3.6-35B-A3B with DFlash2 speculative decoding; developer-reported benchmark, preliminary; comparison table Kapitsa+DFlash2 154, oMLX+DFlash2 127, Ollama+MTP 89, LM Studio 86, MTPLX 80, llama.cpp+MTP 69 tok/s",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 3,
+          "comments": 7,
+          "reshares": 0,
+          "views": 933,
+          "interactions": 10
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T19:55:11Z"
+}

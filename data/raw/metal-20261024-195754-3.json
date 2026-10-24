@@ -1,0 +1,128 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:57:54Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "~18GB 4-bit MLX",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "Mac M4 Max",
+          "quant": "same Qwen3.8-27B and same DFlash2 drafter across three stacks: TensorFold 154 tok/s numbers / 114 code; oMLX 0.7.0 146 / 111; mlx-serve 99 / 80; with speculation off all three land at 29-30 tok/s",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105854793990169068",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "Mac M4 Max",
+          "quant": "oMLX 0.7.0, same 4-bit target + DFlash2 drafter: 146 tok/s numbers, 111 code",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105854793990169068",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "oMLX 0.7.0"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "99",
+          "hardware": "Mac M4 Max",
+          "quant": "same 4-bit target + DFlash2 drafter: 99 tok/s numbers, 80 code (no speculation: ~29-30 tok/s like the other two)",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105854793990169068",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max",
+          "quant": "4-bit + DFlash drafter, spec decode (numbers workload), median of 2",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "147",
+          "hardware": "M4 Max",
+          "quant": "4-bit + DFlash drafter, spec decode (numbers workload), oMLX 0.7.0",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "oMLX 0.7.0"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon)",
+          "quant": "MLX-Serve 26.10.1, Qwen3.8-27B 4-bit via ddalcu's build, --no-mtp to force the DFlash drafter (default MTP made this build ~2x slower), thinking off, median of 2 runs; code 115, JSON 139, story 54",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "MLX-Serve 26.10.1"
+        }
+      ]
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash (abliterated EXL3 build)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "under 100B (MoE)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-01",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "109.1",
+          "hardware": "2x DGX Spark (200 Gb/s link)",
+          "quant": "abliterated EXL3 4-bit build of GLM-5.3-Flash; TensorFold vs vLLM on the same pair of Sparks: count-to-200 66.4 -> 109.1 tok/s (1.64x), prose 28.5 -> 57.7, code 61.3 -> 96.5, JSON 44.7 -> 80.2; DFlash2 drafter, 0.90 conditional acceptance across seven draft positions (5.76 tokens per verify round)",
+          "date": "2026-10-01",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2105437483089707157",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

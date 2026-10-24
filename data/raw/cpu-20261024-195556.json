@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B (community distillation of Qwen3.8 reasoning into the Qwen3.6-35B-A3B MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "A 12GB RTX 3060 with 16GB of system RAM runs the Qwen3.8-35B-A3B distillation at ~50 tok/s decode and ~550 tok/s prefill by pushing 26 MoE layers to the CPU.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M weights, Flash Attention on, Q8 KV cache, 26 MoE layers offloaded to CPU; ~550 tok/s prompt processing; --n-cpu-moe 26 --cache-type-k q8_0 --cache-type-v q8_0 --reasoning on",
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama-server with --n-cpu-moe 26, -c 262144, -fa on, --cache-type-k/-v q8_0",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "vram_min": "12GB",
+      "last_seen": "2026-10-15"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

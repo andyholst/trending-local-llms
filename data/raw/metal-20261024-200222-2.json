@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:02:22Z",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "~2GB (ternary)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "959.6",
+          "hardware": "Apple M5 Max (mlx.fast reference track)",
+          "quant": "Yukon Research challenge, final results: MLX on Mac as the frozen reference engine, weights locked; speedups from speculative decoding, a 4-bit DFlash 2 drafter, draft trees, int8 prefill and kernel fusion; 158 new records, every run had to produce the exact same tokens as the reference; decode 144.8 -> 959.6 tok/s (+471%) on Apple Silicon, against 85.9 -> 576.7 on DGX Spark",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/0xkydo/status/2113382850687009185",
+          "likes": 11,
+          "comments": 0,
+          "reshares": 17,
+          "views": 13147,
+          "interactions": 28,
+          "weight_gb": "~2GB (ternary)"
+        }
+      ]
+    }
+  ]
+}

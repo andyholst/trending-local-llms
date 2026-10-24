@@ -1,0 +1,49 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:53:24Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "M5 Max MacBook Pro",
+          "quant": "DFlash 2 speculative decoding (Z Lab / Inco AI); reported figure, baseline settings not published",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113804819123040694",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 872,
+          "interactions": 874
+        },
+        {
+          "engine": "Kapitsa",
+          "tps": "140",
+          "hardware": "M5 Max MacBook Pro (Apple Silicon)",
+          "quant": "Kapitsa engine on Apple Silicon, MTP speculative decoding described (58 -> 140 tok/s with MTP); no quant or context stated",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113901739170501046",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 0,
+          "views": 171,
+          "interactions": 177
+        }
+      ]
+    }
+  ]
+}

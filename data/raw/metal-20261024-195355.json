@@ -1,0 +1,40 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:53:55Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "~493GB in 4-bit",
+      "system_ram_min": "512GB unified memory per Mac Studio",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (Thunderbolt 5 + RDMA, one full copy of the model per machine)",
+          "quant": "816B MoE in 4-bit / compressed weights (~493GB, uses up to 512GB of GPU memory per Mac Studio), Apple MLX distributed inference over a low-latency Thunderbolt 5 driver; TWO Studios are Meta's documented minimum, the 36 tok/s figure is Apple's and comes from FOUR",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 0,
+          "views": 751,
+          "interactions": 755,
+          "weight_gb": "~493GB in 4-bit",
+          "system_ram_min": "512GB unified memory per Mac Studio"
+        }
+      ]
+    }
+  ]
+}

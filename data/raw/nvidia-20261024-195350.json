@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen/Qwen3.6-35B-A3B",
+      "type": "LLM (MoE, 3B active)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "2024 MacBook Pro, M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B with native MTP (llama.cpp + MTP 69 tok/s vs Kapitsa + DFlash2 154 and oMLX + DFlash2 127 in the same reported comparison)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 933,
+          "weight_gb": "4-bit",
+          "system_ram_min": "48GB unified memory",
+          "engine_min_version": "llama.cpp with MTP"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "why": "In the reported Kapitsa comparison on a 48GB M4 Pro MacBook Pro, llama.cpp with MTP runs a 4-bit Qwen3.6-35B-A3B at 69 tok/s, less than half of Kapitsa's 154 tok/s — captured here as the only llama.cpp figure the comparison states."
+    }
+  ],
+  "generated_utc": "2026-10-24T19:53:50Z"
+}

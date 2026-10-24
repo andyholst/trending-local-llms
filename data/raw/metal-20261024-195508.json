@@ -1,0 +1,229 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:55:08Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "Q4_K_M",
+      "system_ram_min": "16GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4_K_M",
+          "system_ram_min": "16GB",
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "239",
+          "hardware": "M4 Max",
+          "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "MLX-Serve 26.9.5"
+        },
+        {
+          "engine": "Magnitude",
+          "tps": "188.9",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+          "quant": "Magnitude 0.2.9 with its DFlash drafter and quantized KV cache, unsloth UD-Q4_K_XL on the repeat-a-passage round at a 66K-token prompt (75% drafter acceptance); new-story round 50.4 tok/s at 43% acceptance; prefill 2,332 tok/s",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "unsloth UD-Q4_K_XL",
+          "context_tokens": "66000"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "87.2",
+          "hardware": "NVIDIA DGX Spark (one), Ollama 0.40.5 with its default drafter",
+          "quant": "generation of a new story after a 67K-token prompt - the honest half of the same test, against Magnitude's 50.4 tok/s on the copy task's 188.9",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "Ollama 0.40.5"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "~15.5GB IQ4_XS",
+      "system_ram_min": "64GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "2x RTX 5060 Ti 16GB (32GB total, all layers split across both cards, MTP draft head)",
+          "quant": "IQ4_XS weights, q4_0 KV cache with flash attention, 262k context in two 128k slots; IQ4_XS also 20% faster than Q5_K_M at the same score",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/laky_fx/status/2113901739170501046",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 0,
+          "views": 171,
+          "interactions": 177,
+          "weight_gb": "IQ4_XS",
+          "system_ram_min": "64GB",
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decode + lookup-augmented drafting, optimized vLLM, prefix caching, quantized KV cache; ~133 t/s real chat, ~138 t/s DFlash2+lookup, up to 381 t/s longer-verification + context lookup",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105848435672764747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "124",
+          "hardware": "M5 pro 64GB mac mini",
+          "quant": "MLX 4-bit conversion of Qwen3.8-27B",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/pratikg/status/2112217547366088851",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "64GB unified memory"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
+      "system_ram_min": "110GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "33.7",
+          "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
+          "quant": "UD-Q2_K_XL, 65K ctx",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "UD-Q2_K_XL",
+          "system_ram_min": "64GB",
+          "context_tokens": "65000",
+          "engine_min_version": "llama.cpp with -n-cpu-moe=32 (-cmoe)"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "68",
+          "hardware": "1x NVIDIA DGX Spark (GB10)",
+          "quant": "NVIDIA FP4-Local TP1, 90.8% SixCat (one of four ways the model was tested)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "112.3",
+          "hardware": "Apple Silicon",
+          "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "Rapid-MLX 0.15.7"
+        },
+        {
+          "engine": "Strata",
+          "tps": "94",
+          "hardware": "RTX 5070 12GB + 32GB system RAM, ~80GB disk",
+          "quant": "compressed Qwen3.8-Flash-Next with cold experts kept in system RAM (53-94 tok/s range on the RTX 5070 per the developers' tests)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "32GB",
+          "storage_offload": "~80GB disk for cold experts"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:00:51Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE) with SSD expert offload",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "10.7",
+          "hardware": "Apple Silicon Mac with a fixed per-layer LRU expert budget",
+          "quant": "moe-offload, an experimental SSD expert-offloading loader for MLX: always-used weights stay in RAM, routed experts stream into a fixed-budget per-layer LRU cache with router prefetching; 8.9 GiB peak RSS, 94.7% hit rate, 0 swap",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/JAKEVIN16/status/2111317398292971586",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 5,
+          "views": 220,
+          "interactions": 11,
+          "system_ram_min": "8.9 GiB peak RSS"
+        }
+      ]
+    },
+    {
+      "id": "nemotron-3.5-bolt-74b-a9b",
+      "name": "Nemotron 3.5 Bolt 74B-A9B",
+      "full_name": "Nemotron 3.5 Bolt 74B-A9B (hybrid Mamba/MoE)",
+      "type": "LLM",
+      "license": "NVIDIA Open Model License",
+      "params": "74B / 9B active",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+      "vram_tier": "64GB",
+      "vram_min": "16GB",
+      "context_tokens": "256K",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "11.07",
+          "hardware": "Apple Silicon Mac with SSD expert offload",
+          "quant": "moe-offload (experimental SSD expert-offloading loader) driving llama.cpp: 9.9 GiB peak RSS at 11.07 tok/s; the same setup runs on a 16GB M4 Mac mini at 4.39 tok/s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/JAKEVIN16/status/2111317398292971586",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 5,
+          "views": 220,
+          "interactions": 11,
+          "system_ram_min": "9.9 GiB peak RSS"
+        }
+      ]
+    }
+  ]
+}

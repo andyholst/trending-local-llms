@@ -1,0 +1,77 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:57:23Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-26",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "124",
+          "hardware": "Apple Silicon (Mac, hardware not named in the post)",
+          "quant": "MLX 4-bit, TensorFold parallel-lane draft/verify; the post's range is 120-124 tok/s",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 5,
+          "views": 3770
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6 (32GB unified memory)",
+          "quant": "Qwen3.8-27B on TensorFold with DFlash2 drafting, MLX 4-bit: code generation 10.1 -> 61.9 tok/s (6.1x), chat 10.1 -> 30.8 tok/s (3.0x); byte-identical outputs",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-26",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "92",
+          "hardware": "Apple Silicon (Mac, hardware not named in the post)",
+          "quant": "MLX 4-bit TensorFold on Qwen3.8-Flash-Next; the post's range is 88-92 tok/s",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 5,
+          "views": 3770
+        }
+      ]
+    }
+  ]
+}

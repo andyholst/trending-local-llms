@@ -1,0 +1,131 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:00:51Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "~14.5GB Q4_K_M",
+      "context_tokens": "131K",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI's day-one MLX checkpoint for Apple Silicon; 24B total / 2B active, 131K context, ~14.5GB Q4_K_M",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/liquidai/status/2110055810940428387",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 3,
+          "views": 16683,
+          "interactions": 6,
+          "weight_gb": "~14.5GB Q4_K_M",
+          "context_tokens": "131072"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "full_name": "Qwen3.5-9B (Rapid-MLX server)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "mlx-community/Qwen3.5-9B-4bit",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "115.5",
+          "hardware": "Apple Silicon (Mac, hardware not named in the post)",
+          "quant": "Rapid-MLX Apache-2.0 inference server on MLX, continuous batching + Radix prefix cache persisted to disk, 27 tool-call parser modules; first-token latency 0.55 s on a 2K prompt",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/M_jawad_yasin/status/2110171228157731163",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 4,
+          "views": 194,
+          "interactions": 9,
+          "engine_min_version": "Rapid-MLX"
+        }
+      ]
+    },
+    {
+      "id": "minicpm-v-4.7",
+      "name": "MiniCPM-V 4.7 35B-A3B",
+      "full_name": "MiniCPM-V 4.7 35B-A3B (multimodal MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "openbmb/MiniCPM-V-4.7-35B-A3B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "90",
+          "hardware": "Apple Silicon via Nativ",
+          "quant": "Nativ runtime on MLX, image + video understanding, 4,000+ tps prefill (the 1B variant: 24,000+ tps prefill, 315 tps decode)",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2110083153574383904",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 3,
+          "views": 2435,
+          "interactions": 6
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-13",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "60",
+          "hardware": "2x used RTX 3090 GPUs",
+          "quant": "687-step agentic run: 87.9M input / 822K output tokens, 5h11m model runtime + 58m tool execution",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110148507071885606",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 2,
+          "views": 6,
+          "interactions": 3
+        }
+      ]
+    }
+  ]
+}
