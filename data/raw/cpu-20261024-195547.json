@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "LLM (MoE)",
+      "license": "Muse Model License (custom)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Meta's 816B open-weight MoE needs two 512GB M5 Ultra Mac Studios at 4-bit (~493GB) and Apple's own figure of over 36 tok/s comes from two of them; the trending query turns up the license terms and the 39 AA Intelligence Index score rather than a new benchmark.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (unified memory, Thunderbolt 5 + low-latency driver)",
+          "quant": "4-bit compressed weights ~493GB; Apple's test figure, 2x M5 Ultra is Meta's minimum; Torch distributed backend for Apple silicon published by Apple's ML research team",
+          "weight_gb": "~493GB 4-bit",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 751,
+          "interactions": 1
+        }
+      ],
+      "vram_min": "493GB",
+      "last_seen": "2026-10-15"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

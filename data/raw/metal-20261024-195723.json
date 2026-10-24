@@ -1,0 +1,117 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:57:23Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.9GB ternary",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-25",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "16GB Mac (Apple Silicon)",
+          "quant": "compressed ternary 27B (5.9GB) on mlx.fast, YukonResearch challenge run; 125.8% over the frozen baseline (2.26x) half a day into the contest",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 12,
+          "views": 1065,
+          "weight_gb": "5.9GB ternary",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "134.6",
+          "hardware": "Apple Silicon (Mac)",
+          "quant": "mlx.fast leaderboard run on Ternary Bonsai 2 27B, 134.6% faster than the frozen baseline; the post reports the percentage only",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/GumbiiDigital/status/2103533375440949427",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash (Flash 0731)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "284B (MoE)",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-09-25",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "53.2",
+          "hardware": "1x M5 Ultra (unified memory)",
+          "quant": "DeepSeek V4 Flash decode on MLX; two clustered M5 Ultras first decoded more slowly (35.3) and reached 58.2 with an optimized Thunderbolt 5 RDMA pipeline",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "58.2",
+          "hardware": "2x M5 Ultra (Thunderbolt 5 RDMA mesh)",
+          "quant": "optimized pipeline: a small continuously running GPU matmul kept both GPUs awake, 35.3 -> 58.2 tok/s (+65%), 0.04 ms/token transfer overhead",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "17.4",
+          "hardware": "1x DGX Spark (GB10)",
+          "quant": "DeepSeek V4 Flash 0731 (284B) on one DGX Spark, llama.cpp; two Sparks with speculation 20.0 tok/s",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "75.6",
+          "hardware": "2x DGX Spark (GB10)",
+          "quant": "optimized vLLM, mixed FP8/FP4 weights, MTP speculative decoding; prefill 1,881 tok/s, TTFT 1.10 s",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

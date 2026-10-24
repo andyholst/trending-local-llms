@@ -1,0 +1,101 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8-27B based, ternary)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "why": "Fresh Bonsai 2 27B receipts: Pratik Gandhi's M5 Pro Mac mini at 26 tok/s (MLX) against Gemma 3 27B's 18, and Rocky-style agent loops on a 12GB 3060 at ~35-50 tok/s with PrismML's fork and MTP head.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "26",
+          "hardware": "Mac mini M5 Pro, 64GB unified memory",
+          "quant": "Apple MLX build of Ternary Bonsai 2 27B; ~8.4GB footprint (about half of Gemma 3 27B); same bench: Qwen3 30B 106 tok/s, Gemma 3 27B 18 tok/s",
+          "weight_gb": "8.4GB",
+          "system_ram_min": "64GB",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/pratikg/status/2112217547366088851",
+          "likes": 0,
+          "comments": 14,
+          "reshares": 0,
+          "views": 307,
+          "interactions": 14
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 27B 5.95GB weights; Hermes Agent driving a 5-hour build at 125K context; packaged MTP version ~50 tok/s fresh, original setup ~26, ~22 tok/s averaged over the session",
+          "weight_gb": "5.95GB",
+          "context_tokens": "125000",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 48,
+          "interactions": 3
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "54",
+          "hardware": "RTX 4070 Ti 12GB",
+          "quant": "Bonsai 2 27B PQ2, 64-token reasoning budget, 8K context, ~9.0 GB VRAM; ~1.84 s average latency per task",
+          "weight_gb": "9.0 GB VRAM (PQ2 with KV)",
+          "context_tokens": "8192",
+          "system_ram_min": "12GB VRAM",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/brokevibecoder/status/2104236304099881362",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 155,
+          "interactions": 1
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "155.97",
+          "hardware": "RTX 5090 (Windows)",
+          "quant": "Ternary Bonsai 2 27B PQ2 primary + Qwen3.8 DFlash2 Q4 drafter (n4), F16 target AND draft KV caches, full 262,144-token context, xhigh reasoning, both token budgets -1; code/think workload (math 187.39, prose/chat 234.30, agent JSON 169.26)",
+          "weight_gb": "PQ2 ternary",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML llama.cpp with usmaneth's PR #210 Handoff/DFlash runtime fix",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2101685231761694894",
+          "likes": 0,
+          "comments": 4,
+          "reshares": 0,
+          "views": 15,
+          "interactions": 4
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 27B compression with the full 262K context resident plus a real Hermes Agent loop (25 tools, 77-minute build); author restored the MTP head",
+          "context_tokens": "262144",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 5,
+          "reshares": 0,
+          "views": 18,
+          "interactions": 5
+        }
+      ],
+      "vram_min": "12GB",
+      "last_seen": "2026-10-19"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

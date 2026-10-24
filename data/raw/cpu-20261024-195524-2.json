@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The open optimization challenge moved Bonsai 2 9B from 144.9 to 913.1 tok/s on Apple Silicon in five days (mlx.fast, PrismML x DarkbloomAI x Yukon Research), with the NVIDIA track on DGX Spark gaining 401.1%.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (challenge leaderboard, GPU)",
+          "quant": "mlx.fast optimization build; up from 144.9 tok/s five days earlier (+442.3% decode); ~2GB model size in this configuration; leaderboard had 13 solvers / 113 promoted runs",
+          "weight_gb": "about 2GB",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 566,
+          "interactions": 2
+        }
+      ],
+      "vram_min": "2GB",
+      "last_seen": "2026-10-21"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

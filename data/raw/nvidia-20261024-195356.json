@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open",
+      "type": "LLM (MoE)",
+      "license": "Meta open-weight license (limited commercial use)",
+      "params": "816B (MoE, 42B active)",
+      "hf": "meta-llama/Muse-Spark-Open",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "about 493GB in 4-bit",
+      "system_ram_min": "up to 512GB GPU memory per M5 Ultra Mac Studio",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "36",
+          "hardware": "four M5 Ultra Mac Studios over Thunderbolt 5 (Apple's own test; two Mac Studios hold the 493GB 4-bit model)",
+          "quant": "4-bit, about 493GB of weights across the cluster; Apple's speed figure is >36 tok/s from four M5 Ultra Mac Studios (two hold the model); encoding is not named in the post",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 1,
+          "views": 751,
+          "weight_gb": "about 493GB in 4-bit"
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "Meta's 816B/42B-active Muse Spark Open needs two M5 Ultra Mac Studios just to hold its ~493GB 4-bit weights, and Apple's own >36 tok/s figure was measured on four of them over Thunderbolt 5 — a desktop-local run only at workstation-cluster scale."
+    }
+  ],
+  "generated_utc": "2026-10-24T19:53:56Z"
+}

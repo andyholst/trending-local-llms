@@ -1,0 +1,140 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:58:58Z",
+  "models": [
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash (320B MoE, 18B active)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (MoE, 18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "27.8",
+          "hardware": "Mac Studio (Apple Silicon)",
+          "quant": "Rapid-MLX speculative decoding on a Mac Studio, 4x faster than Apple's own MLX library on the same chip",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2107786262211891603",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "under 20GB",
+      "system_ram_min": "64GB",
+      "context_tokens": "139264",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "186",
+          "hardware": "64GB M5 Max Mac Studio",
+          "quant": "Rapid-MLX v0.15.4 + Qwen3.8 27B with the DFlash2 drafter on TensorFold: 176-186 tok/s on code, ~100 tok/s typical agent turns (peaks over 160), still ~50 tok/s 60K tokens deep with max thinking; 92/100 on tool-eval-bench (69 tool calling scenarios), 8/8 on the poster's Hermes agent tasks; under 20GB for the weights, loads in ~20 seconds",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/JoesInvestments/status/2106443623940182148",
+          "likes": 109,
+          "comments": 0,
+          "reshares": 3,
+          "views": 3440,
+          "interactions": 112,
+          "weight_gb": "under 20GB",
+          "system_ram_min": "64GB unified memory",
+          "context_tokens": "139264",
+          "engine_min_version": "Rapid-MLX v0.15.4"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE) - CYBER-FROST MLX build",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "256GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "136",
+          "hardware": "M3 Ultra 80-core, 256GB",
+          "quant": "CYBER-FROST-3.8-MLX-4bit (Blackfrost's cybersecurity finetune of Qwen3.8-Flash-Next), oQ4e quantization with DWQ against the BF16 weights and a retrained MTP head; 96 tok/s at 26k agentic context with xhigh thinking, up to 136 tok/s on TensorFold's bench with thinking off",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/grantoverton/status/2107897439571309032",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 9,
+          "views": 396,
+          "interactions": 14,
+          "context_tokens": "26000",
+          "engine_min_version": "TensorFold 0.6.5"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, ~3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "64GB",
+      "context_tokens": "245000",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "108.6",
+          "hardware": "M4 Pro 64GB",
+          "quant": "Qwen3.6-35B-A3B 4-bit (~3B active) on Rapid-MLX: 108.6 tok/s with 15/15 tools, 5/5 needles at 245K",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/draslan_eth/status/2106705583718154587",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 26,
+          "views": 2656,
+          "interactions": 29,
+          "system_ram_min": "64GB unified memory",
+          "context_tokens": "245000",
+          "engine_min_version": "Rapid-MLX"
+        }
+      ]
+    }
+  ]
+}

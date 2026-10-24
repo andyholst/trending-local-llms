@@ -1,0 +1,51 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen/Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B (dense)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "140",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "code workload; the same post reports llama.cpp at 73 tok/s for the same model and card (OpenJet's own comparison)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 283
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "80",
+          "hardware": "single RTX 4090 24GB",
+          "quant": "Unsloth Q4_K_XL with Q4_0 KV cache, 150K context, DFlash2 spec-decode drafter, --spec-draft-n-max 3; dev build with PR #27342",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 831,
+          "weight_gb": "Q4_K_XL (Unsloth)",
+          "context_tokens": "150000",
+          "engine_min_version": "development build of llama.cpp with PR #27342, --spec-draft-n-max 3"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "OpenJet's own benchmark on one RTX 3090 reports 140 tok/s for code with Qwen3.8-27B against 73 in its llama.cpp run, and a separate DFlash2 dev build of llama.cpp lifted the dense 27B to a reported 80 tok/s on a single RTX 4090 at 150K context."
+    }
+  ],
+  "generated_utc": "2026-10-24T19:53:35Z"
+}

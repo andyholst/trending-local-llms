@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:01:44Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (2B active)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131K",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI's reported figure, runs through llama.cpp and MLX from day one; leads or matches Qwen3.6-35B-A3B on five of eight tool-use/agent benchmarks, still trails bigger models on coding",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 1,
+          "views": 271,
+          "interactions": 6,
+          "context_tokens": "131072"
+        }
+      ]
+    }
+  ]
+}

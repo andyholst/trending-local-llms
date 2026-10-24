@@ -1,0 +1,217 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:54:40Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "Q4_K_M",
+      "system_ram_min": "32GB",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "281",
+          "hardware": "M5 Max Mac (128GB unified memory)",
+          "quant": "4-bit Qwen3.6-35B-A3B with DFlash2 speculative decoding; same report on a 2024 M4 Pro MacBook Pro 48GB: Kapitsa + DFlash2 154 tok/s, oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 1,
+          "system_ram_min": "128GB unified memory"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit + DFlash2 speculative decoding (same reported benchmark)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 1,
+          "system_ram_min": "48GB unified memory"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "MacBook Pro M4 Pro 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B with MTP multi-token prediction, reported comparison row (Kapitsa+DFlash2 154 t/s leads the same test)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 1,
+          "system_ram_min": "48GB unified memory"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "281",
+          "hardware": "M5 Max Mac, 128GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B; same report on a 2024 M4 Pro MacBook Pro 48GB: Kapitsa + DFlash2 154 tok/s, oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 1,
+          "system_ram_min": "128GB unified memory"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit + MTP speculative decoding (same reported benchmark)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 1,
+          "system_ram_min": "48GB unified memory"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "108.3",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "UD-Q3_K_XL 13.1GB, DFlash drafter (1.09GB), -c 16384, n-max 7; no drafter 29.8 t/s, refactor 101.7, JSON 108.3, 400-word 52.6, translate 41.9",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/bountyAIhunter/status/2107870818974019995",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "13.1GB UD-Q3_K_XL",
+          "context_tokens": "16384"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 spec decode + context lookup, longer verification (16 positions), prefix caching, quantized KV cache; ~260 t/s DFlash2 alone, ~382 t/s longer verification + context lookup, ~133 t/s general chat, acceptance ~15/16",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108399085514371078",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MegaCapybara",
+          "tps": "500",
+          "hardware": "RTX 5090 32GB",
+          "quant": "specialized inference engine for Qwen3.8-27B on RTX 5090; up to 500 t/s single agent, ~2000 t/s multi-agent, up to 1M token context",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/BIGBULLapp/status/2106760778229420383",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "1048576"
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "14.5GB Q4 GGUF",
+      "context_tokens": "131K",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1415",
+          "hardware": "one A100 SXM4 (Massed Compute)",
+          "quant": "32 concurrent requests, aggregate output throughput (an L40S hit 1,110 t/s per dollar); datacenter figure, not a single-user decode",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 1
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "50.7",
+          "hardware": "RTX 3080 10GB",
+          "quant": "Q4; prefill 644 tok/s in, 50.7 tok/s out; no bespoke engine (FreeToken/Strata not used)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2110275665408704970",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "vendor figure (Liquid AI), 131K-token context model",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2110065267556622455",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "131K"
+        }
+      ]
+    }
+  ]
+}

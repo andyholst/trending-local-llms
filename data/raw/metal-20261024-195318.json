@@ -1,0 +1,42 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:53:18Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "~493GB 4-bit",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (unified memory, Thunderbolt-linked)",
+          "quant": "4-bit MLX across four Mac Studios, 816B MoE, Apple MLX distributed inference (RDMA over Thunderbolt 5); Apple's own test",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113617362016420003",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 333,
+          "interactions": 335,
+          "weight_gb": "~493GB 4-bit",
+          "system_ram_min": "512GB unified memory per Mac Studio",
+          "context_tokens": "262144",
+          "engine_min_version": "mlx-vlm recent development build"
+        }
+      ]
+    }
+  ]
+}

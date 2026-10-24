@@ -1,0 +1,74 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:01:44Z",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash-1017",
+      "name": "DeepSeek-V4.1-Flash 1017",
+      "full_name": "DeepSeek-V4.1-Flash-1017 (MLX, mixed expert precision)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "552B total / 16B active",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "vram_tier": "256GB",
+      "vram_min": "256GB",
+      "weight_gb": "206.5GB resident RAM",
+      "system_ram_min": "256GB",
+      "context_tokens": "1000000",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "20",
+          "hardware": "Apple M3 Ultra (256GB Apple Silicon Mac)",
+          "quant": "Rapid-MLX 0.16.5 DeepSeek-V4.1-Flash-1017-MLX: zero experts removed (full 40x384 architecture), extreme mixed precision (2/3/4-bit experts, routing and attention at 8-bit/BF16), KL divergence 0.439 against a catastrophic 2.02 for a standard 2-bit; 206.5GB resident RAM",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/rapidmlx/status/2112334158693552232",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "206.5GB resident RAM",
+          "system_ram_min": "256GB",
+          "engine_min_version": "Rapid-MLX 0.16.5"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-0.6b",
+      "name": "Qwen3-0.6B",
+      "full_name": "Qwen3-0.6B (SGLang on Apple Silicon)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "0.6B",
+      "hf": "Qwen/Qwen3-0.6B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "65.9",
+          "hardware": "M4 Pro, 48GB unified memory",
+          "quant": "SGLang v0.5.22's standard PyTorch/MPS backend on Apple Silicon (alongside its separate MLX backend), offline batch-4 test; prefill 2,531 tps; the MPS path has quantization, multimodal and speculative-decoding limitations",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2112280542515474487",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 2,
+          "views": 12,
+          "interactions": 4,
+          "system_ram_min": "48GB unified memory",
+          "engine_min_version": "SGLang v0.5.22"
+        }
+      ]
+    }
+  ]
+}

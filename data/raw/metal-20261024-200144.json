@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T20:01:44Z",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "Muse Model License (free for most commercial use)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "512GB unified memory per Mac Studio",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Mac Studio M5 Ultra 512GB (tensor parallelism)",
+          "quant": "Apple Machine Learning Research's own decode speeds: about 25 tok/s on two Studios with tensor parallelism, about 37 on four; 816B MoE in 4-bit/compressed weights",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 4,
+          "views": 983,
+          "interactions": 10,
+          "engine_min_version": "latest MLX framework (Apple MLX distributed inference)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x Mac Studio M5 Ultra 512GB (tensor parallelism)",
+          "quant": "Apple MLR's two-Studio number, same 816B 4-bit weights; 2 Studios ~= 1TB of unified memory",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 4,
+          "views": 983,
+          "interactions": 10
+        }
+      ]
+    }
+  ]
+}

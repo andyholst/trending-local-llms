@@ -1,0 +1,145 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:58:58Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "~15.5GB IQ4_XS",
+      "system_ram_min": "64GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "352.28",
+          "hardware": "RTX 5090 32GB",
+          "quant": "TensorFold 0.6.0 on MLX 4-bit (same model as the vLLM baseline); TTFT 30.01 s cold, 0.84 s warm; median output tokens/s per request",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2106445239615463431",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 73,
+          "views": 0,
+          "interactions": 75,
+          "engine_min_version": "TensorFold 0.6.0"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "M4 Max",
+          "quant": "Qwen3.8-27B 4-bit + same drafter across three Mac stacks, thinking off, median of 2: TensorFold 154 numbers / 114 code / 146 JSON / 51 story; oMLX 0.7.0 146/111/144/53; mlx-serve 26.10.1 146/115/139/54; with drafting off all three land at 29-31 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 7,
+          "views": 1150,
+          "interactions": 10
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max",
+          "quant": "oMLX 0.7.0, same 4-bit target + drafter: 146 numbers, 111 code, 144 JSON, 53 story",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 7,
+          "views": 1150,
+          "interactions": 10,
+          "engine_min_version": "oMLX 0.7.0"
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max",
+          "quant": "mlx-serve 26.10.1, same 4-bit target + drafter, --no-mtp to force the DFlash path (default MTP made this build ~2x slower on this Mac): 146 numbers, 115 code, 139 JSON, 54 story",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 7,
+          "views": 1150,
+          "interactions": 10,
+          "engine_min_version": "mlx-serve 26.10.1 --no-mtp"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "75.43",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4, vLLM 0.27.1, Mia's recipe; TTFT 20.39 s with prefix cache off (every request cold)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2106445239615463431",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 73,
+          "views": 0,
+          "interactions": 77,
+          "engine_min_version": "vLLM 0.27.1"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB (250W)",
+          "quant": "heavily optimized vLLM + DFlash2 speculative decoding + lookup-based drafting + prefix caching + quantized KV cache + split-KV verification attention; 16-token verification blocks (DFlash2 normally proposes ~7), working because the answer is already in the prompt: ~381 tok/s on a 25K-token document reproduction, DFlash2 alone ~260, ordinary chat ~133, acceptance ~15 of 16 per step; prefix caching cut TTFT 22.4 s -> 0.56 s; progression 82 -> 114 (MTP) -> 138 (DFlash2+lookup) -> 381",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106349101834981541",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 48,
+          "views": 5579,
+          "interactions": 54
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "~111GB UD-Q4_K_XL across 4 GGUF shards",
+      "system_ram_min": "110GB",
+      "context_tokens": "250000",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20.97",
+          "hardware": "single RTX 4090 24GB + 110GB DDR4 system RAM (hybrid expert offload; ~18.3GB VRAM used)",
+          "quant": "UD-Q4_K_XL ~111GB across four GGUF shards; no MTP, no DFlash, no KV-cache quantization; MoE experts in system RAM; 250K context: 364.29 tok/s prefill, 20.97 tok/s decode; at 180K ~21 / ~358; at 80K with 40 expert layers on GPU 22.52 decode / 383.85 prefill at 23.85GB VRAM; -b 4096 -ub 4096 lifted prompt processing from ~150 to >360 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106297709292355986",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 12,
+          "views": 1990,
+          "interactions": 15,
+          "weight_gb": "~111GB UD-Q4_K_XL across 4 GGUF shards",
+          "system_ram_min": "110GB DDR4",
+          "context_tokens": "250000",
+          "engine_min_version": "llama.cpp -b 4096 -ub 4096"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "backends": [
+        "Metal",
+        "CPU"
+      ],
+      "why": "Kapitsa, a model-specific Apple Silicon engine, moves 4-bit Qwen3.6-35B-A3B to 154 tok/s on a 48GB M4 Pro (llama.cpp + MTP: 69) and 281 tok/s on an M5 Max; LattePanda's Sigma 2 SBC runs it at ~30 tok/s through OpenVINO.",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B + DFlash2; same reported benchmark: oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69 tok/s",
+          "system_ram_min": "48GB",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 933,
+          "interactions": 3
+        },
+        {
+          "engine": "Kapitsa",
+          "tps": "281",
+          "hardware": "M5 Max Mac, 128GB unified memory",
+          "quant": "developer-reported Qwen3.6-35B run (no quant stated for this figure); same report: Nemotron 3.5 Super-VL 120B at 85 tok/s",
+          "system_ram_min": "128GB",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 4,
+          "reshares": 0,
+          "views": 17,
+          "interactions": 4
+        }
+      ],
+      "vram_min": "8GB",
+      "last_seen": "2026-10-23"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (MoE, 24B total / 2B active)",
+      "type": "LLM (MoE)",
+      "license": "LFM Open License",
+      "params": "24B total / 2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "backends": [
+        "Metal",
+        "ROCm",
+        "CUDA"
+      ],
+      "why": "Liquid AI's on-device agent model: 184 tok/s decode on an M5 Max and 114 on a Ryzen AI Max+ 395, with the Q4 GGUF at ~14.5GB and agent-benchmark leads over Qwen3.6-35B-A3B.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI's published figure; 24B total / 2B active MoE, 131K context (up from 32K), trained inside OpenClaw/Hermes Agent/Pi/OpenCode harnesses",
+          "context_tokens": "131072",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/raja_sudireddy/status/2113931756323913918",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 56,
+          "interactions": 1
+        },
+        {
+          "engine": "vLLM",
+          "tps": "1415",
+          "hardware": "one NVIDIA A100 SXM4",
+          "quant": "32 concurrent requests, output tokens/sec aggregate; an L40S was the best value at 1,110 tok/s per dollar (Massed Compute public GPU benchmark)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 21,
+          "interactions": 0
+        }
+      ],
+      "vram_min": "14.5GB",
+      "last_seen": "2026-10-24"
+    }
+  ],
+  "generated_utc": "2026-10-24T20:21:36Z"
+}

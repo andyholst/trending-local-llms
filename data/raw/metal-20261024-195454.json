@@ -1,0 +1,232 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:54:54Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "context_tokens": "150000",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp with PR #27342; 90K context; native MTP at 100K context: 70.83 t/s; MTP prefill ~2,360 t/s vs DFlash2 ~1,750 t/s",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Unsloth UD-Q4_K_XL",
+          "context_tokens": "90000",
+          "engine_min_version": "development build with PR #27342, --spec-draft-n-max 3"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "MacBook Pro M5 Max",
+          "quant": "DFlash 2 speculative decoding (Z Lab / Inco AI, drafter for Qwen3.8-27B released day one for SGLang, vLLM, llama.cpp and oMLX)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113186919760707688",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 694,
+          "interactions": 697
+        },
+        {
+          "engine": "MLX",
+          "tps": "44.6",
+          "hardware": "M4 Pro 64GB (Apple Silicon, Mac mini)",
+          "quant": "Qwen3.8 Flash stock serve; best public recipe also 11 t/s",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "64GB unified memory"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "67",
+          "hardware": "DGX Spark",
+          "quant": "4-bit MLX, MTP draft, thinking off (agent workload; fastest decode of the three models tested)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "SGLang",
+          "tps": "70",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB)",
+          "quant": "4-bit speculative-decoding drafter; SGLang launch config, Dockerfile and six benchmarks published for reproduction",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112710345718436183",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
+      "system_ram_min": "110GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "22.52",
+          "hardware": "RTX 4090 24GB + 110GB DDR4 system RAM (hybrid: 40 expert layers on GPU, -cmoe CPU expert offload), Ubuntu 22",
+          "quant": "Q4_K_XL GGUF ~111.4GB across 4 shards; no MTP, no DFlash2, no KV-cache quant; experimental llama.cpp build with -cmoe",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032223587098885",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
+          "system_ram_min": "110GB DDR4",
+          "engine_min_version": "experimental llama.cpp build with -cmoe"
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ3_S quant split between GPU VRAM and system RAM at 261K context (~66 tok/s); IQ2_XS reaches ~87 tok/s, prompt processing ~1,900 tok/s",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "IQ3_S",
+          "system_ram_min": "128GB DDR4-2400",
+          "context_tokens": "261000"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "134.4",
+          "hardware": "NVIDIA GB300 workstation (ASUS ET900N G3)",
+          "quant": "NVFP4 weights, vLLM, a single instance serving 64 concurrent users from one request each; 134.4 tok/s per user with no extra acceleration techniques (same instance: Nemotron 3.5 Super VL 120B NVFP4 at 142.2 tok/s per user)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/AlicanKiraz0/status/2112630102366499175",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "300",
+          "hardware": "M5 Max 128GB",
+          "quant": "mlx-serve, Qwen3.8-Flash-Next",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/thelogicalgate/status/2108375251637981693",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "128GB unified memory"
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "~493GB 4-bit",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "4x Mac Studio M5 Ultra 512GB (Thunderbolt 5, RDMA)",
+          "quant": "Apple MLX tensor parallelism, compressed NVFP4 weights ~493GB; 8K context",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "80",
+          "hardware": "22x RTX 5090 32GB (~1TB of VRAM across the rack)",
+          "quant": "BF16 / NVFP4 checkpoints; needs ~1TB of memory to load; 22 5090s ~= $150K of silicon",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/realMeetKevin/status/2111630844745892076",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "SGLang",
+          "tps": "543",
+          "hardware": "8x NVIDIA B300",
+          "quant": "NVFP4 checkpoint with DFlash V2 speculative decoding, concurrency 1; 80.3K total tokens per second per GPU at concurrency 128",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/VaseGod/status/2110864545413788150",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B-class MoE (an owner's post calls it 183B)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "12GB",
+      "system_ram_min": "960GB inference RAM (pair of RTX 4090s + cryptomining motherboard)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "32",
+          "hardware": "pair of GeForce RTX 4090 Waterforce GPUs + cryptomining motherboard giving 960GB of inference RAM",
+          "quant": "Q4 weights, 256K context; owner reports 200 tok/s prompt reading against 32 tok/s generation — a multi-GPU host, not a single 4090",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 38,
+          "weight_gb": "Q4",
+          "context_tokens": "256000",
+          "system_ram_min": "960GB inference RAM"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "One owner runs Qwen3.8-Flash-Next in Q4 at 256K context on a pair of RTX 4090s backed by 960GB of inference RAM and reports 32 tok/s generation (200 tok/s prompt reading) — a usable Flash-Next setup that needs far more than one card's memory."
+    }
+  ],
+  "generated_utc": "2026-10-24T19:53:41Z"
+}

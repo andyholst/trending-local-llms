@@ -1,0 +1,102 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:59:44Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "about 103GB (4-bit MLX)",
+      "system_ram_min": "128GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "67",
+          "hardware": "single NVIDIA DGX Spark (GB10), thinking off, temperature 0",
+          "quant": "Qwen3.8 Flash Next 4-bit MLX on TensorFold + MTP (~103GB for the whole server); fastest decode of the three models in the same agent test (Kolibri-1 FP8 on vLLM, Saluki 27B 2-bit GGUF on llama.cpp + DFlash); in the 8-step agent loop prompt processing decides the wait: 21.0 steps/min vs Kolibri 26.3 and Saluki 10.1; resisted 97% of AgentDojo prompt-injection attacks",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
+          "likes": 10,
+          "comments": 0,
+          "reshares": 9,
+          "views": 1007,
+          "interactions": 19,
+          "weight_gb": "about 103GB (4-bit MLX)"
+        }
+      ]
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "GLM-5.3-Flash (RED-SNOW redteaming finetune, MLX)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (MoE, 18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "71",
+          "hardware": "Apple Silicon (Mac, hardware not named in the post)",
+          "quant": "RED-SNOW-5.3-FLASH-MLX-4bit, oQ4e + DWQ + retrained MTP head; 48 tok/s at 23k agentic context with max thinking, up to 71 tok/s on TensorFold's bench with thinking off",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/grantoverton/status/2109440321482563787",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 1,
+          "views": 3566,
+          "interactions": 3,
+          "context_tokens": "23000"
+        }
+      ]
+    },
+    {
+      "id": "youtu-parsing-omni",
+      "name": "Youtu-Parsing-Omni",
+      "full_name": "Tencent Youtu-Parsing-Omni (documents, charts, audio, video -> structured JSON)",
+      "type": "LLM",
+      "license": "Tencent Youtu license",
+      "params": "5.3B",
+      "hf": "tencent/Youtu-Parsing-Omni",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.7GB (8-bit MLX)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "40",
+          "hardware": "M4 Pro (Apple Silicon)",
+          "quant": "8-bit MLX port (5.7GB)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/cguldogan/status/2109444643498983745",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 6,
+          "views": 250,
+          "interactions": 8,
+          "weight_gb": "5.7GB (8-bit MLX)"
+        }
+      ]
+    }
+  ]
+}

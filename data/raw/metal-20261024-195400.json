@@ -1,0 +1,90 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:54:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "Apple MLX on the M4 Max with MTP speculative decoding: 53 tok/s prose, 72 tok/s code, 78% draft acceptance",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 4
+        },
+        {
+          "engine": "SGLang",
+          "tps": "42",
+          "hardware": "NVIDIA DGX Spark (GB10, 128GB unified)",
+          "quant": "SGLang with DFlash2 single-request decode, 0.2 s TTFT, 114 tok/s aggregate at concurrency 8, reported 1.86M-token KV-cache capacity, 48% draft acceptance",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 4
+        },
+        {
+          "engine": "oMLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "oMLX with MTP speculative decoding: 53 tok/s prose, 72 tok/s code, 78% draft acceptance",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 4,
+          "engine_min_version": "oMLX (MTP speculative decoding)"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "133",
+          "hardware": "RTX 3090 (HyperQwen serving build on vLLM)",
+          "quant": "HyperQwen serving build of vLLM with an agent-generated CUDA engine, ordinary chat decode; prefill comparison 250 tok/s (HyperQwen) vs ~700 tok/s (llama.cpp)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113063508166189466",
+          "likes": 4,
+          "comments": 2,
+          "reshares": 0,
+          "views": 945,
+          "interactions": 951
+        },
+        {
+          "engine": "OpenJet",
+          "tps": "140",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "OpenJet's own engine for code generation, against 73 tok/s in its llama.cpp test on the same card",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 283,
+          "interactions": 284
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:59:44Z",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "full_name": "Qwen3.5-9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "mlx-community/Qwen3.5-9B-4bit",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "~5.2GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-09",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25.1",
+          "hardware": "base M5 MacBook Pro (16GB, ~153 GB/s memory bandwidth)",
+          "quant": "Qwen3.5 9B on MLX; the same run measured llama.cpp 22.0 and Uzu 92.1 tok/s; ~5.2GB of weights streamed per token, so the one-token-per-pass ceiling is ~29 tok/s",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2108497955049345102",
+          "likes": 108,
+          "comments": 0,
+          "reshares": 130,
+          "views": 82285,
+          "interactions": 238,
+          "weight_gb": "~5.2GB",
+          "system_ram_min": "16GB unified memory"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "22.0",
+          "hardware": "base M5 MacBook Pro (16GB)",
+          "quant": "Qwen3.5 9B on llama.cpp, same machine as the MLX 25.1 and Uzu 92.1 runs",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2108497955049345102",
+          "likes": 108,
+          "comments": 0,
+          "reshares": 130,
+          "views": 82285,
+          "interactions": 238,
+          "system_ram_min": "16GB unified memory"
+        }
+      ]
+    }
+  ]
+}

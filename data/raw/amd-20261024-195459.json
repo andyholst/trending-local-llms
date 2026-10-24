@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "why": "Siim Tolk's overnight eval suite split Qwen3.8-27B IQ4_XS across two RTX 5060 Ti cards, using MTP to lift decode from 25 to 41 tok/s on one card for 1.2GB of extra memory",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "2x RTX 5060 Ti 16GB (32GB total, all layers split across both cards, MTP draft head)",
+          "quant": "IQ4_XS weights, q4_0 KV cache with flash attention, 262k context in two 128k slots; IQ4_XS also 20% faster than Q5_K_M at the same score",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/laky_fx/status/2113901739170501046",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 7,
+          "views": 171,
+          "interactions": 13,
+          "weight_gb": "15.5GB",
+          "context_tokens": "262144",
+          "system_ram_min": "32GB",
+          "engine_min_version": "-fa (flash attention) with q4_0 KV cache; built-in MTP draft head"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T19:54:59Z"
+}

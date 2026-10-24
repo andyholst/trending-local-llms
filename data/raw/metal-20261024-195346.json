@@ -1,0 +1,245 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:53:46Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "weight_gb": "~29.5GB (8-bit MLX)",
+      "system_ram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "Qwen3.8-27B 8-bit MLX conversion on the mlx-community 48-64GB Mac tier (~29.5GB of weights); no measured t/s given, so 72 is the model's best Apple Silicon figure carried from a same-class measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~29.5GB (8-bit MLX)",
+          "system_ram_min": "48GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "weight_gb": "~112GB (4-bit MLX)",
+      "system_ram_min": "256GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "80",
+          "hardware": "Mac Studio 256GB+ unified memory",
+          "quant": "mlx-community Qwen3.8-Flash-Next-4bit (~112GB of weights) on the 256GB+ Studio tier; needs a recent development build of mlx-vlm (earlier conversions had a bug); no measured t/s given, so 80 is the model's best Apple Silicon figure carried from a same-class measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~112GB (4-bit MLX)",
+          "system_ram_min": "256GB",
+          "engine_min_version": "recent development build of mlx-vlm"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5-4B",
+      "full_name": "Qwen3.5-4B (MLX 4-bit)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "Qwen/Qwen3.5-4B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "~3GB (MLX 4-bit)",
+      "system_ram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "28",
+          "hardware": "8GB MacBook Air / Mac mini / older MacBook Pro (unified memory)",
+          "quant": "Qwen3.5-4B-MLX-4bit (~3GB of weights on an 8GB Mac); no measured t/s given, so 28 is this model's existing Apple Silicon figure carried from an earlier measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~3GB (MLX 4-bit)",
+          "system_ram_min": "8GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "full_name": "Qwen3.5-9B (MLX 4-bit)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "mlx-community/Qwen3.5-9B-4bit",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "~6GB (MLX 4-bit)",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "16GB MacBook Air / Mac mini / base MacBook Pro (unified memory)",
+          "quant": "Qwen3.5-9B-4bit (~6GB of weights on a 16GB Mac); no measured t/s given, so 18 is this model's existing Apple Silicon figure carried from an earlier measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~6GB (MLX 4-bit)",
+          "system_ram_min": "16GB"
+        }
+      ]
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "gpt-oss-20b",
+      "full_name": "gpt-oss-20b (MXFP4-Q8)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "20B",
+      "hf": "openai/gpt-oss-20b",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "weight_gb": "~12GB (MXFP4-Q8)",
+      "system_ram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "40",
+          "hardware": "24GB MacBook Air / Mac mini / MacBook Pro (unified memory)",
+          "quant": "gpt-oss-20b-MXFP4-Q8 (~12GB of weights on a 24GB Mac); no measured t/s given, so 40 is this model's existing Apple Silicon figure carried from an earlier measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~12GB (MXFP4-Q8)",
+          "system_ram_min": "24GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.5-35b-a3b",
+      "name": "Qwen3.5-35B-A3B",
+      "full_name": "Qwen3.5-35B-A3B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, ~3B active)",
+      "hf": "mlx-community/Qwen3.5-35B-A3B-4bit",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "weight_gb": "~20.4GB (MLX 4-bit)",
+      "system_ram_min": "32GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "45",
+          "hardware": "32-36GB MacBook Air / Mac mini / MacBook Pro / Mac Studio (unified memory)",
+          "quant": "Qwen3.5-35B-A3B-4bit (~20.4GB of weights; ~3B active per token on a 32-36GB Mac); no measured t/s given, so 45 is this model's existing Apple Silicon figure carried from an earlier measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~20.4GB (MLX 4-bit)",
+          "system_ram_min": "32GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.5-122b-a10b",
+      "name": "Qwen3.5-122B-A10B",
+      "full_name": "Qwen3.5-122B-A10B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "122B (MoE, 10B active)",
+      "hf": "mlx-community/Qwen3.5-122B-A10B-4bit",
+      "vram_tier": "96GB",
+      "vram_min": "96GB",
+      "weight_gb": "~69.6GB (MLX 4-bit)",
+      "system_ram_min": "96GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "30",
+          "hardware": "96-128GB Mac Studio / 128GB MacBook Pro (unified memory)",
+          "quant": "Qwen3.5-122B-A10B-4bit (~69.6GB of weights; 128GB preferred, keep context modest on 96GB); no measured t/s given, so 30 is this model's existing Apple Silicon figure carried from an earlier measurement, not this post's benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 150,
+          "interactions": 151,
+          "weight_gb": "~69.6GB (MLX 4-bit)",
+          "system_ram_min": "96GB"
+        }
+      ]
+    }
+  ]
+}

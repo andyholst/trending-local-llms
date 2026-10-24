@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-24T19:53:52Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "124",
+          "hardware": "M5 Pro 64GB Mac mini (Apple Silicon, TensorFold)",
+          "quant": "MLX 4-bit conversion of Qwen3.8-27B, TensorFold 1.1.4 MLX path with its prompt/decode recipe",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ashxhart/status/2114078430446616868",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 579,
+          "interactions": 585,
+          "engine_min_version": "TensorFold 1.1.4"
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "67",
+          "hardware": "NVIDIA GB10 (DGX Spark)",
+          "quant": "TensorFold 1.1.4 on CUDA: native CUDA from MLX affine checkpoints, Qwen3.8-27B prompt/decode recipe, bf16 prompt precision (optional int8 available); variants in the same release: 12B MTP assistant 30 -> 67 tok/s, 31B with z-lab DFlash drafter 12.6 -> 29.9 tok/s; cold prefill 64k 203 -> 1,045 tok/s",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ashxhart/status/2114078430446616868",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 579,
+          "interactions": 585,
+          "engine_min_version": "TensorFold 1.1.4"
+        }
+      ]
+    }
+  ]
+}
