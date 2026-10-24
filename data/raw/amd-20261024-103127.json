@@ -1,0 +1,72 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B DFlash2 on RTX 3090 (TeksEdge)",
+      "full_name": "Qwen3.8-27B + DFlash2 speculative decoding + context lookup on a single RTX 3090 24GB",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-20",
+      "why": "TeksEdge's inference-stack work on one RTX 3090: 82 t/s baseline, 114 with optimized MTP, 138 with DFlash2 + context lookup, 381-382 on a 25K-token document-reproduction workload (16-token verification blocks, ~15 accepted); ordinary chat is about 133 t/s and usable context rose to 138K",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup; ordinary conversation (381-382 t/s only on document reproduction); 138K usable context",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112382397656261049",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "138K"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-dgx-spark-nvfp4-dflash2",
+      "name": "Qwen3.8-27B on DGX Spark (SGLang NVFP4 + DFlash2, long context)",
+      "full_name": "Qwen3.8-27B NVFP4 on a single NVIDIA DGX Spark with SGLang and a 4-bit DFlash2 drafter, 320 to 260K context",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified memory",
+      "context_tokens": "260000",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-15",
+      "why": "context sweep on one DGX Spark with SGLang, NVFP4 weights, a 4-bit DFlash2 drafter proposing 16 tokens per pass and a BF16 KV cache: 73-74 t/s at 320 to 8K context, 67 at 65K, 56 at 130K, 38 at 260K; repeated prompts cut TTFT from 277 s to 1.2 s via prefix caching",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "74",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "NVFP4 weights; DFlash2 speculative decoding with 4-bit drafter (16 proposed tokens/pass); BF16 KV cache; thinking off; median of 4 runs; 8K context (67 t/s at 65K, 38 t/s at 260K)",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "context_tokens": "8192"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:31:27Z"
+}

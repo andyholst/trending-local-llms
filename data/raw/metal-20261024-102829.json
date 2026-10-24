@@ -1,0 +1,86 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B DFlash2 (RTX 3090, TeksEdge)",
+      "full_name": "Qwen3.8-27B on an RTX 3090 with DFlash2 speculative decoding (TeksEdge build)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "Same RTX 3090 and same quant, swapping native MTP for DFlash2 speculative decoding and adding context lookup to reproduce a document: 82 -> 382 tok/s (4.6x) with no hardware upgrade.",
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "382",
+          "hardware": "RTX 3090 24GB",
+          "quant": "MTP + DFlash2 speculative decoding + context lookup + larger verification batches, on a document reproduction task; initial generation ~82 tok/s before stack optimization (r/LocalLLaMA reproduction)",
+          "date": "2026-10-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112385215423193459",
+          "likes": 1,
+          "comments": 3,
+          "reshares": 2,
+          "views": 658,
+          "interactions": 6
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB",
+          "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp build with PR #27342, 90K context",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 9,
+          "views": 815,
+          "interactions": 12,
+          "weight_gb": "UD-Q4_K_XL",
+          "context_tokens": "90K",
+          "engine_min_version": "development llama.cpp build containing PR #27342, --spec-draft-n-max 3"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-ipad-egpu-r9700",
+      "name": "Qwen3.8-27B (iPad Pro + R9700 eGPU)",
+      "full_name": "Qwen3.8-27B Q4 on an iPad Pro with a Thunderbolt R9700 eGPU (LemonSeed Engine)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "64GB",
+      "vram_min": "32GB",
+      "context_tokens": "131K",
+      "backends": [
+        "ROCm"
+      ],
+      "why": "An iPad Pro driving a Thunderbolt-connected Radeon R9700 eGPU (LemonSeed Engine) reportedly pushes Qwen3.8-27B decoding to 159 tok/s with DFlash2 draft-tree decoding, 5.1x its 31 tok/s baseline.",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "159",
+          "hardware": "iPad Pro + Sapphire R9700 eGPU over Thunderbolt (LemonSeed Engine)",
+          "quant": "Q4, 131K context, DFlash2 draft-tree decoding; standard decoding 31 tok/s, MTP speculative 109 tok/s",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 4,
+          "views": 878,
+          "interactions": 7,
+          "context_tokens": "131K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:29Z"
+}

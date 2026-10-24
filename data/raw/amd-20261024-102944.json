@@ -1,0 +1,38 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dgx-spark-sglang",
+      "name": "Qwen3.8-27B on DGX Spark (SGLang + DFlash2)",
+      "full_name": "Qwen3.8-27B on a single NVIDIA DGX Spark with SGLang and DFlash2 speculative decoding",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "system_ram_min": "128GB unified memory",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "why": "FHILY's Mac Studio M4 Max (oMLX, MTP) vs DGX Spark (SGLang, DFlash2) comparison: the Spark decodes 42 t/s for a single request with a 0.2 s TTFT and 114 t/s aggregate at concurrency 8; the Mac's 78% draft acceptance beats the Spark's 48% on single-request speed",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "42",
+          "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+          "quant": "DFlash2 speculative decoding; single-request decode (114 t/s aggregate at concurrency 8); reported 1.86M-token KV capacity",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 8,
+          "comments": 2,
+          "reshares": 4,
+          "views": 934,
+          "interactions": 948
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:29:44Z"
+}

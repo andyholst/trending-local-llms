@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B (distilled reasoning MoE from Qwen3.6-35B-A3B, ~3B active)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B / ~3B active",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "16GB",
+      "context_tokens": "262K",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "Empero's distilled Qwen3.8-35B-A3B runs at ~50 tok/s decode and ~550 tok/s prefill on a 12GB RTX 3060 with 16GB system RAM and a 262K context - a 35B-class reasoning MoE on a 12GB card.",
+      "last_seen": "2026-10-05",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Empero Qwen3.8-35B-A3B distillation (35B total, ~3B active), 262K context, ~550 tok/s prefill",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107065293684003048",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 21,
+          "views": 2404,
+          "interactions": 26,
+          "system_ram_min": "16GB",
+          "context_tokens": "262K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:43Z"
+}

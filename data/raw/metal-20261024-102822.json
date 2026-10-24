@@ -1,0 +1,54 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "Meta community license (weights free for commercial use under $20M revenue)",
+      "params": "816B / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "1TB unified memory (two linked M5 Ultra Mac Studios at 512GB each)",
+      "context_tokens": "1M",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Meta's Mac guide for Muse Spark Open calls for two M5 Ultra Mac Studios with 512GB each linked over Thunderbolt 5 with RDMA; Apple measured about 25 generated tok/s on that two-machine setup.",
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "two M5 Ultra Mac Studios, 512GB each (Thunderbolt 5 + RDMA)",
+          "quant": "compressed Muse Spark Open 816B-A42B per Meta's Mac guide; Apple-measured generation speed (not time to complete a response)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 5,
+          "comments": 0,
+          "reshares": 0,
+          "views": 82,
+          "interactions": 5,
+          "system_ram_min": "1TB",
+          "context_tokens": "1M"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "four linked M5 Ultra Mac Studios (~1TB combined unified memory)",
+          "quant": "Muse Spark Open 816B-A42B, 'above 36 tokens per second across four Mac Studios' (WSJ CIO Journal / Apple demo figure)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
+          "likes": 73,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 73
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:22Z"
+}

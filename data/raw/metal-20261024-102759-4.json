@@ -1,0 +1,63 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Three Mac inference engines (TensorFold, oMLX, mlx-serve) on the same Qwen3.8-27B 4-bit model and drafter land within a few tok/s of each other; the drafter, not the engine, is what moves the numbers (29-31 tok/s with drafting off).",
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "4-bit, thinking off, drafter on; numbers workload (code 114, JSON 146, story 51 tok/s); with drafting off all three engines fall to 29-31 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 12,
+          "views": 1989,
+          "interactions": 15
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "4-bit, thinking off, drafter on (oMLX 0.7.0); numbers workload (code 111, JSON 144, story 53 tok/s)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 12,
+          "views": 1989,
+          "interactions": 15
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "4-bit, thinking off, drafter on (mlx-serve 26.10.1, ddalcu 4-bit build); numbers workload (code 115, JSON 139, story 54 tok/s)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 12,
+          "views": 1989,
+          "interactions": 15
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:27:59Z"
+}

@@ -1,0 +1,76 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b-amd-32gb",
+      "name": "Qwen3.8-Flash-Next 125B on a 32GB Radeon (EXL3)",
+      "full_name": "Qwen3.8-Flash-Next 125B · EXL3 5.05 bpw on a 32GB Radeon with 90GB RAM and NVMe expert streaming",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "system_ram_min": "90GB",
+      "context_tokens": "230000",
+      "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-04",
+      "why": "reported 34.7 tok/s decode on one 32GB Radeon with a patched ExLlamaV3 ROCm fork: 112 of 512 experts per layer on GPU, 400 in ~90GB RAM, the ~102GB n-gram table on NVMe, Q8 KV cache at ~230K context",
+      "engines": [
+        {
+          "engine": "ExLlamaV3 (ROCm fork)",
+          "tps": "34.7",
+          "hardware": "32GB Radeon GPU + ~90GB system RAM + NVMe",
+          "quant": "EXL3 5.05 bpw; Q8 KV cache; ~230K context; 112/512 experts on GPU, 400 in RAM, n-gram table on NVMe",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "~90GB",
+          "context_tokens": "~230K",
+          "storage_offload": "~102GB BF16 n-gram table streamed from NVMe"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-235b-a22b-strix-halo",
+      "name": "Qwen3-235B-A22B on Strix Halo",
+      "full_name": "Qwen3-235B-A22B (Q3, 128GB Ryzen AI Max+ 395 Strix Halo)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "235B (22B active)",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB",
+      "vram_min": "96GB",
+      "weight_gb": "~100GB at ~Q3",
+      "system_ram_min": "128GB unified LPDDR5X",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-14",
+      "why": "Richard Baird's reality check on the Strix Halo demo: the 128GB Ryzen AI Max+ 395 runs Qwen3-235B-A22B at a real-world 14-17 tok/s decode across the unified pool (~96-110GB accessible), Vulkan often edging out ROCm",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Ryzen AI Max+ 395 (Strix Halo) 128GB unified LPDDR5X, Radeon 8060S",
+          "quant": "~Q3 (~100GB weights); Vulkan often edges out ROCm for generation; real-world decode 14-17 t/s",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 277,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 279
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:35Z"
+}

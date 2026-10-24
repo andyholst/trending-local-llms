@@ -1,0 +1,76 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Qwen3.8-27B is the local 27B everything is measured against: same model, same M4 Max, three Mac engines and three drafters land within a few tok/s, so the drafter/runtime choice is what moves the number.",
+      "last_seen": "2026-10-03",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "154",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "4-bit, thinking off, drafter on; numbers workload (code 114, JSON 146, story 51 tok/s); drafting off: 29-31 tok/s on all three engines",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 0,
+          "views": 35,
+          "interactions": 6
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "4-bit, thinking off, drafter on (oMLX 0.7.0); numbers workload (code 111, JSON 144, story 53 tok/s)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 0,
+          "views": 35,
+          "interactions": 6
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "Mac Studio M4 Max",
+          "quant": "4-bit ddalcu build, thinking off, drafter on, --no-mtp (26.10.1 defaults to MTP, which was 2x slower here); numbers workload (code 115, JSON 139, story 54 tok/s)",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/WescheNex1q/status/2105743490864869554",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 0,
+          "views": 35,
+          "interactions": 6
+        },
+        {
+          "engine": "OpenJet",
+          "tps": "140",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "code workload with L-Forster's OpenJet coding engine, vs 73 tok/s in its llama.cpp test",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 257,
+          "interactions": 257
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:08Z"
+}

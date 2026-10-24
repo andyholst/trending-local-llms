@@ -1,0 +1,54 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (35B MoE, ~3B active, hybrid Mamba)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B / ~3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "why": "A 48GB M4 Pro MacBook Pro reportedly runs Qwen3.6-35B-A3B at 154 tok/s with Kapitsa + DFlash2 vs 69 tok/s in llama.cpp with MTP - about 2.2x decode from engine and drafter work alone.",
+      "last_seen": "2026-10-20",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "MacBook Pro M4 Pro 48GB (2024, 48GB unified memory)",
+          "quant": "4-bit with DFlash2 drafter; same reported test: oMLX + DFlash2 127 tok/s, Ollama + MTP 89 tok/s, llama.cpp + MTP 69 tok/s",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 4,
+          "comments": 5,
+          "reshares": 0,
+          "views": 1141,
+          "interactions": 9,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "MacBook Pro M4 Pro 48GB (2024)",
+          "quant": "4-bit with MTP; baseline arm of the Kapitsa comparison (oMLX + DFlash2 127 tok/s, Ollama + MTP 89 tok/s)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 593,
+          "interactions": 3,
+          "system_ram_min": "48GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:22Z"
+}

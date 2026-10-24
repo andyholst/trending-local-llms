@@ -1,0 +1,70 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (Qwen3.5-based, ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB (ternary weights)",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Open optimization challenge (PrismML + DarkbloomAI on Yukon mlx.fast) took ternary Bonsai 2 9B from 144.8 to 959.6 tok/s decode on Apple Silicon in one week, with frozen weights and an exact-token rule.",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "959.6",
+          "hardware": "Apple Silicon Mac (Yukon mlx.fast leaderboard)",
+          "quant": "ternary 2GB weights, frozen; exact-token leaderboard run, speculative decoding (DFlash 2 drafter shrunk to 4-bit); up from 144.8 tok/s on the challenge's mlx.fast track",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Mahone_AI/status/2113585648435163209",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 3,
+          "views": 147,
+          "interactions": 6,
+          "weight_gb": "2GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-1.7b-mlx-woodcock",
+      "name": "Qwen3-1.7B (Woodcock on MLX)",
+      "full_name": "Qwen3-1.7B running AtomicBot's Woodcock speculative drafter on MLX",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "1.7B",
+      "hf": "Qwen/Qwen3-1.7B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "AtomicBot's MIT clean-room alternative to Eagle 4 uses a single-layer speculative-decoding hidden-state drafter on MLX; reported to lift SMALL_MODEL generation from 120 to 300 tok/s on an M4 Max.",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "300",
+          "hardware": "Apple M4 Max",
+          "quant": "lossless single-layer speculative-decoding hidden-state drafter (Woodcock, MIT), up from 120 tok/s mlx.fast leaderboard run",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/0xPascual/status/2113646362289905754",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 73,
+          "interactions": 1
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:27:59Z"
+}

@@ -1,0 +1,40 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B (24B total, ~2.5B active)",
+      "type": "LLM",
+      "license": "LFM Open License",
+      "params": "24B / ~2.5B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "14.5GB (Q4 GGUF)",
+      "context_tokens": "131K",
+      "backends": [
+        "Metal"
+      ],
+      "why": "24B total but ~2B active per token: Liquid AI reports 184 tok/s on an M5 Max and day-one llama.cpp + MLX support with a 14.5GB Q4 GGUF, while trailing bigger models on coding.",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI's reported 184 tok/s on an M5 Max (vendor figure); the weights run through llama.cpp and MLX from day one, 131K context, Q4 GGUF ~14.5GB",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 5,
+          "comments": 1,
+          "reshares": 7,
+          "views": 258,
+          "interactions": 8,
+          "context_tokens": "131K"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:35Z"
+}

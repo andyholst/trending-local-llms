@@ -1,0 +1,357 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 3 1B Q4_K_M (769MB); prompt 5.9 t/s, gen 2.9 t/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "769MB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "b8816, CPU-only (ARMv8.0)"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "google/gemma-3-1b-it"
+        }
+      ],
+      "system_ram_min": "8GB",
+      "weight_gb": "769MB Q4_K_M",
+      "engine_min_version": "b8816",
+      "why": "Pi 5 edge-AI round-up: Gemma 3 1B Q4_K_M on a Raspberry Pi 4B, llama.cpp"
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "1.0",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 4 E2B Q4_K_M (2.9GB); prompt 2.0 t/s, gen 1.0 t/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "2.9GB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "b8816, CPU-only (ARMv8.0)"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "LiteRT-LM",
+          "hf": "litert-community/gemma-4-E2B-it-litert-lm"
+        }
+      ],
+      "system_ram_min": "8GB",
+      "weight_gb": "2.9GB Q4_K_M",
+      "engine_min_version": "b8816",
+      "why": "Pi 5 edge-AI round-up: Gemma 4 E2B Q4_K_M on a Raspberry Pi 4B, llama.cpp"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop (Intel i7-12700H, 16GB DDR4, PCIe 4), 25 GPU layers + CPU",
+          "quant": "Unsloth IQ4_XS (~14.6GB on disk); Q4_0 KV cache, native MTP; 64K context; prefill 150 tok/s, decode ~5 tok/s",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "14.6GB IQ4_XS",
+          "context_tokens": "64000",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "system_ram_min": "16GB",
+      "weight_gb": "14.6GB IQ4_XS",
+      "context_tokens": "64000",
+      "why": "27B dense at 64K context on an 8GB laptop card by splitting layers CPU/GPU (llama.cpp partial offload, Q4_0 KV cache)"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "Jailbroken PS5 (RDNA 2 GPU, ~12 GiB memory available with the GPU)",
+          "quant": "2-bit Qwen 3.8 27B; PS5LM llama.cpp port; ~20 tok/s on the console GPU vs about 1 token per minute on its CPU",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110336928159784961",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "why": "A jailbroken PS5 running a 2-bit 27B locally at ~20 tok/s — the memory crunch gone consumer"
+    },
+    {
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "full_name": "Gemma 4 E4B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "E4B",
+      "hf": "google/gemma-4-E4B-it",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "44.8",
+          "hardware": "RTX 3050 8GB",
+          "quant": "Q3_K_M GGUF, median of three runs; same post: SonicBoom 53.6 tokens/s on the identical GGUF",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "Gemma 4 E4B",
+          "hf": "google/gemma-4-E4B-it"
+        }
+      ],
+      "why": "SonicBoom vs llama.cpp on an 8GB card: the engine comparison people ask for"
+    },
+    {
+      "id": "qwen2.5-0.5b",
+      "name": "Qwen2.5-0.5B",
+      "full_name": "Qwen2.5-0.5B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "0.5B",
+      "hf": "Qwen/Qwen2.5-0.5B-Instruct",
+      "vram_tier": "CPU",
+      "vram_min": "1GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "306.9",
+          "hardware": "RTX 3050 8GB",
+          "quant": "Q4_K_M GGUF, median of three runs; same post: SonicBoom 345.9 tokens/s on the identical GGUF",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "Qwen2.5-0.5B",
+          "hf": "Qwen/Qwen2.5-0.5B-Instruct"
+        }
+      ],
+      "why": "SonicBoom vs llama.cpp on an 8GB card (small-model baseline)"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "MoE expert offload: experts held in system RAM, GPU keeps a hot cache; FreeToken vs Ollama 2-4x",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "why": "35B MoE served on an 8GB GPU by FreeToken's dual-path expert routing"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "284B (MoE, 13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "vram_tier": "16GB",
+      "vram_min": "system RAM holds the expert set (32GB GPU + system RAM)",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU",
+          "quant": "MoE expert offload to system RAM (6 of 256 experts active per layer); FreeToken vs Ollama 2-4x",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "LLM (MoE)",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "why": "284B MoE on a 32GB consumer card via expert offload"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "full_name": "GLM-5.2 753B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "753B (MoE)",
+      "hf": "zai-org/GLM-5.2",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "14.9",
+          "hardware": "96GB GPU",
+          "quant": "MoE expert offload to system RAM; FreeToken vs Ollama 2-4x",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "formats": [
+        {
+          "name": "LLM (MoE)",
+          "hf": "zai-org/GLM-5.2"
+        }
+      ],
+      "why": "753B MoE serving on a single 96GB card via expert offload"
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:01Z"
+}

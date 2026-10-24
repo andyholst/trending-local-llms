@@ -1,0 +1,42 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b-qwen38-27b-9060xt-kvstream",
+      "name": "Qwen3.8-27B (RX 9060 XT KV-streaming llama.cpp fork)",
+      "full_name": "Qwen3.8-27B IQ4_XS on a 16GB RX 9060 XT with KV-cache streaming to system RAM",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "system_ram_min": "24GB",
+      "context_tokens": "262144",
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-10-19",
+      "why": "reported run of Qwen3.8-27B IQ4_XS on a 16GB Radeon RX 9060 XT: a custom llama.cpp fork streams the KV cache between VRAM and 24GB system RAM; 42.7 t/s at ~20K context and 35 t/s at ~200K, targeting 262K, with MTP speculative decoding and Q4 KV values / Q8 keys",
+      "engines": [
+        {
+          "engine": "llama.cpp (custom KV-streaming fork)",
+          "tps": "42.7",
+          "hardware": "Radeon RX 9060 XT 16GB + 24GB DDR5 system RAM",
+          "quant": "IQ4_XS; Q4 KV values / Q8 keys; MTP speculative decoding + n-gram prediction; ~18-20K context (35 t/s at ~200K context, 262K target)",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112171947941318747",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "24GB (~16GB used in the reported run)",
+          "context_tokens": "262144 (target); 42.7 t/s at ~20K, 35 t/s at ~200K",
+          "engine_repo": "https://github.com/ggml-org/llama.cpp"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:01Z"
+}

@@ -1,0 +1,73 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "Meta community license (weights free for commercial use under $20M revenue)",
+      "params": "816B / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "1TB unified memory (four linked M5 Ultra Mac Studios)",
+      "context_tokens": "1M",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Apple adapted MLX to run Meta's 816B open-weight model across linked M5 Ultra Mac Studios; X posts report above 36 tok/s on four Mac Studios (vendor/CI-journal figures).",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "four linked M5 Ultra Mac Studios (~1TB combined unified memory)",
+          "quant": "Muse Spark Open 816B-A42B, 'above 36 tokens per second across four Mac Studios' (WSJ CIO Journal / Apple demo figure)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2111242542322778498",
+          "likes": 73,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 73,
+          "system_ram_min": "1TB"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (Qwen3.5-based, ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB (ternary weights)",
+      "backends": [
+        "Metal"
+      ],
+      "why": "PrismML's ternary 9B vision-language model fits in about 2GB; PrismML reports up to 179 tok/s on an M5 Max Pro and 34 tok/s on an iPhone 18 Pro Max. Vendor figures until independently tested.",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro",
+          "quant": "ternary (+1/0/-1 weights with group-wise scales), about 2GB",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 5,
+          "comments": 8,
+          "reshares": 0,
+          "views": 986,
+          "interactions": 13,
+          "weight_gb": "2GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:27:45Z"
+}

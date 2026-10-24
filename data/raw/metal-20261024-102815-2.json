@@ -1,0 +1,67 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Qwen3.8-based, ternary weights)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The mlx.fast challenge records for ternary Bonsai 2 27B: a compressed 27B that fits on a 16GB Mac, taken from ~59 tok/s baseline to 237-600 tok/s by solver-submitted engine work (the 600 figure is Mia / ddalcu's Dragonstone board, the 237.4 is Pratik Gandhi's promoted run).",
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "600",
+          "hardware": "Mac mini (Apple Silicon)",
+          "quant": "ternary compressed 27B, mlx.fast Dragonstone leaderboard run; ~600 tok/s ('almost 600 tokens per second'), 503.2% over the frozen baseline, fits on a Mac mini",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/ddalcu/status/2104267108893000033",
+          "likes": 12,
+          "comments": 14,
+          "reshares": 0,
+          "views": 55552,
+          "interactions": 26,
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "compressed 27B on a 16GB Mac (mlx.fast promoted run)",
+          "quant": "ternary compressed 27B, up from ~59 tok/s baseline (+302.7%); every promoted run produced exact-token-identical output mlx.fast leaderboard run",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 22,
+          "comments": 25,
+          "reshares": 0,
+          "views": 94771,
+          "interactions": 47,
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "compressed 27B on a 16GB Mac",
+          "quant": "ternary compressed 27B, +125.8% over baseline (2.26x) half a day into the challenge, 12 submissions / 5 solvers mlx.fast leaderboard run",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 7,
+          "comments": 11,
+          "reshares": 0,
+          "views": 46022,
+          "interactions": 18,
+          "system_ram_min": "16GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:28:15Z"
+}

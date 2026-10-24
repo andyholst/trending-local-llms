@@ -1,0 +1,52 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE, ~3B active)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "why": "Kapitsa, a new Apple-Silicon engine specialized on Qwen/Nemotron architectures, runs 4-bit Qwen3.6-35B-A3B at 154 t/s on a 48GB M4 Pro MacBook Pro (oMLX 127, Ollama 89, llama.cpp 69) and 281 t/s on an M5 Max 128GB",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit; DFlash2 speculative decoding; developer-reported",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 17,
+          "comments": 5,
+          "reshares": 4,
+          "views": 1141,
+          "interactions": 1167,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "Kapitsa",
+          "tps": "281",
+          "hardware": "Mac M5 Max, 128GB unified memory",
+          "quant": "developer-reported; quantization/context not stated in the post",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "128GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-24T10:31:05Z"
+}
