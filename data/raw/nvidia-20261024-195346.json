@@ -8,7 +8,7 @@
       "type": "GGUF",
       "license": "Apache 2.0",
       "params": "2B (ternary)",
-      "hf": "PrismML/Ternary-Bonsai-2-2B-gguf",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
       "vram_tier": "4GB",
       "vram_min": "1GB",
       "backends": [

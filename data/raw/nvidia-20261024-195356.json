@@ -8,7 +8,7 @@
       "type": "LLM (MoE)",
       "license": "Meta open-weight license (limited commercial use)",
       "params": "816B (MoE, 42B active)",
-      "hf": "meta-llama/Muse-Spark-Open",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
       "vram_tier": "512GB",
       "vram_min": "493GB",
       "weight_gb": "about 493GB in 4-bit",

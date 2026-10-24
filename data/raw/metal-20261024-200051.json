@@ -74,7 +74,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "35B total / ~3B active",
-      "hf": "openbmb/MiniCPM-V-4.7",
+      "hf": "openbmb/MiniCPM-V-4.7-35B-A3B",
       "vram_tier": "32GB",
       "vram_min": "32GB",
       "backends": [

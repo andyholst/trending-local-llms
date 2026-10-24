@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-24T20:31:44Z",
+  "generated_utc": "2026-10-24T21:40:58Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -305,7 +305,8 @@
           "comments": 0,
           "reshares": 1,
           "views": 0,
-          "interactions": 4
+          "interactions": 4,
+          "context_tokens": "1.86 million (reported KV-cache capacity)"
         },
         {
           "engine": "oMLX",
@@ -900,7 +901,7 @@
           "views": 0,
           "interactions": 0,
           "weight_gb": "Q4",
-          "context_tokens": "131072"
+          "context_tokens": "131000"
         },
         {
           "engine": "llama.cpp",
@@ -5284,7 +5285,7 @@
           "views": 8,
           "interactions": 8998,
           "engine_min_version": "mlx.fast challenge submission (Yukon CLI, verified on Apple M5 Max)",
-          "weight_gb": "2GB"
+          "weight_gb": "~2GB (ternary)"
         },
         {
           "engine": "llama.cpp",
@@ -5807,7 +5808,7 @@
           "reshares": 11,
           "views": 907,
           "interactions": 0,
-          "engine_min_version": "mlx-lm with Muse Spark Open (vision) support, 0-day"
+          "engine_min_version": "latest MLX framework (Apple MLX distributed inference)"
         },
         {
           "engine": "SGLang",
@@ -6304,7 +6305,7 @@
           "views": 1142,
           "interactions": 22,
           "system_ram_min": "48GB unified memory",
-          "engine_min_version": "MTP speculative decoding on",
+          "engine_min_version": "llama.cpp with MTP",
           "weight_gb": "4-bit"
         },
         {
@@ -6347,7 +6348,8 @@
           "reshares": 1,
           "views": 933,
           "interactions": 3,
-          "system_ram_min": "128GB unified memory"
+          "system_ram_min": "128GB unified memory",
+          "engine_min_version": "Kapitsa with DFlash2 speculative decoding"
         },
         {
           "engine": "Kapitsa",
@@ -9285,7 +9287,8 @@
           "reshares": 5,
           "views": 220,
           "interactions": 11,
-          "system_ram_min": "9.9 GiB peak RSS"
+          "system_ram_min": "9.9 GiB peak RSS",
+          "storage_offload": "SSD expert offload"
         }
       ],
       "engagement": {

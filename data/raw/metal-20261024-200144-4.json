@@ -9,7 +9,7 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "9B",
-      "hf": "prism-ml/Ternary-Bonsai-2-9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
       "vram_tier": "8GB",
       "vram_min": "8GB",
       "weight_gb": "~2GB (ternary)",

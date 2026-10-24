@@ -40,7 +40,7 @@
       "type": "LLM",
       "license": "NVIDIA Open Model License",
       "params": "74B / 9B active",
-      "hf": "nvidia/Nemotron-3.5-Bolt-74B-A9B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
       "vram_tier": "64GB",
       "vram_min": "16GB",
       "context_tokens": "256K",
