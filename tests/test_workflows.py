@@ -324,6 +324,10 @@ def _run_issue_pr_step(issue: str = "376") -> tuple[int, str, str, str]:
 
     Returns (rc, output, the argv gh was called with, the body file it was given).
     The body is what GitHub parses, so it — not the workflow text — is the claim.
+
+    The step now COMPOSES its body through `make pr-body` (issue #287), so it is executed
+    in the checkout — the real Makefile recipe and the real composer run — with only `gh`
+    (an external system) stubbed. `pr-body.md` is gitignored and removed afterwards.
     """
     import os
     import shutil
@@ -348,12 +352,16 @@ def _run_issue_pr_step(issue: str = "376") -> tuple[int, str, str, str]:
         env = dict(os.environ, PATH=f"{bin_}{os.pathsep}{os.environ['PATH']}", TD=str(td),
                    ISSUE=issue, BRANCH=f"ci/data-gap-{issue}-slug", REPO="o/r",
                    GH_TOKEN="x", GITHUB_OUTPUT=str(td / "out"))
-        p = subprocess.run(["bash", "-e", "-c", pr["run"]], cwd=td, env=env,
+        # The step's own literal env (e.g. MAKEFLAGS, which keeps make's directory banner
+        # out of the body) applies exactly as it does in the job.
+        env.update({k: str(v) for k, v in (pr.get("env") or {}).items() if "${{" not in str(v)})
+        p = subprocess.run(["bash", "-e", "-c", pr["run"]], cwd=ROOT, env=env,
                            capture_output=True, text=True)
         log = (td / "gh.log").read_text() if (td / "gh.log").exists() else ""
         body = (td / "body.md").read_text() if (td / "body.md").exists() else ""
         return p.returncode, p.stdout + p.stderr, log, body
     finally:
+        (ROOT / "pr-body.md").unlink(missing_ok=True)
         shutil.rmtree(td, ignore_errors=True)
 
 

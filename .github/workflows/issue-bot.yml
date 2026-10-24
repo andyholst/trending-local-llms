@@ -440,27 +440,16 @@ jobs:
           BRANCH: ${{ steps.iss.outputs.branch }}
           ISSUE: ${{ steps.iss.outputs.issue }}
           REPO: ${{ github.repository }}
+          MAKEFLAGS: --no-print-directory
         run: |
-          cat > pr-body.md <<'BODY'
-          Implements the filed data-gap issue from the post-refresh analysis.
-
-          Spec-tracked: the change lives in `openspec/changes/` (proposal +
-          capability spec in Given/When/Then + a tasks checklist with every box
-          ticked), is listed in the root `OPENSPEC.md` index, and passes
-          `make openspec-check`.
-
-          Additive only: no existing key is removed or narrowed and no value is
-          shrunk; a new key is OPTIONAL. Any value that could not be traced to a
-          real source is left unset and called out in this body.
-
-          Analysis ships issues: whatever the implementation noticed but did not
-          fix is filed as its own `tech-debt` issue (linked to this PR) instead
-          of being folded into this change.
-
-          Auto-merged (squash, branch deleted) by qa-validate once `validate` and
-          `live-smoke` are green on the head commit.
-          BODY
-          printf '\ncloses #%s\n' "$ISSUE" >> pr-body.md
+          # The body is COMPOSED by a target, never spelled here (issue #287): it is the
+          # artifact that decides whether this issue closes on merge (rule 6e), so its
+          # text must be runnable — and testable — exactly as it runs in this job. The
+          # recipe is `@`-silenced, so `pr-body.md` holds the body alone.
+          # MAKEFLAGS keeps make's "Entering directory" banner out of the body (it appears
+          # when make runs as a sub-make), while the command stays `make pr-body`, the form
+          # the Makefile-wiring guard recognises.
+          make pr-body ISSUE="$ISSUE" BRANCH="$BRANCH" > pr-body.md
           URL=$(gh pr create --base master --head "$BRANCH" \
             --title "feat(data-gap): implement the #$ISSUE gap analysis item" \
             --body-file pr-body.md 2>/dev/null)

@@ -910,6 +910,18 @@ data-gap-baseline:
 refresh-run-block:
 	python3 scripts/refresh_run_block.py render
 
+# The implementation PR body is COMPOSED, never spelled in a workflow heredoc (issue
+# #287): the body is what DECIDES whether the issue closes on merge (rule 6e), so its
+# text belongs to a target that a test can run and that `make pr-closure` can read —
+# not to a YAML block only a substring assertion could see. Both recipe lines are
+# `@`-silenced: the workflow redirects this target's stdout into `pr-body.md`, so an
+# echoed command line must never reach the body. Host-run, like `refresh-run-block`:
+# the repo and `python3` live on the runner, not in the image.
+.PHONY: pr-body
+pr-body: ## Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]
+	@test -n "$(ISSUE)" || { echo "Usage: make pr-body ISSUE=<n> [BRANCH=<head branch>]"; exit 1; }
+	@python3 scripts/pr_body.py --issue "$(ISSUE)" $(if $(BRANCH),--branch "$(BRANCH)",)
+
 # ---- secret scan: no credential may reach the repo (issue #122) --------------
 # gitleaks (MIT, the most widely adopted FOSS secret scanner) runs in ITS OWN
 # container image, pinned by tag: the pipeline image has no docker inside, so the
