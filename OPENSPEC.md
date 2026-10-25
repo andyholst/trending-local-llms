@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **123** · archived: **9**
+Active changes: **124** · archived: **9**
 
 ## Active changes
 
@@ -100,6 +100,7 @@ Active changes: **123** · archived: **9**
 | `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 | `red-run-and-repair-path` | active | #558 | — | [red-run-and-repair-path](openspec/changes/red-run-and-repair-path/specs/red-run-and-repair-path/spec.md) | 8/8 | [proposal.md](openspec/changes/red-run-and-repair-path/proposal.md) |
+| `refine-restatement-whole` | active | — | — | [issue-bot-verdict](openspec/changes/refine-restatement-whole/specs/issue-bot-verdict/spec.md) | 7/7 | [proposal.md](openspec/changes/refine-restatement-whole/proposal.md) |
 | `refresh-aggregate-advances-its-base` | active | #448 (filed first, with the measurement) | — | [worktree-base](openspec/changes/refresh-aggregate-advances-its-base/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/refresh-aggregate-advances-its-base/proposal.md) |
 | `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
 | `refresh-pr-on-the-fetched-tip` | active | #177 (`tech-debt: Two overlapping refresh PRs conflict on the generated store, README and baseline`) | — | [refresh-publish](openspec/changes/refresh-pr-on-the-fetched-tip/specs/refresh-publish/spec.md) | 12/12 | [proposal.md](openspec/changes/refresh-pr-on-the-fetched-tip/proposal.md) |
