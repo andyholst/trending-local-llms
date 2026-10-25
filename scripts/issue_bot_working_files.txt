@@ -1,0 +1,26 @@
+# The files a bot run writes at the repository root, and that must therefore never be staged,
+# committed or pushed (issue #543).
+#
+# This is the ONE list. It used to live in three places — the same `git reset -q -- …` line
+# twice in `.github/workflows/issue-bot.yml`, a third copy in `fix-bot.yml`, and a fourth in
+# `.gitignore` — so adding a working file meant remembering all four, and a miss meant the push
+# step's `git add -A` committed it (the measured `qa-report.txt.notes` incident, issue #390: a
+# 0-byte scratch note reached PR #387).
+#
+# Rules:
+#   * one name per line, relative to the repository root, no paths;
+#   * every name here MUST also be gitignored — `make check-working-files` fails otherwise,
+#     because a name that is not ignored can be staged by any other step;
+#   * `make reset-working-files` unstages them before the commit step of both bots.
+qa-report.txt
+comment.md
+issue.md
+pr-body.md
+findings.md
+triage.md
+start.md
+issue-body.md
+implement.log
+implement.scrubbed.log
+review.log
+review.scrubbed.log
