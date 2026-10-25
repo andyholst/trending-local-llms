@@ -197,6 +197,12 @@ Model IDs often differ from the marketing name. Verify with a web search:
 Qwen3-235B-A22B huggingface
 ```
 
+The leg's shell carries `HF_TOKEN`, so a `https://huggingface.co/api/models?search=<name>`
+lookup is authenticated: an unauthenticated one is rate-limited and answers `401`/`429`
+for a gated repo, which reads as "no such model" and gets you the marketing name
+(issue #363). Send it by NAME — `-H "Authorization: Bearer $HF_TOKEN"` — and never
+print, echo or write the value anywhere (AGENTS.md §3d).
+
 Known gotchas:
 - **Qwen3.8-Max** → `Qwen/Qwen3.8-2.4T-A95B`
 - **Mach-1 Additive** → `SyzygyResearch/Mach-1-Additive-35B`
