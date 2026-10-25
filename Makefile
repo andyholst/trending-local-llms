@@ -1128,7 +1128,7 @@ issue-verdict: ## Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<
 # implementer read only the body, so an issue whose fifth comment narrowed the
 # request was implemented wrongly.
 issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>)
-	python3 scripts/issue_thread.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(REPO),--repo $(REPO),)
+	@python3 scripts/issue_thread.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(REPO),--repo $(REPO),)
 
 # The queued-run alarm (issue #252): a job whose runner label matches nothing does not fail —
 # it stays `queued` forever, so the run never concludes and every PR's checks sit at "pending".
