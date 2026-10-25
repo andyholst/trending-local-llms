@@ -724,7 +724,7 @@ _engine-meta-capture:
 
 .PHONY: _nerve-check
 # Which keys to prove: all of them by default; a leg that receives a SUBSET narrows it, so the
-# check never fails on a key the job legitimately lacks (the search job carries Firecrawl + the
+# check never fails on a key the job legitimately lacks (the search job carries Firecrawl and the
 # Hugging Face token, not the Nous or nerve credentials).
 AGENT_SHELL_CHECK_KEYS ?= $(AGENT_SHELL_KEYS)
 _agent-shell-keys-check:
@@ -876,7 +876,8 @@ search:
 # Both credentials the leg uses are then proven in the AGENT's shell (issue #363): the
 # Firecrawl key the scrape sends, and HF_TOKEN, which the leg needs to verify a model's
 # Hugging Face link (an unauthenticated lookup is rate-limited, so a gated repo reads as
-# missing). A leg whose job stopped forwarding either one fails HERE, before the agent.
+# missing and the leg writes the marketing name). A leg whose job stopped forwarding
+# either one fails HERE, loudly and before the agent, naming the variable.
 .PHONY: _search-preflight
 _search-preflight:
 	@python3 scripts/require_env.py FIRECRAWL_API_KEY --why "the search legs cannot scrape lightbrd.com without it"

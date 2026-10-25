@@ -282,13 +282,14 @@ jobs:
     env:
       NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
-      # The Hugging Face token (issue #363): the legs record an HF link for every
-      # model (rule 5b), and an unauthenticated huggingface.co API call is
-      # rate-limited, so a gated repo reads as missing and the leg writes the
-      # marketing name instead of the canonical id. Forwarded by NAME only
-      # (`-e HF_TOKEN` + `-e _HERMES_FORCE_HF_TOKEN` in the Makefile run wrappers)
-      # so the AGENT's shell sees it, and `_search-preflight` proves it before the
-      # 20-minute search starts.
+      # The Hugging Face token (issue #363): every leg records an HF link per model
+      # (rule 5b), and an unauthenticated huggingface.co API call is rate-limited — a
+      # gated repo answers 401/429, reads as missing, and the leg writes the marketing
+      # name instead of the canonical id (the dead-link class #333 fixed at ingest).
+      # `AGENT_SHELL_KEYS` forwards a credential only when the JOB sets it, so without
+      # this line the agent's shell never had it however the run wrappers forward the
+      # name. `_search-preflight` proves BOTH credentials in the agent's shell before
+      # the 20-minute search starts.
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       # The nerve plugin's Jev provider credential (issue #120): forwarded by NAME
       # only, as `-e TYPESAFE_API_KEY` in the Makefile run wrappers.
