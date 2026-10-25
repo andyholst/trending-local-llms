@@ -402,12 +402,18 @@ def test_adopt_carries_uncommitted_work_onto_an_existing_branch(tmp: Path) -> No
     #       branch changed) preserved as a conflict the next round resolves, never dropped.
     ftext = (ci / "f.txt").read_text()
     stashed = "issue-bot: work carried" in git(["stash", "list"], ci).stdout
-    check("adopt(dirty re-run): the tracked edit is kept (restored or conflicted, never lost)",
+    check("adopt(dirty re-run): the tracked edit is kept (restored or carried, never lost)",
           "MINE" in ftext or stashed, (ftext, stashed))
-    check("adopt(dirty re-run): a conflict is reported, not swallowed",
-          "MINE" in ftext and "merge_conflict=true" in proc.stdout
-          or "merge_conflict" not in proc.stdout and ftext.strip() == "base\nMINE",
-          (proc.stdout[-300:], ftext))
+    check("adopt(dirty re-run): a conflicting path keeps THIS RUN's side, not the branch's",
+          ftext == "base\nMINE\n", ftext)
+
+    # Issue #583: the commit step is `git add -A`, so a marker left in a PARSED file makes
+    # every later `make` die — measured on run 40202490846 (`Makefile:588: missing separator`).
+    markers = git(["grep", "-l", "^<<<<<<<"], ci).stdout.strip()
+    check("adopt(dirty re-run): NO conflict marker is left in the tree (issue #583)",
+          markers == "", markers)
+    check("adopt(dirty re-run): the resolution is reported, naming the path(s)",
+          "merge_conflict=f.txt" in proc.stdout, proc.stdout[-400:])
     check("adopt(dirty re-run): the new file survived",
           (ci / "impl.py").read_text() == "print(7)\n", (ci / "impl.py").read_text())
     check("adopt(dirty re-run): the untracked file survived",
