@@ -94,6 +94,45 @@ _STORAGE_TEXT = re.compile(
     rf"|\b{_STORAGE_MEDIUM}\b[^.\n]{{0,32}}\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b",
     re.I)
 
+#: Engines that stream experts from storage, so a model measured on one HAS a storage story.
+_STREAMING_ENGINES = ("strata",)
+
+
+def _params_b(model: dict) -> float | None:
+    """The parameter count in billions, read from the model's own `params` string."""
+    m = re.search(r"(\d+(?:\.\d+)?)\s*B\b", str(model.get("params") or ""), re.I)
+    return float(m.group(1)) if m else None
+
+
+def _is_moe(model: dict) -> bool:
+    """MoE, as the store spells it: `35B-A3B` (active params) or the word itself."""
+    params = str(model.get("params") or "")
+    return bool(re.search(r"\b\d+(?:\.\d+)?B-A\d+(?:\.\d+)?B\b", params, re.I)
+                or "moe" in params.lower())
+
+
+def _applies_storage_offload(model: dict) -> bool:
+    """A storage-offload REQUIREMENT only exists for a model that cannot fit otherwise.
+
+    MoE is the case the dimension describes (experts split across GPU/RAM/SSD) and a model in
+    the tens of billions is the other; a dense 2B model has no expert to stream and no reason
+    to page weights, so counting it "missing storage_offload" filed a gap no post can ever
+    close and inflated the rank impact of the dimension (issue #469).
+    """
+    if _is_moe(model):
+        return True
+    size = _params_b(model)
+    if size is not None and size >= 30:
+        return True
+    return any(str(e.get("engine") or "").strip().lower() in _STREAMING_ENGINES
+               for e in (model.get("engines") or []))
+
+
+def _applies_always(_model: dict) -> bool:
+    """The default: a dimension every model can state (weights, context, engine build)."""
+    return True
+
+
 DIMENSIONS = (
     {
         "key": "system_ram_min",
@@ -134,6 +173,9 @@ DIMENSIONS = (
         # as a storage gap on every refresh and a reader could not tell a storage
         # requirement from a memory one (issues #413/#367).
         "text": _STORAGE_TEXT,
+        # Not every model CAN have one (issue #469): a dense 2B row was counted "missing"
+        # on every refresh for a requirement that cannot apply to it.
+        "applies": _applies_storage_offload,
         "why": "MoE engines (Strata) run big models by streaming experts from storage",
     },
     {
@@ -196,6 +238,7 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     declared_measurement = contract["measurement"]
     gaps: list[str] = []          # volatile-ish findings, reported but not signatured
     missing: dict[str, list[str]] = {}   # dimension -> model ids with no structured value
+    not_applicable: dict[str, list[str]] = {}   # dimension -> ids the dimension cannot apply to
     unstructured: dict[str, list[str]] = {}
     contract_gaps: dict[str, str] = {}
 
@@ -205,10 +248,13 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
             contract_gaps[key] = (
                 f"`{key}` is not declared in model_contract.json/search_contract.json — "
                 f"the value is pruned at ingest, so {dim['label']} cannot be stored")
-        ids = [m.get("id", "?") for m in models if not _stated(m, key)]
+        applies = dim.get("applies") or _applies_always
+        applicable = [m for m in models if applies(m)]
+        not_applicable[key] = [m.get("id", "?") for m in models if m not in applicable]
+        ids = [m.get("id", "?") for m in applicable if not _stated(m, key)]
         missing[key] = ids
         text_models = []
-        for m in models:
+        for m in applicable:
             if _stated(m, key):
                 continue
             # free text lives on the model (quant/why) AND on every measurement
@@ -288,7 +334,9 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     # BODY, so a human still sees which models and how many.
     signature = sorted(
         [f"contract:{k}" for k in contract_gaps]
-        + [f"missing:{k}" for k in missing]
+        # A dimension with nothing missing is NOT a gap: the list carries the key with an
+        # EMPTY list once every model states it, and naming it would keep filing it for ever.
+        + [f"missing:{k}" for k in missing if missing[k]]
         + [f"unstructured:{k}" for k in unstructured]
     )
     return {
@@ -297,6 +345,7 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         "dimensions": {d["key"]: {"label": d["label"], "why": d["why"]} for d in DIMENSIONS},
         "contract_gaps": contract_gaps,
         "missing": missing,
+        "not_applicable": not_applicable,
         "unstructured": unstructured,
         "maintenance": {"stale": stale, "thin_measurements": thin,
                         "estimated": estimated, "empty_raw_legs": empty_legs},
@@ -337,6 +386,13 @@ def render(report: dict) -> str:
     for key, n in rank_impact(report):
         lines.append(f"- **{key}** — {n} model(s)")
     if not report["findings"]:
+        lines.append("- none")
+    lines += ["", "## Dimensions that cannot apply (never counted as missing)", ""]
+    na = {k: v for k, v in (report.get("not_applicable") or {}).items() if v}
+    for key, ids in sorted(na.items()):
+        lines.append(f"- **{key}** — {len(ids)} model(s) cannot have one: {', '.join(ids[:6])}"
+                     + (" …" if len(ids) > 6 else ""))
+    if not na:
         lines.append("- none")
     lines += ["", "## Contract gaps (the store cannot hold the value)", ""]
     for key, why in report["contract_gaps"].items():
