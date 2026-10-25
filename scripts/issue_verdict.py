@@ -92,6 +92,26 @@ _VALUE_DECOR = " \t*_`\"'.,;:"
 _CHOICE_LIST = re.compile(r"\b(?:implement|refine|close)\b\s*[|/]\s*\b(?:implement|refine|close)\b",
                           re.IGNORECASE)
 
+#: The keys that END a `REFINED:` value (issue #450). A restatement is a sentence and a
+#: model wraps it, so the value runs until one of these starts a line (or the block ends).
+_KEYS_AFTER_REFINED = ("EVIDENCE", "REASON", "TRIAGE")
+
+#: A word no sentence ends on. A `REFINED:` value that stops on one of these was CUT — the
+#: measured case ended `... cannot be implemented as written, and the` and was posted as
+#: the whole restatement, leaving the human it hands the issue to with nothing to apply.
+_DANGLING = frozenset(
+    """the a an and or but of to in on for with that which is are was were as by from at
+    into than be been being not no so if then when while""".split())
+
+
+def _ends_mid_sentence(value: str) -> bool:
+    """True when `value` stops where no sentence ends (issue #450)."""
+    words = [w.strip(_VALUE_DECOR) for w in value.split()]
+    words = [w for w in words if w]
+    if not words:
+        return True
+    return words[-1].lower() in _DANGLING or value.rstrip().endswith((",", "-", "—", "("))
+
 
 def _word(value: str) -> str:
     """The first word of a decorated value: the verdict, or an evidence token."""
@@ -174,11 +194,45 @@ def parse(text: str) -> dict:
         # and "`scripts/x.py:12`" keep their word/path without the backticks.
         return value.strip().strip("*").strip()
 
-    verdict = {"triage": kind, "refined": field("REFINED"), "evidence": field("EVIDENCE"),
+    def restatement() -> str:
+        """`REFINED:`'s value, continuation-aware (issue #450).
+
+        A restatement is a SENTENCE, and a model wraps it: measured on the refine
+        path, `REFINED: The issue's top-ranked gap cannot be implemented as written,
+        and the` was posted — the first line only — so the human it hands the issue
+        to had nothing to apply. The value therefore runs to the next KEY line (or a
+        blank line), and a value that still ends mid-sentence is REFUSED instead of
+        posted, because a truncated restatement is worse than none: it looks like a
+        decision.
+        """
+        found = _FIELD["REFINED"].search(text)
+        if not found:
+            return ""
+        parts = [found.group("v").strip()]
+        rest = text[found.end():].splitlines()
+        started = False
+        for line in rest:
+            stripped = line.strip().strip("*").strip()
+            if not stripped:
+                if started:
+                    break  # a blank line ENDS the block once the restatement began
+                continue      # …but `found.end()` sits on the line's own newline
+            if any(_FIELD[k].search(line) for k in _KEYS_AFTER_REFINED):
+                break
+            parts.append(stripped)
+            started = True
+        value = " ".join(p.strip() for p in parts if p.strip())
+        return value.strip().strip("*").strip()
+
+    verdict = {"triage": kind, "refined": restatement(), "evidence": field("EVIDENCE"),
                "reason": field("REASON")}
     if kind == "refine" and not verdict["refined"]:
         raise SystemExit("[verdict] REFUSED: `TRIAGE: refine` without a `REFINED:` "
                          "restatement — the comment IS the deliverable")
+    if kind == "refine" and _ends_mid_sentence(verdict["refined"]):
+        raise SystemExit("[verdict] REFUSED: the `REFINED:` restatement stops mid-sentence "
+                         f"({verdict['refined'][-60:]!r}) — post the WHOLE restatement, or "
+                         "the human it hands the issue to has nothing to apply (issue #450)")
     # A fix/refine verdict is a judgement about the CURRENT tree (issue #494): the proof has to
     # name something in it. An evidence block that is only prose is REFUSED, so the sweep cannot
     # close a live issue — or park one — on the strength of the issue's own words.
