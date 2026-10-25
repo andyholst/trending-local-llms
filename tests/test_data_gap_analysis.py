@@ -72,6 +72,86 @@ def contract_declaring(*keys: str) -> dict:
     }
 
 
+def contract_from(td, *keys: str) -> dict:
+    """`contract_keys()` read from a contract that declares exactly `keys` (the shape the
+    analysis consumes — `contract_declaring()` is the raw JSON)."""
+    cp = Path(td) / "contract.json"
+    cp.write_text(json.dumps(contract_declaring(*keys)))
+    saved_c, saved_s = G.CONTRACT, G.SEARCH_CONTRACT
+    G.CONTRACT, G.SEARCH_CONTRACT = cp, Path(td) / "absent.json"
+    try:
+        return G.contract_keys()
+    finally:
+        G.CONTRACT, G.SEARCH_CONTRACT = saved_c, saved_s
+
+
+def test_a_dimension_that_cannot_apply_is_not_missing():
+    """Issue #469: a dense 2B model was counted "missing storage_offload" on every refresh.
+
+    A storage requirement describes a model that cannot fit otherwise — MoE (experts split
+    across GPU/RAM/SSD), a model in the tens of billions, or one measured on an engine that
+    streams experts. Counting the rest inflated the dimension's rank impact and filed a gap no
+    post can ever close.
+    """
+    dense = model("tiny-dense-2b", params="2B",
+                  engines=[{"engine": "llama.cpp", "tps": "140", "hardware": "RTX 4060 8GB",
+                            "quant": "Q4_K_M", "date": "2026-10-14",
+                            "source_post": "https://lightbrd.com/u/status/2"}])
+    moe = model("big-moe", params="35B-A3B")
+    big = model("dense-70b", params="70B")
+    stratum = model("strata-model", params="8B",
+                    engines=[{"engine": "Strata", "tps": "40", "hardware": "RTX 4090 24GB",
+                              "quant": "Q4_K_M", "date": "2026-10-14",
+                              "source_post": "https://lightbrd.com/u/status/3"}])
+    with tempfile.TemporaryDirectory() as td:
+        contract = contract_from(td, "id")
+        report = G.analyse(store_with([dense, moe, big, stratum]), contract,
+                           raw_dir=Path(td) / "raw")
+
+        missing = report["missing"]["storage_offload"]
+        na = report["not_applicable"]["storage_offload"]
+        check("applicability: a dense 2B model is NOT counted missing",
+              "tiny-dense-2b" not in missing, missing)
+        check("applicability: it is reported as not-applicable instead",
+              "tiny-dense-2b" in na, na)
+        check("applicability: an MoE model (35B-A3B) IS counted missing",
+              "big-moe" in missing, missing)
+        check("applicability: a 70B dense model IS counted missing",
+              "dense-70b" in missing, missing)
+        check("applicability: a model measured on a streaming engine IS counted missing",
+              "strata-model" in missing, missing)
+        check("applicability: the dimension is still a gap while an applicable model lacks it",
+              any(e == "missing:storage_offload" for e in report["signature"]),
+              report["signature"])
+
+        # ... and it stops being a gap once every APPLICABLE model states it, even though the
+        # non-applicable one never will (the #472 class, on the other side).
+        for m in (moe, big, stratum):
+            m["engines"][0]["storage_offload"] = "experts on NVMe"
+        report2 = G.analyse(store_with([dense, moe, big, stratum]), contract,
+                            raw_dir=Path(td) / "raw")
+        check("applicability: no applicable model missing => not in the signature",
+              not any(e == "missing:storage_offload" for e in report2["signature"]),
+              report2["signature"])
+        check("applicability: the render names the models the dimension cannot apply to",
+              "cannot have one" in G.render(report2) and "tiny-dense-2b" in G.render(report2),
+              G.render(report2)[:400])
+
+
+def test_an_empty_dimension_never_reaches_the_signature():
+    """Issue #469/#472: the key sits in `missing` with an EMPTY list once every model states
+    it — naming it in the signature kept filing a dimension nothing is missing from."""
+    m = model("has-everything", params="70B")
+    for dim in G.DIMENSIONS:
+        m["engines"][0][dim["key"]] = "x"
+        m[dim["key"]] = "x"
+    with tempfile.TemporaryDirectory() as td:
+        contract = contract_from(td, *[d["key"] for d in G.DIMENSIONS])
+        report = G.analyse(store_with([m]), contract, raw_dir=Path(td) / "raw")
+    check("signature: no `missing:<dim>` entry survives an empty list",
+          not any(e.startswith("missing:") for e in report["signature"]), report["signature"])
+
+
 def test_contract_gap_vs_stored_dimension():
     """A dimension absent from the contract is a CONTRACT gap (ingest prunes it);
     one the contract declares is only 'missing values'."""
@@ -126,10 +206,11 @@ def test_a_measurement_level_value_is_captured():
     at `storage_offload` while the store held it; issues #368/#388)."""
 
     # Given a model whose ONLY storage_offload lives on one of its measurements
-    with_meas = model("m-measured")
+    # a model storage_offload CAN apply to (#469): these tests are about the DETECTOR
+    with_meas = model("m-measured", params="70B")
     with_meas["engines"][0]["storage_offload"] = "12 of 48 layers streamed from SSD"
     # …and a model that states it nowhere
-    without = model("m-silent")
+    without = model("m-silent", params="70B")
 
     # When  the store is analysed
     report = G.analyse(store_with([with_meas, without]),
@@ -156,7 +237,7 @@ def test_a_storage_offload_needs_a_medium_and_an_offload(  ):
     reported as a storage requirement the model has — five models re-filed for ever."""
 
     def unstructured(quant_text: str) -> list:
-        m = model("m")
+        m = model("m", params="70B")
         m["engines"][0]["quant"] = quant_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
                          raw_dir=Path("/nonexistent"))["unstructured"]["storage_offload"]
@@ -256,7 +337,7 @@ def test_a_context_window_needs_a_figure():
     context windows the store had left unstructured."""
 
     def unstructured(field_text: str) -> list:
-        m = model("m")
+        m = model("m", params="70B")   # storage_offload applies to a model that could need it
         m["engines"][0]["quant"] = field_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
                          raw_dir=Path("/nonexistent"))["unstructured"]["context_tokens"]
@@ -286,7 +367,7 @@ def test_flash_attention_is_not_a_storage_medium():
     Attention, 262,144-token context" — no storage medium is named at all."""
 
     def unstructured(field_text: str) -> list:
-        m = model("m")
+        m = model("m", params="70B")   # storage_offload applies to a model that could need it
         m["engines"][0]["quant"] = field_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
                          raw_dir=Path("/nonexistent"))["unstructured"]["storage_offload"]
@@ -1356,6 +1437,8 @@ def test_a_captured_measurement_footprint_is_never_lost_from_the_store():
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
+    test_a_dimension_that_cannot_apply_is_not_missing()
+    test_an_empty_dimension_never_reaches_the_signature()
     test_free_text_mention_is_unstructured_not_present()
     test_a_measurement_level_value_is_captured()
     test_a_storage_offload_needs_a_medium_and_an_offload()
