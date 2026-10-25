@@ -363,10 +363,22 @@ jobs:
     steps:
       # PAT checkout: the branch push below is then made as the owner, so the
       # PR's qa-validate run starts without an approval click.
+      #
+      # FULL history (`fetch-depth: 0`), because this job is the one that runs the
+      # QA pass (`make qa-report` → validate + test) and `make test` includes
+      # `check-commit-authorship`, which reads `git log origin/master..HEAD`
+      # (issue #552). `actions/checkout` defaults to a depth-1 clone, so the guard
+      # failed here BY CONSTRUCTION on every refresh — measured on run 40126898852:
+      # `[qa-report] make test reported findings (rc=2)`, `is-shallow-repository=true`.
+      # That made the whole QA pass permanently red, and because the aggregate
+      # deliberately treats it as advisory ("data still lands for review") the red
+      # was indistinguishable from noise: a real defect in the data or in a module
+      # looked exactly like the standing failure, and the run stayed green.
       - name: Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          fetch-depth: 0
 
       # This job cuts `ci/trending-refresh-<UTC>` off master and pushes it as a PR:
       # the base it cuts from is FETCHED and ASSERTED first (issue #271, rule 6n).

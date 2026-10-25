@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **117** · archived: **7**
+Active changes: **118** · archived: **7**
 
 ## Active changes
 
@@ -98,6 +98,7 @@ Active changes: **117** · archived: **7**
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 | `refresh-aggregate-advances-its-base` | active | #448 (filed first, with the measurement) | — | [worktree-base](openspec/changes/refresh-aggregate-advances-its-base/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/refresh-aggregate-advances-its-base/proposal.md) |
 | `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
+| `refresh-full-history` | active | #552 | — | [refresh-full-history](openspec/changes/refresh-full-history/specs/refresh-full-history/spec.md) | 7/7 | [proposal.md](openspec/changes/refresh-full-history/proposal.md) |
 | `refresh-pr-on-the-fetched-tip` | active | #177 (`tech-debt: Two overlapping refresh PRs conflict on the generated store, README and baseline`) | — | [refresh-publish](openspec/changes/refresh-pr-on-the-fetched-tip/specs/refresh-publish/spec.md) | 12/12 | [proposal.md](openspec/changes/refresh-pr-on-the-fetched-tip/proposal.md) |
 | `refresh-run-block-uses-gh-api` | active | #320 | — | [refresh-run-block](openspec/changes/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-run-block-uses-gh-api/proposal.md) |
 | `registry-hiccup-is-not-absence` | active | #235 — `tech-debt: \`published()\` reads a registry hiccup as "not published", so a transient outage rebuilds the toolchain` | — | [agent-image-publish](openspec/changes/registry-hiccup-is-not-absence/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/registry-hiccup-is-not-absence/proposal.md) |

@@ -2211,6 +2211,38 @@ def test_the_closure_check_reruns_when_the_pr_body_is_edited():
           "make pr-closure" in qa_steps, qa_steps[-6:])
 
 
+def test_a_job_that_runs_the_suite_checks_out_the_whole_history() -> None:
+    """issue #552: `make test` reads `git log`, so a shallow checkout reds it by construction.
+
+    `actions/checkout` defaults to `fetch-depth: 1`. The refresh `aggregate` job runs the QA pass
+    (`make qa-report` → `validate` + `test`) on that default, and `make test` includes
+    `check-commit-authorship`, which reads `git log origin/master..HEAD` — measured on run
+    40126898852: `[qa-report] make test reported findings (rc=2)`, `is-shallow-repository=true`.
+    Because the aggregate treats its QA pass as advisory ("data still lands for review"), that
+    permanent red made a REAL defect indistinguishable from standing noise, and the run stayed
+    green. Every job that runs the suite must therefore ask for the full history.
+    """
+    print("\nissue #552 — a job that runs `make test` checks out the whole history")
+    callers: list[str] = []
+    for path in sorted(WF.glob("*.yml")):
+        doc = load(path.name)
+        for name, job in (doc.get("jobs") or {}).items():
+            runs = [re.sub(r"(?m)^\s*#.*$", "", s.get("run") or "") for s in steps(job)]
+            if not any(re.search(r"make\s+(test|qa-report|check-commit-authorship)\b", r)
+                       for r in runs):
+                continue
+            callers.append(f"{path.name}:{name}")
+            full = [s for s in steps(job)
+                    if str((s.get("uses") or "")).startswith("actions/checkout")
+                    and str((s.get("with") or {}).get("fetch-depth")) == "0"]
+            check(f"{path.name} {name}: the checkout is the full history (fetch-depth: 0)",
+                  bool(full), [s.get("uses") for s in steps(job)])
+    check("the guard found the jobs that run the suite (not vacuous)", len(callers) >= 2, callers)
+    refresh = load("refresh-bot.yml")["jobs"]["aggregate"]
+    check("refresh-bot aggregate: it really is the QA runner",
+          any("make qa-report" in (s.get("run") or "") for s in steps(refresh)), "")
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2255,6 +2287,7 @@ def main() -> int:
     test_a_step_that_calls_make_runs_after_the_checkout()
     test_gh_before_the_checkout_names_the_repo()
     test_unit_tests_really_run()
+    test_a_job_that_runs_the_suite_checks_out_the_whole_history()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
