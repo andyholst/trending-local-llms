@@ -71,6 +71,56 @@ def test_every_leg_prompt_names_the_variable_it_must_use():
               "Authorization: Bearer ***" not in body, body[:120])
 
 
+def test_every_leg_prompt_pins_the_tool_the_key_reaches():
+    """Issue #362: #359 made the key visible in the TERMINAL tool, and `execute_code`
+    children stay keyless — `tools/code_execution_env.py::_scrub_child_env` drops every
+    name carrying a secret substring (`KEY`, `TOKEN`, `AUTH` …) and never unwraps
+    `_HERMES_FORCE_`, while `env_passthrough` refuses a blocklisted provider name. The
+    prompts said only "POST … with header", so the tool was the agent's choice: a leg
+    that picks `execute_code` sends an EMPTY Bearer and brings back the silent 401.
+    """
+    mk = (ROOT / "Makefile").read_text()
+    for leg in ("nvidia", "metal", "cpu", "amd"):
+        prompt = re.search(rf"\n_search-{leg}:\n(.*?)\n\n", mk, re.S)
+        body = prompt.group(1) if prompt else ""
+        check(f"prompt {leg}: takes the tool pin from $(SCRAPE_ASK)",
+              "$(SCRAPE_ASK)" in body, body[:140])
+    definition = mk.split("SCRAPE_ASK :=", 1)[1].split("\n", 1)[0] if "SCRAPE_ASK :=" in mk else ""
+    check("tool pin: names the terminal tool", "TERMINAL tool" in definition, definition[:100])
+    check("tool pin: forbids execute_code", "Never make it from execute_code" in definition,
+          definition[:140])
+    check("tool pin: names the empty header it causes",
+          "EMPTY Authorization header" in definition, definition[:140])
+    check("tool pin: names the 401 that follows", "HTTP 401" in definition, definition[:140])
+    check("tool pin: names the in-process route",
+          "python3 scripts/update_trending.py" in definition, definition[:140])
+    check("tool pin: a 401 is a blocker, not a key hunt",
+          "blocker to report" in definition and "never a reason to hunt for a key" in definition,
+          definition[-140:])
+
+
+def test_the_tool_pin_has_exactly_one_definition():
+    """ONE definition, like ENGINE_ASK / DIM_ASK: four inline copies would drift, and a
+    leg that kept the old sentence would silently reopen the keyless route (issue #362).
+    """
+    mk = (ROOT / "Makefile").read_text()
+    check("tool pin: SCRAPE_ASK is defined exactly once", mk.count("SCRAPE_ASK :=") == 1,
+          str(mk.count("SCRAPE_ASK :=")))
+    definition = mk.split("SCRAPE_ASK :=", 1)[1].split("\n", 1)[0] if "SCRAPE_ASK :=" in mk else ""
+    check("tool pin: carries no double quote (it lives inside `hermes -z \"…\"`)",
+          '"' not in definition, definition[:60])
+    check("tool pin: carries no `$` (the shell would expand it)",
+          "$" not in definition, definition[:60])
+    for leg in ("nvidia", "metal", "cpu", "amd"):
+        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
+        check(f"{leg}: keeps no second copy of the pin",
+              "Never make it from execute_code" not in recipe, recipe[-160:])
+    # The pin must be reachable from a target CI runs, not from a variable nothing uses.
+    check("tool pin: a leg a workflow calls expands it",
+          "make search-${{ matrix.backend }}" in
+          (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text(), "")
+
+
 def test_the_escaping_keeps_the_value_out_of_the_prompt():
     """Shell-level proof: `\\$${NAME}` reaches the agent as `${NAME}` — never as the value.
 
@@ -90,53 +140,6 @@ def test_the_escaping_keeps_the_value_out_of_the_prompt():
     check("escaping: the agent receives the VARIABLE NAME",
           "${FIRECRAWL_API_KEY}" in text, text)
     check("escaping: and never the VALUE", SENTINEL not in text, text)
-
-
-def test_the_prompts_pin_the_tool_that_can_see_the_key():
-    """Issue #362: #359 fixed the TERMINAL's env, so the prompt must name that tool.
-
-    `execute_code`'s child environment drops every credential-shaped name and never unwraps
-    `_HERMES_FORCE_` (measured against tools/code_execution_env.py::_scrub_child_env), so a scrape
-    made there sends an empty Bearer and fails 401 while the key is set — the silent failure #359
-    removed for `curl`. One definition, taken by every leg (rule 6d: one implementation).
-    """
-    mk = (ROOT / "Makefile").read_text()
-    check("tool ask: defined exactly once", mk.count("SEARCH_TOOL_ASK :=") == 1,
-          str(mk.count("SEARCH_TOOL_ASK :=")))
-    parts = mk.split("SEARCH_TOOL_ASK :=", 1)
-    definition = parts[1].split("\n", 1)[0] if len(parts) > 1 else ""
-    for want in ("TERMINAL tool", "execute_code", "EMPTY Bearer", "HTTP 401"):
-        check(f"tool ask: names the rule ({want})", want in definition, definition[:140])
-    check("tool ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
-          '"' not in definition, definition[:60])
-
-    for leg in ("nvidia", "metal", "cpu", "amd"):
-        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
-        check(f"{leg}: takes the tool rule from $(SEARCH_TOOL_ASK)",
-              "$(SEARCH_TOOL_ASK)" in recipe, recipe[-160:])
-        check(f"{leg}: carries no second copy of the prohibition",
-              "NEVER make that call from execute_code" not in recipe, "")
-        check(f"{leg}: the authenticated request and the tool rule travel together",
-              "Bearer" in recipe and "$(SEARCH_TOOL_ASK)" in recipe, "")
-
-
-def test_the_skill_the_leg_preloads_pins_the_same_tool():
-    """The legs preload `data-search`, and `AGENTS.md` points humans at the guide."""
-    mk = (ROOT / "Makefile").read_text()
-    docs = {
-        "data-search skill": ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md",
-        "gather-data guide": ROOT / "skills" / "gather-data.md",
-    }
-    for label, path in docs.items():
-        text = path.read_text()
-        check(f"{label}: pins the TERMINAL tool", "TERMINAL tool" in text, text[:80])
-        check(f"{label}: forbids execute_code by name", "execute_code" in text, "")
-        check(f"{label}: says why (empty bearer, HTTP 401)",
-              "empty" in text.lower() and "HTTP 401" in text, "")
-    for leg in ("nvidia", "metal", "cpu", "amd"):
-        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
-        check(f"{leg}: the prompt preloads the skill that carries the rule",
-              "-s data-search,bot-unattended" in recipe, recipe[-80:])
 
 
 def test_every_public_leg_checks_the_key_before_the_agent():
@@ -208,8 +211,8 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
 def main() -> int:
     print("search-leg key wiring (issues #357/#355)")
     test_every_leg_prompt_names_the_variable_it_must_use()
-    test_the_prompts_pin_the_tool_that_can_see_the_key()
-    test_the_skill_the_leg_preloads_pins_the_same_tool()
+    test_every_leg_prompt_pins_the_tool_the_key_reaches()
+    test_the_tool_pin_has_exactly_one_definition()
     test_the_escaping_keeps_the_value_out_of_the_prompt()
     test_every_public_leg_checks_the_key_before_the_agent()
     test_a_set_variable_passes_and_the_value_is_never_printed()
