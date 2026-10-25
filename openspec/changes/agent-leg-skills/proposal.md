@@ -1,5 +1,8 @@
 # Proposal — agent-leg skills
 
+Issue: #549
+PR: #550
+
 ## Why
 
 Every agent leg (four searches, the implementer, the two reviewer paths, the fixer) carried its
