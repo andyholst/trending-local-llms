@@ -1,0 +1,101 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "why": "Qwen3.6-35B-A3B — see source posts.",
+      "weight_gb": "Q4_K_M",
+      "system_ram_min": "32GB",
+      "context_tokens": "66000",
+      "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 4060 Laptop GPU 8GB + Core i9-13900H + 32GiB LPDDR5, PCIe 4.0 x8",
+          "quant": "sparse MoE with bandwidth-adaptive expert split between CPU and GPU (FreeToken paper; TTFT cut 42-58%)",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2091325799790195058",
+          "likes": 10,
+          "comments": 8,
+          "reshares": 74,
+          "views": 44944,
+          "weight_gb": "official checkpoint (no extreme quantization)",
+          "system_ram_min": "32GiB LPDDR5"
+        },
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "8GB GPU",
+          "quant": "FreeToken bandwidth-adaptive CPU/GPU expert split (2-4x faster than Ollama)",
+          "date": "2026-08-22",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2091150763418620133",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-08-23"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "284B (MoE, 13B active)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "formats": [
+        {
+          "name": "LLM (MoE)",
+          "hf": "deepseek-ai/DeepSeek-V4-Flash"
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "system RAM holds the expert set (32GB GPU + system RAM)",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "why": "DeepSeek-V4-Flash 284B — see source posts.",
+      "system_ram_min": "system RAM holds the expert set (32GB GPU + system RAM)",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "22",
+          "hardware": "32GB GPU (single card)",
+          "quant": "284B MoE served with FreeToken's CPU/GPU expert split",
+          "date": "2026-08-22",
+          "source_post": "https://lightbrd.com/akshay_pachaar/status/2091150763418620133",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-08-22"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:01:19Z"
+}

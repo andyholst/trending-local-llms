@@ -1,0 +1,130 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (35B total / 3B active MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The 35B-A3B Mac owners tune hardest — a new Apple Silicon engine (Kapitsa) claims 2.2x llama.cpp on the same 4-bit weights.",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "M4 Pro MacBook Pro 48GB (Apple Silicon, 2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B with Kapitsa + DFlash2 speculative decoding, reported developer benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4-bit",
+          "system_ram_min": "48GB unified memory",
+          "interactions": 0
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "M4 Pro MacBook Pro 48GB (Apple Silicon, 2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B with oMLX + DFlash2 speculative decoding, same reported run as Kapitsa's 154",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4-bit",
+          "system_ram_min": "48GB unified memory",
+          "interactions": 0
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "M4 Pro MacBook Pro 48GB (Apple Silicon, 2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B with MTP speculative decoding, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4-bit",
+          "system_ram_min": "48GB unified memory",
+          "interactions": 0
+        },
+        {
+          "engine": "LM Studio",
+          "tps": "86",
+          "hardware": "M4 Pro MacBook Pro 48GB (Apple Silicon, 2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4-bit",
+          "system_ram_min": "48GB unified memory",
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "M4 Pro MacBook Pro 48GB (Apple Silicon, 2024)",
+          "quant": "4-bit Qwen3.6-35B-A3B with MTP, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4-bit",
+          "system_ram_min": "48GB unified memory",
+          "interactions": 0
+        }
+      ],
+      "id": "qwen3-6-35b-a3b"
+    },
+    {
+      "name": "LFM2.5 24B A2B",
+      "full_name": "LFM2.5-24B-A2B (24B total, 2B active MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B total / 2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Liquid AI's 24B MoE with 2B active per token, open weights, 184 tok/s on an M5 Max and leading tool-use scores under 50B.",
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "MLX build; Liquid AI's reported decode figure, no quant named in the post",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/raja_sudireddy/status/2113931756323913918",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "id": "lfm2-5-24b-a2b"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

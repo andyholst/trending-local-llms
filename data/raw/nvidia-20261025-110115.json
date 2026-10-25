@@ -1,0 +1,84 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "why": "PrismML 1.75-bit ternary compression of Qwen3.8-27B; ~98.2% capability in 5.9 GB. 11,792 downloads in 5 days. Runs big-VRAM-quality (262K ctx, MTP, vision on 16 GB) on old low-end cards.",
+      "weight_gb": "5.95GB PTQ1_0 ternary (7.21GB PQ2_0)",
+      "system_ram_min": "16GB",
+      "context_tokens": "262144",
+      "storage_offload": "expert layers offloaded to CPU/SSD on 4GB-VRAM machines",
+      "engine_min_version": "llama.cpp (PrismML fork) + bonsai-ada-surgery serve patch",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "256.3",
+          "hardware": "RTX 5090 32GB",
+          "quant": "PQ2_0 ternary target, DFlash2 draft (Q4 draft weights + ngram, F16 target and draft KV cache), full 262,144-token context, xhigh reasoning; prose/chat prompt — baseline target-only 143.46 tok/s, prose/think 223.02",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2101685231761694894",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 15,
+          "weight_gb": "PQ2_0 ternary",
+          "context_tokens": "262144",
+          "engine_min_version": "PrismML-Eng/llama.cpp PR #210 (DFlash2 runtime handoff fix, Hadamard transforms)"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "143.46",
+          "hardware": "RTX 5090 32GB",
+          "quant": "PQ2_0 ternary target only, F16 KV caches, no drafter — code/chat baseline fed to the DFlash2 sweep",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2101685231761694894",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 15,
+          "weight_gb": "PQ2_0 ternary",
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon, mlx.fast)",
+          "quant": "mlx.fast optimized run: 237.4 tok/s decode vs about 59 at baseline",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "compressed ternary 27B",
+          "system_ram_min": "16GB unified memory"
+        }
+      ],
+      "last_seen": "2026-09-26"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:01:15Z"
+}

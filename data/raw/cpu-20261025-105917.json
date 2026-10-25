@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "Meta Muse Model License (free download; MaaS providers over $20M revenue need a separate agreement)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "1TB unified across two machines (Meta's Mac recipe: 2x M5 Ultra Mac Studio at 512GB each)",
+      "weight_gb": "about 493GB in 4-bit",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "2x M5 Ultra Mac Studio, 512GB each, Thunderbolt 5 + RDMA, one full copy of the compressed model per machine (Apple-measured)",
+          "quant": "4-bit compressed weights, about 493GB; 1M-token context; Meta's guide also allows four 256GB Mac Studios",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Shailendra_ht/status/2112191837176000991",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 86,
+          "interactions": 86,
+          "weight_gb": "about 493GB in 4-bit",
+          "system_ram_min": "1TB (2x 512GB unified)",
+          "context_tokens": "1048576"
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "Meta's 816B/42B-active open-weight model needs two 512GB M5 Ultra Mac Studios just to hold its ~493GB 4-bit weights, and Apple measured about 25 generated tok/s on that two-machine cluster (four Mac Studios reached >36 tok/s) — desk-local only at workstation-cluster scale."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:59:17Z"
+}

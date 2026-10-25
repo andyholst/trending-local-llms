@@ -1,0 +1,54 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (based on Qwen3.5)",
+      "type": "LLM (ternary, vision-language)",
+      "license": "Apache 2.0",
+      "params": "9B (ternary)",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "not stated (2 GB model file; runs on an iPhone 18 Pro Max)",
+      "weight_gb": "2.0GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (Mac track of the PrismML/Darkbloom Yukon optimization challenge), up from 144.9 tok/s in five days",
+          "quant": "around 2GB model file in this configuration; 442.3% decode improvement from open optimization runs (Opus 5.5 / GPT-6 Astra / DeepSeek-V4 agents)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "about 2GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "179",
+          "hardware": "M5 Max Pro (PrismML vendor figure)",
+          "quant": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 0,
+          "views": 986,
+          "interactions": 999,
+          "weight_gb": "about 2GB"
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "why": "A 2GB ternary 9B that went from 144.9 to 913.1 tok/s on Apple Silicon in five days of open optimization, with CUDA on DGX Spark posting a 401.1% gain on the same challenge — small-model speed as an openly optimized target."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:59:09Z"
+}

@@ -1,0 +1,235 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "system_ram_min": "128GB",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "82",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "initial llama.cpp setup, 27B weights on a 24 GB card",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "optimized MTP (multi-token prediction) build, from the 82 tok/s initial setup",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2 × NVIDIA RTX 4090 (48GB total, one cryptomining box)",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, combined throughput over 8 concurrent sessions, 128K context",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "RTX 5090 32GB (SM120)",
+          "quant": "4-bit Qwen3.8-27B NVFP4, single request, vLLM 0.32.0 with --linear-backend humming (default kernel 56.9 tok/s; Marlin 72.4)",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 0,
+          "views": 29,
+          "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "56.9",
+          "hardware": "RTX 5090 32GB (SM120)",
+          "quant": "4-bit Qwen3.8-27B NVFP4, single request, the kernel vLLM picks by default on this card",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 0,
+          "views": 29
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "23.8",
+          "hardware": "RTX 3090 + RTX 3060 12GB (36GB total)",
+          "quant": "Q4 weights at a 262,144-token context length",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 2,
+          "views": 258,
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 ternary weights, full 262K context resident with the MTP head restored and kernel tweaks; 77-minute agent build",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary Bonsai 2 build, 220K context; prefill ~550 tok/s",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "225280"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop + 16GB dual-channel DDR4 (Core i7-12700H, PCIe 4)",
+          "quant": "Unsloth IQ4_XS 14.6GB, 64K context, native MTP, 25 GPU layers offloaded, quantized KV cache, no VRAM overflow; prefill ~150 tok/s",
+          "date": "2026-08-19",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2089876248176759205",
+          "likes": 37,
+          "comments": 125,
+          "reshares": 1442,
+          "views": 198166,
+          "weight_gb": "14.6GB IQ4_XS",
+          "context_tokens": "64000",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "last_seen": "2026-10-25"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "why": "Qwen3.6-35B-A3B — see source posts.",
+      "weight_gb": "Q4_K_M",
+      "system_ram_min": "32GB",
+      "context_tokens": "66000",
+      "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 4060 Laptop GPU 8GB + Core i9-13900H + 32GiB LPDDR5, PCIe 4.0 x8",
+          "quant": "sparse MoE with bandwidth-adaptive expert split between CPU and GPU (FreeToken paper; TTFT cut 42-58%)",
+          "date": "2026-08-23",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2091325799790195058",
+          "likes": 10,
+          "comments": 8,
+          "reshares": 74,
+          "views": 44944,
+          "weight_gb": "official checkpoint (no extreme quantization)",
+          "system_ram_min": "32GiB LPDDR5"
+        }
+      ],
+      "last_seen": "2026-08-23"
+    },
+    {
+      "id": "ornith-1.5-9b",
+      "name": "Ornith 1.5 9B",
+      "full_name": "Ornith 1.5 9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "formats": [
+        {
+          "name": "Ornith 1.5 9B",
+          "hf": "ornith-ai/Ornith-1.5-9B"
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "Ornith 1.5 9B — see source posts.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "RTX 4060 8GB laptop, q8 KV caches",
+          "quant": "Multi-Token Prediction ON (draft acceptance 0.95, avg draft length 2.27) — MTP overhead pushed layers across PCIe and halved throughput; ~200 tok/s prompt processing, ~30 tok/s with MTP off",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+          "likes": 34,
+          "comments": 33,
+          "reshares": 0,
+          "views": 242
+        }
+      ],
+      "last_seen": "2026-10-13"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:00:46Z"
+}

@@ -1,0 +1,122 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B on a Raspberry Pi 5 (LiteRT-LM)",
+      "type": "LLM",
+      "license": "Gemma license",
+      "params": "2B (effective)",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "8GB",
+      "vram_min": "not stated (Raspberry Pi 5, no discrete GPU)",
+      "weight_gb": "1432 MB peak memory on the Pi 5",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5, CPU path (LiteRT-LM on top of LiteRT); 99 tok/s prefill",
+          "quant": "1432 MB peak memory; tokenizer packs about 4.2 characters per token",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096203605748621312",
+          "likes": 2,
+          "comments": 1,
+          "reshares": 0,
+          "views": 549,
+          "interactions": 552,
+          "weight_gb": "1432 MB peak"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "1.0",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0 build b8816; 2.0 t/s prompt processing",
+          "quant": "Gemma 4 E2B Q4_K_M (2.9 GB)",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "2.9GB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "b8816, CPU-only (ARMv8.0)"
+        }
+      ],
+      "last_seen": "2026-09-05",
+      "why": "The one LLM figure that lands on a Raspberry Pi 5: Google's own LiteRT-LM path decodes Gemma 4 E2B at 9 tok/s (99 tok/s prefill) at 1432 MB peak, and Trelis's llama.cpp b8816 build on a Pi 4 gets 1.0 tok/s decode — a hobby-board ceiling, not a laptop one."
+    },
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B (llama.cpp, Raspberry Pi 4, CPU-only)",
+      "type": "LLM",
+      "license": "Gemma license",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "8GB",
+      "vram_min": "not stated (Raspberry Pi 4, 8GB RAM, no GPU)",
+      "weight_gb": "769 MB Q4_K_M",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0 build b8816; 5.9 t/s prompt processing",
+          "quant": "Gemma 3 1B Q4_K_M (769 MB)",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "769MB Q4_K_M",
+          "system_ram_min": "8GB",
+          "engine_min_version": "b8816, CPU-only (ARMv8.0)"
+        }
+      ],
+      "last_seen": "2026-04-16",
+      "why": "Trelis's measured Pi 4 baseline: Gemma 3 1B Q4_K_M at 2.9 tok/s generation (5.9 tok/s prompt) with llama.cpp b8816 CPU-only — the small end of what a $35 board can actually serve."
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill-Qwen-1.5B on a Raspberry Pi 4B via Ollama",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "vram_tier": "4GB",
+      "vram_min": "not stated (Raspberry Pi 4B with 2GB RAM, no GPU)",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B, 2GB LPDDR4, CPU only, ~5 W under load, fully offline",
+          "quant": "quant not stated in the post",
+          "date": "2026-06-25",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "2GB"
+        }
+      ],
+      "last_seen": "2026-06-25",
+      "why": "A 2019 Pi 4B with 2GB of RAM boots Ollama and serves DeepSeek R1 1.5B at 4 tok/s with no internet, drawing about 5 W — the offline floor of the CPU table."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:58:33Z"
+}

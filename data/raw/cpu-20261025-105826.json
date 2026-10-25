@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b-ps5-llamacpp",
+      "name": "Qwen3.8-27B on a jailbroken PS5",
+      "full_name": "Qwen3.8-27B on a jailbroken PS5 (PS5LM llama.cpp port, CPU path)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "6GB (about 6 GiB usable with CPU only on a jailbroken PS5)",
+      "system_ram_min": "about 6 GiB on a jailbroken PS5, CPU only (12 GiB with the GPU)",
+      "weight_gb": "2-bit quantized weights",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "0.0167",
+          "hardware": "jailbroken PS5, CPU path only (about 6 GiB available without the GPU)",
+          "quant": "2-bit Qwen3.8-27B weights; PS5LM, a llama.cpp port for jailbroken PS5s, about one token a minute on the CPU",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/chasmmmmmmmmmmm/status/2110216776759804103",
+          "likes": 9,
+          "comments": 2,
+          "reshares": 0,
+          "views": 809,
+          "interactions": 820,
+          "weight_gb": "2-bit quantized",
+          "system_ram_min": "about 6 GiB (CPU only)"
+        }
+      ],
+      "last_seen": "2026-10-14",
+      "why": "The same jailbroken PS5 that runs Qwen3.8-27B at 20 tok/s on its GPU manages about one token a minute on its CPU (0.0167 tok/s) — the clearest public measure of what a 27B model costs without GPU compute."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:58:26Z"
+}

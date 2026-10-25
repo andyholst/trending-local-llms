@@ -1,0 +1,166 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Gemma 3 27B",
+      "full_name": "Gemma-3-27B-IT",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "27B",
+      "hf": "google/gemma-3-27b-it",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Runs on a 64GB Mac mini through Apple's MLX and turns up in Mac local-LLM round-ups.",
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "dense 27B in the same six-model Mac mini MLX test; the ternary Bonsai 2 27B hit 26 tok/s there",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory",
+          "interactions": 699
+        }
+      ],
+      "id": "gemma-3-27b"
+    },
+    {
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B-IT",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Runs on a 64GB Mac mini through Apple's MLX and turns up in Mac local-LLM round-ups.",
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "18",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "small dense baseline in the same six-model Mac mini MLX test",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory",
+          "interactions": 699
+        }
+      ],
+      "id": "gemma-3-1b"
+    },
+    {
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Runs on a 64GB Mac mini through Apple's MLX and turns up in Mac local-LLM round-ups.",
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "Apple MLX run in the same six-model Mac mini test",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory",
+          "interactions": 699
+        }
+      ],
+      "id": "qwen3-14b"
+    },
+    {
+      "name": "Qwen3 8B",
+      "full_name": "Qwen3-8B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "8B",
+      "hf": "Qwen/Qwen3-8B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Runs on a 64GB Mac mini through Apple's MLX and turns up in Mac local-LLM round-ups.",
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "61",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "Apple MLX run in the same six-model Mac mini test",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory",
+          "interactions": 699
+        }
+      ],
+      "id": "qwen3-8b"
+    },
+    {
+      "name": "Laguna XS 2.1",
+      "full_name": "Laguna XS 2.1 (Poolside MoE)",
+      "type": "LLM",
+      "license": "see model card",
+      "params": "MoE, ~3B active",
+      "hf": "poolside/Laguna-XS-2.1",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Runs on a 64GB Mac mini through Apple's MLX and turns up in Mac local-LLM round-ups.",
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "56",
+          "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
+          "quant": "Apple MLX run in the same six-model Mac mini test; ~3B active parameters per token",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 226,
+          "views": 38759,
+          "system_ram_min": "64GB unified memory",
+          "interactions": 699
+        }
+      ],
+      "id": "laguna-xs-2-1"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

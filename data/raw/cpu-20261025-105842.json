@@ -1,0 +1,74 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "full_name": "Gemma 4 E4B (GGUF, SonicBoom vs llama.cpp on an RTX 3050 8GB)",
+      "type": "LLM",
+      "license": "Gemma license",
+      "params": "4B (effective)",
+      "hf": "google/gemma-4-E4B-it",
+      "vram_tier": "8GB",
+      "vram_min": "not stated",
+      "weight_gb": "Q3_K_M",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "44.8",
+          "hardware": "RTX 3050 8GB (the developer's benchmark SonicBoom is compared against)",
+          "quant": "Gemma 4 E4B Q3_K_M GGUF; GGUF models can also load for CPU inference",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 101,
+          "interactions": 104,
+          "weight_gb": "Q3_K_M"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "why": "Cited as the baseline in the SonicBoom launch write-up: Gemma 4 E4B Q3_K_M at 44.8 tok/s on llama.cpp, versus 53.6 tok/s for the new C++/CUDA engine on the same RTX 3050 8GB."
+    },
+    {
+      "id": "qwen2.5-0.5b",
+      "name": "Qwen2.5-0.5B",
+      "full_name": "Qwen2.5-0.5B (GGUF, llama.cpp baseline in the SonicBoom benchmark)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "0.5B",
+      "hf": "Qwen/Qwen2.5-0.5B-Instruct",
+      "vram_tier": "8GB",
+      "vram_min": "not stated",
+      "weight_gb": "Q4_K_M",
+      "backends": [
+        "CPU",
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "306.9",
+          "hardware": "RTX 3050 8GB (the developer's benchmark SonicBoom is compared against)",
+          "quant": "Qwen2.5-0.5B Q4_K_M GGUF",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/cutetoxicguy/status/2113548483756228835",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 101,
+          "interactions": 104,
+          "weight_gb": "Q4_K_M"
+        }
+      ],
+      "last_seen": "2026-10-23",
+      "why": "The other half of the SonicBoom comparison: a 0.5B Q4_K_M model runs 306.9 tok/s on llama.cpp on an RTX 3050 8GB — the throughput floor a tiny model reaches in the same engine."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:58:42Z"
+}

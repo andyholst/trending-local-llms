@@ -1,0 +1,270 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B (TeksEdge inference-stack tuning on a single RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "why": "Same card, same weights: TeksEdge took Qwen3.8-27B from an 82 t/s baseline to 381 t/s on a single RTX 3090 by stacking MTP, DFlash2 context lookup and prefix caching, with ordinary chat at about 133 t/s.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB (single GPU, used card)",
+          "quant": "DFlash2 + context lookup, 381 tok/s on a document-reproduction task; ordinary chat ~133 tok/s, prompt prefix caching cut TTFT on a 25K-token document from 22.4 s to 0.56 s",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "138",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "DFlash2 + context lookup before the optimized lookup verification (later 381 tok/s on document reproduction)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "80.76",
+          "hardware": "RTX 4090 24GB (single GPU)",
+          "quant": "Unsloth Q4_K_XL weights, Q8_0 KV cache, 90K context, --spec-draft-n-max 3, dev llama.cpp build with PR #27342 (native MTP at 100K context: 70.83 tok/s)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "Unsloth Q4_K_XL",
+          "context_tokens": "90000",
+          "engine_min_version": "llama.cpp dev build with PR #27342, --spec-draft-n-max 3"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "79.71",
+          "hardware": "RTX 4090 24GB (single GPU)",
+          "quant": "Unsloth Q4_K_XL weights, Q4_0 KV cache, 120K context, --spec-draft-n-max 4 (larger draft-state buffer costs VRAM)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "Unsloth Q4_K_XL",
+          "context_tokens": "120000",
+          "engine_min_version": "llama.cpp dev build with PR #27342, --spec-draft-n-max 4"
+        }
+      ],
+      "last_seen": "2026-10-22"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "system_ram_min": "128GB",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "82",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "initial llama.cpp setup, 27B weights on a 24 GB card",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "optimized MTP (multi-token prediction) build, from the 82 tok/s initial setup",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2 × NVIDIA RTX 4090 (48GB total, one cryptomining box)",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, combined throughput over 8 concurrent sessions, 128K context",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-16"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
+      "system_ram_min": "32GB",
+      "context_tokens": "250K",
+      "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 3090 24GB (used card), 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ3_S, experts split between GPU VRAM and system RAM",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "IQ3_S",
+          "context_tokens": "262144",
+          "system_ram_min": "64GB recommended"
+        },
+        {
+          "engine": "Strata",
+          "tps": "66",
+          "hardware": "RTX 3090 24GB (used card), 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ3_S with 261K context",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "IQ3_S",
+          "context_tokens": "261000",
+          "system_ram_min": "64GB recommended"
+        },
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB (used card), 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ2_XS, experts split between GPU VRAM and system RAM; prompt processing ~1,900 tok/s",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "IQ2_XS",
+          "context_tokens": "262144",
+          "system_ram_min": "64GB recommended"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "73",
+          "hardware": "RTX 3090 24GB (24 GB+ RTX 30-series)",
+          "quant": "llama.cpp baseline that OpenJet compares against for Qwen3.8-27B on 24 GB",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 1,
+          "views": 284
+        },
+        {
+          "engine": "Strata",
+          "tps": "100",
+          "hardware": "RTX 4090 24GB (consumer GPU)",
+          "quant": "125B model with experts across GPU/RAM; 70GB download, 32GB RAM, 80GB disk",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/ethanwalkerman/status/2106988896529920109",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 215,
+          "weight_gb": "70GB download",
+          "system_ram_min": "32GB",
+          "storage_offload": "80GB disk"
+        },
+        {
+          "engine": "Strata",
+          "tps": "32",
+          "hardware": "2 × GeForce RTX 4090 Waterforce (cryptomining board, 960GB system RAM)",
+          "quant": "Q4 with 256K context; generation 32 tok/s, prompt reading 200 tok/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
+          "likes": 0,
+          "comments": 3,
+          "reshares": 0,
+          "views": 41,
+          "context_tokens": "262144",
+          "system_ram_min": "960GB"
+        }
+      ],
+      "last_seen": "2026-10-22"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:00:04Z"
+}

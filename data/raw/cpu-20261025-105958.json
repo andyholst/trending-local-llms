@@ -1,0 +1,56 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b-twin-turbo",
+      "name": "Qwen3.8-27B Twin Turbo",
+      "full_name": "Qwen3.8-27B Twin Turbo (community tune: reasoning-efficiency + MTP speculative decoding)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB (Q4 is ~16-18GB; Q5 ~19-21GB, Q6 ~22-24GB)",
+      "weight_gb": "Q4_K_S about 16-18GB",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "90",
+          "hardware": "RTX 5090, MTP build (creator-reported)",
+          "quant": "MTP speculative decoding on the Twin Turbo tune; Q4_K_S without MTP runs around 75 tok/s, a reported ~20%+ decode improvement",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112032613405761904",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4_K_S",
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "75",
+          "hardware": "RTX 5090, Q4_K_S without MTP (creator-reported)",
+          "quant": "Q4_K_S; 5 reasoning modes, 5 instruct modes, vision, 256K context",
+          "date": "2026-09-14",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099391875702546895",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4_K_S",
+          "context_tokens": "262144"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "A community tune that attacks both halves of local latency: 2x to 20x fewer reasoning tokens than its baseline plus MTP speculative decoding, reaching more than 90 tok/s on an RTX 5090 against ~75 without MTP — with Q4/Q5 quants sitting in the 16-24GB VRAM range."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:59:58Z"
+}
