@@ -2406,6 +2406,42 @@ def test_a_recipe_redirected_into_a_file_never_echoes_its_own_command():
           "issue-thread" in redirected, redirected)
 
 
+def test_a_captured_recipe_is_silent():
+    """Issue #562's follow-up: `OUT=$(make <target>)` captures make's ECHO too.
+
+    Measured in production, twice (runs 40190558547, 40194644167): the sweep's
+    `OUT=$(make issue-pick)` captured `python3 scripts/issue_queue.py --pick …` as its
+    first line, so `PICK="${OUT#issue=}"` became that command plus the value, the step
+    refused it as "not a number", and the pick job failed — the sweep implemented nothing
+    for two hours. A stub `make` in a test cannot see this; the REAL recipe's echo is the
+    defect, so a captured target must have a silenced recipe for the same reason a
+    redirected one must.
+    """
+    captured: dict[str, str] = {}
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for i, line in enumerate(wf.read_text().splitlines(), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            for m in re.finditer(r"\$\(\s*make\s+([a-z][a-z0-9-]*)|\b([a-z][a-z0-9-]*)\s*=\s*\$\(\s*make\s+([a-z][a-z0-9-]*)", line):
+                target = m.group(1) or m.group(3)
+                if target:
+                    captured.setdefault(target, f"{wf.name}:{i}")
+
+    check("captured make: a workflow captures a make target's stdout (non-vacuous)",
+          bool(captured), captured)
+
+    commands = _makefile_commands()
+    noisy = {t: [c for c in commands.get(t, []) if not c.startswith("@")]
+             for t in captured}
+    noisy = {t: cmds for t, cmds in noisy.items() if cmds}
+    check("captured make: every captured recipe is silenced (@), so the value is the FIRST line",
+          not noisy, noisy)
+
+    # And the measured case is one of them, so the guard cannot pass by looking elsewhere
+    check("captured make: `OUT=$(make issue-pick)` is covered by the guard",
+          "issue-pick" in captured, captured)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2455,6 +2491,7 @@ def main() -> int:
     test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
     test_a_detached_fix_round_leaves_its_transcript_behind()
     test_a_recipe_redirected_into_a_file_never_echoes_its_own_command()
+    test_a_captured_recipe_is_silent()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

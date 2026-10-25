@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **127** · archived: **9**
+Active changes: **128** · archived: **9**
 
 ## Active changes
 
@@ -33,6 +33,7 @@ Active changes: **127** · archived: **9**
 | `bot-guards-allow-the-bot` | active | — | — | [bot-guards-allow-the-bot](openspec/changes/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-guards-allow-the-bot/proposal.md) |
 | `bot-marker-registry` | active | — | — | [bot-markers](openspec/changes/bot-marker-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-marker-registry/proposal.md) |
 | `bot-verification-protocol` | active | — | — | [bot-verification-protocol](openspec/changes/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/bot-verification-protocol/proposal.md) |
+| `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
 | `card-gap-report` | active | #342 — `tech-debt: Only EMPTY tiers are reported as collection gaps — a model with no card evidence at all is silent` | — | [card-fit](openspec/changes/card-gap-report/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/card-gap-report/proposal.md) |
 | `ci-secret-output-guard` | active | #219 | — | [secret-output-guard](openspec/changes/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/ci-secret-output-guard/proposal.md) |
 | `closure-on-body-edit` | active | #290 — `tech-debt: A PR body edit never re-runs the closure check` | — | [pr-ci](openspec/changes/closure-on-body-edit/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/closure-on-body-edit/proposal.md) |
