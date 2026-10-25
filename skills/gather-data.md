@@ -33,6 +33,12 @@ never write an `export FIRECRAWL_API_KEY=…` line (with a value or a placeholde
 log is public, and a placeholder is one paste away from the real thing (issue #355). A leg that
 cannot authenticate must fail, never narrate its search.
 
+**Make the call from the TERMINAL tool — never from `execute_code`** (issue #362). The terminal's
+child process is the only one Hermes leaves the key in: `execute_code`'s child environment is scrubbed
+of every credential-shaped name and does not unwrap `_HERMES_FORCE_`, so a scrape made there sends an
+**empty** Bearer and fails `HTTP 401` while the key is set. `python3 scripts/update_trending.py
+--fetch`, run from the terminal, reads the key in-process and is fine.
+
 Use the **lightbrd.com mirror** (a working X frontend) via `web_extract`:
 
 ```

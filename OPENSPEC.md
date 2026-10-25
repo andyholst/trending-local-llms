@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **137** · archived: **9**
+Active changes: **138** · archived: **9**
 
 ## Active changes
 
@@ -126,6 +126,7 @@ Active changes: **137** · archived: **9**
 | `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
+| `search-tool-pinned` | active | — | — | [bot-agent-run-safety](openspec/changes/search-tool-pinned/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/search-tool-pinned/proposal.md) |
 | `secret-guard-derived-names` | active | #223 — `the no-secret-VALUE guard's key set is a hand-maintained allowlist — a new key added to a workflow is invisible until added to SECRET_VARS` | — | [secret-output-guard](openspec/changes/secret-guard-derived-names/specs/secret-output-guard/spec.md) | 9/9 | [proposal.md](openspec/changes/secret-guard-derived-names/proposal.md) |
 | `secret-guard-file-set` | active | #224 — `tech-debt: the no-secret-VALUE guard only scans a fixed suffix set` | — | [secret-output-guard](openspec/changes/secret-guard-file-set/specs/secret-output-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/secret-guard-file-set/proposal.md) |
 | `setup-output-visible` | active | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/setup-output-visible/proposal.md) |
