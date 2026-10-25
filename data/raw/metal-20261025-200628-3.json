@@ -1,0 +1,71 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE, experts split across GPU and system RAM)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next Q4",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "Strata keeps a 125B MoE usable on consumer cards by keeping most experts in system RAM: 17-20 tok/s generation on an RTX 3050 6GB laptop with 32 GB RAM at 16K context, and 32 tok/s on a pair of RTX 4090s with 960 GB of inference RAM at 256K context.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20",
+          "hardware": "RTX 3050 6GB Laptop + 32GB system RAM",
+          "quant": "Qwen3.8-Flash-Next, Gyro-S config, unquantized 16K KV cache; 94% VRAM / 96% RAM used; measured range 17-20 tok/s generation",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+          "system_ram_min": "32GB",
+          "context_tokens": "16384",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 194
+        },
+        {
+          "engine": "Strata",
+          "tps": "32",
+          "hardware": "2x GeForce RTX 4090 Waterforce + 960GB inference RAM (cryptomining motherboard)",
+          "quant": "Qwen3.8-Flash-Next 183B MoE Q4, 256K context; 32 tok/s generation, 200 tok/s prompt reading",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
+          "system_ram_min": "960GB",
+          "context_tokens": "262144",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 0,
+          "views": 41
+        },
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "RTX 5090 32GB",
+          "quant": "reported range 100-140 tok/s on an RTX 5090 using Strata (secondary report, not independently measured)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:28Z"
+}

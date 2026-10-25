@@ -1,0 +1,143 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (dense 27B open-weight)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "params": "27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "16GB",
+      "weight_gb": "",
+      "system_ram_min": "32GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.4",
+          "hardware": "Apple Mac mini M4 (base chip, 32GB unified memory), LM Studio with llama.cpp on Metal",
+          "quant": "dense 27B, LM Studio llama.cpp on Metal (dense-for-reference figure)",
+          "date": "2026-08-29",
+          "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "",
+          "system_ram_min": "32GB"
+        }
+      ],
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-08-29"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "GPT-OSS-20B",
+      "full_name": "GPT-OSS-20B (OpenAI open-weight, MoE)",
+      "hf": "openai/gpt-oss-20b",
+      "params": "20B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "24GB",
+      "weight_gb": "11.3GB",
+      "system_ram_min": "32GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "29",
+          "hardware": "Apple Mac mini M4 (base chip, 32GB unified memory), LM Studio with llama.cpp on Metal",
+          "quant": "Q4",
+          "date": "2026-08-29",
+          "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "11.3GB",
+          "system_ram_min": "32GB"
+        }
+      ],
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-08-29"
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "full_name": "Qwen3.5-9B (dense)",
+      "hf": "Qwen/Qwen3.5-9B",
+      "params": "9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "16GB",
+      "weight_gb": "5.6GB",
+      "system_ram_min": "32GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Apple Mac mini M4 (base chip, 32GB unified memory), LM Studio with llama.cpp on Metal",
+          "quant": "Q4",
+          "date": "2026-08-29",
+          "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "5.6GB",
+          "system_ram_min": "32GB"
+        }
+      ],
+      "vram_min": "32GB",
+      "backends": [
+        "CPU",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-08-29"
+    },
+    {
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "full_name": "Gemma 4 E4B (Google DeepMind)",
+      "hf": "google/gemma-4-E4B-it",
+      "params": "E4B",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "vram_tier": "8GB",
+      "weight_gb": "",
+      "system_ram_min": "32GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20",
+          "hardware": "Apple Mac mini M4 (base chip, 32GB unified memory), LM Studio with llama.cpp on Metal",
+          "quant": "LM Studio llama.cpp on Metal",
+          "date": "2026-08-29",
+          "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "",
+          "system_ram_min": "32GB"
+        }
+      ],
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-08-29"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:12:31Z"
+}

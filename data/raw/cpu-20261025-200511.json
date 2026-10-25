@@ -1,0 +1,52 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (dense 27B open-weight)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "params": "27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "16GB",
+      "why": "Qwen3.8-27B at NVFP4 on a single RTX 5090 reaching ~143 t/s with Humming kernels inside vLLM 0.32.0; TensorFold 1.1.4 quintuples CUDA prefill on GB10.",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "143",
+          "hardware": "NVIDIA RTX 5090 32GB",
+          "quant": "NVFP4 4-bit floats - one card runs Qwen3.8-27B at NVFP4 at about 143 tokens a second in one owner's benchmark",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/0xaqt/status/2114002977413345358",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "NVIDIA RTX 5090 32GB",
+          "quant": "NVFP4 4-bit, vLLM 0.32.0 with --linear-backend humming - switching vLLM to Humming took one request from 56.9 to 71.6 tokens per second, +26% over the default kernel",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "vLLM 0.32.0 --linear-backend humming"
+        }
+      ],
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:12:31Z"
+}

@@ -1,0 +1,54 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "params": "125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20",
+          "hardware": "NVIDIA RTX 3050 6GB Laptop + 32GB system RAM",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 0,
+          "views": 194,
+          "context_tokens": "16384",
+          "system_ram_min": "32GB",
+          "quant": "Gyro-S config, 16K unquantized KV cache (32K starts then cuts generation), ~94% VRAM and ~96% RAM used; reporter's range was 17-20 tok/s"
+        },
+        {
+          "engine": "Strata",
+          "tps": "17",
+          "hardware": "NVIDIA RTX 3050 6GB Laptop + 32GB system RAM",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 0,
+          "views": 194,
+          "context_tokens": "16384",
+          "system_ram_min": "32GB",
+          "quant": "Gyro-S config, low end of the reporter's 17-20 tok/s range, 16K unquantized KV cache"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:10:05Z"
+}

@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "87",
+          "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+          "quant": "IQ2_XS, 177B MoE split between GPU VRAM and system RAM",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+          "likes": 4632,
+          "comments": 26,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "261000",
+          "system_ram_min": "64GB",
+          "engine_repo": "https://github.com/Niko1221/Strata"
+        }
+      ],
+      "last_seen": "2026-10-17",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:16Z"
+}

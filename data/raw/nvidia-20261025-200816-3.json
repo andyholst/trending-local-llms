@@ -1,0 +1,118 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "nemotron-3.5-bolt-74b-a9b",
+      "name": "Nemotron-3.5-Bolt-74B-A9B",
+      "full_name": "NVIDIA Nemotron-3.5-Bolt-74B-A9B",
+      "type": "LLM",
+      "license": "NVIDIA Open Model License",
+      "params": "74B (MoE, 9B active)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+      "vram_tier": "8GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "30",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Unsloth UD-IQ1_S 1-bit GGUF, 262K context, Q8 KV cache",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112705410389901480",
+          "likes": 424,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama-server --load-mode none -ngl 99 --n-cpu-moe 57 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0"
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "formats": [
+        {
+          "name": "Nemotron-3.5-Bolt-74B-A9B",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "23.8",
+          "hardware": "RTX 3090 24GB + RTX 3060 12GB (3090+3060 setup)",
+          "quant": "Q4 GGUF",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
+          "likes": 258,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144"
+        }
+      ],
+      "last_seen": "2026-10-11",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "40",
+          "hardware": "2x RTX 3060 12GB (24GB total VRAM) + 64GB DDR5 RAM",
+          "quant": "IQ3_S GSQ-RCO, 256K context",
+          "date": "2026-10-05",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106924430643302782",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "256000",
+          "system_ram_min": "64GB",
+          "engine_repo": "https://github.com/Niko1221/Strata"
+        }
+      ],
+      "last_seen": "2026-10-05",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:16Z"
+}

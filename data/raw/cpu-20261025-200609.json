@@ -1,0 +1,55 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B DFlash2 (TeksEdge, RTX 3090)",
+      "full_name": "Qwen3.8-27B with DFlash2 speculative decoding in llama.cpp (TeksEdge 3090 config)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "params": "27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "24GB",
+      "why": "DFlash2 in llama.cpp beats native MTP on a single RTX 3090: 80.76 t/s decode at 90K context vs MTP's 70.83 at 100K, at the cost of slower prefill.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "79.71",
+          "hardware": "NVIDIA RTX 4090 24GB (single GPU)",
+          "quant": "Unsloth Q4_K_XL, Q4_0 KV cache, --spec-draft-n-max 4, DFlash2 speculative decoding - DFlash2 with n-max 4 at 120K context on Q4 KV cache",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "Q4_K_XL (Unsloth)",
+          "context_tokens": "120000",
+          "engine_min_version": "llama.cpp development build with PR #27342, --spec-draft-n-max 4"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "77.44",
+          "hardware": "NVIDIA RTX 4090 24GB (single GPU)",
+          "quant": "Unsloth Q4_K_XL, Q4_0 KV cache, --spec-draft-n-max 3, DFlash2 speculative decoding - DFlash2 vs native MTP 66.85 tok/s at the same 150K context, Q4_0 KV cache",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "Q4_K_XL (Unsloth)",
+          "context_tokens": "150000",
+          "engine_min_version": "llama.cpp development build with PR #27342, --spec-draft-n-max 3"
+        }
+      ],
+      "vram_min": "24GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:12:31Z"
+}

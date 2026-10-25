@@ -1,0 +1,68 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (Apple Silicon, TensorFold / oMLX / mlx-serve speculation comparison)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B 4-bit MLX",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Three Mac inference engines with the same Qwen3.8-27B 4-bit weights and the same drafter land within a few tok/s of each other on an M4 Max: the engine's speculative-decoding implementation, not its raw decode loop, is what separates them (188 tok/s with drafting on, ~29-31 tok/s with it off).",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "188",
+          "hardware": "M4 Max (Apple Silicon, unified memory)",
+          "quant": "Qwen3.8-27B 4-bit, speculative decoding (drafter) ON, thinking OFF, median of 2 runs; workload breakdown Numbers 154 / JSON 146 / Code 114 / Story 51 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "likes": 108,
+          "comments": 10,
+          "reshares": 9,
+          "views": 1007
+        },
+        {
+          "engine": "oMLX",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon, unified memory)",
+          "quant": "Qwen3.8-27B 4-bit, oMLX 0.7.0, speculative decoding ON, thinking OFF, median of 2 runs; Numbers 146 / JSON 144 / Code 111 / Story 53 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "engine_min_version": "oMLX 0.7.0",
+          "likes": 108,
+          "comments": 10,
+          "reshares": 9,
+          "views": 1007
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "146",
+          "hardware": "M4 Max (Apple Silicon, unified memory)",
+          "quant": "Qwen3.8-27B 4-bit, mlx-serve 26.10.1 with --no-mtp to force the DFlash drafter (default MTP was ~2x slower on this M4 Max), thinking OFF, median of 2 runs; Numbers 146 / Code 115 / JSON 139 / Story 54 tok/s",
+          "date": "2026-10-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106298314748477832",
+          "engine_min_version": "mlx-serve 26.10.1 --no-mtp",
+          "likes": 108,
+          "comments": 10,
+          "reshares": 9,
+          "views": 1007
+        }
+      ],
+      "vram_min": "48GB",
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:28Z"
+}
