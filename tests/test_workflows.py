@@ -20,6 +20,7 @@ Run:  python3 tests/test_workflows.py   or   make test
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -2243,6 +2244,54 @@ def test_a_job_that_runs_the_suite_checks_out_the_whole_history() -> None:
           any("make qa-report" in (s.get("run") or "") for s in steps(refresh)), "")
 
 
+def test_issue_bot_salvages_a_detached_runs_work() -> None:
+    """issue #554: rc=3 AFTER implementing must not throw the change away.
+
+    The unattended contract is preloaded, but a model can still call `clarify` once — measured on
+    run 40168796244, ~30 minutes in, after implementing: Hermes detached (rc=3) and the job's
+    "any non-zero rc means no implementation" discarded a finished change (no commit, no push, no
+    PR). The tree is the evidence, so the shipped step reads it and the push/fail conditions
+    follow. This runs the REAL step text against a real git repo, in both shapes.
+    """
+    print("\nissue #554 — a detached run's work is salvaged, not discarded")
+    impl = load("issue-bot.yml")["jobs"]["implement"]
+    salvage = step(impl, "Did the agent leave work behind")
+    push = step(impl, "Commit + push the branch")
+    fail = step(impl, "Fail loudly")
+
+    check("salvage: the step exists and is not gated on the exit code",
+          bool(salvage) and "steps.impl.outputs.rc" not in (salvage.get("if") or ""), salvage.get("if"))
+    check("salvage: it reads the tree", "git status --porcelain" in (salvage.get("run") or ""), "")
+    check("push: it runs when the tree is dirty, whatever the rc was",
+          "steps.salvage.outputs.dirty == 'true'" in (push.get("if") or ""), push.get("if"))
+    check("fail: a salvaged run is not reported as a failed implementation",
+          "steps.salvage.outputs.dirty != 'true'" in (fail.get("if") or ""), fail.get("if"))
+
+    # And the shipped step really behaves: clean tree -> dirty=false, changed tree -> dirty=true.
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td) / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        (repo / "README.md").write_text("x\n")
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+        subprocess.run(["git", "-c", "user.email=a@b", "-c", "user.name=a", "commit", "-qm", "x"],
+                       cwd=repo, check=True)
+        script = (salvage.get("run") or "").replace("${{ steps.impl.outputs.rc }}", "3")
+        for shape, mutate, want in (("clean", False, "false"), ("dirty", True, "true")):
+            if mutate:
+                (repo / "changed.txt").write_text("work\n")
+            out = Path(td) / "gh_output"
+            out.write_text("")
+            subprocess.run(["bash", "-c", script], cwd=repo, check=True,
+                           env=dict(os.environ, GITHUB_OUTPUT=str(out)))
+            check(f"salvage: a {shape} tree reports dirty={want}",
+                  f"dirty={want}" in out.read_text(), out.read_text())
+            subprocess.run(["git", "checkout", "-q", "--", "."], cwd=repo, check=True)
+            subprocess.run(["git", "clean", "-qfd"], cwd=repo, check=True)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2288,6 +2337,7 @@ def main() -> int:
     test_gh_before_the_checkout_names_the_repo()
     test_unit_tests_really_run()
     test_a_job_that_runs_the_suite_checks_out_the_whole_history()
+    test_issue_bot_salvages_a_detached_runs_work()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **118** · archived: **7**
+Active changes: **119** · archived: **7**
 
 ## Active changes
 
@@ -71,6 +71,7 @@ Active changes: **118** · archived: **7**
 | `ingest-names-a-dead-hf-link` | active | #333 | — | [hf-link-verification](openspec/changes/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/ingest-names-a-dead-hf-link/proposal.md) |
 | `ingest-new-snapshots-only` | active | #175 | — | [ingest-boundary](openspec/changes/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/ingest-new-snapshots-only/proposal.md) |
 | `issue-bot-checks-out-before-make` | active | — | — | [issue-bot-checks-out-before-make](openspec/changes/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/issue-bot-checks-out-before-make/proposal.md) |
+| `issue-bot-salvage` | active | #554 | — | [issue-bot-salvage](openspec/changes/issue-bot-salvage/specs/issue-bot-salvage/spec.md) | 9/9 | [proposal.md](openspec/changes/issue-bot-salvage/proposal.md) |
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
