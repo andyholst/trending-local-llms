@@ -215,6 +215,25 @@ def _wired() -> bool:
     return Path(__file__).name in p.stdout
 
 
+def test_the_fixer_skill_names_the_openspec_failures():
+    """issue #560: a skill that does not name the failure it is handed makes the agent ask — rc=3.
+
+    fix-bot run 40177729642 burned all three rounds on `[openspec-tasks] FAIL …: unchecked task
+    checkbox(es)`, and every round died with `Input required; detached without cancelling` because
+    `pr-fix` said nothing about the OpenSpec gate. Before the seam landed the same loop went green
+    in 1-2 rounds. The skill must name each OpenSpec failure and its remedy.
+    """
+    skill = (SKILLS / "pr-fix" / "SKILL.md").read_text()
+    for needle, why in (
+        ("unchecked task checkbox", "an unticked checklist is ticked only when its step is done"),
+        ("make openspec-index", "a stale index is regenerated, never hand-edited"),
+        ("openspec validate", "a spec that does not validate is fixed, not the check"),
+        ("make openspec-archive", "a merged PR's change is archived, not edited"),
+        ("never turned into a question", "the rule that keeps the run from detaching"),
+    ):
+        check(f"pr-fix skill names: {why}", needle in skill, needle)
+
+
 def main() -> int:
     print("agent-leg skills (issue #549)")
     for fn in (test_the_real_legs_preload_a_real_skill,
@@ -223,7 +242,8 @@ def main() -> int:
                test_the_gate_fails_each_defect,
                test_setup_registers_the_directory_and_reads_it_back,
                test_the_workflows_name_rc_3_as_a_question,
-               test_the_gate_is_wired_to_the_lint_target_and_the_suite):
+               test_the_gate_is_wired_to_the_lint_target_and_the_suite,
+               test_the_fixer_skill_names_the_openspec_failures):
         print(f"-- {fn.__name__}")
         fn()
     print(f"\n{_PASS} passed, {_FAIL} failed")

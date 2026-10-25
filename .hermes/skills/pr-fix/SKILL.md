@@ -44,3 +44,23 @@ output plus the list that passed, and hands it to you. Repair what it names.
 - **Engine registry:** only real inference engines. A harness, agent framework, plugin, chat UI or
   benchmark is never registered; leave that failure for a human and say so.
 - **Do not remove an existing model. Do not push or merge.** The loop does the push.
+
+## The OpenSpec gate's own failures (measured: they killed the repair loop)
+
+A red implementer PR is very often a red **OpenSpec** gate, not a data problem, and the check's own
+line names what to do. Never turn it into a question — that detaches the run (rc=3) and the loop
+burns all its rounds:
+
+- **`unchecked task checkbox(es) at lines [n, …]`** — open the change's `tasks.md`. A box may be
+  ticked ONLY when its step is genuinely done and verified; if a step was not done, do it now. If it
+  cannot be done (a write-protected file, a step that needs a human), say so in the PR body and leave
+  the box unticked — never tick a box to make a gate green.
+- **the index is stale / `OPENSPEC.md` is not current** — run `make openspec-index` and keep the
+  regenerated file; never hand-edit it.
+- **a change does not validate** — read `openspec validate`'s own message (a Scenario with no
+  `- **Test:**` line, a Requirement that states no behaviour) and fix the spec, not the check.
+- **`openspec-archive-check`** — an ACTIVE change names a MERGED PR: `make openspec-archive
+  NAME=<change>` then `make openspec-index`, never by editing the marker.
+
+The same rule holds for every other gate: the failure's own output is the instruction. A check that
+names nothing you can act on is reported in the PR body, never turned into a question.
