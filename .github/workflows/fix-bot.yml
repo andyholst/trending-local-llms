@@ -205,7 +205,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-report
-          path: qa-report.txt
+          # The REDACTED agent transcript travels with the report (issue #566). A leg that
+          # detaches (`Input required; detached without cancelling`, rc=3) leaves the run with a
+          # three-line tail and nothing else — measured on run 40180788039, where three rounds died
+          # that way and the artifact held only qa-report.txt, so the question the model asked was
+          # unrecoverable. `hermes-run.log` is the RAW capture and is never uploaded; the scrubbed
+          # copy is the one `make scrub-log` produced.
+          path: |
+            qa-report.txt
+            hermes-run.scrubbed.log
           if-no-files-found: ignore
 
       - name: Commit + push the fix (only when green)
