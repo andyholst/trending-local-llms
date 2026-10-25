@@ -257,7 +257,10 @@ def test_render():
     cols = [c.strip() for c in V._split_row(hdr)]
     check("render: most-loved has a ROCm column after CUDA/Metal/CPU",
           cols[3:7] == ["CUDA t/s (best)", "Metal t/s (best)", "CPU t/s (best)", "ROCm t/s (best)"], cols)
-    loved = next(ln for ln in md.splitlines() if ln.startswith("| [**Radeon Only**]"))
+    # Scoped to the most-loved table: the tier tables above it use the same
+    # `| [**Name**]` row shape with four cells (issue #349).
+    loved_sec = md.split("## ❤️ Most loved", 1)[-1]
+    loved = next(ln for ln in loved_sec.splitlines() if ln.startswith("| [**Radeon Only**]"))
     cells = [c.strip() for c in V._split_row(loved)]
     check("render: most-loved ROCm cell = best Radeon figure (95, vLLM) + '+1 more'",
           cells[6].startswith("**95**") and "+1 more" in cells[6] and cells[3] == "—", cells[3:7])
@@ -307,7 +310,10 @@ def test_validator():
               any("Radeon Only has a ROCm measurement but no row in the ROCm table" in f for f in V.FAILURES),
               V.FAILURES)
     # most-loved ROCm cell not the best
-    loved = next(ln for ln in md.splitlines() if ln.startswith("| [**Radeon Only**]"))
+    # Scoped to the most-loved table: the tier tables above it use the same
+    # `| [**Name**]` row shape with four cells (issue #349).
+    loved_sec = md.split("## ❤️ Most loved", 1)[-1]
+    loved = next(ln for ln in loved_sec.splitlines() if ln.startswith("| [**Radeon Only**]"))
     with TempReadme(md.replace(loved, loved.replace("**95** t/s", "**60** t/s", 1))):
         run_quiet(V.check_readme_measurements, s)
         check("validator: most-loved ROCm cell not the best -> FAIL",

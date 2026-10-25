@@ -438,16 +438,65 @@ def mode_adopt(args: argparse.Namespace) -> int:
     remote_exists = git(["ls-remote", "--exit-code", "--heads", args.remote, branch],
                         cwd).returncode == 0
 
+    # THE TREE IS DIRTY BY DESIGN: it holds the implementation being adopted. `git checkout`
+    # (and `-B`) refuses to move HEAD when the target branch differs from the current commit
+    # and the working tree would be overwritten — which is exactly the re-run shape: the
+    # issue already has a branch and an open PR (issue #580, measured on run 40199055887,
+    # where ~20 minutes of work were discarded with "Your local changes to the following
+    # files would be overwritten by checkout"). Stash the work, attach the branch, re-apply
+    # it — the work is never dropped: if the re-apply conflicts it stays in the stash AND in
+    # the tree's markers, which the fix loop resolves.
+    dirty = bool(git_out(["status", "--porcelain"], cwd).strip())
+    carried = False
+    # Only an EXISTING branch needs a checkout that moves HEAD. `checkout -b` from HEAD keeps
+    # the working tree as it is, so the cut path is left exactly as it was.
+    if dirty and (local_exists or remote_exists):
+        stash = git(["stash", "push", "--include-untracked", "-m",
+                     f"issue-bot: work carried across adopting {branch}"], cwd)
+        carried = stash.returncode == 0
+
     if local_exists:
-        git_out(["checkout", branch], cwd)          # carries the working tree as it is
-        how = "existing-local"
+        git_out(["checkout", branch], cwd)
+        how = "existing-local" + ("-reapplied" if carried else "")
     elif remote_exists:
         git_out(["fetch", args.remote, f"+refs/heads/{branch}:{remote_ref}"], cwd)
         git_out(["checkout", "-B", branch, remote_ref], cwd)
-        how = "existing-remote"
+        how = "existing-remote" + ("-reapplied" if carried else "")
     else:
         git_out(["checkout", "-b", branch], cwd)    # from whatever HEAD holds — the agent's tree
         how = "cut-from-head"
+
+    if carried:
+        if git(["stash", "pop"], cwd).returncode != 0:
+            # A conflicted re-apply must NOT leave conflict markers in the tree: the next step
+            # is `git add -A` + commit, and a marker inside a PARSED file makes every later
+            # `make` die — measured on run 40202490846, where the markers landed in the
+            # Makefile and `make base-rebase` stopped with `Makefile:588: missing separator`
+            # before anything was pushed (issue #583).
+            #
+            # The work being carried is THIS RUN's implementation, written against the base as
+            # it is now; the branch's copy is the older attempt. So the conflicted paths keep
+            # THE WORK (`--theirs` of a stash pop) and are staged, and the tree stays parseable.
+            conflicted = [p for p in
+                          git_out(["diff", "--name-only", "--diff-filter=U"], cwd).splitlines()
+                          if p.strip()]
+            kept: list[str] = []
+            for path in conflicted:
+                if git(["checkout", "--theirs", "--", path], cwd).returncode == 0:
+                    git(["add", "--", path], cwd)
+                    kept.append(path)
+            leftover = [p for p in
+                        git_out(["diff", "--name-only", "--diff-filter=U"], cwd).splitlines()
+                        if p.strip()]
+            print(f"merge_conflict={','.join(kept) or 'true'}")
+            if leftover:
+                print(f"WARNING: could not take this run's side of {', '.join(leftover)} — the "
+                      f"work for those paths stays in `git stash list` (issue #583).",
+                      file=sys.stderr)
+            else:
+                print(f"NOTE: re-applied this run's work onto {branch}, taking the WORK on the "
+                      f"{len(kept)} path(s) the branch had also changed ({', '.join(kept)}); no "
+                      f"conflict marker is left in the tree (issue #583).", file=sys.stderr)
 
     head = git_out(["rev-parse", "HEAD"], cwd)
     behind = _count(head, tip, cwd)

@@ -2349,6 +2349,147 @@ def test_a_detached_fix_round_leaves_its_transcript_behind() -> None:
         "hermes-run.scrubbed.log", ""), paths)
 
 
+def test_the_issue_is_re_read_right_before_the_agent_starts():
+    """Issue #522: the pick is a SNAPSHOT, so the state is re-read before the spend.
+
+    The pick reads the issue once; the run then checks out, ensures images, smokes the model
+    and reads the thread. `auto-merge` lands PRs continuously, so an issue picked at T can be
+    closed at T+8m — measured on #520's class (run 39612330011) and on #183, where a run
+    implemented for 20 minutes on an issue that no longer existed.
+    """
+    wf = load("issue-bot.yml")
+    job = wf["jobs"]["implement"]
+    ss = steps(job)
+    runs = [str(s.get("run", "")) for s in ss]
+
+    recheck = next((i for i, r in enumerate(runs) if "make issue-state" in r), None)
+    impl = next((i for i, r in enumerate(runs) if "make implement-issue" in r), None)
+    checkout = next((i for i, s in enumerate(ss) if "actions/checkout" in str(s.get("uses", ""))), None)
+
+    check("recheck: a step re-reads the issue's state before implementing",
+          recheck is not None, [s.get("name") for s in ss])
+    check("recheck: it runs BEFORE the agent starts",
+          recheck is not None and impl is not None and recheck < impl, (recheck, impl))
+    check("recheck: it runs AFTER the checkout (a `make` target needs the repo, rule 6d)",
+          recheck is not None and checkout is not None and checkout < recheck, (checkout, recheck))
+    check("recheck: it is the step right before the agent",
+          recheck is not None and impl is not None and impl - recheck == 1, (recheck, impl))
+
+    step_run = runs[recheck] if recheck is not None else ""
+    check("recheck: rc=4 (closed) is a GREEN no-op that comments on the issue",
+          '"$RC" = "4"' in step_run and "gh issue comment" in step_run, step_run[:400])
+    check("recheck: rc=2 (unreadable) fails LOUDLY, never a pass",
+          '"$RC" = "2"' in step_run and "::error" in step_run, step_run[:600])
+    check("recheck: it publishes closed= so the spend steps can skip",
+          "closed=true" in step_run and "closed=false" in step_run, step_run[:600])
+
+    for needle in ("Implement the issue", "Apply the implementer's verdict",
+                   "Did the agent leave work behind?"):
+        st = step(job, needle)
+        check(f"recheck: `{needle}` is gated on the re-read",
+              "steps.recheck.outputs.closed != 'true'" in str(st.get("if", "")), st.get("if"))
+
+    fail_loud = next((s for s in ss if "Fail loudly when the implementation did not happen"
+                      in str(s.get("name", ""))), None)
+    check("recheck: the fail-loud step is gated too, so a closed issue is not reported RED",
+          fail_loud is not None
+          and "steps.recheck.outputs.closed != 'true'" in str(fail_loud.get("if", "")),
+          fail_loud and fail_loud.get("if"))
+
+
+def _makefile_commands() -> dict[str, list[str]]:
+    """Every target's recipe COMMAND lines, comments and blanks skipped."""
+    commands: dict[str, list[str]] = {}
+    target = None
+    for line in (ROOT / "Makefile").read_text().splitlines():
+        if line.startswith("\t"):
+            body = line.strip()
+            if target and body and not body.startswith("#"):
+                commands.setdefault(target, []).append(body)
+            continue
+        m = re.match(r"^([A-Za-z0-9_.-]+)\s*:(?!=)", line)
+        target = m.group(1) if m else None
+    return commands
+
+
+def test_a_recipe_redirected_into_a_file_never_echoes_its_own_command():
+    """Issue #539: `make` echoes each recipe line, and one workflow redirects a target
+    straight into a file another step READS as content.
+
+    Measured: `make issue-thread REPO=… ISSUE=… > issue.md` writes
+    `python3 scripts/issue_thread.py --issue 547 --repo andyholst/trending-local-llms` as
+    the FIRST line of `issue.md` — the file the implementer reads as its specification.
+    The same shape would put an echoed command inside `pr-body.md`, the body GitHub parses
+    for the closing keyword. A redirect into `*.log` is deliberately exempt: a log is
+    captured output, and the echoed command is noise that gets scrubbed anyway.
+    """
+
+    # Given every `make <target> … > <file>` a workflow performs
+    redirected: dict[str, str] = {}
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for i, line in enumerate(wf.read_text().splitlines(), 1):
+            if line.lstrip().startswith("#"):
+                continue  # a comment describing a command is not a redirect
+            # `->` in prose and `|` pipelines are not redirects into a file
+            m = re.search(r"\bmake\s+([a-z][a-z0-9-]*)[^|>]*?(?<![-\d])>>?\s*([^\s`&;]+)", line)
+            if not m or "GITHUB_OUTPUT" in line:
+                continue
+            if m.group(2).endswith(".log"):
+                continue
+            redirected.setdefault(m.group(1), f"{wf.name}:{i}")
+
+    check("make echo: a workflow redirects a make target into a file (non-vacuous)",
+          bool(redirected), redirected)
+
+    # Then  each such recipe is SILENT, so the file holds only the product's own output
+    commands = _makefile_commands()
+    noisy = {t: [c for c in commands.get(t, []) if not c.startswith("@")]
+             for t, _where in redirected.items()}
+    noisy = {t: cmds for t, cmds in noisy.items() if cmds}
+    check("make echo: every redirected recipe is silenced (@), so no echoed command lands in the file",
+          not noisy, noisy)
+
+    # And   the file the implementer reads is one of them (the measured case, issue #539)
+    check("make echo: `make issue-thread > issue.md` is covered by the guard",
+          "issue-thread" in redirected, redirected)
+
+
+def test_a_captured_recipe_is_silent():
+    """Issue #562's follow-up: `OUT=$(make <target>)` captures make's ECHO too.
+
+    Measured in production, twice (runs 40190558547, 40194644167): the sweep's
+    `OUT=$(make issue-pick)` captured `python3 scripts/issue_queue.py --pick …` as its
+    first line, so `PICK="${OUT#issue=}"` became that command plus the value, the step
+    refused it as "not a number", and the pick job failed — the sweep implemented nothing
+    for two hours. A stub `make` in a test cannot see this; the REAL recipe's echo is the
+    defect, so a captured target must have a silenced recipe for the same reason a
+    redirected one must.
+    """
+    captured: dict[str, str] = {}
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for i, line in enumerate(wf.read_text().splitlines(), 1):
+            if line.lstrip().startswith("#"):
+                continue
+            for m in re.finditer(r"\$\(\s*make\s+([a-z][a-z0-9-]*)|\b([a-z][a-z0-9-]*)\s*=\s*\$\(\s*make\s+([a-z][a-z0-9-]*)", line):
+                target = m.group(1) or m.group(3)
+                if target:
+                    captured.setdefault(target, f"{wf.name}:{i}")
+
+    check("captured make: a workflow captures a make target's stdout (non-vacuous)",
+          bool(captured), captured)
+
+    commands = _makefile_commands()
+    noisy = {t: [c for c in commands.get(t, []) if not c.startswith("@")]
+             for t in captured}
+    noisy = {t: cmds for t, cmds in noisy.items() if cmds}
+    check("captured make: every captured recipe is silenced (@), so the value is the FIRST line",
+          not noisy, noisy)
+
+    # And the measured case is one of them, so the guard cannot pass by looking elsewhere
+    check("captured make: `OUT=$(make issue-pick)` is covered by the guard",
+          "issue-pick" in captured, captured)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2397,6 +2538,9 @@ def main() -> int:
     test_issue_bot_salvages_a_detached_runs_work()
     test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
     test_a_detached_fix_round_leaves_its_transcript_behind()
+    test_a_recipe_redirected_into_a_file_never_echoes_its_own_command()
+    test_a_captured_recipe_is_silent()
+    test_the_issue_is_re_read_right_before_the_agent_starts()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

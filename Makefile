@@ -406,7 +406,7 @@ base-advance: ## Fetch <BASE> and fast-forward this clean checkout onto it (a jo
 # refuses to publish a branch the base has left. Host targets, like their `base-*` kin:
 # git lives on the runner, not in the container.
 refresh-sync: ## Move a refresh's generated tree onto the fetched <BASE>, keeping its raw snapshots (issue #177)
-	python3 scripts/refresh_base.py sync $(if $(BASE),--base $(BASE),)
+	@python3 scripts/refresh_base.py sync $(if $(BASE),--base $(BASE),)
 
 refresh-require-tip: ## Fail unless the refresh branch contains the freshly fetched <BASE> (issue #177)
 	python3 scripts/refresh_base.py require-tip $(if $(BASE),--base $(BASE),)
@@ -1097,7 +1097,7 @@ issue-queue: ## Print the implementer's queue (oldest first) with each issue's w
 # nothing is takeable. No slicing, no second parser in YAML.
 .PHONY: issue-pick
 issue-pick: ## Print the ONE key=value line a sweep reads (`issue=<n>` or `issue=`; issues #547/#548)
-	python3 scripts/issue_queue.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
+	@python3 scripts/issue_queue.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
 
 # The reviewer's VERDICT is a hold, not advice (issue #200): while a verdict label
 # (`needs-refinement`, and the obsolete/duplicate/already-fixed family) is FRESH —
@@ -1128,7 +1128,7 @@ issue-verdict: ## Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<
 # implementer read only the body, so an issue whose fifth comment narrowed the
 # request was implemented wrongly.
 issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>)
-	python3 scripts/issue_thread.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(REPO),--repo $(REPO),)
+	@python3 scripts/issue_thread.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(REPO),--repo $(REPO),)
 
 # The queued-run alarm (issue #252): a job whose runner label matches nothing does not fail —
 # it stays `queued` forever, so the run never concludes and every PR's checks sit at "pending".
@@ -1157,7 +1157,7 @@ code-review-file: ## File ONE issue per NEW code-review finding, capped per run 
 
 .PHONY: review-issue-pick
 review-issue-pick: ## Choose the ONE issue this review run works (action=/issue=/path=)
-	python3 scripts/issue_review.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
+	@python3 scripts/issue_review.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
 
 # Every reviewer target that takes ISSUE= takes the NUMBER the pick printed. A value
 # carrying diagnostics is a parse defect upstream and MUST fail here, naming it,
@@ -1172,7 +1172,7 @@ _review-issue-number:
 # `<!-- issue-review: <ISO8601Z> -->` records the instant for the next run.
 .PHONY: review-issue-mark
 review-issue-mark: _review-issue-number ## Open the reviewer's window on ISSUE= (PATH=body|window)
-	python3 scripts/issue_review.py --mark $(ISSUE) --path $(PATH) $(if $(RUN),--run $(RUN),)
+	@python3 scripts/issue_review.py --mark $(ISSUE) --path $(PATH) $(if $(RUN),--run $(RUN),)
 
 # The TOCTOU re-check, run after the mark and BEFORE the write: the implementer
 # may have started while the review was being prepared, in which case the body
@@ -1183,7 +1183,7 @@ review-issue-guard: _review-issue-number ## Re-check that ISSUE= may still be wr
 
 .PHONY: review-issue-body-hash
 review-issue-body-hash: _review-issue-number ## Print the body hash of ISSUE= (proves the window path edited nothing)
-	python3 scripts/issue_review.py --body-hash $(ISSUE)
+	@python3 scripts/issue_review.py --body-hash $(ISSUE)
 
 .PHONY: review-issue-check-markers
 review-issue-check-markers: _review-issue-number ## Fail when FILE= dropped an invisible marker from ISSUE='s body

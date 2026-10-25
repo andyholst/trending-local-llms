@@ -234,16 +234,50 @@ def run_blocks(text: str) -> str:
     return "\n".join(out)
 
 
+_HEREDOC = re.compile(r"<<-?\s*(['\"]?)(?P<word>[A-Za-z_][A-Za-z0-9_]*)\1")
+_QUOTED = re.compile(r"\"(?:[^\"\\]|\\.)*\"|'[^']*'")
+
+
+def command_text(block: str) -> str:
+    """The parts of a `run:` block a shell would EXECUTE (issue #544).
+
+    Two shapes in a real `run:` block are TEXT, not commands, and both were being
+    read as calls:
+
+    * a HEREDOC body (`cat > f <<'EOF' … make validate … EOF`) — the lines are a
+      file's content, and one of them happening to say `make validate` is prose;
+    * a QUOTED string (`echo "this PR passes make openspec-check"`) — the shell
+      never splits it into a command.
+
+    A `make` inside either is dropped here, so the inventory cannot claim a target
+    the pipeline never runs. Shell comments are left alone on purpose: a `make` a
+    reader can SEE in a step is deliberately still reported.
+    """
+    out: list[str] = []
+    pending: str | None = None
+    for line in block.splitlines():
+        if pending is not None:
+            if line.strip() == pending:
+                pending = None
+            continue
+        m = _HEREDOC.search(line)
+        if m:
+            pending = m.group("word")
+        out.append(_QUOTED.sub(" ", line))
+    return "\n".join(out)
+
+
 def workflow_targets(text: str, targets: set[str]) -> list[str]:
     """The `make` targets a workflow's steps call, in first-use order.
 
     Only a target the Makefile really defines is reported — a word in prose that
-    happens to follow `make` is not a call — and a dynamic call
+    happens to follow `make` is not a call, and neither is one inside a heredoc body
+    or a quoted string (`command_text`, issue #544) — and a dynamic call
     (`make search-${{ matrix.backend }}`) is rendered as its static prefix plus
     `*`, so the inventory never claims a target name that does not exist.
     """
     seen: list[str] = []
-    for m in _MAKE_CALL.finditer(run_blocks(text)):
+    for m in _MAKE_CALL.finditer(command_text(run_blocks(text))):
         raw = m.group(1)
         tail = m.string[m.end():]
         # `make search-${{ matrix.backend }}` captures `search-` (the class allows a

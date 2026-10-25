@@ -183,6 +183,61 @@ def test_refine_posts_one_restatement_and_labels_the_issue():
     check("refine: it never closes", "issue close" not in calls, calls)
 
 
+def test_a_wrapped_restatement_is_posted_whole():
+    """Issue #450: a restatement is a SENTENCE, and a model wraps it.
+
+    The parser read one line, so a wrapped restatement was posted as its first line
+    only — `The issue's top-ranked gap cannot be implemented as written, and the` —
+    which left the human it hands the issue to with nothing to apply.
+    """
+
+    # Given a restatement that continues on the next line
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "TRIAGE: refine\n"
+        "REFINED: The gap cannot be implemented as written, because the card tier table\n"
+        "and the README disagree about 8 GB until the vram_need fix lands.\n"
+        "EVIDENCE: scripts/update_trending.py:1412\n"))
+
+    # Then  the WHOLE sentence is posted, not its first line
+    check("refine(wrapped): exit 0", rc == 0, out)
+    check("refine(wrapped): the continuation reaches the comment",
+          "until the vram_need fix lands." in calls, calls)
+    check("refine(wrapped): it is still ONE comment",
+          calls.count("issue comment") == 1, calls)
+
+    # And   it is still labelled, and still never closes
+    check("refine(wrapped): agent:refined is applied", "agent:refined" in calls, calls)
+    check("refine(wrapped): it never closes", "issue close" not in calls, calls)
+
+
+def test_a_truncated_restatement_is_refused():
+    """Issue #450: a restatement that stops on `and the` is a CUT, not a decision.
+
+    Measured: `REFINED: The issue's top-ranked gap cannot be implemented as written, and
+    the` was posted as the whole restatement. A truncated restatement is worse than none —
+    it looks like a decision and cannot be applied — so it is refused before any write.
+    """
+
+    # Given a restatement that ends on a word no sentence ends with
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "TRIAGE: refine\n"
+        "REFINED: The issue's top-ranked gap cannot be implemented as written, and the\n"
+        "EVIDENCE: scripts/data_gap_analysis.py:280\n"))
+
+    # Then  it refuses, naming the defect, and writes nothing
+    check("refine(truncated): exits non-zero", rc != 0, out)
+    check("refine(truncated): it says the restatement is cut",
+          "REFUSED" in out and "mid-sentence" in out, out)
+    check("refine(truncated): no comment and no label",
+          "issue comment" not in calls and "--add-label" not in calls, calls)
+
+    # And   a COMPLETE one-line restatement still passes (the guard is not a length gate)
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"],
+                            verdict="TRIAGE: refine\nREFINED: scope it to the ROCm table only\n")
+    check("refine(complete): still accepted", rc == 0 and "issue comment" in calls,
+          (rc, out[-200:]))
+
+
 def test_close_requires_evidence_and_posts_reason_with_it():
     """Closing without proof is how a real gap gets buried — so it is refused."""
 
@@ -442,6 +497,8 @@ def main() -> int:
     test_an_issue_with_no_comments_says_so_and_an_unreadable_one_fails()
     test_implement_applies_nothing()
     test_refine_posts_one_restatement_and_labels_the_issue()
+    test_a_wrapped_restatement_is_posted_whole()
+    test_a_truncated_restatement_is_refused()
     test_close_requires_evidence_and_posts_reason_with_it()
     test_an_unreadable_verdict_is_never_guessed_at()
     test_a_decorated_verdict_is_read_and_a_near_miss_is_not_guessed_at()

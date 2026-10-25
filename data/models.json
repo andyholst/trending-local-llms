@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-25T12:46:27Z",
+  "generated_utc": "2026-10-25T15:14:56Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -1567,6 +1567,23 @@
         },
         {
           "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop (25 GPU layers, rest CPU/RAM), Intel i7-12700H, 16GB dual-channel DDR4, PCIe 4",
+          "quant": "Unsloth IQ4_XS (~14.6GB); Q4_0 KV cache, native MTP draft, 64K context; ~150 tok/s prefill",
+          "date": "2026-09-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955",
+          "likes": 131,
+          "comments": 15,
+          "reshares": 132,
+          "views": 15074,
+          "interactions": 15230,
+          "context_tokens": "64000",
+          "system_ram_min": "16GB",
+          "weight_gb": "14.6GB IQ4_XS",
+          "engine_min_version": "25 GPU layers offloaded, Q4_0 KV cache, native MTP"
+        },
+        {
+          "engine": "llama.cpp",
           "tps": "33",
           "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtek Evo-X2)",
           "quant": "Q3_K_XL, 64K context, vision enabled, portable 'Vulcan' build; ~33 tok/s total shared across four concurrent lanes",
@@ -2865,8 +2882,8 @@
         "posts_7d": 45,
         "score_7d": 112.4,
         "buzz_7d": 112.4,
-        "speed_bonus": 11.5,
-        "trend_score": 123.9
+        "speed_bonus": 5.7,
+        "trend_score": 118.1
       },
       "last_seen": "2026-10-25",
       "engine_aliases": {
@@ -6904,6 +6921,23 @@
           "views": 907,
           "interactions": 0,
           "engine_min_version": "latest MLX framework (Apple MLX distributed inference)"
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Mac Studio M5 Ultra (unified memory, Thunderbolt-linked)",
+          "quant": "816B MoE NVFP4 open weights across four Apple Silicon machines over Thunderbolt; Apple reports 16-37 tok/s depending on the number of Studios",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/sheik_gulfaan/status/2111801714110337311",
+          "likes": 92,
+          "comments": 1,
+          "reshares": 1,
+          "views": 130,
+          "interactions": 107,
+          "context_tokens": "1M",
+          "system_ram_min": "4x 512GB Mac Studios",
+          "weight_gb": "~493GB NVFP4",
+          "engine_min_version": "mlx-vlm recent development build"
         },
         {
           "engine": "SGLang",
@@ -15202,23 +15236,10 @@
           "quant": "Q4_K_M, CPU-only, patched llama.cpp build; 12-15 t/s reported",
           "date": "2026-10-07",
           "source_post": "https://lightbrd.com/TeksEdge/status/2107652135479332932",
-          "likes": 5,
-          "comments": 21,
-          "reshares": 0,
-          "views": 1621,
-          "interactions": 0
-        },
-        {
-          "engine": "llama.cpp",
-          "tps": "15",
-          "hardware": "Ryzen 7 7800X3D (CPU-only), 128GB RAM",
-          "quant": "Q4_K_M, community GGUF conversion, patched llama.cpp build; 12-15 t/s reported across five CPU-only tests",
-          "date": "2026-10-07",
-          "source_post": "https://lightbrd.com/TeksEdge/status/2107652135479332932",
           "likes": 1649,
-          "comments": 5,
+          "comments": 21,
           "reshares": 21,
-          "views": 0,
+          "views": 1621,
           "interactions": 0
         }
       ],
@@ -15238,12 +15259,12 @@
             "date": "2026-10-07",
             "engine": "llama.cpp",
             "tps": "15",
-            "hardware": "Ryzen 7 7800X3D (CPU-only), 128GB RAM",
-            "quant": "Q4_K_M, community GGUF conversion, patched llama.cpp build; 12-15 t/s reported across five CPU-only tests",
+            "hardware": "Ryzen 7 7800X3D CPU, 128GB RAM",
+            "quant": "Q4_K_M, CPU-only, patched llama.cpp build; 12-15 t/s reported",
             "likes": 1649,
-            "comments": 5,
+            "comments": 21,
             "reshares": 21,
-            "views": 0
+            "views": 1621
           }
         ],
         "posts_7d": 0,
@@ -15737,7 +15758,12 @@
           "hardware": "RTX 4090 Laptop",
           "quant": "Q4",
           "date": "2026-09-19",
-          "source_post": "https://lightbrd.com/"
+          "source_post": "https://lightbrd.com/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         },
         {
           "engine": "llama.cpp",
@@ -15745,7 +15771,12 @@
           "hardware": "Apple Silicon",
           "quant": "Q4",
           "date": "2026-09-19",
-          "source_post": "https://lightbrd.com/"
+          "source_post": "https://lightbrd.com/",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
         }
       ],
       "why": "Best overall personal-agent model. Multimodal + audio, 256K ctx.",

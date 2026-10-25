@@ -368,6 +368,61 @@ def test_adopt_attaches_an_existing_branch_instead_of_recutting_it(tmp: Path) ->
           (fx["ci"] / "f.txt").read_text().endswith("work\n"), (fx["ci"] / "f.txt").read_text())
 
 
+def test_adopt_carries_uncommitted_work_onto_an_existing_branch(tmp: Path) -> None:
+    """Issue #580, measured on run 40199055887: a RE-RUN of an issue that already has a branch.
+
+    `git checkout -B <branch> origin/<branch>` refuses when the working tree is dirty —
+    and the tree is dirty BY DESIGN (it holds the implementation). The run therefore died with
+    "Your local changes to the following files would be overwritten by checkout" after ~20
+    minutes of work, and nothing was committed, pushed or opened as a PR.
+    """
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    # `f.txt` is the file the remote branch itself changed — an uncommitted edit to it is
+    # exactly what `checkout -B <branch> origin/<branch>` refuses to overwrite.
+    (ci / "f.txt").write_text("base\nMINE\n")
+    (ci / "impl.py").write_text("print(7)\n")          # a new file the agent added
+    (ci / "notes.md").write_text("scratch\n")          # …and an untracked one
+
+    proc = run_script("adopt", ci, "--branch", "ci/data-gap-1-x")
+
+    # Then  it does not refuse, and the work is on the branch
+    check("adopt(dirty re-run): it does NOT refuse the dirty tree (issue #580)",
+          proc.returncode == 0, proc.stderr[-400:])
+    check("adopt(dirty re-run): it says the work was carried across",
+          "how=existing-remote-reapplied" in proc.stdout, proc.stdout)
+    check("adopt(dirty re-run): HEAD is the existing branch, not a re-cut",
+          git(["rev-parse", "--abbrev-ref", "HEAD"], ci).stdout.strip() == "ci/data-gap-1-x",
+          git(["rev-parse", "--abbrev-ref", "HEAD"], ci).stdout)
+    tip_text = git(["show", "ci/data-gap-1-x:f.txt"], ci).stdout
+    check("adopt(dirty re-run): the earlier branch commit is still there",
+          tip_text.endswith("work\n"), tip_text)
+
+    # And   the agent's work is KEPT — restored cleanly, or (when it touches the same line the
+    #       branch changed) preserved as a conflict the next round resolves, never dropped.
+    ftext = (ci / "f.txt").read_text()
+    stashed = "issue-bot: work carried" in git(["stash", "list"], ci).stdout
+    check("adopt(dirty re-run): the tracked edit is kept (restored or carried, never lost)",
+          "MINE" in ftext or stashed, (ftext, stashed))
+    check("adopt(dirty re-run): a conflicting path keeps THIS RUN's side, not the branch's",
+          ftext == "base\nMINE\n", ftext)
+
+    # Issue #583: the commit step is `git add -A`, so a marker left in a PARSED file makes
+    # every later `make` die — measured on run 40202490846 (`Makefile:588: missing separator`).
+    markers = git(["grep", "-l", "^<<<<<<<"], ci).stdout.strip()
+    check("adopt(dirty re-run): NO conflict marker is left in the tree (issue #583)",
+          markers == "", markers)
+    check("adopt(dirty re-run): the resolution is reported, naming the path(s)",
+          "merge_conflict=f.txt" in proc.stdout, proc.stdout[-400:])
+    check("adopt(dirty re-run): the new file survived",
+          (ci / "impl.py").read_text() == "print(7)\n", (ci / "impl.py").read_text())
+    check("adopt(dirty re-run): the untracked file survived",
+          (ci / "notes.md").read_text() == "scratch\n", "")
+    check("adopt(dirty re-run): the work is still uncommitted, for the commit step to take",
+          "impl.py" in git(["status", "--porcelain"], ci).stdout,
+          git(["status", "--porcelain"], ci).stdout)
+
+
 def test_rebase_brings_the_commit_onto_the_fetched_tip(tmp: Path) -> None:
     fx = fixture(tmp)
     ci = fx["ci"]
@@ -510,6 +565,7 @@ def main() -> int:
         test_resume_of_a_missing_branch_points_at_new(tmp / "c10")
         test_adopt_cuts_the_branch_from_a_behind_head_and_keeps_the_work(tmp / "c11")
         test_adopt_attaches_an_existing_branch_instead_of_recutting_it(tmp / "c12")
+        test_adopt_carries_uncommitted_work_onto_an_existing_branch(tmp / "c12b")
         test_rebase_brings_the_commit_onto_the_fetched_tip(tmp / "c13")
         test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp / "c14")
         test_rebase_refuses_a_tree_with_uncommitted_changes(tmp / "c15")
