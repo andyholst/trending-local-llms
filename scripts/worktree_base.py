@@ -438,16 +438,43 @@ def mode_adopt(args: argparse.Namespace) -> int:
     remote_exists = git(["ls-remote", "--exit-code", "--heads", args.remote, branch],
                         cwd).returncode == 0
 
+    # THE TREE IS DIRTY BY DESIGN: it holds the implementation being adopted. `git checkout`
+    # (and `-B`) refuses to move HEAD when the target branch differs from the current commit
+    # and the working tree would be overwritten — which is exactly the re-run shape: the
+    # issue already has a branch and an open PR (issue #580, measured on run 40199055887,
+    # where ~20 minutes of work were discarded with "Your local changes to the following
+    # files would be overwritten by checkout"). Stash the work, attach the branch, re-apply
+    # it — the work is never dropped: if the re-apply conflicts it stays in the stash AND in
+    # the tree's markers, which the fix loop resolves.
+    dirty = bool(git_out(["status", "--porcelain"], cwd).strip())
+    carried = False
+    # Only an EXISTING branch needs a checkout that moves HEAD. `checkout -b` from HEAD keeps
+    # the working tree as it is, so the cut path is left exactly as it was.
+    if dirty and (local_exists or remote_exists):
+        stash = git(["stash", "push", "--include-untracked", "-m",
+                     f"issue-bot: work carried across adopting {branch}"], cwd)
+        carried = stash.returncode == 0
+
     if local_exists:
-        git_out(["checkout", branch], cwd)          # carries the working tree as it is
-        how = "existing-local"
+        git_out(["checkout", branch], cwd)
+        how = "existing-local" + ("-reapplied" if carried else "")
     elif remote_exists:
         git_out(["fetch", args.remote, f"+refs/heads/{branch}:{remote_ref}"], cwd)
         git_out(["checkout", "-B", branch, remote_ref], cwd)
-        how = "existing-remote"
+        how = "existing-remote" + ("-reapplied" if carried else "")
     else:
         git_out(["checkout", "-b", branch], cwd)    # from whatever HEAD holds — the agent's tree
         how = "cut-from-head"
+
+    if carried:
+        if git(["stash", "pop"], cwd).returncode != 0:
+            # The stash entry SURVIVES a failed pop, so nothing is lost: the work is both in
+            # `git stash list` and in the tree's conflict markers for the next round.
+            conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], cwd).strip()
+            print(f"WARNING: re-applying this run's work onto {branch} conflicted "
+                  f"({conflicted or 'see git status'}) — the work is KEPT in the stash and in the "
+                  f"tree's markers; a fix round resolves it (issue #580).", file=sys.stderr)
+            print("merge_conflict=true")
 
     head = git_out(["rev-parse", "HEAD"], cwd)
     behind = _count(head, tip, cwd)
