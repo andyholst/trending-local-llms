@@ -8,13 +8,14 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **128** · archived: **9**
+Active changes: **129** · archived: **9**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `a-footprint-is-only-ever-raised` | active | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/a-footprint-is-only-ever-raised/proposal.md) |
+| `a-fresh-red-sweep-is-loud` | active | — | — | [sweep-delivery-alarm](openspec/changes/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-silent-pr-is-an-alarm` | active | #442 (filed with two live measurements) | — | [pr-health](openspec/changes/a-silent-pr-is-an-alarm/specs/pr-health/spec.md) | 9/9 | [proposal.md](openspec/changes/a-silent-pr-is-an-alarm/proposal.md) |
 | `adopt-then-rebase-the-base` | active | #500 (measured: run 39548077538 discarded a finished implementation because `master` moved | — | [bot-coordination](openspec/changes/adopt-then-rebase-the-base/specs/bot-coordination/spec.md) | 12/12 | [proposal.md](openspec/changes/adopt-then-rebase-the-base/proposal.md) |
 | `agent-identity-one-definition` | active | #325 — `tech-debt: The agent identity is a literal repeated in every committing workflow` | — | [agent-identity](openspec/changes/agent-identity-one-definition/specs/agent-identity/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-identity-one-definition/proposal.md) |

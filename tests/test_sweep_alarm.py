@@ -103,13 +103,37 @@ def test_no_delivery_at_all_is_a_verdict_and_never_a_pass():
           verdict)
 
 
-def test_a_red_last_delivery_is_named_even_when_it_is_fresh():
-    """'Red on every run' must not read as health: the last conclusion is rendered."""
-    rows = _rows([("2026-10-21T01:41:54Z", "failure")])
+def test_a_red_last_delivery_is_loud_even_when_it_is_FRESH():
+    """Issue #498: a sweep that ran and failed is a VERDICT, not a fresh delivery.
+
+    This case used to run a delivery 4.8 h old — outside MAX_AGE_HOURS — so it passed on the
+    staleness path and proved nothing about freshness. The measured failure is exactly the
+    opposite: `pick` died at 11:50 and 12:46 and the alarm said OK both times because the
+    run existed and was recent.
+    """
+    rows = _rows([("2026-10-21T06:00:00Z", "failure")])          # 30 minutes old
     now = dt.datetime(2026, 10, 21, 6, 30, tzinfo=U)
     verdict = S.stale(rows, now, 3.0)
+
+    # Then  freshness does NOT excuse it
+    check("fresh-red: a fresh FAILED delivery is a verdict", verdict is not None, verdict)
+    check("fresh-red: the verdict is marked fresh, so it is not read as a dropped cron",
+          verdict is not None and verdict.get("fresh") is True, verdict)
+    check("fresh-red: the reason names the conclusion",
+          verdict is not None and "failure" in verdict["reason"], verdict)
     text = S.render(verdict, rows, 3.0)
-    check("colour: the render names a non-success delivery", "was failure" in text, text[:300])
+    check("fresh-red: the render says FRESH and that the queue did not drain",
+          "FRESH" in text and "did not drain" in text, text[:400])
+    check("fresh-red: it still names the run", "run/0" in text, text[:400])
+
+    # And   a fresh SUCCESS is still health
+    ok = S.stale(_rows([("2026-10-21T06:00:00Z", "success")]), now, 3.0)
+    check("fresh-red: a fresh successful delivery is still OK", ok is None, ok)
+
+    # And   a fresh CANCELLED delivery (the concurrency key) is loud too
+    cancelled = S.stale(_rows([("2026-10-21T06:00:00Z", "cancelled")]), now, 3.0)
+    check("fresh-red: a cancelled sweep is not health either",
+          cancelled is not None and "cancelled" in cancelled["reason"], cancelled)
 
 
 def test_the_cli_exit_codes_are_loud_in_every_direction():
@@ -126,6 +150,17 @@ def test_the_cli_exit_codes_are_loud_in_every_direction():
           and "FAIL" in stale.stdout, (stale.returncode, stale.stdout[-200:]))
     check("cli: a fresh delivery exits 0 and says OK", fresh.returncode == 0
           and "OK" in fresh.stdout, (fresh.returncode, fresh.stdout[-200:]))
+
+    # And a FRESH delivery that FAILED is red through the CLI too (issue #498): the alarm
+    # job's whole value is its exit code, so the decision must reach it.
+    with tempfile.TemporaryDirectory() as td:
+        env = _stub(td, [("2026-10-21T01:41:54Z", "failure")])
+        fresh_red = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
+                                    "--now", "2026-10-21T02:00:00Z"],
+                                   capture_output=True, text=True, env=env)
+    check("cli: a fresh FAILED delivery exits 1 and says FRESH",
+          fresh_red.returncode == 1 and "FRESH" in fresh_red.stdout,
+          (fresh_red.returncode, fresh_red.stdout[-300:]))
 
     with tempfile.TemporaryDirectory() as td:
         env = _stub(td, [], fail=True)
@@ -156,7 +191,7 @@ def main() -> int:
     print("sweep alarm: a dropped cron has no run to look at (issue #497)")
     test_the_measured_gaps_are_stale_and_a_fresh_delivery_is_not()
     test_no_delivery_at_all_is_a_verdict_and_never_a_pass()
-    test_a_red_last_delivery_is_named_even_when_it_is_fresh()
+    test_a_red_last_delivery_is_loud_even_when_it_is_FRESH()
     test_the_cli_exit_codes_are_loud_in_every_direction()
     test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
