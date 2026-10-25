@@ -85,11 +85,31 @@ def git(args: list[str], cwd: str | Path | None = None) -> subprocess.CompletedP
 
 
 def git_out(args: list[str], cwd: str | Path | None = None) -> str:
+    """`git <args>`'s stdout with BOTH ENDS STRIPPED — for a value, never for a record.
+
+    A porcelain/`-z` record's FIRST byte is data: `git status --porcelain` writes `XY<space>PATH`,
+    so stripping a line drops the leading status space and shifts the path — a modified
+    `README.md` was parsed as `EADME.md` by the first `refresh_base._dirty_paths` (issue #504).
+    A parser of records must use `git_raw`, which returns stdout untouched.
+    """
     proc = git(args, cwd)
     if proc.returncode != 0:
         raise Refused(f"`git {' '.join(args)}` failed ({proc.returncode}): "
                       f"{proc.stderr.strip() or proc.stdout.strip()}")
     return proc.stdout.strip()
+
+
+def git_raw(args: list[str], cwd: str | Path | None = None) -> str:
+    """`git <args>`'s stdout EXACTLY as git wrote it — the read for a porcelain/`-z` record.
+
+    Same failure reporting as `git_out`, and the same `git` call, so the only difference a caller
+    has to reason about is the stripping (issue #504).
+    """
+    proc = git(args, cwd)
+    if proc.returncode != 0:
+        raise Refused(f"`git {' '.join(args)}` failed ({proc.returncode}): "
+                      f"{proc.stderr.strip() or proc.stdout.strip()}")
+    return proc.stdout
 
 
 def repo_root(cwd: str | Path | None = None) -> Path:

@@ -37,6 +37,9 @@ from pathlib import Path
 from wiring import wired  # noqa: E402  (issues #176/#192)
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import worktree_base as WB  # noqa: E402  (the REAL module: #504 is about its two reads)
 SCRIPT = ROOT / "scripts" / "worktree_base.py"
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
 ISSUE_BOT = (ROOT / ".github" / "workflows" / "issue-bot.yml").read_text(encoding="utf-8")
@@ -154,6 +157,35 @@ def test_adopt_still_resumes_a_reruns_own_branch(tmp: Path) -> None:
     p = run_script("adopt", ci, "--branch", "ci/data-gap-9-own", env={"RESUME_MAX_AHEAD": "2"})
     check("adopt(own): a branch carrying this run's one commit is still adopted",
           p.returncode == 0 and "how=existing-remote" in p.stdout, (p.returncode, p.stdout, p.stderr))
+def test_git_out_strips_and_git_raw_does_not(tmp: Path) -> None:
+    """Issue #504: `git_out` strips, so a porcelain parser built on it shifts the path.
+
+    `git status --porcelain` writes `XY<space>PATH`: the FIRST byte of a modified entry is a
+    space, and a stripped read turns `README.md` into `EADME.md`. The trap is silent, so the module
+    now names both reads and this test pins the difference.
+    """
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    (ci / "README.md").write_text("modified\n")     # untracked; porcelain reports "?? README.md"
+    (ci / "f.txt").write_text("base\nchanged\n")   # modified: porcelain reports " M f.txt"
+
+    raw = WB.git_raw(["status", "--porcelain"], ci)
+    stripped = WB.git_out(["status", "--porcelain"], ci)
+    check("git_raw: the leading status byte survives (it is DATA)",
+          any(line.startswith(" M ") for line in raw.splitlines()), raw)
+    check("git_out: the same read is stripped, so the leading status space is gone",
+          any(line.startswith("M ") for line in stripped.splitlines()), stripped)
+
+    # The trap itself: a naive porcelain parser on the STRIPPED read loses the first character.
+    def paths_from(text: str) -> list[str]:
+        return [line[3:].strip() for line in text.splitlines() if len(line) > 3]
+
+    check("git_raw: a porcelain parser reads the whole path",
+          "f.txt" in paths_from(raw) and "README.md" in paths_from(raw), paths_from(raw))
+    check("git_out: the same parser mangles the first path (the #504 trap)",
+          "f.txt" not in paths_from(stripped), paths_from(stripped))
+    check("git_raw: `-z` records keep their NUL separators",
+          "\0" in WB.git_raw(["status", "--porcelain", "-z"], ci), "")
 
 
 def test_check_is_fresh_on_a_fresh_checkout(tmp: Path) -> None:
@@ -610,6 +642,7 @@ def main() -> int:
     print("where work starts: a worktree off the freshly fetched base (issue #271)")
     tmp = Path(tempfile.mkdtemp(prefix="wt-base-"))
     try:
+        test_git_out_strips_and_git_raw_does_not(tmp / "c0c")
         test_adopt_refuses_a_branch_that_is_not_this_runs_work(tmp / "c0a")
         test_adopt_still_resumes_a_reruns_own_branch(tmp / "c0b")
         test_check_is_fresh_on_a_fresh_checkout(tmp / "c1")
