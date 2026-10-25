@@ -263,8 +263,26 @@ keep it honest (issue #207):
 
 | Target | What it does |
 |---|---|
-| `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`) or a tracked Python module raises a `SyntaxWarning` on compile (`scripts/lint_syntax.py`); both use `git ls-files` as the file set. The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
+| `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`) or a tracked Python module raises a `SyntaxWarning` on compile (`scripts/lint_syntax.py`); both use `git ls-files` as the file set. It ALSO runs `make check-agent-skills` (`scripts/check_agent_skills.py`), so a bot leg that lost its project skill reds the same gate. The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
 | `lint-fix` | Append exactly one newline to each offending file (idempotent) — the repair half, with `.editorconfig` as the editor-side rule |
+| `check-agent-skills` | Fail when a `hermes -z` leg preloads no skill, names one that does not exist, preloads a skill whose frontmatter `name` disagrees with its directory or that lost `## Inputs`/`## Output`/`## Rules`, inlines the unattended contract, or grew past its pointer budget — and when the `Makefile` lost the seam documentation or the registration target (`scripts/check_agent_skills.py`, issue #549) |
+| `agent-skills-report` | Print every leg with its prompt size and preloaded skills, and every skill's frontmatter, plus whether `AGENTS.md` already states the owed rule for it (report-only) |
+| `hermes-skills-register` | Register this checkout's `.hermes/skills` in the container's Hermes home so `hermes -s <name>` resolves (`scripts/hermes_skills_register.py`); `_setup` runs it and reads it back with `_hermes-skills-check` |
+
+### The bots' contracts live in project skills (issue #549)
+
+| Skill | Which leg preloads it | What it is |
+|---|---|---|
+| `.hermes/skills/bot-unattended` | every leg, beside its own | The unattended contract, written ONCE: never ask a question, never wait for input, decide from the input and write only the file your own skill names. `--yolo --accept-hooks` answers shell and hook prompts but NOT the agent's `clarify`, so a run that asks exits 3 with the tree untouched |
+| `.hermes/skills/data-search` | `_search-nvidia`, `_search-metal`, `_search-cpu`, `_search-amd` | One backend's refresh search: lightbrd.com through the Firecrawl scrape API with the key read by NAME, one query at a time, per-query `--write-raw`, clean `tps`, the exact `source_post` with its engagement counters, never fabricate |
+| `.hermes/skills/issue-implement` | `_implement-issue` | Triage `issue.md` against the fetched tree first (implement / refine / close-with-evidence), then OpenSpec-first, additive-only, findings-as-issues, the gates |
+| `.hermes/skills/issue-review` | `_review-issue`, `_review-issue-window` | The reviewer's two paths: refine the body, or reply once with evidence while the body is off-limits; markers survive, no `gh` writes |
+| `.hermes/skills/pr-fix` | `_fix` | Repair a red PR from `qa-report.txt`: the failing checks, never the report, never a weakened test, contract evolution and link repair |
+
+The directory is registered in the container's Hermes home by `_setup`
+(`scripts/hermes_skills_register.py`, read back by `_hermes-skills-check`), and each leg's inline
+prompt is a pointer plus that run's parameters — `scripts/check_agent_skills.py` fails a leg that
+breaks any of it.
 
 ### Where work starts — the base is fetched and asserted (rule 6n, issue #271)
 
@@ -509,6 +527,8 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/openspec_index.py` | Renders / verifies the root `OPENSPEC.md` from `openspec/changes/**`; `discover()` takes the changes directory (the lifecycle guard reads the same layout through it) |
 | `scripts/openspec_archive_check.py` | The lifecycle's end (rule 6f, issue #183): fails when an ACTIVE change's `PR:` line names a MERGED pull request, naming the change, the PR and the two commands (`make openspec-archive`, `make openspec-index`); skips a change with no `PR:` line and archived changes; exits 2 — never 0 — when the GitHub read fails. PR state via `gh api …/pulls/<n> --jq .merged` |
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |
+| `scripts/check_agent_skills.py` | The bots' contract gate (issue #549): every `hermes -z` leg must preload a project skill and `bot-unattended`; the named skill must exist with a matching frontmatter `name` and `## Inputs`/`## Output`/`## Rules`; no recipe may inline the unattended contract; a leg's prompt stays under the pointer budget; the `Makefile` keeps the seam and its registration target. `check` exits 1 on any finding, `report` prints every leg and skill |
+| `scripts/hermes_skills_register.py` | Register the checkout's `.hermes/skills` in the Hermes home so `hermes -s <name>` resolves — through `hermes config get/set` (the repo's Python has no PyYAML), idempotent, `--check` verifies without writing, exit 2 on a missing CLI or directory (issue #549) |
 | `scripts/issue_thread.py` | Render an issue's whole thread for the implementer (#210): title, body, every comment oldest-first with author + ISO8601Z, then the decision instruction (`TRIAGE`/`REFINED`/`EVIDENCE`/`REASON`). `--paginate` + `.[]` so a multi-page thread parses |
 | `scripts/issue_verdict.py` | Apply the implementer's verdict, deterministically (#210): the grammar with its refusals (close without evidence, refine without a restatement, unknown verdict), ONE comment + a verified label, or a close with the evidence posted. Reads the decoration a model actually writes — leading markdown, a wrapped or spaced colon, a case-different key, emphasis/quotes around the value and a trailing reason after the verdict word (#245) — while an unknown verdict still refuses. No model, no network beyond the `gh` calls it is told to make |
 | `scripts/issue_queue.py` | The implementer's queue, computed once for both bots: pick order, each candidate's implementer window (`window`/`reason`/`started`), the reviewer's markers and run ids |
@@ -634,7 +654,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 150 make targets, 48 files in `scripts/`)
+### Bots in the tree (11 pipelines, 156 make targets, 50 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -690,7 +710,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `pull_request`, `push`, `workflow_dispatch`
 - **jobs:** `guard`, `validate` (needs `guard`), `live-smoke` (needs `guard`), `dispatch-fixbot` (needs `validate`), `auto-merge` (needs `validate`, `live-smoke`)
-- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, or a tracked Python module raises a SyntaxWarning; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make openspec-archive-check` — Fail when an ACTIVE change names a MERGED PR (rule 6f; host-side: needs gh); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
+- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked, the index current; `make openspec-archive-check` — Fail when an ACTIVE change names a MERGED PR (rule 6f; host-side: needs gh); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
 
 #### `.github/workflows/queued-alarm.yml` — queued-alarm
 
@@ -741,6 +761,7 @@ One line each, taken from the script's own docstring.
 - `scripts/architecture_bot.py` — Keep ARCHITECTURE.md's living inventory true to the tree (issue #479, rule 6h).
 - `scripts/architecture_check.py` — Keep ARCHITECTURE.md true to the repository (rule 6h, issue #178).
 - `scripts/bot_markers.py` — ONE definition of every bot start/end marker — its name, its shape, its parser, its writer
+- `scripts/check_agent_skills.py` — Guard the bots' Hermes project skills (issue #549).
 - `scripts/check_commit_authorship.py` — commit-authorship guard — `make check-commit-authorship` (issue #317).
 - `scripts/check_openspec_tasks.py` — Ensure active OpenSpec changes have ALL task checkboxes completed.
 - `scripts/check_secret_output.py` — No secret VALUE may reach a log, a summary or a process list — for every key, not just one.
@@ -751,6 +772,7 @@ One line each, taken from the script's own docstring.
 - `scripts/env_int.py` — Read an integer setting from the environment — EMPTY means MISSING (issue #487).
 - `scripts/file_findings.py` — File ONE GitHub issue per finding an implementation run recorded.
 - `scripts/fix_loop.sh` — fix_loop.sh — the fix-bot's repair loop (runs on the CI runner / host).
+- `scripts/hermes_skills_register.py` — Register the checkout's `.hermes/skills` with Hermes, so `hermes -s <name>` resolves (issue #549).
 - `scripts/hermes_smoke.sh` — hermes_smoke.sh — prove the search alias is ROUTED and ANSWERS, in seconds.
 - `scripts/hermes_update_needed.sh` — Decide whether a Hermes update should run on this invocation.
 - `scripts/hf_id.py` — One definition of a Hugging Face identifier: `owner/repo`.

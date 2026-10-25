@@ -1272,7 +1272,8 @@ def test_issue_bot():
     check("issue-bot: the issue comment explains the token scope and the fix",
           "Workflows: Read and write" in comment_run and "workflow" in comment_run, "")
     check("issue-bot: the prompt forbids scratch artifacts (no *.patch 'implementation')",
-          "NEVER add scratch artifacts" in (ROOT / "Makefile").read_text(), "")
+          "No `*.patch`" in (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text(),
+          "")
 
     fail_step = step(impl, "Fail loudly")
     check("issue-bot: a missing implementation makes the RUN red at a named step",
@@ -1514,27 +1515,32 @@ def test_implement_prompt_requires_openspec_and_findings():
     mk = (ROOT / "Makefile").read_text()
     recipe = re.search(r"\n_implement-issue:\n((?:\t[^\n]*\n)+)", mk)
     prompt = recipe.group(1) if recipe else ""
+    # Issue #549: the RULES are the implementer's project skill now — the recipe is a pointer plus
+    # that run's parameters. The contract is asserted where it lives, at the same strength.
+    skill = (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text()
 
-    # Given the implementer prompt
-    # When  it is read
-    # Then  the OpenSpec-first rules and the findings rules are all in it
-    check("prompt: requires the tracked change before the code",
-          "make openspec-new" in prompt and "BEFORE you write any code" in prompt, prompt[:400])
-    check("prompt: requires the tasks checklist and the gate",
-          "tasks.md" in prompt and "make openspec-check" in prompt, prompt[:400])
-    check("prompt: requires the root index refresh",
-          "make openspec-index" in prompt, prompt[:400])
-    check("prompt: requires findings.md and its check",
-          "findings.md" in prompt and "make findings-check" in prompt, prompt[:400])
-    check("prompt: forbids fixing a finding inside the change",
-          "NEVER fix a finding in this change" in prompt, prompt[:400])
+    # Given the implementer's contract (its skill) and the recipe that preloads it
+    # When  both are read
+    # Then  the OpenSpec-first rules and the findings rules are all in the skill
+    check("skill: requires the tracked change before the code",
+          "make openspec-new" in skill and "before any code" in skill.lower(), skill[:400])
+    check("skill: requires the tasks checklist and the gate",
+          "tasks.md" in skill and "make openspec-check" in skill, skill[:400])
+    check("skill: requires the root index refresh",
+          "make openspec-index" in skill, skill[:400])
+    check("skill: requires findings.md and its check",
+          "findings.md" in skill and "make findings-check" in skill, skill[:400])
+    check("skill: forbids fixing a finding inside the change",
+          "never fix a finding here" in skill.lower() or "Never fix a finding" in skill, skill[:400])
+    check("prompt: the recipe preloads that skill and the unattended contract",
+          "-s issue-implement,bot-unattended" in prompt, prompt[-200:])
     # And the prompt is still ONE shell command (the alias must stay on the
     # continued line, or hermes auto-routes to whatever provider key is in env).
     # The flag set is one variable (issue #351): `--yolo` alone is not enough,
     # `--accept-hooks` is a separate flag, and a `-z` run that needs input detaches.
     check("prompt: the recipe keeps the `-z` line and the model flags on one command",
           prompt.count('-z "') == 1 and "-m $(HERMES_ALIAS)" in prompt
-          and prompt.rstrip().endswith("$(HERMES_NONINTERACTIVE)"),
+          and "$(HERMES_NONINTERACTIVE)" in prompt,
           prompt[-200:])
 
 
@@ -1780,25 +1786,32 @@ def test_the_reviewer_never_edits_an_issue_inside_a_window():
     check("paths: the reply runs only on the `window` route",
           reply.get("if") == f"{THREAD_GATE} && steps.route.outputs.path == 'window'", reply.get("if"))
 
-    # The two prompts state the hard rule of their path.
+    # The two prompts state the hard rule of their path. Issue #549: the RULES live in the
+    # reviewer's project skill (the recipes are pointers that preload it), so they are asserted
+    # where they live — at the same strength — and the recipes are asserted to preload it.
     body_prompt = makefile.split("_review-issue:")[1].split(".PHONY: review-issue")[0]
     window_prompt = makefile.split("_review-issue-window:")[1].split(".PHONY: review-issue-window")[0]
-    check("prompt(body): it must never implement the issue",
-          "NEVER implement" in body_prompt, body_prompt[:200])
-    check("prompt(body): the markers are byte-identical or the run is wrong",
-          "byte-identical" in body_prompt, "")
-    check("prompt(window): the body is declared off-limits",
-          "OFF-LIMITS" in window_prompt and "issue-body.md" in window_prompt, window_prompt[:200])
-    check("prompt(window): the reply is bounded and must carry evidence",
-          "at most 5 bullets" in window_prompt and "evidence" in window_prompt, "")
-    # The container has no gh (measured: the base image carries none), so every
-    # comment/label write is the workflow's, and the prompts must say so.
-    check("prompt: the container has no gh, so the prompts forbid running it",
-          "NO gh CLI" in body_prompt and "NO gh CLI" in window_prompt, "")
+    review_skill = (ROOT / ".hermes" / "skills" / "issue-review" / "SKILL.md").read_text()
+    check("skill: it must never implement the issue",
+          "Never implement" in review_skill, review_skill[:200])
+    check("skill: the markers are byte-identical or the run is wrong",
+          "byte-identical" in review_skill, "")
+    check("skill(window): the body is declared off-limits",
+          "off-limits" in review_skill.lower() and "issue-body.md" in review_skill, "")
+    check("skill(window): the reply is bounded and must carry evidence",
+          "at most 5 bullets" in review_skill and "evidence" in review_skill, "")
+    check("skill: the container has no gh, so it forbids running it",
+          "no `gh`" in review_skill.lower(), "")
+    check("skill: both paths ship their findings as issues",
+          "findings.md" in review_skill, "")
+    check("prompt(body): the recipe preloads the reviewer's skill",
+          "-s issue-review,bot-unattended" in body_prompt, body_prompt[:200])
+    check("prompt(window): the recipe preloads the reviewer's skill",
+          "-s issue-review,bot-unattended" in window_prompt, window_prompt[:200])
+    check("prompt(window): the recipe names its own path",
+          "WINDOW path" in window_prompt, window_prompt[:200])
     check("review: the refinement clears `needs-refinement` from the workflow, not the agent",
           "remove-label needs-refinement" in all_run, "")
-    check("prompt: both prompts ship their findings as issues",
-          "findings.md" in body_prompt and "findings.md" in window_prompt, "")
 
 
 def test_no_pipeline_opens_a_draft_pr() -> None:
