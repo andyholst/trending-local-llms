@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **132** · archived: **9**
+Active changes: **133** · archived: **9**
 
 ## Active changes
 
@@ -84,6 +84,7 @@ Active changes: **132** · archived: **9**
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |
+| `no-marker-reaches-the-tree` | active | — | — | [bot-commit-safety](openspec/changes/no-marker-reaches-the-tree/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/no-marker-reaches-the-tree/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
 | `one-person-one-identity` | active | #445 (filed first, with the measurement) | — | [commit-authorship](openspec/changes/one-person-one-identity/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/one-person-one-identity/proposal.md) |
 | `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |

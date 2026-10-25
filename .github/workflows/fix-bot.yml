@@ -231,6 +231,9 @@ jobs:
           # skips them. Never name an ignored path in the pathspec (not even as
           # ':!qa-report.txt'): git then exits 1 under bash -e and the green fix
           # is never pushed — that is how every fix-bot push was lost.
+          # Last line of defence (issue #588): a conflict marker from any source stops the
+          # commit here instead of making every later `make` fail on a parsed file.
+          make check-conflict-markers
           git add -A
           git reset -q -- qa-report.txt comment.md 2>/dev/null || true
           if git diff --cached --quiet; then
