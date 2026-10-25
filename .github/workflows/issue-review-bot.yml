@@ -120,13 +120,21 @@ jobs:
           fi
           OUT=$(make review-issue-pick)
           echo "$OUT"
-          # The value is the FIRST token after the key: diagnostics belong on the
-          # `candidate=` lines, and a parser that took the whole tail made ISSUE
-          # `266 position=-1 window=open …` (issue #344, run 39040689085). Every
-          # key is read that way so the class is covered, not this instance.
+          # Every value is a SINGLE TOKEN because the queue producer REFUSES anything
+          # else (`checked()`, issues #547/#548): this step takes the value
+          # WHOLE. Splitting on whitespace silently cut `reason=window open` down to
+          # `reason=window`, and the same split is what once turned ISSUE into
+          # `266 position=-1 window=open …` (issue #344, run 39040689085). A truncated
+          # pick is worse than a refused one, so a non-token value fails HERE.
           for key in action issue path reason; do
-            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1 | awk '{print $1}')
-            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
+            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1)
+            case "$value" in
+              *[[:space:]]*)
+                echo "::error::the pick's ${key}= value carries whitespace: '${value}' - the producer must refuse a non-token value, never let a reader truncate it (issue #548)."
+                exit 1
+                ;;
+            esac
+            printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"
           done
           # A number, or nothing: anything else is the parse defect itself and must
           # fail HERE with its reason, before a job is spent on it.
@@ -135,7 +143,7 @@ jobs:
               echo "Nothing to review this run: every candidate is inside an implementer window."
               ;;
             *)
-              PICKED=$(printf '%s\n' "$OUT" | sed -n 's/^issue=//p' | head -1 | awk '{print $1}')
+              PICKED=$(printf '%s\n' "$OUT" | sed -n 's/^issue=//p' | head -1)
               case "$PICKED" in
                 ''|*[!0-9]*)
                   echo "::error::the pick's issue= value is not an issue number: '$PICKED' - the pick's diagnostics must never ride on the issue= line (issue #344)."

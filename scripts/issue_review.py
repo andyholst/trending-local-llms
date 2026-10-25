@@ -102,10 +102,18 @@ def decide(repo: str, gap_hours: int, now: dt.datetime,
 
 
 def _print_action(decision: dict) -> None:
-    print(f"action={decision['action']}")
-    print(f"issue={decision['issue']}")
-    print(f"path={decision['path']}")
-    print(f"reason={decision['reason']}")
+    """Print the four keys the workflow reads — each VALIDATED as a token (issue #548).
+
+    The reader used to take the first whitespace-delimited token (`awk '{print $1}'`),
+    so a value that ever gained a space was silently cut: `reason=window open` became
+    `reason=window`, and the same split is what once turned ISSUE into a whole tail
+    (issue #344). The producer now refuses such a value instead of letting it reach
+    `$GITHUB_OUTPUT` truncated, so the reader can take the value whole.
+    """
+    print(f"action={iq.checked('action', decision['action'], allowed=('review', 'window', 'none'))}")
+    print(f"issue={iq.checked('issue', decision['issue'])}")
+    print(f"path={iq.checked('path', decision['path'], allowed=('body', 'window', ''))}")
+    print(f"reason={iq.checked('reason', decision['reason'])}")
 
 
 def cmd_pick(repo: str, gap_hours: int, now: dt.datetime, run: str | None = None) -> int:

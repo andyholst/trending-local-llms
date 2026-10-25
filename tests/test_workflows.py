@@ -1211,8 +1211,9 @@ def test_issue_bot():
     # window) has ONE home now — scripts/issue_queue.py, read by both bots — so
     # this test asserts the WIRING and tests/test_issue_review.py asserts the rule
     # itself (rule 6d: a second copy is the defect, not a second assertion).
-    check("issue-bot: the picker reads the shared queue instead of its own copy",
-          "make issue-queue" in pick_run and "issue list" not in pick_run and "matching-refs" not in pick_run,
+    check("issue-bot: the picker reads the producer's OWN pick line, not a sed of its row",
+          "make issue-pick" in pick_run and "issue list" not in pick_run
+          and "matching-refs" not in pick_run and "sed -n 's/^issue=" not in pick_run,
           pick_run[:300])
     check("issue-bot: the queue's own test file runs in the suite",
           wired(ROOT / "tests" / "test_issue_review.py"), "")
@@ -1640,7 +1641,8 @@ def test_the_queue_rule_has_one_implementation():
     pick_run = run_text(bot["jobs"]["pick"])
 
     # Then  the implementer picks through the shared target
-    check("queue: issue-bot's pick runs `make issue-queue`", "make issue-queue" in pick_run, pick_run[:400])
+    check("queue: issue-bot's pick runs `make issue-pick` (the producer's own line)",
+          "make issue-pick" in pick_run, pick_run[:400])
     check("queue: issue-bot's pick no longer pastes the branch/PR rule inline",
           "matching-refs" not in pick_run and "gh pr list" not in pick_run, pick_run[:400])
     check("queue: the reviewer picks through the shared target",
@@ -1727,12 +1729,12 @@ def test_issue_review_bot():
           all(target in all_run for target in ("make review-issue-pick", "make review-issue-mark",
                                                "make review-issue-finish", "make review-issue")), "")
 
-    # Issue #344: the pick's diagnostics never become ISSUE. The shipped step reads
-    # the FIRST token and refuses a value that is not a number, and the resolve step
-    # names the defect instead of turning it into a 404 / argparse error.
+    # Issue #344: the pick's diagnostics never become ISSUE. Issue #548: the step takes
+    # each value WHOLE and refuses one carrying whitespace (the producer refuses it too),
+    # and the resolve step names the defect instead of turning it into a 404.
     pick_run = run_text(pick)
-    check("review: the pick takes the first token of each key",
-          "awk '{print $1}'" in pick_run, pick_run[:600])
+    check("review: the pick takes each value WHOLE — a whitespace split is what truncated it",
+          "awk '{print $1}'" not in pick_run and "*[[:space:]]*" in pick_run, pick_run[:600])
     check("review: the pick refuses a non-numeric issue= loudly",
           "*[!0-9]*" in pick_run and "not an issue number" in pick_run, pick_run[:600])
     resolve_run = str(step(review, "Resolve the issue").get("run", ""))

@@ -1090,6 +1090,15 @@ REVIEW_GAP_HOURS := 3
 issue-queue: ## Print the implementer's queue (oldest first) with each issue's window and its reviewer verdict hold
 	python3 scripts/issue_queue.py --gap-hours $(REVIEW_GAP_HOURS)
 
+# The ONE line a sweep reads (issues #547/#548). The workflow used to re-derive its pick
+# from `make issue-queue`'s row with a `sed` expression of its own, so the producer and
+# the reader were two implementations of one contract and only one had a test against
+# the real output. Here the producer names its own value: `issue=<n>`, or `issue=` when
+# nothing is takeable. No slicing, no second parser in YAML.
+.PHONY: issue-pick
+issue-pick: ## Print the ONE key=value line a sweep reads (`issue=<n>` or `issue=`; issues #547/#548)
+	python3 scripts/issue_queue.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
+
 # The reviewer's VERDICT is a hold, not advice (issue #200): while a verdict label
 # (`needs-refinement`, and the obsolete/duplicate/already-fixed family) is FRESH —
 # younger than VERDICT_TTL_HOURS, measured from the reviewer's newest marker
