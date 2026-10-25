@@ -192,8 +192,13 @@ def test_the_real_issue_pick_prints_exactly_one_line():
         env = env_for(Path(td), issues=four_issues())
 
         # When  the REAL target runs, exactly as the sweep runs it
-        proc = subprocess.run(["make", "issue-pick"], cwd=str(ROOT), env=env,
-                              capture_output=True, text=True)
+        # `--no-print-directory`: a NESTED make (this test runs inside `make _test`, which exports
+        # MAKEFLAGS) prints "make[1]: Entering directory …" on stdout, which is make's own banner
+        # and not the recipe's value — the production caller runs `OUT=$(make issue-pick)` from a
+        # shell STEP, where no such banner exists. CI measured it: the first run of this test saw
+        # ['make[1]: Entering directory \'/workspace\'', 'issue=163', "make[1]: Leaving …"].
+        proc = subprocess.run(["make", "--no-print-directory", "issue-pick"],
+                              cwd=str(ROOT), env=env, capture_output=True, text=True)
 
     lines = [line for line in proc.stdout.splitlines() if line.strip()]
     # Then  stdout is ONE `issue=<n>` line — the value, not the command that produced it

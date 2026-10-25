@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **138** · archived: **9**
+Active changes: **141** · archived: **9**
 
 ## Active changes
 
@@ -71,6 +71,7 @@ Active changes: **138** · archived: **9**
 | `force-flag-parsing` | active | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/force-flag-parsing/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `gap-files-once-per-dimension` | active | #472 (the measured re-file loop) | — | [data-gap-baseline](openspec/changes/gap-files-once-per-dimension/specs/data-gap-baseline/spec.md) | 9/9 | [proposal.md](openspec/changes/gap-files-once-per-dimension/proposal.md) |
+| `git-out-vs-git-raw` | active | — | — | [worktree-base](openspec/changes/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/git-out-vs-git-raw/proposal.md) |
 | `green-when-the-issue-closed-while-in-flight` | active | #520 (measured: run 39612330011 went RED over work PR #517 had already landed) | — | [bot-coordination](openspec/changes/green-when-the-issue-closed-while-in-flight/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/green-when-the-issue-closed-while-in-flight/proposal.md) |
 | `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `hardware-is-not-an-engine` | active | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/hardware-is-not-an-engine/proposal.md) |
@@ -85,6 +86,7 @@ Active changes: **138** · archived: **9**
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
+| `marker-written-outside-registry` | active | — | — | [bot-markers](openspec/changes/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/marker-written-outside-registry/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |
 | `no-marker-reaches-the-tree` | active | — | — | [bot-commit-safety](openspec/changes/no-marker-reaches-the-tree/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/no-marker-reaches-the-tree/proposal.md) |
@@ -127,6 +129,7 @@ Active changes: **138** · archived: **9**
 | `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
+| `search-tool-pinned` | active | — | — | [bot-agent-run-safety](openspec/changes/search-tool-pinned/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/search-tool-pinned/proposal.md) |
 | `secret-guard-derived-names` | active | #223 — `the no-secret-VALUE guard's key set is a hand-maintained allowlist — a new key added to a workflow is invisible until added to SECRET_VARS` | — | [secret-output-guard](openspec/changes/secret-guard-derived-names/specs/secret-output-guard/spec.md) | 9/9 | [proposal.md](openspec/changes/secret-guard-derived-names/proposal.md) |
 | `secret-guard-file-set` | active | #224 — `tech-debt: the no-secret-VALUE guard only scans a fixed suffix set` | — | [secret-output-guard](openspec/changes/secret-guard-file-set/specs/secret-output-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/secret-guard-file-set/proposal.md) |
 | `setup-output-visible` | active | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/setup-output-visible/proposal.md) |
