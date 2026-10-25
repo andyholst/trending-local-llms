@@ -25,6 +25,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -172,6 +173,45 @@ def four_issues() -> list[dict]:
     """Four candidates in createdAt order: positions 0,1,2,3 (i.e. hours to start)."""
     return [candidate(163, "2026-01-01T00:00:00Z"), candidate(174, "2026-01-02T00:00:00Z"),
             candidate(175, "2026-01-03T00:00:00Z"), candidate(176, "2026-01-04T00:00:00Z")]
+
+
+def test_the_real_issue_pick_prints_exactly_one_line():
+    """Issue #578: the REAL `make issue-pick` must print ONE `issue=` line and nothing else.
+
+    A step test that stubs `make` cannot prove this: the stub prints the value alone, which
+    removes exactly the line the real recipe contributes. Measured in production (runs
+    40190558547, 40194644167): `OUT=$(make issue-pick)` captured
+    `python3 scripts/issue_queue.py --pick …` as its first line, so `PICK="${OUT#issue=}"`
+    became that command plus the value and the step refused it as "not a number" — the sweep
+    implemented nothing for two hours. So this test runs the recipe itself, with the `gh` stub
+    on PATH (the EXTERNAL system), and asserts the shape the workflow's reader depends on.
+    """
+
+    # Given a takeable issue and a `gh` that answers from fixtures
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues())
+
+        # When  the REAL target runs, exactly as the sweep runs it
+        # `--no-print-directory`: a NESTED make (this test runs inside `make _test`, which exports
+        # MAKEFLAGS) prints "make[1]: Entering directory …" on stdout, which is make's own banner
+        # and not the recipe's value — the production caller runs `OUT=$(make issue-pick)` from a
+        # shell STEP, where no such banner exists. CI measured it: the first run of this test saw
+        # ['make[1]: Entering directory \'/workspace\'', 'issue=163', "make[1]: Leaving …"].
+        proc = subprocess.run(["make", "--no-print-directory", "issue-pick"],
+                              cwd=str(ROOT), env=env, capture_output=True, text=True)
+
+    lines = [line for line in proc.stdout.splitlines() if line.strip()]
+    # Then  stdout is ONE `issue=<n>` line — the value, not the command that produced it
+    check("real make issue-pick: it succeeds", proc.returncode == 0,
+          (proc.returncode, proc.stdout[-300:], proc.stderr[-300:]))
+    check("real make issue-pick: stdout is exactly ONE line",
+          len(lines) == 1, lines)
+    check("real make issue-pick: the line is `issue=<number>` and nothing else",
+          bool(lines) and re.fullmatch(r"issue=\d+", lines[0].strip()) is not None, lines)
+    check("real make issue-pick: no line is the recipe's own echo (the #578 defect)",
+          not any(line.strip().startswith(("python3", "make ", "sed ")) for line in lines), lines)
+    check("real make issue-pick: the reasoning goes to stderr, never to the value's stream",
+          "issue-queue" in proc.stderr, proc.stderr[-300:])
 
 
 def test_the_queue_attributes_a_run_by_its_start_comment_not_its_title():
@@ -1076,6 +1116,7 @@ def test_a_value_outside_the_token_shape_is_refused_by_the_producer():
 
 def main() -> int:
     print("issue reviewer: one queue, one 3 h window, two bots (issue #179)")
+    test_the_real_issue_pick_prints_exactly_one_line()
     test_the_queue_attributes_a_run_by_its_start_comment_not_its_title()
     test_the_window_opens_and_closes_at_the_three_hour_boundary()
     test_the_next_three_sweeps_are_the_window_before_a_start()

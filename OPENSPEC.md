@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **140** · archived: **9**
+Active changes: **141** · archived: **9**
 
 ## Active changes
 
@@ -111,6 +111,7 @@ Active changes: **140** · archived: **9**
 | `query-coverage-guard` | active | — | — | [query-coverage](openspec/changes/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/query-coverage-guard/proposal.md) |
 | `queue-drops-run-backstop` | active | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/queue-drops-run-backstop/proposal.md) |
 | `queued-run-alarm` | active | — | — | [queued-run-alarm](openspec/changes/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/queued-run-alarm/proposal.md) |
+| `real-pick-prints-one-line` | active | — | — | [issue-queue](openspec/changes/real-pick-prints-one-line/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/real-pick-prints-one-line/proposal.md) |
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 | `recheck-before-the-agent` | active | — | — | [issue-implementer](openspec/changes/recheck-before-the-agent/specs/issue-implementer/spec.md) | 7/7 | [proposal.md](openspec/changes/recheck-before-the-agent/proposal.md) |
 | `red-run-and-repair-path` | active | #558 | — | [red-run-and-repair-path](openspec/changes/red-run-and-repair-path/specs/red-run-and-repair-path/spec.md) | 8/8 | [proposal.md](openspec/changes/red-run-and-repair-path/proposal.md) |
