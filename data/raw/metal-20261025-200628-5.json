@@ -1,0 +1,81 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (Apple Silicon across M4 Max / M5 Max / M3 Ultra / M5 Ultra)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next MLX 4-bit",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "vram_tier": "128GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "A cross-chip Mac survey with each number's engine named: oMLX 0.6.4 with MTP depth 6 takes Qwen3.8-Flash-Next to 83 tok/s on an M4 Max 128GB and 224 tok/s aggregate at 4 streams, mlx-serve to 90 on an M5 Max (73.5 at 262k context), oMLX to 157.7 on an M5 Ultra 80-core, and TensorFold to 353 tok/s aggregate across 8 streams on the same Ultra.",
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "83",
+          "hardware": "Mac Studio M4 Max 128GB (Apple Silicon)",
+          "quant": "Qwen3.8-Flash-Next MLX 4-bit, oMLX 0.6.4, MTP depth 6, byte-identical output; 224 tok/s aggregate at 4 streams; stock serve was 62-69 tok/s",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "engine_min_version": "oMLX 0.6.4, MTP depth 6",
+          "likes": 138,
+          "comments": 2,
+          "reshares": 16,
+          "views": 18913
+        },
+        {
+          "engine": "mlx-serve",
+          "tps": "90",
+          "hardware": "MacBook Pro M5 Max 128GB (Apple Silicon)",
+          "quant": "Qwen3.8-Flash-Next MLX 4-bit on the Sushi-4 hybrid pack; stock serve high-50s to mid-60s; 73.5 tok/s at 262k context",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "context_tokens": "262144",
+          "likes": 138,
+          "comments": 2,
+          "reshares": 16,
+          "views": 18913
+        },
+        {
+          "engine": "oMLX",
+          "tps": "157.7",
+          "hardware": "Mac Studio M5 Ultra 80-core, 256GB unified memory",
+          "quant": "Qwen3.8-Flash-Next MLX 4-bit, tuned oMLX build; holds 96.6 tok/s at 195k context; stock M5 Ultra 64-core 97-99 tok/s",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "context_tokens": "195000",
+          "likes": 138,
+          "comments": 2,
+          "reshares": 16,
+          "views": 18913
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "353",
+          "hardware": "Mac Studio M5 Ultra 80-core, 256GB unified memory",
+          "quant": "Qwen3.8-Flash-Next, 353 tok/s aggregate across 8 concurrent streams vs oMLX 226 on the same M5 Ultra; single-stream decode 200.7 tok/s",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 138,
+          "comments": 2,
+          "reshares": 16,
+          "views": 18913
+        }
+      ],
+      "vram_min": "128GB",
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:28Z"
+}

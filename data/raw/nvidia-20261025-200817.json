@@ -1,0 +1,45 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1415",
+          "hardware": "one A100 SXM4, 32 concurrent requests",
+          "quant": "32 concurrent requests, aggregate output throughput (not single-request decode)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 22,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:17Z"
+}

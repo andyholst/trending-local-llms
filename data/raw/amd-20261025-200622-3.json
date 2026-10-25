@@ -1,0 +1,148 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (Qwen, 27B dense)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "why": "On Strix Halo the runtime decides everything: a Vulkan llama.cpp build with the open DFlash 2 pull request (PR #27342) roughly doubles decode at 32K context on the same Ryzen AI Max+ 395, and a portable 'Vulcan' build reaches ~33 tok/s shared across four lanes on a 128GB box.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "26.39",
+          "hardware": "Radeon 8060S / Strix Halo (Ryzen AI Max+ 395)",
+          "quant": "llama.cpp + Vulkan, Qwen3.8-27B UD-Q4_K_XL + DFlash2 drafter Q8_0 (n=4); 26.39 tok/s at 0K context (21.58 at 8K, 21.11 at 32K) vs 11.81 baseline — needs llama.cpp PR #27342",
+          "engine_min_version": "llama.cpp PR #27342 (DFlash 2 speculative decoding, fork)",
+          "date": "2026-08-20",
+          "source_post": "https://lightbrd.com/TeksEdge/status/2090257512574624234",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 2,
+          "views": 2564,
+          "interactions": 25,
+          "weight_gb": "UD-Q4_K_XL target + Q8_0 DFlash2 drafter"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "33",
+          "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtec Evo-X2)",
+          "quant": "PCIE_VULKAN build, Q3_K_XL, 64K context, vision enabled; ~33 tok/s shared across four concurrent lanes",
+          "date": "2026-09-15",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099665294285299780",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "65536",
+          "system_ram_min": "128GB"
+        }
+      ],
+      "last_seen": "2026-09-15",
+      "backends": [
+        "ROCm"
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (Qwen, 125B MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "why": "Experimental Strix Halo support in Strata keeps a 125B MoE decoding at 27 tok/s from 168K to 262K context on a 16GB-VRAM + 96GB RAM laptop, and hits 55-58 tok/s in 140W Performance mode — quarter-million-token context on one APU.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "Radeon 8060S / Strix Halo laptop (Bosgame M5, 16GB VRAM + 96GB RAM)",
+          "quant": "Unsloth Q4 / GSQ-RCO weights, experimental Strix Halo support (Linux only); 27 tok/s at 168K-262K context in real work, 55-58 tok/s decode in 140W Performance mode",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "likes": 8,
+          "comments": 5,
+          "reshares": 16,
+          "views": 589,
+          "interactions": 55,
+          "context_tokens": "262000",
+          "system_ram_min": "96GB"
+        },
+        {
+          "engine": "Strata",
+          "tps": "40",
+          "hardware": "Strix Halo (Ryzen AI Max APU)",
+          "quant": "ROCm; the post reports ~40 tok/s for the model on the Strix Halo APU",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/basel_by/status/2106492205313478868",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-07",
+      "backends": [
+        "ROCm"
+      ]
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "full_name": "Muse-Glimmer-30B (Meta Superintelligence Labs, 30B dense multimodal)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "30B",
+      "hf": "meta-models/Muse-Glimmer-30B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "meta-models/Muse-Glimmer-30B"
+        }
+      ],
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "why": "AMD day-0 support puts the 30B dense agentic model on both AMD shapes: a 4-bit quant brings the language model under 17-21GB, leaving room for KV cache, the vision encoder and a DFlash drafter in a 24/32GB envelope — up to ~24 tok/s on a Ryzen AI Max+ 395 APU.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "24",
+          "hardware": "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo, unified memory)",
+          "quant": "4-bit, Vulkan backend + DFlash speculative decoding, Windows 11 Pro 25H2, averaged over multiple runs (AMD day-0 blog)",
+          "engine_min_version": "llama.cpp with Vulkan backend and DFlash support",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/MikeLongTerm/status/2110396477583266292",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "4-bit, ~17-21GB language model"
+        }
+      ],
+      "last_seen": "2026-10-10",
+      "backends": [
+        "ROCm"
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:22Z"
+}

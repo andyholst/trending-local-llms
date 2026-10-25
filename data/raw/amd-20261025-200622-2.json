@@ -1,0 +1,80 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (PrismML, ternary / 1.72-bit)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ],
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "why": "The ternary 27B is the model that makes a 12GB Radeon usable: 5.9GB PTQ1_0 weights on an RTX 4070 12GB reach 60.4 tok/s, and the same 5.95GB ternary file was the reference for a 4GB VRAM + 32GB system RAM partial-offload run.",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "60.4",
+          "hardware": "RTX 4070 12GB",
+          "quant": "PTQ1_0 ternary (~16x faster than Qwen3.8-27B Q4_K_M at 3.55 t/s on the same card)",
+          "date": "2026-10-12",
+          "source_post": "https://lightbrd.com/localai_lab/status/2109533645279199248",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "5.9GB ternary (PTQ1_0)"
+        }
+      ],
+      "last_seen": "2026-10-12",
+      "backends": [
+        "CUDA"
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (Qwen, 125B MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "why": "Strata reports 60 tok/s on a 16GB RX 9070 XT with the IQ2_XS build (52 on the higher-quality IQ3_S), and its Linux installer takes --backend hip for RX 7900 XT/XTX, 9070/9070 XT and R9700 — a 125B MoE on a mid-range Radeon.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Project-reported (Strata README): 60 tok/s on the IQ2_XS build, 52 tok/s on the higher-quality IQ3_S",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "IQ2_XS 39.2GB (IQ3_S 54.8GB)"
+        }
+      ],
+      "last_seen": "2026-10-04",
+      "backends": [
+        "ROCm"
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:22Z"
+}

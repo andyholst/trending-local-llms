@@ -1,0 +1,44 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open 816B-A42B (Meta, MLX across four M5 Ultra Mac Studios)",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "formats": [
+        {
+          "name": "Muse Spark Open 4-bit MLX (~493GB)",
+          "hf": "meta-models/Muse-Spark-Open-816B-A42B"
+        }
+      ],
+      "vram_tier": "512GB",
+      "weight_gb": "493GB 4-bit",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Apple and Meta ran the 816B open-weight Muse Spark across four M5 Ultra Mac Studios over Thunderbolt 5 RDMA: read the 4-bit (~493GB) model together and serve it at over 36 tok/s - Apple's own test, two Mac Studios alone hold the weights.",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (512GB each, Thunderbolt 5 RDMA; 2 Mac Studios hold the 493GB 4-bit weights)",
+          "quant": "Muse Spark Open 4-bit MLX, ~493GB weights, multi-Mac distributed inference over Thunderbolt RDMA; Apple's machine-learning team test, not independently timed",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "weight_gb": "493GB 4-bit",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "vram_min": "512GB",
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:28Z"
+}
