@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-25T11:16:32Z",
+  "generated_utc": "2026-10-25T12:46:27Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -208,6 +208,21 @@
       "url": "https://github.com/openvinotoolkit/openvino",
       "note": "Auto-registered from https://lightbrd.com/AIQuanting/status/2113876566547845590 — OpenVINO™ is an open source toolkit for optimizing and deploying AI inference",
       "auto": true
+    },
+    "MTPLX": {
+      "backend": "Metal",
+      "url": "https://github.com/youssofal/MTPLX",
+      "note": "Native MTP speculative decoding on Apple Silicon (MLX-native Mac app + CLI) — from https://lightbrd.com/Oluwaphilemon1/status/2113748519588635100"
+    },
+    "LemonSeed Engine": {
+      "backend": "ROCm",
+      "url": "https://github.com/Geramy/LSE",
+      "note": "Self-optimizing AMD/Metal kernel engine behind LemonSeed Studio (iPad Pro + Thunderbolt R9700 eGPU) — from https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832"
+    },
+    "LM Studio": {
+      "backend": "Metal",
+      "url": "https://lmstudio.ai",
+      "note": "Closed-source desktop local-inference app with its own bundled llama.cpp/MLX runtimes (Bionic serving layer); its source is not on GitHub, so the product site is the link — from https://lightbrd.com/Oluwaphilemon1/status/2102223365268246864"
     }
   },
   "models": [
@@ -6824,9 +6839,9 @@
           "reshares": 0,
           "views": 0,
           "interactions": 318,
-          "weight_gb": "~493GB NVFP4",
-          "context_tokens": "1M",
-          "system_ram_min": "4x 512GB Mac Studios",
+          "weight_gb": "~493GB 4-bit",
+          "context_tokens": "262144",
+          "system_ram_min": "512GB unified memory per Mac Studio",
           "engine_min_version": "mlx-vlm recent development build"
         },
         {
@@ -7540,7 +7555,7 @@
       "engine_min_version": "SGLang day-0 (Liquid's own benchmarks run on vLLM/Liquid inference stack)"
     },
     {
-      "name": "Qwen3.8-27B",
+      "name": "Qwen3.8-27B (Apple Silicon)",
       "full_name": "Qwen3.8-27B-Instruct",
       "type": "LLM",
       "license": "Apache 2.0",
@@ -7722,7 +7737,7 @@
       }
     },
     {
-      "name": "Qwen3.8-Flash-Next 125B",
+      "name": "Qwen3.8-Flash-Next 125B (Apple Silicon)",
       "full_name": "Qwen3.8-Flash-Next (125B MoE)",
       "type": "LLM (MoE)",
       "license": "Apache 2.0",
@@ -10167,7 +10182,7 @@
       ]
     },
     {
-      "name": "Qwen3.6-35B-A3B",
+      "name": "Qwen3.6-35B-A3B (M4 Pro engine bakeoff)",
       "full_name": "Qwen3.6-35B-A3B (35B total / 3B active MoE)",
       "type": "LLM (MoE)",
       "license": "Apache 2.0",
@@ -16075,7 +16090,7 @@
       "engine_min_version": "llama.cpp with q4_0 KV cache, thinking mode on"
     },
     {
-      "name": "Qwen3.6 27B",
+      "name": "Qwen3.6-27B (official repo)",
       "full_name": "Qwen3.6-27B",
       "type": "LLM",
       "license": "Apache 2.0",
