@@ -409,10 +409,13 @@ def test_the_pick_output_the_workflow_parses_is_a_number():
     with tempfile.TemporaryDirectory() as td:
         legacy = _run_pick_step(_shipped_pick_step(), old_shape, Path(td))
 
-    # Then  the first token is read: the number, never the tail
-    legacy_keys = dict(l.split("=", 1) for l in legacy.github_output.splitlines() if "=" in l)
-    check("pick parse: the pre-fix shape can no longer poison ISSUE",
-          legacy.returncode == 0 and legacy_keys.get("issue") == "266", legacy.github_output)
+    # Then  the step REFUSES it: a value carrying whitespace is a producer defect, and
+    #       silently taking its first token (the old `awk '{print $1}'`) is the
+    #       truncation issue #548 exists for. A refused pick never spends a job on a
+    #       guessed number.
+    check("pick parse: a whitespace-carrying value is refused loudly, never truncated",
+          legacy.returncode != 0 and "carries whitespace" in (legacy.stdout + legacy.stderr),
+          legacy.stdout + legacy.stderr + "|" + getattr(legacy, "github_output", ""))
 
     # Given a value that is not a number at all
     broken = "action=review\nissue=not-a-number\npath=body\nreason=window-closed\n"
@@ -570,8 +573,9 @@ def test_the_reviewer_reads_the_one_queue_the_implementer_reads():
     # Then  the reviewer imports the shared queue and the bot's pick calls it
     check("queue: the reviewer imports issue_queue instead of re-implementing it",
           "import issue_queue as iq" in review_src, review_src[:400])
-    check("queue: the implementer's pick runs the same target",
-          "make issue-queue" in bot, bot[:400])
+    step = _shipped_sweep_step()
+    check("queue: the implementer's pick copies the producer's own line, never a sed of the row",
+          "make issue-pick" in step and "sed -n 's/^issue=" not in step, step[:600])
     check("queue: the window gap is one variable, not a literal per bot",
           "REVIEW_GAP_HOURS := 3" in (ROOT / "Makefile").read_text()
           and "REVIEW_GAP_HOURS" in review_src, "")
@@ -976,6 +980,100 @@ def test_the_implementer_never_edits_a_label_or_a_body_when_it_skips():
           [c[:2] for c in calls if c[:2] == ["issue", "comment"]] == [["issue", "comment"]], str(calls))
 
 
+def _shipped_sweep_step() -> str:
+    """The IMPLEMENTER workflow's OWN `Pick the oldest …` run block, as shipped."""
+    import yaml
+    wf = yaml.safe_load(BOT_WF.read_text())
+    for s in wf["jobs"]["pick"]["steps"]:
+        if s.get("id") == "pick":
+            return s["run"]
+    raise AssertionError("the pick step is missing from issue-bot.yml")
+
+
+def test_the_sweep_reads_the_producers_own_pick_line():
+    """Issues #547/#548: the sweep COPIES the producer's value instead of slicing its row.
+
+    The workflow used to re-derive its pick with a `sed` expression of its own while the
+    reviewer used `sed | awk '{print $1}'`: two hand-rolled readers of one producer, and
+    only the reviewer's was driven by a test against the real output. Now the producer
+    prints the one line the sweep needs, both readers take a value WHOLE, and a value
+    outside the token shape is refused rather than truncated.
+    """
+
+    # Given the queue the REAL producer reads
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues())
+        proc = run(QUEUE, "--pick", "--repo", "o/r", "--now", NOW, env=env)
+
+    # Then  stdout is exactly ONE key=value line — there is nothing left to slice
+    lines = [l for l in proc.stdout.splitlines() if l]
+    check("sweep pick: the producer prints ONE key=value line",
+          lines == ["issue=163"], proc.stdout)
+    check("sweep pick: the value is a number", lines and lines[0][len("issue="):].isdigit(),
+          proc.stdout)
+    check("sweep pick: its reasoning goes to stderr, never onto the value's line",
+          "[issue-queue] pick:" in proc.stderr, proc.stderr)
+
+    # When the workflow's OWN shipped step reads that stdout
+    with tempfile.TemporaryDirectory() as td:
+        shipped = _run_pick_step(_shipped_sweep_step(), proc.stdout, Path(td))
+    keyed = dict(l.split("=", 1)
+                 for l in getattr(shipped, "github_output", "").splitlines() if "=" in l)
+    check("sweep parse: the shipped step succeeds", shipped.returncode == 0,
+          shipped.stdout + shipped.stderr)
+    check("sweep parse: `issue=` is the number the producer decided",
+          keyed.get("issue") == "163", getattr(shipped, "github_output", ""))
+
+    # Given an EMPTY backlog (the producer prints an empty value, never a guess)
+    with tempfile.TemporaryDirectory() as td:
+        empty = _run_pick_step(_shipped_sweep_step(), "issue=\n", Path(td))
+    empty_keys = dict(l.split("=", 1)
+                      for l in getattr(empty, "github_output", "").splitlines() if "=" in l)
+    check("sweep parse: an empty backlog is an empty issue=, and a green step",
+          empty.returncode == 0 and empty_keys.get("issue") == "",
+          empty.stdout + empty.stderr + getattr(empty, "github_output", ""))
+
+    # Given a value that is not a number at all
+    with tempfile.TemporaryDirectory() as td:
+        broken = _run_pick_step(_shipped_sweep_step(), "issue=not-a-number\n", Path(td))
+    check("sweep parse: a non-numeric pick is refused loudly",
+          broken.returncode != 0 and "not a number" in (broken.stdout + broken.stderr),
+          broken.stdout + broken.stderr)
+
+
+def test_a_value_outside_the_token_shape_is_refused_by_the_producer():
+    """Issue #548: a value that would be cut by a whitespace-splitting reader is REFUSED.
+
+    The mechanism only holds if the producer refuses it: a reader that takes the value
+    whole would otherwise carry `window open` into `$GITHUB_OUTPUT`, and one that splits
+    would silently keep `window`.
+    """
+    iq = _module()
+
+    # Given values a whitespace-splitting reader would truncate
+    for bad in ("window open", "two\nlines", "tab\there"):
+        try:
+            iq.checked("reason", bad)
+        except SystemExit as exc:
+            check(f"producer refuses {bad!r}, naming the key",
+                  "REFUSED" in str(exc) and "reason" in str(exc), str(exc))
+        else:
+            check(f"producer refuses {bad!r}", False, "no SystemExit")
+
+    # Then  a legitimate token passes through unchanged
+    check("producer passes a real token through",
+          iq.checked("reason", "window-open:open") == "window-open:open"
+          and iq.checked("issue", 163) == "163")
+
+    # And   an enumerated key refuses a value outside its set
+    try:
+        iq.checked("action", "bogus", allowed=("review", "window", "none"))
+    except SystemExit as exc:
+        check("producer refuses an action outside its enum", "REFUSED" in str(exc), str(exc))
+    else:
+        check("producer refuses an action outside its enum", False, "no SystemExit")
+
+
 def main() -> int:
     print("issue reviewer: one queue, one 3 h window, two bots (issue #179)")
     test_the_queue_attributes_a_run_by_its_start_comment_not_its_title()
@@ -987,6 +1085,8 @@ def main() -> int:
     test_a_stale_label_never_holds_the_queue_for_ever()
     test_pick_replies_once_to_a_started_implementer_and_then_goes_quiet()
     test_the_pick_output_the_workflow_parses_is_a_number()
+    test_the_sweep_reads_the_producers_own_pick_line()
+    test_a_value_outside_the_token_shape_is_refused_by_the_producer()
     test_a_reviewer_target_refuses_a_non_numeric_issue()
     test_guard_blocks_the_write_when_the_implementer_starts_mid_review()
     test_mark_sets_the_label_and_never_writes_a_body_marker_for_the_window_path()

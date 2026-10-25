@@ -409,6 +409,45 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
     return rows
 
 
+# --- the pick's `key=value` contract (issues #547/#548) ------------------------------
+# The sweep used to re-derive its pick from this script's row with
+# `sed -n 's/^issue=\([0-9]*\) position=0 .*/\1/p'`, and the reviewer with
+# `sed … | awk '{print $1}'`: TWO hand-rolled readers of one producer, and only the
+# reviewer's was driven by a test in tests/test_issue_review.py. The reviewer's split on
+# whitespace is the worse half — a value that ever gains a space is silently cut to its
+# first token (`reason=window open` becomes `reason=window`), which is the class that
+# made ISSUE `266 position=-1 window=open …` (issue #344, run 39040689085).
+#
+# So the producer states the contract and the readers no longer interpret:
+#   * every value this script prints is ONE TOKEN — no whitespace,
+#   * a value that breaks that shape is refused HERE, with the key and the raw value,
+#   * `--pick` prints exactly the line the sweep needs, so there is nothing to slice.
+TOKEN_RE = re.compile(r"^[A-Za-z0-9_:.,/#+-]+$")
+
+
+def checked(key: str, value: object, *, allowed: tuple[str, ...] | None = None) -> str:
+    """Return `value` as a token, or exit 2 naming the key and the offending value.
+
+    Fail-closed on purpose: a value the reader cannot trust must never reach a
+    workflow's `$GITHUB_OUTPUT` (a truncated `issue=` spends a whole run on the wrong
+    number, and a truncated `reason=` hides why the pick happened).
+    """
+    text = "" if value is None else str(value)
+    if allowed is not None and text not in allowed:
+        sys.exit(f"[issue-queue] REFUSED: {key}={text!r} is not one of {allowed!r} — "
+                 f"the pick's shape changed; fix the producer, not the reader")
+    if text and not TOKEN_RE.match(text):
+        sys.exit(f"[issue-queue] REFUSED: {key}={text!r} carries whitespace or a character "
+                 f"outside the key=value token shape — a whitespace-splitting reader would "
+                 f"silently truncate it (issue #548)")
+    return text
+
+
+def pick_head(rows: list[dict]) -> dict | None:
+    """The ONE issue a sweep takes: the head of the pick order (`position=0`)."""
+    return next((r for r in rows if r["position"] == 0), None)
+
+
 def render(rows: list[dict]) -> str:
     lines = []
     for r in rows:
@@ -536,6 +575,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="how long a verdict may be held in total, across re-reviews (issue #203)")
     ap.add_argument("--skip-note", action="store_true",
                     help="post the ONE 'skipped: the reviewer holds this issue' comment (issue #200)")
+    ap.add_argument("--pick", action="store_true",
+                    help="print ONLY the key=value line the sweep reads (`issue=<n>` or `issue=`), "
+                         "so no workflow has to slice this script's row (issues #547/#548)")
     ap.add_argument("--now", default=None)
     ap.add_argument("--run", default=None, help="this run's id (a run never blocks itself)")
     args = ap.parse_args(argv)
@@ -550,6 +592,25 @@ def main(argv: list[str] | None = None) -> int:
         return post_skip_note(repo, labels, args.gap_hours, args.verdict_ttl_hours, now, run)
     rows = build(repo, labels, args.gap_hours, now, run, args.verdict_ttl_hours,
                  args.verdict_max_hold_hours)
+    if args.pick:
+        # ONE line, already in the shape `$GITHUB_OUTPUT` takes, and NOTHING else on
+        # stdout: the workflow copies the value instead of slicing the row (issues
+        # #547/#548). The reasoning stays on stderr, where a log reader still sees it.
+        head = pick_head(rows)
+        print(f"issue={checked('issue', head['issue'] if head else '')}")
+        if head is None:
+            why = ("every open labelled issue has an implementer, or a fresh reviewer verdict "
+                   "holds it")
+            print(f"[issue-queue] pick: none — {why} ({len(rows)} candidate(s))", file=sys.stderr)
+            for row in rows:
+                if row["impl_skip"] or row["position"] != 0:
+                    print(f"[issue-queue] pick: skipped #{row['issue']} "
+                          f"(window={checked('window', row['window'])}, "
+                          f"reason={checked('reason', row['reason'])})", file=sys.stderr)
+        else:
+            print(f"[issue-queue] pick: #{head['issue']} is the head of the pick order "
+                  f"({len(rows)} candidate(s))", file=sys.stderr)
+        return 0
     text = render(rows)
     if text:
         print(text)

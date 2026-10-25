@@ -123,17 +123,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          QUEUE=$(make issue-queue)
-          echo "$QUEUE"
-          # The head of the pick order (position=0) is the issue this sweep takes.
-          PICK=$(printf '%s\n' "$QUEUE" | sed -n 's/^issue=\([0-9][0-9]*\) position=0 .*/\1/p' | head -1)
-          if [ -z "$PICK" ]; then
-            echo "data-gap backlog empty: every open labelled issue has an implementer, or a fresh reviewer verdict holds it."
-            echo "issue=" >> "$GITHUB_OUTPUT"
-          else
-            echo "Sweeping #$PICK (oldest with no implementer, and no reviewer holding it)"
-            echo "issue=$PICK" >> "$GITHUB_OUTPUT"
-          fi
+          # The PRODUCER names its pick — `issue=<n>`, or `issue=` when nothing is
+          # takeable — so this step copies a value instead of slicing the queue row with
+          # a sed expression of its own (issues #547/#548: two hand-rolled readers of
+          # one producer, and only one of them had a test against the real output).
+          # Why nothing was picked arrives on stderr and stays in this log.
+          OUT=$(make issue-pick)
+          echo "$OUT"
+          PICK="${OUT#issue=}"
+          case "$PICK" in
+            '')
+              echo "data-gap backlog empty: every open labelled issue has an implementer, or a fresh reviewer verdict holds it."
+              printf 'issue=%s\n' "$PICK" >> "$GITHUB_OUTPUT"
+              ;;
+            *[!0-9]*)
+              echo "::error::the pick's issue= value is not a number: '$PICK' - the producer must refuse a bad shape, never let it reach this step (issue #548)."
+              exit 1
+              ;;
+            *)
+              echo "Sweeping #$PICK (oldest with no implementer, and no reviewer holding it)"
+              printf 'issue=%s\n' "$PICK" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
       # The reviewer's VERDICT is a hold, not advice (issue #200): a fresh
       # `needs-refinement` (or obsolete/duplicate/already-fixed) keeps the sweep
