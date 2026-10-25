@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **141** · archived: **9**
+Active changes: **143** · archived: **9**
 
 ## Active changes
 
@@ -16,6 +16,7 @@ Active changes: **141** · archived: **9**
 |---|---|---|---|---|---|---|
 | `a-footprint-is-only-ever-raised` | active | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | active | — | — | [sweep-delivery-alarm](openspec/changes/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/a-fresh-red-sweep-is-loud/proposal.md) |
+| `a-judged-dimension-stays-closed` | active | — | — | [data-gap-analysis](openspec/changes/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/a-judged-dimension-stays-closed/proposal.md) |
 | `a-silent-pr-is-an-alarm` | active | #442 (filed with two live measurements) | — | [pr-health](openspec/changes/a-silent-pr-is-an-alarm/specs/pr-health/spec.md) | 9/9 | [proposal.md](openspec/changes/a-silent-pr-is-an-alarm/proposal.md) |
 | `adopt-carries-the-work` | active | — | — | [worktree-base](openspec/changes/adopt-carries-the-work/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/adopt-carries-the-work/proposal.md) |
 | `adopt-refuses-a-stale-branch` | active | — | — | [worktree-base](openspec/changes/adopt-refuses-a-stale-branch/specs/worktree-base/spec.md) | 7/7 | [proposal.md](openspec/changes/adopt-refuses-a-stale-branch/proposal.md) |
