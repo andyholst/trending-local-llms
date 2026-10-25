@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **118** · archived: **6**
+Active changes: **117** · archived: **7**
 
 ## Active changes
 
@@ -20,7 +20,6 @@ Active changes: **118** · archived: **6**
 | `agent-identity-one-definition` | active | #325 — `tech-debt: The agent identity is a literal repeated in every committing workflow` | — | [agent-identity](openspec/changes/agent-identity-one-definition/specs/agent-identity/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-identity-one-definition/proposal.md) |
 | `agent-image-publish` | active | — | — | [agent-image-publish](openspec/changes/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/agent-image-publish/proposal.md) |
 | `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
-| `agent-leg-skills` | active | #549 | #550 | [agent-leg-skills](openspec/changes/agent-leg-skills/specs/agent-leg-skills/spec.md) | 20/20 | [proposal.md](openspec/changes/agent-leg-skills/proposal.md) |
 | `agent-shell-keys` | active | — | — | [bot-agent-run-safety](openspec/changes/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-shell-keys/proposal.md) |
 | `alias-one-definition` | active | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/alias-one-definition/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
@@ -137,6 +136,7 @@ Active changes: **118** · archived: **6**
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `2026-10-25-agent-leg-skills` | archived | #549 | #550 | [agent-leg-skills](openspec/changes/archive/2026-10-25-agent-leg-skills/specs/agent-leg-skills/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/2026-10-25-agent-leg-skills/proposal.md) |
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
 | `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
 | `fix-bot-repairs-with-the-base` | archived | #383 | #384 | [fix-bot-repair-loop](openspec/changes/archive/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/fix-bot-repairs-with-the-base/proposal.md) |
