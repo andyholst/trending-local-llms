@@ -329,6 +329,120 @@ def test_pick_replies_once_to_a_started_implementer_and_then_goes_quiet():
           decision.get("action") == "none" and decision.get("reason") == "all-deferred", proc.stdout)
 
 
+def _shipped_pick_step() -> str:
+    """The reviewer workflow's OWN `Pick ONE issue` run block, as shipped."""
+    import yaml
+    wf = yaml.safe_load((ROOT / ".github" / "workflows" / "issue-review-bot.yml").read_text())
+    for s in wf["jobs"]["pick"]["steps"]:
+        if s.get("id") == "pick":
+            return s["run"]
+    raise AssertionError("the pick step is missing from issue-review-bot.yml")
+
+
+def _run_pick_step(step: str, pick_stdout: str, td: Path) -> subprocess.CompletedProcess:
+    """Run the shipped step with a stub `make` that prints the REAL pick output.
+
+    The stub is the EXTERNAL system (the make target is exercised by the pick test
+    above); the step's own parsing, validation and $GITHUB_OUTPUT write are the
+    product code under test.
+    """
+    bin_dir = td / "step-bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    out_file = td / "pick.out"
+    out_file.write_text(pick_stdout)
+    stub = bin_dir / "make"
+    stub.write_text(f'#!/bin/sh\ncat "{out_file}"\n')
+    stub.chmod(0o755)
+    gh_output = td / "github-output"
+    gh_output.write_text("")
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+           "GITHUB_OUTPUT": str(gh_output), "FORCED": "", "GH_TOKEN": "x", "REPO": "o/r"}
+    proc = subprocess.run(["bash", "-e", "-c", step], env=env, cwd=td,
+                          capture_output=True, text=True)
+    proc.github_output = gh_output.read_text()  # type: ignore[attr-defined]
+    return proc
+
+
+def test_the_pick_output_the_workflow_parses_is_a_number():
+    """Issue #344: the `issue=` line carries the NUMBER, and the shipped step reads it.
+
+    Measured (run 39040689085): the diagnostics rode on the `issue=` line, so ISSUE
+    became `266 position=-1 window=open reason=…` - `gh issue view` failed and the
+    `always()` close died in argparse (`unrecognized arguments`).
+    """
+
+    # Given a four-candidate queue, exactly one of them reviewable
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues())
+
+        # When  the REAL picker runs
+        proc = run(REVIEW, "--pick", "--repo", "o/r", "--now", NOW, env=env)
+
+    # Then  exactly one line starts with `issue=` and it is the number alone
+    issue_lines = [l for l in proc.stdout.splitlines() if l.startswith("issue=")]
+    check("pick shape: exactly ONE `issue=` line (diagnostics never ride on it)",
+          len(issue_lines) == 1, proc.stdout)
+    check("pick shape: the `issue=` value is the number, with no diagnostics",
+          issue_lines and issue_lines[0] == "issue=176", issue_lines)
+    check("pick shape: every candidate is reported on a `candidate=` line",
+          sum(l.startswith("candidate=") for l in proc.stdout.splitlines()) == 4, proc.stdout)
+
+    # When  the workflow's OWN shipped step parses that stdout
+    with tempfile.TemporaryDirectory() as td:
+        shipped = _run_pick_step(_shipped_pick_step(), proc.stdout, Path(td))
+
+    # Then  $GITHUB_OUTPUT gets the number, and nothing else
+    check("pick parse: the shipped step succeeds", shipped.returncode == 0,
+          shipped.stdout + shipped.stderr)
+    keyed = dict(l.split("=", 1) for l in shipped.github_output.splitlines() if "=" in l)
+    check("pick parse: `issue=` is the number the pick decided",
+          keyed.get("issue") == "176", shipped.github_output)
+    check("pick parse: the value is numeric (never a tail)",
+          keyed.get("issue", "").isdigit(), shipped.github_output)
+    check("pick parse: action/path/reason survive the parse",
+          (keyed.get("action"), keyed.get("path"), keyed.get("reason"))
+          == ("review", "body", "window-closed"), shipped.github_output)
+
+    # Given the PRE-FIX shape, whose diagnostics rode on the `issue=` line
+    old_shape = "issue=266 position=-1 window=open reason=decided:agent:refined started=0\n" \
+                "action=review\nissue=266\npath=body\nreason=window-closed\n"
+    with tempfile.TemporaryDirectory() as td:
+        legacy = _run_pick_step(_shipped_pick_step(), old_shape, Path(td))
+
+    # Then  the first token is read: the number, never the tail
+    legacy_keys = dict(l.split("=", 1) for l in legacy.github_output.splitlines() if "=" in l)
+    check("pick parse: the pre-fix shape can no longer poison ISSUE",
+          legacy.returncode == 0 and legacy_keys.get("issue") == "266", legacy.github_output)
+
+    # Given a value that is not a number at all
+    broken = "action=review\nissue=not-a-number\npath=body\nreason=window-closed\n"
+    with tempfile.TemporaryDirectory() as td:
+        refused = _run_pick_step(_shipped_pick_step(), broken, Path(td))
+
+    # Then  the step fails LOUDLY instead of spending a job on it
+    check("pick parse: a non-numeric issue is refused loudly",
+          refused.returncode != 0 and "not an issue number" in (refused.stdout + refused.stderr),
+          refused.stdout + refused.stderr)
+
+
+def test_a_reviewer_target_refuses_a_non_numeric_issue():
+    """The measured failure value must die in the target, naming the parse defect."""
+
+    # Given the exact value run 39040689085 fed to `make review-issue-finish`
+    bad = "266 position=-1 window=open reason=decided:agent:refined started=0"
+
+    # When  the target runs
+    proc = subprocess.run(["make", "-s", "review-issue-finish", f"ISSUE={bad}"],
+                          cwd=ROOT, capture_output=True, text=True)
+
+    # Then  it exits non-zero and says what the value must be
+    check("make guard: a diagnostic-carrying ISSUE is refused",
+          proc.returncode != 0, proc.stdout + proc.stderr)
+    check("make guard: the message names the defect",
+          "must be the issue NUMBER" in (proc.stdout + proc.stderr)
+          and "issue #344" in (proc.stdout + proc.stderr), proc.stdout + proc.stderr)
+
+
 def test_guard_blocks_the_write_when_the_implementer_starts_mid_review():
     """The TOCTOU re-check: a body rewrite is refused once the window opens."""
 
@@ -872,6 +986,8 @@ def main() -> int:
     test_a_run_never_blocks_its_own_guard_but_another_run_does()
     test_a_stale_label_never_holds_the_queue_for_ever()
     test_pick_replies_once_to_a_started_implementer_and_then_goes_quiet()
+    test_the_pick_output_the_workflow_parses_is_a_number()
+    test_a_reviewer_target_refuses_a_non_numeric_issue()
     test_guard_blocks_the_write_when_the_implementer_starts_mid_review()
     test_mark_sets_the_label_and_never_writes_a_body_marker_for_the_window_path()
     test_body_hash_and_finish_are_the_write_proof_and_the_cleanup()

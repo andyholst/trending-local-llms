@@ -41,6 +41,8 @@ import pr_closure  # noqa: E402  the pipeline's OWN closure parser (issue #289)
 from wiring import wired  # noqa: E402  (issues #176/#192)
 
 PAT = "secrets.FIXBOT_DISPATCH_TOKEN"
+# The reviewer steps that consume the issue thread are gated on it (issue #344).
+THREAD_GATE = "steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success'"
 _PASS = 0
 _FAIL = 0
 
@@ -1718,6 +1720,36 @@ def test_issue_review_bot():
           all(target in all_run for target in ("make review-issue-pick", "make review-issue-mark",
                                                "make review-issue-finish", "make review-issue")), "")
 
+    # Issue #344: the pick's diagnostics never become ISSUE. The shipped step reads
+    # the FIRST token and refuses a value that is not a number, and the resolve step
+    # names the defect instead of turning it into a 404 / argparse error.
+    pick_run = run_text(pick)
+    check("review: the pick takes the first token of each key",
+          "awk '{print $1}'" in pick_run, pick_run[:600])
+    check("review: the pick refuses a non-numeric issue= loudly",
+          "*[!0-9]*" in pick_run and "not an issue number" in pick_run, pick_run[:600])
+    resolve_run = str(step(review, "Resolve the issue").get("run", ""))
+    check("review: the resolve step refuses a non-numeric ISSUE before any gh read",
+          "*[!0-9]*" in resolve_run and "not an issue number" in resolve_run
+          and resolve_run.index("not an issue number") < resolve_run.index("gh api"), resolve_run[:400])
+
+    # A failing thread step stops the steps that consume its value, and the window
+    # close is gated on the window THIS run opened: one broken value, one failure.
+    thread = step(review, "Write the issue and its comments")
+    check("review: the thread step has an id its consumers can gate on",
+          thread.get("id") == "thread", thread.get("id"))
+    for name in ("Open the reviewer window", "Route (re-check", "Refine the issue",
+                 "Every invisible marker", "Publish the refined body",
+                 "Review as a reply", "Prove the window path", "Reply once",
+                 "File the gaps"):
+        consumed = step(review, name)
+        check(f"review: `{name}` is gated on the thread step",
+              "steps.thread.outcome == 'success'" in str(consumed.get("if", "")),
+              consumed.get("if"))
+    close_if = str(step(review, "Close the reviewer window").get("if", ""))
+    check("review: the window close is gated on the mark (only a window we opened)",
+          "always()" in close_if and "steps.mark.outcome == 'success'" in close_if, close_if)
+
     # A run that produced nothing to read is a defect, not a green no-op.
     loud = step(review, "Fail loudly")
     check("review: a silent review is a loud failure",
@@ -1739,13 +1771,14 @@ def test_the_reviewer_never_edits_an_issue_inside_a_window():
     # window path has no body write at all.
     publish = step(review, "Publish the refined body")
     check("paths: the body is published only on the `body` route",
-          publish.get("if") == "steps.route.outputs.path == 'body'", publish.get("if"))
+          publish.get("if") == f"{THREAD_GATE} && steps.route.outputs.path == 'body'",
+          publish.get("if"))
     refine = step(review, "Refine the issue")
     check("paths: the refinement runs only on the `body` route",
-          refine.get("if") == "steps.route.outputs.path == 'body'", refine.get("if"))
+          refine.get("if") == f"{THREAD_GATE} && steps.route.outputs.path == 'body'", refine.get("if"))
     reply = step(review, "Review as a reply")
     check("paths: the reply runs only on the `window` route",
-          reply.get("if") == "steps.route.outputs.path == 'window'", reply.get("if"))
+          reply.get("if") == f"{THREAD_GATE} && steps.route.outputs.path == 'window'", reply.get("if"))
 
     # The two prompts state the hard rule of their path.
     body_prompt = makefile.split("_review-issue:")[1].split(".PHONY: review-issue")[0]

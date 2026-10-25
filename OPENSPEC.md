@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **116** · archived: **6**
+Active changes: **117** · archived: **6**
 
 ## Active changes
 
@@ -104,6 +104,7 @@ Active changes: **116** · archived: **6**
 | `remove-stray-qa-notes` | active | #390 — `tech-debt: the fix loop leaves qa-report.txt.notes in the repo tree and git add -A commits it` | — | [fix-loop-scratch](openspec/changes/remove-stray-qa-notes/specs/fix-loop-scratch/spec.md) | 6/6 | [proposal.md](openspec/changes/remove-stray-qa-notes/proposal.md) |
 | `render-only-readme` | active | #195 — `tech-debt: A generated-README change forces a store timestamp bump and a snapshot write` | — | [readme-render](openspec/changes/render-only-readme/specs/readme-render/spec.md) | 10/10 | [proposal.md](openspec/changes/render-only-readme/proposal.md) |
 | `repair-a-conflicted-pr` | active | #475 (the owner's ask: *"they should always auto-merge and rebase and resolve conflicts with help off llm"*) | — | [fix-bot-repair-loop](openspec/changes/repair-a-conflicted-pr/specs/fix-bot-repair-loop/spec.md) | 12/12 | [proposal.md](openspec/changes/repair-a-conflicted-pr/proposal.md) |
+| `review-pick-parse` | active | — | — | [issue-review-queue](openspec/changes/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/review-pick-parse/proposal.md) |
 | `scope-gate-total-vram` | active | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/scope-gate-total-vram/proposal.md) |
 | `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |

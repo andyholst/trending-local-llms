@@ -110,8 +110,13 @@ def _print_action(decision: dict) -> None:
 
 def cmd_pick(repo: str, gap_hours: int, now: dt.datetime, run: str | None = None) -> int:
     decision, rows = decide(repo, gap_hours, now, run)
+    # Each candidate's diagnostics go on a `candidate=` line, NEVER on `issue=`
+    # (issue #344): the workflow parses `issue=` as a key, so a diagnostic riding
+    # on it made ISSUE the whole tail (`266 position=-1 window=open …`) and every
+    # `gh` read and `make review-issue-finish` died on an unparseable number
+    # (measured, run 39040689085). The only `issue=` line is the action's, below.
     for row in rows:
-        print(f"issue={row['issue']} position={row['position']} window={row['window']} "
+        print(f"candidate={row['issue']} position={row['position']} window={row['window']} "
               f"reason={row['reason']} started={row['started']} reply_recent={row['reply_recent']} "
               f"review_recent={row['review_recent']}")
     _print_action(decision)

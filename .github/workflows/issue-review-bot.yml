@@ -120,13 +120,30 @@ jobs:
           fi
           OUT=$(make review-issue-pick)
           echo "$OUT"
+          # The value is the FIRST token after the key: diagnostics belong on the
+          # `candidate=` lines, and a parser that took the whole tail made ISSUE
+          # `266 position=-1 window=open …` (issue #344, run 39040689085). Every
+          # key is read that way so the class is covered, not this instance.
           for key in action issue path reason; do
-            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1)
+            value=$(printf '%s\n' "$OUT" | sed -n "s/^${key}=//p" | head -1 | awk '{print $1}')
             echo "${key}=${value}" >> "$GITHUB_OUTPUT"
           done
-          if [ "$(printf '%s\n' "$OUT" | sed -n 's/^action=//p')" = "none" ]; then
-            echo "Nothing to review this run: every candidate is inside an implementer window."
-          fi
+          # A number, or nothing: anything else is the parse defect itself and must
+          # fail HERE with its reason, before a job is spent on it.
+          case "$(printf '%s\n' "$OUT" | sed -n 's/^action=//p' | head -1)" in
+            none|"")
+              echo "Nothing to review this run: every candidate is inside an implementer window."
+              ;;
+            *)
+              PICKED=$(printf '%s\n' "$OUT" | sed -n 's/^issue=//p' | head -1 | awk '{print $1}')
+              case "$PICKED" in
+                ''|*[!0-9]*)
+                  echo "::error::the pick's issue= value is not an issue number: '$PICKED' - the pick's diagnostics must never ride on the issue= line (issue #344)."
+                  exit 1
+                  ;;
+              esac
+              ;;
+          esac
 
   review:
     needs: [guard, pick]
@@ -155,6 +172,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
+          # ISSUE is a NUMBER (issue #344): a value carrying diagnostics means the
+          # pick's output shape drifted, and it must be named as that, not become a
+          # 404 or an argparse error two steps later.
+          case "$ISSUE" in
+            ''|*[!0-9]*)
+              echo "::error::ISSUE is not an issue number: '$ISSUE' - the pick's diagnostics must never ride on the issue= line (issue #344)."
+              exit 1
+              ;;
+          esac
           STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq .state 2>/dev/null || echo "missing")
           if [ "$STATE" != "open" ]; then
             echo "Issue #$ISSUE is '$STATE' - nothing to review."
@@ -179,6 +205,7 @@ jobs:
       # The reviewer reads the WHOLE thread: body plus every comment (a decision
       # recorded in a comment must reach the body, or the issue is reclassified).
       - name: Write the issue and its comments for the reviewer
+        id: thread
         if: steps.iss.outputs.review == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -191,7 +218,7 @@ jobs:
       # its own guard re-check).
       - name: Open the reviewer window (label + marker)
         id: mark
-        if: steps.iss.outputs.review == 'true'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -206,7 +233,7 @@ jobs:
       # rewrite of the text its run already read.
       - name: Route (re-check the window before writing anything)
         id: route
-        if: steps.iss.outputs.review == 'true'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -224,7 +251,7 @@ jobs:
 
       # --- path `body`: refine the issue (no code, ever) -----------------------
       - name: Refine the issue (Hermes, through make)
-        if: steps.route.outputs.path == 'body'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'body'
         run: |
           # The reviewer agent's stream IS this step's console log, so it is captured
           # and only the REDACTED, bounded tail is printed (issue #351): GitHub masks
@@ -238,11 +265,11 @@ jobs:
       # The dedup markers are not decoration: dropping one re-files an issue that
       # already exists (#184/#185). The rewrite is compared against the live body.
       - name: Every invisible marker survived the rewrite
-        if: steps.route.outputs.path == 'body'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'body'
         run: make review-issue-check-markers ISSUE="$ISSUE" FILE=issue-body.md
 
       - name: Publish the refined body (only when it changed) and the summary
-        if: steps.route.outputs.path == 'body'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'body'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -266,7 +293,7 @@ jobs:
 
       # --- path `window`: an implementer is working — reply, do not rewrite -----
       - name: Review as a reply (Hermes, through make)
-        if: steps.route.outputs.path == 'window'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'window'
         run: |
           # Same shape as the body path (issue #351): capture the agent's stream,
           # print only the redacted tail.
@@ -279,7 +306,7 @@ jobs:
       # The hard rule of this path, enforced rather than promised: the body the
       # implementer's run read is byte-identical to the body it will close.
       - name: Prove the window path edited no body
-        if: steps.route.outputs.path == 'window'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'window'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -298,7 +325,7 @@ jobs:
           echo "Body untouched ($AFTER)."
 
       - name: Reply once on the issue (never twice in one window)
-        if: steps.route.outputs.path == 'window'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'window'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -318,7 +345,7 @@ jobs:
       # analysis uses — deduped by signature, label-verified, linked back here.
       # `- none` is the honest "found nothing" and files nothing.
       - name: File the gaps the review surfaced (its own issues)
-        if: steps.iss.outputs.review == 'true'
+        if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -326,7 +353,7 @@ jobs:
           make file-findings ISSUE="$ISSUE"
 
       - name: Close the reviewer window
-        if: always() && steps.iss.outputs.review == 'true'
+        if: always() && steps.mark.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -336,7 +363,7 @@ jobs:
       # both paths must leave a comment a human can see (the body refinement's
       # summary, or the window reply).
       - name: Fail loudly when the review produced nothing to read
-        if: always() && steps.iss.outputs.review == 'true' && steps.route.outputs.path != ''
+        if: always() && steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path != ''
         run: |
           if [ ! -s comment.md ]; then
             echo "::error::the review of #$ISSUE produced no comment.md - the prompt must write its one summary reply (a silent review is indistinguishable from a review that never ran)."
