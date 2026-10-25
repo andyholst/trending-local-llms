@@ -56,6 +56,9 @@ class Refused(RuntimeError):
     """The decision does not hold. Exit 1; the message says what to do instead."""
 
 
+from env_int import env_int  # noqa: E402  (one reading of an integer setting — issue #487)
+
+
 try:  # the ONE definition of who a bot commits as (scripts/agent_identity.py, §7)
     from agent_identity import AGENT_EMAIL
 except ImportError:  # pragma: no cover - only when run outside scripts/
@@ -116,6 +119,28 @@ def _count(a: str, b: str, cwd: str | Path | None) -> int:
     """`git rev-list --count a..b` — how many commits b has that a does not."""
     out = git_out(["rev-list", "--count", f"{a}..{b}"], cwd) or "0"
     return int(out)
+
+
+# A RE-RUN resumes the branch ITS OWN earlier attempt cut, so it carries a handful of commits at
+# most (the implementation commit, sometimes a fix). A branch carrying tens of commits the base
+# does not have is not this run's work: it is an abandoned attempt from another day, and switching
+# the tree to it REMOVES every file the base has added since — measured on run 40210081952, where
+# resuming a branch with `ahead_base=273` deleted `scripts/check_conflict_markers.py` that master
+# had merged, and the step after the adopt died on a missing file (issue #592).
+# ONE reading of an integer setting (issue #487): a typo must fail naming the variable, and an
+# EMPTY value must read as the default (the shape a missing env at run time takes).
+MAX_RESUME_AHEAD = env_int("RESUME_MAX_AHEAD", 20)
+
+
+def _too_stale(branch: str, ahead: int, behind: int) -> str:
+    """The refusal message for a branch that is not this run's own work (issue #592)."""
+    return (
+        f"{branch} carries {ahead} commit(s) the base does not have ({behind} behind it) — that "
+        f"is not a re-run of THIS issue's work, it is an abandoned attempt. Resuming it would "
+        f"switch the tree to it and REMOVE every file the base has added since, so the steps "
+        f"after the adopt would run against a tree older than the Makefile that invoked them. "
+        f"Close the PR it belongs to and delete the branch (the sweep then cuts a fresh one), or "
+        f"pass --resume-stale (RESUME_STALE=1) to adopt it anyway.")
 
 
 def _stale(head: str, tip: str, base: str, remote: str, cwd: str | Path | None) -> Refused:
@@ -446,6 +471,16 @@ def mode_adopt(args: argparse.Namespace) -> int:
     # files would be overwritten by checkout"). Stash the work, attach the branch, re-apply
     # it — the work is never dropped: if the re-apply conflicts it stays in the stash AND in
     # the tree's markers, which the fix loop resolves.
+    # REFUSE a branch that is not this run's own work, BEFORE touching the tree (issue #592).
+    if (local_exists or remote_exists) and not getattr(args, "resume_stale", False):
+        resume_ref = local_ref
+        if not local_exists:
+            git_out(["fetch", args.remote, f"+refs/heads/{branch}:{remote_ref}"], cwd)
+            resume_ref = remote_ref
+        ahead = _count(tip, resume_ref, cwd)
+        if ahead > MAX_RESUME_AHEAD:
+            raise Refused(_too_stale(branch, ahead, _count(resume_ref, tip, cwd)))
+
     dirty = bool(git_out(["status", "--porcelain"], cwd).strip())
     carried = False
     # Only an EXISTING branch needs a checkout that moves HEAD. `checkout -b` from HEAD keeps
@@ -593,6 +628,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("mode", choices=sorted(MODES))
     parser.add_argument("--branch", help="the branch to start (new) or resume")
+    parser.add_argument("--resume-stale", action="store_true",
+                        help="adopt a branch far ahead of the base even though it is not this "
+                             "run's work (issue #592; the default is to refuse)")
     parser.add_argument("--base", default=DEFAULT_BASE, help=f"base branch (default: {DEFAULT_BASE})")
     parser.add_argument("--remote", default=DEFAULT_REMOTE, help=f"remote (default: {DEFAULT_REMOTE})")
     parser.add_argument("--in-place", action="store_true",
