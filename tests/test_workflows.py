@@ -2329,6 +2329,26 @@ def test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot() -> None:
     check("qa-validate: still only on a failed validate", "failure()" in cond and "pull_request" in cond, cond)
 
 
+def test_a_detached_fix_round_leaves_its_transcript_behind() -> None:
+    """issue #566: rc=3 must not be a dead end — the REDACTED transcript is the artifact.
+
+    fix-bot run 40180788039 died three times with `Input required; detached without cancelling`
+    and the artifact held only `qa-report.txt`, so the question the model asked was unrecoverable
+    and the next reader could only guess (which is what happened). The scrubbed agent log travels
+    with the report; the RAW capture must never be the uploaded one (rule 3d).
+    """
+    print("\nissue #566 — a detached fix round leaves its (redacted) transcript behind")
+    job = load("fix-bot.yml")["jobs"]["fix"]
+    uploads = [s for s in steps(job)
+               if "upload-artifact" in str(s.get("uses", ""))
+               and "qa-report" in str(s.get("with", {}))]
+    check("fix-bot: the QA artifact exists", bool(uploads), [s.get("name") for s in steps(job)])
+    paths = " ".join(str(u.get("with", {}).get("path", "")) for u in uploads)
+    check("fix-bot: it carries the scrubbed agent log", "hermes-run.scrubbed.log" in paths, paths)
+    check("fix-bot: it never uploads the RAW capture", "hermes-run.log" not in paths.replace(
+        "hermes-run.scrubbed.log", ""), paths)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2376,6 +2396,7 @@ def main() -> int:
     test_a_job_that_runs_the_suite_checks_out_the_whole_history()
     test_issue_bot_salvages_a_detached_runs_work()
     test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
+    test_a_detached_fix_round_leaves_its_transcript_behind()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
