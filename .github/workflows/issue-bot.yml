@@ -153,9 +153,15 @@ jobs:
       # the reviewer's own timestamp — so "why is nobody working on this?" is
       # answered where the issue lives. A comment, never a label: the verdict
       # belongs to the reviewer (or a human), and this job never edits one.
+      # Every held issue is noted on EVERY sweep, not only on a sweep that found
+      # nothing (issue #202): the note is about the issues the sweep SKIPPED, and a
+      # sweep that takes one issue still skipped every other held one. The gate that
+      # was here (`if: steps.pick.outputs.issue == ''`) made the second case silent
+      # for ever, which is the "why is nobody working on this?" state the note exists
+      # to answer. `post_skip_note` is idempotent per review round (`since=` on the
+      # marker), so a run that notes an unchanged round costs no comment.
       - name: Note a fresh reviewer verdict on the issue it holds
         id: verdict
-        if: steps.pick.outputs.issue == ''
         env:
           # The default token has `issues: write`; the owner PAT is scoped to
           # Actions/Contents/Pull-requests and cannot comment (measured on #124).

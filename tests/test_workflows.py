@@ -1220,14 +1220,16 @@ def test_issue_bot():
     check("issue-bot: an empty backlog is a green run that implements nothing",
           'issue=' in pick_run and "backlog empty" in pick_run, "")
     # The reviewer's verdict is a HOLD, and the sweep says so on the issue
-    # (issue #200): when the pick came back empty it runs `make issue-skip-note`
-    # with the default token (the owner PAT cannot comment), and it edits no label
-    # — the verdict belongs to the reviewer.
+    # (issue #200): it runs `make issue-skip-note` with the default token (the owner
+    # PAT cannot comment) and edits no label — the verdict belongs to the reviewer.
+    # Issue #202: the note runs on EVERY sweep, never only when the pick came back
+    # empty — a sweep that takes one issue still skipped every other held one, and a
+    # gate on the pick made those holds silent for ever.
     verdict_step = step(pick, "Note a fresh reviewer verdict")
     check("issue-bot: a fresh verdict is noted on the issue (make issue-skip-note)",
           "make issue-skip-note" in verdict_step.get("run", ""), verdict_step)
-    check("issue-bot: the note runs only when the pick found nothing",
-          "steps.pick.outputs.issue == ''" in str(verdict_step.get("if", "")), verdict_step.get("if"))
+    check("issue-bot: the note runs on EVERY sweep, not only when the pick found nothing",
+          "outputs.issue" not in str(verdict_step.get("if", "")), verdict_step.get("if"))
     check("issue-bot: the note uses the default token (the PAT cannot comment)",
           verdict_step.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", verdict_step.get("env"))
     check("issue-bot: the note never edits a label",
