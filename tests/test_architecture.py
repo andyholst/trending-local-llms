@@ -218,6 +218,8 @@ def test_wired_into_ci_the_loop_the_suite_and_the_prompt():
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
     loop = (ROOT / "scripts" / "fix_loop.sh").read_text()
     prompt = mk.split("_implement-issue:")[1][:6000]
+    # Issue #549: the implementer's rules are its project skill; the recipe is a pointer.
+    skill = (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text()
 
     # When  their wiring is read
     # Then  the target exists, CI + the loop run it, the suite carries this file, and the prompt demands the update
@@ -229,7 +231,9 @@ def test_wired_into_ci_the_loop_the_suite_and_the_prompt():
     check("make: this test file runs in the suite",
           wired(__file__), "")
     check("prompt: the implementer must update ARCHITECTURE.md (rule 6h)",
-          "ARCHITECTURE.md" in prompt and "make architecture-check" in prompt, prompt[:300])
+          "ARCHITECTURE.md" in skill and "make architecture-check" in skill, skill[:300])
+    check("prompt: the recipe preloads the implementer's skill (issue #549)",
+          "-s issue-implement,bot-unattended" in prompt, prompt[:300])
 
 
 def test_a_script_named_only_in_the_generated_block_has_no_role():

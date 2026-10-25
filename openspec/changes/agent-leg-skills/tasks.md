@@ -1,0 +1,22 @@
+# Tasks
+
+- [x] 1. Proposal + capability spec for `agent-leg-skills` (issue #549): the measured rc=3 detach on the issue-bot sweep, and the seam that prevents it.
+- [x] 2. `.hermes/skills/bot-unattended/SKILL.md` — the unattended paragraph, written once, naming the measured failure.
+- [x] 3. `.hermes/skills/data-search/SKILL.md` — the refresh leg's contract (mirror, key by name, one query at a time, clean tps, exact `source_post`, never fabricate).
+- [x] 4. `.hermes/skills/issue-implement/SKILL.md` — triage-first, OpenSpec-first, additive-only, findings-as-issues, the gates.
+- [x] 5. `.hermes/skills/issue-review/SKILL.md` — the `body` and `window` paths, the markers that must survive, no `gh` writes.
+- [x] 6. `.hermes/skills/pr-fix/SKILL.md` — repair from `qa-report.txt`, never weaken a test, contract evolution, link repair.
+- [x] 7. `Makefile`: all eight legs preload `-s <skill>,bot-unattended`; `_fix` and `_implement-issue` shrink to pointers (3862→554, 4799→903 characters).
+- [x] 8. `Makefile`: `_hermes-skills-register` / `_hermes-skills-check` / `hermes-skills-register` / `check-agent-skills` / `agent-skills-report`, `_setup` registers and reads back, `lint` runs the gate.
+- [x] 9. `scripts/hermes_skills_register.py` — register through the Hermes CLI (no PyYAML in the repo's requirements), `--check`, idempotent, exit 2 on a missing CLI or directory.
+- [x] 10. `scripts/check_agent_skills.py` — the gate: preload, skill existence, frontmatter name, required sections, no inline contract, pointer budget, seam documentation, registration target.
+- [x] 11. `.github/workflows/issue-bot.yml` — the rc=3 branch, before the generic "produced no implementation".
+- [x] 12. `.github/workflows/issue-review-bot.yml` — the rc=3 branch on both agent steps.
+- [x] 13. `tests/test_agent_skills.py` — 128 checks over the real tree, the real scripts, and eight falsifying fixtures.
+- [x] 14. Re-specified at the same strength: `tests/test_workflows.py`, `tests/test_architecture.py`, `tests/test_engine_registry.py` now assert the rules against the skill the leg preloads, plus the preload itself.
+- [x] 15. Regression proved RED on the pre-change tree: the gate reports 10 findings against `git show origin/master:Makefile`, 0 against this one.
+- [x] 16. `ARCHITECTURE.md`: the two script rows, the new targets, the skills, and the regenerated §10 block.
+- [x] 17. `OPENSPEC.md` index refreshed (`make openspec-index`).
+- [x] 18. Gates green: `make lint`, `make test`, `make validate`, `make openspec-check`, `make architecture-check`.
+- [x] 19. Commit, push, open the PR (closes #549) — reviewable, never a draft, never merged here.
+- [x] 20. The AGENTS.md rule for this seam is OWED (the file is write-protected): the exact paragraph ships in the PR body for the owner to apply, and `make agent-skills-report` prints whether it is stated yet.

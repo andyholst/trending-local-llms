@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -327,8 +328,12 @@ def test_contracts_and_prompts():
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         prompt = mk[mk.index(f"_search-{b}:\n"):].split("\n", 2)[1]
         check(f"prompt {b}: takes the engine rules from $(ENGINE_ASK)", "$(ENGINE_ASK)" in prompt, prompt[-120:])
-    fix = mk[mk.index("_fix:\n"):].split("\n", 2)[1]
-    check("prompt fix: never register a harness/app/benchmark", "Never register a harness" in fix)
+    fix_recipe = re.search(r"\n_fix:\n((?:\t[^\n]*\n)+)", mk)
+    fix = fix_recipe.group(1) if fix_recipe else ""
+    # Issue #549: the fixer's rules are its project skill; the recipe is a pointer.
+    fix_skill = (ROOT / ".hermes" / "skills" / "pr-fix" / "SKILL.md").read_text()
+    check("prompt fix: never register a harness/app/benchmark", "never registered" in fix_skill)
+    check("prompt fix: preloads its skill", "-s pr-fix,bot-unattended" in fix, fix[-120:])
     check("make: engine-check target", "_engine-check:" in mk and "engine_registry.py --check-raw" in mk)
 
 
