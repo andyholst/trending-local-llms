@@ -277,7 +277,11 @@ def test_validator_catches_misplaced_measurement():
     errs = _validate_rendered("\n".join(lines), s)
     check("validator: CPU measurement missing from its CPU row -> FAIL",
           any("no row in the CPU table" in e or "missing from its CPU row" in e for e in errs), errs[:3])
-    wrong_best = md.replace("**150** t/s<br>[vLLM]", "**120** t/s<br>[vLLM]", 1)
+    # Scoped to the most-loved table: the tier tables above it (issue #349) render the
+    # same `**150** t/s<br>[vLLM]` shape, so an unscoped replace mutates the wrong one.
+    head, loved_sec = md.split("## ❤️ Most loved", 1)
+    wrong_best = head + "## ❤️ Most loved" + loved_sec.replace(
+        "**150** t/s<br>[vLLM]", "**120** t/s<br>[vLLM]", 1)
     errs = _validate_rendered(wrong_best, s)
     check("validator: most-loved cell not showing the true best -> FAIL",
           any("should start with '**150**'" in e for e in errs), errs[:3])

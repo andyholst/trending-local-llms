@@ -740,6 +740,7 @@ How a model gets from an X post to a `README.md` row. Every step below is a real
 ### `README.md` — the sections a refresh rewrites
 
 - Trending Local LLMs
+- 🔥 Trending for your card — low end first
 - ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)
 - 🖥️ Pick your card — what fits your VRAM
 - 🧭 Which inference engine runs what

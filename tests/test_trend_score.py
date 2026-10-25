@@ -240,7 +240,10 @@ def test_readme_trend_cell():
     md, _ = _readme_for(s)
     hdr = next(ln for ln in md.split("\n") if ln.startswith("| Model | Status"))
     check("readme: 'Trend' column", "| Trend |" in hdr, hdr)
-    row = next(ln for ln in md.split("\n") if ln.startswith("| [**Bonsai 2 27B**]"))
+    # scoped to the most-loved table: the tier tables above it (issue #349) carry the
+    # same `| [**Name**]` row shape
+    loved_md = md.split("## ❤️ Most loved", 1)[-1]
+    row = next(ln for ln in loved_md.split("\n") if ln.startswith("| [**Bonsai 2 27B**]"))
     cell = V._split_row(row)[2]
     check("readme: trend cell shows buzz, posts and speed source",
           "buzz " in cell and "5 posts" in cell and "speed +" in cell and "t/s" in cell, cell)
@@ -265,7 +268,8 @@ def test_validator_ranking_accepts_and_rejects():
     check("validator: generated README passes the ranking check", not _ranking_errors(s, path),
           _ranking_errors(s, path)[:2])
     lines = md.split("\n")
-    i = next(k for k, ln in enumerate(lines) if ln.startswith("| [**Bonsai 2 27B**]"))
+    first_loved = next(k for k, ln in enumerate(lines) if ln.startswith("## ❤️ Most loved"))
+    i = next(k for k, ln in enumerate(lines) if k > first_loved and ln.startswith("| [**Bonsai 2 27B**]"))
     lines[i], lines[i + 1] = lines[i + 1], lines[i]
     path.write_text("\n".join(lines))
     check("validator: swapped rows -> FAIL", any("order" in e for e in _ranking_errors(s, path)))

@@ -802,6 +802,95 @@ def check_card_tables(store: dict) -> None:
                            for t in ut.CARD_TIERS_GB))
 
 
+def _trending_card_section(text: str) -> str:
+    """The `## 🔥 Trending for your card` section body (issue #349)."""
+    lines = text.split("\n")
+    start = next((i for i, ln in enumerate(lines) if ln.startswith("## 🔥 Trending for your card")), None)
+    if start is None:
+        return ""
+    out = []
+    for ln in lines[start + 1:]:
+        if ln.startswith("## "):
+            break
+        out.append(ln)
+    return "\n".join(out)
+
+
+def check_card_trending(store: dict) -> None:
+    """The tier-local trending list: "what is trending that fits MY card?" (issue #349).
+
+    The headline list ranked every model by ONE global score whose speed term could come
+    from a card above the reader's, and a datacenter aggregate that named no card at all
+    (28,340 t/s on 'datacenter GPUs, 512 concurrent requests') earned the top speed bonus
+    and the top CUDA cell. This gate reads the ONE derivation the renderer reads
+    (`update_trending.tier_trending_rows`) and fails when the section is missing, sits
+    below the most-loved list, loses a tier or reorders them, drops a row, shows a score
+    that is not the tier-local one, shows a speed term from a card ABOVE the tier, or
+    renders an empty tier without naming it as a collection gap.
+    """
+    if not README.exists():
+        fail("README.md missing")
+        return
+    ut = _ut()
+    reg = store.get("engines", {})
+    text = README.read_text()
+    sec = _trending_card_section(text)
+    if not sec:
+        fail("trending-for-your-card: README has no '## 🔥 Trending for your card' section")
+        return
+    most = next((i for i, ln in enumerate(text.split("\n")) if ln.startswith("## ❤️ Most loved")), None)
+    here = next((i for i, ln in enumerate(text.split("\n")) if ln.startswith("## 🔥 Trending for your card")), None)
+    bad = 0
+    if most is not None and here is not None and here > most:
+        bad += 1
+        fail("trending-for-your-card: the section must come ABOVE the most-loved ('No limit') list")
+    heads = [int(m.group(1)) for m in re.finditer(r"^### Up to (\d+) GB", sec, re.M)]
+    if heads != list(ut.CARD_TIERS_GB):
+        bad += 1
+        fail(f"trending-for-your-card: tier headings are {heads}, expected {list(ut.CARD_TIERS_GB)} (low end first)")
+    for t in ut.CARD_TIERS_GB:
+        if f"(#up-to-{t}-gb)" not in sec:
+            bad += 1
+            fail(f"trending-for-your-card: the selector does not link the {t} GB tier")
+    for t in ut.CARD_TIERS_GB:
+        block = sec.split(f"### Up to {t} GB", 1)[-1].split("### ", 1)[0]
+        expected = ut.tier_trending_rows(store["models"], t, reg)
+        if not expected:
+            if "collection gap" not in block:
+                bad += 1
+                fail(f"trending-for-your-card: {t} GB has no trending evidence and does not say so as a collection gap")
+            continue
+        got = []
+        for row in (ln for ln in block.split("\n")
+                    if ln.startswith("|") and "---" not in ln and not ln.startswith("| Model")):
+            cells = _split_row(row)
+            name = re.search(r"\*\*(.+?)\*\*", cells[0] if cells else "")
+            trend = re.search(r"\*\*([\d.]+)\*\*", cells[1] if len(cells) > 1 else "")
+            speed = re.search(r"speed \+([\d.]+) \(([\d.]+) t/s", cells[1] if len(cells) > 1 else "")
+            got.append((name.group(1) if name else "",
+                        float(trend.group(1)) if trend else None,
+                        float(speed.group(2)) if speed else None))
+        if [g[0] for g in got] != [r[1]["name"] for r in expected]:
+            bad += 1
+            fail(f"trending-for-your-card: {t} GB rows differ from the tier-local derivation. "
+                 f"readme={[g[0] for g in got][:4]} store={[r[1]['name'] for r in expected][:4]}")
+            continue
+        for (_name, shown_score, shown_tps), (score, m, best, _ev) in zip(got, expected):
+            if shown_score is None or abs(shown_score - score) > 0.05:
+                bad += 1
+                fail(f"trending-for-your-card: {t} GB row for {m['name']} shows trend {shown_score}, "
+                     f"the tier-local score is {score}")
+            want_tps = ut._tps_core(best.get("tps")) if best else None
+            if (want_tps is None) != (shown_tps is None) or (
+                    want_tps is not None and abs(shown_tps - want_tps) > 0.01):
+                bad += 1
+                fail(f"trending-for-your-card: {t} GB speed term for {m['name']} is {shown_tps} t/s, "
+                     f"the fastest measurement that RAN on <= {t} GB is {want_tps} t/s")
+    if not bad:
+        print(f"  OK: 'Trending for your card' ranks all {len(ut.CARD_TIERS_GB)} tiers by their own "
+              f"tier-local trend, low end first, above the most-loved list")
+
+
 #: The capacity categories `data/MODEL_CONTRACT.md` documents, plus `CPU` for a run with no
 #: GPU. NOT an enum in the contract: narrowing `vram_tier` to one would reject the store as
 #: it is (rule 3b), which is why this is a vocabulary report, not a gate (issue #341).
@@ -1515,6 +1604,7 @@ def main() -> int:
     add("JSON <-> README sync", "readme", lambda: check_readme_sync(store))
     add("measurements in their backend rows", "readme", lambda: check_readme_measurements(store))
     add("card-fit tables (what fits your card)", "readme", lambda: check_card_tables(store))
+    add("trending for your card (tier-local trend)", "readme", lambda: check_card_trending(store))
     add("backends cover measurements", "data", lambda: check_backends_cover_measurements(store))
     add("post-signal coverage (report only)", "data", lambda: check_post_signal(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))

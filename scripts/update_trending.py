@@ -797,6 +797,14 @@ _DATACENTER_HW = ("h100", "h200", "h800", "a100", "a800", "b100", "b200", "b300"
                   # (#260). Radeon Pro W-series (W7900/W7800) are workstation
                   # cards and stay in scope.
                   "v620", "v520", "v340")
+# A hardware string can name a CLASS of machine instead of a card: the shipped store
+# carries 'datacenter GPUs, 512 concurrent requests' for Qwen3.8-27B's 28,340 t/s
+# AGGREGATE figure. It has no card name and no VRAM figure, so hardware_vram_gb()
+# returned None and the gate ADMITTED it — that number earned speed +11.5, headed the
+# most-loved row and was printed as its CUDA best cell, when the fastest figure on a
+# card a reader can buy was 500 t/s on an RTX 5090 (issue #349). The SKU list above
+# cannot see this shape, so a class phrase is refused on its own.
+_DATACENTER_CLASS_RE = re.compile(r"\bdata[\s-]?cent(?:er|re)\b", re.I)
 # Known consumer cards -> VRAM (GB). Laptop variants listed first (more specific).
 _CARD_VRAM = (
     ("5090 laptop", 24), ("4090 laptop", 16), ("5080 laptop", 16), ("4080 laptop", 12),
@@ -852,6 +860,8 @@ def in_scope(e: dict) -> bool:
     exactly like NVIDIA; AMD Instinct (MI210/MI250/MI300/MI355) never counts."""
     h = (e.get("hardware") or "").lower()
     if any(k in h for k in _DATACENTER_HW) or re.search(r"\binstinct\b", h):
+        return False
+    if _DATACENTER_CLASS_RE.search(h):
         return False
     if "apple" in h or "mac" in h or measurement_backend(e) in ("Metal", "CPU"):
         return True
@@ -978,6 +988,56 @@ def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> li
         e, ev = max(cands, key=lambda p: (p[1] == "ran-on", _tps_core(p[0].get("tps"))))
         rows.append((_tps_core(e.get("tps")), m, e, ev))
     rows.sort(key=lambda r: (-r[0], r[1]["name"].lower()))
+    return rows
+
+
+# ---- trending for your card (issue #349): a tier-local trend ----------------
+# The ranking was ONE global list: its speed term could come from any in-scope
+# card, so a 32 GB RTX 5090 at 500 t/s and a 16 GB RTX 4060 at 50 t/s competed in
+# the same column and the reader with the smaller card had no ranking at all. The
+# fix is NOT a per-tier copy of the score — it is the SAME buzz with a speed bonus
+# earned only by a measurement that RAN on a card <= the tier, reusing the ONE fit
+# rule (`tier_measurements` -> `fits_tier`, rule 6d). A weights-only fit never earns
+# it: the figure came from a bigger card and was never measured at this size.
+
+
+def tier_speed(m: dict, tier: int, registry: dict | None = None) -> dict | None:
+    """The measurement that earns a `tier`-GB speed bonus: the fastest one that
+    actually RAN on a card <= tier ('ran-on'), never a weights-only fit."""
+    ran = [e for e, ev in tier_measurements(m, tier, registry) if ev == "ran-on"]
+    return best_measurement(ran)
+
+
+def tier_trend(m: dict, tier: int, registry: dict | None = None) -> tuple[float, float, dict | None]:
+    """(tier-local trend, speed bonus, the measurement behind the bonus).
+
+    The buzz is the model's own 7-day buzz (unchanged: engagement does not depend
+    on the reader's card); only the speed term is tier-local. A model with no post
+    in the window is not trending at any tier, so its score is 0."""
+    eng = m.get("engagement", {}) or {}
+    if not int(eng.get("posts_7d", 0) or 0):
+        return 0.0, 0.0, None
+    best = tier_speed(m, tier, registry)
+    bonus = speed_bonus(_tps_core(best.get("tps"))) if best else 0.0
+    return round(float(eng.get("buzz_7d", 0) or 0) + bonus, 1), bonus, best
+
+
+def tier_trending_rows(models: list[dict], tier: int,
+                       registry: dict | None = None) -> list[tuple[float, dict, dict | None, str]]:
+    """(tier-local trend, model, measurement or None, evidence) for every TRENDING
+    model with evidence at <= `tier`, ranked by the tier-local trend, then t/s."""
+    rows = []
+    for m in models:
+        cands = tier_measurements(m, tier, registry)
+        if not cands:
+            continue
+        score, _bonus, best = tier_trend(m, tier, registry)
+        if not score:
+            continue  # not trending in the window, so it belongs to the card-fit view only
+        ev = next((evidence for e, evidence in cands if e is best), cands[0][1])
+        rows.append((score, m, best, ev))
+    rows.sort(key=lambda r: (-r[0], -(_tps_core(r[2].get("tps")) if r[2] else 0.0),
+                             r[1]["name"].lower()))
     return rows
 
 
@@ -1137,6 +1197,14 @@ def render_readme(store: dict, today: datetime) -> str:
             return "<sub>not stated</sub>"
         tag = {"declared": "stated by the source", "tier": "category only",
                "measured-on": "smallest card it ran on"}[ev]
+        # NAME THE CARD the headline figure ran on: a 500 t/s figure sourced from an
+        # RTX 5090 32GB sat in a row whose VRAM cell said "16GB", which reads as "this
+        # is what my 16 GB laptop gets" (issue #349). The least-VRAM claim stays first
+        # (that is what the column means); the card the number came from follows it.
+        best = best_in_scope(m)
+        hw = best.get("hardware") if best else None
+        if hw:
+            tag += f" · headline on {_cell(hw)}"
         return f"**{need}**<br><sub>{tag}</sub>"
 
     loved = []
@@ -1153,6 +1221,69 @@ def render_readme(store: dict, today: datetime) -> str:
             f"| {vram_cell(m)} | {_cell(m.get('why')) or '—'} |"
         )
     most_loved = "\n".join(loved)
+
+    # ---- 1a. trending for your card (issue #349) ----------------------------
+    # The FIRST section: the reader with 8-24 GB of VRAM picks their card and reads
+    # the trend ranked FOR THAT CARD. Ranked by `tier_trending_rows()` — the ONE
+    # tier-local derivation the validator also reads (rule 6d) — never by t/s alone
+    # and never by the global score, which could inherit a card they do not own.
+    def tier_trend_cell(m: dict, score: float, bonus: float, best: dict | None) -> str:
+        eng = m.get("engagement", {}) or {}
+        posts = int(eng.get("posts_7d", 0) or 0)
+        sub = f"buzz {_fmt_num(eng.get('buzz_7d', 0))} · {posts} post{'s' if posts != 1 else ''}"
+        if best and bonus:
+            hw = f", {_cell(best.get('hardware'))}" if best.get("hardware") else ""
+            sub += f" · speed +{_fmt_num(bonus)} ({best['tps']} t/s{hw})"
+        else:
+            sub += " · speed +0 (no measured fit at this size)"
+        return f"**{_fmt_num(score)}**<br><sub>{sub}</sub>"
+
+    def trending_card_section() -> str:
+        most_loved_anchor = ("#-most-loved-open-weight-models-on-x-ranked-by-trend-"
+                             "7-day-buzz--speed")
+        parts = [
+            "## 🔥 Trending for your card — low end first",
+            "",
+            "Jump to your card: " + " · ".join(f"[{t} GB](#up-to-{t}-gb)" for t in CARD_TIERS_GB)
+            + f" · [No limit]({most_loved_anchor})",
+            "",
+            "Ranked by a **tier-local trend**: the model's own 7-day buzz, plus a speed bonus earned only by"
+            " a measurement that **actually ran on a card of that size or smaller**. A 32 GB figure can never"
+            " top the 8 GB table, and a datacenter measurement never appears at all. The tables are"
+            " **cumulative** (`Up to 16 GB` includes every model with evidence at 16 GB or below) and place a"
+            " model only with evidence: a proved `ran on` figure, or the labelled `weights-only` fit. A model"
+            " with no post in the window is not trending — it keeps its row in"
+            " [🖥️ Pick your card](#-pick-your-card--what-fits-your-vram) below.",
+            "",
+        ]
+        for t in CARD_TIERS_GB:
+            rows = tier_trending_rows(models, t, registry)
+            parts.append(f"### Up to {t} GB")
+            parts.append("")
+            if not rows:
+                parts.append(f"_No trending model has evidence at {t} GB yet. That is a **collection gap, not"
+                             f" \u201cnothing fits\u201d**: the search legs must ask for these cards"
+                             f" (`skills/gather-data.md`, issue #337)._")
+                parts.append("")
+                continue
+            parts.append("| Model | Trend | Best t/s that fits — engine · hardware · quant · date | VRAM |")
+            parts.append("|---|---|---|---|")
+            for score, m, e, ev in rows:
+                _score, bonus, _best = tier_trend(m, t, registry)
+                if e is not None:
+                    det = detail(e)
+                    date = f" · {e['date']}" if e.get("date") else ""
+                    best_cell = f"**{e['tps']}** t/s<br>{elink(e['engine'])}" + (f" · {det}" if det else "") + date
+                else:
+                    w, tag = weights_gb(m, next((x for x, _ in tier_measurements(m, t, registry)), {}))
+                    best_cell = (f"<sub>weights-only {_fmt_num(w)} GB ({tag}) — no measured run at this size</sub>"
+                                 if w is not None else "<sub>weights-only — no measured run at this size</sub>")
+                parts.append(f"| [**{m['name']}**]({hf_url(m)}) | {tier_trend_cell(m, score, bonus, e)}"
+                             f" | {best_cell} | {vram_cell(m)} |")
+            parts.append("")
+        return "\n".join(parts)
+
+    trending_card = trending_card_section()
 
     # ---- 1b. pick your card (issue #337) ------------------------------------
     # The card owner's entry point: pick your VRAM, see the fastest model that
@@ -1289,9 +1420,13 @@ Ties go to more posts, then the highest t/s. t/s is always shown **per engine**,
 
 ---
 
+{trending_card}
+
+---
+
 ## ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)
 
-Best measured t/s per backend, on consumer/workstation hardware; the full list of measurements is in the backend tables below. The **VRAM** column is the least amount needed to run the model, with the evidence behind that claim.
+The **No limit** view: every model in rank order, whatever card it was measured on. Best measured t/s per backend, on consumer/workstation hardware (a datacenter figure is never a "best" cell); the full list of measurements is in the backend tables below. The **VRAM** column is the least amount needed to run the model, with the evidence behind that claim and the card its headline figure came from.
 
 | Model | Status | Trend | {loved_hdr} | VRAM | Why people love it |
 |---|---|---|{"---|" * len(BACKENDS)}---|---|
