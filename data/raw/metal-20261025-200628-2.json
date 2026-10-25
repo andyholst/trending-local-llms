@@ -44,11 +44,11 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "27B",
-      "hf": "BottleCapAI/ThinkingCap-27B",
+      "hf": "bottlecapai/ThinkingCap-Qwen3.8-27B",
       "formats": [
         {
           "name": "ThinkingCap Qwen3.8-27B Kearuga EXL3 4.0 bpw",
-          "hf": "BottleCapAI/ThinkingCap-27B"
+          "hf": "bottlecapai/ThinkingCap-Qwen3.8-27B"
         }
       ],
       "vram_tier": "32GB",

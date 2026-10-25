@@ -8,11 +8,11 @@
       "type": "LLM",
       "license": "Apache 2.0",
       "params": "125B total / ~6B active",
-      "hf": "Qwen/Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
       "formats": [
         {
           "name": "Qwen3.8-Flash-Next Q4",
-          "hf": "Qwen/Qwen3.8-Flash-Next-125B"
+          "hf": "Qwen/Qwen3.8-Flash-Next"
         }
       ],
       "vram_tier": "8GB",
