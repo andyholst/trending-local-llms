@@ -168,29 +168,42 @@ merge_base() {
 		return 0
 	fi
 	echo "[fix-loop] branch is $behind commit(s) behind origin/$BASE — merging the base in BEFORE any LLM round"
-	if git merge --no-edit FETCH_HEAD >/dev/null 2>&1; then
+	local merge_out
+	if merge_out="$(git merge --no-edit FETCH_HEAD 2>&1)"; then
 		echo "[fix-loop] merged origin/$BASE ($behind commit(s)) — a failure the base already fixed now needs no LLM round"
 	else
 		local conflicted
 		conflicted="$(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')"
-		echo "[fix-loop] merging origin/$BASE CONFLICTED in: ${conflicted:-<unreadable>} — a Hermes round resolves it (issue #475)"
-		{
-			echo "=== base merge conflict: origin/$BASE moved while this branch was open ==="
-			echo "Resolve these paths, keep BOTH sides' intent, and remove every conflict marker:"
-			echo "  ${conflicted:-<git could not list them>}"
-			echo
-			echo "Generated artifacts (data/models.json, README.md, data/snapshots/*) are"
-			echo "REGENERATED, never hand-merged: keep this branch's copy and re-run the"
-			echo "generator, or keep the base's and re-run make merge. Never leave a conflict"
-			echo "marker inside the store or the README."
-			echo
-			for f in $(git diff --name-only --diff-filter=U 2>/dev/null); do
-				echo "===== $f ====="
-				awk '/^<<<<<<< /,/^>>>>>>> /' "$f" 2>/dev/null | head -80
+		# A merge can fail WITHOUT leaving an unmerged path (an untracked file the base
+		# would overwrite, a dirty index, a git refusing the merge outright). The loop
+		# used to print `<unreadable>` and hand a round a conflict that did not exist —
+		# measured on run 40177729642, where the merge failed, `<unreadable>` was
+		# reported, and every round then detached on a repair with nothing to repair
+		# (issue #563). Name WHICH case it is: the paths, or git's own first line.
+		if [ -z "${conflicted// /}" ]; then
+			echo "[fix-loop] REFUSED: merging origin/$BASE failed with NO unmerged path, so it is not a conflict a round can resolve — git said: $(printf '%s' "$merge_out" | sed -n '1p')"
+			echo "[fix-loop] the branch is left exactly as it was; the checks below still run, so the real failure is reported"
+			BASE_CONFLICT_PENDING=0
+		else
+			echo "[fix-loop] merging origin/$BASE CONFLICTED in: $conflicted — a Hermes round resolves it (issue #475)"
+			{
+				echo "=== base merge conflict: origin/$BASE moved while this branch was open ==="
+				echo "Resolve these paths, keep BOTH sides' intent, and remove every conflict marker:"
+				echo "  $conflicted"
 				echo
-			done
-		} >"$CONFLICT_REPORT" 2>&1 || true
-		BASE_CONFLICT_PENDING=1
+				echo "Generated artifacts (data/models.json, README.md, data/snapshots/*) are"
+				echo "REGENERATED, never hand-merged: keep this branch's copy and re-run the"
+				echo "generator, or keep the base's and re-run make merge. Never leave a conflict"
+				echo "marker inside the store or the README."
+				echo
+				for f in $conflicted; do
+					echo "===== $f ====="
+					awk '/^<<<<<<< /,/^>>>>>>> /' "$f" 2>/dev/null | head -80
+					echo
+				done
+			} >"$CONFLICT_REPORT" 2>&1 || true
+			BASE_CONFLICT_PENDING=1
+		fi
 	fi
 	return 0
 }
