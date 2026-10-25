@@ -56,6 +56,9 @@ class Refused(RuntimeError):
     """The decision does not hold. Exit 1; the message says what to do instead."""
 
 
+from env_int import env_int  # noqa: E402  (one reading of an integer setting — issue #487)
+
+
 try:  # the ONE definition of who a bot commits as (scripts/agent_identity.py, §7)
     from agent_identity import AGENT_EMAIL
 except ImportError:  # pragma: no cover - only when run outside scripts/
@@ -124,7 +127,9 @@ def _count(a: str, b: str, cwd: str | Path | None) -> int:
 # the tree to it REMOVES every file the base has added since — measured on run 40210081952, where
 # resuming a branch with `ahead_base=273` deleted `scripts/check_conflict_markers.py` that master
 # had merged, and the step after the adopt died on a missing file (issue #592).
-MAX_RESUME_AHEAD = int(os.environ.get("RESUME_MAX_AHEAD") or 20)
+# ONE reading of an integer setting (issue #487): a typo must fail naming the variable, and an
+# EMPTY value must read as the default (the shape a missing env at run time takes).
+MAX_RESUME_AHEAD = env_int("RESUME_MAX_AHEAD", 20)
 
 
 def _too_stale(branch: str, ahead: int, behind: int) -> str:
