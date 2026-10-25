@@ -389,9 +389,10 @@ branch-adopt: ## Cut or attach BRANCH at COMMIT time, reporting behind_base=N an
 	@test -n "$(BRANCH)" || { echo "Usage: make branch-adopt BRANCH=<branch> [BASE=master]"; exit 1; }
 	python3 scripts/worktree_base.py adopt --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)"
 
-base-rebase: ## Fetch the base and rebase BRANCH onto it; a conflict ABORTS and KEEPS the work (exit 3) (BRANCH=, BASE=)
+base-rebase: ## Fetch the base and rebase BRANCH onto it; a conflict KEEPS the work and still SUCCEEDS (`base_rebase=conflict`) (BRANCH=, BASE=)
 	@test -n "$(BRANCH)" || { echo "Usage: make base-rebase BRANCH=<branch> [BASE=master]"; exit 1; }
-	python3 scripts/worktree_base.py rebase --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)"
+	@rc=0; python3 scripts/worktree_base.py rebase --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)" || rc=$$?; \
+	if [ $$rc -eq 3 ]; then echo "base_rebase=conflict"; exit 0; fi; exit $$rc
 
 base-advance: ## Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet)
 	python3 scripts/worktree_base.py advance $(if $(BASE),--base $(BASE),)

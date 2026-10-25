@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **132** · archived: **9**
+Active changes: **133** · archived: **9**
 
 ## Active changes
 
@@ -30,6 +30,7 @@ Active changes: **132** · archived: **9**
 | `architecture-bot-write-path` | active | #485 — arch-bot: the drift→commit→PR path has no behavioural test | — | [architecture-bot-write-path](openspec/changes/architecture-bot-write-path/specs/architecture-bot-write-path/spec.md) | 10/10 | [proposal.md](openspec/changes/architecture-bot-write-path/proposal.md) |
 | `architecture-check-presence-boundary` | active | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/architecture-check-presence-boundary/proposal.md) |
 | `architecture-inventory` | active | #479 — architecture-bot: a daily, deterministic refresh of ARCHITECTURE.md's living inventory | — | [architecture-inventory](openspec/changes/architecture-inventory/specs/architecture-inventory/spec.md) | 11/11 | [proposal.md](openspec/changes/architecture-inventory/proposal.md) |
+| `base-rebase-conflict-succeeds` | active | — | — | [worktree-base](openspec/changes/base-rebase-conflict-succeeds/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/base-rebase-conflict-succeeds/proposal.md) |
 | `baseline-age-visible` | active | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/baseline-age-visible/proposal.md) |
 | `bot-agent-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 19/19 | [proposal.md](openspec/changes/bot-agent-output-scrubbed/proposal.md) |
 | `bot-commits-as-the-agent` | active | — | — | [commit-authorship](openspec/changes/bot-commits-as-the-agent/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/bot-commits-as-the-agent/proposal.md) |

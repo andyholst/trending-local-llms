@@ -473,13 +473,13 @@ jobs:
           # Bring the commit onto the base as it is NOW. A conflict is not a failure of the
           # work: `base-rebase` aborts the rebase, every commit stays, and the push goes ahead —
           # the PR carries the conflict and the fix loop repairs it (#475). Exit 3 = conflicted.
-          make base-rebase BRANCH="$BRANCH" || REBASE_RC=$?
-          if [ "${REBASE_RC:-0}" = "3" ]; then
-            echo "rebase=conflict (work kept; the PR will carry it and the fix loop repairs it)"
-          elif [ "${REBASE_RC:-0}" != "0" ]; then
-            echo "::error::make base-rebase failed (rc=${REBASE_RC}) — refusing to push a tree whose base could not be established."
-            exit 1
-          fi
+          # `make` exits 2 for ANY failing recipe, so the script's documented exit 3 (a
+          # conflicted rebase that KEEPS every commit and must be pushed) could not be read
+          # here: the contract was dead code and a finished implementation was refused
+          # (measured, run 40205472559 — "Error 3" from the script, "rc=2" from make, no
+          # push). The TARGET now normalises it and prints `base_rebase=conflict`, so a real
+          # failure is the only thing that sets a non-zero status (issue #586).
+          make base-rebase BRANCH="$BRANCH"
           # A push may be REJECTED by the remote even with a valid token: a
           # fine-grained PAT without `Workflows: Read and write` cannot create or
           # update .github/workflows/** ("refusing to allow a Personal Access
