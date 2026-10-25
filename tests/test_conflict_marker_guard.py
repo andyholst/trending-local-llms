@@ -148,6 +148,10 @@ def test_the_bots_and_lint_run_the_guard():
         check(f"{name}: the commit step runs the guard", idx != -1, "")
         check(f"{name}: it runs BEFORE `git add -A` (a marker must stop the commit)",
               idx != -1 and add > idx, (idx, add))
+    # The adopt switches the tree to the BRANCH (a stale branch drops files master added), so
+    # the guard must run on THIS RUN's tree, before the adopt — measured on run 40210081952.
+    check("issue-bot: the guard runs BEFORE the branch is adopted",
+          ib.find("make check-conflict-markers") < ib.find("make branch-adopt"), "")
     makefile = (ROOT / "Makefile").read_text()
     check("makefile: `lint` runs the guard", "check-conflict-markers" in makefile.split("lint:")[1][:600], "")
     check("makefile: the target exists",

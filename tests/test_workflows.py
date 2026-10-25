@@ -284,6 +284,11 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
         g("clone", "-q", str(td / "remote.git"), str(td / "wc"))
         wc = td / "wc"
         shutil.copy(ROOT / ".gitignore", wc / ".gitignore")
+        # `make reset-working-files` reads the ONE list (issue #543); a clone without it
+        # cannot run the real commit step.
+        (wc / "scripts").mkdir(exist_ok=True)
+        shutil.copy(ROOT / "scripts" / "issue_bot_working_files.txt",
+                    wc / "scripts" / "issue_bot_working_files.txt")
         (wc / "data.json").write_text("{}\n")
         g("add", "-A", cwd=wc)
         g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base", cwd=wc)
@@ -308,6 +313,7 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
             'case "$1" in\n'
             f'  git-identity) exec python3 "{ROOT / "scripts" / "agent_identity.py"}" --git-config ;;\n'
             f'  check-conflict-markers) exec python3 "{ROOT / "scripts" / "check_conflict_markers.py"}" ;;\n'
+            f'  reset-working-files) exec python3 "{ROOT / "scripts" / "reset_working_files.py"}" ;;\n'
             '  *) echo "unexpected target: $1" >&2; exit 2 ;;\n'
             "esac\n")
         (bin_ / "make").chmod(0o755)
@@ -505,6 +511,11 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
         g("clone", "-q", str(td / "remote.git"), str(td / "wc"))
         wc = td / "wc"
         shutil.copy(ROOT / ".gitignore", wc / ".gitignore")
+        # `make reset-working-files` reads the ONE list (issue #543); a clone without it
+        # cannot run the real commit step.
+        (wc / "scripts").mkdir(exist_ok=True)
+        shutil.copy(ROOT / "scripts" / "issue_bot_working_files.txt",
+                    wc / "scripts" / "issue_bot_working_files.txt")
         (wc / "data.json").write_text("{}\n")
         g("add", "-A", cwd=wc)
         g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base", cwd=wc)
@@ -543,6 +554,8 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
             '    git config user.name "Asimov Agent" && git config user.email "support@docondee.com" ;;\n'
             '  check-conflict-markers)\n'
             f'    exec python3 "{ROOT / "scripts" / "check_conflict_markers.py"}" ;;\n'
+            '  reset-working-files)\n'
+            f'    exec python3 "{ROOT / "scripts" / "reset_working_files.py"}" ;;\n'
             '  *)\n'
             '    echo "stub make: the push step called an unexpected target: $1" >&2; exit 2 ;;\n'
             "esac\n")
@@ -1064,9 +1077,16 @@ def test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log():
     check("issue-bot: the RAW log is never uploaded",
           "implement.log" not in paths.replace("implement.scrubbed.log", ""), paths)
 
-    resets = [str(s.get("run", "")) for s in impl_steps if "git reset -q --" in str(s.get("run", ""))]
-    check("issue-bot: the capture is reset out of every commit", resets and all("implement.log" in r for r in resets),
+    # Issue #543: the reset used to be one long literal line, copied into two steps here and a
+    # third in fix-bot.yml — adding a working file meant editing four places. ONE target now
+    # reads ONE list, and the list must still name the capture.
+    resets = [str(s.get("run", "")) for s in impl_steps if "make reset-working-files" in str(s.get("run", ""))]
+    check("issue-bot: every commit step unstages through the ONE target",
+          bool(resets) and not any("git reset -q --" in str(s.get("run", "")) for s in impl_steps),
           len(resets))
+    listed = (ROOT / "scripts" / "issue_bot_working_files.txt").read_text()
+    check("issue-bot: the capture is on the working-file LIST",
+          "implement.log" in listed, listed[:200])
     check("issue-bot: the capture is gitignored", "implement.log" in (ROOT / ".gitignore").read_text(), "")
 
 

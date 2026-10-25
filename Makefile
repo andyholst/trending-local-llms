@@ -437,11 +437,36 @@ _check-conflict-markers:
 check-conflict-markers: ## Fail when a tracked file carries a merge-conflict block (issue #588)
 	@$(MAKE) --no-print-directory _check-conflict-markers
 
+# The bot's working files, in ONE list (issue #543). They are gitignored, but both bots unstage
+# them explicitly before `git add -A` because a name written before the ignore entry lands — or
+# created in another checkout — can be staged anyway, and a committed `issue.md` publishes
+# scratch inside the repository (the #390 class: a 0-byte `qa-report.txt.notes` reached PR #387).
+# The list used to be two identical `git reset -q -- …` lines in `issue-bot.yml`, a third copy in
+# `fix-bot.yml` and a fourth in `.gitignore`.
+WORKING_FILES := scripts/issue_bot_working_files.txt
+
+.PHONY: _reset-working-files
+_reset-working-files:
+	python3 scripts/reset_working_files.py
+
+.PHONY: reset-working-files
+reset-working-files: ## Unstage the bot's working files (one list: $(WORKING_FILES); issue #543)
+	@$(MAKE) --no-print-directory _reset-working-files
+
+.PHONY: _check-working-files
+_check-working-files:
+	python3 scripts/reset_working_files.py --check
+
+.PHONY: check-working-files
+check-working-files: ## Fail when a name in the bot's working-file list is not gitignored (issue #543)
+	@$(MAKE) --no-print-directory _check-working-files
+
 .PHONY: lint lint-fix
 lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill
 	python3 scripts/lint_linefeeds.py
 	python3 scripts/lint_syntax.py
 	$(MAKE) --no-print-directory check-agent-skills
+	$(MAKE) --no-print-directory check-working-files
 	$(MAKE) --no-print-directory check-conflict-markers
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one

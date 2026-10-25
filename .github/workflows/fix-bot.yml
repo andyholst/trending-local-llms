@@ -235,7 +235,8 @@ jobs:
           # commit here instead of making every later `make` fail on a parsed file.
           make check-conflict-markers
           git add -A
-          git reset -q -- qa-report.txt comment.md 2>/dev/null || true
+          # One list, not a copied line (issue #543): scripts/issue_bot_working_files.txt
+          make reset-working-files
           if git diff --cached --quiet; then
             echo "Checks green with no changes (the CI failure was transient). Nothing to push."
             echo "pushed=none" >> "$GITHUB_OUTPUT"
