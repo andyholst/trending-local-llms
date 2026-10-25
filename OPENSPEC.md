@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **124** · archived: **9**
+Active changes: **126** · archived: **9**
 
 ## Active changes
 
@@ -66,6 +66,7 @@ Active changes: **124** · archived: **9**
 | `green-when-the-issue-closed-while-in-flight` | active | #520 (measured: run 39612330011 went RED over work PR #517 had already landed) | — | [bot-coordination](openspec/changes/green-when-the-issue-closed-while-in-flight/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/green-when-the-issue-closed-while-in-flight/proposal.md) |
 | `guard-registry-derived` | active | — | — | [bot-guards](openspec/changes/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/guard-registry-derived/proposal.md) |
 | `hardware-is-not-an-engine` | active | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/hardware-is-not-an-engine/proposal.md) |
+| `heredoc-prose-is-not-a-call` | active | — | — | [architecture-description](openspec/changes/heredoc-prose-is-not-a-call/specs/architecture-description/spec.md) | 7/7 | [proposal.md](openspec/changes/heredoc-prose-is-not-a-call/proposal.md) |
 | `implementer-honours-the-verdict` | active | — | — | [bot-coordination](openspec/changes/implementer-honours-the-verdict/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/implementer-honours-the-verdict/proposal.md) |
 | `index-checked-on-the-pr-tree` | active | #432 (measured) · #304 (the related finding) | — | [pr-ci](openspec/changes/index-checked-on-the-pr-tree/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/index-checked-on-the-pr-tree/proposal.md) |
 | `index-failure-names-its-cause` | active | — | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |

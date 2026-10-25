@@ -400,9 +400,78 @@ def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
               "ARCHITECTURE.md" in _git(repo, "show", "--stat", "--oneline", branch))
 
 
+def _bot():
+    spec = importlib.util.spec_from_file_location("architecture_bot", SCRIPT)
+    assert spec and spec.loader, SCRIPT
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_a_make_written_inside_prose_is_not_a_call():
+    """Issue #544: a `make` in a heredoc BODY or a quoted string is text, not a call.
+
+    Measured: a `run:` block that wrote the sentence "this PR passes `make
+    openspec-check`" into a file, and then really ran `make validate`, was reported as
+    calling BOTH — so the inventory claimed a target the pipeline never runs. The
+    phantom vanished only because #287 moved that heredoc into a target, not because
+    the scanner was fixed.
+    """
+    bot = _bot()
+    targets = {"validate", "openspec-check", "pr-body", "fix"}
+    workflow = """jobs:
+  a:
+    steps:
+      - name: real
+        run: |
+          cat > pr-body.md <<'BODY'
+          this PR passes make openspec-check and make fix
+          BODY
+          make validate
+          make pr-body ISSUE="$ISSUE"
+      - name: quoted prose
+        run: |
+          echo "the guard runs make openspec-check before anything else"
+"""
+
+    # When  the inventory reads the workflow
+    found = bot.workflow_targets(workflow, targets)
+
+    # Then  only the EXECUTED calls are reported
+    check("heredoc: a `make` inside a heredoc body is not a call",
+          "openspec-check" not in found, found)
+    check("heredoc: a `make` inside a quoted string is not a call",
+          found.count("openspec-check") == 0 and "fix" not in found, found)
+    check("heredoc: a real `make validate` IS a call", "validate" in found, found)
+    check("heredoc: a quoted ARGUMENT does not hide the target",
+          "pr-body" in found, found)
+    check("heredoc: order is first-use", found[:2] == ["validate", "pr-body"], found)
+
+    # And   the real tree still reports what it runs (the guard is not vacuous)
+    real = bot.workflow_targets(
+        (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(),
+        _makefile_targets())
+    check("heredoc: qa-validate's real calls survive the filter",
+          {"validate", "validate-search", "test"} <= set(real), real)
+
+
+def _makefile_targets() -> set[str]:
+    """Every target the real Makefile defines."""
+    out: set[str] = set()
+    for line in (ROOT / "Makefile").read_text().splitlines():
+        if line.startswith("\t") or line.lstrip().startswith("#"):
+            continue
+        import re as _re
+        m = _re.match(r"^([A-Za-z0-9_.-]+)\s*:(?!=)", line)
+        if m:
+            out.add(m.group(1))
+    return out
+
+
 def main() -> int:
     print("ARCHITECTURE.md's living inventory + its daily bot (scripts/architecture_bot.py)")
     test_block_is_derived_from_the_tree()
+    test_a_make_written_inside_prose_is_not_a_call()
     test_check_is_red_on_a_stale_block_and_green_after_write()
     test_missing_markers_are_loud_and_write_nothing()
     test_a_flow_the_tree_does_not_back_is_refused()
