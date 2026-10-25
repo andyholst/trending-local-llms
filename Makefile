@@ -1099,30 +1099,38 @@ code-review-file: ## File ONE issue per NEW code-review finding, capped per run 
 review-issue-pick: ## Choose the ONE issue this review run works (action=/issue=/path=)
 	python3 scripts/issue_review.py --pick --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
 
+# Every reviewer target that takes ISSUE= takes the NUMBER the pick printed. A value
+# carrying diagnostics is a parse defect upstream and MUST fail here, naming it,
+# instead of dying inside argparse (measured: `--finish 266 position=-1 window=open
+# reason=decided:agent:refined` -> `unrecognized arguments`, run 39040689085; issue #344).
+.PHONY: _review-issue-number
+_review-issue-number:
+	@case "$(ISSUE)" in ''|*[!0-9]*) echo "ISSUE must be the issue NUMBER the pick printed, got '$(ISSUE)' - the pick's diagnostics must never ride on the issue= line (issue #344)"; exit 2;; esac
+
 # Open the reviewer's window BEFORE anything is written: the `review-in-progress`
 # label is what `issue-bot`'s pick defers to, and (body path) one marker comment
 # `<!-- issue-review: <ISO8601Z> -->` records the instant for the next run.
 .PHONY: review-issue-mark
-review-issue-mark: ## Open the reviewer's window on ISSUE= (PATH=body|window)
+review-issue-mark: _review-issue-number ## Open the reviewer's window on ISSUE= (PATH=body|window)
 	python3 scripts/issue_review.py --mark $(ISSUE) --path $(PATH) $(if $(RUN),--run $(RUN),)
 
 # The TOCTOU re-check, run after the mark and BEFORE the write: the implementer
 # may have started while the review was being prepared, in which case the body
 # must not be touched (`PATH=window` re-checks the reply path instead).
 .PHONY: review-issue-guard
-review-issue-guard: ## Re-check that ISSUE= may still be written (PATH=body|window)
+review-issue-guard: _review-issue-number ## Re-check that ISSUE= may still be written (PATH=body|window)
 	python3 scripts/issue_review.py --guard $(ISSUE) --for $(PATH) --gap-hours $(REVIEW_GAP_HOURS) $(if $(RUN),--run $(RUN),)
 
 .PHONY: review-issue-body-hash
-review-issue-body-hash: ## Print the body hash of ISSUE= (proves the window path edited nothing)
+review-issue-body-hash: _review-issue-number ## Print the body hash of ISSUE= (proves the window path edited nothing)
 	python3 scripts/issue_review.py --body-hash $(ISSUE)
 
 .PHONY: review-issue-check-markers
-review-issue-check-markers: ## Fail when FILE= dropped an invisible marker from ISSUE='s body
+review-issue-check-markers: _review-issue-number ## Fail when FILE= dropped an invisible marker from ISSUE='s body
 	python3 scripts/issue_review.py --check-markers $(ISSUE) --file $(if $(FILE),$(FILE),issue-body.md)
 
 .PHONY: review-issue-finish
-review-issue-finish: ## Close the reviewer's window on ISSUE=
+review-issue-finish: _review-issue-number ## Close the reviewer's window on ISSUE=
 	python3 scripts/issue_review.py --finish $(ISSUE)
 
 # The reviewer's judgement, in the container like every other hermes call. The
