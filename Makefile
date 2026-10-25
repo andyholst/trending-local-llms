@@ -424,11 +424,24 @@ worktree-resume: ## Resume an existing branch — fetched first, so a re-run of 
 # and turns the next append into a spurious last-line change. `make lint` is the
 # gate (a `qa-validate` step, the first check in the fix loop), `make lint-fix`
 # the repair. Pure python, so host and container agree.
+# A conflict marker in a tracked file is never acceptable: in a PARSED file (Makefile, a
+# workflow, a module) it does not merely look wrong, it makes every later `make` fail — the
+# measured run 40202490846 died with `Makefile:588: *** missing separator` after one was
+# committed. `#583` removed the producer; this is the last line of defence (issue #588).
+.PHONY: _check-conflict-markers
+_check-conflict-markers:
+	python3 scripts/check_conflict_markers.py
+
+.PHONY: check-conflict-markers
+check-conflict-markers: ## Fail when a tracked file carries a merge-conflict block (issue #588)
+	@$(MAKE) --no-print-directory _check-conflict-markers
+
 .PHONY: lint lint-fix
 lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill
 	python3 scripts/lint_linefeeds.py
 	python3 scripts/lint_syntax.py
 	$(MAKE) --no-print-directory check-agent-skills
+	$(MAKE) --no-print-directory check-conflict-markers
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
 	python3 scripts/lint_linefeeds.py --fix
