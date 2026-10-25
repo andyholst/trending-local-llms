@@ -1,0 +1,42 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "RTX 5090 32GB",
+          "quant": "4-bit Qwen3.8-27B NVFP4; vLLM 0.32.0 --linear-backend humming (default FP4 kernel gave 56.9 tok/s)",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
+        }
+      ],
+      "last_seen": "2026-10-25",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:16Z"
+}

@@ -1,0 +1,93 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (Apple Silicon, DFlash2 speculative decoding)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B 4-bit + DFlash2 drafter",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "DFlash2 speculative decoding pushes Qwen3.8-27B to about 70 tok/s on an M5 Max MacBook Pro - the drafter, not the decode loop, is what makes a 27B model usable on a laptop.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "Apple M5 Max MacBook Pro (Apple Silicon, unified memory)",
+          "quant": "DFlash2 speculative decoding (Z Lab / Inco AI drafter for Qwen3.8-27B); reported figure, baseline and context length not stated",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113804819123040694",
+          "likes": 16,
+          "comments": 2,
+          "reshares": 0,
+          "views": 1004
+        }
+      ],
+      "vram_min": "48GB",
+      "last_seen": "2026-10-25"
+    },
+    {
+      "id": "thinkingcap-27b",
+      "name": "ThinkingCap 27B",
+      "full_name": "ThinkingCap 27B (BottleCap AI fine-tune of Qwen3.8-27B, EXL3 4.0 bpw)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "BottleCapAI/ThinkingCap-27B",
+      "formats": [
+        {
+          "name": "ThinkingCap Qwen3.8-27B Kearuga EXL3 4.0 bpw",
+          "hf": "BottleCapAI/ThinkingCap-27B"
+        }
+      ],
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "ThinkingCap - BottleCap AI's fine-tune of Qwen3.8-27B - cut GPQA thinking-token use by 62% versus base Qwen3.8-27B while holding accuracy, and decodes 54 tok/s on code on a single DGX Spark with the TensorFold recipe (45.7 tok/s under TandemLLM).",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "54",
+          "hardware": "NVIDIA DGX Spark (GB10, 1 Spark)",
+          "quant": "ThinkingCap Qwen3.8-27B Kearuga EXL3 4.0 bpw by 0xWhiteMage, TensorFold recipe, thinking off, decode on code; prose 42.5 tok/s, eight concurrent requests 125.2 tok/s total (16 slots)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2113412588822544531",
+          "context_tokens": "262144",
+          "likes": 11,
+          "comments": 2,
+          "reshares": 0,
+          "views": 612
+        },
+        {
+          "engine": "TandemLLM",
+          "tps": "45.7",
+          "hardware": "NVIDIA DGX Spark (GB10, 1 Spark)",
+          "quant": "ThinkingCap Qwen3.8-27B Kearuga EXL3 4.0 bpw, TandemLLM v0.12.2 with xhigh effort set on the server, thinking off, decode on code; prose 45.4 tok/s, eight concurrent requests 41.5 tok/s (1 slot)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2113412588822544531",
+          "engine_min_version": "TandemLLM v0.12.2",
+          "context_tokens": "262144",
+          "likes": 11,
+          "comments": 2,
+          "reshares": 0,
+          "views": 612
+        }
+      ],
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:06:28Z"
+}

@@ -1,0 +1,44 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20",
+          "hardware": "RTX 3050 6GB Laptop + 32GB system RAM",
+          "quant": "Gyro-S configuration; 16K context was the most he could get",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+          "likes": 194,
+          "comments": 4,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "16000",
+          "system_ram_min": "32GB",
+          "engine_repo": "https://github.com/Niko1221/Strata"
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:16Z"
+}

@@ -1,0 +1,42 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "159",
+          "hardware": "iPad Pro + Thunderbolt eGPU: AMD Radeon AI PRO R9700 (ROCm)",
+          "quant": "Q4 quantization, 131K context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131000"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:16Z"
+}

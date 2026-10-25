@@ -1,0 +1,46 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "143",
+          "hardware": "single RTX 5090",
+          "quant": "ternary 5.93GB (53.8GB full-precision down to 5.93GB), 98.2% of Qwen3.8-27B aggregate",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2101718479250264407",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "5.93GB ternary"
+        }
+      ],
+      "last_seen": "2026-09-20",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        },
+        {
+          "name": "MLX",
+          "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:08:16Z"
+}

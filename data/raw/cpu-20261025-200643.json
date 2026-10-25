@@ -1,0 +1,42 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LiquidAI LFM2.5-24B-A2B (24B MoE, ~2B active, 131K context)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "params": "24B (A2B MoE)",
+      "type": "LLM",
+      "license": "LFM Open License (free to ship under $10M revenue)",
+      "vram_tier": "16GB",
+      "context_tokens": "131072",
+      "weight_gb": "14.5GB Q4_K_M",
+      "why": "Liquid AI's 24B MoE with ~2B active per token: 184 t/s on an M5 Max, 14.5GB Q4_K_M fits an 8GB card with experts offloaded, and it tops Agon's agentic composite at 93.4%.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "184",
+          "hardware": "Apple M5 Max (Apple Silicon)",
+          "quant": "Q4_K_M - Liquid AI's reported 184 tok/s on an M5 Max, cited alongside the 131K context release",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/Joshua_WD/status/2110598524622504008",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 556,
+          "weight_gb": "14.5GB Q4_K_M",
+          "context_tokens": "131072"
+        }
+      ],
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-15"
+    }
+  ],
+  "generated_utc": "2026-10-25T20:12:31Z"
+}

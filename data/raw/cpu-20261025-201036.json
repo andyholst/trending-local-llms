@@ -1,0 +1,71 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (dense 27B open-weight)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "params": "27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "likes": 2,
+          "comments": 11,
+          "reshares": 0,
+          "views": 612,
+          "engine": "TensorFold",
+          "tps": "54",
+          "hardware": "NVIDIA DGX Spark (GB10)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2113412588822544531",
+          "context_tokens": "262144",
+          "quant": "ThinkingCap Qwen3.8-27B Kearuga, EXL3 4.0 bpw, TensorFold recipe; DECODE, code, thinking off (single stream)"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-thinkingcap-tensorfold-1spark",
+      "name": "Qwen3.8-27B ThinkingCap (TensorFold recipe, 1 Spark)",
+      "full_name": "Qwen3.8-27B ThinkingCap (BottleCap AI fine-tune) on one NVIDIA DGX Spark",
+      "hf": "Qwen/Qwen3.8-27B",
+      "params": "27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-22",
+      "why": "One DGX Spark runs the ThinkingCap Qwen3.8-27B EXL3 quant at 125.2 tok/s AGGREGATE over 8 concurrent requests (16 slots); single-stream decode is 54.0 tok/s.",
+      "engines": [
+        {
+          "likes": 2,
+          "comments": 11,
+          "reshares": 0,
+          "views": 612,
+          "engine": "TensorFold",
+          "tps": "125.2",
+          "hardware": "NVIDIA DGX Spark (GB10)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2113412588822544531",
+          "context_tokens": "262144",
+          "quant": "ThinkingCap Qwen3.8-27B Kearuga, EXL3 4.0 bpw, TensorFold recipe; 8 requests at once in total (16 slots) - AGGREGATE THROUGHPUT, not single-stream decode"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-25T20:10:36Z"
+}
