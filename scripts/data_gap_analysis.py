@@ -190,6 +190,36 @@ DIMENSIONS = (
 TEXT_FIELDS = ("quant", "hardware", "why")
 STALE_DAYS = 30
 
+#: A gap dimension whose issue was CLOSED stays judged for this long (issue #491). The verdict a
+#: triage reached is a judgement about the DIMENSION ("this is not implementable from the store"),
+#: not about one issue: without this, closing files the same dimension again on the next refresh and
+#: the queue's throughput is close operations nobody can keep up with. After this window the claim
+#: is re-examined — and a dimension the signature no longer carries is not affected at all.
+JUDGED_DAYS = 21
+
+
+def dimension_of(entry: str) -> str:
+    """The dimension a signature entry names: `missing:storage_offload` -> `storage_offload`."""
+    return entry.split(":", 1)[1] if ":" in entry else entry
+
+
+def judged_dimensions(previous: dict | None, as_of: str) -> dict[str, str]:
+    """The dimensions still inside their judged window, with the stamp that judged them."""
+    out: dict[str, str] = {}
+    judged = (previous or {}).get("judged") or {}
+    try:
+        here = datetime.strptime(as_of, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return out
+    for dim, stamp in judged.items():
+        try:
+            when = datetime.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        except (TypeError, ValueError):
+            continue
+        if (here - when).days < JUDGED_DAYS:
+            out[dim] = str(stamp)
+    return out
+
 
 def load(path: Path, default=None):
     if not path.exists():
@@ -433,9 +463,12 @@ def baseline_info(baseline_path: Path, as_of: str) -> dict | None:
     return info
 
 
-def write_baseline(report: dict, path: Path) -> None:
-    path.write_text(json.dumps({"as_of": report["as_of"], "signature": report["signature"]},
-                               indent=2, sort_keys=True) + "\n")
+def write_baseline(report: dict, path: Path, judged: dict[str, str] | None = None) -> None:
+    """Record the gap signature — and the dimension verdicts already reached (issue #491)."""
+    payload: dict = {"as_of": report["as_of"], "signature": report["signature"]}
+    if judged:
+        payload["judged"] = dict(sorted(judged.items()))
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 def signature_id(report: dict) -> str:
@@ -448,7 +481,7 @@ def marker(sig: str) -> str:
     return f"<!-- data-gap-signature: {sig} -->"
 
 
-def already_filed(sig: str) -> str | None:
+def already_filed(sig: str) -> tuple[str | None, list[dict]]:
     """The URL of an OPEN issue already carrying this gap signature, or None.
 
     The baseline only reaches the repository through the refresh PR, so between
@@ -460,7 +493,7 @@ def already_filed(sig: str) -> str | None:
     """
     out = subprocess.run(
         ["gh", "issue", "list", "--state", "all", "--label", LABEL,
-         "--search", f"{sig} in:body", "--json", "number,state,url"],
+         "--search", f"{sig} in:body", "--json", "number,state,url,closedAt"],
         text=True, capture_output=True)
     if out.returncode != 0:
         raise SystemExit(f"[data-gaps] gh issue list failed: {out.stderr.strip()}")
@@ -468,10 +501,14 @@ def already_filed(sig: str) -> str | None:
         items = json.loads(out.stdout or "[]")
     except json.JSONDecodeError:
         items = []
+    open_url: str | None = None
+    closed: list[dict] = []
     for item in items:
-        if item.get("state") == "OPEN":
-            return str(item.get("url") or item.get("number"))
-    return None
+        if item.get("state") == "OPEN" and open_url is None:
+            open_url = str(item.get("url") or item.get("number"))
+        elif item.get("state") == "CLOSED":
+            closed.append(item)
+    return open_url, closed
 
 
 def label_exists() -> bool:
@@ -650,17 +687,38 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
     if a.issue and is_changed:
         sig = signature_id(report)
-        existing = already_filed(sig)
+        existing, closed_issues = already_filed(sig)
+        judged = dict((previous or {}).get("judged") or {})
+        # A CLOSED issue carrying this signature is a JUDGEMENT about the dimensions it named
+        # (issue #491): the triage read the thread and decided the gap is not implementable from
+        # the store. Remember when, so the next refresh does not file the same dimension again
+        # for JUDGED_DAYS.
+        for item in closed_issues:
+            stamp = str(item.get("closedAt") or "")
+            if stamp:
+                for entry in report["signature"]:
+                    judged[dimension_of(entry)] = stamp
+        recent = judged_dimensions({"judged": judged}, report["as_of"])
+        undecided = [e for e in report["signature"] if dimension_of(e) not in recent]
         if existing:
             # The baseline reaches master only through the refresh PR, so a second
             # run before that merge (or after a PR was closed) sees the same change:
             # report it, file nothing (issue #157).
             print(f"[data-gaps] gap set {sig} is already filed: {existing} — no duplicate",
                   file=sys.stderr)
+        elif not undecided:
+            # Every dimension in this set was judged inside its window: re-filing would repeat a
+            # decision a human or the reviewer already made (#491).
+            for dim, stamp in sorted(recent.items()):
+                print(f"[data-gaps] {dim}: judged at {stamp} — not re-filing within "
+                      f"{JUDGED_DAYS} days (issue #491)", file=sys.stderr)
+            write_baseline(report, baseline_path, judged)
         else:
             url = file_issue(report, previous)
             print(f"[data-gaps] filed {url}", file=sys.stderr)
-            write_baseline(report, baseline_path)
+            write_baseline(report, baseline_path, judged)
+    elif a.issue:
+        print("[data-gaps] no new gap set — no issue filed", file=sys.stderr)
     elif a.issue:
         print("[data-gaps] no new gap set — no issue filed", file=sys.stderr)
     if a.check and is_changed:

@@ -595,6 +595,68 @@ def _one_issue_per_changed_gap_set(tmp_path):
         os.environ["PATH"] = saved_path
 
 
+def test_a_closed_dimension_is_not_re_filed_inside_the_window(tmp_path=None):
+    """Issue #491: the triage's verdict is per DIMENSION, not per issue.
+
+    Of twelve `storage_offload` issues, five were closed by the implementer verdict and the same
+    dimension was filed again on the next refresh, because only the individual ISSUE was closed.
+    A closed issue carrying the signature now records WHEN its dimensions were judged, and the
+    same set is not filed again inside `JUDGED_DAYS`.
+    """
+    import datetime as _dt
+    if tmp_path is None:
+        tmp_path = Path(tempfile.mkdtemp())
+    tmp_path = Path(tmp_path)
+    tmp_path.mkdir(parents=True, exist_ok=True)
+
+    def stamp(days_ago: int) -> str:
+        return (_dt.datetime(2026, 10, 14, 6, 0, tzinfo=_dt.timezone.utc)
+                - _dt.timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    store = tmp_path / "models.json"
+    store.write_text(json.dumps(store_with([model("m1"), model("m2")])))
+    baseline = tmp_path / "gap_baseline.json"
+    saved_store, saved_contract = G.STORE, G.CONTRACT
+    saved_path = os.environ["PATH"]
+    G.STORE, G.CONTRACT = store, tmp_path / "absent-contract.json"
+    try:
+        for label, closed_days_ago, expect_file in (("recent", 3, False), ("old", 30, True)):
+            bindir = tmp_path / f"bin-{label}"
+            bindir.mkdir(exist_ok=True)
+            log = tmp_path / f"gh-{label}.log"
+            gh = bindir / "gh"
+            closed_at = stamp(closed_days_ago)
+            listing = ('[{"number":460,"state":"CLOSED","url":"u","closedAt":"%s"}]' % closed_at)
+            gh.write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\n' \"$@\" >> {log}\n"
+                "case \"$1 $2\" in\n"
+                f"  'issue list') printf '%s\\n' '{listing}' ;;\n"
+                "  'issue view') printf '%s\\n' '{\"labels\":[{\"name\":\"data-gap-analysis\"}]}' ;;\n"
+                "  'label list') printf '%s\\n' '[{\"name\":\"data-gap-analysis\"}]' ;;\n"
+                f"  *) cat >> {log}; printf '%s\\n' 'https://example/1' ;;\n"
+                "esac\n")
+            gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
+            baseline.write_text(json.dumps({"as_of": "2026-09-01T00:00:00Z",
+                                            "signature": ["missing:engine_min_version"]}))
+            os.environ["PATH"] = f"{bindir}:{saved_path}"
+            log.write_text("")
+            rc = G.main(["--baseline", str(baseline), "--issue"])
+            calls = log.read_text()
+            filed = "create" in calls
+            check(f"judged({label}): a close {closed_days_ago} day(s) ago -> "
+                  f"{'files again' if expect_file else 'does NOT re-file'}",
+                  filed == expect_file, calls[:200])
+            check(f"judged({label}): the run exits 0", rc == 0, rc)
+            if not expect_file:
+                recorded = json.loads(baseline.read_text())
+                check("judged: the baseline records WHEN the dimension was judged",
+                      bool(recorded.get("judged")), recorded)
+    finally:
+        os.environ["PATH"] = saved_path
+        G.STORE, G.CONTRACT = saved_store, saved_contract
+
+
 def test_write_baseline_records_the_signature_without_filing(tmp_path=None):
     """Issue #174: `--write-baseline` records the CURRENT gap signature as the
     baseline and files NOTHING — the repair for a baseline write lost to a rebase
@@ -1456,6 +1518,7 @@ def main() -> int:
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
+        test_a_closed_dimension_is_not_re_filed_inside_the_window(Path(td) / "judged")
     with tempfile.TemporaryDirectory() as td:
         test_write_baseline_records_the_signature_without_filing(Path(td))
     test_real_store_dimensions_are_capturable_and_partly_filled()
