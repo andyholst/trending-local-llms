@@ -95,6 +95,15 @@ FLOW: tuple[tuple[str, str, tuple[str, ...], tuple[str, ...], str], ...] = (
 )
 
 _MAKE_CALL = re.compile(r"(?<![\w-])make\s+([a-z_][a-z0-9_-]*)")
+
+#: A shell script's declaration of the targets it runs ONE LEVEL DOWN (issue #482). The block reads
+#: a workflow's `run:` bodies, so `scripts/fix_loop.sh`'s `make validate` / `make test` / `make fix`
+#: were invisible and the inventory named three targets for a job that runs six. Following the shell
+#: would be parsing by guesswork; a DECLARATION the Makefile can be checked against is honest.
+_ARCH_CALLS = re.compile(r"^#\s*arch-calls:\s*(.+)$", re.M)
+
+#: A script reference inside a `run:` body.
+_SCRIPT_REF = re.compile(r"(?<![\w/.-])scripts/([A-Za-z0-9_.-]+\.(?:sh|py))")
 _TARGET_DOC = re.compile(r"^([a-z][a-z0-9-]*):[^\n]*?##\s*(\S.*)$", re.MULTILINE)
 _CRON = re.compile(r'-\s*cron:\s*["\']?([^"\'\n]+)')
 _JOB = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$", re.MULTILINE)
@@ -267,7 +276,13 @@ def command_text(block: str) -> str:
     return "\n".join(out)
 
 
-def workflow_targets(text: str, targets: set[str]) -> list[str]:
+def script_arch_calls(script: Path) -> list[str]:
+    """The targets a script DECLARES it runs one level down (`# arch-calls: a b c`)."""
+    m = _ARCH_CALLS.search(_read(script))
+    return m.group(1).split() if m else []
+
+
+def workflow_targets(text: str, targets: set[str], root: Path | None = None) -> list[str]:
     """The `make` targets a workflow's steps call, in first-use order.
 
     Only a target the Makefile really defines is reported — a word in prose that
@@ -293,6 +308,17 @@ def workflow_targets(text: str, targets: set[str]) -> list[str]:
             rendered = name if name in targets else None
         if rendered and rendered not in seen:
             seen.append(rendered)
+    # A target reached through a script the step runs is a call of that step too — but only the
+    # ones the script DECLARES and the Makefile really has (a stale declaration is refused by
+    # `_arch_calls_problems`, never rendered as a call).
+    if root is not None:
+        for ref in dict.fromkeys(_SCRIPT_REF.findall(command_text(run_blocks(text)))):
+            script = root / SCRIPTS_DIR / ref
+            if not script.is_file():
+                continue
+            for name in script_arch_calls(script):
+                if name in targets and name not in seen:
+                    seen.append(name)
     return seen
 
 
@@ -308,7 +334,13 @@ def script_lines(root: Path) -> list[str]:
         elif path.suffix == ".sh":
             for line in text.splitlines():
                 if line.startswith("#") and not line.startswith("#!"):
-                    first = line.lstrip("# ").strip()
+                    body = line.lstrip("# ").strip()
+                    # The `arch-calls:` declaration is machine data, not a description (issue #482):
+                    # rendering it as the script's one line would put a target list where a reader
+                    # expects a purpose, and would surface a REFUSED declaration in the block.
+                    if body.startswith("arch-calls:"):
+                        continue
+                    first = body
                     break
         out.append(f"`scripts/{path.name}` — {first or '(no docstring)'}")
     return out
@@ -317,6 +349,22 @@ def script_lines(root: Path) -> list[str]:
 def readme_sections(root: Path) -> list[str]:
     """The `##` headings of the generated README — the surface a refresh rewrites."""
     return [h for h in _HEADING.findall(_read(root / "README.md"))]
+
+
+def _arch_calls_problems(root: Path) -> list[str]:
+    """Every `# arch-calls:` declaration must name a real target, in a real script (issue #482).
+
+    The block may only describe what the tree backs: a declaration for a target the Makefile does
+    not define is a claim with no code behind it, and it is refused at WRITE time, like the flow.
+    """
+    problems: list[str] = []
+    targets = make_targets(root)
+    for path in sorted(p for p in (root / SCRIPTS_DIR).glob("*") if p.is_file()):
+        for name in script_arch_calls(path):
+            if name not in targets:
+                problems.append(f"`scripts/{path.name}` declares `arch-calls: {name}`, "
+                                f"which is not a make target")
+    return problems
 
 
 def _flow_problems(root: Path) -> list[str]:
@@ -376,7 +424,7 @@ def render(root: Path) -> str:
                 f"`{j}`" + (f" (needs {', '.join('`%s`' % n for n in needs)})" if needs else "")
                 for j, needs in jobs)
             lines.append(f"- **jobs:** {chain}")
-        calls = workflow_targets(text, targets)
+        calls = workflow_targets(text, targets, root)
         if calls:
             described = []
             for c in calls:
@@ -472,7 +520,7 @@ def main(argv: list[str] | None = None) -> int:
         # A generator that writes a description of something that is not there is
         # worse than no generator: the flow is verified before it is written, and
         # the file is left untouched when it is not backed.
-        problems = _flow_problems(root)
+        problems = _flow_problems(root) + _arch_calls_problems(root)
         if problems:
             print("[architecture-bot] FAIL the described flow is not backed by the tree "
                   "— ARCHITECTURE.md was NOT written:", file=sys.stderr)
@@ -484,7 +532,7 @@ def main(argv: list[str] | None = None) -> int:
               f"({len(block.splitlines())} lines)")
         return 0
 
-    problems = _flow_problems(root)
+    problems = _flow_problems(root) + _arch_calls_problems(root)
     if problems:
         print("[architecture-bot] FAIL the described flow is not backed by the tree:", file=sys.stderr)
         for p in problems:
