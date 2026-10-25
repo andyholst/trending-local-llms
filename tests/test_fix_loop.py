@@ -429,6 +429,72 @@ def test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless()
     shutil.rmtree(root, ignore_errors=True)
 
 
+def test_a_failed_merge_with_no_unmerged_path_says_what_git_said():
+    """Issue #563: the loop printed `<unreadable>` and claimed a conflict that was not one.
+
+    Measured on run 40177729642: `git merge` failed, `git diff --diff-filter=U` listed
+    nothing, and the loop still announced `CONFLICTED in: <unreadable>` and handed a Hermes
+    round a repair with no paths to repair — every round then detached. A merge can fail
+    without an unmerged path (an untracked file the base would overwrite, a dirty index),
+    and that case must name git's own reason instead of pretending to be a conflict.
+    Real `git` in a real repository (rule 6m).
+    """
+    if not shutil.which("git"):
+        print("  SKIP conflict-without-paths: git not installed")
+        return
+    root = Path(tempfile.mkdtemp())
+    origin, work, clone = root / "origin.git", root / "work", root / "clone"
+    ident = (("user.email", "t@example.com"), ("user.name", "t"))
+
+    def git(*args, cwd):
+        subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True)
+
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", str(work)], check=True)
+    for c in ident:
+        git("config", *c, cwd=work)
+    (work / "readme.txt").write_text("base\n")
+    git("add", ".", cwd=work)
+    git("commit", "-qm", "base", cwd=work)
+    git("branch", "-M", "master", cwd=work)
+    git("remote", "add", "origin", str(origin), cwd=work)
+    git("push", "-q", "origin", "master", cwd=work)
+    subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
+    for c in ident:
+        git("config", *c, cwd=clone)
+
+    # The branch moves ahead…
+    (clone / "branch.txt").write_text("the branch edit\n")
+    git("add", ".", cwd=clone)
+    git("commit", "-qm", "the branch edit", cwd=clone)
+    # …the base adds a file the branch has as UNTRACKED: git refuses the merge and
+    # leaves NO unmerged path, which is exactly the shape that printed `<unreadable>`.
+    (work / "added-by-base.txt").write_text("from the base\n")
+    git("add", ".", cwd=work)
+    git("commit", "-qm", "the base edit", cwd=work)
+    git("push", "-q", "origin", "master", cwd=work)
+    (clone / "added-by-base.txt").write_text("mine, untracked\n")
+
+    rc, calls, report, out = run(red=99, rounds=1, base_merge="1", cwd=clone)
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=str(clone),
+                            capture_output=True, text=True).stdout
+
+    # Then  the loop names git's reason, and never the placeholder
+    check("merge-without-paths: it does NOT print the placeholder",
+          "<unreadable>" not in out, out[-800:])
+    check("merge-without-paths: it says the failure is not a conflict",
+          "REFUSED" in out and "NO unmerged path" in out, out[-800:])
+    check("merge-without-paths: it quotes git's own first line",
+          "untracked" in out or "would be overwritten" in out, out[-800:])
+    check("merge-without-paths: no conflict report is handed to the round",
+          "=====" not in report, report[-300:])
+    check("merge-without-paths: the checks still run, so the real failure is reported",
+          calls.count("fix") == 1, calls)
+    check("merge-without-paths: nothing was merged or aborted behind the branch's back",
+          "?? added-by-base.txt" in status and "UU" not in status, status)
+    shutil.rmtree(root, ignore_errors=True)
+
+
 def main() -> int:
     if not shutil.which("bash"):
         print("SKIP: bash not available")
@@ -452,6 +518,7 @@ def main() -> int:
     test_the_base_is_merged_before_any_llm_round()
     test_a_round_that_changes_nothing_stops_the_loop()
     test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless()
+    test_a_failed_merge_with_no_unmerged_path_says_what_git_said()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
