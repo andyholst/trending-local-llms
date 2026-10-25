@@ -2349,6 +2349,54 @@ def test_a_detached_fix_round_leaves_its_transcript_behind() -> None:
         "hermes-run.scrubbed.log", ""), paths)
 
 
+def test_the_issue_is_re_read_right_before_the_agent_starts():
+    """Issue #522: the pick is a SNAPSHOT, so the state is re-read before the spend.
+
+    The pick reads the issue once; the run then checks out, ensures images, smokes the model
+    and reads the thread. `auto-merge` lands PRs continuously, so an issue picked at T can be
+    closed at T+8m — measured on #520's class (run 39612330011) and on #183, where a run
+    implemented for 20 minutes on an issue that no longer existed.
+    """
+    wf = load("issue-bot.yml")
+    job = wf["jobs"]["implement"]
+    ss = steps(job)
+    runs = [str(s.get("run", "")) for s in ss]
+
+    recheck = next((i for i, r in enumerate(runs) if "make issue-state" in r), None)
+    impl = next((i for i, r in enumerate(runs) if "make implement-issue" in r), None)
+    checkout = next((i for i, s in enumerate(ss) if "actions/checkout" in str(s.get("uses", ""))), None)
+
+    check("recheck: a step re-reads the issue's state before implementing",
+          recheck is not None, [s.get("name") for s in ss])
+    check("recheck: it runs BEFORE the agent starts",
+          recheck is not None and impl is not None and recheck < impl, (recheck, impl))
+    check("recheck: it runs AFTER the checkout (a `make` target needs the repo, rule 6d)",
+          recheck is not None and checkout is not None and checkout < recheck, (checkout, recheck))
+    check("recheck: it is the step right before the agent",
+          recheck is not None and impl is not None and impl - recheck == 1, (recheck, impl))
+
+    step_run = runs[recheck] if recheck is not None else ""
+    check("recheck: rc=4 (closed) is a GREEN no-op that comments on the issue",
+          '"$RC" = "4"' in step_run and "gh issue comment" in step_run, step_run[:400])
+    check("recheck: rc=2 (unreadable) fails LOUDLY, never a pass",
+          '"$RC" = "2"' in step_run and "::error" in step_run, step_run[:600])
+    check("recheck: it publishes closed= so the spend steps can skip",
+          "closed=true" in step_run and "closed=false" in step_run, step_run[:600])
+
+    for needle in ("Implement the issue", "Apply the implementer's verdict",
+                   "Did the agent leave work behind?"):
+        st = step(job, needle)
+        check(f"recheck: `{needle}` is gated on the re-read",
+              "steps.recheck.outputs.closed != 'true'" in str(st.get("if", "")), st.get("if"))
+
+    fail_loud = next((s for s in ss if "Fail loudly when the implementation did not happen"
+                      in str(s.get("name", ""))), None)
+    check("recheck: the fail-loud step is gated too, so a closed issue is not reported RED",
+          fail_loud is not None
+          and "steps.recheck.outputs.closed != 'true'" in str(fail_loud.get("if", "")),
+          fail_loud and fail_loud.get("if"))
+
+
 def _makefile_commands() -> dict[str, list[str]]:
     """Every target's recipe COMMAND lines, comments and blanks skipped."""
     commands: dict[str, list[str]] = {}
@@ -2492,6 +2540,7 @@ def main() -> int:
     test_a_detached_fix_round_leaves_its_transcript_behind()
     test_a_recipe_redirected_into_a_file_never_echoes_its_own_command()
     test_a_captured_recipe_is_silent()
+    test_the_issue_is_re_read_right_before_the_agent_starts()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
