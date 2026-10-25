@@ -25,6 +25,14 @@
 # consumed the entire budget') and writes nothing — 2 of 3 rounds on PR #80.
 # When that signature shows up, the SAME round is retried once with
 # HERMES_FIX_REASONING=none (0 reasoning tokens) instead of wasting the round.
+#
+#
+# arch-calls: lint validate-search validate-mapped openspec-check architecture-check test fix findings-check
+#
+# The line above is a DECLARATION for the architecture inventory (issue #482): this script runs
+# `make <target>` one level down, where the block cannot see it. Every name is verified against
+# the Makefile (`_arch_calls_problems`), so a stale entry fails `make architecture-check` instead
+# of describing a call that no longer exists.
 set -uo pipefail
 
 ROUNDS="${FIX_ROUNDS:-3}"

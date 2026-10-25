@@ -163,6 +163,50 @@ def test_missing_markers_are_loud_and_write_nothing():
         check("markers: --check fails too", r.returncode == 1 and "no" in r.stderr.lower())
 
 
+def _load_bot():
+    spec = importlib.util.spec_from_file_location("architecture_bot", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_targets_a_step_reaches_through_a_script_are_reported():
+    """Issue #482: `fix-bot.yml` was described as calling three targets while its job runs six.
+
+    The block reads a workflow's `run:` bodies, so `scripts/fix_loop.sh`'s `make validate` /
+    `make test` / `make fix` were invisible and the inventory quietly understated the job. Following
+    the shell would be parsing by guesswork, so a script DECLARES what it runs and the Makefile is
+    checked against the declaration.
+    """
+    bot = _load_bot()
+    with tempfile.TemporaryDirectory() as d:
+        root = _tree(Path(d), targets=("merge", "validate", "test", "fix", "search", "render-readme"),
+                     workflows={"loop.yml": _workflow(targets=()).replace(
+                         "          make not-a-target\n", "          bash scripts/fix_loop.sh\n")})
+        (root / "scripts" / "fix_loop.sh").write_text(
+            "#!/usr/bin/env bash\n# arch-calls: validate test fix\necho loop\n", encoding="utf-8")
+
+        # When  the block is generated
+        block = bot.render(root)
+
+        # Then  the targets the script runs are reported for THAT workflow
+        section = block[block.find("loop.yml"):]
+        section = section[:section.find("####") if "####" in section[3:] else len(section)]
+        joined = " ".join(l for l in section.splitlines() if "**calls:**" in l)
+        check("script: a target the step reaches one level down IS reported",
+              "`make validate`" in joined and "`make test`" in joined and "`make fix`" in joined,
+              joined[:300])
+
+        # And   a declaration naming a target the Makefile does not define is refused, never rendered
+        (root / "scripts" / "fix_loop.sh").write_text(
+            "#!/usr/bin/env bash\n# arch-calls: validate ghost-target\necho loop\n", encoding="utf-8")
+        problems = bot._arch_calls_problems(root)
+        check("script: a declaration naming a non-target is REFUSED",
+              any("ghost-target" in p for p in problems), problems)
+        check("script: and the ghost is never rendered as a call",
+              "ghost-target" not in bot.render(root), "")
+
+
 def test_a_flow_the_tree_does_not_back_is_refused():
     with tempfile.TemporaryDirectory() as d:
         root = _tree(Path(d))
@@ -474,6 +518,7 @@ def main() -> int:
     test_a_make_written_inside_prose_is_not_a_call()
     test_check_is_red_on_a_stale_block_and_green_after_write()
     test_missing_markers_are_loud_and_write_nothing()
+    test_targets_a_step_reaches_through_a_script_are_reported()
     test_a_flow_the_tree_does_not_back_is_refused()
     test_real_repository_inventory_is_current()
     test_wired_into_the_makefile_the_guard_and_the_pipeline()
