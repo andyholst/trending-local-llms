@@ -461,7 +461,8 @@ jobs:
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md implement.log implement.scrubbed.log 2>/dev/null || true
+          # One list, not a copied line (issue #543): scripts/issue_bot_working_files.txt
+          make reset-working-files
           if git diff --cached --quiet; then
             echo "The implementation produced no file changes - nothing to push."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
@@ -613,7 +614,8 @@ jobs:
           make git-identity
           sudo chown -R "$(id -u):$(id -g)" .
           git add -A
-          git reset -q -- qa-report.txt comment.md issue.md pr-body.md findings.md triage.md start.md issue-body.md implement.log implement.scrubbed.log 2>/dev/null || true
+          # One list, not a copied line (issue #543): scripts/issue_bot_working_files.txt
+          make reset-working-files
           if git diff --cached --quiet; then
             echo "Pipeline green with no extra changes."
             exit 0

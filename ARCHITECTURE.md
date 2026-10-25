@@ -266,6 +266,8 @@ keep it honest (issue #207):
 |---|---|
 | `lint` | Fail closed when a tracked text file does not end with a newline (`scripts/lint_linefeeds.py`) or a tracked Python module raises a `SyntaxWarning` on compile (`scripts/lint_syntax.py`); both use `git ls-files` as the file set. It ALSO runs `make check-agent-skills` (`scripts/check_agent_skills.py`), so a bot leg that lost its project skill reds the same gate. The FIRST step of `qa-validate`'s `validate` job and the first check in `scripts/fix_loop.sh` |
 | `lint-fix` | Append exactly one newline to each offending file (idempotent) — the repair half, with `.editorconfig` as the editor-side rule |
+| `reset-working-files` | Unstage the bot's working files (`issue.md`, `pr-body.md`, `findings.md`, `implement.log`, …) before `git add -A`, from the ONE list `scripts/issue_bot_working_files.txt`; called by both bots' commit steps (issue #543) |
+| `check-working-files` | Fail when a name in that list is not gitignored — a name that is not ignored can be staged by any other step (`scripts/reset_working_files.py --check`); runs in `make lint` (issue #543) |
 | `check-conflict-markers` | Fail when a tracked file carries a git conflict block (`<<<<<<<`, `=======`, `|||||||`, `>>>>>>>` at the start of a line), naming every path and line; `git ls-files` is the file set, binary files are skipped and ignored/untracked files are never scanned (`scripts/check_conflict_markers.py`). Both bot commit steps run it immediately BEFORE `git add -A`, and `make lint` runs it too — a marker in a parsed file makes every later `make` fail (issue #588) |
 | `check-agent-skills` | Fail when a `hermes -z` leg preloads no skill, names one that does not exist, preloads a skill whose frontmatter `name` disagrees with its directory or that lost `## Inputs`/`## Output`/`## Rules`, inlines the unattended contract, or grew past its pointer budget — and when the `Makefile` lost the seam documentation or the registration target (`scripts/check_agent_skills.py`, issue #549) |
 | `agent-skills-report` | Print every leg with its prompt size and preloaded skills, and every skill's frontmatter, plus whether `AGENTS.md` already states the owed rule for it (report-only) |
@@ -538,6 +540,8 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/issue_review.py` | The reviewer's deterministic core (issue #179): `--pick` (one issue, `body`/`window`/`none`), `--mark`/`--finish` (the `review-in-progress` label + the run-stamped marker), `--guard` (the TOCTOU re-check before a write), `--body-hash` (the proof the window path edited nothing) and `--check-markers` (a rewrite may not drop an invisible dedup marker). It imports `issue_queue` — the queue rule has one implementation |
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (#206); `decide` returns the rebuild rule as data (#208) |
 | `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is), every `--only` stage list matches the validator's stage map, and every job §4 claims is a real one (issues #178, #182) |
+| `scripts/issue_bot_working_files.txt` | The ONE list of the files a bot run writes at the repository root and that must never be staged, committed or pushed (issue #543) |
+| `scripts/reset_working_files.py` | Unstages the bot's working files from the list `scripts/issue_bot_working_files.txt` (`make reset-working-files`), and asserts every name on it is gitignored (`--check`, `make check-working-files`, in `make lint`) |
 | `scripts/check_conflict_markers.py` | Refuses a merge-conflict block in a tracked file (`make check-conflict-markers`), called by both bots before `git add -A`; `git ls-files` is the file set, binary and ignored files are never findings |
 | `scripts/lint_linefeeds.py` | The trailing-newline lint (`make lint`) and its repair (`make lint-fix`); `git ls-files` is the file set, binary/empty files are never findings |
 | `scripts/lint_syntax.py` | The syntax-warning lint (`make lint`, issue #190): every tracked `*.py` module must compile without a `SyntaxWarning`; compiled from source so no import side effect runs, the tracked-file set so an untracked module is never a finding |
@@ -657,7 +661,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 159 make targets, 51 files in `scripts/`)
+### Bots in the tree (11 pipelines, 163 make targets, 53 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -677,13 +681,13 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `workflow_dispatch`
 - **jobs:** `guard`, `fix` (needs `guard`)
-- **calls:** `make image-ensure`; `make hermes-smoke`; `make git-identity`; `make check-conflict-markers` — Fail when a tracked file carries a merge-conflict block (issue #588)
+- **calls:** `make image-ensure`; `make hermes-smoke`; `make git-identity`; `make check-conflict-markers` — Fail when a tracked file carries a merge-conflict block (issue #588); `make reset-working-files` — Unstage the bot's working files (one list: $(WORKING_FILES); issue #543)
 
 #### `.github/workflows/issue-bot.yml` — issue-bot
 
 - **when:** cron `19 * * * *`, `49 * * * *`, `issues`, `workflow_dispatch`
 - **jobs:** `guard`, `pick` (needs `guard`), `implement` (needs `guard`, `pick`)
-- **calls:** `make issue-pick` — Print the ONE key=value line a sweep reads (`issue=<n>` or `issue=`; issues #547/#548); `make issue-skip-note` — Say on the held issue why the sweep skipped it (one comment per review round); `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make image-ensure`; `make hermes-smoke`; `make issue-thread` — Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>); `make issue-state` — Print the issue's state: exit 0 = open, 4 = closed, 2 = unreadable (ISSUE=<n>, REPO=) (issue #520); `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make implement-issue`; `make issue-verdict` — Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>); `make git-identity`; `make branch-adopt` — Cut or attach BRANCH at COMMIT time, reporting behind_base=N and asserting NO base (issue #500) (BRANCH=, BASE=); `make check-conflict-markers` — Fail when a tracked file carries a merge-conflict block (issue #588); `make base-rebase` — Fetch the base and rebase BRANCH onto it; a conflict KEEPS the work and still SUCCEEDS (`base_rebase=conflict`) (BRANCH=, BASE=); `make pr-body` — Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]; `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo)
+- **calls:** `make issue-pick` — Print the ONE key=value line a sweep reads (`issue=<n>` or `issue=`; issues #547/#548); `make issue-skip-note` — Say on the held issue why the sweep skipped it (one comment per review round); `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make image-ensure`; `make hermes-smoke`; `make issue-thread` — Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>); `make issue-state` — Print the issue's state: exit 0 = open, 4 = closed, 2 = unreadable (ISSUE=<n>, REPO=) (issue #520); `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make implement-issue`; `make issue-verdict` — Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>); `make git-identity`; `make branch-adopt` — Cut or attach BRANCH at COMMIT time, reporting behind_base=N and asserting NO base (issue #500) (BRANCH=, BASE=); `make check-conflict-markers` — Fail when a tracked file carries a merge-conflict block (issue #588); `make reset-working-files` — Unstage the bot's working files (one list: $(WORKING_FILES); issue #543); `make base-rebase` — Fetch the base and rebase BRANCH onto it; a conflict KEEPS the work and still SUCCEEDS (`base_rebase=conflict`) (BRANCH=, BASE=); `make pr-body` — Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]; `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo)
 
 #### `.github/workflows/issue-review-bot.yml` — issue-review-bot
 
@@ -782,6 +786,7 @@ One line each, taken from the script's own docstring.
 - `scripts/hermes_update_needed.sh` — Decide whether a Hermes update should run on this invocation.
 - `scripts/hf_id.py` — One definition of a Hugging Face identifier: `owner/repo`.
 - `scripts/install_hermes_ci.sh` — install_hermes_ci.sh — the ONE way the Hermes CLI enters this repo's image.
+- `scripts/issue_bot_working_files.txt` — (no docstring)
 - `scripts/issue_queue.py` — The implementer's queue — ONE implementation, read by both bots (issue #179).
 - `scripts/issue_review.py` — The issue reviewer's deterministic core (issue #179).
 - `scripts/issue_thread.py` — Render an issue's WHOLE thread for the implementer (issue #210).
@@ -801,6 +806,7 @@ One line each, taken from the script's own docstring.
 - `scripts/refresh_base.py` — Publish a refresh on the base as it is NOW, never on a stale one (issue #177).
 - `scripts/refresh_run_block.py` — The refresh run's WINDOW as a machine-readable block (issue #199).
 - `scripts/require_env.py` — Fail LOUDLY when an environment variable a leg needs is missing or empty.
+- `scripts/reset_working_files.py` — Unstage the bot's working files, from ONE list (issue #543).
 - `scripts/run_tests.sh` — run_tests.sh — the ONE test runner (issues #176 and #192).
 - `scripts/scrub_log.py` — Redact a captured agent log before any of it reaches a bot job's console.
 - `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122).
