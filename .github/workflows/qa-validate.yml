@@ -258,7 +258,8 @@ jobs:
     if: >-
       failure() &&
       github.event_name == 'pull_request' &&
-      startsWith(github.head_ref, 'ci/trending-refresh-') &&
+      (startsWith(github.head_ref, 'ci/trending-refresh-') ||
+       startsWith(github.head_ref, 'ci/data-gap-')) &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
