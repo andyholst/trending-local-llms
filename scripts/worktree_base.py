@@ -468,13 +468,35 @@ def mode_adopt(args: argparse.Namespace) -> int:
 
     if carried:
         if git(["stash", "pop"], cwd).returncode != 0:
-            # The stash entry SURVIVES a failed pop, so nothing is lost: the work is both in
-            # `git stash list` and in the tree's conflict markers for the next round.
-            conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], cwd).strip()
-            print(f"WARNING: re-applying this run's work onto {branch} conflicted "
-                  f"({conflicted or 'see git status'}) — the work is KEPT in the stash and in the "
-                  f"tree's markers; a fix round resolves it (issue #580).", file=sys.stderr)
-            print("merge_conflict=true")
+            # A conflicted re-apply must NOT leave conflict markers in the tree: the next step
+            # is `git add -A` + commit, and a marker inside a PARSED file makes every later
+            # `make` die — measured on run 40202490846, where the markers landed in the
+            # Makefile and `make base-rebase` stopped with `Makefile:588: missing separator`
+            # before anything was pushed (issue #583).
+            #
+            # The work being carried is THIS RUN's implementation, written against the base as
+            # it is now; the branch's copy is the older attempt. So the conflicted paths keep
+            # THE WORK (`--theirs` of a stash pop) and are staged, and the tree stays parseable.
+            conflicted = [p for p in
+                          git_out(["diff", "--name-only", "--diff-filter=U"], cwd).splitlines()
+                          if p.strip()]
+            kept: list[str] = []
+            for path in conflicted:
+                if git(["checkout", "--theirs", "--", path], cwd).returncode == 0:
+                    git(["add", "--", path], cwd)
+                    kept.append(path)
+            leftover = [p for p in
+                        git_out(["diff", "--name-only", "--diff-filter=U"], cwd).splitlines()
+                        if p.strip()]
+            print(f"merge_conflict={','.join(kept) or 'true'}")
+            if leftover:
+                print(f"WARNING: could not take this run's side of {', '.join(leftover)} — the "
+                      f"work for those paths stays in `git stash list` (issue #583).",
+                      file=sys.stderr)
+            else:
+                print(f"NOTE: re-applied this run's work onto {branch}, taking the WORK on the "
+                      f"{len(kept)} path(s) the branch had also changed ({', '.join(kept)}); no "
+                      f"conflict marker is left in the tree (issue #583).", file=sys.stderr)
 
     head = git_out(["rev-parse", "HEAD"], cwd)
     behind = _count(head, tip, cwd)
