@@ -453,11 +453,15 @@ jobs:
           # issue #177: "1 commit behind" -> Error 1 -> no commit, no push, no PR).
           # `branch-adopt` cuts or resumes the branch from the CURRENT HEAD and reports
           # `behind_base=N`; `base-rebase` (after the commit, below) brings the work forward.
-          make branch-adopt BRANCH="$BRANCH"
           # Last line of defence (issue #588): a marker from ANY source — a botched manual
           # merge, a salvaged run, a stash pop — must stop the commit, not reach the PR. The
           # producer is fixed in #583; this refuses what it cannot know about.
+          # It runs BEFORE the adopt because the adopt switches the tree to the BRANCH: resuming
+          # a stale branch (measured: 273 commits ahead of the base) removes files master has
+          # added since, and the guard would then fail on a missing script instead of on a
+          # marker (run 40210081952).
           make check-conflict-markers
+          make branch-adopt BRANCH="$BRANCH"
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)
