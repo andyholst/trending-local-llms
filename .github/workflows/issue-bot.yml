@@ -313,9 +313,48 @@ jobs:
           } > start.md
           gh issue comment "$ISSUE" --body-file start.md
 
+      # The pick is a SNAPSHOT (issue #522): the issue was read once, minutes ago, and this
+      # run has since pulled the base, ensured images, smoked the model and read the whole
+      # thread. `auto-merge` lands PRs continuously, so an issue picked at T can be CLOSED at
+      # T+8m by its own PR — measured on #520's class (run 39612330011: picked 14:37, closed
+      # 14:38, and the run then worked for 20 minutes on an issue that no longer existed).
+      # The check below is the cheap one: one `gh` read, immediately before the agent starts.
+      # It runs AFTER the checkout (rule 6d: `make` needs the repo) and before any spend.
+      - name: Re-read the issue's state right before the agent starts
+        id: recheck
+        if: steps.iss.outputs.implement == 'true'
+        env:
+          # The default token: this branch comments, and the owner PAT cannot (rule 6e).
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+        run: |
+          # Exit codes are the contract (scripts/issue_verdict.py --state): 0 = open,
+          # 4 = closed, 2 = unreadable. A state we cannot read is NEVER a pass.
+          set +e
+          make issue-state ISSUE="$ISSUE" REPO="$REPO"
+          RC=$?
+          set -e
+          if [ "$RC" = "4" ]; then
+            echo "closed=true" >> "$GITHUB_OUTPUT"
+            cat > already-fixed.md <<EOF
+          <!-- issue-bot-already-fixed: ${GITHUB_RUN_ID} -->
+
+          This sweep picked #$ISSUE, and by the time it was ready to implement the issue had been **closed** — its PR merged while the run was still setting up. Nothing is left to implement, so this run is a correct no-op rather than a failure; if that merge did not do what the issue asked, reopen it and the next sweep picks it up again.
+          EOF
+            gh issue comment "$ISSUE" --repo "$REPO" --body-file already-fixed.md || true
+            rm -f already-fixed.md
+            exit 0
+          fi
+          if [ "$RC" = "2" ]; then
+            echo "::error::could not read #$ISSUE's state before implementing - a state we cannot read is never a pass (issue #522)."
+            exit 1
+          fi
+          echo "closed=false" >> "$GITHUB_OUTPUT"
+
       - name: Implement the issue (Hermes, through make)
         id: impl
-        if: steps.iss.outputs.implement == 'true'
+        if: steps.iss.outputs.implement == 'true' && steps.recheck.outputs.closed != 'true'
         run: |
           # The agent's stream IS this step's console log, so it is captured to a
           # gitignored file and only the REDACTED, bounded tail is printed (issue
@@ -354,7 +393,7 @@ jobs:
       # still aborts this step.
       - name: Apply the implementer's verdict (make issue-verdict)
         id: verdict
-        if: steps.iss.outputs.implement == 'true'
+        if: steps.iss.outputs.implement == 'true' && steps.recheck.outputs.closed != 'true'
         env:
           # Comments/labels/closes use the default token (`permissions: issues: write`);
           # the owner PAT cannot comment on an issue (measured on #124).
@@ -380,7 +419,7 @@ jobs:
       # review, whatever the exit code was, so the run salvages it and says why.
       - name: Did the agent leave work behind?
         id: salvage
-        if: steps.iss.outputs.implement == 'true'
+        if: steps.iss.outputs.implement == 'true' && steps.recheck.outputs.closed != 'true'
         run: |
           # `git status --porcelain` ignores the gitignored scratch (implement.log, findings.md),
           # so what it reports is the change itself.
@@ -587,6 +626,7 @@ jobs:
       - name: Fail when the implementation is not green
         if: >-
           always() && steps.iss.outputs.implement == 'true'
+          && steps.recheck.outputs.closed != 'true'
           && steps.verdict.outputs.verdict == 'implement'
           && steps.loop.outputs.green == 'false'
         env:
@@ -601,7 +641,7 @@ jobs:
       - name: Report the outcome on the issue
         # Only an `implement` run has an implementation to report: a refine or a
         # close already said everything in the verdict step's own comment.
-        if: always() && steps.iss.outputs.implement == 'true' && steps.verdict.outputs.verdict == 'implement'
+        if: always() && steps.iss.outputs.implement == 'true' && steps.recheck.outputs.closed != 'true' && steps.verdict.outputs.verdict == 'implement'
         env:
           # default token + `permissions: issues: write` (the PAT cannot comment)
           GH_TOKEN: ${{ github.token }}
@@ -654,6 +694,7 @@ jobs:
         # it must not be reported as a failed implementation.
         if: >-
           always() && steps.iss.outputs.implement == 'true'
+          && steps.recheck.outputs.closed != 'true'
           && steps.verdict.outputs.verdict == 'implement'
           && steps.salvage.outputs.dirty != 'true'
           && (steps.impl.outputs.implemented != 'true' || steps.push.outputs.scope_error == 'true')
