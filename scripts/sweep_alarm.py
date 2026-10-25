@@ -98,7 +98,19 @@ def stale(rows: list[dict], now: dt.datetime, max_age_hours: float) -> dict | No
     gaps = [round((a["at"] - b["at"]).total_seconds() / 3600.0, 2)
             for a, b in zip(rows, rows[1:])]
     if age <= max_age_hours:
-        return None
+        # A delivery that RAN and did not succeed is not a delivery (issue #498). The
+        # alarm proved the cron, not the work: a sweep that dies inside `implement`, or
+        # is cancelled by `concurrency: issue-bot-issue-<n>`, is FRESH to an age test and
+        # read as healthy — measured on runs 40190558547 and 40194644167, where `pick`
+        # failed at 11:50 and 12:46 and this alarm reported OK both times.
+        if newest.get("conclusion") == "success":
+            return None
+        return {"reason": (f"the newest delivery is only {age:.1f} h old but concluded "
+                           f"'{newest.get('conclusion')}' — a sweep that ran and did not "
+                           f"succeed delivered nothing"),
+                "age_hours": round(age, 2), "newest": newest["at"],
+                "conclusion": newest.get("conclusion"), "missed": 0, "gaps": gaps[:6],
+                "url": newest.get("url"), "fresh": True}
     return {"reason": f"the newest delivery is {age:.1f} h old (max {max_age_hours} h)",
             "age_hours": round(age, 2), "newest": newest["at"], "conclusion": newest["conclusion"],
             "missed": missed_slots(newest["at"], now), "gaps": gaps[:6], "url": newest["url"]}
@@ -122,6 +134,9 @@ def render(verdict: dict, rows: list[dict], max_age_hours: float) -> str:
     if verdict["conclusion"] not in ("success", None):
         lines.append(f"  the LAST delivery was {verdict['conclusion']} — a sweep that is red on "
                      f"every run looks the same as a missing one from here")
+    if verdict.get("fresh"):
+        lines.append("  the delivery is FRESH: this is not a dropped cron, it is a sweep that "
+                     "ran and did not succeed (issue #498) — the queue did not drain")
     lines += [
         f"  the hourly queue is not being drained at one issue per hour; MAX_AGE_HOURS="
         f"{max_age_hours}",
