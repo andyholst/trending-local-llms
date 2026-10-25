@@ -2349,6 +2349,63 @@ def test_a_detached_fix_round_leaves_its_transcript_behind() -> None:
         "hermes-run.scrubbed.log", ""), paths)
 
 
+def _makefile_commands() -> dict[str, list[str]]:
+    """Every target's recipe COMMAND lines, comments and blanks skipped."""
+    commands: dict[str, list[str]] = {}
+    target = None
+    for line in (ROOT / "Makefile").read_text().splitlines():
+        if line.startswith("\t"):
+            body = line.strip()
+            if target and body and not body.startswith("#"):
+                commands.setdefault(target, []).append(body)
+            continue
+        m = re.match(r"^([A-Za-z0-9_.-]+)\s*:(?!=)", line)
+        target = m.group(1) if m else None
+    return commands
+
+
+def test_a_recipe_redirected_into_a_file_never_echoes_its_own_command():
+    """Issue #539: `make` echoes each recipe line, and one workflow redirects a target
+    straight into a file another step READS as content.
+
+    Measured: `make issue-thread REPO=… ISSUE=… > issue.md` writes
+    `python3 scripts/issue_thread.py --issue 547 --repo andyholst/trending-local-llms` as
+    the FIRST line of `issue.md` — the file the implementer reads as its specification.
+    The same shape would put an echoed command inside `pr-body.md`, the body GitHub parses
+    for the closing keyword. A redirect into `*.log` is deliberately exempt: a log is
+    captured output, and the echoed command is noise that gets scrubbed anyway.
+    """
+
+    # Given every `make <target> … > <file>` a workflow performs
+    redirected: dict[str, str] = {}
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for i, line in enumerate(wf.read_text().splitlines(), 1):
+            if line.lstrip().startswith("#"):
+                continue  # a comment describing a command is not a redirect
+            # `->` in prose and `|` pipelines are not redirects into a file
+            m = re.search(r"\bmake\s+([a-z][a-z0-9-]*)[^|>]*?(?<![-\d])>>?\s*([^\s`&;]+)", line)
+            if not m or "GITHUB_OUTPUT" in line:
+                continue
+            if m.group(2).endswith(".log"):
+                continue
+            redirected.setdefault(m.group(1), f"{wf.name}:{i}")
+
+    check("make echo: a workflow redirects a make target into a file (non-vacuous)",
+          bool(redirected), redirected)
+
+    # Then  each such recipe is SILENT, so the file holds only the product's own output
+    commands = _makefile_commands()
+    noisy = {t: [c for c in commands.get(t, []) if not c.startswith("@")]
+             for t, _where in redirected.items()}
+    noisy = {t: cmds for t, cmds in noisy.items() if cmds}
+    check("make echo: every redirected recipe is silenced (@), so no echoed command lands in the file",
+          not noisy, noisy)
+
+    # And   the file the implementer reads is one of them (the measured case, issue #539)
+    check("make echo: `make issue-thread > issue.md` is covered by the guard",
+          "issue-thread" in redirected, redirected)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2397,6 +2454,7 @@ def main() -> int:
     test_issue_bot_salvages_a_detached_runs_work()
     test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
     test_a_detached_fix_round_leaves_its_transcript_behind()
+    test_a_recipe_redirected_into_a_file_never_echoes_its_own_command()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
