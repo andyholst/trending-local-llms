@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **119** · archived: **7**
+Active changes: **117** · archived: **9**
 
 ## Active changes
 
@@ -71,7 +71,6 @@ Active changes: **119** · archived: **7**
 | `ingest-names-a-dead-hf-link` | active | #333 | — | [hf-link-verification](openspec/changes/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/ingest-names-a-dead-hf-link/proposal.md) |
 | `ingest-new-snapshots-only` | active | #175 | — | [ingest-boundary](openspec/changes/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/ingest-new-snapshots-only/proposal.md) |
 | `issue-bot-checks-out-before-make` | active | — | — | [issue-bot-checks-out-before-make](openspec/changes/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/issue-bot-checks-out-before-make/proposal.md) |
-| `issue-bot-salvage` | active | #554 | — | [issue-bot-salvage](openspec/changes/issue-bot-salvage/specs/issue-bot-salvage/spec.md) | 9/9 | [proposal.md](openspec/changes/issue-bot-salvage/proposal.md) |
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
@@ -99,7 +98,6 @@ Active changes: **119** · archived: **7**
 | `rebuild-decision` | active | — | — | [rebuild-decision](openspec/changes/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/rebuild-decision/proposal.md) |
 | `refresh-aggregate-advances-its-base` | active | #448 (filed first, with the measurement) | — | [worktree-base](openspec/changes/refresh-aggregate-advances-its-base/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/refresh-aggregate-advances-its-base/proposal.md) |
 | `refresh-bot-stamps-its-window` | active | — | — | [bot-coordination](openspec/changes/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/refresh-bot-stamps-its-window/proposal.md) |
-| `refresh-full-history` | active | #552 | — | [refresh-full-history](openspec/changes/refresh-full-history/specs/refresh-full-history/spec.md) | 7/7 | [proposal.md](openspec/changes/refresh-full-history/proposal.md) |
 | `refresh-pr-on-the-fetched-tip` | active | #177 (`tech-debt: Two overlapping refresh PRs conflict on the generated store, README and baseline`) | — | [refresh-publish](openspec/changes/refresh-pr-on-the-fetched-tip/specs/refresh-publish/spec.md) | 12/12 | [proposal.md](openspec/changes/refresh-pr-on-the-fetched-tip/proposal.md) |
 | `refresh-run-block-uses-gh-api` | active | #320 | — | [refresh-run-block](openspec/changes/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/refresh-run-block-uses-gh-api/proposal.md) |
 | `registry-hiccup-is-not-absence` | active | #235 — `tech-debt: \`published()\` reads a registry hiccup as "not published", so a transient outage rebuilds the toolchain` | — | [agent-image-publish](openspec/changes/registry-hiccup-is-not-absence/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/registry-hiccup-is-not-absence/proposal.md) |
@@ -139,6 +137,8 @@ Active changes: **119** · archived: **7**
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `2026-10-25-agent-leg-skills` | archived | #549 | #550 | [agent-leg-skills](openspec/changes/archive/2026-10-25-agent-leg-skills/specs/agent-leg-skills/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/2026-10-25-agent-leg-skills/proposal.md) |
+| `2026-10-25-issue-bot-salvage` | archived | #554 | — | [issue-bot-salvage](openspec/changes/archive/2026-10-25-issue-bot-salvage/specs/issue-bot-salvage/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-10-25-issue-bot-salvage/proposal.md) |
+| `2026-10-25-refresh-full-history` | archived | #552 | — | [refresh-full-history](openspec/changes/archive/2026-10-25-refresh-full-history/specs/refresh-full-history/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-10-25-refresh-full-history/proposal.md) |
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
 | `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
 | `fix-bot-repairs-with-the-base` | archived | #383 | #384 | [fix-bot-repair-loop](openspec/changes/archive/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/fix-bot-repairs-with-the-base/proposal.md) |
