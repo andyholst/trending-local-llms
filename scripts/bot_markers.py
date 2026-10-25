@@ -53,6 +53,17 @@ ARTIFACTS: dict[str, str] = {
 #: tests/test_bot_markers.py::test_the_two_reviewer_markers_are_not_confused).
 FIELDS: frozenset = frozenset({("issue-bot", "verdict")})
 
+#: Markers a WRITER in the tree emits that the registry does NOT declare yet, each with the issue
+#: that lands the declaration (issue #474). Declaring one is a two-file change — this registry AND
+#: the AGENTS.md §6j table, a protected file — so a marker whose row cannot be written stays here
+#: instead of being invented into the registry alone. The list is CLOSED: the guard fails on any
+#: other stray, so this can only shrink.
+UNREGISTERED_OWED: dict[str, int] = {
+    # Written by `.github/workflows/issue-bot.yml` (the already-fixed notice, issues #520/#522);
+    # its `issue-bot` family row belongs in §6j.
+    "issue-bot-already-fixed": 474,
+}
+
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
 DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature")
 
