@@ -561,6 +561,26 @@ jobs:
           git commit -m "fix(issue-bot): drive the pipeline green for #$ISSUE"
           git push origin "$BRANCH"
 
+      # A red loop must red the RUN (issue #558). The step above captures the loop's exit code into
+      # `green=false` and exits 0 so the outcome comment still posts — but nothing used to act on
+      # that value, so a run whose own pipeline was red reported success while its PR sat
+      # unmergeable (measured on run 40174402542 / PR #557: `[fix-loop] still RED after N round(s)`
+      # and `Fix loop against the PR branch: completed/success`). The outcome comment says
+      # "own pipeline green: no"; this step is what makes the run page agree with it.
+      - name: Fail when the implementation is not green
+        if: >-
+          always() && steps.iss.outputs.implement == 'true'
+          && steps.verdict.outputs.verdict == 'implement'
+          && steps.loop.outputs.green == 'false'
+        env:
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+          ISSUE: ${{ steps.iss.outputs.issue }}
+        run: |
+          echo "::error::the fix loop ended RED for #$ISSUE - the PR is open and NOT mergeable (${PR_URL:-no PR})."
+          echo "The failing checks are in qa-report.txt and on the PR; the run is red so the queue does"
+          echo "not treat this branch as finished."
+          exit 1
+
       - name: Report the outcome on the issue
         # Only an `implement` run has an implementation to report: a refine or a
         # close already said everything in the verdict step's own comment.

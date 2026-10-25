@@ -2292,6 +2292,39 @@ def test_issue_bot_salvages_a_detached_runs_work() -> None:
             subprocess.run(["git", "clean", "-qfd"], cwd=repo, check=True)
 
 
+def test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot() -> None:
+    """issue #558: a red implementation must not report success, and must be repairable.
+
+    Measured on run 40174402542 / PR #557: the loop printed `[fix-loop] still RED after N round(s)`
+    and the job still said `Fix loop against the PR branch: completed/success`, because the loop's
+    exit code was captured into `green=false` and nothing acted on it. And `dispatch-fixbot` fired
+    only for `ci/trending-refresh-*`, so an implementer's PR (`ci/data-gap-<n>-…`) had no repairer at
+    all — the PR sat red and unmergeable until a human looked.
+    """
+    print("\nissue #558 — a red loop reds the run, and fix-bot can reach an implementer's PR")
+    impl = load("issue-bot.yml")["jobs"]["implement"]
+    names = [s.get("name") for s in steps(impl)]
+    loop_at = next((i for i, n in enumerate(names) if n and "Fix loop" in n), None)
+    red = step(impl, "Fail when the implementation is not green")
+    check("issue-bot: the red-run step exists", bool(red), names[-6:])
+    check("issue-bot: it fires exactly when the loop was not green",
+          "steps.loop.outputs.green == 'false'" in (red.get("if") or ""), red.get("if"))
+    check("issue-bot: it really fails the step", "exit 1" in (red.get("run") or ""), "")
+    check("issue-bot: it runs AFTER the fix loop",
+          loop_at is not None and (red.get("name") in names)
+          and names.index(red.get("name")) > loop_at, (loop_at, red.get("name")))
+
+    qa = load("qa-validate.yml")["jobs"]["dispatch-fixbot"]
+    cond = qa.get("if") or ""
+    check("qa-validate: fix-bot is dispatched for a refresh PR",
+          "startsWith(github.head_ref, 'ci/trending-refresh-')" in cond, cond)
+    check("qa-validate: and for an implementer's PR (ci/data-gap-…)",
+          "startsWith(github.head_ref, 'ci/data-gap-')" in cond, cond)
+    check("qa-validate: still only a same-repo head",
+          "head.repo.full_name == github.repository" in cond, cond)
+    check("qa-validate: still only on a failed validate", "failure()" in cond and "pull_request" in cond, cond)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2338,6 +2371,7 @@ def main() -> int:
     test_unit_tests_really_run()
     test_a_job_that_runs_the_suite_checks_out_the_whole_history()
     test_issue_bot_salvages_a_detached_runs_work()
+    test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
