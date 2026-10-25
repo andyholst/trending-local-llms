@@ -35,9 +35,16 @@ own snapshots.
 ## Rules
 
 - **The mirror is lightbrd.com and nothing else.** `POST https://api.firecrawl.dev/v1/scrape` with
-  the `Authorization: Bearer` header carrying the value of `FIRECRAWL_API_KEY`, which you read
-  from the environment **by name**; the body is
+  the `Authorization: Bearer ${FIRECRAWL_API_KEY}` header, whose value you read from the environment
+  **by name**; the body is
   `{"url":"https://lightbrd.com/search?f=tweets&q=<urlencoded>","formats":["markdown"]}`.
+- **Make that call from the TERMINAL tool (`curl`), never from `execute_code`, `web_extract` or
+  `web_search`.** Hermes strips every credential-shaped name from an `execute_code` child
+  (`tools/code_execution_env.py::_scrub_child_env`) and does not unwrap `_HERMES_FORCE_` there, so a
+  key read in that child is EMPTY and the request goes out with an empty Bearer (`HTTP 401`) — the
+  #359 defect, one tool over. Only the terminal child receives the key. If you would rather not
+  build the `curl` call, write the payload with `python3 scripts/update_trending.py`, which reads the
+  key in-process.
 - **One query at a time.** Scrape a query, extract its models, write that snapshot, then move on.
   Never collect every query into one payload: a reply is capped at 65,536 tokens and a bulk
   payload loses the whole leg.

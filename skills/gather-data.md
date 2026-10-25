@@ -33,16 +33,26 @@ never write an `export FIRECRAWL_API_KEY=…` line (with a value or a placeholde
 log is public, and a placeholder is one paste away from the real thing (issue #355). A leg that
 cannot authenticate must fail, never narrate its search.
 
-Use the **lightbrd.com mirror** (a working X frontend) via `web_extract`:
+Use the **lightbrd.com mirror** (a working X frontend), fetched with the **Firecrawl scrape API from
+the TERMINAL tool** — `curl` — against
 
 ```
 https://lightbrd.com/search?f=tweets&q=QUERY
 ```
 
+- **The terminal tool is the only tool that can see the key** (issue #362). Hermes strips every
+  credential-shaped name from an `execute_code` child
+  (`tools/code_execution_env.py::_scrub_child_env`) and does not unwrap `_HERMES_FORCE_` there, so a
+  key read there is EMPTY and the request goes out with an empty Bearer (`HTTP 401`) — the #359
+  defect, one tool over. Do **not** reach the mirror with `execute_code`, `web_extract` or
+  `web_search`. If you would rather not build the `curl` call,
+  `python3 scripts/update_trending.py` reads the key in-process.
 - URL-encode the query. `f=tweets` filters to posts.
 - lightbrd returns real X posts with author, timestamp, text, and engagement (likes/views).
 - Nitter instances (nitter.net, xcancel.com, nitter.poast.org, nitter.privacydev.net) are mostly down or blocked — don't rely on them.
-- lightbrd results are truncated; the full text is saved to a cache file (the footer gives the path). Read it with `read_file` to get the omitted middle.
+- The scrape returns the page as markdown in the response body. A long page is easier to work with
+  from a file: redirect the body to a scratch file (`> /tmp/page.md`) and read it with `read_file`,
+  so the omitted middle of a big page never costs you the leg.
 
 ## 2. Search queries that work — grouped by backend
 
