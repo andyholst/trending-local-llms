@@ -59,14 +59,12 @@ def run(d: Path, *extra: str):
                           capture_output=True, text=True)
 
 
-MARKED = """base
-<<<<<<< HEAD
-ours()
-=======
-theirs()
->>>>>>> ci/data-gap-1-x
-end
-"""
+# The markers are BUILT, never written literally: this file is tracked, and the guard under test
+# scans every tracked file — a literal marker here would make the guard fail on its own fixture
+# (measured on PR #589's first validate run, which flagged lines 63/65/67 of this file).
+_M = {"ours": "<" * 7, "sep": "=" * 7, "base3": "|" * 7, "theirs": ">" * 7}
+MARKED = (f"base\n{_M['ours']} HEAD\nours()\n{_M['sep']}\ntheirs()\n"
+          f"{_M['theirs']} ci/data-gap-1-x\nend\n")
 
 
 def test_a_marked_tracked_file_is_refused():
@@ -115,9 +113,10 @@ def test_a_binary_file_is_not_scanned():
 def test_every_git_marker_shape_is_caught():
     with tempfile.TemporaryDirectory() as td:
         d = repo(Path(td))
-        for name, text in (("diff3.txt", "a\n||||||| base\nb\n=======\nc\n>>>>>>> x\n"),
-                           ("sep.txt", "a\n=======\nb\n"),
-                           ("ours.txt", "a\n<<<<<<< HEAD\nb\n")):
+        for name, text in (
+                ("diff3.txt", f"a\n{_M['base3']} base\nb\n{_M['sep']}\nc\n{_M['theirs']} x\n"),
+                ("sep.txt", f"a\n{_M['sep']}\nb\n"),
+                ("ours.txt", f"a\n{_M['ours']} HEAD\nb\n")):
             (d / name).write_text(text)
         git(["add", "-A"], d)
         git(["commit", "-qm", "shapes"], d)
