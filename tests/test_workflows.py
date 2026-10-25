@@ -118,6 +118,45 @@ def test_refresh_bot():
           any(c.split()[0] not in ("0", "00", "*") for c in crons if c), crons)
 
 
+def test_the_refresh_search_job_forwards_every_credential_its_leg_uses():
+    """Issue #363: the search job set NOUS/FIRECRAWL/TYPESAFE and NOT `HF_TOKEN`.
+
+    The legs record a Hugging Face link for every model (rule 5b), and an
+    unauthenticated `huggingface.co` API call is rate-limited, so a gated repo read as
+    missing and the leg wrote the marketing name — the dead-link class #333 fixed at
+    ingest, one level up where no ingest guard can see it. `AGENT_SHELL_KEYS` forwards a
+    credential only when the JOB sets it, so the agent's shell never had the token.
+
+    The set of credentials a leg uses is DECLARED ONCE, by the pre-flight that proves them
+    (`_search-preflight` -> `AGENT_SHELL_CHECK_KEYS="FIRECRAWL_API_KEY HF_TOKEN"`). This
+    test reads that list and requires the job that runs the leg to set each name from a
+    repository secret: a credential dropped from the job env, and a pre-flight narrowed
+    back to the Firecrawl key alone, both fail here.
+    """
+    make = (ROOT / "Makefile").read_text()
+    pre = re.search(r"\n_search-preflight:\n((?:\t.*\n)+)", make)
+    declared = re.search(r'AGENT_SHELL_CHECK_KEYS="([A-Z_ ]+)"', pre.group(1)) if pre else None
+    keys = declared.group(1).split() if declared else []
+    check("refresh: the pre-flight declares the credentials the leg uses, and proves them",
+          keys != [], pre.group(1) if pre else "")
+    for k in ("FIRECRAWL_API_KEY", "HF_TOKEN"):
+        check(f"refresh: the pre-flight proves {k} in the AGENT's shell before the agent starts",
+              k in keys, keys)
+
+    wf = load("refresh-bot.yml")
+    search = wf["jobs"]["search"]
+    check("refresh: the search job is the job that runs the leg",
+          "make search-${{ matrix.backend }}" in run_text(search), run_text(search)[:200])
+    env = search.get("env") or {}
+    for k in keys:
+        check(f"refresh: the search job env sets {k} by NAME from the repository secret",
+              str(env.get(k, "")).strip() == f"${{{{ secrets.{k} }}}}", env)
+    # The aggregate job runs the link-validating QA pass on the same data; it already
+    # carried the token and must keep it (this fix must not MOVE the credential out).
+    agg_env = wf["jobs"]["aggregate"].get("env") or {}
+    check("refresh: the aggregate job still carries HF_TOKEN (the link-validating QA pass needs it)",
+          str(agg_env.get("HF_TOKEN", "")).strip() == "${{ secrets.HF_TOKEN }}", agg_env)
+
 
 def test_the_rebuild_decision_is_one_tested_unit():
     """Issue #208: `refresh-bot` reads the decision, it does not compute it.
@@ -2517,6 +2556,7 @@ def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
     test_refresh_bot()
+    test_the_refresh_search_job_forwards_every_credential_its_leg_uses()
     test_the_rebuild_decision_is_one_tested_unit()
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
     test_the_closure_check_reruns_when_the_pr_body_is_edited()

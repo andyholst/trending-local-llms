@@ -723,8 +723,9 @@ _engine-meta-capture:
 	python3 scripts/engine_registry.py --capture-meta
 
 .PHONY: _nerve-check
-# Which keys to prove: all of them by default; a leg that only receives one (the search
-# job is given no HF_TOKEN) narrows it, so the check never fails on a key the job lacks.
+# Which keys to prove: all of them by default; a leg that receives a SUBSET narrows it, so the
+# check never fails on a key the job legitimately lacks (the search job carries Firecrawl + the
+# Hugging Face token, not the Nous or nerve credentials).
 AGENT_SHELL_CHECK_KEYS ?= $(AGENT_SHELL_KEYS)
 _agent-shell-keys-check:
 	python3 scripts/agent_shell_keys_check.py $(AGENT_SHELL_CHECK_KEYS)
@@ -872,11 +873,15 @@ search:
 # starts: `require_env.py` fails loudly on a missing/empty name (never printing a
 # value), then the EXISTING `search-smoke` proves the key is accepted and the mirror
 # answers — one implementation, the same one `live-smoke` runs (rule 6d).
+# Both credentials the leg uses are then proven in the AGENT's shell (issue #363): the
+# Firecrawl key the scrape sends, and HF_TOKEN, which the leg needs to verify a model's
+# Hugging Face link (an unauthenticated lookup is rate-limited, so a gated repo reads as
+# missing). A leg whose job stopped forwarding either one fails HERE, before the agent.
 .PHONY: _search-preflight
 _search-preflight:
 	@python3 scripts/require_env.py FIRECRAWL_API_KEY --why "the search legs cannot scrape lightbrd.com without it"
 	@$(MAKE) --no-print-directory search-smoke BACKEND=$(BACKEND)
-	@$(MAKE) --no-print-directory agent-shell-keys-check AGENT_SHELL_CHECK_KEYS=FIRECRAWL_API_KEY
+	@$(MAKE) --no-print-directory agent-shell-keys-check AGENT_SHELL_CHECK_KEYS="FIRECRAWL_API_KEY HF_TOKEN"
 
 .PHONY: search-smoke
 search-smoke:

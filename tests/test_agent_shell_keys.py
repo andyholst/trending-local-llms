@@ -181,8 +181,8 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
           "python3 scripts/agent_shell_keys_check.py $(AGENT_SHELL_CHECK_KEYS)" in mk
           and "AGENT_SHELL_CHECK_KEYS ?= $(AGENT_SHELL_KEYS)" in mk, "")
     pre = re.search(r"\n_search-preflight:\n((?:\t.*\n)+)", mk)
-    check("wiring: every search leg proves the AGENT can see the Firecrawl key before it starts",
-          bool(pre) and "agent-shell-keys-check AGENT_SHELL_CHECK_KEYS=FIRECRAWL_API_KEY" in pre.group(1),
+    check("wiring: every search leg proves the AGENT can see the credentials it uses before it starts",
+          bool(pre) and 'agent-shell-keys-check AGENT_SHELL_CHECK_KEYS="FIRECRAWL_API_KEY HF_TOKEN"' in pre.group(1),
           pre.group(1) if pre else "")
     check("wiring: the public target runs it inside DOCKER_RUN (the bot image)",
           "\tagent-shell-keys-check:" not in mk and "\t$(DOCKER_RUN) make _agent-shell-keys-check" in mk, "")
