@@ -92,6 +92,53 @@ def test_the_escaping_keeps_the_value_out_of_the_prompt():
     check("escaping: and never the VALUE", SENTINEL not in text, text)
 
 
+def test_the_prompts_pin_the_tool_that_can_see_the_key():
+    """Issue #362: #359 fixed the TERMINAL's env, so the prompt must name that tool.
+
+    `execute_code`'s child environment drops every credential-shaped name and never unwraps
+    `_HERMES_FORCE_` (measured against tools/code_execution_env.py::_scrub_child_env), so a scrape
+    made there sends an empty Bearer and fails 401 while the key is set — the silent failure #359
+    removed for `curl`. One definition, taken by every leg (rule 6d: one implementation).
+    """
+    mk = (ROOT / "Makefile").read_text()
+    check("tool ask: defined exactly once", mk.count("SEARCH_TOOL_ASK :=") == 1,
+          str(mk.count("SEARCH_TOOL_ASK :=")))
+    parts = mk.split("SEARCH_TOOL_ASK :=", 1)
+    definition = parts[1].split("\n", 1)[0] if len(parts) > 1 else ""
+    for want in ("TERMINAL tool", "execute_code", "EMPTY Bearer", "HTTP 401"):
+        check(f"tool ask: names the rule ({want})", want in definition, definition[:140])
+    check("tool ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
+          '"' not in definition, definition[:60])
+
+    for leg in ("nvidia", "metal", "cpu", "amd"):
+        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
+        check(f"{leg}: takes the tool rule from $(SEARCH_TOOL_ASK)",
+              "$(SEARCH_TOOL_ASK)" in recipe, recipe[-160:])
+        check(f"{leg}: carries no second copy of the prohibition",
+              "NEVER make that call from execute_code" not in recipe, "")
+        check(f"{leg}: the authenticated request and the tool rule travel together",
+              "Bearer" in recipe and "$(SEARCH_TOOL_ASK)" in recipe, "")
+
+
+def test_the_skill_the_leg_preloads_pins_the_same_tool():
+    """The legs preload `data-search`, and `AGENTS.md` points humans at the guide."""
+    mk = (ROOT / "Makefile").read_text()
+    docs = {
+        "data-search skill": ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md",
+        "gather-data guide": ROOT / "skills" / "gather-data.md",
+    }
+    for label, path in docs.items():
+        text = path.read_text()
+        check(f"{label}: pins the TERMINAL tool", "TERMINAL tool" in text, text[:80])
+        check(f"{label}: forbids execute_code by name", "execute_code" in text, "")
+        check(f"{label}: says why (empty bearer, HTTP 401)",
+              "empty" in text.lower() and "HTTP 401" in text, "")
+    for leg in ("nvidia", "metal", "cpu", "amd"):
+        recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
+        check(f"{leg}: the prompt preloads the skill that carries the rule",
+              "-s data-search,bot-unattended" in recipe, recipe[-80:])
+
+
 def test_every_public_leg_checks_the_key_before_the_agent():
     mk = (ROOT / "Makefile").read_text()
     for leg in ("nvidia", "metal", "cpu", "amd"):
@@ -161,6 +208,8 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
 def main() -> int:
     print("search-leg key wiring (issues #357/#355)")
     test_every_leg_prompt_names_the_variable_it_must_use()
+    test_the_prompts_pin_the_tool_that_can_see_the_key()
+    test_the_skill_the_leg_preloads_pins_the_same_tool()
     test_the_escaping_keeps_the_value_out_of_the_prompt()
     test_every_public_leg_checks_the_key_before_the_agent()
     test_a_set_variable_passes_and_the_value_is_never_printed()
