@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **119** · archived: **9**
+Active changes: **121** · archived: **9**
 
 ## Active changes
 
@@ -58,6 +58,7 @@ Active changes: **119** · archived: **9**
 | `fix-publish-latest-tag` | active | #232 | — | [agent-image-publish](openspec/changes/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/fix-publish-latest-tag/proposal.md) |
 | `fix-publish-login-token-by-name` | active | #240 | — | [agent-image-publish](openspec/changes/fix-publish-login-token-by-name/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-publish-login-token-by-name/proposal.md) |
 | `fix-push-check-token-exchange` | active | #232 | — | [agent-image-publish](openspec/changes/fix-push-check-token-exchange/specs/agent-image-publish/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-push-check-token-exchange/proposal.md) |
+| `fix-round-transcript` | active | #566 | — | [fix-round-transcript](openspec/changes/fix-round-transcript/specs/fix-round-transcript/spec.md) | 7/7 | [proposal.md](openspec/changes/fix-round-transcript/proposal.md) |
 | `fixbot-gh-repo-before-checkout` | active | #331 | — | [fixbot-before-checkout](openspec/changes/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/fixbot-gh-repo-before-checkout/proposal.md) |
 | `force-flag-parsing` | active | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/force-flag-parsing/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
