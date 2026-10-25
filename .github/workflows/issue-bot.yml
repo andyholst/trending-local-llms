@@ -352,11 +352,34 @@ jobs:
           done
           printf '[verdict] %s\n' "$(printf '%s\n' "$OUT" | sed -n 's/^verdict=//p' | head -1)"
 
+      # Did the agent leave work behind? (issue #554)
+      #
+      # The unattended contract is preloaded into every leg (`bot-unattended`), and it forbids
+      # asking a question — but a model can still call `clarify` ONCE, and measured on run
+      # 40168796244 it did so ~30 minutes in, AFTER implementing: Hermes detached (rc=3), and
+      # because this job read any non-zero rc as "no implementation", a finished change was
+      # discarded — no commit, no push, no PR, no artifact. That is the same loss #500 fixed for a
+      # rejected push. The tree is the evidence: a dirty checkout means there is something to
+      # review, whatever the exit code was, so the run salvages it and says why.
+      - name: Did the agent leave work behind?
+        id: salvage
+        if: steps.iss.outputs.implement == 'true'
+        run: |
+          # `git status --porcelain` ignores the gitignored scratch (implement.log, findings.md),
+          # so what it reports is the change itself.
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "dirty=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::rc=${{ steps.impl.outputs.rc }} with a dirty tree — the agent left work behind, so it is salvaged (committed, pushed, opened as a PR) instead of discarded."
+          else
+            echo "dirty=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Commit + push the branch
         id: push
         if: >-
-          steps.iss.outputs.implement == 'true' && steps.impl.outputs.implemented == 'true'
+          steps.iss.outputs.implement == 'true'
           && steps.verdict.outputs.verdict == 'implement'
+          && (steps.impl.outputs.implemented == 'true' || steps.salvage.outputs.dirty == 'true')
         env:
           BRANCH: ${{ steps.iss.outputs.branch }}
           ISSUE: ${{ steps.iss.outputs.issue }}
@@ -595,6 +618,7 @@ jobs:
         if: >-
           always() && steps.iss.outputs.implement == 'true'
           && steps.verdict.outputs.verdict == 'implement'
+          && steps.salvage.outputs.dirty != 'true'
           && (steps.impl.outputs.implemented != 'true' || steps.push.outputs.scope_error == 'true')
         env:
           RC: ${{ steps.impl.outputs.rc }}
