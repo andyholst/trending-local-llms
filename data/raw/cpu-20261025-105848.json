@@ -1,0 +1,55 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB (RTX 4090 with DFlash2 and Q4_K_XL weights)",
+      "weight_gb": "IQ4_XS 15.5GB (vs Q5_K_M 19.7GB)",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "80.76",
+          "hardware": "single RTX 4090 24GB, DFlash2 replacing native MTP, --spec-draft-n-max 3/4; 90K-100K context with Q8_0 KV cache",
+          "quant": "Unsloth Q4_K_XL weights, Q8_0 KV cache, 28K-token prompt baseline, development build of llama.cpp carrying PR #27342; native MTP gave 70.83 tok/s at 100K context",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4_K_XL",
+          "context_tokens": "90112",
+          "engine_min_version": "development build of llama.cpp containing PR #27342, --spec-draft-n-max 3"
+        },
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "M5 Max MacBook Pro, DFlash 2 speculative decoding",
+          "quant": "quant not stated in the post; the 4.6x headline is a claimed maximum and the post asks for the baseline speed, context and exact settings",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113804819123040694",
+          "likes": 15,
+          "comments": 2,
+          "reshares": 0,
+          "views": 875,
+          "interactions": 892
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "On a single 24 GB RTX 4090, DFlash2 in llama.cpp pushed Qwen3.8-27B to 80.76 tok/s at 90K context (Q8_0 KV cache) against 70.83 for native MTP — the best consumer-card figure this query surfaced — and an M5 Max MacBook Pro reportedly reaches 70 tok/s on the same drafter."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:58:48Z"
+}

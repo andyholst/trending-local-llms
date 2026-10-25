@@ -356,6 +356,17 @@ def test_registered_engines_never_refused():
     reg = _real_store()["engines"]
     for name, v in reg.items():
         slug = ER.repo_slug(v["url"])
+        if slug is None:
+            # A CLOSED-SOURCE engine links its product site because it has no
+            # public repo at all (LM Studio ships its own bundled llama.cpp/MLX
+            # runtimes and is not on GitHub), so there is no GitHub metadata a
+            # fixture could hold for it — `capture_meta` can only record a repo
+            # it could read. The classifier is handed no metadata here, which is
+            # exactly what ingest would see, and it must still not refuse the
+            # name. Every engine that DOES have a repo stays covered below.
+            check(f"reality: non-GitHub engine '{name}' is never refused with no metadata",
+                  ER.classify_repo(None, name)[0] != "not-engine", ER.classify_repo(None, name))
+            continue
         check(f"reality: metadata captured for {name}", slug in meta, slug)
         kind, why = ER.classify_repo(meta.get(slug), name)
         check(f"reality: registered '{name}' is never classified not-engine", kind != "not-engine", f"{kind}: {why}")

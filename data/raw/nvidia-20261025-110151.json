@@ -1,0 +1,179 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "system_ram_min": "128GB",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "82",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "initial llama.cpp setup, 27B weights on a 24 GB card",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "RTX 3090 24GB (single GPU)",
+          "quant": "optimized MTP (multi-token prediction) build, from the 82 tok/s initial setup",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110907844031643803",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2 × NVIDIA RTX 4090 (48GB total, one cryptomining box)",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, combined throughput over 8 concurrent sessions, 128K context",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108733397027741953",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "RTX 5090 32GB (SM120)",
+          "quant": "4-bit Qwen3.8-27B NVFP4, single request, vLLM 0.32.0 with --linear-backend humming (default kernel 56.9 tok/s; Marlin 72.4)",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 0,
+          "views": 29,
+          "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "56.9",
+          "hardware": "RTX 5090 32GB (SM120)",
+          "quant": "4-bit Qwen3.8-27B NVFP4, single request, the kernel vLLM picks by default on this card",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 9,
+          "comments": 6,
+          "reshares": 0,
+          "views": 29
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "23.8",
+          "hardware": "RTX 3090 + RTX 3060 12GB (36GB total)",
+          "quant": "Q4 weights at a 262,144-token context length",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2109372891875938443",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 2,
+          "views": 258,
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 ternary weights, full 262K context resident with the MTP head restored and kernel tweaks; 77-minute agent build",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101619782642500091",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "35",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 ternary Bonsai 2 build, 220K context; prefill ~550 tok/s",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "225280"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "5",
+          "hardware": "RTX 4060 8GB laptop + 16GB dual-channel DDR4 (Core i7-12700H, PCIe 4)",
+          "quant": "Unsloth IQ4_XS 14.6GB, 64K context, native MTP, 25 GPU layers offloaded, quantized KV cache, no VRAM overflow; prefill ~150 tok/s",
+          "date": "2026-08-19",
+          "source_post": "https://lightbrd.com/RoundtableSpace/status/2089876248176759205",
+          "likes": 37,
+          "comments": 125,
+          "reshares": 1442,
+          "views": 198166,
+          "weight_gb": "14.6GB IQ4_XS",
+          "context_tokens": "64000",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "211",
+          "hardware": "single-GPU RTX 4070",
+          "quant": "Q2 quant; prompt reading ~4,900 tok/s",
+          "date": "2026-08-21",
+          "source_post": "https://lightbrd.com/decentricity/status/2090937320765825156",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "Q2"
+        },
+        {
+          "engine": "SGLang",
+          "tps": "42",
+          "hardware": "NVIDIA DGX Spark (GB10, 128GB unified)",
+          "quant": "DFlash2 single-request decode, 0.2 s TTFT, 114 tok/s aggregate at concurrency 8, 48% draft acceptance, 1.86M-token KV cache",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-10-25"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:01:51Z"
+}

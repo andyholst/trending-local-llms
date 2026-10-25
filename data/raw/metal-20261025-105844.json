@@ -1,0 +1,137 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Muse Spark Open",
+      "full_name": "Muse Spark Open (816B, 42B active)",
+      "type": "MoE LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "weight_gb": "493GB NVFP4",
+      "context_tokens": "1048576",
+      "system_ram_min": "1TB (2x 512GB unified)",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Meta's 816B open-weight MoE (42B active, 1M context) that Apple and Meta tuned to run through MLX on two M5 Ultra Mac Studios with 512GB each.",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "four M5 Ultra Mac Studios, 512GB each (~1TB unified each pair), Thunderbolt RDMA; Apple Machine Learning Research decode figure with tensor parallelism",
+          "quant": "MLX distributed inference, 4-bit NVFP4 compressed weights, 1M-token context; decode speed per Apple MLR (25 tok/s on two Studios)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "likes": 11,
+          "comments": 4,
+          "reshares": 6,
+          "views": 983,
+          "weight_gb": "about 493GB in 4-bit",
+          "context_tokens": "1048576",
+          "system_ram_min": "1TB (2x 512GB unified)",
+          "interactions": 37
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "four M5 Ultra Mac Studios, 816B model spread across them over Thunderbolt RDMA",
+          "quant": "MLX distributed inference with RDMA; Apple MLX team's own decode figure, no quant named in the post",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113617362016420003",
+          "likes": 316,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 318
+        }
+      ],
+      "id": "muse-spark-open"
+    },
+    {
+      "name": "LFM2.5 24B A2B",
+      "full_name": "LFM2.5-24B-A2B (24B total, 2B active MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B total / 2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Liquid AI's 24B MoE with 2B active per token, open weights, runs on llama.cpp and MLX from day one at 184 tok/s on an M5 Max.",
+      "last_seen": "2026-10-18",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "MLX build; Liquid AI's reported decode figure, no quant named in the post",
+          "date": "2026-10-18",
+          "source_post": "https://lightbrd.com/nyuiela/status/2111748879397913081",
+          "likes": 7,
+          "comments": 1,
+          "reshares": 5,
+          "views": 268,
+          "interactions": 24
+        }
+      ],
+      "id": "lfm2-5-24b-a2b"
+    },
+    {
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB (ternary)",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "why": "Ternary 9B vision-language model in about 2GB, more than 9x smaller than full precision, runnable on Macs, iPhones and iPads through MLX.",
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro (Arm, MLX via PrismML)",
+          "quant": "ternary weights (~2GB), PrismML's reported decode figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 5,
+          "views": 986,
+          "weight_gb": "2GB (ternary)",
+          "interactions": 23
+        },
+        {
+          "engine": "MLX",
+          "tps": "34",
+          "hardware": "iPhone 18 Pro Max (A-series/Metal, MLX via PrismML)",
+          "quant": "ternary weights (~2GB) on iPhone; PrismML's reported decode figure",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 8,
+          "comments": 0,
+          "reshares": 5,
+          "views": 986,
+          "weight_gb": "2GB (ternary)",
+          "interactions": 23
+        }
+      ],
+      "id": "bonsai-2-9b"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

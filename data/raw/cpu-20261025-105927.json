@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B with DFlash2 speculative decoding + context lookup on a single RTX 3090",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB (single RTX 3090, ~250W)",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "single RTX 3090 24GB at about 250W; optimized vLLM with DFlash2, 16-token verification blocks, ~15/16 tokens accepted",
+          "quant": "context-lookup workload reproducing a ~25K-token document already in the prompt (not free-running chat); DFlash2 alone ~260 tok/s on the same task, ordinary chat ~133 tok/s, initial setup 82 tok/s",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+          "likes": 445,
+          "comments": 14,
+          "reshares": 33,
+          "views": 32769,
+          "interactions": 33261,
+          "context_tokens": "25000",
+          "engine_min_version": "optimized vLLM with DFlash2 + context lookup, 16-token verification blocks"
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "why": "The most-engaged figure in this leg: a single 24GB 3090 at ~250W went from 82 to 381 tok/s by combining DFlash2 with context lookup and 16-token verification — 15 of 16 tokens accepted per step — though only on workloads that reuse text already in the prompt."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:59:27Z"
+}

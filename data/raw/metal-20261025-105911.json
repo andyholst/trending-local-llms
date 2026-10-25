@@ -1,0 +1,96 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Qwen's 125B Flash-Next MoE, the model Mac owners tune hardest per runtime release — mlx-serve 26.10.1, TensorFold and oMLX all report it.",
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "mlx-serve",
+          "tps": "97",
+          "hardware": "Mac Studio M3 Ultra (Apple Silicon)",
+          "quant": "MLX build, decode speed with MTP/KV/quant recipe tuned; prefill 5,400 tok/s in the same run",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099312823025496405",
+          "likes": 0,
+          "comments": 5,
+          "reshares": 7,
+          "views": 0,
+          "interactions": 31
+        }
+      ],
+      "id": "qwen3-8-flash-next-125b"
+    },
+    {
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The 27B people actually run on a Mac — TensorFold, MLX-fast and mlx-serve all race it on Apple Silicon.",
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
+          "quant": "decode with the MTP/probe recipe; matched oMLX run at 147 tok/s, mlx-serve at 160",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "61.9",
+          "hardware": "Mac mini M6, 32GB unified memory",
+          "quant": "MLX 4-bit with DFlash2 drafting (speculative decode); code generation 10.1 -> 61.9 tok/s (6.1x), byte-identical tokens",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/stretchcloud/status/2104319418285302066",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 422,
+          "weight_gb": "MLX 4-bit",
+          "system_ram_min": "32GB",
+          "interactions": 12
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "124",
+          "hardware": "Apple Silicon Mac (hardware not named in the post)",
+          "quant": "MLX 4-bit, TensorFold parallel-lane draft/verify; reported as 120-124 tok/s",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "id": "qwen3-8-27b"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

@@ -1,0 +1,73 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (based on Qwen3.8-27B)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B (ternary, ~1.72 bits per weight)",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8.4GB (fits a 16GB laptop and a 12GB RTX 3060)",
+      "weight_gb": "5.95GB PTQ1_0 (7.21GB PQ2_0)",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35",
+          "hardware": "single RTX 3060 12GB, 220K context resident, ~550 tok/s prefill",
+          "quant": "PQ2_0 ternary packing, 7.21GB model file, ~1.72 bits per weight",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 43,
+          "comments": 6,
+          "reshares": 6,
+          "views": 15556,
+          "interactions": 15571,
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "225280",
+          "system_ram_min": "12GB (card VRAM the run used)"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "26",
+          "hardware": "single RTX 3060 12GB, 262K native context, ~260 tok/s prefill",
+          "quant": "PTQ1_0 ternary packing, 5.95GB model file",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 43,
+          "comments": 6,
+          "reshares": 6,
+          "views": 15556,
+          "interactions": 15571,
+          "weight_gb": "5.95GB PTQ1_0",
+          "context_tokens": "262144"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "22",
+          "hardware": "RTX 3060 12GB running a Hermes Agent loop, 125K context, ~50 tok/s fresh and ~22 tok/s average over a five-hour build",
+          "quant": "5.95GB ternary weight file; agent generated 328K tokens and a playable game with zero handwritten code",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 48,
+          "comments": 3,
+          "reshares": 6,
+          "views": 7127,
+          "interactions": 7136,
+          "weight_gb": "5.95GB",
+          "context_tokens": "128000"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "A 27B-class model at 5.95GB that decodes at 26-35 tok/s on a 12GB RTX 3060 with 220K-262K context resident, and held ~22 tok/s over a five-hour agent build — the compression that makes a 27B usable on a mid-range card or an 8.4GB laptop footprint."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:59:03Z"
+}

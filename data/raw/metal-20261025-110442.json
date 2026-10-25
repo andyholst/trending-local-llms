@@ -1,0 +1,85 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Meta Llama 3.1 70B (Q4, MLX)",
+      "full_name": "Meta-Llama-3.1-70B-Instruct at Q4 on MLX",
+      "type": "LLM",
+      "license": "Llama 3.1 Community License",
+      "params": "70B",
+      "hf": "meta-llama/Llama-3.1-70B-Instruct",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The 70B that a 128GB M5 Max MacBook decodes at 14 tok/s, and ~27 with MTP — the biggest model a laptop realistically holds.",
+      "last_seen": "2026-07-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "14",
+          "hardware": "MacBook Pro M5 Max, 128GB unified memory (546 GB/s)",
+          "quant": "Q4 70B on MLX, decode without MTP; prefill ~380 tok/s on a 4K prompt (11 s TTFT)",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 10,
+          "comments": 1,
+          "reshares": 6,
+          "views": 6660,
+          "system_ram_min": "128GB unified memory",
+          "interactions": 30
+        },
+        {
+          "engine": "MLX",
+          "tps": "27",
+          "hardware": "MacBook Pro M5 Max, 128GB unified memory",
+          "quant": "Q4 70B on MLX with MTP (draft/verify) enabled",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 10,
+          "comments": 1,
+          "reshares": 6,
+          "views": 6660,
+          "system_ram_min": "128GB unified memory",
+          "interactions": 30
+        }
+      ],
+      "id": "meta-llama-3-1-70b-q4-mlx"
+    },
+    {
+      "name": "Qwen3.6 27B",
+      "full_name": "Qwen3.6-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.6-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The dense 27B that Mac owners run at Q4 on MLX, and push to ~32 tok/s with MTP.",
+      "last_seen": "2026-07-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "17",
+          "hardware": "Mac mini M4 Pro, 64GB unified memory",
+          "quant": "Q4_K_M on MLX, decode without MTP; ~32 tok/s with MTP",
+          "date": "2026-07-15",
+          "source_post": "https://lightbrd.com/yume_arasaki/status/2077391029947510903",
+          "likes": 10,
+          "comments": 1,
+          "reshares": 6,
+          "views": 6660,
+          "system_ram_min": "64GB unified memory",
+          "weight_gb": "Q4_K_M",
+          "interactions": 30
+        }
+      ],
+      "id": "qwen3-6-27b"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

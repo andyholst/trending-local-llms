@@ -113,6 +113,32 @@
         "transformer"
       ]
     },
+    "geramy/lse": {
+      "full_name": "Geramy/LSE",
+      "description": "HRX, LOOM, Mac, and AMD running top speed kernels with a self optimizing engine.",
+      "topics": [
+        "amd",
+        "amdgpu",
+        "apple",
+        "dflash2",
+        "dsl",
+        "gpu-optimization",
+        "hrx",
+        "ipad",
+        "llm",
+        "loom",
+        "mac",
+        "macbook",
+        "macbook-air",
+        "macbook-pro",
+        "macbookpro",
+        "macos",
+        "mtp",
+        "razer",
+        "thunderbolt-3",
+        "thunderbolt-5"
+      ]
+    },
     "ggml-org/llama.cpp": {
       "full_name": "ggml-org/llama.cpp",
       "description": "LLM inference in C/C++",
@@ -502,6 +528,32 @@
         "qwen3",
         "tpu",
         "transformer"
+      ]
+    },
+    "youssofal/mtplx": {
+      "full_name": "youssofal/MTPLX",
+      "description": "The fastest way to run Qwen 3.8 Flash Next, Qwen 3.8 27B and Ternary Bonsai 2 27B on a Mac: 125 tok/s in OpenCode on an M5 Max, and a 27B model on 16 GB Macs. Native MTP speculative decoding on Apple Silicon, exact at any temperature. OpenAI and Anthropic compatible local server.",
+      "topics": [
+        "anthropic-compatible",
+        "apple-silicon",
+        "claude-code",
+        "flash-next",
+        "inference-engine",
+        "llm-inference",
+        "local-ai",
+        "local-llm",
+        "macos",
+        "metal",
+        "mlx",
+        "mtp",
+        "mtplx",
+        "native-mtp",
+        "openai-compatible",
+        "qwen",
+        "qwen3-8",
+        "qwen3-8-flash-next",
+        "qwen3-next",
+        "speculative-decoding"
       ]
     },
     "z-lab/dflash": {

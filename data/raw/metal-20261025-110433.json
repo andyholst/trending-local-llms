@@ -1,0 +1,70 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Qwen3.8-27B (Aegis RD1.2 + LM Studio)",
+      "full_name": "Qwen3.8-27B-Instruct on Inco AI Aegis (Splash) in LM Studio",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Patch drafting + speculative decode on an M5 Max took agentic coding from 12.3 to 120.1 tok/s with a subagent running alongside.",
+      "last_seen": "2026-09-22",
+      "engines": [
+        {
+          "engine": "LM Studio",
+          "tps": "120",
+          "hardware": "M5 Max MacBook Pro 128GB unified memory (Apple Silicon), LM Studio 0.3.30 + Inco AI Aegis (Splash) spec-decode",
+          "quant": "agentic coding workload with a subagent running alongside; 12.278 tok/s baseline vs 69.634 mean after patch drafting and 120.112 peak (patch drafting, speculative decode)",
+          "date": "2026-09-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2102223365268246864",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "128GB unified memory",
+          "interactions": 0
+        }
+      ],
+      "id": "qwen3-8-27b-aegis-rd1-2-lm-studio"
+    },
+    {
+      "name": "Qwen3.8-Flash-Next 125B (MTPLX rd1.1)",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE) MTPLX Bare Speed build",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "MTPLX V2.11.3 runs the full 125B Flash-Next on an M5 Max MacBook at 126.5 TPS peak and still 50 TPS at 200K context.",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MTPLX",
+          "tps": "126.5",
+          "hardware": "M5 Max MacBook Pro 128GB unified memory (Apple Silicon)",
+          "quant": "Qwen3.8-Flash-Next MTPLX Bare Speed build in MTPLX V2.11.3 (8 exactness fixes); peak 126.5 TPS, 61 TPS average at 100K context, 50 TPS at 200K, run through OpenCode",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113748519588635100",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 3,
+          "views": 1640,
+          "system_ram_min": "128GB unified memory",
+          "interactions": 19
+        }
+      ],
+      "id": "qwen3-8-flash-next-125b-mtplx-rd1-1"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

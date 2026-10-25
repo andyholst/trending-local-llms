@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (125B MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Qwen's 125B Flash-Next MoE, the model Mac owners tune hardest per runtime release — MTPLX, oMLX and mlx-serve all lead with it.",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MTPLX",
+          "tps": "126.5",
+          "hardware": "M5 Max MacBook Pro (Apple Silicon)",
+          "quant": "MTPLX V2.11.3 with 8 exactness fixes, running through OpenCode; peak 126.5 TPS, 61 TPS at 100K context, 50 TPS at 200K",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113748519588635100",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 3,
+          "views": 1640,
+          "interactions": 19
+        }
+      ],
+      "id": "qwen3-8-flash-next-125b"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}

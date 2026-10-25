@@ -448,7 +448,12 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
     # POINTS rather than stating one context window, so the figure is real and
     # unstructured and there is no single window to fill. Naming each added model
     # keeps the check exact: a new prose claim on ANY other model still fails.
-    added_since_measurement = {"qwen3.8-27b-strix-halo-dflash2"}
+    # The 2026-10-25 refresh added the same shape twice: both Flash-Next captures
+    # report MTPLX "peak 126.5 TPS, 61 TPS at 100K context, 50 TPS at 200K" — two
+    # benchmark POINTS, not one stated window, so there is nothing singular to fill.
+    added_since_measurement = {"qwen3.8-27b-strix-halo-dflash2",
+                               "qwen3-8-flash-next-125b",
+                               "qwen3-8-flash-next-125b-mtplx-rd1-1"}
     check("real store: context_tokens prose claims are the stated windows + models added since",
           set(report["unstructured"]["context_tokens"])
           <= {"qwen-3.6-27b", "gemma-4-12b"} | added_since_measurement,

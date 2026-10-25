@@ -1,0 +1,81 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (MoE, ~3B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / ~3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "not stated",
+      "weight_gb": "4-bit (Kapitsa comparison)",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory, Kapitsa + DFlash2 (developer-reported)",
+          "quant": "4-bit Qwen3.6-35B-A3B; same benchmark had oMLX + DFlash2 at 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "48GB (unified)"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory, oMLX + DFlash2 (same comparison)",
+          "quant": "4-bit Qwen3.6-35B-A3B",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "48GB (unified)"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory, Ollama + MTP (same comparison)",
+          "quant": "4-bit Qwen3.6-35B-A3B",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "48GB (unified)"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory, llama.cpp + MTP (same comparison)",
+          "quant": "4-bit Qwen3.6-35B-A3B",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "48GB (unified)"
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "The engine spread on one 48GB M4 Pro MacBook Pro is the story: Kapitsa + DFlash2 reaches 154 tok/s and oMLX + DFlash2 127, against llama.cpp + MTP at 69 — the same 4-bit model running 2.2x faster on a specialized Apple Silicon stack."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:59:36Z"
+}

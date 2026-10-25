@@ -1,0 +1,51 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "not stated",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "120",
+          "hardware": "RTX 5090 32GB, Strata with the experimental speed projection enabled; 100-140 tok/s reported range",
+          "quant": "quant not stated in the post; experimental speed projection turned on with START-HERE.bat --setup --experimental-speed-projection on (setup.sh on Linux)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "engine_min_version": "--setup --experimental-speed-projection on"
+        },
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "RTX 5070 Ti 16GB, Strata; roughly 50-70 tok/s reported",
+          "quant": "quant not stated in the post",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-21",
+      "why": "Strata serves the 125B MoE at 100-140 tok/s on an RTX 5090 and about 50-70 tok/s on an RTX 5070 Ti — big-MoE throughput on consumer cards, with the experimental speed projection as the switch that unlocks it."
+    }
+  ],
+  "generated_utc": "2026-10-25T10:58:53Z"
+}

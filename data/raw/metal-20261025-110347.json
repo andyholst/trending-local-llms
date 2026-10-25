@@ -1,0 +1,75 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B (Qwen3.5 based, ternary)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "weight_gb": "0.43GB (ternary)",
+      "backends": [
+        "Metal"
+      ],
+      "why": "The smallest ternary Bonsai 2 — 0.43GB, fast enough for a phone and absurdly quick in an M4 Max browser demo.",
+      "last_seen": "2026-10-15",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "500",
+          "hardware": "M4 Max (browser demo, Apple Silicon, MLX via PrismML)",
+          "quant": "browser demo on an M4 Max; PrismML's own reported figure, no quant named in the post",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "0.43GB (ternary)",
+          "interactions": 0
+        }
+      ],
+      "id": "bonsai-2-2b"
+    },
+    {
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2GB (ternary)",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork; upstream llama.cpp loads only the Q2_0 file",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "why": "Ternary 9B vision-language model in about 2GB that an iPhone 18 Pro Max runs at 34 tok/s, and an open optimization challenge pushed it past 900 tok/s on Apple Silicon.",
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (PrismML + DarkbloomAI optimization challenge track on mlx.fast / Yukon Research)",
+          "quant": "open optimization challenge runs, mlx.fast Apple Silicon track, from 144.9 to 913.1 tok/s in five days (reported 442.3% gain)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~2GB (ternary)",
+          "interactions": 0
+        }
+      ],
+      "id": "bonsai-2-9b"
+    }
+  ],
+  "generated_utc": "2026-10-25T11:08:15Z"
+}
