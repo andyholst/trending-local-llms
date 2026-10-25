@@ -158,8 +158,104 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
           "make search-${{ matrix.backend }}" in wf, "")
 
 
+# ---------------------------------------------------------------------------
+# the tool pin (issue #362): the scrape is a TERMINAL call
+# ---------------------------------------------------------------------------
+#: The legs the tool rule must reach — ONE list, as everywhere else (`update_trending.SEARCH_LEGS`).
+TOOL_LEGS = ("nvidia", "metal", "cpu", "amd")
+
+#: What the rule must SAY to be a rule and not a slogan: the route, the forbidden tool, WHY it is
+#: forbidden (the scrub, the forced form it does not unwrap, the 401 that follows), the two web
+#: tools that cannot carry the key, and the one supported Python route (the in-process write).
+TOOL_PHRASES = ("terminal", "execute_code", "_hermes_force_", "secret", "401",
+                "web_extract", "web_search", "scripts/update_trending.py --write-raw")
+
+
+def _leg_recipe(mk: str, leg: str) -> str:
+    """The `_search-<leg>` recipe text (everything up to the next target)."""
+    return mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
+
+
+def _tool_ask(mk: str) -> str:
+    """The ONE `TOOL_ASK` definition's value, or '' when there is none."""
+    m = re.search(r"^TOOL_ASK\s*:=\s*(.+)$", mk, re.M)
+    return m.group(1) if m else ""
+
+
+def _tool_rule_violations(mk: str) -> list[str]:
+    """Everything the tool rule is missing — empty means every leg is pinned (one predicate, so the
+    RED proof below runs the SAME check against the pre-change prompts)."""
+    bad: list[str] = []
+    if len(re.findall(r"^TOOL_ASK\s*:=", mk, re.M)) != 1:
+        bad.append("TOOL_ASK is not defined exactly once")
+    body = _tool_ask(mk)
+    # Case-insensitive: the rule says "TERMINAL tool" and "_HERMES_FORCE_" — the words, not a casing.
+    for phrase in TOOL_PHRASES:
+        if phrase not in body.lower():
+            bad.append(f"TOOL_ASK never says {phrase!r}")
+    # Embedded in each leg's `hermes -z "…"`: a `$` or a `"` would expand or close that string.
+    for ch in ('"', "$"):
+        if ch in body:
+            bad.append(f"TOOL_ASK carries {ch!r}, which breaks the -z shell string")
+    for leg in TOOL_LEGS:
+        recipe = _leg_recipe(mk, leg)
+        if "$(TOOL_ASK)" not in recipe:
+            bad.append(f"prompt {leg} does not carry $(TOOL_ASK)")
+        if "TERMINAL tool" in recipe:
+            bad.append(f"prompt {leg} inlines its own copy of the rule")
+    return bad
+
+
+def test_every_search_leg_pins_the_scrape_to_the_terminal_tool():
+    bad = _tool_rule_violations((ROOT / "Makefile").read_text())
+    check("tool: every leg is pinned from ONE definition", not bad, "; ".join(bad))
+
+
+def test_the_tool_rule_names_the_terminal_and_refuses_execute_code():
+    body = _tool_ask((ROOT / "Makefile").read_text())
+    check("tool: it names the terminal tool as the route", "TERMINAL tool" in body, body[:120])
+    check("tool: it refuses execute_code outright",
+          "execute_code" in body and "NEVER use execute_code" in body, body[:200])
+    check("tool: it says WHY (the scrub, the forced form, the 401)",
+          "secret-named" in body and "_HERMES_FORCE_" in body and "401" in body, body[:200])
+    check("tool: it rules out the two web tools",
+          "web_extract" in body and "web_search" in body, body[:200])
+    check("tool: it names the supported Python route",
+          "scripts/update_trending.py --write-raw" in body and "in-process" in body, body[:200])
+
+
+def test_the_tool_rule_guard_is_red_on_the_old_makefile():
+    """Rule 6c: a guard that passes on the code before the fix guards nothing.
+
+    `origin/master`'s four prompts carried no tool rule — the shape this builds by dropping the
+    definition and every reference to it. The SAME predicate must then go red, naming each leg.
+    """
+    mk = (ROOT / "Makefile").read_text()
+    old = re.sub(r"^TOOL_ASK\s*:=.*\n", "", mk, flags=re.M).replace("$(TOOL_ASK) ", "")
+    bad = _tool_rule_violations(old)
+    check("old makefile: the guard goes RED", bool(bad), "no violation on the pre-change prompts")
+    check("old makefile: it names the missing definition",
+          any("exactly once" in b for b in bad), "; ".join(bad))
+    check("old makefile: and every unpinned leg",
+          all(any(leg in b for b in bad) for leg in TOOL_LEGS), "; ".join(bad))
+
+
+def test_the_written_procedure_pins_the_same_tool():
+    """A leg told to load the guide must not be led back to `execute_code` (issue #362)."""
+    for rel in ("skills/gather-data.md", ".hermes/skills/data-search/SKILL.md"):
+        text = (ROOT / rel).read_text()
+        check(f"{rel}: names the terminal tool", "terminal" in text.lower(), "")
+        check(f"{rel}: names execute_code as forbidden", "execute_code" in text, "")
+        check(f"{rel}: says the child loses the credential",
+              "_HERMES_FORCE_" in text and "401" in text, "")
+        check(f"{rel}: names the in-process write route",
+              "scripts/update_trending.py --write-raw" in text, "")
+        check(f"{rel}: carries no instruction to scrape from execute_code",
+              "scrape from `execute_code`" not in text, "")
+
+
 def main() -> int:
-    print("search-leg key wiring (issues #357/#355)")
+    print("search-leg key wiring (issues #357/#355/#362)")
     test_every_leg_prompt_names_the_variable_it_must_use()
     test_the_escaping_keeps_the_value_out_of_the_prompt()
     test_every_public_leg_checks_the_key_before_the_agent()
@@ -168,6 +264,10 @@ def main() -> int:
     test_an_empty_variable_counts_as_missing()
     test_the_explicit_opt_out_is_loud_and_never_silent()
     test_the_check_is_wired_to_a_make_target_ci_runs()
+    test_every_search_leg_pins_the_scrape_to_the_terminal_tool()
+    test_the_tool_rule_names_the_terminal_and_refuses_execute_code()
+    test_the_tool_rule_guard_is_red_on_the_old_makefile()
+    test_the_written_procedure_pins_the_same_tool()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

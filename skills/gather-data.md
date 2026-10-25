@@ -33,7 +33,25 @@ never write an `export FIRECRAWL_API_KEY=…` line (with a value or a placeholde
 log is public, and a placeholder is one paste away from the real thing (issue #355). A leg that
 cannot authenticate must fail, never narrate its search.
 
-Use the **lightbrd.com mirror** (a working X frontend) via `web_extract`:
+### The tool: the **terminal**, never `execute_code` (issue #362)
+
+Make every Firecrawl call — the scrape and the web search — from your **terminal** tool, e.g.
+`curl -sS -X POST https://api.firecrawl.dev/v1/scrape ...`. That is the only tool whose child
+environment receives the pipeline's credentials (Hermes unwraps the `_HERMES_FORCE_<NAME>` form
+there, issue #359).
+
+`execute_code` is **forbidden** for these calls: Hermes scrubs every secret-named variable from that
+child (`tools/code_execution_env.py::_scrub_child_env`), the forced `_HERMES_FORCE_` form included,
+so the header resolves to nothing and the call returns `401` — a silent regression of #359.
+`web_extract` / `web_search` cannot send the key either. The one supported Python route is the
+snapshot **write**, which reads the key in-process:
+
+```
+python3 scripts/update_trending.py --write-raw <backend> < payload.json
+```
+
+Scrape the **lightbrd.com mirror** (a working X frontend) through the Firecrawl API from the
+terminal — the URL you POST is:
 
 ```
 https://lightbrd.com/search?f=tweets&q=QUERY

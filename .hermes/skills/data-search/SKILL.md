@@ -38,6 +38,12 @@ own snapshots.
   the `Authorization: Bearer` header carrying the value of `FIRECRAWL_API_KEY`, which you read
   from the environment **by name**; the body is
   `{"url":"https://lightbrd.com/search?f=tweets&q=<urlencoded>","formats":["markdown"]}`.
+- **Make that call from the TERMINAL tool — never from `execute_code`.** The terminal child is the
+  only one that receives the credential (issue #359); Hermes scrubs every secret-named variable from
+  an `execute_code` child, `_HERMES_FORCE_` included, so the header is empty there and the call
+  returns `401` (issue #362). `web_extract` / `web_search` cannot send the key either. The only
+  supported Python route is the snapshot write, `python3 scripts/update_trending.py --write-raw
+  <backend>`, which reads the key in-process.
 - **One query at a time.** Scrape a query, extract its models, write that snapshot, then move on.
   Never collect every query into one payload: a reply is capped at 65,536 tokens and a bulk
   payload loses the whole leg.
