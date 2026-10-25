@@ -170,8 +170,12 @@ def test_vram_need_prefers_what_the_source_states():
     check("need: nothing available is reported, never invented",
           UT.vram_need(model("none", "None", [meas("llama.cpp", "5", "cluster")], vram_min="", vram_tier="")) == ("unknown", "unknown"))
     text = rendered(s)
+    # …and (issue #349) names the card the headline figure ran on, so a bigger-card
+    # number is never read as a fit for the least-VRAM claim beside it.
     check("readme: the most-loved VRAM cell carries the claim's evidence",
-          "**8GB**<br><sub>stated by the source</sub>" in text)
+          "**8GB**<br><sub>stated by the source" in text)
+    check("readme: the most-loved VRAM cell names the measured card",
+          re.search(r"\*\*8GB\*\*<br><sub>stated by the source · headline on .+?</sub>", text) is not None)
 
     # A SPLIT requirement is not one number: publishing its first capacity reads as "fits
     # that card", which an offload requirement does not promise (issue #431).

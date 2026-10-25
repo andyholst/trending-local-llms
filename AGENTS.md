@@ -963,7 +963,16 @@ can disagree about where a figure belongs — and the figure a **card owner** re
 the same gate the speed bonus uses, so a datacenter figure is never presented as
 "what you can get" (issues #260/#337).
 
-1. **❤️ Most loved** — one row per model in rank order: model (HF link, full
+1. **🔥 Trending for your card — low end first** (issue #349) — the FIRST section:
+   a selector (`#up-to-8-gb` … `#up-to-48-gb`, then `No limit`) and one table per
+   tier (`### Up to N GB`, `CARD_TIERS_GB` low end first), each ranked by a
+   **tier-local trend** (`tier_trending_rows()`): the model's own `buzz_7d` plus a
+   speed bonus earned only by the best measurement that **ran on a card ≤ N GB**
+   (`tier_measurements()` → `fits_tier()`, never a second fit rule; a
+   `weights-only` fit earns no bonus), so a 32 GB figure can never top the 8 GB
+   table. A model with no post in the window is not trending and keeps its row in
+   the card-fit table. Columns: `Model | Trend | best t/s that fits | VRAM`.
+2. **❤️ Most loved** — the **No limit** view: one row per model in rank order: model (HF link, full
    name · params · license), status (🔥 / 🕑 / 💤 + last seen), **Trend**
    (`trend_score`, with `buzz · N posts · speed +X (t/s, hardware)` beneath),
    the **best in-scope** t/s for each of CUDA / Metal / CPU / ROCm (`BACKENDS`
@@ -972,9 +981,10 @@ the same gate the speed bonus uses, so a datacenter figure is never presented as
    amount needed to run the model with its evidence** (`vram_need()`: the source's
    stated `vram_min`, else the coarse `vram_tier`, else the smallest card it ran
    on, else `not stated` — the category alone is never published as a
-   requirement), why. No
+   requirement) **plus the card its headline figure ran on** (`headline on …`), so
+   a 5090-sourced number is not read as a 16 GB laptop's, why. No
    `#` rank column — rank is row order.
-2. **🖥️ Pick your card — what fits your VRAM** — the card owner's entry point: an
+3. **🖥️ Pick your card — what fits your VRAM** — the card owner's entry point: an
    anchor index (`#8-gb` … `#48-gb`) and one table per tier
    (`CARD_TIERS_GB = 8/12/16/24/32/48`), each row
    `Model | best t/s that fits | backend | engine · hardware · quant · date | evidence`.
@@ -988,12 +998,12 @@ the same gate the speed bonus uses, so a datacenter figure is never presented as
    "nothing fits your card". The prioritised low end is a **gaming laptop, 8–24 GB**
    (`LOW_END_TIERS_GB`); 32/48 GB is the workstation step above it and everything
    bigger is unified memory or datacenter hardware.
-3. **🧭 Which inference engine runs what** — models × engines that have at
+4. **🧭 Which inference engine runs what** — models × engines that have at
    least one measurement; each cell is the best t/s per backend on that engine.
-4. **🟦 CUDA / 🟪 ROCm / 🟨 CPU / 🟩 Metal backend tables** — numeric `Peak t/s` column (the sort key
+5. **🟦 CUDA / 🟪 ROCm / 🟨 CPU / 🟩 Metal backend tables** — numeric `Peak t/s` column (the sort key
    the validator reads by header name) + every measurement as
    `engine **t/s** · hardware · quant · date`, best first.
-5. **⚙️ Engine guide** — engine link, backend, models measured, best for.
+6. **⚙️ Engine guide** — engine link, backend, models measured, best for.
 
 Free text in cells is pipe-escaped (`\|`); the table validator splits on
 unescaped pipes only.
@@ -1396,6 +1406,7 @@ actually happened.
 | Guard | Catches |
 |---|---|
 | `tests/test_card_fit.py` + `check_card_tables` (validate, `readme` stage) — what fits YOUR card (issue #337) | a card owner misled about their VRAM: the most-loved `VRAM` cell publishing the coarse `vram_tier` (it disagreed with the model's own `vram_min` for 20 of 46 models and sat below the smallest card a measurement had run on for 17); a per-backend "best" cell showing a figure measured on a datacenter part or a bigger card than the column claims (#260); a bare `B300` passing `in_scope()` because `_DATACENTER_HW` named `b200`/`gb300` but not `b300`, so a 21,000 t/s cluster figure earned `speed +11` and ranked 3rd; a card tier placed from a measurement on a BIGGER card (a guessed fit) or from a run whose own hardware names no card; a `weights-only` row sold as a proven fit; an Apple Silicon / CPU figure landing in a card tier; a tier silently dropped from the README, unsorted, missing its anchor, or rendered empty instead of as a named collection gap; the search legs no longer asking for the low-end cards (3060/4060/4060 Ti/4070, Radeon 6600/7600/9060 XT, `8gb`/`16gb vram`) |
+| `tests/test_trending_for_your_card.py` + `check_card_trending` (validate, `readme` stage) — trending for YOUR card (issue #349) | a datacenter figure at the top of the trending list: `in_scope()` read SKUs only, so a hardware string naming a CLASS — the shipped `datacenter GPUs, 512 concurrent requests` behind Qwen3.8-27B's 28,340 t/s AGGREGATE figure — passed `hardware_vram_gb()` as `None` and was admitted, earning `speed +11.5`, the `Trend` cell and the top row's CUDA best (the fastest card a reader can buy was 500 t/s on an RTX 5090); a tier table ranked by the GLOBAL score, so a 32 GB figure tops the 8 GB table; a speed term earned by a card ABOVE the tier or by a `weights-only` fit; the section missing, below the most-loved list, missing a tier, reordered, or hiding a row; an empty tier not named as a collection gap; and a most-loved `VRAM` cell that does not name the card its headline figure ran on |
 | `tests/test_query_coverage.py` — the searches name the ranked models | a trending model named by no query (a stale or broken derivation); the curated base replaced instead of extended; a sibling's query counted as covering a model; a search prompt that stopped asking for the ranked models; a guard that can be silenced (`--top 0`) |
 | `make pr-body` + `tests/test_pr_body.py` (rule 6e, issue #287) | the implementation PR body spelled in a workflow heredoc, where no target owns the text GitHub parses for the closure: a body no test could run (`cat > pr-body.md <<'BODY'` + `printf '\ncloses #%s\n'` in `issue-bot.yml`), a composer that closes an issue other than the one its branch implements (the shipped step is EXECUTED and its `--body-file` fed to `scripts/pr_closure.py`), a `make pr-body` recipe whose echoed command line or directory banner lands inside `pr-body.md`, a body composed for issue 0 when `ISSUE` is missing, and the workflow going back to its own heredoc/`printf` |
 | `make pr-closure` + `tests/test_pr_closure.py` (rule 6e, issue #284) | a merged PR that does NOT close the issue it implements: a chained reference (`Closes #271 and #276` closes only #271 — the measured PR #272, where the change landed and the issue stayed open), a branch that implements an issue whose body carries no closing keyword for it, a PR that closes an issue it does not implement (the refresh PR's `Closes #1` — the long-closed meta issue), and the checker not running on every PR (rule 6d) |
