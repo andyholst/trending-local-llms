@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import os
 import subprocess
 import sys
 import tempfile
@@ -64,9 +65,12 @@ def git(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
                           cwd=str(cwd), capture_output=True, text=True)
 
 
-def run_script(mode: str, cwd: Path, *args: str) -> subprocess.CompletedProcess:
+def run_script(mode: str, cwd: Path, *args: str,
+               env: dict | None = None) -> subprocess.CompletedProcess:
+    full = dict(os.environ)
+    full.update(env or {})
     return subprocess.run([sys.executable, str(SCRIPT), mode, *args],
-                          cwd=str(cwd), capture_output=True, text=True)
+                          cwd=str(cwd), capture_output=True, text=True, env=full)
 
 
 def fixture(tmp: Path) -> dict:
@@ -98,6 +102,7 @@ def advance(seed: Path, text: str) -> None:
     git(["push", "-q", "origin", "master"], seed)
 
 
+<<<<<<< HEAD
 def test_git_out_strips_and_git_raw_does_not(tmp: Path) -> None:
     """Issue #504: `git_out` strips, so a porcelain parser built on it shifts the path.
 
@@ -127,6 +132,63 @@ def test_git_out_strips_and_git_raw_does_not(tmp: Path) -> None:
           "f.txt" not in paths_from(stripped), paths_from(stripped))
     check("git_raw: `-z` records keep their NUL separators",
           "\0" in WB.git_raw(["status", "--porcelain", "-z"], ci), "")
+=======
+def abandoned_branch(fx: dict, name: str, n: int = 5) -> str:
+    """A branch carrying `n` commits the base does not have — an abandoned attempt (#592)."""
+    seed = fx["seed"]
+    git(["checkout", "-q", "-b", name], seed)
+    for i in range(n):
+        (seed / f"stale{i}.txt").write_text(f"{i}\n")
+        git(["add", "."], seed)
+        git(["commit", "-qm", f"stale {i}"], seed)
+    git(["push", "-q", "origin", name], seed)
+    git(["checkout", "-q", "master"], seed)
+    return name
+
+
+def test_adopt_refuses_a_branch_that_is_not_this_runs_work(tmp: Path) -> None:
+    """Issue #592: resuming an abandoned branch REMOVED every file the base had added.
+
+    Measured on run 40210081952: `ahead_base=273`, the adopt switched the tree to the branch, and
+    the step after it ran a target whose script no longer existed. The refusal must happen BEFORE
+    the tree is touched, so the run's own work is still there afterwards.
+    """
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    branch = abandoned_branch(fx, "ci/data-gap-9-stale", 5)
+    (ci / "f.txt").write_text("base\nMINE\n")
+    head_before = git(["rev-parse", "HEAD"], ci).stdout.strip()
+
+    p = run_script("adopt", ci, "--branch", branch, env={"RESUME_MAX_AHEAD": "2"})
+    check("adopt(stale): it is REFUSED, not resumed", p.returncode == 1, (p.returncode, p.stdout))
+    check("adopt(stale): the message names the branch", branch in p.stderr, p.stderr[:300])
+    check("adopt(stale): it says HOW FAR ahead the branch is (the evidence a human needs)",
+          "5 commit(s)" in p.stderr, p.stderr[:300])
+    check("adopt(stale): it names the remedy (delete the branch / --resume-stale)",
+          "delete the branch" in p.stderr and "--resume-stale" in p.stderr, p.stderr[:400])
+    check("adopt(stale): the run's own work is UNTOUCHED",
+          (ci / "f.txt").read_text() == "base\nMINE\n", (ci / "f.txt").read_text())
+    check("adopt(stale): HEAD did not move (no checkout happened)",
+          git(["rev-parse", "HEAD"], ci).stdout.strip() == head_before, "")
+    check("adopt(stale): no stash was created for a branch it refused to adopt",
+          git(["stash", "list"], ci).stdout.strip() == "", git(["stash", "list"], ci).stdout)
+
+    p2 = run_script("adopt", ci, "--branch", branch, "--resume-stale",
+                    env={"RESUME_MAX_AHEAD": "2"})
+    check("adopt(stale): --resume-stale adopts it anyway (a human's explicit call)",
+          p2.returncode == 0 and "how=existing-remote" in p2.stdout, (p2.returncode, p2.stdout[-300:]))
+
+
+def test_adopt_still_resumes_a_reruns_own_branch(tmp: Path) -> None:
+    """The refusal must not touch the case it exists to allow: a re-run of the SAME issue."""
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    abandoned_branch(fx, "ci/data-gap-9-own", 1)     # the run's own earlier commit
+    (ci / "f.txt").write_text("base\nMINE\n")
+    p = run_script("adopt", ci, "--branch", "ci/data-gap-9-own", env={"RESUME_MAX_AHEAD": "2"})
+    check("adopt(own): a branch carrying this run's one commit is still adopted",
+          p.returncode == 0 and "how=existing-remote" in p.stdout, (p.returncode, p.stdout, p.stderr))
+>>>>>>> origin/master
 
 
 def test_check_is_fresh_on_a_fresh_checkout(tmp: Path) -> None:
@@ -583,7 +645,12 @@ def main() -> int:
     print("where work starts: a worktree off the freshly fetched base (issue #271)")
     tmp = Path(tempfile.mkdtemp(prefix="wt-base-"))
     try:
+<<<<<<< HEAD
         test_git_out_strips_and_git_raw_does_not(tmp / "c0c")
+=======
+        test_adopt_refuses_a_branch_that_is_not_this_runs_work(tmp / "c0a")
+        test_adopt_still_resumes_a_reruns_own_branch(tmp / "c0b")
+>>>>>>> origin/master
         test_check_is_fresh_on_a_fresh_checkout(tmp / "c1")
         test_check_fails_on_a_checkout_behind_the_fetched_base(tmp / "c2")
         test_check_fails_loudly_when_the_fetch_fails(tmp / "c3")
