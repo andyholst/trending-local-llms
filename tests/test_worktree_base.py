@@ -532,8 +532,12 @@ def test_the_makefile_is_the_one_seam() -> None:
           and "make base-check" not in commit, commit[:400])
     check("issue-bot: the commit is rebased onto the fetched tip BEFORE the push",
           0 <= commit.find("make base-rebase") < commit.find("git push"), "")
-    check("issue-bot: a conflicted rebase (exit 3) still pushes the work",
-          "REBASE_RC" in commit and '= "3"' in commit, "")
+    # The rule (#586): a conflicted rebase KEEPS every commit and the push must go ahead. The
+    # step used to compare make's status to 3 — but make returns 2 for ANY failing recipe, so
+    # that branch was dead code and every conflicted rebase refused the push (measured, run
+    # 40205472559). The TARGET now normalises the code: `base_rebase=conflict` + exit 0.
+    check("issue-bot: a conflicted rebase still pushes the work (the target owns the contract)",
+          "make base-rebase" in commit and "REBASE_RC" not in commit, commit[:400])
     artifact = ISSUE_BOT[ISSUE_BOT.find("name: Upload the unpushed implementation as a patch"):]
     artifact = artifact[:artifact.find("with:")]
     check("issue-bot: the patch artifact is not gated on the workflow-scope error alone",

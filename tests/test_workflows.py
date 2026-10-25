@@ -307,6 +307,7 @@ def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
             "#!/bin/sh\n"
             'case "$1" in\n'
             f'  git-identity) exec python3 "{ROOT / "scripts" / "agent_identity.py"}" --git-config ;;\n'
+            f'  check-conflict-markers) exec python3 "{ROOT / "scripts" / "check_conflict_markers.py"}" ;;\n'
             '  *) echo "unexpected target: $1" >&2; exit 2 ;;\n'
             "esac\n")
         (bin_ / "make").chmod(0o755)
@@ -540,6 +541,8 @@ def _run_issue_push(hook: str, touch_workflow: bool) -> tuple[int, str, list[str
             # identity through `make git-identity`, which is a plain git config.
             '  git-identity)\n'
             '    git config user.name "Asimov Agent" && git config user.email "support@docondee.com" ;;\n'
+            '  check-conflict-markers)\n'
+            f'    exec python3 "{ROOT / "scripts" / "check_conflict_markers.py"}" ;;\n'
             '  *)\n'
             '    echo "stub make: the push step called an unexpected target: $1" >&2; exit 2 ;;\n'
             "esac\n")
