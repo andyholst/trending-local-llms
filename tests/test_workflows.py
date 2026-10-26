@@ -817,6 +817,7 @@ BOT_GUARDS = (
     ("pr-health.yml", "guard"),
     ("pr-closure.yml", "guard"),
     ("architecture-bot.yml", "guard"),
+    ("bot-health.yml", "guard"),
 )
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
@@ -2180,6 +2181,7 @@ DISPATCH_ONLY_COVERAGE = {
     "fix-bot.yml": "tests/test_fix_loop.py",              # the loop it runs, push gating
     "issue-bot.yml": "tests/test_issue_review.py",        # the queue, the windows, the pick
     "issue-review-bot.yml": "tests/test_issue_review.py",
+    "bot-health.yml": "tests/test_bot_health.py",          # the decision it makes (issue #488)
     "queued-alarm.yml": "tests/test_queued_run_alarm.py",  # the decision it makes
     "pr-health.yml": "tests/test_pr_health.py",  # the silent-PR decision it makes
     "publish-agent-image.yml": "tests/test_publish_agent_image.py",  # the publish decision
