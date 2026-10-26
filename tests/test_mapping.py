@@ -154,17 +154,41 @@ def test_self_correct_fills_missing_fields():
         check("self-correct fills backends", fixed.get("backends") == ["CUDA", "Metal", "CPU"])
         check("self-correct fills last_seen", fixed.get("last_seen") == "2026-09-28")
         check("self-correct fills engine date", fixed["engines"][0].get("date") == "2026-09-28")
-    # cannot-derive flag
+    # A row that cannot be completed is no longer a fatal flag: the unusable ROW
+    # is quarantined (reported loudly, excluded) and the rest of the capture
+    # still merges (issue #381) — the exact opposite of the old exit-1 contract.
+    #   t2  no hf                 -> quarantined (nothing to build a link on)
+    #   t3  hf but no source_post -> its only measurement is dropped, so the row
+    #                                is quarantined too (no valid figure left)
+    #   t4  complete              -> kept, and the snapshot still merges
     snap2 = {"backend": "nvidia", "generated_utc": "2026-09-28T10:00:00Z",
              "models": [{"id": "t2", "name": "T Two", "type": "LLM", "params": "13B",
-                         "vram_tier": "8GB", "engines": [{"engine": "llama.cpp", "tps": "50"}]}]}
+                         "vram_tier": "8GB",
+                         "engines": [{"engine": "llama.cpp", "tps": "50"}]},
+                        {"id": "t3", "name": "T Three", "type": "LLM", "params": "7B",
+                         "vram_tier": "8GB", "hf": "acme/t3",
+                         "engines": [{"engine": "llama.cpp", "tps": "40"}]},
+                        {"id": "t4", "name": "T Four", "type": "LLM", "params": "4B",
+                         "vram_tier": "8GB", "hf": "acme/t4",
+                         "engines": [{"engine": "llama.cpp", "tps": "70",
+                                      "source_post": "https://lightbrd.com/u/status/1"}]}]}
     import tempfile as _t
     with _t.TemporaryDirectory() as td:
         p = _P(td) / "y.json"
         p.write_text(json.dumps(snap2))
         notes = scr.correct_snapshot(p, {"engines": {"llama.cpp": {"backend": "CUDA", "url": "u"}}})
-        check("self-correct flags cannot-derive (hf)", any("hf missing" in n for n in notes))
-        check("self-correct flags cannot-derive (source_post)", any("source_post missing" in n for n in notes))
+        left = json.loads(p.read_text())["models"]
+        check("self-correct quarantines a row whose hf cannot be derived",
+              any("QUARANTINED" in n and "hf missing" in n for n in notes))
+        check("self-correct drops a measurement with no source_post, loudly",
+              any("no source_post" in n for n in notes))
+        check("self-correct quarantines the row left with no valid measurement",
+              any("QUARANTINED" in n and "no measurement" in n for n in notes))
+        check("self-correct keeps the usable model beside the quarantined ones",
+              [m.get("id") for m in left] == ["t4"], ", ".join(str(m.get("id")) for m in left))
+        check("self-correct does not fail the capture over a bad row "
+              "(no CANNOT_DERIVE / exit-1 state)",
+              not any("CANNOT_DERIVE" in n for n in notes))
 
 
 def main() -> int:
