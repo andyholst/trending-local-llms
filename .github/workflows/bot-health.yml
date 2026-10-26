@@ -1,0 +1,77 @@
+# Bot health (issue #488).
+#
+# `pr-health` was red on every scheduled sweep for days with a traceback nobody saw — and the
+# failing step was the one whose job is to make a silent PR loud, so its silence removed its own
+# alarm. `queued-alarm` reads a job stuck in `queued` (#252), `sweep-alarm` reads a sweep that was
+# never delivered (#497) — neither reads "this PIPELINE's own cron is failing", which is the level
+# above both.
+#
+# No conditional job: the DECISION lives in scripts/bot_health.py (it derives the cron pipelines from
+# the workflows themselves, reads each one's newest scheduled runs and decides what counts as red),
+# and this workflow calls it through `make bot-health`. Read-only — no comment, no dispatch.
+#
+# Exit contract: the sweep exits 1 when a pipeline's last N scheduled runs all failed, so the
+# scheduled run goes RED in the Actions tab and names the newest run URL.
+name: bot-health
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"   # four times a day, off the hour (GitHub drops top-of-hour runs)
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "how many newest scheduled runs of a pipeline must all be red"
+        required: false
+        default: "3"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: bot-health
+  cancel-in-progress: false
+
+jobs:
+  # Before anything reads a secret: owner, a write+ collaborator, or the bot itself; a scheduled
+  # run passes (rule 6j, issue #238).
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            echo "Scheduled run - allowed."
+            exit 0
+          fi
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            if [ "$u" = "github-actions[bot]" ]; then echo "The bot itself ($u) - allowed."; continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner, the bot, or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  health:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail when a cron pipeline's own runs are all red
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          make bot-health REPO="${{ github.repository }}" LIMIT="${{ inputs.limit || '3' }}"
