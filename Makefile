@@ -1022,6 +1022,14 @@ refresh-run-block:
 # `@`-silenced: the workflow redirects this target's stdout into `pr-body.md`, so an
 # echoed command line must never reach the body. Host-run, like `refresh-run-block`:
 # the repo and `python3` live on the runner, not in the image.
+.PHONY: refresh-pr-body
+refresh-pr-body: ## Print the REFRESH PR body: the run's window block + the contract (issue #542)
+	@python3 scripts/pr_body.py --for refresh $(if $(WINDOW_FILE),--window-file "$(WINDOW_FILE)",)
+
+.PHONY: architecture-pr-body
+architecture-pr-body: ## Print the ARCHITECTURE PR body (no closing keyword; issue #542)
+	@python3 scripts/pr_body.py --for architecture --run-url "$(RUN_URL)"
+
 .PHONY: pr-body
 pr-body: ## Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]
 	@test -n "$(ISSUE)" || { echo "Usage: make pr-body ISSUE=<n> [BRANCH=<head branch>]"; exit 1; }
