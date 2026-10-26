@@ -50,6 +50,33 @@ def closing_line(issue: int) -> str:
     return f"Closes #{issue}"
 
 
+#: The Conventional-Commit type each label earns. A `tech-debt` issue is a fix; a
+#: `data-gap-analysis` issue is a feature (it adds data/dimensions). Anything else is REFUSED
+#: rather than guessed, because the title is the first line a reviewer reads (issue #541).
+KIND_TYPES = {"tech-debt": "fix(tech-debt)", "data-gap": "feat(data-gap)"}
+
+
+class UnknownKind(Exception):
+    """The issue's label is not one this composer knows how to title."""
+
+
+def title(issue: int, kind: str) -> str:
+    """The implementation PR's TITLE, composed from the issue and the kind of work it is.
+
+    The workflow used to spell `feat(data-gap): implement the #<n> gap analysis item` inline, so
+    every PR — including the `tech-debt` ones the same sweep takes — was titled a data-gap change
+    (issue #541). Composed here, it can branch on the label and a test can run it.
+    """
+    if issue < 1:
+        raise UnknownKind(f"a PR title cannot name issue {issue}: the number must be positive")
+    prefix = KIND_TYPES.get(kind)
+    if prefix is None:
+        raise UnknownKind(f"unknown issue kind {kind!r}; known: {sorted(KIND_TYPES)}")
+    tail = ("from the post-refresh gap analysis" if kind == "data-gap"
+            else "from the tech-debt the analysis filed")
+    return f"{prefix}: implement #{issue} {tail}"
+
+
 def render(issue: int, branch: str | None = None) -> str:
     """The whole implementation PR body for `issue`, opened from `branch`.
 
@@ -94,7 +121,28 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Compose the implementation PR body (issue #287).")
     ap.add_argument("--issue", type=int, required=True, help="the issue this PR implements")
     ap.add_argument("--branch", help="the head branch (a ci/data-gap-<n>-… branch must match)")
+    ap.add_argument("--title", action="store_true",
+                    help="print the PR TITLE for --kind instead of the body (issue #541)")
+    # `--kind` is deliberately NOT `choices=`: the value comes from the issue's labels at run time,
+    # and an unrecognised one must never stop a PR from opening — that would turn a mislabelled
+    # issue into a bot that cannot land its own work (measured on PR #609, where a gh read that did
+    # not answer made `--kind` a URL and argparse killed the push). An unknown kind falls back to
+    # the default LOUDLY instead.
+    ap.add_argument("--kind", default="data-gap",
+                    help=f"the kind of issue this PR implements: {', '.join(sorted(KIND_TYPES))} "
+                         f"(default: data-gap; anything else falls back with a warning)")
     args = ap.parse_args(argv)
+    if args.kind not in KIND_TYPES:
+        print(f"[pr-body] WARNING: unknown --kind {args.kind!r} (known: "
+              f"{', '.join(sorted(KIND_TYPES))}) — falling back to 'data-gap'", file=sys.stderr)
+        args.kind = "data-gap"
+    if args.title:
+        try:
+            print(title(args.issue, args.kind))
+        except UnknownKind as exc:
+            print(f"[pr-body] REFUSED: {exc}", file=sys.stderr)
+            return 2
+        return 0
     try:
         body = render(args.issue, args.branch)
     except Mismatch as exc:

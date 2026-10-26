@@ -361,6 +361,109 @@ def test_the_store_holds_what_the_trending_list_needs():
           len(low_end) > 0, "no low-end evidence at all")
 
 
+# ---- above 48 GB (issue #572): unified memory, multi-GPU, datacenter ---------
+def test_above_48_gb_needs_more_than_a_consumer_card():
+    """A tier above 48 GB answers "what NEEDS this much", never "what would also fit".
+
+    The first cut placed every model whose RUN had a big machine, so an 8B served on
+    a 64 GB Mac mini topped the 64 GB table and buried the models that need it. The
+    need is the model's own weight footprint: above 48 GB, or nothing.
+    """
+    big = model("big", "Big 125B", [meas("vLLM", 900, "2x Radeon AI PRO R9700 32GB",
+                                        weight_gb="111GB")], params="125B")
+    big["weight_gb"] = "111GB"
+    # The run is on a 64 GB Mac mini: it FITS 64 GB, but the model needs 2 GB.
+    small = model("small", "Small 8B", [meas("MLX", 61, "Apple M5 Pro Mac mini, 64GB unified memory",
+                                            weight_gb="2.0GB")], params="8B")
+    small["weight_gb"] = "2.0GB"
+
+    check("above-48: a 111 GB model is placed in the 128 GB tier",
+          UT.high_tier_fit(big, big["engines"][0], 128) == "ran-on",
+          UT.high_tier_fit(big, big["engines"][0], 128))
+    check("above-48: and NOT in the 64 GB tier (its weights do not fit)",
+          UT.high_tier_fit(big, big["engines"][0], 64) is None, "")
+    check("above-48: an 8B model is never placed above 48 GB, whatever it ran on",
+          UT.high_tier_fit(small, small["engines"][0], 64) is None, "")
+
+
+def test_a_big_model_on_a_bigger_machine_is_labelled_weights_only():
+    """The run's own machine is the proof; without it the fit is labelled, not sold."""
+    m = model("big2", "Big 120B", [meas("llama.cpp", 2.2, "12GB-RAM Android phone, plain CPU",
+                                       weight_gb="60GB")], params="120B")
+    m["weight_gb"] = "60GB"
+    check("above-48: 60 GB of weights on an unknown machine is weights-only at 64 GB",
+          UT.high_tier_fit(m, m["engines"][0], 64) == "weights-only",
+          UT.high_tier_fit(m, m["engines"][0], 64))
+
+
+def test_a_weight_footprint_that_contradicts_the_model_is_refused():
+    """Measured in the shipped store: Bonsai 2 9B (a 2 GB ternary model) carried
+    "~493GB NVFP4" from a 4x M5 Ultra run, which the ladder read as proof it needs a
+    512 GB machine. A number that cannot belong to this model is not evidence."""
+    m = model("bonsai", "Bonsai 2 9B", [meas("TensorFold", 36, "4x Apple M5 Ultra Mac Studio (512GB each)",
+                                            weight_gb="~493GB NVFP4")], params="9B")
+    m["weight_gb"] = "2.0GB (ternary)"
+    g, tag = UT.weights_gb(m, m["engines"][0])
+    check("weights: a 246x contradiction is refused in favour of the model's own footprint",
+          g == 2.0 and tag == "model-level", (g, tag))
+    check("weights: and the bad measurement places nothing above 48 GB",
+          UT.high_tier_fit(m, m["engines"][0], 512) is None, "")
+    ok = model("ok", "Ok 70B", [meas("vLLM", 10, "H100 80GB", weight_gb="42GB")], params="70B")
+    ok["weight_gb"] = "40GB"
+    g2, tag2 = UT.weights_gb(ok, ok["engines"][0])
+    check("weights: a plausible per-run footprint is still used as stated",
+          g2 == 42.0 and tag2 == "stated", (g2, tag2))
+
+
+def test_the_readme_renders_the_above_48_gb_tiers():
+    s_ = store()
+    s_["models"][0]["weight_gb"] = "111GB"
+    s_["models"][0]["engines"][0]["weight_gb"] = "111GB"
+    readme = UT.render_readme(s_, TODAY)
+    check("above-48: the section explains what these tiers are",
+          "Above 48 GB" in readme and "unified" in readme, "")
+    for t in UT.HIGH_TIERS_GB:
+        check(f"above-48: the {t} GB tier is rendered with its anchor",
+              f"### {t} GB" in readme and f"[{t} GB](#{t}-gb)" in readme, "")
+    check("above-48: the 128 GB table holds the 111 GB model",
+          "### 128 GB" in readme and "111" in readme.split("### 128 GB")[1][:2000], "")
+
+
+def test_the_validator_catches_an_above_48_gb_row_that_disagrees():
+    """The high ladder is validated with ITS OWN function, never the card rule."""
+    s_ = store()
+    s_["models"][0]["weight_gb"] = "111GB"
+    s_["models"][0]["engines"][0]["weight_gb"] = "111GB"
+    readme = UT.render_readme(s_, TODAY)
+    with tempfile.TemporaryDirectory() as d:
+        rp = Path(d) / "README.md"
+        rp.write_text(readme, encoding="utf-8")
+        old_readme = V.README
+        V.README = rp
+        try:
+            block = readme.split("### 128 GB")[1]
+            rows = [ln for ln in block.split("\n") if ln.startswith("| [**")]
+            check("above-48: the 128 GB table has a row to break", bool(rows), rows[:2])
+            if rows:
+                cells = rows[0].split("|")
+                check("above-48: the row's t/s cell is where a falsification lands",
+                      len(cells) > 2 and cells[2].strip().replace(".", "").isdigit(), cells[:4])
+                cells[2] = " 4242.0 "
+                broken = readme.replace(rows[0], "|".join(cells), 1)
+                rp.write_text(broken, encoding="utf-8")
+                msgs: list[str] = []
+                old_fail = V.fail
+                V.fail = lambda m: msgs.append(m)
+                try:
+                    V.check_card_tables(s_)
+                finally:
+                    V.fail = old_fail
+                check("above-48: a falsified 128 GB figure fails validation",
+                      any("card-fit[above-48]" in m and "128 GB" in m for m in msgs), msgs[:2])
+        finally:
+            V.README = old_readme
+
+
 def main() -> int:
     print("card-fit: what fits YOUR card (issue #337)")
     for fn in (
@@ -373,6 +476,11 @@ def main() -> int:
         test_the_readme_shows_the_card_view,
         test_the_validator_catches_a_dropped_row,
         test_the_low_end_is_a_gaming_laptop,
+        test_above_48_gb_needs_more_than_a_consumer_card,
+        test_a_big_model_on_a_bigger_machine_is_labelled_weights_only,
+        test_a_weight_footprint_that_contradicts_the_model_is_refused,
+        test_the_readme_renders_the_above_48_gb_tiers,
+        test_the_validator_catches_an_above_48_gb_row_that_disagrees,
         test_the_shipped_store_and_readme_answer_the_question,
         test_the_store_holds_what_the_trending_list_needs,
     ):
