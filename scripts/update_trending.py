@@ -2171,7 +2171,15 @@ def merge_engines(current: list[dict], incoming: list[dict]) -> list[dict]:
         # already held when a higher-engagement incoming row won the group. Fill
         # only (a stated value is never overwritten, an unstated one never
         # invented): the additive-only rule (AGENTS.md §2.3b) at measurement level.
+        # only when that member captured the SAME post: a dimension states THE RUN's
+        # footprint, so a sibling measurement of another post states another run's
+        # (measured: qwen3.6-35b-a3b's oMLX row on post …6273 carried `DFlash2 drafter
+        # on`, a wording only post …4438's rows state, and the captured-footprint guard
+        # in tests/test_data_gap_analysis.py caught the attribution).
+        primary_post = _real_post(primary)
         for member in group:
+            if not primary_post or _real_post(member) != primary_post:
+                continue
             for k in MEASUREMENT_DIMENSION_FIELDS:
                 kept = _raised_dimension(row.get(k), member.get(k))
                 if kept is not None:          # an unstated dimension is never stored

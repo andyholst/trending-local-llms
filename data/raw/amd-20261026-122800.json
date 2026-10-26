@@ -1,0 +1,43 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-26T00:00:00Z",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "LFM Open License",
+      "params": "24B A2B",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "14.5GB Q4 GGUF",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+          "quant": "ROCm; Q4 GGUF 14.5GB",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113073556321886241",
+          "weight_gb": "14.5GB Q4 GGUF",
+          "likes": 8,
+          "comments": 1,
+          "reshares": 2,
+          "views": 765
+        }
+      ],
+      "last_seen": "2026-10-22"
+    }
+  ]
+}

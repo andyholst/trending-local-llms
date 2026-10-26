@@ -1,0 +1,40 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "CUDA"
+      ],
+      "system_ram_min": "32GB",
+      "context_tokens": "16384",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20",
+          "hardware": "RTX 3050 6GB Laptop + 32GB system RAM",
+          "quant": "Strata current build, Gyro-S config; ~94% VRAM and 96% RAM used; 4-bit (17-20 tok/s range)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+          "context_tokens": "16384",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "owner verdict on coldniko's Strata build: 17-20 tok/s on a 6GB laptop card, 16K context is the most that fits before generation cuts out at 32K; ~94% VRAM / 96% RAM"
+    }
+  ],
+  "generated_utc": "2026-10-26T12:25:25Z"
+}

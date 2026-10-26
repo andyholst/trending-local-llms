@@ -1,0 +1,149 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-10-26T13:10:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "54.0",
+          "hardware": "RTX 5090 32GB (ThinkingCap run 1)",
+          "quant": "ThinkingCap Qwen3.8-27B Kearuga, turboderp's EXL3 4.0 bpw, run 1 on the quant's own TensorFold recipe, code decode with thinking off; run 2 switched the same weights to TandemLLM",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/0x0SojalSec/status/2114445352388682214",
+          "likes": 29,
+          "comments": 2,
+          "reshares": 4,
+          "views": 1465,
+          "interactions": 1500,
+          "weight_gb": "EXL3 4.0 bpw"
+        },
+        {
+          "engine": "ExLlamaV3",
+          "tps": "73.1",
+          "hardware": "2x RTX 5060 Ti, tensor parallel 2",
+          "quant": "MiaAI_lab's one-click kit, EXL3 4.0 bpw with MTP, code decode on the same box/prompt where SLQ-EAR98 on vLLM did 33.0",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/tolewis/status/2114666190752645514",
+          "likes": 3,
+          "comments": 1,
+          "reshares": 0,
+          "views": 100,
+          "interactions": 104,
+          "weight_gb": "EXL3 4.0 bpw"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "system_ram_min": "128GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "48",
+          "hardware": "RTX 5090 32GB + 128GB system RAM",
+          "quant": "125B MoE touching ~6B params per word; the system RAM carries most of it",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/_floormodel/status/2114118381469389190",
+          "likes": 2,
+          "comments": 6,
+          "reshares": 8,
+          "views": 3123,
+          "interactions": 3139,
+          "system_ram_min": "128GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "143",
+          "hardware": "RTX 5090 32GB (one owner's benchmark)",
+          "quant": "NVFP4 (4-bit floats)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/0xaqt/status/2114002977413345358",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 77,
+          "interactions": 78,
+          "weight_gb": "NVFP4"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B (ternary, ~1.72 bits/weight)",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB PTQ1_0",
+      "context_tokens": "262144",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "2x RTX 5060 Ti 16GB (32GB total), all layers split across both cards",
+          "quant": "IQ4_XS at 15.5 GB instead of Q5_K_M at 19.7 GB (same score, 20% faster), 262k context in two 128k slots, q4_0 KV cache with flash attention, built-in MTP draft head; decode falls to 26.5 tok/s after 90k tokens",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/laky_fx/status/2113901739170501046",
+          "likes": 7,
+          "comments": 5,
+          "reshares": 1,
+          "views": 233,
+          "interactions": 246,
+          "weight_gb": "15.5GB IQ4_XS",
+          "context_tokens": "262144",
+          "system_ram_min": "32GB"
+        }
+      ]
+    }
+  ]
+}

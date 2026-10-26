@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-26T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "262144",
+      "system_ram_min": "96GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "27",
+          "hardware": "AMD Strix Halo laptop, 16GB VRAM + 96GB RAM",
+          "quant": "Unsloth Q4; 168K-262K context; experimental Strata Strix Halo support (Linux-only)",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+          "context_tokens": "262144",
+          "system_ram_min": "96GB"
+        }
+      ],
+      "last_seen": "2026-10-07"
+    }
+  ]
+}
