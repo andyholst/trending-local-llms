@@ -1196,6 +1196,14 @@ _freshness-alarm:
 freshness-alarm: ## Fail when the newest refresh snapshot is older than MAX_AGE_HOURS (issue #452)
 	@$(MAKE) --no-print-directory _freshness-alarm
 
+.PHONY: _bot-health
+_bot-health:
+	python3 scripts/bot_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(LIMIT),--limit $(LIMIT),)
+
+.PHONY: bot-health
+bot-health: ## Fail when a cron pipeline's own scheduled runs are all red (issue #488)
+	@$(MAKE) --no-print-directory _bot-health
+
 .PHONY: queued-alarm
 sweep-alarm: ## Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
 	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=3]"; exit 1; }

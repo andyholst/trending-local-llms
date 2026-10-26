@@ -229,6 +229,7 @@ keep it honest (issue #207):
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
 | `sweep-alarm` (`REPO=` `MAX_AGE_HOURS=3`) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the newest `schedule` run of `issue-bot.yml` and exits 1 when it is older than `MAX_AGE_HOURS`, naming the age, the missed `:19` slots, the gaps and the last conclusion (2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
+| `bot-health` (`REPO=` `LIMIT=`) | Fail when a cron pipeline's newest N **scheduled** runs all failed, naming the newest run URL (issue #488). The pipelines are DERIVED from the workflows (a `- cron:` line), so a pipeline added tomorrow is covered without editing the script; a window shorter than N is not a failure, `gh` failing is loud, and `--limit 0` is refused (`scripts/bot_health.py`) |
 | `freshness-alarm` (`REPO=` `MAX_AGE_HOURS=`) | Fail when the newest committed snapshot is older than the window (default 14 h — one missed twice-daily slot), naming the age, the newest scheduled refresh run and the remedy (issue #452). An alarm over the ARTIFACT: a cron GitHub DROPPED leaves no run row for any other alarm to read (`scripts/freshness_alarm.py`) |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
 | `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started. `scripts/pr_health.py` lists the open non-draft PRs, keeps the two reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch). Exit 1 when a PR is silent. Run by `pr-health.yml` |
@@ -438,6 +439,18 @@ reported" and nothing distinguishes it from a quiet queue.
   comment uses the DEFAULT token (`pull-requests: write`, rule 6b). Exit 1 when a PR is silent, so
   the scheduled run goes red.
 
+### `.github/workflows/bot-health.yml` — the red-cron alarm (schedule + dispatch)
+
+Four times a day (`23 */6 * * *`, off the hour) plus an owner dispatch.
+
+- **`guard`** — the FIRST job (rule 6j); the scheduled run passes it by design.
+- **`health`** (`needs: guard`) — `actions/checkout`, then `make bot-health REPO=… LIMIT=…`. It
+  derives the repository's cron pipelines from the workflows themselves and fails when a pipeline's
+  newest N **scheduled** runs all failed, naming the newest run URL (issue #488). A pipeline with
+  fewer than N scheduled runs is not red (a bot added yesterday has not had N chances), and a `gh`
+  that cannot answer is a loud failure, never a clean bill of health. Read-only: `contents: read`
+  and `actions: read` only — no comment, no dispatch.
+
 ### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
 
 `concurrency: queued-alarm` (queued, never cancelled). A job whose runner label matches nothing
@@ -571,6 +584,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/code_review.py` | The code-review bot's decision half (issue #253): `scan` runs DETERMINISTIC checks over the tree and the pipelines (no model, writes nothing), `file` opens ONE issue per NEW finding with a `<!-- code-review:<key> -->` dedup marker, capped per run. Analysis only — it never edits code, never merges, never comments on anyone's PR |
 | `scripts/env_int.py` | ONE reading of a numeric SETTING (issue #487): `env_int`/`env_float` treat unset **or** blank (`""`, `"   "`) as the default — the shape an unconditionally-forwarded make variable takes at run time — and a non-numeric value raises `EnvSettingError` naming the variable and what it held (a typo is never silently the default). Every `int`/`float` environment read in `scripts/` goes through it; a bare `int(os.environ…)` fails `tests/test_pr_health.py` |
 | `scripts/pr_health.py` | The silent-PR alarm (issue #442) and its repair half (issue #475): lists open non-draft PRs, flags every one that is `CONFLICTING` or has NO check runs on its head commit (a conflicting PR runs no workflows at all), names the fix, and — `--repair` — dispatches `fix-bot` for a silent `ci/…` PR, capped at `MAX_FIXBOT_COMMITS` fix-bot commits per PR. `--comment` leaves ONE deduplicated note per affected PR; read-only apart from that. Exit 1 when any PR is silent, so the scheduled sweep goes red |
+| `scripts/bot_health.py` | The red-cron alarm (`make bot-health`, issue #488): derives the cron pipelines from `.github/workflows/*.yml`, reads each one's newest N `schedule` runs and fails when they all failed. Read-only; never comments or dispatches |
 | `scripts/freshness_alarm.py` | The stale-index alarm (`make freshness-alarm`, issue #452): measures the newest `data/snapshots/trending-*.json` by the timestamp IN ITS NAME (never mtime) and fails when it is older than `MAX_AGE_HOURS`. Read-only |
 | `scripts/queued_run_alarm.py` | The stuck-run alarm (issue #252): reads the repo's `queued`/`in_progress` runs (a run whose jobs are ALL queued reports `queued`, the state this exists for), flags every job queued past `--minutes` with its runner label and age, comments ONE `<!-- queued-run-alarm -->`-deduped note per affected run, and exits 1 so the scheduled run goes red. A runner label that matches nothing never FAILS a job, so nothing else sees it |
 | `scripts/sweep_alarm.py` | The dropped-cron alarm (issue #497): GitHub silently skips scheduled slots, and a slot it never created has no run for `queued-alarm` to read — so this reads the ARTIFACT (the newest `schedule` delivery of the sweep) and exits non-zero when it is older than `--max-age-hours` (default 3), printing the age, the slots that should have run and the gaps it can see, plus the last run's conclusion |
@@ -663,7 +677,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 165 make targets, 54 files in `scripts/`)
+### Bots in the tree (12 pipelines, 167 make targets, 55 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -672,6 +686,12 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 - **when:** cron `13 * * * *`, `workflow_dispatch`
 - **jobs:** `guard`, `refresh` (needs `guard`)
 - **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make openspec-index` — Regenerate the root OPENSPEC.md index from openspec/changes/**; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317)
+
+#### `.github/workflows/bot-health.yml` — bot-health
+
+- **when:** cron `23 */6 * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `health` (needs `guard`)
+- **calls:** `make bot-health` — Fail when a cron pipeline's own scheduled runs are all red (issue #488)
 
 #### `.github/workflows/code-review-bot.yml` — code-review-bot
 
@@ -770,6 +790,7 @@ One line each, taken from the script's own docstring.
 - `scripts/agent_shell_keys_check.py` — Prove that every credential a container receives is visible in the AGENT's shell.
 - `scripts/architecture_bot.py` — Keep ARCHITECTURE.md's living inventory true to the tree (issue #479, rule 6h).
 - `scripts/architecture_check.py` — Keep ARCHITECTURE.md true to the repository (rule 6h, issue #178).
+- `scripts/bot_health.py` — A scheduled bot that is red on every run has no alarm of its own (issue #488).
 - `scripts/bot_markers.py` — ONE definition of every bot start/end marker — its name, its shape, its parser, its writer
 - `scripts/check_agent_skills.py` — Guard the bots' Hermes project skills (issue #549).
 - `scripts/check_commit_authorship.py` — commit-authorship guard — `make check-commit-authorship` (issue #317).
