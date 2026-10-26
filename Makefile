@@ -1196,6 +1196,14 @@ issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, R
 # it stays `queued` forever, so the run never concludes and every PR's checks sit at "pending".
 # The DECISION lives in scripts/queued_run_alarm.py (rule 6d); the workflow calls this target.
 # Exit 1 when a job is stuck, so the scheduled run goes red.
+.PHONY: _bot-health
+_bot-health:
+	python3 scripts/bot_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(LIMIT),--limit $(LIMIT),)
+
+.PHONY: bot-health
+bot-health: ## Fail when a cron pipeline's own scheduled runs are all red (issue #488)
+	@$(MAKE) --no-print-directory _bot-health
+
 .PHONY: queued-alarm
 sweep-alarm: ## Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
 	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=3]"; exit 1; }

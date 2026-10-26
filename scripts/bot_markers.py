@@ -30,7 +30,11 @@ import re
 #: writer that both go through this module can never disagree about it.
 REGISTRY: dict[str, dict[str, str]] = {
     "issue-bot":        {"start": "issue-bot-start", "skip": "issue-bot-skip",
-                         "verdict": "issue-bot-verdict"},
+                         "verdict": "issue-bot-verdict",
+                         # The already-fixed notice (issues #520/#522): written by
+                         # `.github/workflows/issue-bot.yml` when the issue closed while the run
+                         # was in flight. Registered here after #474's reverse guard found it.
+                         "already_fixed": "issue-bot-already-fixed"},
     "issue-review-bot": {"start": "issue-review", "window": "issue-review: window"},
     "fix-bot":          {"start": "fix-bot-start", "end": "fix-bot-end"},
     "refresh-bot":      {"run": "refresh-bot-run"},
@@ -59,9 +63,9 @@ FIELDS: frozenset = frozenset({("issue-bot", "verdict")})
 #: instead of being invented into the registry alone. The list is CLOSED: the guard fails on any
 #: other stray, so this can only shrink.
 UNREGISTERED_OWED: dict[str, int] = {
-    # Written by `.github/workflows/issue-bot.yml` (the already-fixed notice, issues #520/#522);
-    # its `issue-bot` family row belongs in §6j.
-    "issue-bot-already-fixed": 474,
+    # Empty: `issue-bot-already-fixed` moved into REGISTRY once its §6j row could be written
+    # (issue #474). Kept as the seam so a future blocked registration has somewhere to live that
+    # the reverse guard can still see.
 }
 
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
@@ -76,6 +80,7 @@ WRITTEN: frozenset = frozenset({
     # a READER's problem: the decided hold (`agent:refined`) has no timestamp of its own,
     # so the queue reads this marker's stamp to date it (issue #449).
     ("issue-bot", "verdict"),
+    ("issue-bot", "already_fixed"),
     ("issue-review-bot", "start"),
     ("issue-review-bot", "window"),
     ("fix-bot", "start"),

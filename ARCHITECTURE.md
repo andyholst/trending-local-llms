@@ -229,6 +229,7 @@ keep it honest (issue #207):
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
 | `sweep-alarm` (`REPO=` `MAX_AGE_HOURS=3`) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the newest `schedule` run of `issue-bot.yml` and exits 1 when it is older than `MAX_AGE_HOURS`, naming the age, the missed `:19` slots, the gaps and the last conclusion (2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
+| `bot-health` (`REPO=` `LIMIT=`) | Fail when a cron pipeline's newest N **scheduled** runs all failed, naming the newest run URL (issue #488). The pipelines are DERIVED from the workflows (a `- cron:` line), so a pipeline added tomorrow is covered without editing the script; a window shorter than N is not a failure, `gh` failing is loud, and `--limit 0` is refused (`scripts/bot_health.py`) |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
 | `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started. `scripts/pr_health.py` lists the open non-draft PRs, keeps the two reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch). Exit 1 when a PR is silent. Run by `pr-health.yml` |
 | `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
@@ -256,9 +257,9 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `git-identity` | Set the repository's committer identity from its ONE definition (`scripts/agent_identity.py`, issue #325): every committing job calls this seam instead of hand-keeping the same two `git config` lines, the authorship guard reads the same module's allowed sets, and a change to the address is one edit. Host target — `git config` is host-side, no image |
+| `refresh-pr-body` (`RUN=<id>`) | Compose the REFRESH PR body — the run's own window block first, then what changed (issue #542). Refuses an unreadable window; reads the run's real job timestamps, never a wall clock (`scripts/pr_body.py --for refresh`) |
+| `architecture-pr-body` (`RUN_URL=`) | Compose the ARCHITECTURE PR body for a description that was stale (issue #542). It must carry NO closing keyword — this PR implements no issue — and the composer refuses its own output if it ever does (`scripts/pr_body.py --for architecture`) |
 | `pr-body` (`ISSUE=<n>` `BRANCH=<head branch>`) | Print the IMPLEMENTATION PR body the issue-bot opens (issue #287): the whole text GitHub parses for the closure, composed by `scripts/pr_body.py` instead of a workflow heredoc. The single `Closes #<n>` claim comes from the same module and is read back by `scripts/pr_closure.py`; a branch that encodes a different issue is REFUSED (exit 2, empty stdout). The recipe is `@`-silenced, so the workflow can redirect it straight into `pr-body.md`. Runs on the runner's own `python3`, like `refresh-run-block` |
-| `refresh-pr-body` (`[WINDOW_FILE=…]`) | Print the REFRESH PR body: the run's window block (#199) followed by the contract a reviewer relies on (issue #542). An empty or unreadable window is REFUSED — a body whose first section is blank is the #199 defect. The recipe is `@`-silenced, so `refresh-bot.yml` redirects it into `$PR_BODY` |
-| `architecture-pr-body` (`RUN_URL=…`) | Print the ARCHITECTURE PR body (issue #542). It carries NO closing keyword by construction — `pr_closure` is run on the composer's own output in the tests, because this PR implements no issue (rule 6e). `architecture-bot.yml` pipes it into `gh pr create` |
 | `pr-closure` (`PR_EVENT=<event json>` · or `BRANCH=<head> BODY_FILE=<pr body>`) | Fail when the PR does not close the issue its branch implements (`scripts/pr_closure.py`, issue #284): a closing keyword whose clause chains a second reference is refused (`Closes #1 and #2` would close only #1), a branch issue with no keyword bound to it is refused, and a PR whose branch implements no issue must not close one (the refresh PR references its tracking issue). In CI the default reads `$GITHUB_EVENT_PATH` by PATH — nothing is interpolated into a `run:` block. A non-PR event is a green no-op. Runs in `qa-validate`'s `validate` job |
 | `verify-closure` (`PR=<n>` `REPO=<owner/name>`) | After a merge, PROVE the issue the body claimed to close actually closed (`scripts/verify_closure.py`, issue #288): `pr-closure` PREDICTS the closure from GitHub's parser semantics, and PR #272 shows the difference (`Closes #271 and #276` closed #271, left #276 open, every job green). Reads the merged PR's own `closingIssuesReferences` (fetching an issue's state when the reference omits it), retries briefly because GitHub's close trails the merge call, exits 1 naming the issue and its state, and is LOUD when `gh` itself fails. A PR that closes nothing is not a failure. Read-only; runs as the last step of `auto-merge` |
 
@@ -439,6 +440,18 @@ reported" and nothing distinguishes it from a quiet queue.
   comment uses the DEFAULT token (`pull-requests: write`, rule 6b). Exit 1 when a PR is silent, so
   the scheduled run goes red.
 
+### `.github/workflows/bot-health.yml` — the red-cron alarm (schedule + dispatch)
+
+Four times a day (`23 */6 * * *`, off the hour) plus an owner dispatch.
+
+- **`guard`** — the FIRST job (rule 6j); the scheduled run passes it by design.
+- **`health`** (`needs: guard`) — `actions/checkout`, then `make bot-health REPO=… LIMIT=…`. It
+  derives the repository's cron pipelines from the workflows themselves and fails when a pipeline's
+  newest N **scheduled** runs all failed, naming the newest run URL (issue #488). A pipeline with
+  fewer than N scheduled runs is not red (a bot added yesterday has not had N chances), and a `gh`
+  that cannot answer is a loud failure, never a clean bill of health. Read-only: `contents: read`
+  and `actions: read` only — no comment, no dispatch.
+
 ### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
 
 `concurrency: queued-alarm` (queued, never cancelled). A job whose runner label matches nothing
@@ -572,6 +585,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/code_review.py` | The code-review bot's decision half (issue #253): `scan` runs DETERMINISTIC checks over the tree and the pipelines (no model, writes nothing), `file` opens ONE issue per NEW finding with a `<!-- code-review:<key> -->` dedup marker, capped per run. Analysis only — it never edits code, never merges, never comments on anyone's PR |
 | `scripts/env_int.py` | ONE reading of a numeric SETTING (issue #487): `env_int`/`env_float` treat unset **or** blank (`""`, `"   "`) as the default — the shape an unconditionally-forwarded make variable takes at run time — and a non-numeric value raises `EnvSettingError` naming the variable and what it held (a typo is never silently the default). Every `int`/`float` environment read in `scripts/` goes through it; a bare `int(os.environ…)` fails `tests/test_pr_health.py` |
 | `scripts/pr_health.py` | The silent-PR alarm (issue #442) and its repair half (issue #475): lists open non-draft PRs, flags every one that is `CONFLICTING` or has NO check runs on its head commit (a conflicting PR runs no workflows at all), names the fix, and — `--repair` — dispatches `fix-bot` for a silent `ci/…` PR, capped at `MAX_FIXBOT_COMMITS` fix-bot commits per PR. `--comment` leaves ONE deduplicated note per affected PR; read-only apart from that. Exit 1 when any PR is silent, so the scheduled sweep goes red |
+| `scripts/bot_health.py` | The red-cron alarm (`make bot-health`, issue #488): derives the cron pipelines from `.github/workflows/*.yml`, reads each one's newest N `schedule` runs and fails when they all failed. Read-only; never comments or dispatches |
 | `scripts/queued_run_alarm.py` | The stuck-run alarm (issue #252): reads the repo's `queued`/`in_progress` runs (a run whose jobs are ALL queued reports `queued`, the state this exists for), flags every job queued past `--minutes` with its runner label and age, comments ONE `<!-- queued-run-alarm -->`-deduped note per affected run, and exits 1 so the scheduled run goes red. A runner label that matches nothing never FAILS a job, so nothing else sees it |
 | `scripts/sweep_alarm.py` | The dropped-cron alarm (issue #497): GitHub silently skips scheduled slots, and a slot it never created has no run for `queued-alarm` to read — so this reads the ARTIFACT (the newest `schedule` delivery of the sweep) and exits non-zero when it is older than `--max-age-hours` (default 3), printing the age, the slots that should have run and the gaps it can see, plus the last run's conclusion |
 | `scripts/refresh_base.py` | Publishes a refresh on the base as it is NOW (issue #177, extended by #500/#501): a refresh PR is entirely generated files that every other merge rewrites, so `sync` fetches the base and resets/rebases the clean checkout onto it, while `require-tip` refuses to publish when the checkout is not the fetched tip. Adopts the bot's own branch rather than cutting a new one, so a moved `master` cannot discard the run's work |
@@ -663,7 +677,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 165 make targets, 53 files in `scripts/`)
+### Bots in the tree (12 pipelines, 167 make targets, 54 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -672,6 +686,12 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 - **when:** cron `13 * * * *`, `workflow_dispatch`
 - **jobs:** `guard`, `refresh` (needs `guard`)
 - **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make openspec-index` — Regenerate the root OPENSPEC.md index from openspec/changes/**; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make architecture-pr-body` — Print the ARCHITECTURE PR body (no closing keyword; issue #542)
+
+#### `.github/workflows/bot-health.yml` — bot-health
+
+- **when:** cron `23 */6 * * *`, `workflow_dispatch`
+- **jobs:** `guard`, `health` (needs `guard`)
+- **calls:** `make bot-health` — Fail when a cron pipeline's own scheduled runs are all red (issue #488)
 
 #### `.github/workflows/code-review-bot.yml` — code-review-bot
 
@@ -770,6 +790,7 @@ One line each, taken from the script's own docstring.
 - `scripts/agent_shell_keys_check.py` — Prove that every credential a container receives is visible in the AGENT's shell.
 - `scripts/architecture_bot.py` — Keep ARCHITECTURE.md's living inventory true to the tree (issue #479, rule 6h).
 - `scripts/architecture_check.py` — Keep ARCHITECTURE.md true to the repository (rule 6h, issue #178).
+- `scripts/bot_health.py` — A scheduled bot that is red on every run has no alarm of its own (issue #488).
 - `scripts/bot_markers.py` — ONE definition of every bot start/end marker — its name, its shape, its parser, its writer
 - `scripts/check_agent_skills.py` — Guard the bots' Hermes project skills (issue #549).
 - `scripts/check_commit_authorship.py` — commit-authorship guard — `make check-commit-authorship` (issue #317).
