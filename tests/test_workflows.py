@@ -2516,6 +2516,44 @@ def test_a_recipe_redirected_into_a_file_never_echoes_its_own_command():
           "issue-thread" in redirected, redirected)
 
 
+def test_a_step_setting_lives_in_env_or_on_the_command_line_never_both():
+    """Issue #489: a setting declared twice, where the dead copy reads as authoritative.
+
+    `pr-health.yml` set `MAX_FIXBOT_COMMITS: "2"` in the step's `env:` while the same step ran
+    `make pr-health … MAX_FIXBOT_COMMITS=2`, so the env entry changed nothing — and the NEXT step
+    (`COMMENT=1`) had no such entry, which is why it received an empty value and crashed
+    (run 39530945300). Reading the YAML, the two steps looked configured the same way.
+    """
+    problems: list[str] = []
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        doc = yaml.safe_load(wf.read_text(encoding="utf-8")) or {}
+        for job_name, job in (doc.get("jobs") or {}).items():
+            for step in (job or {}).get("steps") or []:
+                env = step.get("env") or {}
+                run = str(step.get("run") or "")
+                for key in env:
+                    # An assignment on the command line OVERRIDES the env entry — but passing the
+                    # env value through (`REPO="$REPO"`, the idiomatic shape) is not an override:
+                    # the step still has ONE source. Only a different value is dead configuration.
+                    for m in re.finditer(rf"(?<![\w.-]){re.escape(key)}=(['\"]?)([^\s'\"]*)\1",
+                                         run):
+                        value = m.group(2)
+                        if value.strip() in (f"${key}", f"${{{key}}}"):
+                            continue      # the env value, handed on: one source
+                        problems.append(f"{wf.name}:{job_name}: {step.get('name')!r} sets {key} "
+                                        f"in env: AND overrides it on its command line "
+                                        f"({key}={value or '<empty>'})")
+    check("step settings: no step declares the same setting twice (issue #489)",
+          not problems, problems)
+
+    # And  the measured case stays fixed: pr-health's repair step carries it on the command line
+    pr = (ROOT / ".github" / "workflows" / "pr-health.yml").read_text()
+    check("step settings: pr-health passes MAX_FIXBOT_COMMITS on the command line",
+          "MAX_FIXBOT_COMMITS=2" in pr, "")
+    check("step settings: and no longer in a dead env: entry",
+          'MAX_FIXBOT_COMMITS: "2"' not in pr, "")
+
+
 def test_a_captured_recipe_is_silent():
     """Issue #562's follow-up: `OUT=$(make <target>)` captures make's ECHO too.
 
@@ -2602,6 +2640,7 @@ def main() -> int:
     test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
     test_a_detached_fix_round_leaves_its_transcript_behind()
     test_a_recipe_redirected_into_a_file_never_echoes_its_own_command()
+    test_a_step_setting_lives_in_env_or_on_the_command_line_never_both()
     test_a_captured_recipe_is_silent()
     test_the_issue_is_re_read_right_before_the_agent_starts()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
