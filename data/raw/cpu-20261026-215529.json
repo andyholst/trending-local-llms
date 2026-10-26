@@ -1,0 +1,101 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "params": "35B (MoE, 3B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "32GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "why": "Qwen3.6-35B-A3B on a CPU-only box: llama.cpp 3.47 tok/s with the Bolt drafter off, against Ollama's default drafter slowing the same machine to 1.34 tok/s (+1.7 GiB RSS).",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "3.47",
+          "hardware": "CPU-only machine (no GPU)",
+          "quant": "Bolt model, llama.cpp with the drafter disabled",
+          "date": "2026-10-26",
+          "likes": 9,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "hf": "google/gemma-4-E2B",
+      "params": "2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "1432MB peak",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "why": "Gemma 4 E2B on a Raspberry Pi 5 CPU via LiteRT: 9 tok/s decode (99 tok/s prefill) at 1432 MB peak memory.",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU)",
+          "quant": "Gemma 4 E2B on LiteRT-LM; 1432 MB peak memory; 99 tokens/sec prefill (prompt processing, not decode)",
+          "date": "2026-10-26",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "1432MB peak",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728"
+        }
+      ]
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "name": "DeepSeek R1 1.5B",
+      "full_name": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "hf": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "params": "1.5B",
+      "type": "LLM",
+      "license": "MIT",
+      "vram_tier": "2GB",
+      "vram_min": "1GB",
+      "system_ram_min": "2GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "why": "DeepSeek R1 1.5B served by Ollama on a Raspberry Pi 4B with 2GB of LPDDR4, fully offline: 4 tokens per second on CPU.",
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "4",
+          "hardware": "Raspberry Pi 4B 2GB (CPU-only, LPDDR4)",
+          "quant": "Ollama's default quant of DeepSeek R1 1.5B, offline",
+          "date": "2026-10-26",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 3,
+          "views": 1387,
+          "system_ram_min": "2GB",
+          "source_post": "https://lightbrd.com/antisadh/status/2070164703704399921"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-26T21:55:29Z"
+}

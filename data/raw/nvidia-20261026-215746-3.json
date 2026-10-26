@@ -1,0 +1,103 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "95.0",
+          "hardware": "single RTX 5090",
+          "quant": "UD-Q4_K_XL",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2114796704423657751",
+          "likes": 15,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 16,
+          "weight_gb": "UD-Q4_K_XL"
+        }
+      ],
+      "why": "A single 5090 does 75-95 tok/s on Qwen3.8-27B UD-Q4_K_XL; adding a 4070 Ti through a slow adapter dropped it to 20-30."
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "58.53",
+          "hardware": "RTX PRO 4000 Blackwell SFF 24GB (power limit raised 70 -> 120 W via modified VBIOS)",
+          "quant": "NVFP4 + DFlash2, 8K input / 512 output tokens, ECC off",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/laky_fx/status/2114787605103427934",
+          "likes": 121,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 124,
+          "weight_gb": "NVFP4",
+          "context_tokens": "8192",
+          "engine_min_version": "modified VBIOS via patched open kernel modules, 120 W"
+        }
+      ],
+      "why": "The same 24GB RTX PRO 4000 Blackwell went 35.04 -> 58.53 tok/s (+67%) on Qwen3.8-27B NVFP4 + DFlash2 after raising the power limit to 120 W."
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "33.0",
+          "hardware": "2x RTX 5060 Ti (tensor parallel 2)",
+          "quant": "Benjamin Marie's SLQ-EAR98, same box/prompt as the EXL3 4.0 bpw MTP run at 73.1",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/tolewis/status/2114666190752645514",
+          "likes": 121,
+          "comments": 1,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 126
+        }
+      ],
+      "why": "Same box, same prompt: SLQ-EAR98 on vLLM 33.0 tok/s vs EXL3 4.0 bpw with MTP 73.1 tok/s — wall clock was identical."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:46Z"
+}

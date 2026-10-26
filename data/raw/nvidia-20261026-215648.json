@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B with TeksEdge's DFlash2 speculative decoding + context lookup",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-25",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381.0",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup + optimized lookup verification; reported progression 82 -> 114 (MTP) -> 138 (DFlash2 + lookup) -> 381 tok/s",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114176652250898709",
+          "likes": 3522,
+          "comments": 4,
+          "reshares": 6,
+          "views": 0,
+          "interactions": 3532,
+          "context_tokens": "25000"
+        }
+      ],
+      "why": "TeksEdge's DFlash2 + context-lookup path on a single 24GB 3090, from 82 to 381 tok/s. Three independent posts report the same progression; the figure is attributed to DFlash2 as the engine named in the post."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:56:48Z"
+}

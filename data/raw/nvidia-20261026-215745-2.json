@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.7",
+          "hardware": "48GB M5 Pro (33GB memory budget)",
+          "quant": "4-bit (~105GB weights streamed from SSD)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~105GB 4-bit",
+          "system_ram_min": "48GB",
+          "storage_offload": "SSD streaming (17.3 GB/s disk)"
+        }
+      ],
+      "why": "Slotstream streams the 125B MoE's 105GB of 4-bit weights from SSD: 20.9-23.7 tok/s on a 48GB M5 Pro; a 1.5 GB/s disk drops it to 1.41 tok/s."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:45Z"
+}

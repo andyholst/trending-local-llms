@@ -1,0 +1,37 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "88GB",
+      "vram_min": "88GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "70.0",
+          "hardware": "Apple M5 Max MacBook Pro",
+          "quant": "DFlash 2 speculative decoding (seeded at Z Lab, developed by Inco AI)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113804819123040694",
+          "likes": 1005,
+          "comments": 2,
+          "reshares": 16,
+          "views": 0,
+          "interactions": 1039
+        }
+      ],
+      "why": "Qwen3.8-27B at 70 tok/s on an M5 Max MacBook Pro with DFlash 2."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:08Z"
+}

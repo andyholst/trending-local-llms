@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170.0",
+          "hardware": "Apple Silicon Mac (mlx.fast floor)",
+          "quant": "ternary 9B, ~2GB weights",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "~2GB ternary"
+        }
+      ],
+      "why": "The open challenge opened at 170+ tok/s on a Mac and 22 tok/s on an iPhone; five days later Apple Silicon was at 913.1 tok/s and the DGX Spark CUDA track up 401.1%."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:59Z"
+}

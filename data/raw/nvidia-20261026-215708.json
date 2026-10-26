@@ -1,0 +1,72 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "104.0",
+          "hardware": "RTX PRO 4000 Blackwell 24GB (VS: 512 / 8K / 32K-token inputs)",
+          "quant": "IQ2_XS, Strata v0.1.42, CPU P-cores fixed 7 workers",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/8CEVSmSRMT32119/status/2108971713463792113",
+          "likes": 1069,
+          "comments": 1,
+          "reshares": 4,
+          "views": 0,
+          "interactions": 1074,
+          "weight_gb": "IQ2_XS",
+          "context_tokens": "32768"
+        }
+      ],
+      "why": "Strata on a 24GB RTX PRO 4000 Blackwell: 104 tok/s decode on a 512-token input, 82.9 tok/s held at 32K input. The same box on IQ3_S fell to 67.3 tok/s."
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "61.4",
+          "hardware": "RTX PRO 2000 Blackwell 16GB",
+          "quant": "NVFP4 converted to FTW, FreeToken nightly, CPU pinned to E-cores",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/8CEVSmSRMT32119/status/2108971713463792113",
+          "likes": 1069,
+          "comments": 1,
+          "reshares": 4,
+          "views": 0,
+          "interactions": 1074,
+          "weight_gb": "NVFP4 (converted to FTW)",
+          "context_tokens": "32768"
+        }
+      ],
+      "why": "FreeToken nightly on a 16GB RTX PRO 2000 Blackwell: 54.5-64.4 tok/s decode across 512/8K/32K inputs."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:08Z"
+}

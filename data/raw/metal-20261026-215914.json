@@ -1,0 +1,263 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "nanbeige4.3-33b",
+      "name": "Nanbeige4.3-33B",
+      "full_name": "Nanbeige4.3-33B (MLX 4-bit)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "33B",
+      "hf": "Nanbeige/Nanbeige4.3-33B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "weight_gb": "18.6GB MLX 4-bit",
+      "context_tokens": "131072",
+      "why": "pratikg self-converted MLX 4-bit: 14.4 tok/s at 512 ctx on a Mac mini M5 Pro 64GB; Alex's mixed 3/4/6-bit (15.7 GiB) runs ~25 tok/s on a 24GB M5 Pro",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "14.4",
+          "hardware": "Mac mini M5 Pro 64GB (Apple Silicon)",
+          "quant": "MLX 4-bit (self-converted); 512 ctx, 311 tok/s prefill, 1.65s TTFT",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2114442421824360620",
+          "weight_gb": "18.6GB MLX 4-bit",
+          "context_tokens": "512",
+          "system_ram_min": "64GB unified memory",
+          "likes": 158,
+          "comments": 16,
+          "reshares": 3,
+          "views": 12331,
+          "interactions": 177
+        },
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "Mac with 24GB M5 Pro (Apple Silicon), terminal agent load",
+          "quant": "MLX mixed 3/4/6-bit; ~25 tok/s while fixing a buggy repo end to end",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Alex_tra_memory/status/2114574901697015872",
+          "weight_gb": "15.7 GiB MLX mixed 3/4/6-bit",
+          "system_ram_min": "24GB unified memory",
+          "likes": 10,
+          "comments": 1,
+          "reshares": 3,
+          "views": 1597,
+          "interactions": 14
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b-mac-mini-m4-pro-flint",
+      "name": "Qwen3.6-35B-A3B (Mac mini M4 Pro, Flint head-to-head)",
+      "full_name": "Qwen3.6-35B-A3B (52-task screen on a Mac mini M4 Pro 48GB, vs Flint)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Marcos Placona's 52-task local screen on a Mac mini M4 Pro 48GB: Qwen3.6-35B-A3B 91.5 tok/s at 1K prompt and 73.9 at 20K (fits in 18.6 GB); Flint 122.6/90.9 at 25.5 GB peak",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "LM Studio",
+          "tps": "91.5",
+          "hardware": "Mac mini M4 Pro 48GB (Apple Silicon); output tok/s at 1K prompt, thinking on",
+          "quant": "same 52-task screen as Flint, no cached prompts; model fits in 18.6 GB and reads prompts 10-19% faster than Flint",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/marcos_placona/status/2114727001781412326",
+          "system_ram_min": "48GB unified memory",
+          "likes": 1058,
+          "comments": 2,
+          "reshares": 6,
+          "views": 0,
+          "interactions": 1066
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b-pt215-mps-m3-ultra",
+      "name": "Qwen3.6-35B-A3B (PyTorch 2.15 MPS, M3 Ultra)",
+      "full_name": "Qwen3.6-35B-A3B on PyTorch 2.15 MPS with torch.compile",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "engine_min_version": "PyTorch 2.15 (MPS backend, Metal kernels; macOS 15+, Python 3.11+)",
+      "why": "Hugging Face PyTorch team: PyTorch 2.15's dedicated Metal kernels take Qwen3.6-35B-A3B from 9.4 to 61.3 tok/s on an M3 Ultra with torch.compile",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "PyTorch",
+          "tps": "61.3",
+          "hardware": "M3 Ultra (Apple Silicon), torch.compile",
+          "quant": "PyTorch 2.15 MPS backend with Metal kernels for MoE decoding",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2114781884144370049",
+          "engine_min_version": "PyTorch 2.15 (MPS, macOS 15+, Python 3.11+)"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-9b-apple-silicon-yukon",
+      "name": "Bonsai 2 9B (mlx.fast optimization challenge)",
+      "full_name": "Ternary Bonsai 2 9B on Apple Silicon via mlx.fast (Yukon Research challenge)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "weight_gb": "about 2GB in the challenge configuration",
+      "why": "Five days of the PrismML/DarkbloomAI open optimization challenge on Yukon Research's mlx.fast took Bonsai 2 9B from 144.9 to 913.1 tok/s decode on Apple Silicon (113 promoted runs, 13 solvers); the DGX Spark CUDA track gained 401.1% over the same week",
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (mlx.fast track of the PrismML/DarkbloomAI Yukon Research challenge)",
+          "quant": "mlx.fast Yukon Research optimization-challenge configuration, about 2GB model size; best promoted run after five days (started at 144.9 tok/s)",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "weight_gb": "about 2GB in this configuration",
+          "likes": 569,
+          "comments": 2,
+          "reshares": 5,
+          "views": 0,
+          "interactions": 576
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b-kapitsa-m4-pro-mtp",
+      "name": "Qwen3.6-35B-A3B (Kapitsa + DFlash2, M4 Pro MTP bake-off)",
+      "full_name": "Qwen3.6-35B-A3B on Kapitsa with DFlash2 drafting vs llama.cpp/Ollama MTPLX on an M4 Pro",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "engine_min_version": "Kapitsa + DFlash2 drafter (vs llama.cpp/Ollama/Ollama MTP)",
+      "why": "Kapitsa with DFlash2 drafting 154 tok/s vs oMLX+DFlash2 127, Ollama+MTP 89, LM Studio 86, MTPLX 80 and llama.cpp+MTP 69 on the same 4-bit model and 48GB M4 Pro — a sketch decoding x2.0 faster than llama.cpp",
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B, DFlash2 speculative decoding",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832919273",
+          "system_ram_min": "48GB unified memory",
+          "engine_min_version": "Kapitsa + DFlash2",
+          "likes": 1019,
+          "comments": 3,
+          "reshares": 7,
+          "views": 0,
+          "interactions": 1029
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B, DFlash2 speculative decoding",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832919273",
+          "system_ram_min": "48GB unified memory",
+          "likes": 1019,
+          "comments": 3,
+          "reshares": 7,
+          "views": 0,
+          "interactions": 1029
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B, MTP speculative decoding",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832919273",
+          "system_ram_min": "48GB unified memory",
+          "likes": 1019,
+          "comments": 3,
+          "reshares": 7,
+          "views": 0,
+          "interactions": 1029
+        },
+        {
+          "engine": "MTPLX",
+          "tps": "80",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit Qwen3.6-35B-A3B, MTP speculative decoding",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832919273",
+          "system_ram_min": "48GB unified memory",
+          "likes": 1019,
+          "comments": 3,
+          "reshares": 7,
+          "views": 0,
+          "interactions": 1029
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open-mlx-2-studio-tp",
+      "name": "Muse Spark Open (MLX over two M5 Ultra Mac Studios)",
+      "full_name": "Muse Spark Open 816B-A42B on two 512GB M5 Ultra Mac Studios over Thunderbolt MLX tensor parallelism",
+      "type": "LLM (MoE)",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "1024GB",
+      "backends": [
+        "Metal"
+      ],
+      "weight_gb": "about 493GB in 4-bit",
+      "context_tokens": "1048576",
+      "why": "Meta and Apple tuned Muse Spark Open for Apple's MLX: the 493GB 4-bit model is held by two 512GB M5 Ultra Mac Studios over Thunderbolt 5 tensor parallelism, decoding about 25 tok/s",
+      "last_seen": "2026-10-17",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "25",
+          "hardware": "two M5 Ultra Mac Studios, 512GB each, over Thunderbolt 5 with tensor parallelism",
+          "quant": "4-bit (about 493GB)",
+          "date": "2026-10-17",
+          "source_post": "https://lightbrd.com/shawnchauhan1/status/2111434560068354387",
+          "weight_gb": "about 493GB in 4-bit",
+          "system_ram_min": "1TB unified (2x 512GB)",
+          "context_tokens": "1048576",
+          "likes": 11,
+          "comments": 6,
+          "reshares": 4,
+          "views": 990,
+          "interactions": 21
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-26T21:59:14Z"
+}

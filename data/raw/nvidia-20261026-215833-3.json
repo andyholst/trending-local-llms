@@ -1,0 +1,70 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "206.1",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4 + DSpark, SGLang Day-0 support",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113065943605649611",
+          "likes": 770,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 774,
+          "weight_gb": "NVFP4"
+        }
+      ],
+      "why": "SGLang Day-0 support: 206.1 tok/s on an RTX 5090 with NVFP4 + DSpark, 38.28 tok/s on a DGX Spark."
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "32GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1415.0",
+          "hardware": "1x NVIDIA A100 SXM4",
+          "quant": "32 concurrent requests through vLLM (aggregate output throughput)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4 GGUF ~14.5GB"
+        }
+      ],
+      "why": "1,415 output tok/s aggregate at 32 concurrent requests on one A100 SXM4; an L40S was the best value per dollar at 1,110."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:58:33Z"
+}
