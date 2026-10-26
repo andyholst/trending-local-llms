@@ -1030,6 +1030,11 @@ refresh-pr-body: ## Print the REFRESH PR body: the run's window block + the cont
 architecture-pr-body: ## Print the ARCHITECTURE PR body (no closing keyword; issue #542)
 	@python3 scripts/pr_body.py --for architecture --run-url "$(RUN_URL)"
 
+.PHONY: pr-title
+pr-title: ## Print the implementation PR TITLE for ISSUE=<n> [KIND=data-gap|tech-debt] (issue #541)
+	@test -n "$(ISSUE)" || { echo "Usage: make pr-title ISSUE=<n> [KIND=data-gap|tech-debt]"; exit 1; }
+	@python3 scripts/pr_body.py --issue "$(ISSUE)" --title --kind "$(if $(KIND),$(KIND),data-gap)"
+
 .PHONY: pr-body
 pr-body: ## Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]
 	@test -n "$(ISSUE)" || { echo "Usage: make pr-body ISSUE=<n> [BRANCH=<head branch>]"; exit 1; }

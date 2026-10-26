@@ -70,15 +70,20 @@ def _run_step(issue: str = "287") -> tuple[int, str, str, str]:
         bin_ = td / "bin"
         bin_.mkdir()
         gh = bin_ / "gh"
-        gh.write_text(
-            "#!/bin/sh\n"
-            'printf "%s\\n" "$*" >> "$TD/gh.log"\n'
-            'prev=""\n'
-            'for a in "$@"; do\n'
-            '  [ "$prev" = "--body-file" ] && cp "$a" "$TD/body.md"\n'
-            '  prev="$a"\n'
-            "done\n"
-            'echo "https://example.invalid/pull/1"\n')
+        gh.write_text("""#!/bin/sh
+printf "%s\\n" "$*" >> "$TD/gh.log"
+case "$1" in
+  api) printf '%s\\n' 'data-gap' ;;   # what the step's --jq prints for a data-gap issue
+  *)
+    prev=""
+    for a in "$@"; do
+      [ "$prev" = "--body-file" ] && cp "$a" "$TD/body.md"
+      prev="$a"
+    done
+    echo "https://example.invalid/pull/1"
+    ;;
+esac
+""")
         gh.chmod(0o755)
         env = dict(os.environ, PATH=f"{bin_}{os.pathsep}{os.environ['PATH']}", TD=str(td),
                    ISSUE=issue, BRANCH=f"ci/data-gap-{issue}-slug", REPO="o/r",
@@ -252,6 +257,65 @@ def test_the_other_two_pr_bodies_are_composed_too():
           "make architecture-pr-body RUN_URL=\"$RUN_URL\" | gh pr create" in ab, "")
     check("workflow: architecture-bot carries no inline body printf",
           "A generated description was stale" not in ab, "")
+def test_the_pr_title_is_composed_from_the_issue_kind():
+    """Issue #541: the title was inline and called every PR a "data-gap" change.
+
+    The sweep takes BOTH `data-gap-analysis` and `tech-debt` issues, so a `tech-debt` fix was
+    titled `feat(data-gap): implement the #<n> gap analysis item` — wrong kind, wrong artifact, and
+    unreachable by any test because the text lived inside the workflow.
+    """
+    def run(*args):
+        return subprocess.run(["make", "--no-print-directory", "pr-title", *args],
+                              cwd=str(ROOT), capture_output=True, text=True)
+
+    tech = run("ISSUE=541", "KIND=tech-debt")
+    gap = run("ISSUE=541", "KIND=data-gap")
+    bogus = run("ISSUE=541", "KIND=bogus")
+    missing = run("KIND=tech-debt")
+
+    check("pr-title: a tech-debt issue is titled a FIX",
+          tech.returncode == 0 and tech.stdout.startswith("fix(tech-debt): "), tech.stdout)
+    check("pr-title: it names the issue", "#541" in tech.stdout, tech.stdout)
+    check("pr-title: a data-gap issue is titled a FEAT",
+          gap.returncode == 0 and gap.stdout.startswith("feat(data-gap): "), gap.stdout)
+    # An unknown kind must NOT stop the PR from opening — it is a `gh` label read at run time, and
+    # refusing there killed the bot's push step in production (PR #609). It falls back to the
+    # default and SAYS SO, which is "never silently guessed".
+    check("pr-title: an unknown kind falls back to the default kind",
+          bogus.returncode == 0 and bogus.stdout.startswith("feat(data-gap): "),
+          bogus.stdout + bogus.stderr)
+    check("pr-title: and the fallback is announced, never silent",
+          "unknown --kind" in bogus.stderr, bogus.stderr)
+    check("pr-title: a missing ISSUE is a usage error", missing.returncode != 0,
+          missing.stdout + missing.stderr)
+    check("pr-title: the recipe is silenced, so a CAPTURE holds the title alone",
+          not any(line.startswith("python3") for line in tech.stdout.splitlines()), tech.stdout)
+
+    # And   the shipped step composes it instead of spelling it
+    wf = (ROOT / ".github" / "workflows" / "issue-bot.yml").read_text()
+    check("workflow: the inline title is gone",
+          "implement the #$ISSUE gap analysis item" not in wf)
+    check("workflow: the step composes the title through the target",
+          "make pr-title ISSUE=\"$ISSUE\" KIND=\"$KIND\"" in wf, "")
+    check("workflow: the kind comes from the issue's labels, not a constant",
+          "index(\"tech-debt\")" in wf, "")
+
+
+def test_an_unrecognised_kind_falls_back_instead_of_refusing():
+    """Issue #541: the kind is read from the issue's labels at run time, so it is not a constant.
+
+    Measured on PR #609: `argparse(choices=...)` made an unexpected value exit 2 in the middle of
+    the bot's push step, so no PR was ever created. A mislabelled issue must not block the work.
+    """
+    proc = subprocess.run([sys.executable, str(SCRIPT), "--issue", "7", "--title",
+                           "--kind", "https://example.invalid/pull/1"],
+                          capture_output=True, text=True)
+    check("kind: an unknown --kind still prints a title", proc.returncode == 0,
+          (proc.returncode, proc.stderr[-200:]))
+    check("kind: it falls back to the data-gap title", proc.stdout.strip() != "",
+          proc.stdout[:120])
+    check("kind: and it says so loudly on stderr", "unknown --kind" in proc.stderr,
+          proc.stderr[-200:])
 
 
 def main() -> int:
@@ -262,7 +326,9 @@ def main() -> int:
     test_the_target_prints_the_body_and_a_missing_issue_is_a_usage_error()
     test_the_issue_bot_step_composes_the_body_through_the_target()
     test_the_other_two_pr_bodies_are_composed_too()
+    test_the_pr_title_is_composed_from_the_issue_kind()
     test_the_shipped_step_hands_a_closure_correct_body_to_gh()
+    test_an_unrecognised_kind_falls_back_instead_of_refusing()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

@@ -747,7 +747,7 @@ def check_card_tables(store: dict) -> None:
         fail("card-fit: README has no '## 🖥️ Pick your card' section")
         return
     bad = 0
-    for t in ut.CARD_TIERS_GB:
+    for t in ut.CARD_TIERS_GB + ut.HIGH_TIERS_GB:
         if f"[{t} GB](#{t}-gb)" not in sec:
             bad += 1
             fail(f"card-fit: the anchor index does not link the {t} GB tier")
@@ -761,14 +761,19 @@ def check_card_tables(store: dict) -> None:
                 cur = None
         elif cur and ln.startswith("|") and "---" not in ln and not ln.startswith("| Model"):
             blocks.setdefault(cur, []).append(ln)
-    for t in ut.CARD_TIERS_GB:
-        expected = ut.tier_rows(store["models"], t, reg)
+    # The card ladder and the ABOVE-48-GB ladder (issue #572) are two different
+    # questions over the same evidence, so each tier is compared with ITS OWN
+    # function: a >48 GB row is never validated against the card rule.
+    tiers = [(t, ut.tier_rows, ut.tier_measurements, "card") for t in ut.CARD_TIERS_GB]
+    tiers += [(t, ut.high_tier_rows, ut.high_tier_measurements, "above-48") for t in ut.HIGH_TIERS_GB]
+    for t, rows_fn, meas_fn, kind in tiers:
+        expected = rows_fn(store["models"], t, reg)
         rows = blocks.get(t, [])
         if not expected:
             # An empty tier is legitimate ONLY as a loud collection-gap line.
             if "collection gap" not in sec.split(f"### {t} GB")[-1].split("### ")[0]:
                 bad += 1
-                fail(f"card-fit: {t} GB has no evidence in the store and the README does not say so as a collection gap")
+                fail(f"card-fit[{kind}]: {t} GB has no evidence in the store and the README does not say so as a collection gap")
             continue
         got = []
         for r in rows:
@@ -778,24 +783,31 @@ def check_card_tables(store: dict) -> None:
             got.append((m.group(1) if m else "", tps))
             if len(cells) >= 5 and not (cells[4].strip().startswith("ran on") or "weights-only" in cells[4]):
                 bad += 1
-                fail(f"card-fit: {t} GB row for {got[-1][0]} carries no evidence tag: {cells[4][:40]!r}")
+                fail(f"card-fit[{kind}]: {t} GB row for {got[-1][0]} carries no evidence tag: {cells[4][:40]!r}")
         want = [(row[1]["name"], ut._fmt_num(row[0])) for row in expected]
         if got != want:
             bad += 1
-            fail(f"card-fit: {t} GB rows differ from the store's evidence. readme={got[:4]} store={want[:4]}")
+            fail(f"card-fit[{kind}]: {t} GB rows differ from the store's evidence. readme={got[:4]} store={want[:4]}")
         nums = [ut._tps_core(c[1]) for c in got]
         if nums != sorted(nums, reverse=True):
             bad += 1
-            fail(f"card-fit: {t} GB rows are not sorted by t/s descending: {nums[:6]}")
+            fail(f"card-fit[{kind}]: {t} GB rows are not sorted by t/s descending: {nums[:6]}")
     if not bad:
         placed = sum(1 for m in store["models"]
                      if any(ut.tier_measurements(m, t, reg) for t in ut.CARD_TIERS_GB))
         n_meas = sum(len(m.get("engines", [])) for m in store["models"])
         with_fp = sum(1 for m in store["models"] for e in m.get("engines", []) if e.get("weight_gb"))
-        print(f"  OK: card-fit section lists every model with evidence in each of the {len(ut.CARD_TIERS_GB)} tiers, sorted, evidence-tagged")
+        print(f"  OK: card-fit section lists every model with evidence in each of the "
+              f"{len(ut.CARD_TIERS_GB)} card tiers and the {len(ut.HIGH_TIERS_GB)} above-48-GB "
+              f"tiers, sorted, evidence-tagged")
         # REPORT ONLY (never fails here): how much of the store can answer the
         # question at all. A thin low end is a data gap for the searches to close,
         # reported in every validate run instead of being invisible (issue #337).
+        high_placed = sum(1 for m in store["models"]
+                          if any(ut.high_tier_measurements(m, t, reg) for t in ut.HIGH_TIERS_GB))
+        print(f"  above-48-GB coverage (report only): {high_placed} model(s) have evidence of needing "
+              f"more than {ut.MAX_SCOPE_VRAM_GB} GB — the ladder is only as good as the weight footprints "
+              f"the search captures")
         print(f"  card-fit coverage (report only): {placed}/{len(store['models'])} models have card evidence; "
               f"{with_fp}/{n_meas} measurements carry their own weight_gb (a footprint per run); "
               + " · ".join(f"{t} GB: {len(ut.tier_rows(store['models'], t, reg))}"
@@ -1083,6 +1095,60 @@ def check_post_signal(store: dict) -> None:
                 line(f"raw/{f.name}", json.loads(f.read_text()).get("models", []))
             except Exception as e:  # noqa: BLE001
                 print(f"  WARN: post-signal raw/{f.name}: unreadable ({e})")
+
+
+def duplicate_runs(models: list[dict]) -> list[tuple[str, str, str, str, list[str]]]:
+    """One physical run stored twice under two engine names (issue #459).
+
+    `merge_engines` keys a measurement on (engine, hardware, quant), so a RENAMED
+    engine — a fabricated name, a renamed fork, a fixed typo — appends a second row
+    instead of updating the first. The same post, the same date and the same t/s
+    under two engine names is one run, and a reader comparing engines is told two
+    engines did what one did.
+
+    Returns (model name, source_post, date, t/s, [engines]) for every such group.
+    """
+    out: list[tuple[str, str, str, str, list[str]]] = []
+    for m in models:
+        groups: dict[tuple[str, str, str], list[str]] = {}
+        for e in m.get("engines", []):
+            post, date, tps = (e.get("source_post") or "").strip(), (e.get("date") or "").strip(), \
+                str(e.get("tps") or "").strip()
+            if not post or "lightbrd.com" not in post or "/status/" not in post:
+                continue          # a placeholder post cannot identify a run
+            if not date or not tps:
+                continue
+            groups.setdefault((post, date, tps), []).append(str(e.get("engine") or ""))
+        for (post, date, tps), engines in groups.items():
+            uniq = sorted(set(engines))
+            if len(uniq) > 1:
+                out.append((str(m.get("name") or m.get("id") or "?"), post, date, tps, uniq))
+    return out
+
+
+def check_duplicate_runs(store: dict) -> None:
+    """REPORT ONLY (never fails): one run counted under two engine names.
+
+    It is report-only FIRST on purpose (issue #459): the existing data still holds
+    rows written before `refuse_fabricated_engines` (issue #458) refused an engine
+    named after a quantization, so failing here would red every PR for history it
+    cannot repair. A report makes the drift visible in every refresh run instead of
+    letting it accumulate, and a later change can make it a failure once the store
+    is clean.
+    """
+    dups = duplicate_runs(store.get("models", []))
+    if not dups:
+        print("  OK: duplicate-run scan: no run is stored under two engine names")
+        return
+    # A COMPARISON post legitimately reports one figure for two engines, so this is a
+    # report, never a verdict: it names both engines so a human can tell a renamed
+    # engine (one run stored twice) from a benchmark that measured two.
+    print(f"  WARN: duplicate-run scan: {len(dups)} figure(s) appear under more than one engine "
+          f"name for the same post — a renamed engine, or a comparison post (check the pairs below)")
+    for name, post, date, tps, engines in dups[:10]:
+        print(f"    - {name}: {tps} t/s on {date} under {', '.join(engines)} — {post}")
+    if len(dups) > 10:
+        print(f"    ... and {len(dups) - 10} more")
 
 
 def check_readme_has_all_models(store: dict) -> None:
@@ -1607,6 +1673,9 @@ def main() -> int:
     add("trending for your card (tier-local trend)", "readme", lambda: check_card_trending(store))
     add("backends cover measurements", "data", lambda: check_backends_cover_measurements(store))
     add("post-signal coverage (report only)", "data", lambda: check_post_signal(store))
+    # One physical run under two engine names (issue #459): report only, because the
+    # history predates the ingest refusal and cannot be repaired by reding every PR.
+    add("duplicate-run scan (report only)", "data", lambda: check_duplicate_runs(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))
     add("README engine links", "readme", lambda: check_readme_engine_links(store))
     add("README regenerated by make merge", "readme", lambda: check_readme_generated(store))

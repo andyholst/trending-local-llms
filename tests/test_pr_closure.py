@@ -29,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import pr_closure as PC  # noqa: E402  (the real product)
+import pr_body as PRB  # noqa: E402  (the ONE body composer, issue #542)
 
 from wiring import wired  # noqa: E402  (issues #176/#192)
 
@@ -103,8 +104,13 @@ def test_a_refresh_pr_must_not_close_the_meta_issue(tmp: Path) -> None:
 
     okay = "Hermes CLI refresh. Auto-merged when qa-validate is green. Refs #1"
     check("refresh: a plain reference PASSES", PC.check(okay, "ci/trending-refresh-20261016-1200") == [], "")
+    # The shipped text moved from the workflow into the ONE composer (issue #542), so the
+    # assertion follows it there: the shipped REFRESH body must still reference #1, never close it.
+    shipped = PRB.refresh_body("<!-- refresh-bot-run: 2026-10-25T06:00:00Z run=1 -->\n")
     check("refresh: the shipped body no longer closes the meta issue",
-          "Closes #1" not in REFRESH_BOT and "Refs #1" in REFRESH_BOT, "")
+          "Closes #1" not in shipped and "Refs #1" in shipped, shipped[-200:])
+    check("refresh: and the workflow no longer carries the text inline",
+          "Refs #1" not in REFRESH_BOT and "make refresh-pr-body" in REFRESH_BOT, "")
 
 
 def test_the_branch_issue_must_be_closed_by_its_own_keyword(tmp: Path) -> None:

@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **148** · archived: **9**
+Active changes: **153** · archived: **9**
 
 ## Active changes
 
@@ -19,6 +19,7 @@ Active changes: **148** · archived: **9**
 | `a-judged-dimension-stays-closed` | active | — | — | [data-gap-analysis](openspec/changes/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/a-judged-dimension-stays-closed/proposal.md) |
 | `a-red-cron-pipeline-is-loud` | active | — | — | [bot-alarms](openspec/changes/a-red-cron-pipeline-is-loud/specs/bot-alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/a-red-cron-pipeline-is-loud/proposal.md) |
 | `a-silent-pr-is-an-alarm` | active | #442 (filed with two live measurements) | — | [pr-health](openspec/changes/a-silent-pr-is-an-alarm/specs/pr-health/spec.md) | 9/9 | [proposal.md](openspec/changes/a-silent-pr-is-an-alarm/proposal.md) |
+| `above-48-gb-tiers` | active | — | — | [card-fit](openspec/changes/above-48-gb-tiers/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/above-48-gb-tiers/proposal.md) |
 | `adopt-carries-the-work` | active | — | — | [worktree-base](openspec/changes/adopt-carries-the-work/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/adopt-carries-the-work/proposal.md) |
 | `adopt-refuses-a-stale-branch` | active | — | — | [worktree-base](openspec/changes/adopt-refuses-a-stale-branch/specs/worktree-base/spec.md) | 7/7 | [proposal.md](openspec/changes/adopt-refuses-a-stale-branch/proposal.md) |
 | `adopt-takes-the-work-on-conflict` | active | — | — | [worktree-base](openspec/changes/adopt-takes-the-work-on-conflict/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/adopt-takes-the-work-on-conflict/proposal.md) |
@@ -92,13 +93,16 @@ Active changes: **148** · archived: **9**
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
 | `marker-written-outside-registry` | active | — | — | [bot-markers](openspec/changes/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/marker-written-outside-registry/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
+| `no-dead-step-env` | active | — | — | [bot-alarm-configuration](openspec/changes/no-dead-step-env/specs/bot-alarm-configuration/spec.md) | 6/6 | [proposal.md](openspec/changes/no-dead-step-env/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |
 | `no-marker-reaches-the-tree` | active | — | — | [bot-commit-safety](openspec/changes/no-marker-reaches-the-tree/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/no-marker-reaches-the-tree/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
 | `one-person-one-identity` | active | #445 (filed first, with the measurement) | — | [commit-authorship](openspec/changes/one-person-one-identity/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/one-person-one-identity/proposal.md) |
 | `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
+| `one-run-two-engine-names` | active | — | — | [data-integrity](openspec/changes/one-run-two-engine-names/specs/data-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/one-run-two-engine-names/proposal.md) |
 | `one-slow-query-is-not-a-red-run` | active | — | — | [search-smoke](openspec/changes/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/one-slow-query-is-not-a-red-run/proposal.md) |
+| `one-stage-map-reader` | active | — | — | [stage-wiring](openspec/changes/one-stage-map-reader/specs/stage-wiring/spec.md) | 6/6 | [proposal.md](openspec/changes/one-stage-map-reader/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `one-working-file-list` | active | — | — | [bot-commit-safety](openspec/changes/one-working-file-list/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/one-working-file-list/proposal.md) |
 | `openspec-archive-lifecycle` | active | #183 | — | [openspec-lifecycle](openspec/changes/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-archive-lifecycle/proposal.md) |
@@ -110,6 +114,7 @@ Active changes: **148** · archived: **9**
 | `pr-closure-guard` | active | — | — | [pr-lifecycle](openspec/changes/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/pr-closure-guard/proposal.md) |
 | `pr-exercises-every-pipeline` | active | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-exercises-every-pipeline/proposal.md) |
 | `pr-fix-names-the-openspec-gate` | active | #560 | — | [pr-fix-openspec-gate](openspec/changes/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/pr-fix-names-the-openspec-gate/proposal.md) |
+| `pr-title-from-the-issue` | active | — | — | [pr-body](openspec/changes/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/pr-title-from-the-issue/proposal.md) |
 | `prs-are-never-drafts` | active | — | — | [pr-lifecycle](openspec/changes/prs-are-never-drafts/specs/pr-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/prs-are-never-drafts/proposal.md) |
 | `publish-is-verified` | active | #228 — `tech-debt: Nothing verifies what the registry serves after a publish` | — | [agent-image-publish](openspec/changes/publish-is-verified/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/publish-is-verified/proposal.md) |
 | `qa-validate-carries-the-guard` | active | — | — | [qa-validate-carries-the-guard](openspec/changes/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/qa-validate-carries-the-guard/proposal.md) |

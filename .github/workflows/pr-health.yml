@@ -81,7 +81,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
-          MAX_FIXBOT_COMMITS: "2"
+          # No `MAX_FIXBOT_COMMITS:` here: the command line below carries the setting, and an
+          # `env:` entry the command line overrides is DEAD configuration that reads as
+          # authoritative (issue #489). `tests/test_workflows.py` now refuses the shape.
         run: make pr-health REPO="$REPO" REPAIR=1 MAX_FIXBOT_COMMITS=2
 
       # The comment uses the DEFAULT token (rule 6b): the owner PAT has no Issues/PR-comment
