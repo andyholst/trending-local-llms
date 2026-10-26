@@ -292,7 +292,12 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
     for name, src in (("ARCHITECTURE.md", ROOT / "ARCHITECTURE.md"),
                       ("OPENSPEC.md", ROOT / "OPENSPEC.md"),
                       ("Makefile", ROOT / "Makefile"),
-                      ("scripts/agent_identity.py", ROOT / "scripts" / "agent_identity.py")):
+                      ("scripts/agent_identity.py", ROOT / "scripts" / "agent_identity.py"),
+                      # The publish step COMPOSES its body through `make architecture-pr-body`
+                      # (issue #542), so the fixture needs the real composer and the closure parser
+                      # it imports — never a stub: the body's rule-6e shape is what this proves.
+                      ("scripts/pr_body.py", ROOT / "scripts" / "pr_body.py"),
+                      ("scripts/pr_closure.py", ROOT / "scripts" / "pr_closure.py")):
         (repo / name).write_bytes(src.read_bytes())
     _git(repo, "init", "-q", "-b", "master")
     _git(repo, "add", "-A")
@@ -347,9 +352,17 @@ def test_the_keeper_regenerates_both_generated_documents():
     publish = next(s for s in refresh["steps"] if "Commit, push and open the PR" in str(s.get("name")))
     check("index: the commit stages both files",
           "git add ARCHITECTURE.md OPENSPEC.md" in str(publish.get("run")), "")
-    check("index: the PR it opens still carries NO closing keyword",
+    # The body is COMPOSED now (issue #542): the step pipes `make architecture-pr-body` instead of
+    # spelling the text, so the two properties are read where they live — no closing keyword
+    # anywhere near this bot, and the reference to the tracking issue kept in the composer.
+    check("index: the step no longer spells a body of its own",
           "closes #" not in str(publish.get("run")).lower()
-          and "Track" in str(publish.get("run")), "")
+          and "architecture-pr-body" in str(publish.get("run")), str(publish.get("run"))[:200])
+    composer = (ROOT / "scripts" / "pr_body.py").read_text()
+    body_start = composer.index("def architecture_body(")
+    body = composer[body_start:composer.index("def ", body_start + 10)]
+    check("index: the composed body carries NO closing keyword",
+          "closes #" not in body.lower() and "Tracking issue: #" in body, body[:200])
 
     on = doc.get("on") or doc.get(True) or {}   # YAML 1.1 parses a bare `on:` as True
     crons = [c.get("cron") for c in (on.get("schedule") or [])]
