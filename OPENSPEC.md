@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **146** · archived: **9**
+Active changes: **148** · archived: **9**
 
 ## Active changes
 
@@ -110,6 +110,7 @@ Active changes: **146** · archived: **9**
 | `pr-closure-guard` | active | — | — | [pr-lifecycle](openspec/changes/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/pr-closure-guard/proposal.md) |
 | `pr-exercises-every-pipeline` | active | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-exercises-every-pipeline/proposal.md) |
 | `pr-fix-names-the-openspec-gate` | active | #560 | — | [pr-fix-openspec-gate](openspec/changes/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/pr-fix-names-the-openspec-gate/proposal.md) |
+| `pr-title-from-the-issue` | active | — | — | [pr-body](openspec/changes/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/pr-title-from-the-issue/proposal.md) |
 | `prs-are-never-drafts` | active | — | — | [pr-lifecycle](openspec/changes/prs-are-never-drafts/specs/pr-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/prs-are-never-drafts/proposal.md) |
 | `publish-is-verified` | active | #228 — `tech-debt: Nothing verifies what the registry serves after a publish` | — | [agent-image-publish](openspec/changes/publish-is-verified/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/publish-is-verified/proposal.md) |
 | `qa-validate-carries-the-guard` | active | — | — | [qa-validate-carries-the-guard](openspec/changes/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/qa-validate-carries-the-guard/proposal.md) |
