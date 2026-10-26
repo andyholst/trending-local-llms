@@ -30,9 +30,24 @@ Fill rules (per missing field, uses only data already present in the payload):
     into the declared key that captures the same dimension when that is absent,
     then the undeclared key is removed
 
-Re-writes the file in place only when changes were made. Exit 0 = all raw
-snapshots now conform (or were corrected); non-zero = some field cannot be
-derived (missing source_post / hf) and must be re-searched.
+A model row that cannot be COMPLETED is no longer fatal (issue #381): one model
+the agent wrote without an `hf` used to turn every `make correct-raw` into a
+failed step, so the aggregate died and four green search legs were discarded
+(measured: scheduled run 39159853260). The row is QUARANTINED instead — reported
+loudly by name with its source posts and excluded — while the rest of the
+snapshot, and every other snapshot, still merges:
+  - `hf` missing, row does not resolve to a stored model -> quarantined
+  - `hf` missing, row DOES resolve to a stored model     -> `hf` filled from the
+    store (data already present — never invented), row kept, so a known model's
+    new measurements are not lost to a missing field
+  - a measurement with no `source_post`                  -> that measurement is
+    dropped loudly (rule 5b: every figure carries its post); the model is
+    quarantined only when no measurement survives
+
+Re-writes the file in place only when changes were made. Exit 0 = every snapshot
+was processed and now conforms (quarantined rows are reported, never hidden);
+non-zero = the CAPTURE is unusable, i.e. not one snapshot could be read, which
+is the state that genuinely needs a re-search.
 
 Run:  python3 scripts/self_correct_raw.py
 """
@@ -122,6 +137,36 @@ def _is_amd_gpu(hw: str) -> bool:
     finally:
         sys.path.pop(0)
     return ut.is_amd_gpu(hw)
+
+
+def _stored_model(store: dict, m: dict) -> dict | None:
+    """The store model this raw row maps to, resolved by the ONE identity rule
+    ingest uses (`resolve_model_mapping`: id, then name, then hf — never a
+    second copy of that order here)."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import update_trending as ut
+    finally:
+        sys.path.pop(0)
+    res = ut.resolve_model_mapping(m, store)
+    if res.get("status") != "existing":
+        return None
+    for sm in store.get("models", []):
+        if sm.get("id") == res.get("id"):
+            return sm
+    return None
+
+
+def _quarantine(data: dict, m: dict, reason: str, path: Path) -> str:
+    """Exclude one unusable model row from the snapshot and return the ONE loud
+    line that says so — the model, why, and the posts it was measured on, so a
+    human (or a re-search) can recover it. Never silent (issue #381)."""
+    mid = m.get("id") or m.get("name") or "?"
+    posts = sorted({e.get("source_post") for e in m.get("engines", []) if e.get("source_post")})
+    data["models"] = [x for x in data.get("models", []) if x is not m]
+    tail = f" (post(s): {', '.join(posts)})" if posts else ""
+    return (f"QUARANTINED: {path.name}/{mid}: {reason}; excluded from this snapshot — "
+            f"the rest of the capture still merges{tail}")
 
 
 def derive_backends(engines, store_engines) -> list:
@@ -229,9 +274,12 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
                 if k in e and not isinstance(e[k], str) and isinstance(e[k], (int, float, bool)):
                     notes.append(f"{path.name}/{m.get('id')}: {k} {e[k]!r} -> text '{coerce_text(e[k])}'")
                     e[k] = coerce_text(e[k])
-    # detect fields we cannot derive
-    cannot = []
-    for m in data.get("models", []):
+    # A row we cannot COMPLETE is quarantined, never fatal (issue #381): one
+    # model the agent wrote without an hf used to abort the whole refresh here
+    # (measured: run 39159853260 — four green legs, no PR). The unusable ROW is
+    # reported by name with its posts and excluded; the rest of the capture
+    # still conforms and still merges.
+    for m in list(data.get("models", [])):
         raw_hf = m.get("hf") or ""
         hf = normalise_hf(raw_hf)
         if hf != raw_hf:
@@ -239,18 +287,40 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
             notes.append(f"{path.name}/{m.get('id')}: hf <- {hf or 'MISSING'} "
                          f"(was {raw_hf[:60]!r})")
         if not hf:
-            cannot.append(f"{m.get('id')}: hf missing (cannot derive)")
+            # A model already in the store HAS its HF link: take it from there
+            # (data we already hold, never an invented repo), so a known model's
+            # new measurements are not thrown away over a missing field.
+            stored = _stored_model(store, m)
+            if stored and stored.get("hf"):
+                m["hf"] = stored["hf"]
+                notes.append(f"{path.name}/{m.get('id')}: hf <- store {stored['hf']!r} "
+                             f"(the row's own hf was missing)")
+            else:
+                notes.append(_quarantine(data, m, "hf missing (cannot derive)", path))
+                continue
         for f in m.get("formats", []) or []:
             raw_f = f.get("hf") or ""
             f_hf = normalise_hf(raw_f)
             if f_hf != raw_f:
                 f["hf"] = f_hf
                 notes.append(f"{path.name}/{m.get('id')}: format hf <- {f_hf or 'MISSING'}")
+        # A measurement with no post cannot be attributed to anything, so it is
+        # not a valid entry (rule 5b) — drop THAT row loudly, keep the model
+        # while any measurement survives.
+        if not m.get("engines"):
+            notes.append(_quarantine(data, m, "no measurement (nothing to attribute)", path))
+            continue
+        kept = []
         for e in m.get("engines", []):
             if not e.get("source_post"):
-                cannot.append(f"{m.get('id')}/{e.get('engine')}: source_post missing (cannot derive)")
-    if cannot:
-        notes.append("CANNOT_DERIVE: " + "; ".join(cannot))
+                notes.append(f"{path.name}/{m.get('id')}: dropped measurement "
+                             f"{e.get('engine')!r} (no source_post — every figure carries its post)")
+                continue
+            kept.append(e)
+        if not kept:
+            notes.append(_quarantine(data, m, "no measurement with a source_post", path))
+            continue
+        m["engines"] = kept
     # Write the file back ONLY when the snapshot actually changed, as this
     # module has always claimed. When it did change, refresh generated_utc:
     # `ingest_raw_snapshots` merges only the snapshots NEWER than the store's own
@@ -271,24 +341,34 @@ def main() -> int:
         return 0
     store_path = ROOT / "data" / "models.json"
     store = json.loads(store_path.read_text()) if store_path.exists() else {"engines": {}}
-    any_correction = False
-    cannot_any = False
+    processed = 0
+    unreadable = 0
+    quarantined = False
     for path in sorted(RAW_DIR.glob("*.json")):
         try:
             notes = correct_snapshot(path, store)
         except Exception as e:  # noqa: BLE001
-            print(f"  ERROR {path.name}: {e}")
-            cannot_any = True
+            # ONE unreadable file is not the whole capture: say so loudly and
+            # keep going — the other legs of this refresh still merge (issue #381).
+            print(f"  UNREADABLE {path.name}: {e} — skipped; the other snapshots still merge")
+            unreadable += 1
             continue
+        processed += 1
         if notes:
-            any_correction = True
             for n in notes:
                 print(f"  {n}")
-            if any("CANNOT_DERIVE" in n for n in notes):
-                cannot_any = True
-    if cannot_any:
-        print("SELF-CORRECT INCOMPLETE: some fields (hf/source_post) cannot be derived — re-search needed.")
+            if any(n.startswith("QUARANTINED:") for n in notes):
+                quarantined = True
+    if processed == 0:
+        # Distinct from a quarantine: NOTHING could be read, which is the state
+        # that genuinely needs a re-search (the aggregate may fail this step).
+        print(f"SELF-CORRECT INCOMPLETE: no raw snapshot could be read ({unreadable} unreadable) "
+              "— this capture needs a re-search.")
         return 1
+    if quarantined:
+        print("SELF-CORRECT OK: all raw snapshots conform; the un-derivable model(s) listed above "
+              "were QUARANTINED and the rest of the capture still merges.")
+        return 0
     print("SELF-CORRECT OK: all raw snapshots conform (or were corrected from available data).")
     return 0
 

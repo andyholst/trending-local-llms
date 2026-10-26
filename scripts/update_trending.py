@@ -1977,6 +1977,18 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                 updated += 1
             else:
                 model = normalize_model(m, store)
+                # A model row carries its HF link (rule 5b, §4): a NEW model the search
+                # wrote without an `hf` is REFUSED here, loudly, instead of being stored
+                # as `formats[0].hf == ""` — which reds the PR on check_links_present and
+                # is the same defect that aborted a whole refresh in self_correct_raw
+                # (issue #381). The rest of the capture still merges, and this half holds
+                # even when the merge runs BEFORE `correct-raw` (the aggregate's order).
+                # Nothing is invented: the row is excluded, never given a guessed repo.
+                if not normalise_hf(model.get("hf") or ""):
+                    print(f"[ingest] REFUSED {mid!r}: hf missing and not derivable "
+                          f"({path.name}) — a model row carries its HF link (rule 5b); "
+                          f"the rest of the snapshot still merges")
+                    continue
                 by_id[mid] = model
                 store["models"].append(model)
                 added += 1
