@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-26T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "backends": [
+        "ROCm",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "LemonSeed Engine",
+          "tps": "159",
+          "hardware": "Sapphire R9700 eGPU (Thunderbolt) on iPad Pro",
+          "quant": "Q4; DFlash2 draft-tree decoding (standard decode 31 tok/s, MTP speculative 109 tok/s); 131K context",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112036219152412832",
+          "context_tokens": "131072",
+          "engine_repo": "https://github.com/Geramy/LSE"
+        }
+      ],
+      "last_seen": "2026-10-19"
+    }
+  ]
+}

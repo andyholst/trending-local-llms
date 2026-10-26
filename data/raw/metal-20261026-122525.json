@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "200.7",
+          "hardware": "Mac Studio M5 Ultra 80-core / 256GB (Apple Silicon)",
+          "quant": "decode with the MTP/probe recipe; TensorFold 1.1.4 MLX path, matched oMLX run at 147 tok/s and mlx-serve at 160; the same release reports the MLX 4-bit path at 124 tok/s on an M5 Pro 64GB Mac mini",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ashxhart/status/2114078430446616868",
+          "likes": 283,
+          "comments": 36,
+          "reshares": 19,
+          "views": 22429,
+          "interactions": 338
+        }
+      ],
+      "last_seen": "2026-10-24",
+      "why": "TensorFold 1.1.4 release notes: matched oMLX run at 147 tok/s, mlx-serve at 160; Qwen3.8-27B CUDA prefill 203 -> 1,045 tok/s at 64K on GB10"
+    }
+  ],
+  "generated_utc": "2026-10-26T12:25:25Z"
+}

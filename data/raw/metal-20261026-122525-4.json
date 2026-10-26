@@ -1,0 +1,39 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max",
+          "quant": "Liquid AI reported figure; runs via llama.cpp and MLX from day one; Q4 GGUF ~14.5GB",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113073556321886241",
+          "weight_gb": "14.5GB Q4 GGUF",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "last_seen": "2026-10-22",
+      "weight_gb": "14.5GB Q4 GGUF",
+      "why": "Liquid AI reports 184 t/s on Apple M5 Max and 114 t/s on a Ryzen AI Max+ 395; Q4 GGUF ~14.5GB, 131K context"
+    }
+  ],
+  "generated_utc": "2026-10-26T12:25:25Z"
+}

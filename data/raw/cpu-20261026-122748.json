@@ -1,0 +1,85 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B (Qwen3.5 based)",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "params": "2B",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "vram_tier": "6GB",
+      "vram_min": "4GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-25",
+      "weight_gb": "0.43GB (ternary)",
+      "engine_min_version": "ternary GGUF packings need PrismML's llama.cpp fork",
+      "why": "Phone CPU path, measured by the poster on a Samsung Galaxy S25: 38.5 tok/s on the CPU versus 31.2 on the S25's Vulkan GPU. The post names neither an engine nor the build it used.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "38.5",
+          "hardware": "Samsung Galaxy S25 CPU (arm64 phone)",
+          "quant": "Ternary Bonsai 2 2B ternary weights",
+          "date": "2026-10-25",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 0,
+          "views": 31,
+          "source_post": "https://lightbrd.com/SpawnLauv/status/2114363853031260610"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "params": "35B (MoE, 3B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-25",
+      "weight_gb": "Q4_K_M",
+      "system_ram_min": "32GB",
+      "context_tokens": "66000",
+      "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
+      "why": "On a CPU-only box with no GPU, Ollama's default drafter (MTP) cost more than it bought: Bolt dropped from 3.47 to 1.34 tok/s and gained ~1.7 GiB RSS.",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "3.47",
+          "hardware": "CPU-only machine (no GPU)",
+          "quant": "Bolt, drafter disabled",
+          "date": "2026-10-24",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 476,
+          "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "1.34",
+          "hardware": "CPU-only machine (no GPU)",
+          "quant": "Ollama default build with its default drafter (MTP) enabled",
+          "date": "2026-10-24",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 0,
+          "views": 476,
+          "engine_min_version": "Ollama with the default drafter (MTP) on",
+          "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-26T12:27:48Z"
+}

@@ -1,0 +1,43 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-26T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "full_name": "Qwen3-14B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-14B-GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "14B",
+      "hf": "Qwen/Qwen3-14B-GGUF",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "43.7",
+          "hardware": "RX 9070 XT 16GB",
+          "quant": "Vulkan (RADV); Q4_K_M; 30K context; vs 35.5 tok/s ROCm; median of 7 runs, fixed seed, 256 tokens",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/g_lejars/status/2108555007012282460",
+          "context_tokens": "30720",
+          "engine_min_version": "b11177",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 0,
+          "views": 122
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ]
+}

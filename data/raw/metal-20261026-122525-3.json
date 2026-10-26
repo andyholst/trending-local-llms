@@ -1,0 +1,96 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "system_ram_min": "36GB",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "41.3",
+          "hardware": "Apple Silicon M3 Max 36GB",
+          "quant": "dense Qwen 27B, Kapitsa 0.2.12",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 884,
+          "interactions": 5
+        },
+        {
+          "engine": "oMLX",
+          "tps": "34.1",
+          "hardware": "Apple Silicon M3 Max 36GB",
+          "quant": "oQ4e-mtp checkpoint + Lightning MTP; same model upgraded from 17.9 to 34.1 tok/s",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 884,
+          "interactions": 5
+        }
+      ],
+      "last_seen": "2026-10-25",
+      "why": "five-engine Apple Silicon benchmark on M3 Max 36GB: Kapitsa 0.2.12 fastest on the dense 27B"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "123",
+          "hardware": "Apple Silicon M3 Max 36GB",
+          "quant": "MoE decode, oMLX",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 884,
+          "interactions": 5
+        },
+        {
+          "engine": "Kapitsa",
+          "tps": "123",
+          "hardware": "Apple Silicon M3 Max 36GB",
+          "quant": "MoE decode, Kapitsa",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455",
+          "likes": 4,
+          "comments": 1,
+          "reshares": 0,
+          "views": 884,
+          "interactions": 5
+        }
+      ],
+      "last_seen": "2026-10-25",
+      "why": "MoE decode: oMLX and Kapitsa tie at ~123 tok/s on M3 Max 36GB",
+      "system_ram_min": "36GB"
+    }
+  ],
+  "generated_utc": "2026-10-26T12:25:25Z"
+}

@@ -1,0 +1,54 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "params": "125B (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-24",
+      "system_ram_min": "32GB",
+      "why": "Niko Veit's Strata Gyro-S config on a 6GB RTX 3050 Laptop plus 32GB system RAM: 17-20 tok/s with the layers that did not fit 6GB of VRAM running from system RAM. The poster's verdict is that 32GB RAM is the practical floor — the run used ~94% VRAM and ~96% RAM and peaked at 16K context.",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20",
+          "hardware": "NVIDIA RTX 3050 6GB Laptop GPU + 32GB system RAM (system-RAM offload)",
+          "quant": "Strata Qwen3.8-Flash-Next Gyro-S config",
+          "date": "2026-10-24",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 1,
+          "views": 212,
+          "context_tokens": "16384",
+          "system_ram_min": "32GB",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399"
+        },
+        {
+          "engine": "Strata",
+          "tps": "17",
+          "hardware": "NVIDIA RTX 3050 6GB Laptop GPU + 32GB system RAM (system-RAM offload)",
+          "quant": "Strata Qwen3.8-Flash-Next Gyro-S config",
+          "date": "2026-10-24",
+          "likes": 4,
+          "comments": 0,
+          "reshares": 1,
+          "views": 212,
+          "context_tokens": "16384",
+          "system_ram_min": "32GB",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-26T12:27:48Z"
+}

@@ -1,0 +1,37 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-26T00:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b-rdna2-vllm-cluster",
+      "name": "Qwen3.8-Flash-Next 125B on 8x Radeon Pro V620 (vLLM fork)",
+      "full_name": "Qwen3.8-Flash-Next 125B on 8x Radeon Pro V620 256GB (vLLM RDNA2 fork)",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB+",
+      "vram_min": "32GB+",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "60-100",
+          "hardware": "8x Radeon Pro V620 32GB (RDNA2), 256GB total VRAM, PP=4 pipeline parallelism",
+          "quant": "ROCm; experimental vLLM fork with custom RDNA2 kernels; W4A16 routed experts; 3-token drafting (40-50 bare decode); prefill 3000+ tok/s",
+          "date": "2026-10-09",
+          "source_post": "https://lightbrd.com/raminaol9ykas/status/2108497527586611313"
+        }
+      ],
+      "last_seen": "2026-10-09"
+    }
+  ]
+}
