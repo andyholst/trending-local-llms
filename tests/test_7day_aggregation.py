@@ -237,6 +237,37 @@ def test_a_measured_footprint_is_raised_never_pinned():
           all(not e.get("weight_gb") for e in out_none), out_none)
 
 
+def test_a_footprint_is_never_attributed_across_posts():
+    """A dimension belongs to the run its own post describes (issue #395).
+
+    Measured on the store: `qwen3.6-35b-a3b`'s oMLX row for post `…6273` carried
+    `DFlash2 drafter on` — a wording ONLY the Kapitsa/oMLX rows of post `…4438`
+    state. Two posts' runs collapse into one store row when their engine, card and
+    t/s agree, and the group's fill then copied the other post's value onto the
+    representative. The store attributed one post's evidence to another; the
+    captured-footprint guard in `test_data_gap_analysis.py` caught it.
+    """
+    a = "https://lightbrd.com/someone/status/111"
+    b = "https://lightbrd.com/someone/status/222"
+    # Given  two concordant runs of the same engine + card whose posts state DIFFERENT
+    #        footprints, the higher-engagement one (post b, which states none) winning
+    row_a = {"engine": "oMLX", "tps": "127", "hardware": "M4 Pro 48GB", "date": "2026-10-23",
+             "source_post": a, "likes": 1, "comments": 0, "engine_min_version": "drafter on A"}
+    row_b = {"engine": "oMLX", "tps": "127", "hardware": "M4 Pro 48GB", "date": "2026-10-23",
+             "source_post": b, "likes": 50, "comments": 0}
+    out = UT.merge_engines([row_a], [row_b])
+    # Then   the surviving row is post b's, and it does NOT borrow post a's wording
+    check("cross-post: two concordant posts collapse to one row", len(out) == 1, out)
+    check("cross-post: the representative is the higher-engagement post",
+          out[0].get("source_post") == b, out[0].get("source_post"))
+    check("cross-post: a dimension is never attributed from another post",
+          not out[0].get("engine_min_version"), out[0])
+    # And   the same post's own capture still fills the row (the rule is not a mute button)
+    out_same = UT.merge_engines([row_b], [dict(row_b, engine_min_version="oMLX with DFlash2 draft")])
+    check("cross-post: a capture of the SAME post still fills the footprint",
+          any(e.get("engine_min_version") == "oMLX with DFlash2 draft" for e in out_same), out_same)
+
+
 def test_merge_engines_dedup_same_gpu_vram():
     """Same model + same engine + same t/s + same GPU card/VRAM must collapse to
     ONE engine row — the same measurement reported by two different X posts
@@ -856,6 +887,7 @@ def main() -> int:
     test_ingest_seeds_and_dedupes_seen_posts()
     test_correct_raw_fills_missing_backend()
     test_a_measured_footprint_is_raised_never_pinned()
+    test_a_footprint_is_never_attributed_across_posts()
     test_merge_engines_dedup_same_gpu_vram()
     test_validate_catches_duplicate_engine_same_gpu_vram()
     test_validate_allows_same_engine_different_gpu()
