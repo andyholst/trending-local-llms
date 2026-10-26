@@ -1193,6 +1193,14 @@ issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, R
 # it stays `queued` forever, so the run never concludes and every PR's checks sit at "pending".
 # The DECISION lives in scripts/queued_run_alarm.py (rule 6d); the workflow calls this target.
 # Exit 1 when a job is stuck, so the scheduled run goes red.
+.PHONY: _freshness-alarm
+_freshness-alarm:
+	python3 scripts/freshness_alarm.py $(if $(REPO),--repo "$(REPO)",) $(if $(MAX_AGE_HOURS),--max-age-hours $(MAX_AGE_HOURS),)
+
+.PHONY: freshness-alarm
+freshness-alarm: ## Fail when the newest refresh snapshot is older than MAX_AGE_HOURS (issue #452)
+	@$(MAKE) --no-print-directory _freshness-alarm
+
 .PHONY: _bot-health
 _bot-health:
 	python3 scripts/bot_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(LIMIT),--limit $(LIMIT),)

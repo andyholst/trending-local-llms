@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **148** · archived: **9**
+Active changes: **153** · archived: **9**
 
 ## Active changes
 
@@ -151,6 +151,7 @@ Active changes: **148** · archived: **9**
 | `sweep-delivery-alarm` | active | #497 (measured: the hourly sweep asks GitHub for 24 slots a day and gets ~5) | — | [bot-coordination](openspec/changes/sweep-delivery-alarm/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-delivery-alarm/proposal.md) |
 | `sweep-reverifies-against-the-base` | active | #494 (the owner's ruling: *"the sweep bot analyzes each issue again against the latest | — | [bot-coordination](openspec/changes/sweep-reverifies-against-the-base/specs/bot-coordination/spec.md) | 11/11 | [proposal.md](openspec/changes/sweep-reverifies-against-the-base/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
+| `the-artifact-is-the-alarm` | active | — | — | [bot-alarms](openspec/changes/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/the-artifact-is-the-alarm/proposal.md) |
 | `the-index-keeper-regenerates-both` | active | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/the-index-keeper-regenerates-both/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `trending-for-your-card` | active | #349 — `feat(readme): the trending list for YOUR card — VRAM-tiered trending tables, low end (8–24 GB) first` | — | [readme-trending](openspec/changes/trending-for-your-card/specs/readme-trending/spec.md) | 10/10 | [proposal.md](openspec/changes/trending-for-your-card/proposal.md) |
