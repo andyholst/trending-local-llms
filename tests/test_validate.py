@@ -425,11 +425,18 @@ def test_every_check_is_wired_to_a_stage_and_a_makefile_target():
         check(f"wiring: {name} is registered in main()", name in " ".join(registered.values()),
               "not referenced by any add(...)")
 
-    # And  every stage is explicitly selected by a Makefile target
-    makefile = (ROOT / "Makefile").read_text()
-    selected: set[str] = set()
-    for only in re.findall(r"--only\s+([\w,]+)", makefile):
-        selected.update(s.strip() for s in only.split(",") if s.strip())
+    # And  every stage is explicitly selected by a Makefile target — read through the
+    # ONE implementation of that contract (`architecture_check.stage_lists`, issue #514).
+    # This test used to re-parse the Makefile with its own regex, so a `--only` shape it
+    # accepted and the guard refused (or the reverse) could make one of them lie.
+    from architecture_check import stage_lists, validate_stages
+    selected = {s for _target, stages in stage_lists(ROOT / "Makefile") for s in stages}
+    check("wiring: the one reader actually found the Makefile's --only lists",
+          len(stage_lists(ROOT / "Makefile")) >= 5 and len(selected) >= 5,
+          (len(stage_lists(ROOT / "Makefile")), sorted(selected)))
+    check("wiring: the two readers agree on which stages the validator registers",
+          registered.keys() == validate_stages(ROOT / "scripts" / "validate.py"),
+          (sorted(registered), sorted(validate_stages(ROOT / "scripts" / "validate.py"))))
     for stage in sorted(registered):
         check(f"wiring: stage '{stage}' is selected by a Makefile --only list",
               stage in selected, f"--only stages: {sorted(selected)}")
@@ -440,7 +447,8 @@ def test_every_check_is_wired_to_a_stage_and_a_makefile_target():
     check("wiring: --only removal executes the additive-only check",
           "additive-only (no key/value loss)" in out.stdout, out.stdout[-200:])
     check("wiring: the full `make validate` path runs every stage without --only",
-          re.search(r"^_validate:\n\tpython3 scripts/validate\.py\s*$", makefile, re.M) is not None)
+          re.search(r"^_validate:\n\tpython3 scripts/validate\.py\s*$",
+                    (ROOT / "Makefile").read_text(), re.M) is not None)
 
 
 def test_newline_terminators():
