@@ -203,8 +203,10 @@ def test_every_marker_the_tree_writes_is_registered() -> None:
 
     # And   the closed "owed" list still names an issue for every entry (it may only shrink)
     owed = getattr(bm, "UNREGISTERED_OWED", {})
+    # The list may be EMPTY (every owed marker registered — issue #474 closed that way); what it may
+    # never do is name an entry without the issue that lands its registration.
     check("markers: every owed registration names its issue",
-          bool(owed) and all(isinstance(n, int) and n > 0 for n in owed.values()), owed)
+          all(isinstance(n, int) and n > 0 for n in owed.values()), owed)
 
     # And   the REAL tree declares every marker it writes
     stray = undeclared_markers(TREE)

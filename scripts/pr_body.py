@@ -123,9 +123,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--branch", help="the head branch (a ci/data-gap-<n>-… branch must match)")
     ap.add_argument("--title", action="store_true",
                     help="print the PR TITLE for --kind instead of the body (issue #541)")
-    ap.add_argument("--kind", default="data-gap", choices=sorted(KIND_TYPES),
-                    help="the kind of issue this PR implements (default: data-gap)")
+    # `--kind` is deliberately NOT `choices=`: the value comes from the issue's labels at run time,
+    # and an unrecognised one must never stop a PR from opening — that would turn a mislabelled
+    # issue into a bot that cannot land its own work (measured on PR #609, where a gh read that did
+    # not answer made `--kind` a URL and argparse killed the push). An unknown kind falls back to
+    # the default LOUDLY instead.
+    ap.add_argument("--kind", default="data-gap",
+                    help=f"the kind of issue this PR implements: {', '.join(sorted(KIND_TYPES))} "
+                         f"(default: data-gap; anything else falls back with a warning)")
     args = ap.parse_args(argv)
+    if args.kind not in KIND_TYPES:
+        print(f"[pr-body] WARNING: unknown --kind {args.kind!r} (known: "
+              f"{', '.join(sorted(KIND_TYPES))}) — falling back to 'data-gap'", file=sys.stderr)
+        args.kind = "data-gap"
     if args.title:
         try:
             print(title(args.issue, args.kind))

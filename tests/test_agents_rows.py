@@ -16,6 +16,7 @@ Run:  python3 tests/test_agents_rows.py   or   make test
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -57,6 +58,39 @@ def test_the_owed_rows_are_present():
           "qa-report.txt.notes" in sec and "PR #387" in sec)
 
 
+def test_the_rows_this_session_owed_are_written():
+    """The §8 rows that could not be written when their guards shipped (issues #543, #474, #362,
+    #580/#583, #592, #522, #547/#548/#539/#578, #544, #563, #363).
+
+    Each of those changes recorded its row as OWED in `findings.md` because `AGENTS.md` is a
+    protected file and the approval did not return. They are applied together here, and pinned so
+    the ledger cannot rot back to prose.
+    """
+    sec = section8()
+    wanted = {
+        "#543": "the bot's working files (",
+        "#474": "a marker WRITTEN outside the registry",
+        "#362": "a search leg told to make its Firecrawl call",
+        "#580/#583": "a re-run's work lost",
+        "#592": "resuming a branch that is NOT this run's work",
+        "#522": "reading the picked issue's state ONLY in the fail-loud step",
+        "#547/#548/#539/#578": "a recipe whose stdout a workflow CAPTURES",
+        "#544": "the inventory claiming a target the pipeline never runs",
+        "#563": "the fix loop describing a failed base merge",
+        "#363": "a refresh search leg given no `HF_TOKEN`",
+    }
+    for issue, phrase in wanted.items():
+        row = next((l for l in sec.splitlines() if issue in l and phrase in l), "")
+        check(f"rows: the {issue} row is present and describes the guard", bool(row),
+              f"no row naming {issue} + {phrase!r}")
+
+    # And the marker the reverse guard found is REGISTERED (issue #474), not merely allowed
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import bot_markers as bm  # noqa: E402 — the real registry
+    check("rows: issue-bot-already-fixed is registered, not owed",
+          "issue-bot-already-fixed" in [n for k in bm.REGISTRY.values() for n in k.values()],
+          sorted(bm.REGISTRY))
+    check("rows: and nothing is left in the owed list", not bm.UNREGISTERED_OWED, bm.UNREGISTERED_OWED)
 def test_the_storage_offload_row_is_written():
     """#369: the row #364's change owed, derived from its own tasks 4/5 rather than guessed.
 
@@ -109,6 +143,7 @@ def test_the_section_still_parses_as_a_table():
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
+    test_the_rows_this_session_owed_are_written()
     test_the_storage_offload_row_is_written()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()

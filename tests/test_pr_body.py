@@ -229,9 +229,14 @@ def test_the_pr_title_is_composed_from_the_issue_kind():
     check("pr-title: it names the issue", "#541" in tech.stdout, tech.stdout)
     check("pr-title: a data-gap issue is titled a FEAT",
           gap.returncode == 0 and gap.stdout.startswith("feat(data-gap): "), gap.stdout)
-    check("pr-title: an unknown kind is REFUSED, never guessed",
-          bogus.returncode != 0 and "invalid choice" in (bogus.stdout + bogus.stderr),
+    # An unknown kind must NOT stop the PR from opening — it is a `gh` label read at run time, and
+    # refusing there killed the bot's push step in production (PR #609). It falls back to the
+    # default and SAYS SO, which is "never silently guessed".
+    check("pr-title: an unknown kind falls back to the default kind",
+          bogus.returncode == 0 and bogus.stdout.startswith("feat(data-gap): "),
           bogus.stdout + bogus.stderr)
+    check("pr-title: and the fallback is announced, never silent",
+          "unknown --kind" in bogus.stderr, bogus.stderr)
     check("pr-title: a missing ISSUE is a usage error", missing.returncode != 0,
           missing.stdout + missing.stderr)
     check("pr-title: the recipe is silenced, so a CAPTURE holds the title alone",
@@ -247,6 +252,23 @@ def test_the_pr_title_is_composed_from_the_issue_kind():
           "index(\"tech-debt\")" in wf, "")
 
 
+def test_an_unrecognised_kind_falls_back_instead_of_refusing():
+    """Issue #541: the kind is read from the issue's labels at run time, so it is not a constant.
+
+    Measured on PR #609: `argparse(choices=...)` made an unexpected value exit 2 in the middle of
+    the bot's push step, so no PR was ever created. A mislabelled issue must not block the work.
+    """
+    proc = subprocess.run([sys.executable, str(SCRIPT), "--issue", "7", "--title",
+                           "--kind", "https://example.invalid/pull/1"],
+                          capture_output=True, text=True)
+    check("kind: an unknown --kind still prints a title", proc.returncode == 0,
+          (proc.returncode, proc.stderr[-200:]))
+    check("kind: it falls back to the data-gap title", proc.stdout.strip() != "",
+          proc.stdout[:120])
+    check("kind: and it says so loudly on stderr", "unknown --kind" in proc.stderr,
+          proc.stderr[-200:])
+
+
 def main() -> int:
     print("pr-body composer (issue #287)")
     test_the_composed_body_closes_exactly_the_issue_it_implements()
@@ -256,6 +278,7 @@ def main() -> int:
     test_the_issue_bot_step_composes_the_body_through_the_target()
     test_the_pr_title_is_composed_from_the_issue_kind()
     test_the_shipped_step_hands_a_closure_correct_body_to_gh()
+    test_an_unrecognised_kind_falls_back_instead_of_refusing()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
