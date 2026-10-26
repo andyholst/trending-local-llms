@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **146** · archived: **9**
+Active changes: **148** · archived: **9**
 
 ## Active changes
 
@@ -98,6 +98,7 @@ Active changes: **146** · archived: **9**
 | `one-person-one-identity` | active | #445 (filed first, with the measurement) | — | [commit-authorship](openspec/changes/one-person-one-identity/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/one-person-one-identity/proposal.md) |
 | `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
+| `one-run-two-engine-names` | active | — | — | [data-integrity](openspec/changes/one-run-two-engine-names/specs/data-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/one-run-two-engine-names/proposal.md) |
 | `one-slow-query-is-not-a-red-run` | active | — | — | [search-smoke](openspec/changes/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/one-slow-query-is-not-a-red-run/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `one-working-file-list` | active | — | — | [bot-commit-safety](openspec/changes/one-working-file-list/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/one-working-file-list/proposal.md) |
