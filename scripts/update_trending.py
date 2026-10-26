@@ -908,6 +908,21 @@ def best_measurement(es: list[dict]) -> dict | None:
 #   'tier'        only the coarse vram_tier string is available
 #   'unknown'     nothing supports a claim: reported, never rendered as a number
 CARD_TIERS_GB = (8, 12, 16, 24, 32, 48)
+# Above the card ladder (issue #572): the memory is UNIFIED (Apple Silicon, a big
+# APU), a multi-GPU workstation, or a datacenter part — so the evidence is the
+# run's TOTAL memory (unified memory / system RAM / the measured VRAM across every
+# GPU), never a card. A model is placed here only when its evidence says it needs
+# MORE than `MAX_SCOPE_VRAM_GB` (48): the reader's question is "what runs on the
+# machine I have", not "what would also fit a small card", so a 24 GB run does not
+# appear in the 64 GB table. The same `ran-on` / `weights-only` labelling applies.
+HIGH_TIERS_GB = (64, 128, 256, 512)
+#: What a tier of that size usually IS, said in the section's own words.
+HIGH_TIER_LABELS = {
+    64: "unified memory or a prosumer multi-GPU box",
+    128: "unified memory or a prosumer multi-GPU box",
+    256: "unified memory or datacenter hardware",
+    512: "datacenter hardware",
+}
 # The low end this index prioritises: a GAMING LAPTOP, 8-24 GB of VRAM. The
 # trending list and the tier tables are for that reader first; 32/48 GB is the
 # workstation step above it, and everything bigger is unified memory / datacenter
@@ -926,14 +941,33 @@ def _gb_value(value) -> float | None:
     return float(m.group(1)) if m else None
 
 
+#: A measurement's `weight_gb` that is this many times the model's OWN stated
+#: footprint is not the same model's weights — it is a mis-ingested row (measured:
+#: Bonsai 2 9B, a 2 GB ternary model, carried "~493GB NVFP4" on a 4x M5 Ultra run,
+#: which the tier ladder happily read as proof it needs a 512 GB machine). The
+#: stated value is refused and the model's own footprint is used instead.
+WEIGHTS_CONTRADICTION_FACTOR = 10
+
+
 def weights_gb(m: dict, e: dict) -> tuple[float | None, str]:
     """The weight footprint of the quant THIS measurement ran in, with its
     evidence: the measurement's own `weight_gb` when the post stated it
-    ('stated'), else the model's ('model-level'), else (None, 'unknown')."""
-    for src, tag in ((e.get("weight_gb"), "stated"), (m.get("weight_gb"), "model-level")):
-        g = _gb_value(src)
-        if g is not None:
-            return g, tag
+    ('stated'), else the model's ('model-level'), else (None, 'unknown').
+
+    A 'stated' value that CONTRADICTS the model's own footprint by more than
+    `WEIGHTS_CONTRADICTION_FACTOR` is refused in favour of the model-level one:
+    a number that cannot belong to this model is not evidence about it.
+    """
+    stated = _gb_value(e.get("weight_gb"))
+    model_level = _gb_value(m.get("weight_gb"))
+    if stated is not None and model_level is not None and model_level > 0:
+        ratio = max(stated, model_level) / min(stated, model_level)
+        if ratio > WEIGHTS_CONTRADICTION_FACTOR:
+            return model_level, "model-level"
+    if stated is not None:
+        return stated, "stated"
+    if model_level is not None:
+        return model_level, "model-level"
     return None, "unknown"
 
 
@@ -985,6 +1019,78 @@ def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> li
         if not cands:
             continue
         # A proved fit beats a weights-only one, then the fastest figure wins.
+        e, ev = max(cands, key=lambda p: (p[1] == "ran-on", _tps_core(p[0].get("tps"))))
+        rows.append((_tps_core(e.get("tps")), m, e, ev))
+    rows.sort(key=lambda r: (-r[0], r[1]["name"].lower()))
+    return rows
+
+
+# ---- above 48 GB (issue #572): the memory is unified, multi-GPU or datacenter --
+def total_memory_gb(e: dict) -> float | None:
+    """The TOTAL memory the RUN had, from the hardware it names.
+
+    VRAM first (`hardware_vram_gb`, which multiplies `Nx`), so an `8×H100 80GB`
+    run is 640 GB and a `2×RTX 4090 24GB` box is 48; otherwise the largest GB
+    figure the hardware states, which is the unified memory of an Apple Silicon
+    machine (`M3 Ultra 512GB`) or the system RAM of a CPU run. None when the
+    hardware names no size at all — then nothing can be claimed (rule 2).
+    """
+    hw = e.get("hardware") or ""
+    v = hardware_vram_gb(hw)
+    if v is not None:
+        return v
+    gbs = [float(g) for g in _GB_TEXT_RE.findall(hw)]
+    return max(gbs) if gbs else None
+
+
+def high_tier_fit(m: dict, e: dict, tier: int) -> str | None:
+    """How this measurement qualifies for an ABOVE-48-GB `tier`, or None.
+
+    The reader of these tiers owns a machine with more memory than any consumer
+    card, and asks "what NEEDS this much?". So a model is placed here only with
+    evidence that it needs MORE than `MAX_SCOPE_VRAM_GB`:
+
+      'ran-on'       a run whose own total memory was in (48, tier] — it needed
+                     more than a card and fit this machine
+      'weights-only' only the weight footprint fits the tier and it EXCEEDS 48 GB
+                     (KV cache and overhead unknown, so it is labelled)
+
+    A model whose weights fit a consumer card is never placed here — an 8B served
+    on a 64 GB Mac mini does not need 64 GB, and listing it would bury the models
+    that do. That is the CARD ladder's reader, one section up.
+    """
+    total = total_memory_gb(e)
+    w, _tag = weights_gb(m, e)
+    # ONLY the weight footprint can say a model needs more than a consumer card, and
+    # an unknown footprint says nothing (rule 2: no figure is invented).
+    if w is None or w <= MAX_SCOPE_VRAM_GB or w > tier:
+        return None
+    if total is not None and MAX_SCOPE_VRAM_GB < total <= tier:
+        return "ran-on"
+    # The weights fit but the run's own machine does not prove the fit: the KV cache
+    # and the overhead it needed are unknown, so it is labelled, never sold as a fit.
+    return "weights-only"
+
+
+def high_tier_measurements(m: dict, tier: int,
+                           registry: dict | None = None) -> list[tuple[dict, str]]:
+    """The measurements of `m` with evidence for an above-48-GB tier.
+
+    Apple Silicon and CPU are NOT skipped here — unified memory and system RAM are
+    exactly what these tiers are — unlike the card tiers, where they never appear.
+    """
+    return [(e, ev) for e in m.get("engines", [])
+            if (ev := high_tier_fit(m, e, tier))]
+
+
+def high_tier_rows(models: list[dict], tier: int,
+                   registry: dict | None = None) -> list[tuple[float, dict, dict, str]]:
+    """(best t/s, model, measurement, evidence) for an above-48-GB tier, best first."""
+    rows = []
+    for m in models:
+        cands = high_tier_measurements(m, tier, registry)
+        if not cands:
+            continue
         e, ev = max(cands, key=lambda p: (p[1] == "ran-on", _tps_core(p[0].get("tps"))))
         rows.append((_tps_core(e.get("tps")), m, e, ev))
     rows.sort(key=lambda r: (-r[0], r[1]["name"].lower()))
@@ -1294,7 +1400,8 @@ def render_readme(store: dict, today: datetime) -> str:
         parts = [
             "## 🖥️ Pick your card — what fits your VRAM",
             "",
-            "Jump to your card: " + " · ".join(f"[{t} GB](#{t}-gb)" for t in CARD_TIERS_GB) + ".",
+            "Jump to your card: " + " · ".join(f"[{t} GB](#{t}-gb)" for t in CARD_TIERS_GB)
+            + " · **above that:** " + " · ".join(f"[{t} GB](#{t}-gb)" for t in HIGH_TIERS_GB) + ".",
             "",
             "A model is listed in a tier only with **evidence**: *ran on* a card of that size — a real measured"
             " figure — or *weights-only*, where only the weight footprint fits and the KV cache and overhead are"
@@ -1331,6 +1438,47 @@ def render_readme(store: dict, today: datetime) -> str:
                     ev_txt = (f"weights-only {_fmt_num(w)} GB ({tag}), KV cache unknown"
                               if w is not None else "weights-only")
                 more = sum(1 for _e, _ev in tier_measurements(m, t, registry) if _ev == "ran-on") - 1
+                if more:
+                    ev_txt += f"<br><sub>+{more} more measured at this size</sub>"
+                parts.append(f"| [**{m['name']}**]({hf_url(m)}) | {_fmt_num(tps)} |"
+                             f" {BACKEND_LABEL[b][0]} {b} | {cell} | {ev_txt} |")
+            parts.append("")
+        # Above 48 GB (issue #572): a card owner stops at 48 GB, so these tiers
+        # answer a different question — "what runs on the machine I have" — and a
+        # model appears only when its evidence says it needs MORE than 48 GB.
+        parts.append("**Above 48 GB** — there is no consumer card up here: the memory is **unified**"
+                     " (Apple Silicon, a large APU), a **multi-GPU workstation**, or **datacenter"
+                     " hardware**. A model is listed only when its evidence says it needs more than"
+                     f" {MAX_SCOPE_VRAM_GB} GB, so a run that fits a card stays in the tiers above.")
+        parts.append("")
+        for t in HIGH_TIERS_GB:
+            rows = high_tier_rows(models, t, registry)
+            parts.append(f"### {t} GB")
+            parts.append("")
+            parts.append(f"_Typically {HIGH_TIER_LABELS[t]}._")
+            parts.append("")
+            if not rows:
+                parts.append(f"_Nothing in the store has evidence of needing more than"
+                             f" {MAX_SCOPE_VRAM_GB} GB and fitting {t} GB — a **collection gap, not"
+                             f" \u201cnothing runs\u201d**._")
+                parts.append("")
+                continue
+            parts.append("| Model | Best t/s that fits | Backend | Engine · hardware · quant · date | Evidence |")
+            parts.append("|---|---|---|---|---|")
+            for tps, m, e, ev in rows:
+                b = measurement_backend(e, registry)
+                det = detail(e)
+                date = f" · {e['date']}" if e.get("date") else ""
+                cell = f"{elink(e['engine'])} **{e['tps']}**" + (f" · {det}" if det else "") + date
+                if ev == "ran-on":
+                    total = total_memory_gb(e)
+                    ev_txt = f"ran on {_fmt_num(total)} GB total"
+                else:
+                    w, tag = weights_gb(m, e)
+                    ev_txt = (f"weights-only {_fmt_num(w)} GB ({tag}), KV cache unknown"
+                              if w is not None else "weights-only")
+                more = sum(1 for _e, _ev in high_tier_measurements(m, t, registry)
+                           if _ev == "ran-on") - 1
                 if more:
                     ev_txt += f"<br><sub>+{more} more measured at this size</sub>"
                 parts.append(f"| [**{m['name']}**]({hf_url(m)}) | {_fmt_num(tps)} |"

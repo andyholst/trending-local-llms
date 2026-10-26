@@ -747,7 +747,7 @@ def check_card_tables(store: dict) -> None:
         fail("card-fit: README has no '## 🖥️ Pick your card' section")
         return
     bad = 0
-    for t in ut.CARD_TIERS_GB:
+    for t in ut.CARD_TIERS_GB + ut.HIGH_TIERS_GB:
         if f"[{t} GB](#{t}-gb)" not in sec:
             bad += 1
             fail(f"card-fit: the anchor index does not link the {t} GB tier")
@@ -761,14 +761,19 @@ def check_card_tables(store: dict) -> None:
                 cur = None
         elif cur and ln.startswith("|") and "---" not in ln and not ln.startswith("| Model"):
             blocks.setdefault(cur, []).append(ln)
-    for t in ut.CARD_TIERS_GB:
-        expected = ut.tier_rows(store["models"], t, reg)
+    # The card ladder and the ABOVE-48-GB ladder (issue #572) are two different
+    # questions over the same evidence, so each tier is compared with ITS OWN
+    # function: a >48 GB row is never validated against the card rule.
+    tiers = [(t, ut.tier_rows, ut.tier_measurements, "card") for t in ut.CARD_TIERS_GB]
+    tiers += [(t, ut.high_tier_rows, ut.high_tier_measurements, "above-48") for t in ut.HIGH_TIERS_GB]
+    for t, rows_fn, meas_fn, kind in tiers:
+        expected = rows_fn(store["models"], t, reg)
         rows = blocks.get(t, [])
         if not expected:
             # An empty tier is legitimate ONLY as a loud collection-gap line.
             if "collection gap" not in sec.split(f"### {t} GB")[-1].split("### ")[0]:
                 bad += 1
-                fail(f"card-fit: {t} GB has no evidence in the store and the README does not say so as a collection gap")
+                fail(f"card-fit[{kind}]: {t} GB has no evidence in the store and the README does not say so as a collection gap")
             continue
         got = []
         for r in rows:
@@ -778,24 +783,31 @@ def check_card_tables(store: dict) -> None:
             got.append((m.group(1) if m else "", tps))
             if len(cells) >= 5 and not (cells[4].strip().startswith("ran on") or "weights-only" in cells[4]):
                 bad += 1
-                fail(f"card-fit: {t} GB row for {got[-1][0]} carries no evidence tag: {cells[4][:40]!r}")
+                fail(f"card-fit[{kind}]: {t} GB row for {got[-1][0]} carries no evidence tag: {cells[4][:40]!r}")
         want = [(row[1]["name"], ut._fmt_num(row[0])) for row in expected]
         if got != want:
             bad += 1
-            fail(f"card-fit: {t} GB rows differ from the store's evidence. readme={got[:4]} store={want[:4]}")
+            fail(f"card-fit[{kind}]: {t} GB rows differ from the store's evidence. readme={got[:4]} store={want[:4]}")
         nums = [ut._tps_core(c[1]) for c in got]
         if nums != sorted(nums, reverse=True):
             bad += 1
-            fail(f"card-fit: {t} GB rows are not sorted by t/s descending: {nums[:6]}")
+            fail(f"card-fit[{kind}]: {t} GB rows are not sorted by t/s descending: {nums[:6]}")
     if not bad:
         placed = sum(1 for m in store["models"]
                      if any(ut.tier_measurements(m, t, reg) for t in ut.CARD_TIERS_GB))
         n_meas = sum(len(m.get("engines", [])) for m in store["models"])
         with_fp = sum(1 for m in store["models"] for e in m.get("engines", []) if e.get("weight_gb"))
-        print(f"  OK: card-fit section lists every model with evidence in each of the {len(ut.CARD_TIERS_GB)} tiers, sorted, evidence-tagged")
+        print(f"  OK: card-fit section lists every model with evidence in each of the "
+              f"{len(ut.CARD_TIERS_GB)} card tiers and the {len(ut.HIGH_TIERS_GB)} above-48-GB "
+              f"tiers, sorted, evidence-tagged")
         # REPORT ONLY (never fails here): how much of the store can answer the
         # question at all. A thin low end is a data gap for the searches to close,
         # reported in every validate run instead of being invisible (issue #337).
+        high_placed = sum(1 for m in store["models"]
+                          if any(ut.high_tier_measurements(m, t, reg) for t in ut.HIGH_TIERS_GB))
+        print(f"  above-48-GB coverage (report only): {high_placed} model(s) have evidence of needing "
+              f"more than {ut.MAX_SCOPE_VRAM_GB} GB — the ladder is only as good as the weight footprints "
+              f"the search captures")
         print(f"  card-fit coverage (report only): {placed}/{len(store['models'])} models have card evidence; "
               f"{with_fp}/{n_meas} measurements carry their own weight_gb (a footprint per run); "
               + " · ".join(f"{t} GB: {len(ut.tier_rows(store['models'], t, reg))}"
