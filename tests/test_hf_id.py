@@ -126,11 +126,21 @@ def test_correct_raw_reduces_a_url_shaped_hf():
         snap.write_text(json.dumps(_snapshot("https://huggingface.co/onlyone")))
         proc = subprocess.run([sys.executable, "scripts/self_correct_raw.py"],
                               cwd=ROOT, capture_output=True, text=True, env=env)
+        after = json.loads(snap.read_text())
 
-        # Then  it counts as missing (flagged for re-search), not as a value
-        check("correct-raw: an irreducible URL is flagged missing",
-              "hf missing (cannot derive)" in proc.stdout and proc.returncode == 1,
-              proc.stdout[-300:])
+        # Then  it counts as MISSING — never a value to build a link on. The row is
+        # known to the store, so its hf is repaired from there (it is not thrown
+        # away), and the step SUCCEEDS: one bad value must never abort a refresh
+        # (issue #381).
+        kept = after["models"][0] if after["models"] else {}
+        check("correct-raw: an irreducible URL counts as missing (reported)",
+              "hf <- MISSING" in proc.stdout, proc.stdout[-400:])
+        check("correct-raw: a known model is repaired from the store, not dropped",
+              kept.get("id") == "qwen3.6-35b-a3b"
+              and kept.get("hf") == "Qwen/Qwen3.6-35B-A3B",
+              kept.get("hf"))
+        check("correct-raw: it is not a failed step (exit 0)",
+              proc.returncode == 0, proc.returncode)
 
 
 def test_the_link_checker_builds_links_with_the_same_definition():
