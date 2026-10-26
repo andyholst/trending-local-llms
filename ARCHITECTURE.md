@@ -230,6 +230,7 @@ keep it honest (issue #207):
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
 | `sweep-alarm` (`REPO=` `MAX_AGE_HOURS=3`) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the newest `schedule` run of `issue-bot.yml` and exits 1 when it is older than `MAX_AGE_HOURS`, naming the age, the missed `:19` slots, the gaps and the last conclusion (2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
 | `bot-health` (`REPO=` `LIMIT=`) | Fail when a cron pipeline's newest N **scheduled** runs all failed, naming the newest run URL (issue #488). The pipelines are DERIVED from the workflows (a `- cron:` line), so a pipeline added tomorrow is covered without editing the script; a window shorter than N is not a failure, `gh` failing is loud, and `--limit 0` is refused (`scripts/bot_health.py`) |
+| `freshness-alarm` (`REPO=` `MAX_AGE_HOURS=`) | Fail when the newest committed snapshot is older than the window (default 14 h — one missed twice-daily slot), naming the age, the newest scheduled refresh run and the remedy (issue #452). An alarm over the ARTIFACT: a cron GitHub DROPPED leaves no run row for any other alarm to read (`scripts/freshness_alarm.py`) |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
 | `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started. `scripts/pr_health.py` lists the open non-draft PRs, keeps the two reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch). Exit 1 when a PR is silent. Run by `pr-health.yml` |
 | `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
@@ -587,6 +588,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/env_int.py` | ONE reading of a numeric SETTING (issue #487): `env_int`/`env_float` treat unset **or** blank (`""`, `"   "`) as the default — the shape an unconditionally-forwarded make variable takes at run time — and a non-numeric value raises `EnvSettingError` naming the variable and what it held (a typo is never silently the default). Every `int`/`float` environment read in `scripts/` goes through it; a bare `int(os.environ…)` fails `tests/test_pr_health.py` |
 | `scripts/pr_health.py` | The silent-PR alarm (issue #442) and its repair half (issue #475): lists open non-draft PRs, flags every one that is `CONFLICTING` or has NO check runs on its head commit (a conflicting PR runs no workflows at all), names the fix, and — `--repair` — dispatches `fix-bot` for a silent `ci/…` PR, capped at `MAX_FIXBOT_COMMITS` fix-bot commits per PR. `--comment` leaves ONE deduplicated note per affected PR; read-only apart from that. Exit 1 when any PR is silent, so the scheduled sweep goes red |
 | `scripts/bot_health.py` | The red-cron alarm (`make bot-health`, issue #488): derives the cron pipelines from `.github/workflows/*.yml`, reads each one's newest N `schedule` runs and fails when they all failed. Read-only; never comments or dispatches |
+| `scripts/freshness_alarm.py` | The stale-index alarm (`make freshness-alarm`, issue #452): measures the newest `data/snapshots/trending-*.json` by the timestamp IN ITS NAME (never mtime) and fails when it is older than `MAX_AGE_HOURS`. Read-only |
 | `scripts/queued_run_alarm.py` | The stuck-run alarm (issue #252): reads the repo's `queued`/`in_progress` runs (a run whose jobs are ALL queued reports `queued`, the state this exists for), flags every job queued past `--minutes` with its runner label and age, comments ONE `<!-- queued-run-alarm -->`-deduped note per affected run, and exits 1 so the scheduled run goes red. A runner label that matches nothing never FAILS a job, so nothing else sees it |
 | `scripts/sweep_alarm.py` | The dropped-cron alarm (issue #497): GitHub silently skips scheduled slots, and a slot it never created has no run for `queued-alarm` to read — so this reads the ARTIFACT (the newest `schedule` delivery of the sweep) and exits non-zero when it is older than `--max-age-hours` (default 3), printing the age, the slots that should have run and the gaps it can see, plus the last run's conclusion |
 | `scripts/refresh_base.py` | Publishes a refresh on the base as it is NOW (issue #177, extended by #500/#501): a refresh PR is entirely generated files that every other merge rewrites, so `sync` fetches the base and resets/rebases the clean checkout onto it, while `require-tip` refuses to publish when the checkout is not the fetched tip. Adopts the bot's own branch rather than cutting a new one, so a moved `master` cannot discard the run's work |
@@ -678,7 +680,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 168 make targets, 54 files in `scripts/`)
+### Bots in the tree (12 pipelines, 170 make targets, 55 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -746,7 +748,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** cron `7,37 * * * *`, `workflow_dispatch`
 - **jobs:** `guard`, `alarm` (needs `guard`)
-- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1); `make sweep-alarm` — Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
+- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1); `make sweep-alarm` — Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3); `make freshness-alarm` — Fail when the newest refresh snapshot is older than MAX_AGE_HOURS (issue #452)
 
 #### `.github/workflows/refresh-bot.yml` — refresh-bot
 
@@ -805,6 +807,7 @@ One line each, taken from the script's own docstring.
 - `scripts/env_int.py` — Read an integer setting from the environment — EMPTY means MISSING (issue #487).
 - `scripts/file_findings.py` — File ONE GitHub issue per finding an implementation run recorded.
 - `scripts/fix_loop.sh` — fix_loop.sh — the fix-bot's repair loop (runs on the CI runner / host).
+- `scripts/freshness_alarm.py` — An alarm over the ARTIFACT, not over the run (issue #452).
 - `scripts/hermes_skills_register.py` — Register the checkout's `.hermes/skills` with Hermes, so `hermes -s <name>` resolves (issue #549).
 - `scripts/hermes_smoke.sh` — hermes_smoke.sh — prove the search alias is ROUTED and ANSWERS, in seconds.
 - `scripts/hermes_update_needed.sh` — Decide whether a Hermes update should run on this invocation.
