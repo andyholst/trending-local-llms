@@ -208,6 +208,55 @@ def test_the_shipped_step_hands_a_closure_correct_body_to_gh() -> None:
           body[:160])
 
 
+def test_the_other_two_pr_bodies_are_composed_too():
+    """Issue #542: the refresh and architecture bodies were built INSIDE the workflows.
+
+    `refresh-bot.yml` used a `{ … } > "$PR_BODY"` block and `architecture-bot.yml` four `printf`
+    lines, so neither text could be rendered locally or run by a test — the defect #287 fixed for
+    the implementer's body. The architecture body additionally must carry NO closing keyword
+    (rule 6e: it implements no issue).
+    """
+    def make(*args):
+        return subprocess.run(["make", "--no-print-directory", *args],
+                              cwd=str(ROOT), capture_output=True, text=True)
+
+    # Given a window block, the refresh body is that block + the contract, byte for byte
+    with tempfile.TemporaryDirectory() as td:
+        window = Path(td) / "w.md"
+        window.write_text("<!-- refresh-bot-run: 2026-10-25T06:00:00Z run=1 -->\n"
+                          "started=… legs: nvidia=… · aggregate=…\n")
+        refresh = make("refresh-pr-body", f"WINDOW_FILE={window}")
+        empty = make("refresh-pr-body", f"WINDOW_FILE={Path(td) / 'missing.md'}")
+        check("refresh body: the target succeeds", refresh.returncode == 0, refresh.stderr[-300:])
+        check("refresh body: the WINDOW block comes first",
+              refresh.stdout.startswith("<!-- refresh-bot-run:"), refresh.stdout[:120])
+        check("refresh body: the contract sentence follows",
+              "Auto-merged when qa-validate is green" in refresh.stdout, refresh.stdout[-200:])
+        check("refresh body: an unreadable window is REFUSED, never a blank first section",
+              empty.returncode != 0, empty.stdout + empty.stderr)
+
+    # And  the architecture body carries NO closing keyword, and names the run
+    arch = make("architecture-pr-body", "RUN_URL=https://example/run/1")
+    check("architecture body: the target succeeds", arch.returncode == 0, arch.stderr[-300:])
+    check("architecture body: it names the run", "Run: https://example/run/1" in arch.stdout,
+          arch.stdout[-200:])
+    check("architecture body: it carries NO closing keyword (rule 6e)",
+          pr_closure.check(arch.stdout, "") == []
+          or not any("closing" in p for p in pr_closure.check(arch.stdout, "")),
+          pr_closure.check(arch.stdout, ""))
+    check("architecture body: it references #479 without closing it",
+          "#479" in arch.stdout and "never closed" in arch.stdout, arch.stdout[-200:])
+
+    # And  neither workflow builds its body inline any more
+    rf = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text()
+    ab = (ROOT / ".github" / "workflows" / "architecture-bot.yml").read_text()
+    check("workflow: refresh-bot redirects the target", "make refresh-pr-body > \"$PR_BODY\"" in rf, "")
+    check("workflow: refresh-bot carries no inline contract sentence",
+          "Hermes CLI refresh (deepseek-v4.1-flash-1017 via Nous)" not in rf, "")
+    check("workflow: architecture-bot pipes the target into gh",
+          "make architecture-pr-body RUN_URL=\"$RUN_URL\" | gh pr create" in ab, "")
+    check("workflow: architecture-bot carries no inline body printf",
+          "A generated description was stale" not in ab, "")
 def test_the_pr_title_is_composed_from_the_issue_kind():
     """Issue #541: the title was inline and called every PR a "data-gap" change.
 
@@ -276,6 +325,7 @@ def main() -> int:
     test_the_cli_prints_the_body_on_stdout()
     test_the_target_prints_the_body_and_a_missing_issue_is_a_usage_error()
     test_the_issue_bot_step_composes_the_body_through_the_target()
+    test_the_other_two_pr_bodies_are_composed_too()
     test_the_pr_title_is_composed_from_the_issue_kind()
     test_the_shipped_step_hands_a_closure_correct_body_to_gh()
     test_an_unrecognised_kind_falls_back_instead_of_refusing()

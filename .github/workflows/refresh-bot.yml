@@ -550,12 +550,11 @@ jobs:
             # in-flight refresh is then readable from the PR a human actually opens, and a
             # reviewer can tell WHICH run opened it and when each leg started.
             # Written to $RUNNER_TEMP, so no scratch file lands in the checkout.
+            # The body is COMPOSED by a target (issue #542), never built here: the window block
+            # (#199) and the contract a reviewer relies on are one artifact, so the text can be
+            # rendered and asserted by a test instead of living in a YAML block.
             PR_BODY="$RUNNER_TEMP/refresh-pr-body.md"
-            {
-              make refresh-run-block
-              echo
-              echo "Hermes CLI refresh (deepseek-v4.1-flash-1017 via Nous). Three separate per-backend searches (NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model removed. Auto-merged when qa-validate is green; red stays open for review. Refs #1"
-            } > "$PR_BODY"
+            make refresh-pr-body > "$PR_BODY"
             PR_URL=$(gh pr create --base master --head "$BRANCH" \
               --title "chore: Hermes refresh of trending LLM data" \
               --body-file "$PR_BODY" 2>/dev/null)

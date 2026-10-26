@@ -117,10 +117,67 @@ Auto-merged (squash, branch deleted) by qa-validate once `validate` and
 """
 
 
+# The refresh body's contract sentence, kept HERE so the workflow redirects a target instead of
+# building the text inline (issue #542). The run's WINDOW block is prepended by `refresh_body()`.
+REFRESH_CONTRACT = (
+    "Hermes CLI refresh (deepseek-v4.1-flash-1017 via Nous). Three separate per-backend searches "
+    "(NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model "
+    "removed. Auto-merged when qa-validate is green; red stays open for review. Refs #1"
+)
+
+
+class Empty(Exception):
+    """A body that must not be published empty (or without its window block)."""
+
+
+class RefusedClosing(Exception):
+    """An architecture PR body must never carry a closing claim (rule 6e)."""
+
+
+def refresh_body(window: str) -> str:
+    """The refresh PR body: the run's WINDOW block first, then the contract a reviewer relies on.
+
+    A body without the window is the defect #199 fixed, so an empty window is REFUSED here rather
+    than published with a blank first section (issue #542).
+    """
+    if not window.strip():
+        raise Empty("refusing to compose a refresh body with no window block (issue #199)")
+    return window.rstrip("\n") + "\n\n" + REFRESH_CONTRACT + "\n"
+
+
+def architecture_body(run_url: str) -> str:
+    """The architecture PR body — and it must carry NO closing keyword (rule 6e).
+
+    This PR implements no issue: it republishes a generated description, so `pr_closure` refuses a
+    closing claim on it. The composer proves the absence instead of trusting the workflow.
+    """
+    body = (
+        "A generated description was stale, so `make architecture-refresh` and/or "
+        "`make openspec-index` rewrote it: `ARCHITECTURE.md` §10 when a pipeline's triggers, jobs "
+        "or `make` targets changed, a script appeared, or the `README.md` sections changed — and "
+        "`OPENSPEC.md` when a change landed on disk without its row (issue #526: two concurrent "
+        "changes merge into ONE index, so master lists one change fewer than the tree holds).\n\n"
+        "The block is derived from the tree (`scripts/architecture_bot.py`), so nothing here is "
+        "invented. `make architecture-check` is green on this commit — the whole document, not only "
+        "the regenerated block.\n\n"
+        f"Run: {run_url}\n"
+        "Tracking issue: #479 (referenced, never closed: this PR implements no issue)\n"
+    )
+    if any("closing keyword" in problem for problem in pr_closure.check(body, "")):
+        raise RefusedClosing(body)
+    return body
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Compose the implementation PR body (issue #287).")
-    ap.add_argument("--issue", type=int, required=True, help="the issue this PR implements")
+    ap.add_argument("--issue", type=int, help="the issue this PR implements (body/title modes)")
     ap.add_argument("--branch", help="the head branch (a ci/data-gap-<n>-… branch must match)")
+    ap.add_argument("--for", dest="mode", default="implementation",
+                    choices=("implementation", "refresh", "architecture"),
+                    help="which body to print (issue #542)")
+    ap.add_argument("--window-file",
+                    help="the refresh run's window block (default: compose it from the live run)")
+    ap.add_argument("--run-url", default="", help="the architecture run URL")
     ap.add_argument("--title", action="store_true",
                     help="print the PR TITLE for --kind instead of the body (issue #541)")
     # `--kind` is deliberately NOT `choices=`: the value comes from the issue's labels at run time,
@@ -132,6 +189,33 @@ def main(argv: list[str] | None = None) -> int:
                     help=f"the kind of issue this PR implements: {', '.join(sorted(KIND_TYPES))} "
                          f"(default: data-gap; anything else falls back with a warning)")
     args = ap.parse_args(argv)
+
+    # The two NON-implementation bodies (issue #542) — they close no issue, so they never
+    # reach the `render()` path that binds a closing keyword.
+    if args.mode == "architecture":
+        try:
+            sys.stdout.write(architecture_body(args.run_url))
+        except RefusedClosing:
+            print("[pr-body] REFUSED: an architecture body must carry no closing keyword",
+                  file=sys.stderr)
+            return 2
+        return 0
+    if args.mode == "refresh":
+        window = Path(args.window_file).read_text(encoding="utf-8") if args.window_file else ""
+        if not window:
+            import refresh_run_block  # the ONE composer of the window block (issue #199)
+            window = refresh_run_block.current_block()
+        try:
+            sys.stdout.write(refresh_body(window))
+        except Empty as exc:
+            print(f"[pr-body] REFUSED: {exc}", file=sys.stderr)
+            return 2
+        return 0
+
+    if args.issue is None:
+        print("Usage: pr_body.py --issue <n> [--branch <b>] | --for refresh|architecture",
+              file=sys.stderr)
+        return 2
     if args.kind not in KIND_TYPES:
         print(f"[pr-body] WARNING: unknown --kind {args.kind!r} (known: "
               f"{', '.join(sorted(KIND_TYPES))}) — falling back to 'data-gap'", file=sys.stderr)

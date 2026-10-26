@@ -142,12 +142,9 @@ jobs:
           # The body arrives on stdin (`--body-file -`), so no scratch file exists for a later
           # `git add -A` to commit. It carries NO closing keyword: this PR implements no issue,
           # and `scripts/pr_closure.py` refuses a PR that closes an issue it does not implement.
-          {
-            printf '%s\n\n' 'A generated description was stale, so `make architecture-refresh` and/or `make openspec-index` rewrote it: `ARCHITECTURE.md` §10 when a pipeline'"'"'s triggers, jobs or `make` targets changed, a script appeared, or the `README.md` sections changed — and `OPENSPEC.md` when a change landed on disk without its row (issue #526: two concurrent changes merge into ONE index, so master lists one change fewer than the tree holds).'
-            printf '%s\n\n' 'The block is derived from the tree (`scripts/architecture_bot.py`), so nothing here is invented. `make architecture-check` is green on this commit — the whole document, not only the regenerated block.'
-            printf 'Run: %s\n' "$RUN_URL"
-            printf '%s\n' 'Tracking issue: #479 (referenced, never closed: this PR implements no issue)'
-          } | gh pr create --base master --head "$branch" \
+          # Composed by a target (issue #542), and it carries NO closing keyword by construction:
+          # this PR implements no issue, and `pr_closure` refuses a claim it cannot honour.
+          make architecture-pr-body RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
             --title "docs(architecture): refresh the generated inventory" \
             --body-file -
 
