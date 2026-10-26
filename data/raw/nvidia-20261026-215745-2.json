@@ -30,7 +30,8 @@
           "interactions": 0,
           "weight_gb": "~105GB 4-bit",
           "system_ram_min": "48GB",
-          "storage_offload": "SSD streaming (17.3 GB/s disk)"
+          "storage_offload": "SSD streaming (17.3 GB/s disk)",
+          "engine_repo": "https://github.com/carloslfu/slotstream"
         }
       ],
       "why": "Slotstream streams the 125B MoE's 105GB of 4-bit weights from SSD: 20.9-23.7 tok/s on a 48GB M5 Pro; a 1.5 GB/s disk drops it to 1.41 tok/s."

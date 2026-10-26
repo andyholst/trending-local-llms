@@ -34,7 +34,7 @@
           "context_tokens": "128000"
         },
         {
-          "engine": "LLM Studio",
+          "engine": "LM Studio",
           "tps": "26.0",
           "hardware": "M5 Pro 64GB Mac mini (Apple MLX)",
           "quant": "ternary 27B",

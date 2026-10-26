@@ -97,7 +97,7 @@
       "backends": [
         "Metal"
       ],
-      "engine_min_version": "PyTorch 2.15 (MPS backend, Metal kernels; macOS 15+, Python 3.11+)",
+      "engine_min_version": "PyTorch 2.15 (MPS backend, Metal kernels)",
       "why": "Hugging Face PyTorch team: PyTorch 2.15's dedicated Metal kernels take Qwen3.6-35B-A3B from 9.4 to 61.3 tok/s on an M3 Ultra with torch.compile",
       "last_seen": "2026-10-26",
       "engines": [
@@ -108,7 +108,7 @@
           "quant": "PyTorch 2.15 MPS backend with Metal kernels for MoE decoding",
           "date": "2026-10-26",
           "source_post": "https://lightbrd.com/AIQuanting/status/2114781884144370049",
-          "engine_min_version": "PyTorch 2.15 (MPS, macOS 15+, Python 3.11+)"
+          "engine_min_version": "PyTorch 2.15 (MPS backend, Metal kernels)"
         }
       ]
     },
