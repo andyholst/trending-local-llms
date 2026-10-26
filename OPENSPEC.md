@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **144** · archived: **9**
+Active changes: **145** · archived: **9**
 
 ## Active changes
 
@@ -26,6 +26,7 @@ Active changes: **144** · archived: **9**
 | `agent-image-publish` | active | — | — | [agent-image-publish](openspec/changes/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/agent-image-publish/proposal.md) |
 | `agent-install-seam` | active | — | — | [agent-image](openspec/changes/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/agent-install-seam/proposal.md) |
 | `agent-shell-keys` | active | — | — | [bot-agent-run-safety](openspec/changes/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/agent-shell-keys/proposal.md) |
+| `agents-row-storage-offload` | active | — | — | [agents-guard-registry](openspec/changes/agents-row-storage-offload/specs/agents-guard-registry/spec.md) | 6/6 | [proposal.md](openspec/changes/agents-row-storage-offload/proposal.md) |
 | `alias-one-definition` | active | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/alias-one-definition/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | active | — | — | [code-review-scan](openspec/changes/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/an-unchecked-scan-is-not-clean/proposal.md) |
 | `announce-the-decided-hold` | active | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/announce-the-decided-hold/proposal.md) |
