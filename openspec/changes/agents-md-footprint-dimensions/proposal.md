@@ -33,13 +33,12 @@ editing the file — the rulebook's own words for what it owed.
   issue body, which spelled out the exact replacement text.
 - **`AGENTS.md` §8** — one guard row for the new pin (rule 6c: the row scrolls
   with the guard).
-- **`tests/test_agents_rows.py`** —
-  `test_the_footprint_sentence_names_every_dimension` derives the dimension keys
-  from the CONTRACT rather than from a list in this file (an optional
-  measurement key the model row also carries, i.e. the footprint family, never
-  an engagement counter) and fails when §4's sentence does not name one of them.
-  A future dimension added to both contracts therefore reds `make test` until
-  the rulebook names it, which is the drift this issue exists for.
+- **`tests/test_measurement_footprint.py`** —
+  `test_the_rulebook_names_every_measurement_dimension` derives the dimension
+  keys from the CONTRACT and from `scripts/data_gap_analysis.DIMENSIONS` rather
+  than from a list in this file, and fails when §4's sentence does not name one
+  of them. A future dimension added to both contracts therefore reds `make test`
+  until the rulebook names it, which is the drift this issue exists for.
 
 ## Impact
 
