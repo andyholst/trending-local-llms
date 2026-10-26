@@ -30,11 +30,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+AGENTS = ROOT / "AGENTS.md"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 # Imported BEFORE the data-dir seam is switched below: the validator's own paths
@@ -209,6 +211,58 @@ def test_the_merge_never_drops_a_stored_dimension():
               e.get("tps") == "45", e.get("tps"))
 
 
+def _section4_footprint_names() -> list[str]:
+    """The dimension names `AGENTS.md` §4 lists for the optional footprint, read
+    from the rulebook itself (between 'footprint of THAT run' and the '(additive,
+    never `required`' parenthetical). Real file, real sentence — no copy in a test."""
+    text = AGENTS.read_text(encoding="utf-8")
+    start = text.index("\n## 4. Data store & regeneration model")
+    section = text[start:text.index("\n## 5. ", start)]
+    i = section.index("footprint of THAT run")
+    j = section.index("(additive", i)
+    return re.findall(r"`([a-z_]+)`", section[i:j])
+
+
+def test_the_rulebook_names_every_measurement_dimension():
+    """§4 must list EVERY optional per-measurement dimension the repo can hold, and no
+    other (issue #371).
+
+    The defect: both contracts accept `engine_min_version` on a measurement (and on the
+    model), the gap analysis tracks five dimensions, and §4 named four — so the rulebook
+    documented a smaller footprint than the store can hold, and an agent reading it had
+    no reason to fill the fifth. The keys are DERIVED here, never listed a second time:
+    the analysis' own `DIMENSIONS` is the registry, and the contracts are the truth about
+    what can be stored (rule 6d — one implementation per list).
+    """
+    import data_gap_analysis as gap  # the registry the data-gap chain ranks
+    dimensions = [d["key"] for d in gap.DIMENSIONS]
+    named = _section4_footprint_names()
+
+    check("agents: §4 states the optional measurement footprint at all", bool(named), named)
+
+    # Every dimension the chain ranks is named by the rulebook.
+    for key in dimensions:
+        check(f"agents: §4 names the tracked dimension {key}", key in named, named)
+
+    # … and nothing §4 names is missing from the contracts (a stale or invented name).
+    for name in ("model_contract.json", "search_contract.json"):
+        c = json.loads((ROOT / "data" / name).read_text())
+        item = c["properties"]["models"]["items"]["properties"]["engines"]["items"]
+        declared = set(item["properties"])
+        for key in named:
+            check(f"{name}: §4's {key} is a measurement key the contract declares",
+                  key in declared, sorted(declared))
+
+    # The registry cannot drift from the contracts either: a ranked dimension with no
+    # key on a measurement would be reported as a gap the store can never close.
+    for name in ("model_contract.json", "search_contract.json"):
+        c = json.loads((ROOT / "data" / name).read_text())
+        item = c["properties"]["models"]["items"]["properties"]["engines"]["items"]
+        for key in dimensions:
+            check(f"{name}: the tracked dimension {key} has a measurement key",
+                  key in item["properties"], sorted(item["properties"]))
+
+
 def main() -> int:
     print("measurement footprint: a figure can state its own run (issue #337)")
     with tempfile.TemporaryDirectory() as tmp:
@@ -251,6 +305,9 @@ def main() -> int:
 
     test_a_dimension_survives_the_merge_onto_an_existing_measurement()
     test_the_merge_never_drops_a_stored_dimension()
+
+    print("-- test_the_rulebook_names_every_measurement_dimension")
+    test_the_rulebook_names_every_measurement_dimension()
 
     print("-- test_the_contract_declares_them_optional")
     for name in ("model_contract.json", "search_contract.json"):
