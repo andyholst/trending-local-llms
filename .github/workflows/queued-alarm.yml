@@ -88,3 +88,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make sweep-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=3
+      # An alarm over the ARTIFACT, not the run (issue #452): a refresh slot GitHub DROPPED leaves no
+      # run row for any other alarm to read, so the only honest signal is the age of the newest
+      # committed snapshot. Twice-daily crons leave a ~11.7 h gap; 14 h is one missed slot.
+      - name: Fail loudly when the published index is stale
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make freshness-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=14
