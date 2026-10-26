@@ -70,15 +70,20 @@ def _run_step(issue: str = "287") -> tuple[int, str, str, str]:
         bin_ = td / "bin"
         bin_.mkdir()
         gh = bin_ / "gh"
-        gh.write_text(
-            "#!/bin/sh\n"
-            'printf "%s\\n" "$*" >> "$TD/gh.log"\n'
-            'prev=""\n'
-            'for a in "$@"; do\n'
-            '  [ "$prev" = "--body-file" ] && cp "$a" "$TD/body.md"\n'
-            '  prev="$a"\n'
-            "done\n"
-            'echo "https://example.invalid/pull/1"\n')
+        gh.write_text("""#!/bin/sh
+printf "%s\\n" "$*" >> "$TD/gh.log"
+case "$1" in
+  api) printf '%s\\n' 'data-gap' ;;   # what the step's --jq prints for a data-gap issue
+  *)
+    prev=""
+    for a in "$@"; do
+      [ "$prev" = "--body-file" ] && cp "$a" "$TD/body.md"
+      prev="$a"
+    done
+    echo "https://example.invalid/pull/1"
+    ;;
+esac
+""")
         gh.chmod(0o755)
         env = dict(os.environ, PATH=f"{bin_}{os.pathsep}{os.environ['PATH']}", TD=str(td),
                    ISSUE=issue, BRANCH=f"ci/data-gap-{issue}-slug", REPO="o/r",
@@ -203,6 +208,45 @@ def test_the_shipped_step_hands_a_closure_correct_body_to_gh() -> None:
           body[:160])
 
 
+def test_the_pr_title_is_composed_from_the_issue_kind():
+    """Issue #541: the title was inline and called every PR a "data-gap" change.
+
+    The sweep takes BOTH `data-gap-analysis` and `tech-debt` issues, so a `tech-debt` fix was
+    titled `feat(data-gap): implement the #<n> gap analysis item` — wrong kind, wrong artifact, and
+    unreachable by any test because the text lived inside the workflow.
+    """
+    def run(*args):
+        return subprocess.run(["make", "--no-print-directory", "pr-title", *args],
+                              cwd=str(ROOT), capture_output=True, text=True)
+
+    tech = run("ISSUE=541", "KIND=tech-debt")
+    gap = run("ISSUE=541", "KIND=data-gap")
+    bogus = run("ISSUE=541", "KIND=bogus")
+    missing = run("KIND=tech-debt")
+
+    check("pr-title: a tech-debt issue is titled a FIX",
+          tech.returncode == 0 and tech.stdout.startswith("fix(tech-debt): "), tech.stdout)
+    check("pr-title: it names the issue", "#541" in tech.stdout, tech.stdout)
+    check("pr-title: a data-gap issue is titled a FEAT",
+          gap.returncode == 0 and gap.stdout.startswith("feat(data-gap): "), gap.stdout)
+    check("pr-title: an unknown kind is REFUSED, never guessed",
+          bogus.returncode != 0 and "invalid choice" in (bogus.stdout + bogus.stderr),
+          bogus.stdout + bogus.stderr)
+    check("pr-title: a missing ISSUE is a usage error", missing.returncode != 0,
+          missing.stdout + missing.stderr)
+    check("pr-title: the recipe is silenced, so a CAPTURE holds the title alone",
+          not any(line.startswith("python3") for line in tech.stdout.splitlines()), tech.stdout)
+
+    # And   the shipped step composes it instead of spelling it
+    wf = (ROOT / ".github" / "workflows" / "issue-bot.yml").read_text()
+    check("workflow: the inline title is gone",
+          "implement the #$ISSUE gap analysis item" not in wf)
+    check("workflow: the step composes the title through the target",
+          "make pr-title ISSUE=\"$ISSUE\" KIND=\"$KIND\"" in wf, "")
+    check("workflow: the kind comes from the issue's labels, not a constant",
+          "index(\"tech-debt\")" in wf, "")
+
+
 def main() -> int:
     print("pr-body composer (issue #287)")
     test_the_composed_body_closes_exactly_the_issue_it_implements()
@@ -210,6 +254,7 @@ def main() -> int:
     test_the_cli_prints_the_body_on_stdout()
     test_the_target_prints_the_body_and_a_missing_issue_is_a_usage_error()
     test_the_issue_bot_step_composes_the_body_through_the_target()
+    test_the_pr_title_is_composed_from_the_issue_kind()
     test_the_shipped_step_hands_a_closure_correct_body_to_gh()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

@@ -538,8 +538,14 @@ jobs:
           # when make runs as a sub-make), while the command stays `make pr-body`, the form
           # the Makefile-wiring guard recognises.
           make pr-body ISSUE="$ISSUE" BRANCH="$BRANCH" > pr-body.md
+          # The TITLE is composed too (issue #541): the sweep takes BOTH `data-gap-analysis`
+          # and `tech-debt` issues, and an inline title called every one of them a "data-gap"
+          # change. The kind comes from the issue's own labels, never from a guess.
+          KIND=$(gh api "repos/$REPO/issues/$ISSUE" --jq \
+            '[.labels[].name] | if index("tech-debt") then "tech-debt" else "data-gap" end')
+          TITLE=$(make pr-title ISSUE="$ISSUE" KIND="$KIND")
           URL=$(gh pr create --base master --head "$BRANCH" \
-            --title "feat(data-gap): implement the #$ISSUE gap analysis item" \
+            --title "$TITLE" \
             --body-file pr-body.md 2>/dev/null)
           echo "pr_url=$URL" >> "$GITHUB_OUTPUT"
           echo "Opened $URL"
