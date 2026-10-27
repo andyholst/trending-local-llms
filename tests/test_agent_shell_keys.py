@@ -78,10 +78,28 @@ def test_the_list_names_every_credential_a_container_receives():
     for name in ("DOCKER_RUN", "TEST_RUN"):
         blk = re.search(rf"(?ms)^{name}\s*:=.*?(?=^\S|\Z)", mk)
         body = blk.group(0) if blk else ""
-        plain = re.findall(r"-e\s+(\$\([A-Z_]+\)|[A-Z_][A-Z0-9_]*)\b", body)
-        plain = [p for p in plain if not p.startswith(FORCE)]
+        # TWO legal shapes reach a container (rule 3e): a credential forwarded BY NAME (`-e NAME` —
+        # the agent's shell must be able to see it, so NAME must be in AGENT_SHELL_KEYS) and a
+        # NON-SECRET SETTING given explicitly (`-e NAME=value`, a literal that is never a forwarded
+        # host value, e.g. `PYTHONUNBUFFERED=1` for issue #591). The old single regex read the name
+        # out of the setting shape too — `\b` matches on the `=` — so it demanded that
+        # `PYTHONUNBUFFERED` be an agent-shell credential, which no credential list can hold.
+        tokens = re.findall(r"-e\s+([^\s\\]+)", body)
+        plain = [t for t in tokens if not t.startswith(FORCE)]
         check(f"{name}: forwards the forced names", "$(AGENT_SHELL_FORWARD)" in body, body[-160:])
         for p in plain:
+            setting, eq, value = p.partition("=")
+            if eq:
+                # a non-secret SETTING: never credential-shaped, and its value is a literal (a `$`
+                # there would forward a host value — the leak shape `check-secret-output` refuses).
+                # `setting not in keys`: a credential is NEVER given a literal value here — it is
+                # forwarded by name, so baking one in could only be a value read off some host.
+                check(f"{name}: `-e {setting}` is a NON-SECRET setting, never a credential",
+                      setting not in keys and not setting.endswith(
+                          ("_KEY", "_TOKEN", "_SECRET", "_PASSWORD", "_CREDENTIAL")), setting)
+                check(f"{name}: `-e {setting}={value}` is a literal, never a forwarded host value",
+                      "$" not in value, p)
+                continue
             resolved = "TYPESAFE_API_KEY" if p == "$(NERVE_KEY_ENV)" else p
             check(f"{name}: `-e {p}` is also in AGENT_SHELL_KEYS (no key the agent cannot see)",
                   resolved in keys, keys)
