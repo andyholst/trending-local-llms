@@ -1,0 +1,42 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3-235B-A22B",
+      "full_name": "Qwen3-235B-A22B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3-235B-A22B"
+        }
+      ],
+      "license": "Apache-2.0",
+      "params": "235B A22B",
+      "hf": "Qwen/Qwen3-235B-A22B",
+      "vram_tier": "128GB unified",
+      "vram_min": "128GB unified memory",
+      "system_ram_min": "128GB unified LPDDR5X",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "17",
+          "hardware": "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo), 128GB unified LPDDR5X",
+          "quant": "ROCm/Vulkan; ~Q3 (~100GB weights), Vulkan often edges ROCm for generation",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 0,
+          "views": 280
+        }
+      ],
+      "last_seen": "2026-10-14"
+    }
+  ],
+  "generated_utc": "2026-10-27T11:45:31Z"
+}

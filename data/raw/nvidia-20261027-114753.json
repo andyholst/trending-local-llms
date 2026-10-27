@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Prism ML)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "129",
+          "hardware": "RTX 3080 10GB, capped at 250W",
+          "quant": "Ternary-Bonsai-2-27B-Abliterated-v2 (Qwen3.8-27B, ternary weights). Code/math/JSON ~126-129 tok/s, prose ~86, planning ~104, copy-editing code ~354, four chats at once ~163 total (~40 each)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/PotatoLordsLab/status/2114517622804861130",
+          "likes": 90,
+          "comments": 1,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 94
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

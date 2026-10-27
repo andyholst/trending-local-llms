@@ -1,0 +1,72 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-11",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "40",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "MiaAI_lab's one-click kit with MTP: code at 65 tok/s, normal text at 40, holds up to 176k tokens",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2109290423500058862",
+          "likes": 505,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 514,
+          "context_tokens": "176000",
+          "engine_min_version": "MiaAI_lab one-click kit (MTP)"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "44",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "Same MiaAI_lab kit with a DFlash2 drafter: code at 89.6 (+38%), normal text at 44, 90k context so the drafter fits next to the model; 3-hour soak, 4,940 requests, 0 errors",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2109290423500058862",
+          "likes": 505,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 514,
+          "context_tokens": "90000",
+          "engine_min_version": "MiaAI_lab kit + DFlash2 drafter"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "32",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "Saluki, the same model squeezed to a 7.9GB file with no MTP part; 32 tok/s on both code and text, 262k context (the most this model takes), llama.cpp b11151",
+          "date": "2026-10-11",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2109290423500058862",
+          "likes": 505,
+          "comments": 3,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 514,
+          "weight_gb": "7.9GB (Saluki)",
+          "context_tokens": "262144",
+          "engine_min_version": "llama.cpp b11151"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

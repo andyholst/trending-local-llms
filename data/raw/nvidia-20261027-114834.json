@@ -1,0 +1,52 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "48",
+          "hardware": "one RTX 5090 32GB + 128GB system RAM",
+          "quant": "125B MoE (6B touched per token); the same author elsewhere states 64GB RAM for the same 5090 setup",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/_floormodel/status/2114118381469389190",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "128GB"
+        },
+        {
+          "engine": "vLLM",
+          "tps": "40",
+          "hardware": "local NUC (~$2500)",
+          "quant": "uncensored variant (refusals removed)",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/JD__Hayes/status/2113498954038133047",
+          "likes": 88,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 90
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

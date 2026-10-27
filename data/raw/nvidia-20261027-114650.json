@@ -1,0 +1,129 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Prism ML)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "120",
+          "hardware": "NVIDIA RTX 5090",
+          "quant": "Ternary Bonsai 2 27B reported as the same ternary model run on an RTX 5090 (120 tok/s) and an Apple M5 Pro (28 tok/s)",
+          "date": "2026-10-26",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114553793010352349",
+          "interactions": 0
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "140",
+          "hardware": "RTX 5090 32GB",
+          "quant": "Strata runtime, reported 100-140 tok/s generation range on a 5090",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 658,
+          "interactions": 24
+        },
+        {
+          "engine": "Strata",
+          "tps": "70",
+          "hardware": "RTX 5070 Ti 16GB",
+          "quant": "Strata runtime, reported 50-70 tok/s range on a 5070 Ti",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112708884519428321",
+          "likes": 2,
+          "comments": 3,
+          "reshares": 0,
+          "views": 658,
+          "interactions": 24
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-25",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4 4-bit, Humming linear backend in vLLM 0.32.0 (--linear-backend humming); 56.9 tok/s on the default kernel, +26%",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "364",
+          "hardware": "RTX 5090 32GB",
+          "quant": "4-bit",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Chriswong/status/2113743045321720315",
+          "likes": 31,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 31
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

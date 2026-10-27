@@ -1,0 +1,37 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "raon-1-mini-preview",
+      "name": "Raon-1 mini",
+      "full_name": "KRAFTON Raon-1 Mini Preview (30B A4B)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "30B (MoE, ~4B active)",
+      "hf": "KRAFTON/Raon-1-mini-preview",
+      "vram_tier": "8GB",
+      "vram_min": "6.4GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "45",
+          "hardware": "RTX 3080 10GB",
+          "quant": "IQ4_XS on the forked llama.cpp build Codex set up",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2114449416988115399",
+          "likes": 491,
+          "comments": 7,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 511
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

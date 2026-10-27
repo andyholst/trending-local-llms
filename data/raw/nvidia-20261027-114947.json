@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "SGLang",
+          "tps": "206.1",
+          "hardware": "RTX 5090 32GB",
+          "quant": "NVFP4 quantization plus DSpark speculative decoding; the same post reports 38.28 tok/s for the same model on a DGX Spark",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113065943605649611",
+          "likes": 8,
+          "comments": 2,
+          "reshares": 1,
+          "views": 770,
+          "interactions": 17
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

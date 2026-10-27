@@ -1,0 +1,53 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Meta Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "36",
+          "hardware": "four M5 Ultra Mac Studios over Thunderbolt 5 (Apple's own test; two Mac Studios hold the 493GB 4-bit model)",
+          "quant": "4-bit, about 493GB of weights across the cluster; Apple's speed figure is >36 tok/s from four M5 Ultra Mac Studios (two hold the model); encoding is not named in the post",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 3,
+          "comments": 0,
+          "reshares": 1,
+          "views": 751,
+          "weight_gb": "about 493GB in 4-bit",
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "36",
+          "hardware": "4x Apple M5 Ultra Mac Studio (Thunderbolt 5 low-latency driver)",
+          "quant": "4-bit (~493GB weights)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 933,
+          "comments": 2,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 938,
+          "weight_gb": "~493GB 4-bit",
+          "system_ram_min": "512GB unified memory per Mac Studio"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

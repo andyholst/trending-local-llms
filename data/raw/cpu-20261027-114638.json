@@ -1,0 +1,128 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "system_ram_min": "8GB",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 3 1B Q4_K_M (769MB); prompt 5.9 t/s, gen 2.9 t/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 341,
+          "weight_gb": "769MB (Q4_K_M)",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816",
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "1.0",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 4 E2B Q4_K_M (2.9GB); prompt 2.0 t/s, gen 1.0 t/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 341,
+          "weight_gb": "2.9GB (Q4_K_M)",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816",
+          "interactions": 3
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "16GB",
+      "system_ram_min": "16GB",
+      "storage_offload": "~105GB weights streamed from SSD (~110GB free required)",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.69",
+          "hardware": "Apple M5 Pro, 48GB unified memory (33GB memory budget)",
+          "quant": "4-bit (~105GB weights streamed from SSD, reported 17.3 GB/s disk)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~105GB 4-bit",
+          "system_ram_min": "48GB unified memory (33GB budget)",
+          "storage_offload": "SSD streaming (~110GB free required)",
+          "interactions": 0
+        },
+        {
+          "engine": "Slotstream",
+          "tps": "1.41",
+          "hardware": "base Mac mini M2, disk reads 1.5 GB/s",
+          "quant": "4-bit (~105GB weights streamed from SSD, slow 1.5 GB/s disk)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "~105GB 4-bit",
+          "storage_offload": "SSD streaming (1.5 GB/s disk)",
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:46:38Z"
+}

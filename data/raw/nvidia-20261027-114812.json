@@ -1,0 +1,75 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "58.53",
+          "hardware": "RTX PRO 4000 Blackwell SFF 24GB (power limit raised 70 -> 120 W via modified VBIOS)",
+          "quant": "NVFP4 + DFlash2, 8K input / 512 output tokens, ECC off",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/laky_fx/status/2114787605103427934",
+          "likes": 121,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 124,
+          "weight_gb": "NVFP4",
+          "context_tokens": "8192",
+          "engine_min_version": "modified VBIOS via patched open kernel modules, 120 W"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "100",
+          "hardware": "Radeon Pro V620 32GB x8 (256GB total, user-built homelab cluster of ~$350 surplus cards)",
+          "quant": "W4A16 routed experts, 3-token drafting vs bare decode; vLLM fork with custom RDNA2 kernels, pipeline parallelism PP=4. Same post: 40-50 t/s bare decode, and 3000+ t/s prefill which is prompt processing, never the decode figure",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/raminaol9ykas/status/2108497527586611313",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "system_ram_min": "256GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

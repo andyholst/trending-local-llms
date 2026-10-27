@@ -1948,9 +1948,28 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             mid = m.get("id")
             if not mid:
                 continue
-            if mid in by_id:
+            existing = by_id.get(mid)
+            if existing is None:
+                # A raw row whose id the search derived DIFFERENTLY but whose NAME is
+                # already stored is the SAME model: `check_no_duplicates` forbids two
+                # rows sharing one name, and `resolve_model_mapping` is the documented
+                # id -> name -> hf priority for exactly this. Here the id missed, so the
+                # name decides — folded into the stored row instead of added beside it
+                # (measured: one post captured as `…-mac-m4-pro-flint` next to the stored
+                # `…-mac-mini-m4-pro-flint`, which red every PR on a duplicate name).
+                # Only an exact NAME folds: one hf legitimately feeds several rows (a
+                # model measured on different cards), a name never does.
+                res = resolve_model_mapping(
+                    {"id": mid, "name": m.get("name"), "hf": m.get("hf")}, store)
+                if res["status"] == "existing" and res["matched_by"] == "name":
+                    existing = next((x for x in store["models"] if x.get("id") == res["id"]), None)
+                    if existing is not None:
+                        print(f"[ingest] FOLDED {mid!r} into {existing['id']!r}: the same "
+                              f"name {m.get('name')!r} ({path.name}) — a duplicate name is a "
+                              f"duplicate model")
+                        mid = existing["id"]
+            if existing is not None:
                 # update existing: merge engines (replace t/s on same engine+date), keep rest
-                existing = by_id[mid]
                 # alias the incoming rows FIRST, so a raw 'llama.cpp' figure merges
                 # with the stored fork rows instead of becoming a duplicate
                 apply_engine_aliases(existing)

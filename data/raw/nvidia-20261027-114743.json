@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-09-24",
+      "engines": [
+        {
+          "engine": "llama.cpp (hikicoder fork)",
+          "tps": "1.90",
+          "hardware": "RTX A4500 (Ada) ~17GB VRAM + 128GB DDR5, 60GB RAM used, 192GB engram on Gen4 7GB/s NVMe",
+          "quant": "DeepSeek-V4.1-Flash-Uncensored MXFP4 engram full precision, 32K context at fp16, MoE experts streamed from disk (--moe-stream). He also reports ~2 tok/s and prefill dropping to ~10 tok/s when the NVMe is paced/thermally throttled",
+          "date": "2026-09-24",
+          "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+          "likes": 3,
+          "comments": 2,
+          "reshares": 0,
+          "views": 304,
+          "interactions": 10,
+          "weight_gb": "192GB engram on disk",
+          "context_tokens": "32768",
+          "system_ram_min": "128GB DDR5",
+          "storage_offload": "192GB engram on Gen4 7GB/s NVMe (--moe-stream)",
+          "engine_min_version": "hikicoder llama.cpp dsv41-ada-medvram branch, --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 -ngl 99 -c 32768"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

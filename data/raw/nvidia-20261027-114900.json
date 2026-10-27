@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary Bonsai 2 9B (Qwen3.5 base, Prism ML)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-16",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "179",
+          "hardware": "Apple M5 Max Pro (vendor-reported figure)",
+          "quant": "Ternary Bonsai 2 9B GGUF (2.0GB ternary weights), mirrors the vendor's own reported number",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
+          "likes": 988,
+          "comments": 8,
+          "reshares": 5,
+          "views": 0,
+          "interactions": 1017,
+          "weight_gb": "2.0GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

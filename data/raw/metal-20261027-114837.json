@@ -1,0 +1,138 @@
+{
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (Humming kernel in vLLM, RTX 5090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "witcheer switched vLLM to the Humming linear backend on a single RTX 5090 with 4-bit NVFP4 Qwen3.8-27B: one request went 56.9 -> 71.6 tok/s (+26% over vLLM's default FP4 kernel); Marlin ties at 75.8 vs 77.1 on a dense int4 27B, and the default FP4 kernel still reads a long prompt fastest. Humming ships inside vLLM 0.32.0 (--linear-backend humming).",
+      "last_seen": "2026-10-25",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "RTX 5090 (single); one request, Humming linear backend",
+          "quant": "4-bit NVFP4; Humming kernel vs vLLM default FP4 kernel (56.9 tok/s)",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "full_name": "Qwen3.8-27B on a single RTX 3090: TeksEdge DFlash2 + context lookup + faster verification",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "why": "Reported progression on one RTX 3090 24GB: baseline 82 tok/s, optimized MTP 114, DFlash2 + context lookup 138, optimized lookup verification 381 (~4.6x, same GPU and weights); TeksEdge uses blocks of up to 16 tokens with ~15 accepted per block, and a 25,000-token document reproduction went ~260 -> 382 tok/s.",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB (single); decode, optimized lookup verification",
+          "quant": "speculative decoding + DFlash2 + context lookup, blocks of up to 16 tokens (~15 accepted/block)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114543357246771711"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (Strata on Mac, SSD weight streaming)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B total / ~6B active",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "16GB",
+      "system_ram_min": "48GB unified memory",
+      "weight_gb": "105GB 4-bit",
+      "storage_offload": "~110GB free SSD; shared weights + hottest experts in RAM, the rest streamed from disk",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Slotstream streams the 105GB 4-bit 125B MoE from SSD: 20.9-23.7 tok/s on a 48GB M5 Pro with a 33GB budget, 1.41 tok/s on a Mac mini M2 whose disk reads 1.5 GB/s instead of 17.3 GB/s; a 32k-token prompt on a 16GB Mac is >6 min (author's estimate).",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.7",
+          "hardware": "Mac M5 Pro 48GB unified memory (Apple Silicon), 33GB memory budget; 17.3 GB/s SSD",
+          "quant": "4-bit weights (105GB) streamed from SSD; 20.9-23.7 tok/s across short/long/coding prompts",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "system_ram_min": "48GB unified memory",
+          "weight_gb": "105GB 4-bit",
+          "storage_offload": "~110GB free SSD; disk at 17.3 GB/s"
+        },
+        {
+          "engine": "Slotstream",
+          "tps": "1.41",
+          "hardware": "Mac mini M2 base (Apple Silicon); SSD reads 1.5 GB/s",
+          "quant": "4-bit; weights streamed from a slow 1.5 GB/s disk",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "storage_offload": "~110GB free SSD; disk at 1.5 GB/s"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Bonsai 2 27B (Ternary-Bonsai-2-27B, PrismML fork)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.95GB ternary",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "why": "Prism ML reports 5.95GB footprints (from ~54GB) and generation speeds of 28 tok/s on an Apple M5 Pro and 120 tok/s on an RTX 5090; it needs a Prism ML-maintained branch of the engine, so it is not a drop-in quant. 84.78 average over 14 thinking-mode benchmarks vs 86.32 for the original Qwen3.8-27B.",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "28",
+          "hardware": "Apple M5 Pro (Apple Silicon)",
+          "quant": "ternary, 5.95GB weights",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114553793010352349",
+          "weight_gb": "5.95GB ternary"
+        },
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "120",
+          "hardware": "NVIDIA RTX 5090",
+          "quant": "ternary, 5.95GB weights",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114553793010352349",
+          "weight_gb": "5.95GB ternary"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:50:21Z",
+  "backend": "metal"
+}
