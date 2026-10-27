@@ -1,0 +1,354 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "weight_gb": "2.0GB (ternary)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-21",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "913.1",
+          "hardware": "Apple Silicon (mlx.fast track of the PrismML/DarkbloomAI Yukon challenge)",
+          "quant": "ternary 2GB weights; promoted leaderboard run, 144.9 -> 913.1 tok/s over five days of open optimization",
+          "date": "2026-10-21",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112709672322883604",
+          "likes": 0,
+          "comments": 2,
+          "reshares": 5,
+          "views": 552,
+          "weight_gb": "2.0GB (ternary)"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "170",
+          "hardware": "Apple Silicon Mac (mlx.fast track launch floor)",
+          "quant": "ternary 2GB model; the challenge floor this run began from, on a Mac",
+          "date": "2026-10-15",
+          "source_post": "https://lightbrd.com/yukonresearch/status/2110833177908728096",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "2.0GB (ternary)"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Qwen3.8-27B based, ternary)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.9GB (ternary)",
+      "system_ram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-26",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (Apple Silicon, mlx.fast Yukon challenge)",
+          "quant": "ternary compressed 27B; 4x faster than the frozen baseline (302.7%), up from about 59 tok/s at baseline",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 12,
+          "comments": 14,
+          "reshares": 0,
+          "views": 55592,
+          "weight_gb": "5.9GB (ternary)",
+          "system_ram_min": "16GB"
+        },
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "148.4",
+          "hardware": "16GB Mac (Apple Silicon, mlx.fast Yukon challenge)",
+          "quant": "ternary compressed 27B; half a day into the challenge (125.8% over baseline, 2.26x)",
+          "date": "2026-09-25",
+          "source_post": "https://lightbrd.com/pratikg/status/2103495500146307434",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "5.9GB (ternary)",
+          "system_ram_min": "16GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-8-27b",
+      "name": "Qwen3.8-27B (Apple Silicon)",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max (Apple Silicon)",
+          "quant": "MTP speculative decoding, 78% draft acceptance; code generation 72 tok/s, prose 53 tok/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 9,
+          "comments": 2,
+          "reshares": 1,
+          "views": 831
+        }
+      ]
+    },
+    {
+      "id": "qwen3.6-35b-a3b-kapitsa-m4-pro-mtp",
+      "name": "Qwen3.6-35B-A3B (Kapitsa on an M4 Pro MacBook, 4-bit)",
+      "full_name": "Qwen3.6-35B-A3B + Kapitsa (DFlash2) vs oMLX, Ollama, LM Studio, MTPLX and llama.cpp on an M4 Pro 48GB",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B total / 3B active",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "system_ram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "Kapitsa",
+          "tps": "154",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit; Kapitsa + DFlash2, developer-reported",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "127",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit; oMLX + DFlash2, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "89",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit; Ollama + MTP, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "LM Studio",
+          "tps": "86",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "69",
+          "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+          "quant": "4-bit; llama.cpp + MTP, same reported benchmark",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "48GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash-next-125b-strix-halo-strata",
+      "name": "Qwen3.8-Flash-Next (Slotstream streaming on an M5 Pro Mac)",
+      "full_name": "Qwen3.8-Flash-Next 125B-A6B with Slotstream (SSD weight streaming) on a 48GB M5 Pro",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "system_ram_min": "48GB",
+      "weight_gb": "105GB (4-bit)",
+      "storage_offload": "about 110GB free SSD; weights streamed from disk, 33GB memory budget",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.69",
+          "hardware": "MacBook Pro M5 Pro 48GB (Apple Silicon); 17.3 GB/s SSD, 33GB memory budget",
+          "quant": "4-bit, 105GB of weights streamed from SSD; 20.91-23.69 tok/s across short prompts, long prompts and coding tasks (upper figure recorded)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "105GB (4-bit)",
+          "storage_offload": "about 110GB free SSD (17.3 GB/s)",
+          "system_ram_min": "48GB"
+        },
+        {
+          "engine": "Slotstream",
+          "tps": "23.69",
+          "hardware": "MacBook Pro M5 Pro 48GB (Apple Silicon); 33GB memory budget",
+          "quant": "4-bit, roughly 105GB of weights streamed from SSD; 20.91-23.69 tok/s (upper figure recorded)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "105GB (4-bit)",
+          "system_ram_min": "48GB"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3 30B-A3B",
+      "full_name": "Qwen3-30B-A3B (MoE)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "30B total / 3B active",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "24GB",
+      "vram_min": "18GB",
+      "system_ram_min": "64GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-19",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "106",
+          "hardware": "64GB Mac mini (Apple Silicon)",
+          "quant": "about 3B of 30B parameters active per token; faster than Qwen3 8B (61 tok/s) on the same machine",
+          "date": "2026-10-19",
+          "source_post": "https://lightbrd.com/pratikg/status/2112217547366088851",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "system_ram_min": "64GB"
+        }
+      ]
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (MoE, ~2B active)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B total / ~2B active",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "context_tokens": "131072",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max (Apple Silicon)",
+          "quant": "runs through MLX from day one; vendor-reported decode, reproduced by multiple threads; no quant named in the post",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/raja_sudireddy/status/2113931756323913918",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "context_tokens": "131072"
+        }
+      ]
+    },
+    {
+      "id": "muse-spark-open-mlx-2-studio-tp",
+      "name": "Muse Spark Open (MLX over two M5 Ultra Mac Studios)",
+      "full_name": "Muse Spark Open 816B-A42B on two 512GB M5 Ultra Mac Studios over Thunderbolt 5 MLX tensor parallelism",
+      "type": "LLM (MoE)",
+      "license": "free commercial use under $20M revenue",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "493GB",
+      "system_ram_min": "1024GB",
+      "weight_gb": "about 493GB in 4-bit",
+      "context_tokens": "1048576",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "37",
+          "hardware": "four Apple M5 Ultra Mac Studios with 512GB each, over Thunderbolt, MLX distributed inference",
+          "quant": "NVFP4 distributed run from Apple's MLX research note; Apple's own figure, reported second-hand",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "weight_gb": "about 493GB in 4-bit",
+          "system_ram_min": "2048GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T21:34:16Z"
+}

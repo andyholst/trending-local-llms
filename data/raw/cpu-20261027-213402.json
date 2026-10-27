@@ -1,0 +1,37 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-22",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "1110",
+          "hardware": "NVIDIA L40S (single GPU)",
+          "quant": "aggregate/batched output throughput at concurrency; L40S was the best value at 1,110 tokens per second per dollar (A100 SXM4 reached 1,415 tok/s at 32 concurrent requests)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/MassedCompute/status/2113352552188195231",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 23,
+          "interactions": 0
+        }
+      ],
+      "why": "Serving throughput: 1,110 tok/s per dollar on an L40S with vLLM (A100 SXM4: 1,415 tok/s at 32 concurrent requests)."
+    }
+  ],
+  "generated_utc": "2026-10-27T21:34:02Z"
+}

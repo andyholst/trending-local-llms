@@ -1,0 +1,81 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "full_name": "Qwen3.5-9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "system_ram_min": "24GB",
+      "weight_gb": "5.4GB (4-bit)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-27",
+      "engines": [
+        {
+          "engine": "Rapid-MLX",
+          "tps": "29.4",
+          "hardware": "Mac mini M4 24GB (Apple Silicon, 120 GB/s unified memory)",
+          "quant": "4-bit; MTP (Multi-Token Prediction) on, 256-token generations, thinking off, holds ~29 t/s at 8K input; without MTP 20.0",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/luokelabs/status/2115022033675513931",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 334,
+          "weight_gb": "5.4GB (4-bit)",
+          "context_tokens": "8192",
+          "system_ram_min": "24GB"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "20.8",
+          "hardware": "Mac mini M4 24GB (Apple Silicon)",
+          "quant": "4-bit, thinking off, 256-token generations",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/luokelabs/status/2115022033675513931",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 334,
+          "weight_gb": "5.4GB (4-bit)",
+          "system_ram_min": "24GB"
+        },
+        {
+          "engine": "MLX",
+          "tps": "19.3",
+          "hardware": "Mac mini M4 24GB (Apple Silicon)",
+          "quant": "mlx-lm, 4-bit, thinking off, 256-token generations",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/luokelabs/status/2115022033675513931",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 334,
+          "weight_gb": "5.4GB (4-bit)",
+          "system_ram_min": "24GB"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "17.0",
+          "hardware": "Mac mini M4 24GB (Apple Silicon)",
+          "quant": "GGUF, thinking off, 256-token generations",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/luokelabs/status/2115022033675513931",
+          "likes": 5,
+          "comments": 5,
+          "reshares": 0,
+          "views": 334,
+          "system_ram_min": "24GB"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T21:33:04Z"
+}

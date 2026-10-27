@@ -1,0 +1,43 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "weight_gb": "14.5GB Q4",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "114",
+          "hardware": "AMD Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo)",
+          "quant": "Q4 GGUF (Liquid AI's own reported figure, quoted in the post)",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113073556321886241",
+          "weight_gb": "14.5GB Q4",
+          "likes": 2,
+          "comments": 2,
+          "reshares": 2,
+          "views": 543
+        }
+      ],
+      "last_seen": "2026-10-22"
+    }
+  ],
+  "generated_utc": "2026-10-27T21:34:32Z"
+}

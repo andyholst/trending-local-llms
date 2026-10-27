@@ -1,0 +1,42 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "MoE LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "96.63",
+          "hardware": "NVIDIA RTX Spark laptop 128GB (ARM64, Windows 11 on ARM)",
+          "quant": "Q4_K_M (llama.cpp, RTX Spark laptop); AIPerf coding speed bench, third-party table quoted in the post",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/urs69141/status/2114126182899666972",
+          "system_ram_min": "128GB",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 0,
+          "views": 279
+        }
+      ],
+      "last_seen": "2026-10-24"
+    }
+  ],
+  "generated_utc": "2026-10-27T21:34:32Z"
+}

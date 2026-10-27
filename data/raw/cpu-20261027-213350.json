@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE, 3B active)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "OpenVINO",
+          "tps": "30",
+          "hardware": "LattePanda Sigma 2 single-board computer, Intel Core Ultra X7 358H + Arc B390 (16-core CPU, up to 64GB LPDDR5X-8533, 136.5 GB/s)",
+          "quant": "INT4 via OpenVINO; LattePanda-measured",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2113876566547845590",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 2,
+          "views": 103,
+          "interactions": 2,
+          "system_ram_min": "up to 59GB of the board's 64GB LPDDR5X can be given to AI work"
+        }
+      ],
+      "why": "Edge SBC run: 35B-class MoE at ~30 tok/s with INT4 + OpenVINO on Intel Core Ultra X7 358H / Arc B390."
+    }
+  ],
+  "generated_utc": "2026-10-27T21:33:50Z"
+}
