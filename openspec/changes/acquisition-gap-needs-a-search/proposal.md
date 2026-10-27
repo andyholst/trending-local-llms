@@ -1,7 +1,6 @@
 # Proposal: acquisition-gap-needs-a-search
 
-Issue: tech-debt `ranked-gaps-need-new-search-data` — "The ranked dimension gaps cannot be
-closed from the captured snapshots" (filed while implementing #395, surfaced by PR #410)
+Issue: tech-debt `ranked-gaps-need-new-search-data` (filed while implementing #395, surfaced by PR #410)
 
 ## Why
 
