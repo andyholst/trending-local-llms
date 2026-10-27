@@ -234,6 +234,11 @@
       "backend": "Metal",
       "url": "https://github.com/pytorch/pytorch",
       "note": "PyTorch MPS backend with torch.compile (dedicated Metal kernels) — from https://lightbrd.com/AIQuanting/status/2114781884144370049, the Hugging Face PyTorch team's Qwen3.6-35B-A3B MoE measurement on an M3 Ultra"
+    },
+    "Rapid-MLX": {
+      "backend": "Metal",
+      "url": "https://github.com/raullenchai/Rapid-MLX",
+      "note": "Apache-2.0 OpenAI/Anthropic-compatible MLX inference server for Apple Silicon (continuous batching, radix prompt cache, tool calling) — from https://lightbrd.com/luokelabs/status/2115022033675513931; repo verified at its GitHub metadata (description: 'LLM inference server for Apple Silicon, built on MLX')"
     }
   },
   "models": [
@@ -11629,7 +11634,7 @@
         "trend_score": 4.8
       },
       "weight_gb": "105GB (4-bit)",
-      "storage_offload": "about 110GB free SSD; weights streamed from disk, 33GB memory budget"
+      "storage_offload": "105GB of weights streamed from SSD; 33GB memory budget"
     },
     {
       "id": "qwen3.5-4b",
