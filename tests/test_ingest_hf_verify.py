@@ -2,6 +2,11 @@
 """Issue #333: a refresh names a NEW model's Hugging Face repo that does not
 resolve, in the run that produced it.
 
+The same seam is enforced EARLIER on the `--write-raw` path: a search leg that
+writes a guessed `owner/model` must be refused before the raw snapshot lands,
+not after a refresh PR is open and fix-bot rewrites it. The tests below cover
+both halves against the same real local Hugging Face stand-in.
+
 `check_links_resolve` already fails the PR on a dead link, but that is the first
 moment anyone sees it — by then the refresh has opened a PR whose only repairer
 is a bot round. On PR #330 a single truncated repo id
@@ -23,11 +28,14 @@ Run:  python3 tests/test_ingest_hf_verify.py   or   make test
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import sys
 import tempfile
 import threading
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -116,6 +124,19 @@ def ingest(store: dict, raws: dict[str, dict], **kw):
             return UT.ingest_raw_snapshots(store, **kw)
         finally:
             UT.RAW_DIR = saved
+
+
+def write_and_read(payload: dict, backend: str = "amd", **kw) -> dict:
+    """Run `write_raw_snapshot` against a temp raw dir and return what landed."""
+    with tempfile.TemporaryDirectory() as td:
+        saved_dir, saved_now = UT.RAW_DIR, UT.now_utc
+        UT.RAW_DIR = Path(td)
+        UT.now_utc = lambda: datetime(2026, 10, 27, 12, 0, 0, tzinfo=timezone.utc)
+        try:
+            path = UT.write_raw_snapshot(backend, payload, **kw)
+            return json.loads(Path(path).read_text())
+        finally:
+            UT.RAW_DIR, UT.now_utc = saved_dir, saved_now
 
 
 # ---------------------------------------------------------------- the check --
@@ -213,6 +234,131 @@ def test_main_passes_verify_hf():
     check("cli: the merge targets go through that script", "scripts/update_trending.py" in mk, "")
 
 
+# --------------------------------------------------- the write-raw seam ------
+
+def test_write_raw_refuses_an_unverified_hf():
+    """A guessed id is refused in the leg that made it, not by CI later."""
+    def run(base):
+        _HF.status_for = {"/api/models/gone/model": 404,
+                          "/api/models/good/model": 200}
+        _HF.seen = []
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            data = write_and_read({
+                "backend": "amd",
+                "models": [
+                    {"id": "bad-model", "name": "Bad", "hf": "gone/model"},
+                    {"id": "good-model", "name": "Good", "hf": "good/model"},
+                ],
+            }, backend="amd", verify_hf=True)
+        return data, buf.getvalue()
+
+    data, out = _with_api(run)
+    ids = [m["id"] for m in data["models"]]
+    check("write-raw: a 404 model is refused", "bad-model" not in ids, ids)
+    check("write-raw: the model that resolves survives", "good-model" in ids, ids)
+    check("write-raw: the warning names the backend, model and id",
+          "amd" in out and "bad-model" in out and "gone/model" in out, out)
+    check("write-raw: the good model is not named in a warning",
+          "good/model" not in out, out)
+
+
+def test_write_raw_drops_a_bad_format_only():
+    """A bad `formats[].hf` costs that format, not the whole model."""
+    def run(base):
+        _HF.status_for = {"/api/models/good/model": 200,
+                          "/api/models/gone/format": 404}
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            data = write_and_read({
+                "backend": "cpu",
+                "models": [{
+                    "id": "m", "name": "M", "hf": "good/model",
+                    "formats": [{"name": "GGUF", "hf": "gone/format"},
+                                {"name": "MLX", "hf": "good/model"}],
+                }],
+            }, backend="cpu", verify_hf=True)
+        return data, buf.getvalue()
+
+    data, out = _with_api(run)
+    m = data["models"][0]
+    check("write-raw: the model survives a bad format", m["id"] == "m", m)
+    check("write-raw: only the bad format entry is dropped",
+          [f["name"] for f in m["formats"]] == ["MLX"], m["formats"])
+    check("write-raw: the warning names the format and the model",
+          "gone/format" in out and "GGUF" in out and "m" in out, out)
+
+
+def test_write_raw_keeps_an_indeterminate_hf():
+    """A 429 is not a fabricated id: keep it and refuse nothing."""
+    def run(base):
+        _HF.status_for = {"/api/models/busy/model": 429}
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            data = write_and_read({
+                "backend": "metal",
+                "models": [{"id": "busy-model", "name": "Busy", "hf": "busy/model"}],
+            }, backend="metal", verify_hf=True)
+        return data, buf.getvalue()
+
+    data, out = _with_api(run)
+    check("write-raw: a 429 keeps the model", data["models"][0]["id"] == "busy-model", data)
+    check("write-raw: a 429 prints no refusal", "refused" not in out, out)
+
+
+def test_write_raw_default_makes_no_request():
+    """Direct callers stay hermetic: the check is opt-in."""
+    def run(base):
+        _HF.status_for = {"/api/models/gone/model": 404}
+        _HF.seen = []
+        data = write_and_read({
+            "backend": "nvidia",
+            "models": [{"id": "bad-model", "name": "Bad", "hf": "gone/model"}],
+        })  # verify_hf defaults to False
+        return data, list(_HF.seen)
+
+    data, seen = _with_api(run)
+    check("write-raw: the default makes no request", seen == [], seen)
+    check("write-raw: the default keeps the model", data["models"][0]["id"] == "bad-model", data)
+
+
+def test_write_raw_cli_turns_on_verification():
+    """The `--write-raw` CLI is the production path and must turn the check on."""
+    src = (ROOT / "scripts" / "update_trending.py").read_text()
+    check("write-raw: main() passes verify_hf=True",
+          "write_raw_snapshot(args.write_raw, payload, verify_hf=True)" in src, "")
+
+
+def test_write_raw_normalises_hf_co_urls():
+    """A full link is reduced to the id before it is verified."""
+    def run(base):
+        _HF.status_for = {"/api/models/Qwen/Qwen3-14B": 200}
+        _HF.seen = []
+        data = write_and_read({
+            "backend": "amd",
+            "models": [{"id": "qwen3-14b", "name": "Qwen3-14B",
+                        "hf": "https://hf.co/Qwen/Qwen3-14B"}],
+        }, backend="amd", verify_hf=True)
+        return data, list(_HF.seen)
+
+    data, seen = _with_api(run)
+    check("write-raw: hf.co link -> repo id",
+          data["models"][0]["hf"] == "Qwen/Qwen3-14B", data["models"][0].get("hf"))
+    check("write-raw: the API was asked for the repo id",
+          any(u.endswith("/Qwen/Qwen3-14B") for u in seen), seen)
+
+
+def test_the_search_skill_requires_the_hf_lookup():
+    """The leg's preloaded contract asks for the lookup, not a plausible guess."""
+    text = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    check("skill: names the authenticated HF API lookup",
+          "https://huggingface.co/api/models?search=<name>" in text, "")
+    check("skill: says the id is looked up, never guessed",
+          "looked up, never guessed" in text, "")
+    check("skill: says an unverified id is left out",
+          "leave `hf` out" in text, "")
+
+
 def main() -> int:
     print("ingest HF link verification (#333)")
     test_only_a_definitive_answer_is_a_finding()
@@ -220,6 +366,13 @@ def main() -> int:
     test_only_new_models_cost_a_request()
     test_the_default_makes_no_request()
     test_main_passes_verify_hf()
+    test_write_raw_refuses_an_unverified_hf()
+    test_write_raw_drops_a_bad_format_only()
+    test_write_raw_keeps_an_indeterminate_hf()
+    test_write_raw_default_makes_no_request()
+    test_write_raw_cli_turns_on_verification()
+    test_write_raw_normalises_hf_co_urls()
+    test_the_search_skill_requires_the_hf_lookup()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
