@@ -117,11 +117,20 @@ def test_no_stale_model_pin():
 
 def test_prompts_write_per_query():
     text = (ROOT / "Makefile").read_text()
+    # Issue #638: the per-query write rule lives in the skill the legs preload; the
+    # recipe keeps only the write COMMAND as a parameter.
+    skill = " ".join(
+        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        .replace("`", "").split())
+    check("skill: write after EACH query",
+          "After EACH query, immediately write only that query" in skill, skill[:160])
+    check("skill: never one big payload",
+          "never collect all queries into one big payload" in skill, skill[:160])
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         prompt = text[text.index(f"_search-{b}:\n"):].split("\n", 2)[1]
-        check(f"prompt {b}: write after EACH query", "After EACH query, immediately write only that query" in prompt)
-        check(f"prompt {b}: never one big payload", "never collect all queries into one big payload" in prompt)
         check(f"prompt {b}: still uses --write-raw {b}", f"--write-raw {b} <" in prompt)
+        check(f"prompt {b}: keeps no copy of the write rule",
+              "After EACH query" not in prompt, prompt[:160])
 
 
 def test_model_caps_evaluate():

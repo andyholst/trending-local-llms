@@ -18,6 +18,8 @@ This gate keeps that true, because nothing else can:
 * a skill whose frontmatter `name` disagrees with its directory is not resolvable by `-s`;
 * a skill whose `Inputs`/`Output`/`Rules` section went missing is a contract with a hole in it;
 * the unattended contract inlined in a recipe is the duplication this change removed;
+* a rule moved out of the recipes never arriving in the skill it moved to, or restated inline in a
+  recipe — the search legs' 1.7-2.3 KB prompts and the three ~4.7 KB rule variables (issue #638);
 * an `AGENTS.md` that no longer states the rule lets the seam be deleted silently;
 * a `_setup` that no longer registers the directory leaves every leg preloading nothing.
 
@@ -46,17 +48,29 @@ UNATTENDED_SKILL = "bot-unattended"
 REQUIRED_SECTIONS = ("## Inputs", "## Output", "## Rules")
 #: Text that belongs in `bot-unattended/SKILL.md` and nowhere near a make recipe.
 INLINE_UNATTENDED = "NEVER ask a question"
-#: The rule AGENTS.md must keep, so the seam cannot be deleted silently. AGENTS.md is a
-#: write-protected file in this repo (the owner applies rule text), so the gate cannot require the
-#: paragraph here: it asserts the seam's own documented block in the Makefile instead, and
-#: `report` prints whether AGENTS.md already states the rule (owed, issue #549).
+#: The rule AGENTS.md must keep, so the seam cannot be deleted silently. The gate's `check`
+#: asserts the seam's own documented block in the Makefile (always enforceable); `report` prints
+#: whether AGENTS.md states the rule too — §2 rule 6p — which issue #638 landed.
 AGENTS_MARKER = "**Every agent leg runs from a project skill"
 #: The seam's documentation, in the file the seam lives in — enforced, unlike the AGENTS.md prose.
 MAKEFILE_MARKER = "## Every agent leg runs from a project SKILL"
 #: `hermes -z` callers with no bot contract to carry (documented, not skipped by accident).
 PROBES = {Path("scripts") / "hermes_smoke.sh"}
-#: A leg's inline prompt is a pointer plus that run's parameters.
-PROMPT_BUDGET = 3200
+#: A leg's inline prompt is a pointer plus that run's parameters. 900 characters covers the
+#: longest pointer (a search leg, whose keyword list IS a parameter) and nothing more: the rules a
+#: leg obeys used to occupy 1.7-2.3 KB per search recipe and three ~4.7 KB variables, and a budget
+#: of 3200 let that whole rulebook sit "inside budget" (issue #638).
+PROMPT_BUDGET = 900
+#: A rule retired from the recipes into a skill (issue #638). Each MUST appear in its skill and MUST
+#: NOT appear in any recipe: the duplication is what this gate exists to prevent, and a rule that
+#: left the recipe and never arrived in the skill is a contract with a hole in it.
+RETIRED_RULES = {
+    "engine_repo": "data-search",
+    "system_ram_min": "data-search",
+    "execute_code": "data-search",
+    "/status/<id>": "data-search",
+    "reshares and views": "data-search",
+}
 
 _TARGET = re.compile(r"^([A-Za-z0-9_.-]+):")
 _SKILL_FLAG = re.compile(r"(?:^|\s)(?:-s|--skills)[\s=]+(\S+)")
@@ -169,6 +183,17 @@ def check(root: Path = REPO_ROOT) -> list[str]:
             findings.append(f"{target}: prompt is {size} characters (budget {PROMPT_BUDGET}) — the "
                             f"rules crept back into the recipe")
 
+    for needle, skill_name in sorted(RETIRED_RULES.items()):
+        path = skills / skill_name / SKILL_FILE
+        body = path.read_text(encoding="utf-8") if path.is_file() else ""
+        if needle not in body:
+            findings.append(f"{path.relative_to(root)} no longer states '{needle}' — the rule left "
+                            f"the recipes and never arrived in the skill it was moved to")
+        offenders = sorted(t for t, recipe in found.items() if needle in recipe)
+        if offenders:
+            findings.append(f"{', '.join(offenders)} restate '{needle}' inline — it belongs in "
+                            f"{SKILLS_DIR / skill_name / SKILL_FILE}, not in a recipe")
+
     agents = root / "AGENTS.md"
     if MAKEFILE_MARKER not in text:
         findings.append(f"the Makefile no longer documents the seam (marker: {MAKEFILE_MARKER}) — "
@@ -205,14 +230,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"skill {path.parent.name:24s} name={fields.get('name', '-')}")
         agents = root / "AGENTS.md"
         stated = agents.is_file() and AGENTS_MARKER in agents.read_text(encoding="utf-8")
-        print(f"AGENTS.md rule (issue #549): {'stated' if stated else 'OWED (AGENTS.md is write-protected)'}")
+        print(f"AGENTS.md rule 6p (issues #549/#638): {'stated' if stated else 'OWED'}")
         return 0
     findings = check(root)
     for f in findings:
         print(f"FAIL: {f}")
     if findings:
         print(f"\n[agent-skills] {len(findings)} finding(s). A bot leg's contract is a project "
-              f"skill preloaded with `hermes -s`; see AGENTS.md rule owed by issue #549.")
+              f"skill preloaded with `hermes -s`; see AGENTS.md rule 6p.")
         return 1
     print("[agent-skills] ok: every leg preloads an existing skill and the unattended contract")
     return 0

@@ -145,14 +145,23 @@ def test_post_signal_never_fails():
 
 
 def test_prompts_ask_for_post_url():
+    """Issue #638: the search rules live in the skill the legs preload (`data-search`),
+    so the post-signal contract is asserted there, at the same strength, and each leg is
+    asserted to preload it and to keep no copy in its own recipe."""
+    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    flat = " ".join(skill.replace("`", "").split())
     text = (ROOT / "Makefile").read_text()
+    check("skill: requires the …/status/<id> post URL", "/status/<id>" in flat, flat[:160])
+    check("skill: rejects placeholder/profile URLs",
+          "never the bare mirror URL or a profile page" in flat, flat[:200])
+    check("skill: per-post counts as integers",
+          "likes, comments, reshares and views as integers" in flat, flat[:200])
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
-        body = text[text.index(f"_search-{b}:\n"):]
-        prompt = re.search(r'hermes -z "(.*?)" \\', body, re.S).group(1)
-        check(f"prompt {b}: requires the …/status/<id> post URL", "/status/<id>" in prompt)
-        check(f"prompt {b}: rejects placeholder/profile URLs", "never the bare mirror URL or a profile page" in prompt)
-        check(f"prompt {b}: per-post counts as integers",
-              "likes, comments, reshares and views as integers" in prompt)
+        recipe = text[text.index(f"_search-{b}:\n"):].split("\n.PHONY", 1)[0]
+        check(f"prompt {b}: preloads the skill that carries the post rule",
+              "-s data-search,bot-unattended" in recipe, recipe[-160:])
+        check(f"prompt {b}: keeps no copy of the post rule",
+              "/status/<id>" not in recipe, recipe[-160:])
 
 
 def main() -> int:
