@@ -44,6 +44,14 @@ row set, the exit code and the snapshot write rule are unchanged.
 
 - **Test:** tests/test_raw_quarantine.py::test_a_malformed_hf_is_reported_as_malformed
 
+#### Scenario: a sibling row carried the only token
+
+- **Given** a raw snapshot whose offending row states no HF-shaped token while ANOTHER model's row in the same snapshot carries one (in its `hf` or in free text), with the offending row first in one run and last in another
+- **When** the correction runs
+- **Then** the offending row's `QUARANTINED:` line says THIS row states none and names the sibling field that carried one, so a leg that lost the field on every row is distinguishable from a post that states no repo — and the answer does not depend on which row was quarantined first
+
+- **Test:** tests/test_raw_quarantine.py::test_a_sibling_rows_token_is_not_claimed_as_this_rows
+
 #### Scenario: the report stays bounded
 
 - **Given** a row carrying a very long HF-shaped token in its captured text
