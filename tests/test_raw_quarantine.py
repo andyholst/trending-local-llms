@@ -24,6 +24,12 @@ states are now DISTINCT:
   5. Ingest refuses a NEW model whose `hf` is empty (loudly, naming the snapshot)
      and keeps the rest of the merge, even when the merge runs before
      `correct-raw` — while an EXISTING model still merges and keeps its `hf`.
+  6. The quarantined line for an un-derivable `hf` DIAGNOSES what the captured
+     row held (issue #382): an HF repo link in another field, an `hf` value that
+     is not `owner/repo`, a `formats[i].hf`, a token in a sibling row of the same
+     snapshot, or none anywhere — bounded, never invented — so the artifact alone
+     separates "the post states no repo" from "the agent forgot to copy one it
+     had".
 
 Run:  python3 tests/test_raw_quarantine.py   or   make test
 """
@@ -344,6 +350,142 @@ def test_ingest_refuses_a_new_model_without_an_hf():
           any(e.get("tps") == "40" for e in existing["engines"]), existing["engines"])
 
 
+def test_a_row_that_held_a_repo_says_so_in_the_report():
+    """Issue #382: the run's log is the ONLY evidence left, so it must say whether
+    the row HAD a repo id and never copied it — the opposite fix from a post that
+    states none."""
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "raw").mkdir()
+        (d / "models.json").write_text(json.dumps(base_store()))
+        snap = d / "raw" / "nvidia-20261020-120000.json"
+        row = raw_model("dropped-hf", hf=None, post=POST_B)
+        row["why"] = "runs great on a 3060, weights at https://huggingface.co/Qwen/Qwen3.6-27B"
+        snap.write_text(json.dumps(snapshot([raw_model("good-model", post=POST_A), row])))
+
+        proc = run_correct_raw(d)
+        after = json.loads(snap.read_text())
+        reported = [ln for ln in proc.stdout.splitlines() if "QUARANTINED:" in ln]
+
+        check("diagnosis: the step still exits 0", proc.returncode == 0, proc.stdout[-600:])
+        check("diagnosis: the diagnosed row is still EXCLUDED (report-only)",
+              [m["id"] for m in after["models"]] == ["good-model"],
+              [m["id"] for m in after["models"]])
+        check("diagnosis: ONE line, naming the model, the reason, the post",
+              len(reported) == 1 and "dropped-hf" in reported[0]
+              and "hf missing (cannot derive)" in reported[0] and POST_B in reported[0],
+              reported)
+        check("diagnosis: it names the FIELD the repo id sat in and quotes it",
+              bool(reported) and "'why'" in reported[0]
+              and "https://huggingface.co/Qwen/Qwen3.6-27B" in reported[0], reported)
+        check("diagnosis: it says the repo never reached 'hf' (a copy, not a gap)",
+              bool(reported) and "never reached 'hf'" in reported[0], reported)
+        ok, why = conforms(after)
+        check("diagnosis: the remaining snapshot still conforms", ok, why)
+
+    # The diagnosis QUOTES captured text — bounded, so a long paste cannot flood
+    # the log (and the line stays ONE line the aggregate can read).
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "raw").mkdir()
+        (d / "models.json").write_text(json.dumps(base_store()))
+        snap = d / "raw" / "cpu-20261020-120000.json"
+        owner, repo = "o" * 120, "r" * 120
+        row = raw_model("long-token", hf=None, post=POST_A)
+        row["why"] = f"see huggingface.co/{owner}/{repo}"
+        snap.write_text(json.dumps(snapshot([row], backend="cpu")))
+        proc = run_correct_raw(d)
+        line = next((ln for ln in proc.stdout.splitlines() if "QUARANTINED:" in ln), "")
+        check("bounded: the line stays ONE line", "\n" not in line and line != "", line[:200])
+        check("bounded: the quoted token is truncated, the whole paste is not dumped",
+              owner not in line and "QUARANTINED:" in line and "never reached 'hf'" in line,
+              len(line))
+        check("bounded: the line is still short enough to read", 0 < len(line) <= 400, len(line))
+
+
+def test_a_row_that_states_no_repo_says_that_too():
+    """The other half of the pair: nothing to copy means the gap is real."""
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "raw").mkdir()
+        (d / "models.json").write_text(json.dumps(base_store()))
+        snap = d / "raw" / "metal-20261020-120000.json"
+        row = raw_model("no-repo", hf=None, post=POST_B)
+        row["why"] = "runs fine on an M4 with 16 GB and no downloadable repo was posted"
+        snap.write_text(json.dumps(snapshot([row], backend="metal")))
+
+        proc = run_correct_raw(d)
+        reported = [ln for ln in proc.stdout.splitlines() if "QUARANTINED:" in ln]
+        check("no-repo: ONE line says the snapshot carries no HF-shaped token",
+              len(reported) == 1 and "no HF-shaped token anywhere in the snapshot" in reported[0],
+              reported)
+        check("no-repo: it still names the model, the reason and the post",
+              bool(reported) and "no-repo" in reported[0]
+              and "hf missing (cannot derive)" in reported[0] and POST_B in reported[0],
+              reported)
+
+
+def test_a_sibling_rows_token_is_not_claimed_as_this_rows():
+    """A token in ANOTHER model's row is a SNAPSHOT fact, never evidence about
+    this row — and the answer must not depend on which row was quarantined first."""
+    for order in ("bare-first", "bare-last"):
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            (d / "raw").mkdir()
+            (d / "models.json").write_text(json.dumps(base_store()))
+            snap = d / "raw" / "nvidia-20261020-120000.json"
+            bare = raw_model("bare", hf=None, post=POST_A)
+            bare["why"] = "nothing downloadable here"
+            sibling = raw_model("sibling", hf=None, post=POST_B)
+            sibling["why"] = "weights at https://huggingface.co/Qwen/Qwen3.6-27B"
+            rows = [bare, sibling] if order == "bare-first" else [sibling, bare]
+            snap.write_text(json.dumps(snapshot(rows)))
+
+            proc = run_correct_raw(d)
+            line = next((ln for ln in proc.stdout.splitlines()
+                         if "QUARANTINED:" in ln and "/bare:" in ln), "")
+            check(f"sibling ({order}): THIS row states none, another row's field carries one",
+                  "THIS row states none" in line and "'why'" in line, line)
+            check(f"sibling ({order}): the sibling's own line quotes ITS link",
+                  any("QUARANTINED:" in ln and "/sibling:" in ln
+                      and "never reached 'hf'" in ln
+                      for ln in proc.stdout.splitlines()), proc.stdout[-600:])
+
+
+def test_a_format_hf_is_reported_as_the_rows_repo():
+    """The repo can be in the row WITHOUT the top-level `hf`: say so, so the fix is
+    a copy (formats[i].hf -> hf), not a re-search."""
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "amd-20261020-120000.json"
+        row = raw_model("fmt-only", hf=None, post=POST_A)
+        row["formats"] = [{"name": "GGUF", "hf": "Qwen/Qwen3.6-27B"}]
+        path.write_text(json.dumps(snapshot([row], backend="amd")))
+
+        notes = SC.correct_snapshot(path, base_store())
+        q = [n for n in notes if n.startswith("QUARANTINED:")]
+        check("format: the row is quarantined with the format's id named",
+              len(q) == 1 and "formats[0].hf" in q[0] and "Qwen/Qwen3.6-27B" in q[0], notes)
+        check("format: it says the repo was IN the row",
+              bool(q) and "the repo was in the row" in q[0], q)
+
+
+def test_a_malformed_hf_is_reported_as_malformed():
+    """A value that was CAPTURED but cannot become `owner/repo` is a different
+    defect from an absent one — the report must not call it missing evidence."""
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "nvidia-20261020-120000.json"
+        row = raw_model("bad-id", hf="https://huggingface.co/", post=POST_A)
+        path.write_text(json.dumps(snapshot([row])))
+
+        notes = SC.correct_snapshot(path, base_store())
+        q = [n for n in notes if n.startswith("QUARANTINED:")]
+        check("malformed: the captured value is quoted and called malformed",
+              len(q) == 1 and "https://huggingface.co/" in q[0]
+              and "malformed, not absent" in q[0], notes)
+        check("malformed: the report does NOT claim the snapshot lacked a token",
+              bool(q) and "no HF-shaped token anywhere" not in q[0], q)
+
+
 def test_the_module_is_wired_into_the_suite():
     check("wiring: the runner discovers this module and `make test` runs the runner",
           wired(__file__), "")
@@ -352,6 +494,11 @@ def test_the_module_is_wired_into_the_suite():
 def main() -> int:
     print("Raw-snapshot quarantine: one un-derivable model never discards a refresh")
     test_an_underivable_model_is_quarantined_and_the_rest_merges()
+    test_a_row_that_held_a_repo_says_so_in_the_report()
+    test_a_row_that_states_no_repo_says_that_too()
+    test_a_sibling_rows_token_is_not_claimed_as_this_rows()
+    test_a_format_hf_is_reported_as_the_rows_repo()
+    test_a_malformed_hf_is_reported_as_malformed()
     test_a_known_model_is_repaired_from_the_store()
     test_a_measurement_without_a_post_is_dropped()
     test_a_capture_where_no_snapshot_can_be_read_is_the_unusable_state()
