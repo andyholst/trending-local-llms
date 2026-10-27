@@ -64,6 +64,11 @@ def _tree(td: Path, makefile: str, skills: dict[str, str] | None = None) -> Path
 
 
 GOOD_SKILL = "---\nname: {name}\ndescription: d\n---\n\n## Inputs\n- x\n\n## Output\n- y\n\n## Rules\n- z\n"
+#: The retired rules (issue #638) must be stated by the skill they moved to, so a fixture tree whose
+#: `data-search` skill lacks them is red for the right reason. This is the minimal carrier.
+DATA_SEARCH_SKILL = GOOD_SKILL.format(name="data-search") + "".join(
+    f"- {needle}\n" for needle in (
+        "engine_repo", "system_ram_min", "execute_code", "/status/<id>", "reshares and views"))
 SEAM = "# " + CAS.MAKEFILE_MARKER + "\n_hermes-skills-register:\n\t@true\n"
 
 
@@ -105,7 +110,7 @@ def test_the_real_tree_passes_the_gate():
 def test_the_gate_fails_each_defect():
     good = GOOD_SKILL
     base_skills = {CAS.UNATTENDED_SKILL: good.format(name=CAS.UNATTENDED_SKILL),
-                   "data-search": good.format(name="data-search")}
+                   "data-search": DATA_SEARCH_SKILL}
     leg = ('\thermes -z "pointer" \\\n\t\t-m $(HERMES_ALIAS) --reasoning none '
            '$(HERMES_NONINTERACTIVE) -s data-search,bot-unattended\n')
 
@@ -136,6 +141,14 @@ def test_the_gate_fails_each_defect():
             "_hermes-skills-register:\n\t@true\nsearch:\n" + leg, base_skills),
         "a leg whose prompt grew back into a rulebook": (
             SEAM + "search:\n" + leg.replace('"pointer"', '"' + "x" * 4000 + '"'), base_skills),
+        # Issue #638: a rule retired into the skill may not be restated in a recipe, and a skill
+        # that lost it is a contract with a hole in it.
+        "a recipe that restates a retired rule": (
+            SEAM + "search:\n" + leg.replace('"pointer"', '"pointer engine_repo"'), base_skills),
+        "a skill that lost a retired rule": (
+            SEAM + "search:\n" + leg,
+            {CAS.UNATTENDED_SKILL: good.format(name=CAS.UNATTENDED_SKILL),
+             "data-search": good.format(name="data-search")}),
     }
     for name, (mk, skills) in cases.items():
         with tempfile.TemporaryDirectory() as td:

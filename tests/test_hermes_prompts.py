@@ -186,16 +186,29 @@ def test_make_dry_run_single_hermes_command():
           f"rc={p.returncode} {[c[:50] for c in _logical_commands(p.stdout)][:2]}")
 
 
+def _data_search_flat() -> str:
+    """The search legs' contract, flattened: the skill is where its rules live (issue #638)."""
+    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    return " ".join(skill.replace("`", "").split())
+
+
 def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():
     """Issue #167: the dimension ask was four byte-identical copies buried in the
     legs' prompts, and the latest refresh emitted ZERO of the five values while the
     posts named them (the analysis reports 5/25 models with a free-text RAM figure).
-    No value can be stored unless the gathering step actually asks for it."""
-    mk = (ROOT / "Makefile").read_text()
+    No value can be stored unless the gathering step actually asks for it.
 
-    # Given ONE shared definition
-    check("make: DIM_ASK is defined exactly once", mk.count("DIM_ASK :=") == 1, mk.count("DIM_ASK :="))
-    definition = mk.split("DIM_ASK :=", 1)[1].split("\n", 1)[0]
+    Issue #638: the ask is no longer a `Makefile` variable expanded into four recipes —
+    it lives in the `data-search` skill every search leg preloads, so ONE reviewed file
+    states it and no recipe can carry a divergent copy.
+    """
+    mk = (ROOT / "Makefile").read_text()
+    definition = _data_search_flat()
+
+    # Given ONE shared definition, in the skill the legs preload
+    check("make: the dimension ask is no longer a Makefile variable",
+          "DIM_ASK :=" not in mk, mk.count("DIM_ASK :="))
+    check("skill: states the dimension ask", "MODEL DIMENSIONS" in definition, definition[:90])
 
     # Then  it names every dimension the store and the search contract can hold
     for dim in ("system_ram_min", "weight_gb", "context_tokens", "storage_offload",
@@ -207,8 +220,6 @@ def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():
           "belongs in its field" in definition and "NOT only" in definition, definition[-120:])
     check("dimension ask: never guess, derive or invent",
           "never guess" in definition and "invent one" in definition, definition[-120:])
-    check("dimension ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
-          '"' not in definition, definition[:60])
 
     # Then  it says WHICH dimensions the MEASUREMENT itself carries (issue #371): a
     #       minimum engine build or a set of required flags is a property of the
@@ -219,12 +230,13 @@ def test_every_search_leg_asks_for_the_model_dimensions_from_one_definition():
     check("dimension ask: names storage_offload ON the measurement",
           "storage_offload on the measurement" in definition, definition[-200:])
 
-    # Then  every leg references it and keeps no divergent copy of the old sentence
+    # Then  every leg preloads that skill and keeps no divergent copy in its recipe
     for leg in ("nvidia", "metal", "cpu", "amd"):
         recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
-        check(f"{leg}: takes the ask from $(DIM_ASK)", "$(DIM_ASK)" in recipe, recipe[-140:])
-        check(f"{leg}: carries no second copy of the buried sentence",
-              "also record the optional model fields" not in recipe, "")
+        check(f"{leg}: preloads the skill that carries the ask",
+              "-s data-search,bot-unattended" in recipe, recipe[-140:])
+        check(f"{leg}: carries no copy of the ask in its prompt",
+              "system_ram_min" not in recipe and "engine_min_version" not in recipe, recipe[-140:])
 
 
 def test_every_search_leg_asks_for_the_engine_rule_from_one_definition():
@@ -232,17 +244,18 @@ def test_every_search_leg_asks_for_the_engine_rule_from_one_definition():
     named no engine (`Nvidia/Qwen3.8-Flash-Next-FP4-Local` running NVFP4 became
     engine `NVIDIA FP4-Local`). An engine with no repo can never be registered, so
     the whole refresh PR went red for it. The rule that forbids it was four
-    byte-identical inline copies; it is now ONE definition no leg can diverge from.
+    byte-identical inline copies; it is now ONE definition in the skill (issue #638).
     """
     mk = (ROOT / "Makefile").read_text()
+    definition = _data_search_flat()
 
-    # Given ONE shared definition
-    check("make: ENGINE_ASK is defined exactly once", mk.count("ENGINE_ASK :=") == 1, mk.count("ENGINE_ASK :="))
-    parts = mk.split("ENGINE_ASK :=", 1)
-    definition = parts[1].split("\n", 1)[0] if len(parts) > 1 else ""
+    # Given ONE shared definition, in the skill the legs preload
+    check("make: the engine rule is no longer a Makefile variable",
+          "ENGINE_ASK :=" not in mk, mk.count("ENGINE_ASK :="))
+    check("skill: states the engine rule", "The engine rule" in definition, definition[:120])
 
     # Then  it requires an engine the POST names, and forbids manufacturing one
-    for want in ("must be the engine the post ACTUALLY NAMES",
+    for want in ("the engine the post ACTUALLY NAMES",
                  "names no engine at all, SKIP that measurement",
                  "a t/s with no engine is not a valid entry",
                  "A model name, a vendor name or a quantization is NEVER an engine",
@@ -255,15 +268,14 @@ def test_every_search_leg_asks_for_the_engine_rule_from_one_definition():
                  "add engine_repo =",
                  "never invent or guess a URL"):
         check(f"engine ask: keeps the existing rule ({want[:38]}…)", want in definition, definition[:120])
-    check("engine ask: carries no double quote (it lives inside `hermes -z \"…\"`)",
-          '"' not in definition, definition[:60])
 
-    # Then  every leg takes it from $(ENGINE_ASK) and keeps no divergent copy
+    # Then  every leg preloads it and keeps no divergent copy
     for leg in ("nvidia", "metal", "cpu", "amd"):
         recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
-        check(f"{leg}: takes the engine rule from $(ENGINE_ASK)", "$(ENGINE_ASK)" in recipe, recipe[-160:])
-        check(f"{leg}: carries no second copy of the buried engine sentence",
-              "Use engine names exactly as registered in data/models.json" not in recipe, "")
+        check(f"{leg}: preloads the skill that carries the engine rule",
+              "-s data-search,bot-unattended" in recipe, recipe[-160:])
+        check(f"{leg}: carries no copy of the engine rule in its prompt",
+              "engine_repo" not in recipe and "ACTUALLY NAMES" not in recipe, recipe[-160:])
 
 
 def test_prompt_permutations():

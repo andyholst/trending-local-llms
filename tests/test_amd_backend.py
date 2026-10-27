@@ -490,14 +490,22 @@ def test_wiring_parity():
     exec(compile((ROOT / "scripts" / "smoke_search.py").read_text(), "smoke_search.py", "exec"), ns)
     check("smoke: one keyword list per leg", sorted(ns["BACKEND_KEYWORDS"]) == sorted(legs))
     prompt = mk[mk.index("_search-amd:\n"):].split("\n", 2)[1]
-    for needle, why in (("--write-raw amd <", "writes data/raw/amd-<UTC>.json"),
-                        ("record the AMD card exactly as posted in hardware", "the card is what classifies ROCm"),
+    # Issue #638: the AMD leg's rules live in the skill it preloads, not in its prompt.
+    amd_skill = " ".join(
+        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        .replace("`", "").split()).lower()
+    for needle, why in (("record the AMD card exactly as posted in hardware", "the card is what classifies ROCm"),
                         ("put the API (ROCm, HIP, Vulkan) in quant, never in the engine name", "no pseudo-engines"),
                         ("never prompt-processing or prefill t/s", "decode t/s only"),
                         ("skip datacenter Instinct", "8-48 GB scope")):
-        check(f"prompt amd: {why}", needle in prompt)
+        check(f"skill amd: {why}", needle.lower() in amd_skill, amd_skill[:160])
+    check("prompt amd: writes data/raw/amd-<UTC>.json", "--write-raw amd <" in prompt, prompt[:200])
+    check("prompt amd: takes its parameters from the backend name", "backend=amd" in prompt, prompt[:200])
+    check("prompt amd: preloads the skill", "-s data-search,bot-unattended" in mk[mk.index("_search-amd:\n"):].split("\n.PHONY", 1)[0], "")
     check("prompt amd: no stray NVIDIA/CPU leg text (copy-paste guard)",
-          "--write-raw cpu" not in prompt and "CPU/embedded/edge keywords" not in prompt)
+          "--write-raw cpu" not in prompt and "CPU/embedded/edge keywords" not in prompt, prompt[:160])
+    check("prompt amd: keeps no copy of the AMD rules inline",
+          "record the AMD card exactly as posted" not in prompt, prompt[:160])
     if yaml is None:
         print("  SKIP workflow parity (PyYAML not installed)")
         return

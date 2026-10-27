@@ -57,16 +57,19 @@ def _load_smoke_backends() -> dict:
 
 
 def _makefile_keywords(backend: str) -> list:
-    """Extract the keyword list the Makefile `_search-<backend>` prompt embeds:
-    'Search with <X> keywords ONLY (<k1>, <k2>, ...), one query at a time'."""
+    """Extract the keyword list the Makefile `_search-<backend>` recipe passes as a parameter.
+
+    Issue #638: the keywords are a PARAMETER of the pointer prompt —
+    `Follow the preloaded skill data-search. Parameters: backend=<b>; keywords=(<k1>, <k2>, …);
+    model_queries=…; write_raw=…` — so the smoke and the leg still search exactly the same strings.
+    """
     text = MAKEFILE.read_text()
     target = "_search-" + backend + ":\n"
-    body = text[text.index(target):]
-    # prompt value is the quoted hermes -z "..." string
-    m = re.search(r'keywords ONLY \((.*?)\), one query at a time', body)
+    body = text[text.index(target):].split("\n.PHONY", 1)[0]
+    m = re.search(r"keywords=\((.*?)\)", body, re.S)
     if not m:
         return []
-    return [k.strip() for k in m.group(1).split(",")]
+    return [k.strip() for k in m.group(1).split(",") if k.strip()]
 
 
 def test_an_upstream_error_page_is_its_own_outage_label():

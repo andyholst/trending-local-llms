@@ -318,16 +318,21 @@ def test_contracts_and_prompts():
     check("contract: store measurements do NOT accept engine_repo (stripped at ingest)",
           "engine_repo" not in mc["properties"]["models"]["items"]["properties"]["engines"]["items"]["properties"])
     mk = (ROOT / "Makefile").read_text()
-    # The engine rules are ONE definition the legs expand (`ENGINE_ASK`, issue #378),
-    # so they are checked once there and each leg is checked to expand it — a leg
+    # The engine rules are ONE definition, in the skill every search leg preloads
+    # (issue #638 — they used to be a `Makefile` variable expanded into four recipes),
+    # so they are checked once there and each leg is checked to preload it — a leg
     # cannot carry a divergent copy of them.
-    engine_ask = mk.split("ENGINE_ASK :=", 1)[1].split("\n", 1)[0] if "ENGINE_ASK :=" in mk else ""
+    engine_ask = " ".join(
+        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        .replace("`", "").split())
     check("engine ask: defines engine vs harness/app/benchmark", "harnesses, agent frameworks" in engine_ask)
     check("engine ask: asks for engine_repo, never invent",
           "engine_repo" in engine_ask and "never invent" in engine_ask)
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         prompt = mk[mk.index(f"_search-{b}:\n"):].split("\n", 2)[1]
-        check(f"prompt {b}: takes the engine rules from $(ENGINE_ASK)", "$(ENGINE_ASK)" in prompt, prompt[-120:])
+        check(f"prompt {b}: preloads the skill that carries the engine rules",
+              "-s data-search,bot-unattended" in mk[mk.index(f"_search-{b}:\n"):].split("\n.PHONY", 1)[0],
+              prompt[-120:])
     fix_recipe = re.search(r"\n_fix:\n((?:\t[^\n]*\n)+)", mk)
     fix = fix_recipe.group(1) if fix_recipe else ""
     # Issue #549: the fixer's rules are its project skill; the recipe is a pointer.
@@ -435,17 +440,22 @@ def test_engine_topics_beat_a_bundled_harness():
 
 def test_search_prompts_look_up_missing_repos():
     """mlx-serve's post linked no repo, so engine_repo was empty and ingest
-    could not register it. The prompts must ask for ONE verified lookup."""
+    could not register it. The rule must ask for ONE verified lookup.
+
+    Issue #638: the rule is stated once in the `data-search` skill the legs preload,
+    not in a `Makefile` variable expanded into four prompts.
+    """
     mk = (ROOT / "Makefile").read_text()
     lines = [l for l in mk.splitlines() if "hermes -z" in l and "--write-raw" in l]
-    # The lookup rule is ONE definition the legs expand (`ENGINE_ASK`, issue #378):
-    # it is stated once there, and each leg is checked to expand it rather than to
-    # carry its own copy.
-    engine_ask = mk.split("ENGINE_ASK :=", 1)[1].split("\n", 1)[0] if "ENGINE_ASK :=" in mk else ""
+    engine_ask = " ".join(
+        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        .replace("`", "").split())
     check("engine ask: asks for a verified repo lookup when the post links none",
           "links no repo" in engine_ask and "page resolves" in engine_ask, engine_ask[-160:])
-    check("prompts: every search prompt takes the engine rules from $(ENGINE_ASK)",
-          lines and all("$(ENGINE_ASK)" in l for l in lines), len(lines))
+    check("prompts: every search prompt preloads the skill that carries the rule",
+          lines and all("data-search" in l for l in lines), len(lines))
+    check("prompts: no search prompt carries the rule inline",
+          lines and not any("links no repo" in l for l in lines), len(lines))
 
 
 def test_classifier_signals():

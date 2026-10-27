@@ -51,72 +51,93 @@ def check(name, cond, detail=""):
 # ---------------------------------------------------------------------------
 # the prompt names the variable — and can never carry its value
 # ---------------------------------------------------------------------------
-def test_every_leg_prompt_names_the_variable_it_must_use():
-    """The measured defect: `Bearer \\$${FI...KEY}`, a name that does not exist."""
+def _data_search_flat() -> str:
+    """The search legs' contract, flattened (issue #638: the rules live in the skill)."""
+    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    return " ".join(skill.replace("`", "").split())
+
+
+def test_the_skill_names_the_variable_the_agent_must_use():
+    """The measured defect: `Bearer \\$${FI...KEY}`, a name that does not exist.
+
+    Issue #638: the name is no longer in a recipe at all — it is in the skill the four legs
+    preload. That is also the stronger shape: a recipe that cannot name the key cannot
+    expand it into a prompt.
+    """
     mk = (ROOT / "Makefile").read_text()
-    for leg in ("nvidia", "metal", "cpu", "amd"):
-        prompt = re.search(rf"\n_search-{leg}:\n(.*?)\n\n", mk, re.S)
-        body = prompt.group(1) if prompt else ""
-        check(f"prompt {leg}: names the real variable",
-              r"\$${FIRECRAWL_API_KEY}" in body, body[:120])
-        check(f"prompt {leg}: carries no elided name",
-              "FI...KEY" not in body and "FI..KEY" not in body, "elided form present")
+    flat = _data_search_flat().lower()
+    check("skill: names the real variable", "${firecrawl_api_key}" in flat, flat[:140])
+    check("skill: says it is read BY NAME from the environment",
+          "from the environment by name" in flat, flat[:200])
+    check("skill: carries no elided name", "fi...key" not in flat, "elided form present")
     check("prompt: no elided variable name anywhere in the Makefile",
           mk.count("FI...KEY") == 0, mk.count("FI...KEY"))
     # Scoped to the prompts: the Makefile legitimately mentions the mask `***` in prose.
     for leg in ("nvidia", "metal", "cpu", "amd"):
         prompt = re.search(rf"\n_search-{leg}:\n(.*?)\n\n", mk, re.S)
         body = prompt.group(1) if prompt else ""
+        check(f"prompt {leg}: names no credential variable at all (nothing to expand)",
+              "FIRECRAWL_API_KEY" not in body, body[:140])
+        check(f"prompt {leg}: preloads the skill that names it",
+              "-s data-search,bot-unattended" in body, body[:140])
         check(f"prompt {leg}: no asterisk placeholder in the header instruction",
               "Authorization: Bearer ***" not in body, body[:120])
 
 
-def test_every_leg_prompt_pins_the_tool_the_key_reaches():
+def test_the_skill_pins_the_tool_the_key_reaches():
     """Issue #362: #359 made the key visible in the TERMINAL tool, and `execute_code`
     children stay keyless — `tools/code_execution_env.py::_scrub_child_env` drops every
     name carrying a secret substring (`KEY`, `TOKEN`, `AUTH` …) and never unwraps
     `_HERMES_FORCE_`, while `env_passthrough` refuses a blocklisted provider name. The
     prompts said only "POST … with header", so the tool was the agent's choice: a leg
     that picks `execute_code` sends an EMPTY Bearer and brings back the silent 401.
+
+    Issue #638: the pin lives in the skill the legs preload, once.
     """
     mk = (ROOT / "Makefile").read_text()
+    flat = _data_search_flat().lower()
+    check("tool pin: names the terminal tool", "from the terminal tool" in flat, flat[:140])
+    check("tool pin: forbids execute_code", "never make it from execute_code" in flat,
+          flat[:140])
+    check("tool pin: names the empty header it causes",
+          "empty authorization header" in flat, flat[:140])
+    check("tool pin: names the 401 that follows", "http 401" in flat, flat[:140])
+    check("tool pin: names the in-process route",
+          "scripts/update_trending.py" in flat, flat[:140])
+    check("tool pin: a 401 is a blocker, not a key hunt",
+          "blocker to report" in flat and "never a reason to hunt for a key" in flat,
+          flat[-160:])
     for leg in ("nvidia", "metal", "cpu", "amd"):
         prompt = re.search(rf"\n_search-{leg}:\n(.*?)\n\n", mk, re.S)
         body = prompt.group(1) if prompt else ""
-        check(f"prompt {leg}: takes the tool pin from $(SCRAPE_ASK)",
-              "$(SCRAPE_ASK)" in body, body[:140])
-    definition = mk.split("SCRAPE_ASK :=", 1)[1].split("\n", 1)[0] if "SCRAPE_ASK :=" in mk else ""
-    check("tool pin: names the terminal tool", "TERMINAL tool" in definition, definition[:100])
-    check("tool pin: forbids execute_code", "Never make it from execute_code" in definition,
-          definition[:140])
-    check("tool pin: names the empty header it causes",
-          "EMPTY Authorization header" in definition, definition[:140])
-    check("tool pin: names the 401 that follows", "HTTP 401" in definition, definition[:140])
-    check("tool pin: names the in-process route",
-          "python3 scripts/update_trending.py" in definition, definition[:140])
-    check("tool pin: a 401 is a blocker, not a key hunt",
-          "blocker to report" in definition and "never a reason to hunt for a key" in definition,
-          definition[-140:])
+        check(f"prompt {leg}: preloads the skill that pins the tool",
+              "-s data-search,bot-unattended" in body, body[:140])
+        check(f"prompt {leg}: keeps no copy of the pin",
+              "execute_code" not in body, body[:140])
 
 
 def test_the_tool_pin_has_exactly_one_definition():
-    """ONE definition, like ENGINE_ASK / DIM_ASK: four inline copies would drift, and a
-    leg that kept the old sentence would silently reopen the keyless route (issue #362).
+    """ONE definition, like the engine rule and the dimension ask were: four inline copies
+    would drift, and a leg that kept the old sentence would silently reopen the keyless
+    route (issue #362). Issue #638 moved that ONE definition into the skill.
     """
     mk = (ROOT / "Makefile").read_text()
-    check("tool pin: SCRAPE_ASK is defined exactly once", mk.count("SCRAPE_ASK :=") == 1,
-          str(mk.count("SCRAPE_ASK :=")))
-    definition = mk.split("SCRAPE_ASK :=", 1)[1].split("\n", 1)[0] if "SCRAPE_ASK :=" in mk else ""
-    check("tool pin: carries no double quote (it lives inside `hermes -z \"…\"`)",
-          '"' not in definition, definition[:60])
-    check("tool pin: carries no `$` (the shell would expand it)",
-          "$" not in definition, definition[:60])
+    check("tool pin: the Makefile no longer defines an ask variable",
+          "SCRAPE_ASK :=" not in mk, mk.count("SCRAPE_ASK :="))
+    check("tool pin: no recipe restates the prohibition",
+          "Never make it from execute_code" not in mk, "inline copy present")
+    def states_it(path):
+        flat = " ".join(path.read_text().replace("`", "").split()).lower()
+        return "never make it from execute_code" in flat
+
+    hits = [p.parent.name for p in (ROOT / ".hermes" / "skills").glob("*/SKILL.md") if states_it(p)]
+    check("tool pin: exactly one skill states it", hits == ["data-search"], hits)
     for leg in ("nvidia", "metal", "cpu", "amd"):
         recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]
         check(f"{leg}: keeps no second copy of the pin",
               "Never make it from execute_code" not in recipe, recipe[-160:])
     # The pin must be reachable from a target CI runs, not from a variable nothing uses.
-    check("tool pin: a leg a workflow calls expands it",
+    check("tool pin: a leg a workflow calls preloads it",
           "make search-${{ matrix.backend }}" in
           (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text(), "")
 
@@ -210,8 +231,8 @@ def test_the_check_is_wired_to_a_make_target_ci_runs():
 
 def main() -> int:
     print("search-leg key wiring (issues #357/#355)")
-    test_every_leg_prompt_names_the_variable_it_must_use()
-    test_every_leg_prompt_pins_the_tool_the_key_reaches()
+    test_the_skill_names_the_variable_the_agent_must_use()
+    test_the_skill_pins_the_tool_the_key_reaches()
     test_the_tool_pin_has_exactly_one_definition()
     test_the_escaping_keeps_the_value_out_of_the_prompt()
     test_every_public_leg_checks_the_key_before_the_agent()
