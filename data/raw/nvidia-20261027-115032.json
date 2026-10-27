@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3-8-27b",
+      "name": "Qwen3.8-27B (Apple Silicon)",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "oMLX",
+          "tps": "72",
+          "hardware": "Mac Studio M4 Max (Apple Silicon)",
+          "quant": "MTP speculative decoding, 78% draft acceptance; code generation 72 tok/s, prose 53 tok/s",
+          "date": "2026-10-22",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113067771118379265",
+          "likes": 9,
+          "comments": 2,
+          "reshares": 1,
+          "views": 831,
+          "interactions": 13
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

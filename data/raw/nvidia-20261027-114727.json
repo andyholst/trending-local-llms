@@ -1,0 +1,123 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-04",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "53.2",
+          "hardware": "RTX 4070 12GB + i5-12600K + 64GB DDR5",
+          "quant": "Strata runtime; same post's llama.cpp figure on this box was 27 tok/s at 60k context",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 126,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 130,
+          "system_ram_min": "64GB",
+          "context_tokens": "60000"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "27",
+          "hardware": "RTX 4070 12GB + i5-12600K + 64GB DDR5",
+          "quant": "llama.cpp at 60k context",
+          "date": "2026-10-04",
+          "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+          "likes": 126,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 130,
+          "system_ram_min": "64GB",
+          "context_tokens": "60000"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Prism ML)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-09-27",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "54",
+          "hardware": "RTX 4070 Ti, same machine as an LFM2.5 3B comparison",
+          "quant": "Bonsai 2 27B PQ2, 64-token reasoning budget, 8K context, ~9.0GB VRAM",
+          "date": "2026-09-27",
+          "source_post": "https://lightbrd.com/brokevibecoder/status/2104236304099881362",
+          "likes": 155,
+          "comments": 4,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 163,
+          "weight_gb": "~9.0GB VRAM (PQ2)",
+          "context_tokens": "8192"
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-08-21",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "211",
+          "hardware": "single-GPU RTX 4070 12GB",
+          "quant": "Q2 quantization; ~4,900 tok/s read (prefill)",
+          "date": "2026-08-21",
+          "source_post": "https://lightbrd.com/decentricity/status/2090937320765825156",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q2 quantization"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B (35B MoE, 3B active)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "309",
+          "hardware": "RTX 5090 32GB",
+          "quant": "dense int4 27B (Qwen3.8-27B) 75.8 vs Marlin 77.1 on the same card; 35B MoE 309 tok/s with Humming vs 292 with Marlin",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "engine_min_version": "vLLM 0.32.0, --linear-backend humming",
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

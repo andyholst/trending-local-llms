@@ -1,0 +1,74 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "ExLlamaV3",
+          "tps": "73.1",
+          "hardware": "2x RTX 5060 Ti, tensor parallel 2",
+          "quant": "MiaAI_lab's one-click kit, EXL3 4.0 bpw with MTP, code decode on the same box/prompt where SLQ-EAR98 on vLLM did 33.0",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/tolewis/status/2114666190752645514",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 121,
+          "interactions": 104,
+          "weight_gb": "EXL3 4.0 bpw",
+          "context_tokens": "262144"
+        }
+      ]
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary Bonsai 2 27B (Prism ML)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "28",
+          "hardware": "Apple M5 Pro (unified memory)",
+          "quant": "Ternary Bonsai 2 27B ternary weights (5.95GB file)",
+          "date": "2026-10-25",
+          "likes": 13,
+          "comments": 2,
+          "reshares": 2,
+          "views": 940,
+          "weight_gb": "5.95GB",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114182765188993318",
+          "interactions": 0
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:52:43Z"
+}

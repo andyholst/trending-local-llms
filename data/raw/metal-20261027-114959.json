@@ -1,0 +1,32 @@
+{
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B (Liquid AI, Apple M5 Max)",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "why": "Liquid AI's open-weights 24B-total / 2B-active agent model decodes 184 tok/s on an Apple M5 Max; the MACHINA Summit post repeats the same Liquid AI figure.",
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184",
+          "hardware": "Apple M5 Max (Apple Silicon)",
+          "quant": "not stated in the post",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MACHINASUMMIT/status/2114684697556988257"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-27T11:50:21Z",
+  "backend": "metal"
+}
