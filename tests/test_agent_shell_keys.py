@@ -78,13 +78,23 @@ def test_the_list_names_every_credential_a_container_receives():
     for name in ("DOCKER_RUN", "TEST_RUN"):
         blk = re.search(rf"(?ms)^{name}\s*:=.*?(?=^\S|\Z)", mk)
         body = blk.group(0) if blk else ""
-        plain = re.findall(r"-e\s+(\$\([A-Z_]+\)|[A-Z_][A-Z0-9_]*)\b", body)
+        # A BARE `-e NAME` forwards a credential of the HOST's, so it must also be in the ONE list:
+        # Hermes strips a credential it was given unless the name is forced too. A literal
+        # `-e NAME=value` is a container SETTING — nothing of the host's travels, and the agent's
+        # shell needs nothing unwrapped (`PYTHONUNBUFFERED=1`, the setting this distinction exists
+        # for, issue #591) — but it must never BE a credential: a literal value is a baked secret,
+        # which rule 3e refuses outright. Hence two scans, not one weakened one.
+        plain = re.findall(r"-e\s+(\$\([A-Z_]+\)|[A-Z_][A-Z0-9_]*)(?=\s)", body)
         plain = [p for p in plain if not p.startswith(FORCE)]
+        literal = re.findall(r"-e\s+([A-Z_][A-Z0-9_]*)=", body)
         check(f"{name}: forwards the forced names", "$(AGENT_SHELL_FORWARD)" in body, body[-160:])
         for p in plain:
             resolved = "TYPESAFE_API_KEY" if p == "$(NERVE_KEY_ENV)" else p
             check(f"{name}: `-e {p}` is also in AGENT_SHELL_KEYS (no key the agent cannot see)",
                   resolved in keys, keys)
+        for p in literal:
+            check(f"{name}: the literal `-e {p}=…` setting is not a credential (a baked value, "
+                  f"rule 3e)", p not in keys, keys)
     for k in ("NOUS_API_KEY", "FIRECRAWL_API_KEY", "HF_TOKEN", "TYPESAFE_API_KEY"):
         check(f"AGENT_SHELL_KEYS names {k}", k in keys, keys)
 

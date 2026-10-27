@@ -21,8 +21,20 @@ So the stream is captured to a file and this redactor is the only thing that pri
 The script never prints a value: it prints the redacted lines and a redaction COUNT. A missing
 input is loud (exit 2) rather than an empty log that reads as a clean run.
 
+Two modes, ONE redaction:
+
+* `--in FILE` (post-mortem): redact a capture that already exists, write the redacted whole log
+  to `--out`, and print a bounded tail (`--tail N`).
+* `--stream` (LIVE, issue #591): read a command's stream from stdin and print each line AS IT
+  ARRIVES — redacted first, flushed immediately — while writing the raw capture to `--raw` and
+  the redacted copy to `--out`. A bot's repair round is otherwise invisible in the job log until
+  the step ends (measured: fix-bot run 39183131652 printed one line and then nothing for over an
+  hour), so "is the bot working?" could only be answered from a post-mortem. Redaction is what
+  makes liveness safe: the line is masked BEFORE it is printed, never after.
+
 Usage:
     python3 scripts/scrub_log.py --in implement.log --out implement.scrubbed.log --tail 60
+    my-command 2>&1 | python3 scripts/scrub_log.py --stream --raw run.log --out run.scrubbed.log
 """
 from __future__ import annotations
 
@@ -33,6 +45,7 @@ import re
 import sys
 import urllib.parse
 from pathlib import Path
+from typing import TextIO
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 #: ONE list of the variables that carry a credential (rule 6d) — never a second copy.
@@ -105,12 +118,70 @@ def redact(text: str, environ: dict[str, str] | None = None) -> tuple[str, int]:
     return text, count
 
 
+def stream(src: TextIO, raw_path: str | None, out_path: str | None,
+           environ: dict[str, str] | None = None) -> tuple[int, int]:
+    """Redact a LIVE stream line by line, printing each line the moment it arrives.
+
+    The line is masked FIRST and printed second, and both files are flushed per line, so a
+    reader watching the job log sees progress while the command is still running — and a killed
+    run still leaves the transcript it had reached. Returns `(lines, redactions)`.
+    """
+    raw = open(raw_path, "w", encoding="utf-8") if raw_path else None
+    out = open(out_path, "w", encoding="utf-8") if out_path else None
+    lines = 0
+    count = 0
+    try:
+        while True:
+            line = src.readline()
+            if not line:
+                break
+            lines += 1
+            if raw is not None:
+                raw.write(line)
+                raw.flush()
+            clean, hits = redact(line.rstrip("\n"), environ)
+            count += hits
+            if out is not None:
+                out.write(clean + "\n")
+                out.flush()
+            print(f"[agent] {clean}", flush=True)
+    finally:
+        for handle in (raw, out):
+            if handle is not None:
+                handle.close()
+    return lines, count
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Redact a captured agent log and print a bounded tail.")
-    parser.add_argument("--in", dest="src", required=True, help="the captured log to redact")
+    parser = argparse.ArgumentParser(description="Redact an agent log (a captured file, or a live stream) before it is printed.")
+    parser.add_argument("--in", dest="src", default=None, help="the captured log to redact")
+    parser.add_argument("--stream", action="store_true",
+                        help="redact stdin LIVE, printing each line as it arrives (issue #591)")
+    parser.add_argument("--raw", dest="raw", default=None,
+                        help="--stream only: write the RAW capture here (gitignored, never uploaded)")
     parser.add_argument("--out", dest="dst", default=None, help="write the REDACTED whole log here (the run artifact)")
     parser.add_argument("--tail", type=int, default=40, help="how many of the last lines to print (default 40)")
     args = parser.parse_args(argv)
+
+    if args.stream:
+        if args.src:
+            parser.error("--stream reads stdin; do not combine it with --in")
+        if not args.dst:
+            parser.error("--stream needs --out: the REDACTED log is the run artifact")
+        # Write what we read BEFORE reading it: `--raw` is a file, never a terminal, and a path we
+        # cannot open must be loud, not a silent drop of the transcript we promised to keep.
+        try:
+            lines, count = stream(sys.stdin, args.raw, args.dst)
+        except OSError as exc:
+            print(f"[scrub-log] FATAL: cannot write the stream to disk ({exc}) — a transcript that "
+                  f"cannot be kept must never look like a clean run.", file=sys.stderr)
+            return 2
+        print(f"[scrub-log] stream: {lines} line(s), {count} redaction(s); "
+              f"REDACTED log: {args.dst}", flush=True)
+        return 0
+
+    if not args.src:
+        parser.error("--in is required (or --stream to redact a live stream)")
 
     src = Path(args.src)
     if not src.is_file():

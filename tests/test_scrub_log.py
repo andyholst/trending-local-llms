@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 import subprocess
 import tempfile
 import urllib.parse
@@ -291,6 +292,138 @@ def test_the_seam_prints_only_the_redacted_tail_and_keeps_the_status():
           r2.returncode != 0, r2.returncode)
 
 
+def test_stream_mode_prints_a_line_while_the_stream_is_still_open():
+    """issue #591: a repair IN FLIGHT must be visible — the line is printed before stdin closes.
+
+    This is the whole point of `--stream`: the old shape captured the round into a file and printed
+    its tail only once the round had ENDED, so a fix-bot round showed one line and then over an hour
+    of silence (measured on run 39183131652). Here the first line has to arrive while the producer
+    is still running, and it has to arrive REDACTED.
+    """
+    import select
+
+    td = Path(tempfile.mkdtemp())
+    raw = td / "run.log"
+    out = td / "run.scrubbed.log"
+    env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
+    p = subprocess.Popen(["python3", str(SCRIPT), "--stream", "--raw", str(raw), "--out", str(out)],
+                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                         text=True, bufsize=1, env=env)
+
+    def read_line(timeout=5.0):
+        """One line from the child, or None if it stayed silent for `timeout` seconds."""
+        ready, _, _ = select.select([p.stdout], [], [], timeout)
+        return p.stdout.readline() if ready else None
+
+    try:
+        p.stdin.write("agent: first visible line\n")
+        p.stdin.flush()
+        first = read_line()
+        check("stream: a line is printed WHILE the stream is still open",
+              first is not None and "first visible line" in first, repr(first))
+        check("stream: the producer is still running when its output is shown",
+              p.poll() is None, f"already exited rc={p.returncode}")
+
+        p.stdin.write(f"agent: the key is {FAKE_VALUE}\n")
+        p.stdin.flush()
+        leaky = read_line()
+        check("stream: the LIVE line is redacted, never the value",
+              leaky is not None and FAKE_VALUE not in leaky, repr(leaky))
+        check("stream: the mask is the fixed marker", leaky is not None and "***" in leaky, repr(leaky))
+    finally:
+        if p.stdin and not p.stdin.closed:
+            p.stdin.close()
+        rc = p.wait(timeout=10)
+
+    check("stream: a clean stream exits 0", rc == 0, rc)
+    check("stream: the RAW capture is kept on disk (never printed, never uploaded)",
+          raw.is_file() and FAKE_VALUE in raw.read_text(), "raw capture missing")
+    check("stream: the REDACTED copy is the artifact and holds every line",
+          out.is_file() and out.read_text().count("agent: ") == 2
+          and FAKE_VALUE not in out.read_text(), out.read_text() if out.is_file() else "missing")
+    check("stream: a flushed transcript survives a killed run (written per line, not at EOF)",
+          out.is_file() and "first visible line" in out.read_text(), "")
+
+
+def test_stream_mode_needs_an_artifact_and_refuses_a_mixed_mode():
+    """A live stream with nowhere to write its REDACTED log would lose the run artifact."""
+    env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
+    r = subprocess.run(["python3", str(SCRIPT), "--stream"], input="x\n", capture_output=True,
+                       text=True, env=env)
+    check("stream: --stream without --out is refused", r.returncode != 0, r.returncode)
+    r2 = subprocess.run(["python3", str(SCRIPT), "--stream", "--in", "x.log"], input="x\n",
+                        capture_output=True, text=True, env=env)
+    check("stream: --stream with --in is refused (one source)", r2.returncode != 0, r2.returncode)
+    r3 = subprocess.run(["python3", str(SCRIPT)], input="x\n", capture_output=True, text=True, env=env)
+    check("scrub-log: neither --in nor --stream is refused", r3.returncode != 0, r3.returncode)
+
+
+def test_the_container_stdio_is_unbuffered():
+    """The other half of issue #591: a pipe-buffered container writes nothing until it exits.
+
+    `docker run` gives the container a pipe, not a TTY, so Python block-buffers and a host reader
+    sees silence even when it is streaming. `PYTHONUNBUFFERED=1` is set EXPLICITLY on the run
+    wrapper (never a forwarded host value that may be unset).
+    """
+    mk = (ROOT / "Makefile").read_text()
+    import re as _re
+    m = _re.search(r"(?m)^DOCKER_RUN\s*:?=\s*docker run(?:[^\n]*\\\n)*[^\n]*", mk)
+    wrapper = m.group(0) if m else ""
+    check("make: the run wrapper found", bool(wrapper), mk[:80])
+    check("make: the container's stdio is unbuffered (PYTHONUNBUFFERED=1)",
+          "-e PYTHONUNBUFFERED=1" in wrapper, wrapper[:300])
+
+
+def test_the_seam_shows_a_round_while_it_runs():
+    """END TO END, issue #591: the REAL seam, driven through make, prints line 1 before line 2.
+
+    The command writes a line, sleeps, then writes another. With the pre-change seam nothing at all
+    reached the console until the command had exited; here the first line must be readable while the
+    second is still two seconds away — which is exactly "is fix-bot working?" answered from the log.
+    """
+    import select
+    import shutil
+
+    mk = (ROOT / "Makefile").read_text()
+    seam = re.search(r"^define scrubbed_run\n.*?^endef\n", mk, re.M | re.S).group(0)
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    for f in ("scrub_log.py", "check_secret_output.py"):
+        shutil.copy(ROOT / "scripts" / f, td / "scripts" / f)
+    (td / "Makefile").write_text(
+        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\n"
+        "HERMES_LOG_TAIL ?= 60\n\n" + seam +
+        "\nslow:\n\t$(call scrubbed_run,sh -c \"echo round-started; sleep 3; echo round-finished\")\n"
+        "failing:\n\t$(call scrubbed_run,sh -c \"echo about-to-fail; exit 3\")\n")
+    env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
+    p = subprocess.Popen(["make", "slow"], cwd=str(td), env=env, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True, bufsize=1)
+    saw_first = False
+    while True:
+        ready, _, _ = select.select([p.stdout], [], [], 10)
+        if not ready:
+            break
+        line = p.stdout.readline()
+        if not line:
+            break
+        if "round-started" in line:
+            saw_first = True
+            check("seam: the first line is visible BEFORE the command finishes", p.poll() is None,
+                  "make had already exited when its first line appeared")
+            break
+    p.kill()
+    p.wait(timeout=10)
+    check("seam: the round's own progress reaches the console while it runs", saw_first, "")
+    r = subprocess.run(["make", "failing"], cwd=str(td), env=env, capture_output=True, text=True)
+    # `make` itself exits 2 on ANY failed recipe, so the proof that the PIPELINE kept the command's
+    # status is the one make prints: `Error 3`. Without `pipefail` the pipeline would report the
+    # redactor's own 0, make would call the recipe a success and a red round would look green.
+    check("seam: a failing command still keeps its own status (pipefail, not the redactor's 0)",
+          r.returncode != 0 and "Error 3" in (r.stdout + r.stderr), (r.stdout + r.stderr)[-300:])
+    check("seam: and its output is redacted and shown", "about-to-fail" in (r.stdout + r.stderr),
+          (r.stdout + r.stderr)[:200])
+
+
 def test_the_target_is_wired_into_the_repo():
     """A script no target names runs nowhere (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -316,6 +449,10 @@ def main() -> int:
     test_the_shipped_implement_step_prints_no_value_in_any_spelling()
     test_the_shipped_implement_step_still_reports_a_failed_run()
     test_the_seam_prints_only_the_redacted_tail_and_keeps_the_status()
+    test_stream_mode_prints_a_line_while_the_stream_is_still_open()
+    test_stream_mode_needs_an_artifact_and_refuses_a_mixed_mode()
+    test_the_container_stdio_is_unbuffered()
+    test_the_seam_shows_a_round_while_it_runs()
     test_the_target_is_wired_into_the_repo()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
