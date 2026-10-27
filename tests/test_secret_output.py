@@ -629,6 +629,27 @@ def test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation():
     check("agent-stream-printed-raw: naming the target in output is not a violation", bad == [], str(bad))
 
 
+def test_a_seam_that_prints_only_after_the_command_ends_is_a_violation():
+    """issue #591: redacting at the END is safe and useless — it hides a repair in flight.
+
+    This is the exact shape the seam had before the change (`> log; scrub-log --in log`): the
+    console stays empty for as long as the round runs, which is the measured fix-bot silence.
+    """
+    mk = ("define scrubbed_run\n"
+          "\t@rc=0; { $(1) ; } > hermes-run.log 2>&1 || rc=$$?; \\\n"
+          "\tpython3 scripts/scrub_log.py --in hermes-run.log --out hermes-run.scrubbed.log "
+          "--tail 60 || true; \\\n"
+          "\texit $$rc\n"
+          "endef\n")
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), {"Makefile": mk})
+        rules = _rules(root)
+    check("scrub-seam-is-not-live: a capture-then-print-at-the-end seam is a violation",
+          "scrub-seam-is-not-live" in rules, str(rules))
+    check("scrub-seam-is-not-live: the live seam this repo ships is not",
+          cso.seam_streams((ROOT / "Makefile").read_text()), "")
+
+
 def test_a_public_agent_target_without_the_seam_is_a_violation():
     """issue #355: the redaction belongs in the PUBLIC target, because a workflow step, a bot
     script (`fix_loop.sh`) and a human all reach the agent through `make <target>`."""
@@ -653,7 +674,7 @@ def test_the_matrix_search_step_is_covered_when_every_leg_scrubs():
     each = "".join(f"{t}:\n\t$(call scrubbed_run,$(DOCKER_RUN) make x)\n"
                    for t in ("search-nvidia", "search-metal", "search-cpu", "search-amd",
                              "search", "fix"))
-    mk = ("define scrubbed_run\n\t@python3 scripts/scrub_log.py --in x --tail 5\nendef\n" + each)
+    mk = ("define scrubbed_run\n\t@python3 scripts/scrub_log.py --stream --out x.scrubbed.log\nendef\n" + each)
     body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: make search-${{ matrix.backend }}\n")
     with tempfile.TemporaryDirectory() as td:
         root = _tree(Path(td), {"Makefile": mk, ".github/workflows/w.yml": body})
@@ -673,6 +694,8 @@ def test_the_shipped_agent_targets_scrub_their_own_stream():
     """The real Makefile: every agent target whose stream no workflow step captures redacts it."""
     mk = (ROOT / "Makefile").read_text()
     check("make: the scrubbed_run seam calls the redactor", cso.seam_redacts(mk), "")
+    check("make: the seam redacts LIVE (a round in flight is visible)", cso.seam_streams(mk),
+          "the seam must feed the stream through `scrub_log.py --stream` (issue #591)")
     for target in cso.AGENT_TARGETS_TO_SCRUB:
         check(f"make: `{target}` redacts its own stream", cso.public_target_scrubs(mk, target), "")
     check("make: the seam is one definition, not a per-target copy",
@@ -757,6 +780,7 @@ def main() -> int:
     test_an_agent_stream_printed_raw_is_a_violation()
     test_a_captured_agent_run_is_clean()
     test_a_mention_of_an_agent_target_in_a_message_is_not_a_violation()
+    test_a_seam_that_prints_only_after_the_command_ends_is_a_violation()
     test_agents_md_requires_the_run_log_audit_and_rotation()
     test_a_public_agent_target_without_the_seam_is_a_violation()
     test_the_matrix_search_step_is_covered_when_every_leg_scrubs()

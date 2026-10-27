@@ -164,6 +164,19 @@ def seam_redacts(makefile_text: str) -> bool:
     return bool(m) and "scrub_log.py" in m.group(1)
 
 
+def seam_streams(makefile_text: str) -> bool:
+    """Does the seam redact the stream LIVE, instead of after the command ended? (issue #591)
+
+    Redaction at the end is safe and useless: it captures the whole round into a file and prints
+    its tail only once the round has finished, so a run in flight is invisible in the job log
+    (measured: fix-bot run 39183131652 printed one line, then nothing for over an hour). The seam
+    therefore feeds the LIVE stream through `scripts/scrub_log.py --stream`, which masks each line
+    and prints it at once. A seam that goes back to `> log; scrub-log --in log` is refused here.
+    """
+    m = re.search(rf"^define\s+{SCRUB_SEAM}\b(.*?)^endef", makefile_text, re.M | re.S)
+    return bool(m) and "--stream" in m.group(1)
+
+
 def public_target_scrubs(makefile_text: str, target: str) -> bool:
     """Does the public `target`'s own recipe redact the stream it captured? (issue #355)
 
@@ -361,6 +374,11 @@ def violations(root: Path = REPO_ROOT) -> list[str]:
             bad.append(f"Makefile: scrub-seam-does-not-redact — the `{SCRUB_SEAM}` seam no longer "
                        f"calls `scripts/scrub_log.py`, so every target that trusts it prints the "
                        f"agent's stream raw (issue #355)")
+        if not seam_streams(_mk):
+            bad.append(f"Makefile: scrub-seam-is-not-live — the `{SCRUB_SEAM}` seam no longer "
+                       f"feeds the stream through `scripts/scrub_log.py --stream`, so a repair in "
+                       f"flight is invisible in the job log until its round ends (measured: "
+                       f"fix-bot run 39183131652, one line and over an hour of silence; issue #591)")
         for target in AGENT_TARGETS_TO_SCRUB:
             if target not in self_scrubbing:
                 bad.append(f"Makefile: agent-target-does-not-scrub — `{target}` runs the agent and "

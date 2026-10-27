@@ -64,7 +64,14 @@ $(foreach k,$(AGENT_SHELL_KEYS),$(if $(value $(k)),$(eval export $(AGENT_FORCE_P
 endif
 AGENT_SHELL_FORWARD := $(foreach k,$(AGENT_SHELL_KEYS),-e $(AGENT_FORCE_PREFIX)$(k))
 
+# The container's OWN stdio is a pipe (`docker run` without a TTY), so a Python child
+# block-buffers its output and writes nothing until it exits — which made a running fix round
+# invisible even to a host that streamed it (issue #591, measured: run 39183131652, one line and
+# then over an hour of silence). `PYTHONUNBUFFERED=1` is set EXPLICITLY (`-e NAME=value`, never a
+# forwarded host value) so every Python process in the container — Hermes, and every
+# `make`-invoked script — flushes each line into the stream the redactor is already reading.
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
+	-e PYTHONUNBUFFERED=1 \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(IMAGE)
 
 # The TEST image layers the CURRENT requirements-test.txt on top of the base
@@ -180,15 +187,21 @@ HERMES_NONINTERACTIVE := --yolo --accept-hooks
 HERMES_LOG      := hermes-run.log
 HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
 HERMES_LOG_TAIL ?= 60
-# `$(call scrubbed_run,<command>)`: run it into $(HERMES_LOG), print only the
-# redactor's bounded tail, and keep the command's own exit status (a red run must
-# stay red). `scripts/scrub_log.py` reads the secret values BY NAME from this
-# environment — the runner passes them with `env:`, the docker call forwards the
-# NAMES — so a value the agent printed, in any spelling, never reaches the console.
+# `$(call scrubbed_run,<command>)`: run it, STREAMING through the redactor, and keep the
+# command's own exit status (a red run must stay red). `scripts/scrub_log.py` reads the secret
+# values BY NAME from this environment — the runner passes them with `env:`, the docker call
+# forwards the NAMES — so a value the agent printed, in any spelling, never reaches the console.
+#
+# The redaction is LIVE, not a post-mortem (issue #591). It used to capture the whole stream into
+# `$(HERMES_LOG)` and print only its tail once the command had ENDED, so a fix round printed one
+# line and then nothing for over an hour (measured: fix-bot run 39183131652, the whole step empty
+# in `gh run view --log` while it ran) and "is fix-bot working?" was answerable only from a
+# post-mortem. Now each line is MASKED and then printed, flushed as it arrives, so the job log
+# answers that question while the round runs — and the raw capture and the redacted copy are both
+# still written for the artifact. `bash -o pipefail` is what keeps the command's status: a
+# pipeline in `/bin/sh` would report the redactor's own 0 and turn a red leg green.
 define scrubbed_run
-	@rc=0; { $(1) ; } > $(HERMES_LOG) 2>&1 || rc=$$?; \
-	python3 scripts/scrub_log.py --in $(HERMES_LOG) --out $(HERMES_LOG_SCRUBBED) --tail $(HERMES_LOG_TAIL) || true; \
-	exit $$rc
+	@bash -o pipefail -c '$(1) 2>&1 | python3 scripts/scrub_log.py --stream --raw $(HERMES_LOG) --out $(HERMES_LOG_SCRUBBED)'
 endef
 
 
