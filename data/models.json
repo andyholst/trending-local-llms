@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-27T12:01:17Z",
+  "generated_utc": "2026-10-27T12:53:42Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -10509,7 +10509,9 @@
           "comments": 2,
           "reshares": 6,
           "views": 0,
-          "interactions": 1066
+          "interactions": 1066,
+          "weight_gb": "18.6GB",
+          "context_tokens": "20000"
         }
       ],
       "supported_engines": [
@@ -11592,73 +11594,6 @@
         "Ollama"
       ],
       "system_ram_min": "2GB"
-    },
-    {
-      "id": "qwen3.6-35b-a3b-mac-m4-pro-flint",
-      "name": "Qwen3.6-35B-A3B (Mac mini M4 Pro, Flint head-to-head)",
-      "full_name": "Qwen3.6-35B-A3B (52-task screen on a Mac mini M4 Pro 48GB, vs Flint)",
-      "type": "LLM (MoE)",
-      "license": "Apache 2.0",
-      "params": "35B total / 3B active",
-      "hf": "Qwen/Qwen3.6-35B-A3B",
-      "vram_tier": "24GB",
-      "vram_min": "24GB",
-      "backends": [
-        "Metal"
-      ],
-      "why": "Marcos Placona's 52-task local screen on a Mac mini M4 Pro 48GB: Qwen3.6-35B-A3B 73.9 tok/s at a 20K prompt (91.5 at 1K) with thinking on, fitting in 18.6 GB; Flint 90.9/122.6 at a 25.5 GB peak. Median task 10.1 s vs Flint's 2.8 s.",
-      "last_seen": "2026-10-26",
-      "engines": [
-        {
-          "engine": "LM Studio",
-          "tps": "73.9",
-          "hardware": "Mac mini M4 Pro 48GB (Apple Silicon); 20K prompt, thinking on",
-          "quant": "fits in 18.6 GB",
-          "date": "2026-10-26",
-          "source_post": "https://lightbrd.com/marcos_placona/status/2114727001781412326",
-          "weight_gb": "18.6GB",
-          "context_tokens": "20000",
-          "likes": 0,
-          "comments": 0,
-          "reshares": 0,
-          "views": 0,
-          "interactions": 0
-        }
-      ],
-      "supported_engines": [
-        "LM Studio"
-      ],
-      "formats": [
-        {
-          "name": "Qwen3.6-35B-A3B (Mac mini M4 Pro, Flint head-to-head)",
-          "hf": "Qwen/Qwen3.6-35B-A3B"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 1,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/marcos_placona/status/2114727001781412326",
-            "date": "2026-10-26",
-            "engine": "LM Studio",
-            "tps": "73.9",
-            "hardware": "Mac mini M4 Pro 48GB (Apple Silicon); 20K prompt, thinking on",
-            "quant": "fits in 18.6 GB",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 1,
-        "buzz_7d": 1.0,
-        "score_7d": 1.0,
-        "speed_bonus": 3.1,
-        "trend_score": 4.1
-      }
     },
     {
       "id": "qwen3.8-27b-dgx-spark-sglang",

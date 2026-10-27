@@ -1332,7 +1332,23 @@ MEASUREMENT_DIMENSIONS = ("weight_gb", "context_tokens", "system_ram_min",
 
 def _captured_raw_text() -> dict[str, str]:
     """Every text field of every captured raw model, per model id — the record of the
-    real `…/status/<id>` posts the search acquired."""
+    real `…/status/<id>` posts the search acquired.
+
+    A capture whose id the search spelled differently but whose NAME the store
+    already holds is that model's capture: ingest FOLDS such a row into the
+    stored model (`update_trending.ingest_raw_snapshots`; a duplicate name is a
+    duplicate model, so the store can never hold both). Its text therefore
+    belongs to the stored model — measured on the 2026-10-27 refresh, where one
+    `marcos_placona` post was captured as `…-mac-m4-pro-flint` beside the stored
+    `…-mac-mini-m4-pro-flint`, and the folded run's own `weight_gb` read as
+    invented because the hay was keyed on the capture's spelling. Only an exact
+    NAME resolves: a capture of ANOTHER model stays that model's evidence (one
+    post is sometimes captured under two different models, and copying a value
+    across models is the fabrication this stage must never make)."""
+    store = json.loads((ROOT / "data" / "models.json").read_text())
+    by_name = {str(m.get("name") or "").strip().lower(): m.get("id")
+               for m in store.get("models", []) if m.get("name")}
+    store_ids = {m.get("id") for m in store.get("models", [])}
     text: dict[str, list[str]] = {}
     for path in sorted((ROOT / "data" / "raw").glob("*.json")):
         data = json.loads(path.read_text())
@@ -1340,6 +1356,8 @@ def _captured_raw_text() -> dict[str, str]:
             mid = m.get("id")
             if not mid:
                 continue
+            if mid not in store_ids:
+                mid = by_name.get(str(m.get("name") or "").strip().lower(), mid)
             parts = text.setdefault(mid, [])
             parts += [str(m.get(k, "")) for k in ("why", "quant", "hardware")]
             for e in m.get("engines", []):

@@ -502,6 +502,50 @@ def test_a_malformed_hf_is_reported_as_malformed():
               bool(q) and "no HF-shaped token anywhere" not in q[0], q)
 
 
+def test_an_id_spelled_differently_folds_into_the_stored_model():
+    """A raw row that re-derives the id but repeats a stored NAME is the SAME model.
+
+    Measured on the 2026-10-27 refresh: `marcos_placona`'s Mac mini post was
+    re-captured as `qwen3.6-35b-a3b-mac-m4-pro-flint` beside the stored
+    `qwen3.6-35b-a3b-mac-mini-m4-pro-flint`, and `make validate-mapped` went red
+    with `duplicate model names in models.json`. Ingest keyed on the raw id
+    alone, so a differently-spelled id minted a second row for one model —
+    `check_no_duplicates` forbids exactly that. The row folds into the stored
+    model instead; a shared `hf` under a DIFFERENT name stays its own row (one
+    repo legitimately feeds several card-specific rows)."""
+    store = base_store()
+    store["models"][0]["name"] = "Qwen3.6-35B-A3B (Mac mini M4 Pro, Flint head-to-head)"
+
+    twin = raw_model("qwen3.6-35b-a3b-mac-m4-pro-flint", hf="Qwen/Qwen3.6-27B", post=POST_B)
+    twin["name"] = "Qwen3.6-35B-A3B (Mac mini M4 Pro, Flint head-to-head)"
+    twin["engines"][0]["tps"] = "45"
+
+    added, updated, log = ingest(
+        store, {"nvidia-20261020-120000.json": snapshot([twin])}, since=None)
+
+    names = [m.get("name") for m in store["models"]]
+    check("fold: one row per name — no duplicate model", len(names) == len(set(names)), names)
+    check("fold: the store gained no second row", len(store["models"]) == 1,
+          [m.get("id") for m in store["models"]])
+    check("fold: it was an UPDATE of the stored model, not an add", (added, updated) == (0, 1),
+          (added, updated))
+    check("fold: the measurement still landed on the stored model",
+          any(e.get("tps") == "45" for e in store["models"][0].get("engines", [])),
+          store["models"][0].get("engines"))
+    check("fold: the report names the folded id and the shared name",
+          "FOLDED" in log and "qwen3.6-35b-a3b-mac-m4-pro-flint" in log
+          and "Flint head-to-head" in log, log)
+
+    # The same `hf` under a different NAME is not evidence of one model.
+    store2 = base_store()
+    sibling = raw_model("qwen3.6-27b-dflash2-rtx-3090", hf="Qwen/Qwen3.6-27B", post=POST_B)
+    sibling["name"] = "Qwen3.6-27B (DFlash2 draft, RTX 3090)"
+    added2, updated2, _ = ingest(
+        store2, {"nvidia-20261020-120000.json": snapshot([sibling])}, since=None)
+    check("fold: a same-hf row under another name is still added as its own model",
+          (added2, updated2) == (1, 0) and len(store2["models"]) == 2, (added2, updated2))
+
+
 def test_the_module_is_wired_into_the_suite():
     check("wiring: the runner discovers this module and `make test` runs the runner",
           wired(__file__), "")
@@ -519,6 +563,7 @@ def main() -> int:
     test_a_measurement_without_a_post_is_dropped()
     test_a_capture_where_no_snapshot_can_be_read_is_the_unusable_state()
     test_ingest_refuses_a_new_model_without_an_hf()
+    test_an_id_spelled_differently_folds_into_the_stored_model()
     test_the_module_is_wired_into_the_suite()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
