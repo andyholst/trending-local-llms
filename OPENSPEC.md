@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **160** · archived: **9**
+Active changes: **161** · archived: **9**
 
 ## Active changes
 
@@ -21,6 +21,7 @@ Active changes: **160** · archived: **9**
 | `a-red-cron-pipeline-is-loud` | active | — | — | [bot-alarms](openspec/changes/a-red-cron-pipeline-is-loud/specs/bot-alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/a-red-cron-pipeline-is-loud/proposal.md) |
 | `a-silent-pr-is-an-alarm` | active | #442 (filed with two live measurements) | — | [pr-health](openspec/changes/a-silent-pr-is-an-alarm/specs/pr-health/spec.md) | 9/9 | [proposal.md](openspec/changes/a-silent-pr-is-an-alarm/proposal.md) |
 | `above-48-gb-tiers` | active | — | — | [card-fit](openspec/changes/above-48-gb-tiers/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/above-48-gb-tiers/proposal.md) |
+| `acquisition-gap-needs-a-search` | active | tech-debt `ranked-gaps-need-new-search-data` (filed while implementing #395, surfaced by PR #410) | — | [data-gap-analysis](openspec/changes/acquisition-gap-needs-a-search/specs/data-gap-analysis/spec.md)<br>[search-queries](openspec/changes/acquisition-gap-needs-a-search/specs/search-queries/spec.md) | 10/10 | [proposal.md](openspec/changes/acquisition-gap-needs-a-search/proposal.md) |
 | `adopt-carries-the-work` | active | — | — | [worktree-base](openspec/changes/adopt-carries-the-work/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/adopt-carries-the-work/proposal.md) |
 | `adopt-refuses-a-stale-branch` | active | — | — | [worktree-base](openspec/changes/adopt-refuses-a-stale-branch/specs/worktree-base/spec.md) | 7/7 | [proposal.md](openspec/changes/adopt-refuses-a-stale-branch/proposal.md) |
 | `adopt-takes-the-work-on-conflict` | active | — | — | [worktree-base](openspec/changes/adopt-takes-the-work-on-conflict/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/adopt-takes-the-work-on-conflict/proposal.md) |

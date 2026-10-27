@@ -137,7 +137,11 @@ verified against the lightbrd.com mirror.
 > arrived incidentally and a higher one upstream could never be found. So each
 > search leg ALSO runs the **trending-model queries** — one per model in the top
 > `QUERY_TOP_N` (10) of `data/models.json`, naming that model by its own id
-> (`<id> tokens per second`). They are derived from the store by
+> (`<id> tokens per second`) **and one for that model's footprint** (`<id> vram
+> ram context weights`) — two per model, because a post that answers a
+> throughput query can legitimately state no VRAM, weight size, context window
+> or engine build, which is exactly why those dimension gaps stayed open while
+> every ranked model already had captured rows. They are derived from the store by
 > `scripts/update_trending.py` (ONE implementation, rule 6d) and reach the
 > prompts as `$(MODEL_QUERIES)`; `python3 scripts/query_coverage.py --queries`
 > prints exactly what a prompt sends. `make query-coverage` reports which of the

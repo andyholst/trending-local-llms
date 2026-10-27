@@ -27,7 +27,12 @@ The prompt carries this run's parameters. Nothing else is a rule to re-derive:
 - **`model_queries`** — the trending-model queries derived from the store by
   `scripts/query_coverage.py`. Run ALL of them, the same way, in the same last-3-day window: they
   name the models we rank, so a higher figure for one can actually be found (AGENTS.md rule 6o). A
-  model no query names is a LOUD gap, so never skip one because it looks unrelated.
+  model no query names is a LOUD gap, so never skip one because it looks unrelated. Each ranked
+  model gets **two** queries — one for its throughput (`<id> tokens per second`) and one for its
+  **footprint** (`<id> vram ram context weights`) — because a post that answers a throughput query
+  can state no VRAM, weight size, context window or engine build, which is exactly why those
+  dimension gaps stay open. A footprint figure a post states belongs in its field, never only in
+  the prose.
 - **`write_raw`** — the exact per-query command for this backend. It is the only write this run
   makes.
 - **`AGENTS.md`** — the repository's rules, especially §3 (data source), §3d (no credential in a

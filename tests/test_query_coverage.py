@@ -120,6 +120,44 @@ def test_the_curated_queries_are_kept():
           all(UT.model_query(store["models"][0]) in full[b] for b in full), sorted(full))
 
 
+def test_a_footprint_query_names_each_ranked_model():
+    """A throughput answer can state no footprint (tech-debt `ranked-gaps-need-new-search-data`).
+
+    The derived set asked each ranked model for `tokens per second` and nothing else, so the
+    posts that answered it were free to state no VRAM, weights, context window or engine build
+    — and the ranked dimension gaps are dominated by models whose captured posts state no such
+    figure. Each ranked model therefore also gets a dedicated FOOTPRINT query, on every leg.
+    """
+    # Given a store whose trending band is two models
+    store = _store_with(["qwen3.8-flash-next-125b", "bonsai-2-test"])
+
+    # When  the footprint queries are derived
+    foot = UT.footprint_queries(store)
+    one = UT.footprint_query(store["models"][0])
+
+    # Then  one per trending model, each naming it and asking for the footprint terms
+    check("footprint: one query per trending model", len(foot) == 2, foot)
+    check("footprint: the query names the ranked model",
+          UT.query_names_model(one, store["models"][0]), one)
+    for term in ("vram", "ram", "context", "weights"):
+        check(f"footprint: the query asks for {term}", term in one, one)
+    check("footprint: it names only its own model, never a sibling",
+          not UT.query_names_model(one, {"id": "qwen3.8-27b"}), one)
+
+    # And  every leg carries BOTH halves — the throughput query is kept, never replaced
+    full = UT.all_search_queries(store)
+    incomplete = [(b, q) for b in full
+                  for q in UT.derived_queries(store) + foot if q not in full[b]]
+    check("footprint: every leg carries the throughput AND the footprint queries",
+          not incomplete, incomplete)
+    check("footprint: the throughput query is still there",
+          UT.model_query(store["models"][0]) in full[sorted(full)[0]], sorted(full))
+
+    # And  the coverage guard still passes on the pair
+    check("footprint: the derived set still covers every trending model",
+          UT.uncovered_models(store) == [], UT.uncovered_models(store))
+
+
 def test_a_sibling_model_query_does_not_cover():
     # Given the query that names the 27B
     q = "qwen3.8-27b dflash speculative tokens"
@@ -156,6 +194,16 @@ def test_the_prompts_and_the_guard_are_wired():
                          text=True, timeout=60).stdout
     check("wiring: the expanded prompt names the ranked models",
           "qwen3.8-flash-next-125b tokens per second" in out, out[:120])
+    # ... including a FOOTPRINT query per ranked model (the dimension gaps), and a sentence
+    # that tells the agent what they ask for — a bare list would read as more throughput
+    # queries and the footprint figure would stay unrecorded.
+    check("wiring: the expanded prompt carries a footprint query",
+          "qwen3.8-flash-next-125b vram ram context weights" in out, out[:200])
+    # The wording that tells the agent what the footprint queries ASK for lives in the leg's
+    # PRELOADED skill, not in the prompt (issue #638: a prompt is a pointer plus this run's
+    # parameters, so a rule duplicated there would drift from the one reviewed file).
+    check("wiring: the leg is pointed at its preloaded skill",
+          "-s data-search" in out, out[:200])
 
 
 def test_the_real_store_is_covered():
@@ -168,12 +216,19 @@ def test_the_real_store_is_covered():
     # Then  every top-N trending model is named, and the CLI agrees (exit 0)
     check("real: the top-N trending models are all named", not missing,
           [m.get("id") for m in missing])
-    check("real: the derived set is one query per model",
+    check("real: the derived set is one throughput query per model",
           len(derived) == min(UT.QUERY_TOP_N, len(UT.trending_models(REAL_STORE))),
           f"{len(derived)} queries")
+    footprint = UT.footprint_queries(REAL_STORE)
+    check("real: the footprint set is one query per ranked model",
+          len(footprint) == len(derived), f"{len(footprint)} queries")
+    ranked_ids = [m.get("id") for m in UT.trending_models(REAL_STORE)[:len(footprint)]]
+    check("real: every footprint query is built from a ranked model's own id",
+          footprint == [f"{mid} {UT.MODEL_FOOTPRINT_SUFFIX}" for mid in ranked_ids], footprint)
     check("real: the coverage run exits 0", r.returncode == 0, r.stderr[-200:])
-    check("real: --queries prints exactly what the prompts append",
-          _run_cli(REAL_STORE, "--queries").stdout.strip() == ",".join(derived))
+    check("real: --queries prints exactly what the prompts append (both halves)",
+          _run_cli(REAL_STORE, "--queries").stdout.strip() == ",".join(derived + footprint),
+          _run_cli(REAL_STORE, "--queries").stdout.strip()[:200])
 
 
 def test_a_silenced_guard_is_refused():
@@ -204,6 +259,12 @@ def test_the_rule_is_documented():
           "query-coverage" in readme and "QUERY_TOP_N" in readme)
     check("docs: the search skill documents the derived queries",
           "Trending-model queries (issue #264)" in skill)
+    # The leg's preloaded skill is where a prompt's rule now lives (issue #638): it must say that
+    # each ranked model gets TWO queries, so the footprint half is never read as more throughput.
+    leg = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    check("docs: the leg's skill says each ranked model gets a footprint query",
+          "**two** queries" in leg and "**footprint** (`<id> vram ram context weights`)" in leg,
+          leg[:400])
 
 
 def main() -> int:
@@ -212,6 +273,7 @@ def main() -> int:
     test_the_empty_id_is_the_only_uncovered_shape()
     test_the_curated_queries_are_kept()
     test_a_sibling_model_query_does_not_cover()
+    test_a_footprint_query_names_each_ranked_model()
     test_the_prompts_and_the_guard_are_wired()
     test_the_rule_is_documented()
     test_the_real_store_is_covered()

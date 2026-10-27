@@ -482,6 +482,143 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
               missing <= count + added, f"{missing} > {count} + {added} added")
 
 
+def test_an_acquisition_gap_is_not_an_ingest_gap():
+    """A missing dimension must say WHICH gap it is (tech-debt `ranked-gaps-need-new-search-data`).
+
+    `missing` alone reads as ingest work — "the search sees it and the store drops it" — while
+    measured against the captured snapshots 60-66 of the models behind each ranked dimension
+    have a post that states NO such figure: only a new search can close those. So every missing
+    model is classified against the text the search CAPTURED for it: no statement at all is an
+    ACQUISITION gap, a statement in prose only is an INGEST gap.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        # Given two models with no structured context_tokens — one whose captured post STATES
+        # `131072-token context`, one whose captured post states nothing at all
+        stated, silent = model("captured-context"), model("silent-context")
+        (raw / "nvidia-20261014-060000.json").write_text(json.dumps({
+            "backend": "nvidia", "generated_utc": "2026-10-14T06:00:00Z",
+            "models": [
+                {"id": "captured-context", "name": "captured-context",
+                 "engines": [{"engine": "llama.cpp", "tps": "40", "hardware": "RTX 4090 24GB",
+                              "quant": "Q4_K_M, 131072-token context",
+                              "source_post": "https://lightbrd.com/u/status/7"}]},
+                {"id": "silent-context", "name": "silent-context",
+                 "engines": [{"engine": "llama.cpp", "tps": "40", "hardware": "RTX 4090 24GB",
+                              "quant": "Q4_K_M",
+                              "source_post": "https://lightbrd.com/u/status/8"}]},
+            ]}))
+        contract = contract_from(td, "context_tokens")
+
+        # When  the store is analysed against that capture
+        report = G.analyse(store_with([stated, silent]), contract, raw_dir=raw)
+
+        # Then  the silent model is the ACQUISITION gap …
+        check("acquisition: a model whose captured post states nothing is un-captured",
+              report["not_captured"]["context_tokens"] == ["silent-context"],
+              report["not_captured"]["context_tokens"])
+        # … the stating one is NOT (its post names the figure) …
+        check("acquisition: a model whose capture states the figure is not un-captured",
+              "captured-context" not in report["not_captured"]["context_tokens"],
+              report["not_captured"]["context_tokens"])
+        # … it is the INGEST gap, and both still count as missing …
+        check("ingest: the stating model's prose was captured but not structured",
+              report["captured_prose"]["context_tokens"] == ["captured-context"],
+              report["captured_prose"]["context_tokens"])
+        check("both are still reported as missing coverage",
+              sorted(report["missing"]["context_tokens"]) == ["captured-context", "silent-context"],
+              report["missing"]["context_tokens"])
+        # … the classes are a PARTITION of the missing set, never an extra count …
+        dim = next(d for d in G.DIMENSIONS if d["key"] == "context_tokens")
+        parts = (report["not_captured"][dim["key"]] + report["unstructured"][dim["key"]]
+                 + report["captured_prose"][dim["key"]])
+        check("the classes partition the missing set (disjoint, no double count)",
+              sorted(parts) == sorted(report["missing"][dim["key"]]) and len(parts) == len(set(parts)),
+              parts)
+        # … and the split does NOT change the issue-triggering signature (issue #472's churn)
+        check("the split adds no signature entry",
+              report["signature"] == sorted(set(report["signature"]))
+              and not any(s.startswith("not_captured") for s in report["signature"]),
+              report["signature"])
+        # … and a report with no capture at all classifies everything as un-captured, so the
+        #     "we never looked" case can never read as an ingest job.
+        bare = G.analyse(store_with([stated, silent]), contract, raw_dir=Path(td) / "absent")
+        check("no capture at all: every missing model is un-captured",
+              bare["not_captured"]["context_tokens"] == ["captured-context", "silent-context"]
+              and bare["captured_prose"]["context_tokens"] == [],
+              bare["not_captured"]["context_tokens"])
+
+
+def test_the_real_store_splits_every_missing_dimension():
+    """On the repository's own store and snapshots, the split is a consistent partition and the
+    ranked gaps really are acquisition gaps — not a claim about a fixture."""
+
+    store = G.load(G.STORE)
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    capture = G.captured_text(store, G.RAW_DIR)
+
+    # Then  every dimension's missing set is partitioned into disjoint classes …
+    for dim in G.DIMENSIONS:
+        key = dim["key"]
+        parts = (report["not_captured"][key] + report["unstructured"][key]
+                 + report["captured_prose"][key])
+        check(f"real store: {key}'s classes partition the missing set",
+              sorted(parts) == sorted(report["missing"][key]) and len(parts) == len(set(parts)),
+              f"{len(parts)} parts vs {len(report['missing'][key])} missing")
+
+    # … no "not stated by any captured post" claim contradicts the capture itself (the guard
+    #     that keeps the new label honest: a model the snapshots DO state must never be filed
+    #     as an acquisition gap) …
+    contradicted = [f"{d['key']}:{mid}" for d in G.DIMENSIONS
+                    for mid in report["not_captured"][d["key"]]
+                    if any(d["text"].search(t) for t in G.captured_dim_texts(capture, mid, d))]
+    check("real store: no un-captured claim is contradicted by a captured post",
+          contradicted == [], str(contradicted[:5]))
+
+    # … and the measurement the issue rests on holds: the ranked dimensions are dominated by
+    #     models whose post states no such figure (the whole reason a SEARCH change is needed).
+    acquisition = [len(ids) for ids in report["not_captured"].values()]
+    ingest = ([len(ids) for ids in report["unstructured"].values()]
+              + [len(ids) for ids in report["captured_prose"].values()])
+    check("real store: the ranked gaps are acquisition gaps, not ingest work",
+          sum(acquisition) > sum(ingest), str((sum(acquisition), sum(ingest))))
+    check("real store: every missing dimension names at least one un-captured model",
+          all(acquisition), str(report["not_captured"]))
+
+
+def test_the_report_and_issue_body_name_an_acquisition_gap():
+    """The filed issue must say which kind of gap it is, or the next triage reads it as ingest
+    work again (the re-filing loop this issue exists to end)."""
+
+    store = G.load(G.STORE)
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    text = G.render(report)
+    body, title = G.issue_body(report, None)
+
+    # Then  the report names the acquisition class, per dimension and in its own section …
+    check("report: the ranked line says which gap it is",
+          "not stated by any captured post (acquisition gap)" in text, text[:400])
+    check("report: the acquisition section is present",
+          "## Not stated by any captured post" in text, text[:400])
+    check("report: the ingest class is still reported beside it",
+          "stated in prose only (ingest gap)" in text, text[:400])
+    # … the issue body carries the same words …
+    check("issue body: says which gap it is", "not stated by any captured post" in body,
+          body[:400])
+    check("issue body: has its own acquisition section",
+          "## Not stated by any captured post" in body, body[:400])
+    # … and it NAMES the models, so the reader can go and look at the posts
+    ids = [mid for vals in report["not_captured"].values() for mid in vals]
+    check("issue body: names an un-captured model", any(mid in body for mid in ids), title)
+    # And  a report with nothing missing does not invent the section
+    empty = G.analyse(store_with([]), {"model": set(), "measurement": set(), "search_model": set()},
+                      raw_dir=Path("/nonexistent"))
+    body2, _ = G.issue_body(empty, None)
+    check("issue body: no acquisition section when nothing is missing",
+          "\n## Not stated by any captured post (acquisition gap)" not in body2, body2[:200])
+
+
 def test_signature_tracks_the_store_not_the_noise():
     """The issue-triggering signature covers what the STORE lacks; volatile items
     (empty raw legs, estimates) stay in the report and out of the signature."""
@@ -1533,6 +1670,9 @@ def main() -> int:
     test_flash_attention_is_not_a_storage_medium()
     test_a_vram_capacity_is_not_a_weights_figure_even_beside_gguf()
     test_the_real_store_reports_only_figures_it_can_point_at()
+    test_an_acquisition_gap_is_not_an_ingest_gap()
+    test_the_real_store_splits_every_missing_dimension()
+    test_the_report_and_issue_body_name_an_acquisition_gap()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
