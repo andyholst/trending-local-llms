@@ -36,12 +36,13 @@ failed step, so the aggregate died and four green search legs were discarded
 (measured: scheduled run 39159853260). The row is QUARANTINED instead — reported
 loudly by name with its source posts and excluded — while the rest of the
 snapshot, and every other snapshot, still merges:
-  - `hf` missing, row does not resolve to a stored model -> quarantined, and the
-    line carries a DIAGNOSIS of what the row (or its snapshot) DID carry: an HF
-    repo link in another field (`why`, `quant` …), an `hf` value that is not an
-    `owner/repo` id, a `formats[i].hf`, or no HF-shaped token at all — so the
-    log alone separates "the post states no repo" from "the agent forgot to copy
-    one it had", the two causes whose fixes are opposite (issue #382)
+  - `hf` missing, row does not resolve to a stored model -> quarantined, and its
+    line carries a DIAGNOSIS of what the row (or, failing that, its snapshot)
+    DID capture: an HF repo link in another field (`why`, `quant`, `hardware` …),
+    an `hf` value that is not an `owner/repo` id, a `formats[i].hf`, a token in a
+    sibling row, or no HF-shaped token at all — so the run log alone separates
+    "the post states no repo" from "the agent forgot to copy one it had", the two
+    causes whose fixes are opposite (issue #382)
   - `hf` missing, row DOES resolve to a stored model     -> `hf` filled from the
     store (data already present — never invented), row kept, so a known model's
     new measurements are not lost to a missing field
@@ -85,7 +86,7 @@ _HF_LINK_RE = re.compile(
     r"([A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*)",
     re.I,
 )
-# A diagnosis QUOTES captured text, it never dumps the row: one bounded fragment.
+# A diagnosis QUOTES captured text; it never dumps the row. One bounded fragment.
 _DIAG_MAX = 80
 
 
@@ -176,13 +177,14 @@ def _stored_model(store: dict, m: dict) -> dict | None:
 
 
 def _hf_link_in(text: str) -> str:
-    """The HF repo link inside `text` (``huggingface.co/o/r`` / ``hf.co/o/r``), or ""."""
+    """The HF repo link inside `text` (`huggingface.co/o/r`, `hf.co/o/r`), or \"\"
+    truncated to the bounded diagnosis length."""
     hit = _HF_LINK_RE.search(text or "")
     return hit.group(0)[:_DIAG_MAX] if hit else ""
 
 
 def iter_strings(val, prefix: str = ""):
-    """`(field path, text)` for every string inside a raw model row, in order."""
+    """`(field path, text)` for every string inside a captured value, in order."""
     if isinstance(val, str):
         yield prefix or "?", val
     elif isinstance(val, dict):
@@ -194,11 +196,11 @@ def iter_strings(val, prefix: str = ""):
 
 
 def hf_diagnosis(m: dict, rows: list, raw_hf: str = "") -> str:
-    """What the row — or, failing that, its snapshot — actually carried that could
+    """What the row — or, failing that, its snapshot — actually captured that could
     have become its `hf`, reported and never invented.
 
     `rows` is the snapshot's models AS CAPTURED and `raw_hf` the `hf` value as
-    captured (the caller has already normalised it away) — "the post states no
+    captured (the caller has already normalised it away). "The post states no
     repo" and "the agent forgot to copy one it had" need OPPOSITE fixes, and
     `data/raw/*.json` keeps the measurement but not the post text, so this run's
     line is the only evidence left (issue #382)."""
@@ -214,6 +216,20 @@ def hf_diagnosis(m: dict, rows: list, raw_hf: str = "") -> str:
         if isinstance(f, dict) and f.get("hf"):
             return (f"no top-level 'hf', but formats[{i}].hf held "
                     f"{str(f['hf'])[:_DIAG_MAX]!r} — the repo was in the row")
+    # Another model's STRUCTURED hf is unambiguous (free text is not), so it is
+    # reported by field with no guessing at prose.
+    for om in rows:
+        if om is m:
+            continue
+        other = str(om.get("hf") or "")
+        if other:
+            return (f"no HF repo id in this model's row, while another model's 'hf' holds "
+                    f"{other[:_DIAG_MAX]!r} — THIS row states none")
+        for i, f in enumerate(om.get("formats") or []):
+            if isinstance(f, dict) and f.get("hf"):
+                return (f"no HF repo id in this model's row, while another model's "
+                        f"formats[{i}].hf holds {str(f['hf'])[:_DIAG_MAX]!r} — THIS row "
+                        f"states none")
     elsewhere = sorted({field for om in rows if om is not m
                         for field, text in iter_strings(om) if _hf_link_in(text)})
     if elsewhere:
@@ -351,7 +367,7 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
     #
     # The diagnosis scans the snapshot AS CAPTURED (`captured_rows`), not the
     # list the loop below is shrinking: an earlier row's quarantine must not
-    # change what a later row is told about its own snapshot.
+    # change what a later row is told about its own snapshot (issue #382).
     captured_rows = list(data.get("models", []))
     for m in list(data.get("models", [])):
         raw_hf = m.get("hf") or ""

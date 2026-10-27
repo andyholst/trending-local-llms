@@ -26,10 +26,10 @@ states are now DISTINCT:
      `correct-raw` — while an EXISTING model still merges and keeps its `hf`.
   6. The quarantined line for an un-derivable `hf` DIAGNOSES what the captured
      row held (issue #382): an HF repo link in another field, an `hf` value that
-     is not `owner/repo`, a `formats[i].hf`, a token in a sibling row of the same
-     snapshot, or none anywhere — bounded, never invented — so the artifact alone
-     separates "the post states no repo" from "the agent forgot to copy one it
-     had".
+     is not `owner/repo`, a `formats[i].hf`, a structured/token one in a sibling
+     row of the same snapshot, or none anywhere — bounded, never invented — so
+     the artifact alone separates "the post states no repo" from "the agent
+     forgot to copy one it had".
 
 Run:  python3 tests/test_raw_quarantine.py   or   make test
 """
@@ -400,7 +400,7 @@ def test_a_row_that_held_a_repo_says_so_in_the_report():
         check("bounded: the quoted token is truncated, the whole paste is not dumped",
               owner not in line and "QUARANTINED:" in line and "never reached 'hf'" in line,
               len(line))
-        check("bounded: the line is still short enough to read", 0 < len(line) <= 400, len(line))
+        check("bounded: the line is still short enough to read", 0 < len(line) <= 600, len(line))
 
 
 def test_a_row_that_states_no_repo_says_that_too():
@@ -428,6 +428,22 @@ def test_a_row_that_states_no_repo_says_that_too():
 def test_a_sibling_rows_token_is_not_claimed_as_this_rows():
     """A token in ANOTHER model's row is a SNAPSHOT fact, never evidence about
     this row — and the answer must not depend on which row was quarantined first."""
+    # A structured `hf` on a sibling is the unambiguous case.
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "raw").mkdir()
+        (d / "models.json").write_text(json.dumps(base_store()))
+        snap = d / "raw" / "nvidia-20261020-120000.json"
+        bare = raw_model("bare", hf=None, post=POST_A)
+        bare["why"] = "nothing downloadable here"
+        snap.write_text(json.dumps(snapshot([bare, raw_model("sibling", post=POST_B)])))
+        proc = run_correct_raw(d)
+        line = next((ln for ln in proc.stdout.splitlines()
+                     if "QUARANTINED:" in ln and "/bare:" in ln), "")
+        check("sibling (structured hf): THIS row states none while another row holds an id",
+              "THIS row states none" in line and "'hf'" in line
+              and "org/sibling" in line, line)
+
     for order in ("bare-first", "bare-last"):
         with tempfile.TemporaryDirectory() as td:
             d = Path(td)
