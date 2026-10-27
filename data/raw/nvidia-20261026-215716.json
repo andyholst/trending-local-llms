@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-9b",
+      "name": "Bonsai 2 9B",
+      "full_name": "Ternary-Bonsai-2-9B (Qwen3.5 based, vision-language)",
+      "type": "LLM (ternary, VLM)",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "prism-ml/Ternary-Bonsai-2-9B-gguf",
+      "vram_tier": "8GB",
+      "vram_min": "6GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "last_seen": "2026-10-23",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "959.6",
+          "hardware": "Apple Silicon (mlx.fast / cuda.fast open challenge, weights frozen)",
+          "quant": "ternary weights frozen, exact-token verified; one-week challenge, 158 record changes",
+          "date": "2026-10-23",
+          "source_post": "https://lightbrd.com/Mahone_AI/status/2113585648435163209",
+          "likes": 263,
+          "comments": 3,
+          "reshares": 2,
+          "views": 0,
+          "interactions": 270,
+          "weight_gb": "~2GB (ternary)"
+        }
+      ],
+      "why": "Bonsai 2 9B went 144.8 -> 959.6 tok/s decode on Apple Silicon in one week of engine-only optimization (weights frozen, exact-token verified)."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:16Z"
+}

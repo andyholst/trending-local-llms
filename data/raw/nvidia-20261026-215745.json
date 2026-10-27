@@ -1,0 +1,70 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-25",
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "71.6",
+          "hardware": "RTX 5090 32GB",
+          "quant": "4-bit NVFP4, Humming linear backend in vLLM 0.32.0 (`--linear-backend humming`)",
+          "date": "2026-10-25",
+          "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "4-bit NVFP4",
+          "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
+        }
+      ],
+      "why": "Switching vLLM's linear kernel to Humming took a 4-bit NVFP4 Qwen3.8-27B from 56.9 to 71.6 tok/s on an RTX 5090; Marlin reached 72.4 on the same model."
+    },
+    {
+      "id": "gemma-4-12b",
+      "name": "Gemma 4 12B",
+      "full_name": "Gemma 4 12B",
+      "type": "LLM",
+      "license": "Gemma license",
+      "params": "12B",
+      "hf": "google/gemma-4-12B-it",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "MegaCapybara",
+          "tps": "106.0",
+          "hardware": "RTX 5080 16GB (batch 1, no speculative decoding)",
+          "quant": "dense, custom pure-CUDA engine with no NVIDIA libraries",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/marcospaulosd/status/2114521574212796923",
+          "likes": 867,
+          "comments": 5,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 880
+        }
+      ],
+      "why": "The poster's own from-scratch pure-CUDA engine (registered as MegaCapybara) runs Gemma 4 12B at 106 tok/s on one RTX 5080, batch 1, no spec decoding."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:45Z"
+}

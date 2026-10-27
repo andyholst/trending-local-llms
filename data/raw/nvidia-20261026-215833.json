@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "muse-spark-open",
+      "name": "Muse Spark Open",
+      "full_name": "Meta Muse Spark Open 816B-A42B",
+      "type": "LLM",
+      "license": "Muse Spark Open (limited commercial use)",
+      "params": "816B total / 42B active",
+      "hf": "meta-models/Muse-Spark-Open-816B-A42B",
+      "vram_tier": "512GB",
+      "vram_min": "512GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "36.0",
+          "hardware": "4x Apple M5 Ultra Mac Studio (Thunderbolt 5 low-latency driver)",
+          "quant": "4-bit (~493GB weights)",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/ChrisPirillo/status/2113795302390141219",
+          "likes": 933,
+          "comments": 2,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 938,
+          "weight_gb": "~493GB 4-bit"
+        }
+      ],
+      "why": "Apple's own figure is over 36 tok/s for the 816B model across FOUR M5 Ultra Mac Studios, not two: two only hold the 493GB of 4-bit weights."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:58:33Z"
+}

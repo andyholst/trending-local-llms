@@ -1,0 +1,70 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b-mlx-fast",
+      "name": "Bonsai 2 27B (mlx.fast)",
+      "full_name": "Ternary-Bonsai-2-27B on the mlx.fast open-optimization leaderboard",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-09-26",
+      "engines": [
+        {
+          "engine": "MLX-fast (Bonsai 2)",
+          "tps": "237.4",
+          "hardware": "16GB Mac (mlx.fast, Yukon Research open challenge)",
+          "quant": "ternary 27B, decode up from ~59 tok/s baseline",
+          "date": "2026-09-26",
+          "source_post": "https://lightbrd.com/pratikg/status/2103905760115884172",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "237.4 tok/s decode on a 16GB Mac in the mlx.fast challenge, up from ~59 at baseline."
+    },
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8-27B compressed to ternary)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-09-19",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "35.0",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0 build, 7.21GB model file, ~220K context",
+          "date": "2026-09-19",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2101246102406054306",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "7.21GB PQ2_0",
+          "context_tokens": "225280"
+        }
+      ],
+      "why": "PQ2_0 build on a 12GB RTX 3060: ~35 tok/s decode at a 220K context."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:59Z"
+}

@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "32GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "184.0",
+          "hardware": "Apple M5 Max",
+          "quant": "4-bit MLX conversion, 2B of 24B params active per token",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/raja_sudireddy/status/2113931756323913918",
+          "likes": 162,
+          "comments": 1,
+          "reshares": 4,
+          "views": 0,
+          "interactions": 167,
+          "weight_gb": "Q4 GGUF ~14.5GB",
+          "context_tokens": "131072"
+        }
+      ],
+      "why": "Liquid AI's own figure: 184 tok/s on an M5 Max, 131K context, post-trained inside real agent harnesses."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:58:33Z"
+}

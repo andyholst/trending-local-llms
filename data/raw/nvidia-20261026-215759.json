@@ -1,0 +1,156 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Ternary-Bonsai-2-27B (Qwen3.8-27B compressed to ternary, 1.72 bits/weight)",
+      "type": "GGUF",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "vram_tier": "24GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50.0",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Bonsai 2 ternary PQ2_0, 5.95GB weights, 125K context, Hermes Agent on top",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 7135,
+          "comments": 3,
+          "reshares": 6,
+          "views": 0,
+          "interactions": 7150,
+          "weight_gb": "5.95GB ternary",
+          "context_tokens": "128000"
+        },
+        {
+          "engine": "LM Studio",
+          "tps": "26.0",
+          "hardware": "M5 Pro 64GB Mac mini (Apple MLX)",
+          "quant": "ternary 27B",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 52787,
+          "comments": 14,
+          "reshares": 10,
+          "views": 0,
+          "interactions": 52825
+        },
+        {
+          "engine": "MLX",
+          "tps": "143.0",
+          "hardware": "single RTX 5090",
+          "quant": "ternary 27B, 5.93GB (from 53.8GB), 98.2% of Qwen3.8-27B's aggregate score",
+          "date": "2026-09-20",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2101718479250264407",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "5.93GB ternary"
+        },
+        {
+          "engine": "MLX",
+          "tps": "9.0",
+          "hardware": "2021 MacBook Pro M1 Pro 16GB",
+          "quant": "ternary 27B",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "MLX",
+          "tps": "34.5",
+          "hardware": "Mac Studio M4 Max 128GB",
+          "quant": "ternary 27B at 1.72 bits/weight",
+          "date": "2026-09-18",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        }
+      ],
+      "why": "Ternary 27B at ~5.9GB: 50 tok/s fresh on a 12GB RTX 3060 with 125K context, and 26 tok/s on a 64GB M5 Pro Mac mini."
+    },
+    {
+      "id": "gemma-3-27b",
+      "name": "Gemma 3 27B",
+      "full_name": "Gemma 3 27B",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "27B",
+      "hf": "google/gemma-3-27b-it",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "18.0",
+          "hardware": "M5 Pro 64GB Mac mini (Apple MLX)",
+          "quant": "MLX conversion",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 52787,
+          "comments": 14,
+          "reshares": 10,
+          "views": 0,
+          "interactions": 52825
+        }
+      ],
+      "why": "18 tok/s on a 64GB M5 Pro Mac mini with Apple's MLX, measured alongside five other models."
+    },
+    {
+      "id": "qwen3-30b",
+      "name": "Qwen3 30B",
+      "full_name": "Qwen3-30B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "30B total / 3B active",
+      "hf": "Qwen/Qwen3-30B-A3B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-10",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "106.0",
+          "hardware": "M5 Pro 64GB Mac mini (Apple MLX)",
+          "quant": "MLX conversion",
+          "date": "2026-10-10",
+          "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
+          "likes": 52787,
+          "comments": 14,
+          "reshares": 10,
+          "views": 0,
+          "interactions": 52825
+        }
+      ],
+      "why": "106 tok/s on a 64GB M5 Pro Mac mini with Apple's MLX, the fastest of six models in the same measured run."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:59Z"
+}

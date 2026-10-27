@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE, ~6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-24",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20.0",
+          "hardware": "RTX 3050 6GB Laptop + 32GB RAM",
+          "quant": "Gyro-S config (coldniko's current Strata build), unquantized 16K KV cache",
+          "date": "2026-10-24",
+          "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+          "likes": 221,
+          "comments": 1,
+          "reshares": 4,
+          "views": 0,
+          "interactions": 230,
+          "context_tokens": "16384",
+          "system_ram_min": "32GB"
+        }
+      ],
+      "why": "coldniko's Strata build runs the 125B MoE at 17-20 tok/s on a 6GB RTX 3050 laptop, capped at a 16K context."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:46Z"
+}

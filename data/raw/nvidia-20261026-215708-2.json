@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "Liquid AI LFM2.5-24B-A2B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "10GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-14",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50.7",
+          "hardware": "RTX 3080 10GB",
+          "quant": "Q4",
+          "date": "2026-10-14",
+          "source_post": "https://lightbrd.com/PaulGugAI/status/2110275665408704970",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "weight_gb": "Q4",
+          "context_tokens": "48000"
+        }
+      ],
+      "why": "LFM2.5-24B-A2B Q4 on a 10GB RTX 3080: 50.7 tok/s output (644 tok/s in)."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:08Z"
+}

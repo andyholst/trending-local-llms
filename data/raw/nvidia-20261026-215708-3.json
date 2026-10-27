@@ -1,0 +1,106 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "20.0",
+          "hardware": "Beelink SER 7 Pro iGPU Radeon 780M (Vulkan)",
+          "quant": "GSQ-RCO IQ3_S, MTP, Arifi Labs' custom Vulkan-optimised llama.cpp fork",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/ArifiLabs/status/2107703750957641985",
+          "likes": 6349,
+          "comments": 20,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 6375,
+          "weight_gb": "GSQ-RCO IQ3_S",
+          "system_ram_min": "48GB"
+        }
+      ],
+      "why": "Arifi Labs' llama.cpp fork (Vulkan) on a Beelink SER 7 Pro iGPU, no discrete GPU: 20 t/s on the 125B MoE."
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "12.1",
+          "hardware": "Beelink SER 7 Pro iGPU Radeon 780M (Vulkan)",
+          "quant": "Q4_K_XL with DFlash2 drafter, Arifi Labs' custom Vulkan-optimised llama.cpp fork",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/ArifiLabs/status/2107703750957641985",
+          "likes": 6349,
+          "comments": 20,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 6375,
+          "weight_gb": "Q4_K_XL",
+          "system_ram_min": "48GB"
+        }
+      ],
+      "why": "Qwen3.8-27B on the 780M iGPU with DFlash2 in the same fork: 12.1 t/s, up from 2 t/s plain."
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "full_name": "Z.ai GLM-5.3-Flash",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "320B (18B active)",
+      "hf": "zai-org/GLM-5.3-Flash",
+      "vram_tier": "24GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-07",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.96",
+          "hardware": "Beelink SER 7 Pro iGPU Radeon 780M (Vulkan)",
+          "quant": "GSQ-RCO 3.0-bit with DFlash2, experts streamed from NVMe, Arifi Labs' custom Vulkan-optimised llama.cpp fork",
+          "date": "2026-10-07",
+          "source_post": "https://lightbrd.com/ArifiLabs/status/2107703750957641985",
+          "likes": 6349,
+          "comments": 20,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 6375,
+          "weight_gb": "GSQ-RCO 3.0-bit",
+          "system_ram_min": "48GB",
+          "storage_offload": "streamed from NVMe"
+        }
+      ],
+      "why": "GLM-5.3-Flash 320B on an iGPU: 2.96 t/s with DFlash2 and experts streamed from NVMe."
+    }
+  ],
+  "generated_utc": "2026-10-26T21:57:08Z"
+}
