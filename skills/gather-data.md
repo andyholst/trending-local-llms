@@ -135,19 +135,19 @@ verified against the lightbrd.com mirror.
 > model: of the 24 queries the ONE model-specific one names `qwen3.8-27b`, and
 > none names `Strata`, so every figure for the model at the top of the README
 > arrived incidentally and a higher one upstream could never be found. So each
-> search leg ALSO runs the **trending-model queries** — one per model in the top
-> `QUERY_TOP_N` (10) of `data/models.json`, naming that model by its own id
-> (`<id> tokens per second`) **and one for that model's footprint** (`<id> vram
-> ram context weights`) — two per model, because a post that answers a
-> throughput query can legitimately state no VRAM, weight size, context window
-> or engine build, which is exactly why those dimension gaps stayed open while
-> every ranked model already had captured rows. They are derived from the store by
-> `scripts/update_trending.py` (ONE implementation, rule 6d) and reach the
-> prompts as `$(MODEL_QUERIES)`; `python3 scripts/query_coverage.py --queries`
-> prints exactly what a prompt sends. `make query-coverage` reports which of the
-> top models the curated lists alone reach (today: 1 of 10) against the full set
-> (10 of 10) and **FAILS** when a model is named by no query — so when you add a
-> model, the pipeline says so instead of silently capping what we know.
+> search leg ALSO runs the **trending-model queries** — TWO per model in the top
+> `QUERY_TOP_N` (10) of `data/models.json`: one for its throughput, naming the
+> model by its own id (`<id> tokens per second`), and one for its footprint
+> (`<id> vram ram context weights`). The second exists because a post that
+> answers a throughput query can legitimately state no VRAM, weight size, context
+> window or engine build — which is exactly why those dimension gaps stayed open
+> while every ranked model already had captured rows. They are derived from the
+> store by `scripts/update_trending.py` (ONE implementation, rule 6d) and reach
+> the prompts as `$(MODEL_QUERIES)`; `python3 scripts/query_coverage.py --queries`
+> prints exactly what a prompt sends, and `make query-coverage` reports the
+> curated-only reach against the full set — 10 of the top 10 once the derived
+> queries are added — and **FAILS** when a model is named by no query, so when
+> you add a model, the pipeline says so instead of silently capping what we know.
 
 ## 3. Extract per model
 
