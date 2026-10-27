@@ -177,25 +177,25 @@ def _stored_model(store: dict, m: dict) -> dict | None:
 
 
 def _hf_link_in(text: str) -> str:
-    """The HF repo link inside `text` (`huggingface.co/o/r`, `hf.co/o/r`), or \"\"
+    """The HF repo link inside `text` (`huggingface.co/o/r`, `hf.co/o/r`), or ''
     truncated to the bounded diagnosis length."""
     hit = _HF_LINK_RE.search(text or "")
     return hit.group(0)[:_DIAG_MAX] if hit else ""
 
 
-def iter_strings(val, prefix: str = ""):
+def _iter_strings(val, prefix: str = ""):
     """`(field path, text)` for every string inside a captured value, in order."""
     if isinstance(val, str):
         yield prefix or "?", val
     elif isinstance(val, dict):
         for k, v in val.items():
-            yield from iter_strings(v, f"{prefix}.{k}" if prefix else str(k))
+            yield from _iter_strings(v, f"{prefix}.{k}" if prefix else str(k))
     elif isinstance(val, list):
         for i, v in enumerate(val):
-            yield from iter_strings(v, f"{prefix}[{i}]")
+            yield from _iter_strings(v, f"{prefix}[{i}]")
 
 
-def hf_diagnosis(m: dict, rows: list, raw_hf: str = "") -> str:
+def _hf_diagnosis(m: dict, rows: list, raw_hf: str = "") -> str:
     """What the row — or, failing that, its snapshot — actually captured that could
     have become its `hf`, reported and never invented.
 
@@ -204,7 +204,7 @@ def hf_diagnosis(m: dict, rows: list, raw_hf: str = "") -> str:
     repo" and "the agent forgot to copy one it had" need OPPOSITE fixes, and
     `data/raw/*.json` keeps the measurement but not the post text, so this run's
     line is the only evidence left (issue #382)."""
-    for field, text in iter_strings(m):
+    for field, text in _iter_strings(m):
         link = _hf_link_in(text)
         if link:
             return (f"a repo id WAS captured in {field!r} ({link!r}) and never reached "
@@ -231,7 +231,7 @@ def hf_diagnosis(m: dict, rows: list, raw_hf: str = "") -> str:
                         f"formats[{i}].hf holds {str(f['hf'])[:_DIAG_MAX]!r} — THIS row "
                         f"states none")
     elsewhere = sorted({field for om in rows if om is not m
-                        for field, text in iter_strings(om) if _hf_link_in(text)})
+                        for field, text in _iter_strings(om) if _hf_link_in(text)})
     if elsewhere:
         return (f"no HF-shaped token in this model's row, while another model's "
                 f"{', '.join(repr(f) for f in elsewhere[:3])} carries one — THIS row "
@@ -387,7 +387,7 @@ def correct_snapshot(path: Path, store: dict) -> list[str]:
                              f"(the row's own hf was missing)")
             else:
                 notes.append(_quarantine(data, m, "hf missing (cannot derive)", path,
-                                         detail=hf_diagnosis(m, captured_rows, raw_hf)))
+                                         detail=_hf_diagnosis(m, captured_rows, raw_hf)))
                 continue
         for f in m.get("formats", []) or []:
             raw_f = f.get("hf") or ""

@@ -8,7 +8,7 @@ regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
 and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
 
-Active changes: **156** · archived: **9**
+Active changes: **157** · archived: **9**
 
 ## Active changes
 
@@ -53,6 +53,7 @@ Active changes: **156** · archived: **9**
 | `code-review-secrets-contract` | active | — | — | [code-review-scan](openspec/changes/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/code-review-secrets-contract/proposal.md) |
 | `commit-authorship-guard` | active | #317 | — | [commit-authorship](openspec/changes/commit-authorship-guard/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/commit-authorship-guard/proposal.md) |
 | `conflict-merge-says-why` | active | — | — | [bot-conflict-repair](openspec/changes/conflict-merge-says-why/specs/bot-conflict-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/conflict-merge-says-why/proposal.md) |
+| `correct-raw-diagnoses-a-missing-hf` | active | #382 | — | [raw-snapshot-quarantine](openspec/changes/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/correct-raw-diagnoses-a-missing-hf/proposal.md) |
 | `data-gap-acquired-footprint-capture` | active | #395 — `data-gap: storage_offload (40 models)` | — | [data-gap-backfill](openspec/changes/data-gap-acquired-footprint-capture/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-acquired-footprint-capture/proposal.md) |
 | `data-gap-baseline` | active | #174 | — | [data-gap-baseline](openspec/changes/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-baseline/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
