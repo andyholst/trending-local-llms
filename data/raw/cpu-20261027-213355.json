@@ -1,0 +1,41 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "system_ram_min": "8GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-04-16",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "2.9",
+          "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+          "quant": "Gemma 3 1B Q4_K_M (769MB); prompt 5.9 t/s, gen 2.9 t/s",
+          "date": "2026-04-16",
+          "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+          "likes": 3,
+          "comments": 3,
+          "reshares": 0,
+          "views": 341,
+          "interactions": 3,
+          "weight_gb": "769MB (Q4_K_M)",
+          "system_ram_min": "8GB",
+          "engine_min_version": "llama.cpp b8816, CPU-only ARMv8.0"
+        }
+      ],
+      "why": "Smallest local model on the cheapest CPU board: 2.9 tok/s generation on a Pi 4."
+    }
+  ],
+  "generated_utc": "2026-10-27T21:33:55Z"
+}

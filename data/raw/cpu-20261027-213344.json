@@ -1,0 +1,70 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "18",
+          "hardware": "NVIDIA RTX 4090 24GB, CPU attention fallback (one box)",
+          "quant": "Qwen3.8-27B with -ctk q5_1 KV cache; flash-attn has no CUDA kernel for q5_1 so attention silently falls back to CPU; this is a degraded configuration vs ~2185 tok/s prompt with q8_0 KV (llama.cpp issue 28455)",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/QwenAIFans/status/2114821375512711640",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 1,
+          "views": 495,
+          "interactions": 3
+        }
+      ],
+      "why": "Wrong-KV-flag pitfall: llama.cpp's default flash-attn only carries CUDA kernels for f16/q8_0/q4_0, so -ctk q5_1 fell back to CPU attention (18 tok/s prompt vs ~2185 with q8_0)."
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "gemma-4-E2B",
+      "type": "LLM (edge)",
+      "license": "Gemma",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "2GB",
+      "vram_min": "2GB",
+      "system_ram_min": "1432MB peak",
+      "backends": [
+        "CPU"
+      ],
+      "last_seen": "2026-09-05",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5, CPU-only (VideoCore VII GPU split off for vision/audio)",
+          "quant": "Gemma 4 E2B via LiteRT-LM; 99 tok/s prefill, 9 tok/s decode, 1432 MB peak RAM",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 549,
+          "interactions": 3,
+          "system_ram_min": "1432MB peak"
+        }
+      ],
+      "why": "Google's edge path: LiteRT-LM on a Pi 5 hits 9 tok/s decode at 1432 MB peak RAM."
+    }
+  ],
+  "generated_utc": "2026-10-27T21:33:44Z"
+}

@@ -1,0 +1,41 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b-radeon-pro-r9700",
+      "name": "Qwen3.8-27B on Radeon AI Pro R9700",
+      "full_name": "Qwen3.8-27B (ASRock Creator Radeon AI Pro R9700, ServeTheHome review)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "vLLM",
+          "tps": "113",
+          "hardware": "Radeon AI Pro R9700 32GB (ASRock Creator, RDNA 4)",
+          "quant": "4-bit (reported, ServeTheHome review); concurrency-scaled: ~20-30 tok/s at 1 user, 113+ tok/s code generation at 16 concurrent users",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2114790688370098604",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 53
+        }
+      ],
+      "last_seen": "2026-10-26"
+    }
+  ],
+  "generated_utc": "2026-10-27T21:34:32Z"
+}
