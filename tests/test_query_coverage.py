@@ -199,8 +199,11 @@ def test_the_prompts_and_the_guard_are_wired():
     # queries and the footprint figure would stay unrecorded.
     check("wiring: the expanded prompt carries a footprint query",
           "qwen3.8-flash-next-125b vram ram context weights" in out, out[:200])
-    check("wiring: the prompt says the derived set asks for the footprint",
-          "memory FOOTPRINT" in out and "vram / ram / context / weights" in out, out[:400])
+    # The wording that tells the agent what the footprint queries ASK for lives in the leg's
+    # PRELOADED skill, not in the prompt (issue #638: a prompt is a pointer plus this run's
+    # parameters, so a rule duplicated there would drift from the one reviewed file).
+    check("wiring: the leg is pointed at its preloaded skill",
+          "-s data-search" in out, out[:200])
 
 
 def test_the_real_store_is_covered():
@@ -256,6 +259,12 @@ def test_the_rule_is_documented():
           "query-coverage" in readme and "QUERY_TOP_N" in readme)
     check("docs: the search skill documents the derived queries",
           "Trending-model queries (issue #264)" in skill)
+    # The leg's preloaded skill is where a prompt's rule now lives (issue #638): it must say that
+    # each ranked model gets TWO queries, so the footprint half is never read as more throughput.
+    leg = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    check("docs: the leg's skill says each ranked model gets a footprint query",
+          "**two** queries" in leg and "**footprint** (`<id> vram ram context weights`)" in leg,
+          leg[:400])
 
 
 def main() -> int:
