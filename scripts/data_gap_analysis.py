@@ -50,6 +50,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import refresh_run_block  # noqa: E402
+# The ONE raw-row -> store-model resolver (rule 6d): the classification below maps
+# each captured row to the store id ingest would give it, so it can never disagree
+# with the merge about which model a post belongs to.
+import update_trending  # noqa: E402
 DATA = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
 STORE = DATA / "models.json"
 CONTRACT = DATA / "model_contract.json"
@@ -260,6 +264,63 @@ def _stated(m: dict, key: str) -> bool:
     return any(e.get(key) not in (None, "", [], {}) for e in (m.get("engines") or []))
 
 
+def _dim_texts(row: dict, dim: dict) -> list[str]:
+    """The free text of ONE row (a store model OR a captured raw row) a dimension scans.
+
+    Free text lives on the row (`quant`/`why`) AND on every measurement (`hardware` is a
+    dimension's own `skip_fields` decision), and both shapes are the same in the store and in
+    a raw snapshot — so one builder serves both. One field at a time, never a CONCATENATION: a
+    "within N characters" pattern applied to joined fields matches two words that never shared
+    a sentence (issue #456).
+    """
+    fields = [f for f in TEXT_FIELDS if f not in dim.get("skip_fields", ())]
+    texts = [str(row.get(f, "")) for f in fields]
+    texts += [str(e.get(f, "")) for e in (row.get("engines") or []) for f in fields]
+    return texts
+
+
+def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, list[str]]]:
+    """Per STORE model id, the free text of every CAPTURED post, keyed by field.
+
+    The record of what the search actually brought back (`data/raw/*.json`), keyed by the id
+    `update_trending.resolve_model_mapping` gives the row — the same resolver ingest uses, so
+    the analysis can never attribute a post to a different model than the merge did. The
+    values are kept PER FIELD (never one concatenated blob), so a dimension's own
+    `skip_fields` and a "within N characters" pattern still only ever match text that shared
+    a sentence.
+
+    This is what separates an ACQUISITION gap (no captured post states the figure — only a
+    new search can close it) from an INGEST gap (a post states it and the store has no
+    structured value). Reported per dimension, never as a reason to invent a value.
+    """
+    out: dict[str, dict[str, list[str]]] = {}
+    if not raw_dir.exists():
+        return out
+    for path in sorted(raw_dir.glob("*.json")):
+        data = load(path, {}) or {}
+        for row in data.get("models", []) or []:
+            if not isinstance(row, dict):
+                continue
+            res = update_trending.resolve_model_mapping(row, store)
+            if res.get("status") != "existing":
+                continue
+            bucket = out.setdefault(str(res.get("id")), {})
+            sources = [row] + list(row.get("engines") or [])
+            for source in sources:
+                for f in TEXT_FIELDS:
+                    value = source.get(f) if isinstance(source, dict) else None
+                    if isinstance(value, str) and value.strip():
+                        bucket.setdefault(f, []).append(value)
+    return out
+
+
+def captured_dim_texts(capture: dict, model_id, dim: dict) -> list[str]:
+    """The captured text ONE dimension scans for ONE model (its own fields only)."""
+    bucket = (capture or {}).get(str(model_id)) or {}
+    return [t for f in TEXT_FIELDS if f not in dim.get("skip_fields", ())
+            for t in bucket.get(f, [])]
+
+
 def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     """The gap report: per-dimension coverage, free-text-only mentions, and the
     store/maintenance gaps the refresh cannot see."""
@@ -270,7 +331,13 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     missing: dict[str, list[str]] = {}   # dimension -> model ids with no structured value
     not_applicable: dict[str, list[str]] = {}   # dimension -> ids the dimension cannot apply to
     unstructured: dict[str, list[str]] = {}
+    captured: dict[str, list[str]] = {}   # prose only in the CAPTURE, not in the store text
+    not_captured: dict[str, list[str]] = {}   # NO captured post states it — a new search is the fix
     contract_gaps: dict[str, str] = {}
+
+    # What the search actually brought back, per store id (the record of each real post).
+    # One scan for every dimension: this is what tells an ACQUISITION gap from an INGEST gap.
+    capture = captured_text(store, raw_dir)
 
     for dim in DIMENSIONS:
         key = dim["key"]
@@ -284,27 +351,25 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         ids = [m.get("id", "?") for m in applicable if not _stated(m, key)]
         missing[key] = ids
         text_models = []
+        capture_only = []
+        uncaptured = []
         for m in applicable:
             if _stated(m, key):
                 continue
-            # free text lives on the model (quant/why) AND on every measurement
-            # (a figure written into a measurement's `quant` is exactly the case
-            # measured on the store: "1432 MB peak RAM").
-            fields = [f for f in TEXT_FIELDS if f not in dim.get("skip_fields", ())]
-            # One field at a time, never a CONCATENATION: a "within N characters"
-            # pattern applied to joined fields matches two words that never shared a
-            # sentence (issue #456).
-            texts = [str(m.get(f, "")) for f in fields]
-            texts += [str(e.get(f, "")) for e in (m.get("engines") or []) for f in fields]
-            # An engine's registry NOTE is not this model's prose: it is one sentence
-            # about the ENGINE, identical for every model that names it, so it cannot
-            # be evidence about a model's own footprint (#456 — the DFlash2 note's
-            # "context-lookup" made three models look like they stated a context
-            # window, and turned one engine-wide sentence into per-model signature
-            # entries).
-            if any(dim["text"].search(t) for t in texts):
-                text_models.append(m.get("id", "?"))
+            mid = m.get("id", "?")
+            # The model's OWN prose (the store side, unchanged) …
+            if any(dim["text"].search(t) for t in _dim_texts(m, dim)):
+                text_models.append(mid)
+            # … then the CAPTURED post's prose, which the store may have pruned — the same
+            # rule, over the text the search actually recorded.
+            elif any(dim["text"].search(t) for t in captured_dim_texts(capture, mid, dim)):
+                capture_only.append(mid)
+            # … and neither: no post we ever captured states this figure at all.
+            else:
+                uncaptured.append(mid)
         unstructured[key] = text_models
+        captured[key] = capture_only
+        not_captured[key] = uncaptured
 
     # maintenance gaps the merge/sort cannot report
     as_of = None
@@ -331,8 +396,11 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
 
     for key, ids in missing.items():
         if ids:
+            un = len(not_captured.get(key, []))
             gaps.append(f"{len(ids)}/{len(models)} models have no structured `{key}` "
-                        f"(e.g. {', '.join(ids[:5])})")
+                        f"({un} not stated by any captured post — a new search is the only fix; "
+                        f"{len(ids) - un} stated in prose only — an ingest job; "
+                        f"e.g. {', '.join(ids[:5])})")
     for key, ids in unstructured.items():
         if ids:
             gaps.append(f"{len(ids)} model(s) name the value only in free text, not in `{key}`: "
@@ -375,6 +443,8 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         "dimensions": {d["key"]: {"label": d["label"], "why": d["why"]} for d in DIMENSIONS},
         "contract_gaps": contract_gaps,
         "missing": missing,
+        "not_captured": not_captured,
+        "captured_prose": captured,
         "not_applicable": not_applicable,
         "unstructured": unstructured,
         "maintenance": {"stale": stale, "thin_measurements": thin,
@@ -398,6 +468,29 @@ def rank_impact(report: dict) -> list[tuple[str, int]]:
     return sorted(ranked, key=lambda kv: (-kv[1], kv[0]))
 
 
+def _gap_kind(report: dict, key: str) -> str:
+    """How many of a dimension's models no captured post states, and how many it does.
+
+    THE point of this change: a ranked gap that reads `66 model(s)` looks like ingest work,
+    while measured against the captured snapshots 61 of those models' posts state no such
+    figure at all — only a new search can close it. `unstructured:<dim>` entries are prose-only
+    mentions by construction, so they are an ingest job one and all.
+    """
+    dim = key.split(":", 1)[1] if key.startswith("unstructured:") else key
+    ids = (report.get("missing") or {}).get(dim) if not key.startswith("unstructured:") else None
+    if ids is None:
+        prose = len((report.get("unstructured") or {}).get(dim) or [])
+        return f" — {prose} stated in prose only (ingest gap)" if prose else ""
+    un = len((report.get("not_captured") or {}).get(dim) or [])
+    ingest = len(ids) - un
+    parts = []
+    if un:
+        parts.append(f"{un} not stated by any captured post (acquisition gap)")
+    if ingest:
+        parts.append(f"{ingest} stated in prose only (ingest gap)")
+    return f" — {', '.join(parts)}" if parts else ""
+
+
 def render(report: dict) -> str:
     lines = [
         "# data-gap analysis",
@@ -414,8 +507,26 @@ def render(report: dict) -> str:
         when = f"{age} day(s) before this analysis" if age is not None else "age unknown"
         lines.insert(5, f"- baseline: recorded `{report['baseline_as_of']}` ({when})")
     for key, n in rank_impact(report):
-        lines.append(f"- **{key}** — {n} model(s)")
+        lines.append(f"- **{key}** — {n} model(s)" + _gap_kind(report, key))
     if not report["findings"]:
+        lines.append("- none")
+    lines += ["", "## Not stated by any captured post (a new search is the only fix)", ""]
+    acquisition = {k: v for k, v in (report.get("not_captured") or {}).items() if v}
+    for key, ids in sorted(acquisition.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        lines.append(f"- **{key}** — {len(ids)} model(s) no captured post states a figure for: "
+                     f"{', '.join(ids[:6])}" + (" …" if len(ids) > 6 else ""))
+    if not acquisition:
+        lines.append("- none")
+    lines += ["", "## Stated in prose only (an ingest job, not a search)", ""]
+    ingest = {k: v for k, v in (report.get("unstructured") or {}).items() if v}
+    for key, ids in sorted(ingest.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        lines.append(f"- **{key}** — {len(ids)} model(s): " + ", ".join(ids[:6])
+                     + (" …" if len(ids) > 6 else ""))
+    for key, ids in sorted((report.get("captured_prose") or {}).items()):
+        if ids:
+            lines.append(f"- **{key}** — {len(ids)} model(s) whose CAPTURED post states it but whose "
+                         f"store row does not: " + ", ".join(ids[:6]) + (" …" if len(ids) > 6 else ""))
+    if not ingest and not any((report.get("captured_prose") or {}).values()):
         lines.append("- none")
     lines += ["", "## Dimensions that cannot apply (never counted as missing)", ""]
     na = {k: v for k, v in (report.get("not_applicable") or {}).items() if v}
@@ -584,8 +695,13 @@ def ensure_label(number: str) -> None:
             f"instead of reporting it. gh said: {why}")
 
 
-def file_issue(report: dict, previous: dict | None) -> str:
-    """One issue per changed gap set. The body is the report + the ranked gaps."""
+def issue_body(report: dict, previous: dict | None) -> tuple[str, str]:
+    """The issue body and title for a changed gap set — the ONE implementation the filer uses.
+
+    Split out of `file_issue()` so the text a human reads is testable without a `gh` on PATH:
+    it names, per ranked gap, whether it is an ACQUISITION gap (no captured post states the
+    figure) or an INGEST gap (a post states it, the store holds no structured value).
+    """
     added = sorted(set(report["signature"]) - set((previous or {}).get("signature", [])))
     ranked = rank_impact(report)
     body = [
@@ -596,10 +712,21 @@ def file_issue(report: dict, previous: dict | None) -> str:
         "leaves unstructured — never invent a value, and never remove a key",
         "(additive contract changes only; a new key is OPTIONAL, never `required`).",
         "",
+        "Each ranked gap says WHICH kind it is: **not stated by any captured post** is an",
+        "acquisition gap (the captured snapshots state no such figure for those models, so a",
+        "new search is the only fix — the footprint queries in the refresh ask the ranked",
+        "models for it), while **stated in prose only** is an ingest job.",
+        "",
         "## Ranked gaps",
         "",
     ]
-    body += [f"- **{k}** — {n} model(s)" for k, n in ranked] or ["- none"]
+    body += [f"- **{k}** — {n} model(s)" + _gap_kind(report, k) for k, n in ranked] or ["- none"]
+    acquisition = {k: v for k, v in (report.get("not_captured") or {}).items() if v}
+    if acquisition:
+        body += ["", "## Not stated by any captured post (acquisition gap)", ""]
+        body += [f"- **{k}** — {len(ids)} model(s): " + ", ".join(ids[:10])
+                 + (" …" if len(ids) > 10 else "")
+                 for k, ids in sorted(acquisition.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
     body += ["", "## Contract gaps", ""]
     body += [f"- {why}" for why in report["contract_gaps"].values()] or ["- none"]
     if added:
@@ -616,6 +743,12 @@ def file_issue(report: dict, previous: dict | None) -> str:
     # in the rendered issue, searchable in the body.
     body += ["", marker(signature_id(report))]
     title = (f"data-gap: {ranked[0][0]} ({ranked[0][1]} models)" if ranked else "data-gap: refresh analysis")
+    return "\n".join(body), title
+
+
+def file_issue(report: dict, previous: dict | None) -> str:
+    """One issue per changed gap set: `issue_body()`'s text, filed with the label the bots read."""
+    text, title = issue_body(report, previous)
     # The label must exist BEFORE the create: GitHub silently ignores an unknown
     # label, so `--label` below would be dropped and the filing would be invisible
     # to both bots while `gh` still exits 0 (issue #277).
@@ -623,7 +756,7 @@ def file_issue(report: dict, previous: dict | None) -> str:
     out = subprocess.run(
         ["gh", "issue", "create", "--title", f"{title} ({report['as_of']})",
          "--body-file", "-", "--label", LABEL],
-        input="\n".join(body), text=True, capture_output=True)
+        input=text, text=True, capture_output=True)
     if out.returncode != 0:
         raise SystemExit(f"[data-gaps] gh issue create failed: {out.stderr.strip()}")
     url = out.stdout.strip()

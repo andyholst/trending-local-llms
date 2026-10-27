@@ -12,7 +12,10 @@ This is the CLI over the rule, whose ONE implementation lives in
 
   * `--queries`   the derived model queries, comma-separated — exactly what the
                   `_search-<backend>` prompts append, so the searches ask for the
-                  ranked models and not only the hardware keywords;
+                  ranked models and not only the hardware keywords. Two per model:
+                  the throughput query (`<id> tokens per second`) and the FOOTPRINT
+                  query (`<id> vram ram context weights`), because a post can answer
+                  the first without stating any dimension the store ranks as a gap;
   * the default   the coverage report: which of the top-N trending models the
                   hand-curated queries alone reach, and which of them the full
                   set (curated + derived) names. Exit 1 when the full set misses
@@ -49,22 +52,28 @@ def report(store: dict, top_n: int) -> str:
     lines = [f"top-{len(models)} trending models vs the search queries", ""]
     for m in models:
         own = UT.model_query(m)
+        foot = UT.footprint_query(m)
         from_curated = sorted({q for q in curated if UT.query_names_model(q, m)})
         named = sorted({q for q in full_queries if UT.query_names_model(q, m)})
         mark = "ok " if named else "MISS"
         lines.append(f"  {mark} {m.get('id', ''):<32} "
-                     f"curated={', '.join(from_curated) or 'none':<46} derived={own}")
+                     f"curated={', '.join(from_curated) or 'none':<46} "
+                     f"derived={own} + footprint={foot}")
     missing = [m for m in models if not any(UT.query_names_model(q, m) for q in full_queries)]
     reachable_by_curated = [m for m in models
                             if any(UT.query_names_model(q, m) for q in curated)]
     lines += [
         "",
         f"  queries: {len(curated)} curated across the {len(full)} legs + "
-        f"{len(UT.derived_queries(store, top_n))} derived added to EACH leg "
+        f"{len(UT.derived_queries(store, top_n))} derived (throughput) + "
+        f"{len(UT.footprint_queries(store, top_n))} footprint, added to EACH leg "
         f"= {len(full_queries)} sent in total",
         f"  the hand-curated queries alone name {len(reachable_by_curated)}/{len(models)} of "
         f"the top {len(models)}",
         f"  the full set names {len(models) - len(missing)}/{len(models)}",
+        "  the footprint queries ask the same models for the dimensions the data-gap",
+        "  analysis ranks (vram / ram / context / weights): a throughput answer can state",
+        "  none of them, which is why those gaps were acquisition gaps",
     ]
     if missing:
         lines += ["", "  MISSED — no query names: " + ", ".join(m.get("id", "?") for m in missing),
@@ -96,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.queries:
-        print(",".join(UT.derived_queries(store, args.top)))
+        print(",".join(UT.derived_queries(store, args.top)
+                       + UT.footprint_queries(store, args.top)))
         return 0
 
     missing = UT.uncovered_models(store, args.top)
@@ -105,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
             "top": args.top,
             "trending": [m.get("id") for m in UT.trending_models(store)[:max(0, args.top)]],
             "derived": UT.derived_queries(store, args.top),
+            "footprint": UT.footprint_queries(store, args.top),
             "missing": [m.get("id") for m in missing],
         }, indent=2))
     else:
