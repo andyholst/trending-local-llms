@@ -135,6 +135,101 @@ def test_checkbox_in_fence_is_not_a_task():
     check("fenced sample: gate exits 0", rc == 0, str(rc) + " " + buf.getvalue())
 
 
+def test_a_blocked_task_is_review_required_not_a_failure():
+    """A `- [~] … — blocked: why` box passes the gate and is REPORTED.
+
+    Issue #409: work an agent may not finish (an AGENTS.md row a human must
+    apply, a rule-3c signature) had only two exits — tick a box for work that
+    was not done, or keep the gate red for ever. The third state is accepted,
+    but it must never read as "all tasks checked".
+    """
+
+    # Given an active change whose only unfinished task is blocked on a human
+    mod = _module()
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td) / "changes"
+        _change(
+            base,
+            "needs-a-signature",
+            "# Tasks\n\n- [x] 1. done\n"
+            "- [~] 2. AGENTS.md §8 row — blocked: owner approval (rule 3c)\n",
+        )
+
+        # When  the gate runs
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = mod.check_all(base=base)
+        out = buf.getvalue()
+
+    # Then  it is green, and the blocked task is named as review-required
+    check("blocked: gate exits 0", rc == 0, str(rc) + " " + out)
+    check("blocked: the change is named REVIEW-REQUIRED", "REVIEW-REQUIRED needs-a-signature" in out, out)
+    check("blocked: the blocked line number is named", "[4]" in out, out)
+    check("blocked: the summary counts it", "need a HUMAN review" in out, out)
+
+
+def test_a_blocked_task_is_neither_done_nor_silently_skipped():
+    """A blocked box is never reported as a finished checklist.
+
+    The measured defect (issue #409): `- [~]` matched neither state's regex, so
+    the line was dropped and the change printed `OK … all tasks checked`.
+    """
+
+    # Given a half-finished checklist whose remainder is blocked on a human
+    mod = _module()
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td) / "changes"
+        _change(
+            base,
+            "half-blocked",
+            "# Tasks\n\n- [x] 1. done\n- [~] 2. waiting — blocked: the owner\n",
+        )
+
+        # When  the gate runs over the tree AND over that one change
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc_all = mod.check_all(base=base)
+        buf1 = io.StringIO()
+        with contextlib.redirect_stdout(buf1):
+            rc_only = mod.check_all("half-blocked", base=base)
+        out, out_only = buf.getvalue(), buf1.getvalue()
+
+    # Then  neither run claims the checklist is complete, and both name it
+    check("not done: all-changes run exits 0", rc_all == 0, str(rc_all) + " " + out)
+    check("not done: it does NOT say 'all tasks checked'", "all tasks checked" not in out, out)
+    check("not done: --only run exits 0", rc_only == 0, str(rc_only) + " " + out_only)
+    check("not done: --only does NOT say 'all tasks checked'",
+          "all tasks checked" not in out_only, out_only)
+    check("not done: --only reports REVIEW-REQUIRED",
+          "REVIEW-REQUIRED half-blocked" in out_only, out_only)
+
+
+def test_a_blocked_task_without_a_reason_fails():
+    """A bare `- [~]` with no `blocked:` annotation is a silent skip — refused.
+
+    An unannotated third state would become the very thing the gate exists to
+    prevent: an unchecked task wearing a disguise.
+    """
+
+    # Given a blocked box that names neither who nor why
+    mod = _module()
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td) / "changes"
+        _change(base, "vague", "# Tasks\n\n- [x] 1. done\n- [~] 2. something came up\n")
+
+        # When  the gate runs
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = mod.check_all(base=base)
+        out = buf.getvalue()
+
+    # Then  it fails and points at the line that needs a reason
+    check("unannotated: gate exits non-zero", rc == 1, str(rc) + " " + out)
+    check("unannotated: the change is named", "vague" in out, out)
+    check("unannotated: the line is named", "[4]" in out, out)
+    check("unannotated: the message asks for `blocked:`", "blocked:` reason" in out, out)
+
+
 def test_real_repo_active_changes_are_all_ticked():
     """The repository's own active changes have every task ticked (rule: tick as verified)."""
 
@@ -166,6 +261,12 @@ def test_wired_into_make_test():
           "openspec-check: openspec-image openspec-tasks-check openspec-index-check" in mk, "")
     check("make: the task-gate tests run in the suite",
           wired(__file__), "")
+    # issue #409: the gate's own words must not claim every task is ticked when
+    # a task is blocked on a human — the report above says otherwise.
+    check("make: openspec-check's echo names the review-required blocked state",
+          "review-required" in mk, "")
+    check("make: the task-check help text describes the blocked state",
+          "blocked: <who/why>" in mk, "")
 
 
 def main() -> int:
@@ -174,6 +275,9 @@ def main() -> int:
     test_all_ticked_passes()
     test_archived_change_is_ignored()
     test_checkbox_in_fence_is_not_a_task()
+    test_a_blocked_task_is_review_required_not_a_failure()
+    test_a_blocked_task_is_neither_done_nor_silently_skipped()
+    test_a_blocked_task_without_a_reason_fails()
     test_real_repo_active_changes_are_all_ticked()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
