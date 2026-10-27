@@ -6,9 +6,10 @@ Every spec-driven change in this repository, in one place. `make openspec-index`
 regenerates this file from `openspec/changes/**`; `make openspec-index-check`
 (run by `make openspec-check` in CI) fails when it is stale or a change is
 missing from it. Work starts by creating a change (`make openspec-new NAME=<name>`)
-and ends with every box in its `tasks.md` ticked, validated by `make openspec-check`.
+and ends with every box in its `tasks.md` ticked (or explicitly marked
+`- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **158** · archived: **9**
+Active changes: **159** · archived: **9**
 
 ## Active changes
 
@@ -39,6 +40,7 @@ Active changes: **158** · archived: **9**
 | `architecture-inventory` | active | #479 — architecture-bot: a daily, deterministic refresh of ARCHITECTURE.md's living inventory | — | [architecture-inventory](openspec/changes/architecture-inventory/specs/architecture-inventory/spec.md) | 11/11 | [proposal.md](openspec/changes/architecture-inventory/proposal.md) |
 | `base-rebase-conflict-succeeds` | active | — | — | [worktree-base](openspec/changes/base-rebase-conflict-succeeds/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/base-rebase-conflict-succeeds/proposal.md) |
 | `baseline-age-visible` | active | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/baseline-age-visible/proposal.md) |
+| `blocked-task-is-visible` | active | #409 | — | [openspec-task-gate](openspec/changes/blocked-task-is-visible/specs/openspec-task-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/blocked-task-is-visible/proposal.md) |
 | `bot-agent-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 19/19 | [proposal.md](openspec/changes/bot-agent-output-scrubbed/proposal.md) |
 | `bot-commits-as-the-agent` | active | — | — | [commit-authorship](openspec/changes/bot-commits-as-the-agent/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/bot-commits-as-the-agent/proposal.md) |
 | `bot-guards-allow-the-bot` | active | — | — | [bot-guards-allow-the-bot](openspec/changes/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/bot-guards-allow-the-bot/proposal.md) |
@@ -195,3 +197,5 @@ Active changes: **158** · archived: **9**
   above; a new change with no row turns the check red.
 - `Tasks` is `ticked/total` from the change's `tasks.md`; `missing` means the
   change has no checklist (a structure defect `openspec validate` also flags).
+  `· N blocked` counts boxes marked `- [~] … — blocked: <who/why>`: work that
+  waits on a human, so the change stays visibly incomplete instead of green.

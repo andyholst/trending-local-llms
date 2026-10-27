@@ -305,7 +305,7 @@ openspec-archive: openspec-image ## Move a completed change to openspec/changes/
 openspec-shell: openspec-image ## Interactive shell into the repo with the openspec CLI
 	docker run --rm -it -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE) /bin/sh
 
-openspec-tasks-check: ## Fail when an ACTIVE change still has an unticked `- [ ]` task (NAME=<change> for one)
+openspec-tasks-check: ## Fail when an ACTIVE change still has an unticked `- [ ]` task; `- [~] … — blocked: <who/why>` is reported as review-required (NAME=<change> for one)
 	python3 scripts/check_openspec_tasks.py $(NAME)
 
 openspec-index: ## Regenerate the root OPENSPEC.md index from openspec/changes/**
@@ -322,9 +322,9 @@ openspec-index-check: ## Fail when OPENSPEC.md is stale, or a change on disk has
 openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR (rule 6f; host-side: needs gh)
 	python3 scripts/openspec_archive_check.py
 
-openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI gate: every active change validates, every task ticked, the index current
+openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI gate: every active change validates, every task ticked or blocked, the index current
 	docker run $(OS_OPTS) openspec validate --changes
-	@echo "[openspec-check] OK: active changes validate, their tasks are ticked, OPENSPEC.md is current"
+	@echo "[openspec-check] OK: active changes validate, no task is unticked, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 
 file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh + the repo)
 	python3 scripts/file_findings.py --file $(if $(PR),--pr $(PR)) $(if $(ISSUE),--issue $(ISSUE))

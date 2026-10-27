@@ -207,6 +207,35 @@ def test_a_row_whose_data_moved_is_named():
           "rows whose data changed" in out and "agent-thing" in out, out)
 
 
+def test_a_blocked_task_is_counted_as_blocked_not_done():
+    """A `- [~]` box renders as `done/total · N blocked`, never as done.
+
+    Issue #409: the third state must keep the change VISIBLY incomplete in the
+    one file a reviewer opens. A checklist with no blocked box is unchanged, so
+    no existing row moves.
+    """
+
+    # Given one change with a blocked task and one fully ticked change
+    with tempfile.TemporaryDirectory() as td:
+        mod, _ = _fixture(
+            Path(td),
+            "agent-blocked",
+            "# Tasks\n\n- [x] 1. done\n- [~] 2. row — blocked: the owner\n",
+        )
+        where = mod.CHANGES / "agent-done"
+        (where / "specs" / "capability").mkdir(parents=True, exist_ok=True)
+        (where / "specs" / "capability" / "spec.md").write_text("# capability\n", encoding="utf-8")
+        (where / "tasks.md").write_text("# Tasks\n\n- [x] 1. done\n- [x] 2. done\n", encoding="utf-8")
+        (where / "proposal.md").write_text("# Proposal: agent-done\n", encoding="utf-8")
+
+        # When  the index is rendered
+        text = mod.render()
+
+    # Then  the blocked change shows `1/2 · 1 blocked`; the ticked one is unchanged
+    check("index: the blocked row shows the blocked count", "| 1/2 · 1 blocked |" in text, text)
+    check("index: a blocked-free row is unchanged", "| 2/2 |" in text, text)
+
+
 def test_wired_into_make_test():
     """The generator is reachable from make targets CI runs (rule 6d)."""
 
@@ -238,6 +267,7 @@ def main() -> int:
     test_real_repo_index_is_current_and_lists_every_change()
     test_a_stale_count_line_is_named_and_not_blamed_on_the_rows()
     test_a_row_whose_data_moved_is_named()
+    test_a_blocked_task_is_counted_as_blocked_not_done()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
