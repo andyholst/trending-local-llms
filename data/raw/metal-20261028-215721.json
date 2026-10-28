@@ -1,0 +1,116 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-28T21:57:21Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B (Apple Silicon)",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-28",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.69",
+          "hardware": "Apple M5 Pro 48GB unified memory (33GB memory budget)",
+          "quant": "native Swift on MLX/Metal, experts streamed from SSD into a bounded cache; 20.91-23.69 tok/s across three workloads",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/KanikaBK/status/2115368981678989443",
+          "likes": 15,
+          "comments": 3,
+          "reshares": 16,
+          "views": 1381,
+          "interactions": 34,
+          "weight_gb": "105",
+          "system_ram_min": "48GB",
+          "storage_offload": "SSD expert streaming (16GB Mac runs it at 1-6 tok/s)"
+        }
+      ],
+      "vram_tier": "48GB"
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B (Mac mini M4)",
+      "full_name": "Qwen3.5-9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-27",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "19.3",
+          "hardware": "Mac mini M4 24GB (Apple Silicon, 120GB/s unified memory)",
+          "quant": "4-bit, thinking off, 256 output tokens",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/dextune/status/2115047608670662799",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 19,
+          "views": 1647,
+          "interactions": 26,
+          "weight_gb": "5.4",
+          "system_ram_min": "24GB",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "20.8",
+          "hardware": "Mac mini M4 24GB (Apple Silicon)",
+          "quant": "4-bit, thinking off, 256 output tokens",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/dextune/status/2115047608670662799",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 19,
+          "views": 1647,
+          "interactions": 26,
+          "weight_gb": "5.4",
+          "system_ram_min": "24GB"
+        },
+        {
+          "engine": "Rapid-MLX",
+          "tps": "29.4",
+          "hardware": "Mac mini M4 24GB (Apple Silicon)",
+          "quant": "4-bit + MTP multi-token prediction enabled; 29 tps sustained on 8K prompt",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/dextune/status/2115047608670662799",
+          "likes": 6,
+          "comments": 1,
+          "reshares": 19,
+          "views": 1647,
+          "interactions": 26,
+          "weight_gb": "5.4",
+          "system_ram_min": "24GB",
+          "context_tokens": "8192"
+        },
+        {
+          "engine": "MLX",
+          "tps": "25.1",
+          "hardware": "base M5 MacBook Pro (16GB, ~153 GB/s)",
+          "quant": "Qwen3.5 9B, one-person side-by-side test",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/SISpotlight/status/2115189014579806378",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 87,
+          "views": 0,
+          "interactions": 88
+        }
+      ],
+      "vram_tier": "8GB"
+    }
+  ]
+}

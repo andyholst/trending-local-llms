@@ -1,0 +1,43 @@
+{
+  "models": [
+    {
+      "id": "gemma-4-12b",
+      "name": "Gemma 4 12B",
+      "full_name": "Gemma 4 12B IT",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "google/gemma-4-12B-it"
+        }
+      ],
+      "license": "Gemma Terms of Use",
+      "params": "12B",
+      "hf": "google/gemma-4-12B-it",
+      "vram_tier": "6GB",
+      "vram_min": "6GB",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "106",
+          "date": "2026-10-26",
+          "hardware": "single RTX 5080 16GB",
+          "quant": "the poster's own from-scratch pure-CUDA engine (no NVIDIA libraries), batch 1, no speculative decoding",
+          "likes": 1091,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1091,
+          "source_post": "https://lightbrd.com/marcospaulosd/status/2114521574212796923"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-28T22:12:55Z",
+  "backend": "nvidia"
+}

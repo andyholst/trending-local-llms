@@ -1,0 +1,57 @@
+{
+  "backend": "cpu",
+  "models": [
+    {
+      "id": "lfm3-1.7b",
+      "name": "LFM3-1.7B",
+      "full_name": "LiquidAI LFM3-1.7B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM3-1.7B-GGUF"
+        }
+      ],
+      "license": "LFM Open License",
+      "params": "1.7B",
+      "hf": "LiquidAI/LFM3-1.7B",
+      "vram_tier": "CPU-only",
+      "vram_min": "0GB (no GPU required)",
+      "backends": [
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "25",
+          "hardware": "2019 Intel MacBook Pro (CPU only, no GPU offload)",
+          "quant": "GGUF, llama.cpp CPU only; decode throughput",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/dextune/status/2115263759841370137",
+          "likes": 1,
+          "comments": 4,
+          "reshares": 18,
+          "views": 1402,
+          "interactions": 23
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "25",
+          "hardware": "2019 Intel MacBook Pro (CPU only, no GPU offload)",
+          "quant": "llama.cpp CPU only, ~25 t/s",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/amadad/status/2115218978914087290",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 0,
+          "views": 1573,
+          "interactions": 3
+        }
+      ],
+      "context_tokens": "262144",
+      "last_seen": "2026-10-28",
+      "why": "Liquid AI's LFM3-1.7B runs CPU-only on an old 2019 Intel MacBook Pro at 25 t/s decode in llama.cpp — the small-model laptop-CPU case; the model card series announces a 256k context window for LFM3-1.7B."
+    }
+  ],
+  "generated_utc": "2026-10-28T22:01:32Z"
+}
