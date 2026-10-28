@@ -1,0 +1,12 @@
+# Tasks
+
+- [x] 1. Write the proposal + capability spec for issue #647 (`issue-queue-hold`: the branch hold matches the full short ref, an empty ref list changes nothing, a failed read is loud on stderr and never on stdout).
+- [x] 2. `scripts/issue_queue.py::_branches` keeps `refs/heads/<short ref>` with the `ci/` segment intact, so `build()`'s `startswith(f"{BRANCH_PREFIX}<n>-")` can match — the hold rule 6j states and the queue has never applied.
+- [x] 3. `scripts/issue_queue.py::_branches` prints one `[issue-queue] WARN:` on stderr when the ref read fails (an empty answer), and still returns a set — the queue must not die on a diagnostic, and a failed read must not read as "no implementer".
+- [x] 4. `tests/test_issue_review.py` — the `gh` stub grows the `fail-refs.txt` hook and `env_for()` the `refs_fail` flag.
+- [x] 5. `tests/test_issue_review.py::test_a_ci_data_gap_branch_holds_its_issue` — the branch exists in the API's REAL shape (a list of `{"ref": …}` objects) and the issue is held while its neighbours are offered; registered in `main()`.
+- [x] 6. `tests/test_issue_review.py::test_a_failed_branch_read_is_loud_never_silent` — a failing ref read still answers, warns on stderr, and keeps stdout clean; registered in `main()`.
+- [x] 7. Both new cases prove RED on the pre-change code (2 failures on `git stash` of `scripts/issue_queue.py`) and GREEN with the fix, so the pin locks the behaviour rather than the fixture.
+- [~] 8. `AGENTS.md` §8 row for the guard (rule 6c) and the `scripts/issue_queue.py` row in `ARCHITECTURE.md` naming the short-ref hold and the loud read failure (rule 6h). — blocked: the ARCHITECTURE.md half is DONE; the AGENTS.md §8 row needs a human because that file's write sits behind an approval gate that timed out (the exact row is quoted in the PR body).
+- [x] 9. `OPENSPEC.md` regenerated with `make openspec-index`; `findings.md` written for what this change found and will not fix here (rule 6g).
+- [x] 10. Verified: `make lint`, the two new cases, the whole `tests/test_issue_review.py` in the test container, `make openspec-check`, `make architecture-check`, `make validate`, `make test`. — done: `make validate` → `QA PASSED` (exit 0); `python3 tests/test_issue_review.py` in the test image → `PASSED 133 | FAILED 0`; `make lint`, `make findings-check`, `make architecture-check` green; the two new cases are RED on the pre-change `scripts/issue_queue.py` (task 7).

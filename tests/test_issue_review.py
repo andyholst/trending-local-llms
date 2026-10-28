@@ -104,6 +104,8 @@ elif head == ["repo", "view"]:
 elif head[:1] == ["api"]:
     url = args[1]
     if "/git/matching-refs/" in url:
+        if (D / "fail-refs.txt").exists():
+            sys.exit(3)
         out(fixture("branches.json", []))
     elif "/comments?per_page=100" in url:
         number = url.split("/issues/")[1].split("/")[0]
@@ -120,7 +122,8 @@ else:
 
 
 def env_for(td: Path, *, issues=None, branches=None, pulls=None, runs=None,
-            comments=None, bodies=None, labels=None, paths=None) -> dict:
+            comments=None, bodies=None, labels=None, paths=None,
+            refs_fail: bool = False) -> dict:
     """A PATH with the gh stub in front, plus the control files it reads."""
     td.mkdir(parents=True, exist_ok=True)
     bin_dir = td / "bin"
@@ -130,6 +133,8 @@ def env_for(td: Path, *, issues=None, branches=None, pulls=None, runs=None,
     gh.chmod(0o755)
     log = td / "calls.log"
     log.write_text("", encoding="utf-8")
+    if refs_fail:
+        (td / "fail-refs.txt").write_text("1")
     (td / "issues.json").write_text(json.dumps(issues if issues is not None else []))
     (td / "branches.json").write_text(json.dumps(branches if branches is not None else []))
     (td / "pulls.json").write_text(json.dumps(pulls if pulls is not None else []))
@@ -1114,6 +1119,66 @@ def test_a_value_outside_the_token_shape_is_refused_by_the_producer():
         check("producer refuses an action outside its enum", False, "no SystemExit")
 
 
+def test_a_ci_data_gap_branch_holds_its_issue():
+    """Issue #647: the branch half of the implementer hold never matched.
+
+    `_branches` kept only the LAST path segment of each ref, so
+    `refs/heads/ci/data-gap-176-…` became `data-gap-176-…` while `build()` compared
+    it with `ci/data-gap-176-` — never true — which also made the open-PR half
+    unreachable (`pull = … if branch else None`). Every other test in this file
+    answers the ref read with `[]`, so the comparison was never executed. Measured
+    in production: run 40610814947's pick logged "#417 is the head of the pick
+    order" while PR #643 was open on that branch, and the implement job pushed a
+    duplicate implementation commit onto it.
+    """
+
+    # Given an issue whose implementer branch EXISTS, in the shape the API really
+    # answers (`gh api …/git/matching-refs/…` is a list of ref OBJECTS, not strings —
+    # the fixture shape this file never exercised)
+    branches = [{"ref": "refs/heads/ci/data-gap-176-tech-debt-a-repair-in-flight",
+                 "object": {"sha": "0" * 40}}]
+
+    # When  the shared queue is read
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues(), branches=branches)
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        calls = [json.loads(l) for l in (Path(td) / "calls.log").read_text().splitlines() if l.strip()]
+
+    rows = {l.split()[0] for l in proc.stdout.splitlines() if l.startswith("issue=")}
+    # Then  #176 is held — it has an implementer — and the others are still offered
+    check("branch hold: an issue with a ci/data-gap-<n>-* branch is not a candidate",
+          "issue=176" not in rows, str(sorted(rows)))
+    check("branch hold: the issues without a branch are still candidates",
+          {"issue=163", "issue=174", "issue=175"} <= rows, str(sorted(rows)))
+    # And   the hold is decided on the branch refs the API was actually asked for
+    ref_reads = [c[1] for c in calls if len(c) > 1 and str(c[1]).find("/git/matching-refs/") >= 0]
+    check("branch hold: the queue asks for the ci/data-gap-* refs",
+          any(str(u).endswith("/git/matching-refs/heads/ci/data-gap-") for u in ref_reads),
+          str(ref_reads))
+
+
+def test_a_failed_branch_read_is_loud_never_silent():
+    """Issue #647: `_gh(check=False)` answers "" for a FAILED read, and the queue
+    treated that as "no branch exists" — so the hold quietly degraded to nothing
+    instead of saying so. A sweep that cannot read the branches must say it, and
+    still run: the other holds are unaffected, and the pick must not die."""
+
+    # Given a `gh` that fails the ref read
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues(), refs_fail=True)
+
+        # When  the queue is read
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+
+    # Then  it still answers, and the un-readable hold is named on stderr
+    check("branch read failure: the queue still runs", proc.returncode == 0,
+          str((proc.returncode, proc.stderr[-300:])))
+    check("branch read failure: the warning names the branch read and the hold",
+          "WARN" in proc.stderr and "ci/data-gap" in proc.stderr, proc.stderr[-300:])
+    check("branch read failure: the warning never reaches the machine-readable stdout",
+          "WARN" not in proc.stdout, proc.stdout[:300])
+
+
 def main() -> int:
     print("issue reviewer: one queue, one 3 h window, two bots (issue #179)")
     test_the_real_issue_pick_prints_exactly_one_line()
@@ -1145,6 +1210,8 @@ def main() -> int:
     test_the_skip_note_covers_every_held_issue()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
     test_a_decided_issue_is_skipped_by_the_shared_queue()
+    test_a_ci_data_gap_branch_holds_its_issue()
+    test_a_failed_branch_read_is_loud_never_silent()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

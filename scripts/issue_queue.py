@@ -215,12 +215,28 @@ def _issues(repo: str, label: str | list[str] | tuple[str, ...]) -> list[dict]:
 
 
 def _branches(repo: str) -> set[str]:
+    """Every existing `ci/data-gap-<n>-<slug>` branch, as the FULL short ref.
+
+    The API answers `refs/heads/ci/data-gap-<n>-<slug>`; the short form is what
+    `build()` matches against `BRANCH_PREFIX` and what `repos/{repo}/commits/{ref}`
+    takes (`ci/…` intact). Issue #647: keeping only the LAST path segment made
+    `name.startswith("ci/data-gap-<n>-")` impossible, so the branch half of the
+    implementer hold never matched and a sweep re-implemented an issue whose PR was
+    already open (measured: run 40610814947 picked #417 over open PR #643).
+    """
     out = _gh(["api", f"repos/{repo}/git/matching-refs/heads/{BRANCH_PREFIX}"], check=False)
+    if not out.strip():
+        # A FAILED read is not "no branch exists": this set decides whether a sweep may
+        # re-implement an issue that already has an implementer, so silence here is what
+        # made the defect invisible. Loud and non-fatal — the other holds still apply.
+        print("[issue-queue] WARN: could not read the ci/data-gap-* branches — the branch "
+              "half of the implementer hold cannot be trusted this run", file=sys.stderr)
+        return set()
     try:
-        refs = json.loads(out or "[]")
+        refs = json.loads(out)
     except json.JSONDecodeError:
         refs = []
-    return {r["ref"].rsplit("/", 1)[-1] for r in refs if isinstance(r, dict) and "ref" in r}
+    return {r["ref"].removeprefix("refs/heads/") for r in refs if isinstance(r, dict) and "ref" in r}
 
 
 def _pulls(repo: str) -> list[dict]:

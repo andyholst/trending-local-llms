@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **162** · archived: **9**
+Active changes: **163** · archived: **9**
 
 ## Active changes
 
@@ -92,6 +92,7 @@ Active changes: **162** · archived: **9**
 | `ingest-names-a-dead-hf-link` | active | #333 | — | [hf-link-verification](openspec/changes/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/ingest-names-a-dead-hf-link/proposal.md) |
 | `ingest-new-snapshots-only` | active | #175 | — | [ingest-boundary](openspec/changes/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/ingest-new-snapshots-only/proposal.md) |
 | `issue-bot-checks-out-before-make` | active | — | — | [issue-bot-checks-out-before-make](openspec/changes/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/issue-bot-checks-out-before-make/proposal.md) |
+| `issue-queue-branch-hold` | active | #647 | — | [issue-queue-hold](openspec/changes/issue-queue-branch-hold/specs/issue-queue-hold/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/issue-queue-branch-hold/proposal.md) |
 | `issue-review-bot` | active | #179 | — | [issue-review](openspec/changes/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/issue-review-bot/proposal.md) |
 | `issue-triage` | active | — | — | [issue-triage](openspec/changes/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/issue-triage/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
