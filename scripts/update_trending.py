@@ -1714,9 +1714,10 @@ def normalize_hf_ref(value):
     while v.startswith(_HF_URL_PREFIX):
         v = v[len(_HF_URL_PREFIX):]
     v = v.strip("/")
-    # One HF-id definition (rule 6d): `scripts/hf_id.py` knows `hf.co`, `www.`,
-    # a query/fragment and an in-repo path. Fall back to the stripped value when
-    # it cannot reduce one (a bare id passes through unchanged).
+    # One HF-id definition (rule 6d): `scripts/hf_id.py` also knows `hf.co`,
+    # `www.`, a query/fragment and an in-repo path. Fall back to the stripped
+    # value when it cannot reduce one (a bare id passes through unchanged), so
+    # this can never turn a value into "" that the caller did not already have.
     return normalise_hf(v) or v
 
 
@@ -1755,12 +1756,13 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
             print(f"[write-raw] id normalised {_id!r} -> {_fixed!r} (contract pattern)")
             _m["id"] = _fixed
             _id = _fixed
-        # A guessed `owner/model` is not data (AGENTS.md rule 2). The ingest-time
-        # check (#333) only sees a NEW model after this snapshot is written and
-        # the refresh PR is open; refuse it HERE, in the leg that made it, so the
-        # PR never carries an id nobody looked up. Only a DEFINITIVE answer
-        # (401/404) refuses — a 429/5xx keeps the value, because a rate-limited
-        # API must never look like a fabricated id.
+        # A guessed `owner/model` is not data (AGENTS.md rule 2), and the
+        # ingest-time check (#333) only sees a NEW model once this snapshot has
+        # landed and the refresh PR is open — where its only repairer is a bot
+        # round that rewrites the guess SILENTLY. Refuse it HERE, in the leg that
+        # made it (issue #417). Only a DEFINITIVE answer (401/404) refuses: a
+        # 429/5xx/transport keeps the value, because a rate-limited API must
+        # never look like a fabricated id.
         if verify_hf and _m.get("hf") and hf_repo_resolves(_m["hf"]) is False:
             print(f"[write-raw] WARN: {safe} refused model {_id!r}: HF "
                   f"{_m['hf']!r} does not resolve — look the repo up and re-run; "
@@ -1773,6 +1775,9 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
                 continue
             if _f.get("hf"):
                 _f["hf"] = normalize_hf_ref(_f["hf"])
+                if _f["hf"] == _m.get("hf"):
+                    formats.append(_f)       # same repo: already verified above
+                    continue
                 if verify_hf and hf_repo_resolves(_f["hf"]) is False:
                     print(f"[write-raw] WARN: {safe} refused format "
                           f"{_f.get('name')!r} on model {_id!r}: HF {_f['hf']!r} "

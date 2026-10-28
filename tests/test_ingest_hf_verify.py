@@ -2,11 +2,6 @@
 """Issue #333: a refresh names a NEW model's Hugging Face repo that does not
 resolve, in the run that produced it.
 
-The same seam is enforced EARLIER on the `--write-raw` path: a search leg that
-writes a guessed `owner/model` must be refused before the raw snapshot lands,
-not after a refresh PR is open and fix-bot rewrites it. The tests below cover
-both halves against the same real local Hugging Face stand-in.
-
 `check_links_resolve` already fails the PR on a dead link, but that is the first
 moment anyone sees it — by then the refresh has opened a PR whose only repairer
 is a bot round. On PR #330 a single truncated repo id
@@ -23,6 +18,13 @@ Proves:
   4. The default (`verify_hf=False`) makes NO request at all, so the suite's
      ingest tests stay hermetic.
   5. The seam defaults to the real Hugging Face API.
+
+Issue #417 adds the WRITE-time half of the same seam: the same check runs inside
+`write_raw_snapshot(..., verify_hf=True)` — what `--write-raw` passes — so a
+guessed `owner/model` is refused in the leg that made it, before the snapshot
+lands and the refresh PR is open, and the leg's log says which id it refused.
+The last test pins the OTHER half of the repair: the `data-search` skill the four
+legs preload asks for the lookup instead of a plausible guess.
 
 Run:  python3 tests/test_ingest_hf_verify.py   or   make test
 """
@@ -126,19 +128,6 @@ def ingest(store: dict, raws: dict[str, dict], **kw):
             UT.RAW_DIR = saved
 
 
-def write_and_read(payload: dict, backend: str = "amd", **kw) -> dict:
-    """Run `write_raw_snapshot` against a temp raw dir and return what landed."""
-    with tempfile.TemporaryDirectory() as td:
-        saved_dir, saved_now = UT.RAW_DIR, UT.now_utc
-        UT.RAW_DIR = Path(td)
-        UT.now_utc = lambda: datetime(2026, 10, 27, 12, 0, 0, tzinfo=timezone.utc)
-        try:
-            path = UT.write_raw_snapshot(backend, payload, **kw)
-            return json.loads(Path(path).read_text())
-        finally:
-            UT.RAW_DIR, UT.now_utc = saved_dir, saved_now
-
-
 # ---------------------------------------------------------------- the check --
 
 def test_only_a_definitive_answer_is_a_finding():
@@ -234,14 +223,26 @@ def test_main_passes_verify_hf():
     check("cli: the merge targets go through that script", "scripts/update_trending.py" in mk, "")
 
 
-# --------------------------------------------------- the write-raw seam ------
+# --------------------------------------------------- the write-raw seam -------
+
+def write_and_read(payload: dict, backend: str = "amd", **kw) -> dict:
+    """Run `write_raw_snapshot` against a temp raw dir and return what landed."""
+    with tempfile.TemporaryDirectory() as td:
+        saved_dir, saved_now = UT.RAW_DIR, UT.now_utc
+        UT.RAW_DIR = Path(td)
+        UT.now_utc = lambda: datetime(2026, 10, 27, 12, 0, 0, tzinfo=timezone.utc)
+        try:
+            path = UT.write_raw_snapshot(backend, payload, **kw)
+            return json.loads(Path(path).read_text())
+        finally:
+            UT.RAW_DIR, UT.now_utc = saved_dir, saved_now
+
 
 def test_write_raw_refuses_an_unverified_hf():
     """A guessed id is refused in the leg that made it, not by CI later."""
     def run(base):
         _HF.status_for = {"/api/models/gone/model": 404,
                           "/api/models/good/model": 200}
-        _HF.seen = []
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             data = write_and_read({
@@ -330,7 +331,7 @@ def test_write_raw_cli_turns_on_verification():
 
 
 def test_write_raw_normalises_hf_co_urls():
-    """A full link is reduced to the id before it is verified."""
+    """A full link is reduced to its id before it is verified."""
     def run(base):
         _HF.status_for = {"/api/models/Qwen/Qwen3-14B": 200}
         _HF.seen = []
@@ -360,7 +361,7 @@ def test_the_search_skill_requires_the_hf_lookup():
 
 
 def main() -> int:
-    print("ingest HF link verification (#333)")
+    print("ingest HF link verification (#333) + the write-raw refusal (#417)")
     test_only_a_definitive_answer_is_a_finding()
     test_a_dead_repo_is_named_and_a_good_one_is_silent()
     test_only_new_models_cost_a_request()
