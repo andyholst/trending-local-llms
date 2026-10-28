@@ -1,7 +1,6 @@
 # Proposal: search-hf-verify-before-write
 
-Issue: (this run's `issue.md` — the input carried no issue number; the measured
-failure is refresh PR #416 / fix-bot run 39306663973)
+Issue: #417
 
 ## Why
 

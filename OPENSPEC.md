@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **161** · archived: **9**
+Active changes: **162** · archived: **9**
 
 ## Active changes
 
@@ -145,6 +145,7 @@ Active changes: **161** · archived: **9**
 | `review-pick-parse` | active | — | — | [issue-review-queue](openspec/changes/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/review-pick-parse/proposal.md) |
 | `scope-gate-total-vram` | active | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/scope-gate-total-vram/proposal.md) |
 | `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
+| `search-hf-verify-before-write` | active | #417 | — | [hf-link-verification](openspec/changes/search-hf-verify-before-write/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/search-hf-verify-before-write/proposal.md) |
 | `search-key-instruction` | active | — | — | [bot-agent-run-safety](openspec/changes/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-key-instruction/proposal.md) |
 | `search-legs-output-scrubbed` | active | — | — | [bot-agent-run-safety](openspec/changes/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/search-legs-output-scrubbed/proposal.md) |
 | `search-legs-pointer-prompts` | active | — | — | [agent-leg-skills](openspec/changes/search-legs-pointer-prompts/specs/agent-leg-skills/spec.md) | 11/11 | [proposal.md](openspec/changes/search-legs-pointer-prompts/proposal.md) |
