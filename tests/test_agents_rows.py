@@ -16,6 +16,7 @@ Run:  python3 tests/test_agents_rows.py   or   make test
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -41,6 +42,74 @@ def section8() -> str:
     return text[text.index("## 8. Regression guards"):]
 
 
+#: The next rule or section heading at column 0 — the end of the rule being read. Rules are
+#: written two ways in the rulebook: `## 6b. <title>` for a section, and a bare `6e. **…**`
+#: item, so the slicer accepts both.
+_NEXT_RULE = re.compile(r"(?m)^(## |\d+[a-z]?\. )")
+
+
+def rule_section(rule: str) -> str:
+    """The text of ONE rulebook rule (`rule="6j"`), from its heading to the next one."""
+    text = AGENTS.read_text(encoding="utf-8")
+    # §6b is BOTH a `## 6b.` section and a bare `6b.` rule, so the section form is tried
+    # first: a bare match would slice the wrong text entirely.
+    m = None
+    for pat in (rf"(?m)^## {re.escape(rule)}\.", rf"(?m)^{re.escape(rule)}\. "):
+        m = re.search(pat, text)
+        if m:
+            break
+    if not m:
+        return ""
+    nxt = _NEXT_RULE.search(text, m.end())
+    return text[m.start():] if not nxt else text[m.start():nxt.start()]
+
+
+def test_the_rows_for_the_two_label_queue_and_the_sweep_alarm_are_written():
+    """#494 / #497: the rulebook rows those two changes shipped WITHOUT, pinned so the ledger
+    cannot rot back to prose.
+
+    #494 put `tech-debt` into `issue_queue.QUEUE_LABELS` (one oldest-first queue) and made
+    `scripts/issue_verdict.py` REFUSE an `EVIDENCE:` block that names nothing in the tree;
+    #497 added `issue-bot.yml`'s backup slot and the delivery alarm a DROPPED cron needs.
+    All of that is in the tree and green, and §6b/§6e/§6j/§8 described the OLD behaviour —
+    which an agent reads as authority.
+    """
+    sec = section8()
+    rows = [
+        ("#494 the two-label queue",
+         "test_the_queue_reads_both_labels_as_one_oldest_first_list",
+         "tests/test_issue_review.py", "48 `tech-debt` issues"),
+        ("#494 the tree-evidence verdict",
+         "test_three_mock_issues_decide_implement_refine_or_close_against_the_tree",
+         "tests/test_issue_triage.py", "`EVIDENCE:`"),
+        ("#497 the sweep delivery alarm",
+         "tests/test_sweep_alarm.py",
+         "make sweep-alarm", "24 slots a day"),
+    ]
+    for label, guard, module, measured in rows:
+        row = next((l for l in sec.splitlines() if guard in l), "")
+        check(f"rows: {label} has a §8 row", bool(row), f"no row naming {guard}")
+        check(f"rows: … naming {module}", module in row, row[:120])
+        check(f"rows: … and the measured failure", measured in row, row[:120])
+
+    # The three rule paragraphs the rows describe (§6b slots, §6e verdict, §6j label set).
+    b = rule_section("6b")
+    check("6b: both cron slots are named", "'19 * * * *'" in b and "'49 * * * *'" in b)
+    check("6b: … with the dropped-cron reason", "DROPS on-the-hour crons" in b)
+    check("6b: … and the serialising concurrency",
+          "concurrency: issue-bot-<issue|sweep>" in b)
+
+    e = rule_section("6e")
+    check("6e: the verdict file is named", "`triage.md`" in e)
+    check("6e: … its three verdicts", all(v in e for v in ("`implement`", "`refine`", "`close`")))
+    check("6e: … the target that applies it", "`make issue-verdict`" in e)
+    check("6e: … and the EVIDENCE refusal", "REFUSES one that names nothing in the tree" in e)
+
+    j = rule_section("6j")
+    check("6j: both actionable labels", '`("data-gap-analysis", "tech-debt")`' in j)
+    check("6j: … read as ONE oldest-first queue", "ONE oldest-first queue" in j)
+    check("6j: … and the reviewer's narrower default",
+          "keeps its own `data-gap-analysis` default" in j)
 def section6b() -> str:
     """The §6b pipelines section, up to the next `## ` heading."""
     text = AGENTS.read_text(encoding="utf-8")
@@ -150,8 +219,22 @@ def test_the_storage_offload_row_is_written():
 def test_the_rows_name_modules_that_exist():
     sec = section8()
     for mod in ("tests/test_ci_wiring.py", "tests/test_code_review.py", "tests/test_fix_loop.py",
-                "tests/test_data_gap_analysis.py"):
+                "tests/test_data_gap_analysis.py", "tests/test_issue_review.py",
+                "tests/test_issue_triage.py", "tests/test_sweep_alarm.py"):
         check(f"rows: {mod} is a real module", (ROOT / mod).is_file(), mod)
+    # #494: the §8 row says the verdict evidence gate exists, so the gate it cites must be REAL
+    # in `scripts/issue_verdict.py` — a refusal some other module implements would leave the row
+    # describing nothing (the shape #369's pin already uses).
+    verdict = (ROOT / "scripts" / "issue_verdict.py").read_text()
+    check("rows: the EVIDENCE shape gate the #494 row cites lives in scripts/issue_verdict.py",
+          "_EVIDENCE_SHAPES" in verdict and "points at nothing in the tree" in verdict)
+    # …and the two guards themselves live in the modules the §8 rows name.
+    for mod, guard in (("tests/test_issue_review.py",
+                        "def test_the_queue_reads_both_labels_as_one_oldest_first_list("),
+                       ("tests/test_issue_triage.py",
+                        "def test_three_mock_issues_decide_implement_refine_or_close_against_the_tree(")):
+        check(f"rows: {guard.split('(')[0].removeprefix('def ')} lives in the module the row names",
+              guard in (ROOT / mod).read_text(), guard)
     check("rows: the guards the rows name live in those modules",
           "test_scratch_notes_stay_out_of_the_tree" in
           (ROOT / "tests" / "test_fix_loop.py").read_text())
@@ -175,6 +258,7 @@ def test_the_section_still_parses_as_a_table():
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
+    test_the_rows_for_the_two_label_queue_and_the_sweep_alarm_are_written()
     test_the_conflict_repair_path_is_named_in_6b()
     test_the_rows_this_session_owed_are_written()
     test_the_storage_offload_row_is_written()
