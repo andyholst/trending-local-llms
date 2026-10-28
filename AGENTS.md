@@ -146,6 +146,19 @@ retains 30 days of history.
    and `live-smoke` are green); a run that stops at "branch pushed" is a defect.
    The agent never merges, never pushes `master`, and never invents a value to
    close a gap — an unverifiable one is reported on the issue instead.
+   **Before it implements, the run DECIDES what the issue is — the `triage.md`
+   verdict (#494).** It re-checks the issue against the base it actually fetched
+   (`make base-check`, rule 6n — never the clone's stale tip), writes `triage.md`
+   with ONE of three verdicts — `implement`, `refine` or `close` — and
+   `make issue-verdict` applies it: `refine` posts one restatement and labels the
+   issue `agent:refined`, `close` posts the reason, closes it and labels it
+   `agent:closed`, and only `implement` continues to a PR. A `close` or a
+   `refine` MUST carry an `EVIDENCE:` block, and `scripts/issue_verdict.py`
+   REFUSES one that names nothing in the tree — no `path:line`, no checkable
+   path, no `make`/`python3`/`gh` command (exit 2, loudly). A stale issue is
+   therefore closed on PROOF, never on prose: the refusal is the only thing
+   standing between a lazy close and a live gap buried by an agent that found
+   the wording inconvenient.
 
 6f. **Every change is a TRACKED OpenSpec change, and the root `OPENSPEC.md`
    index is how you find them (MANDATORY).** Work MUST start by creating the
@@ -197,7 +210,18 @@ retains 30 days of history.
    the implementer (`issue-bot` sweep, cron `19 * * * *`) each have exactly one
    verb, and they never guess about each other: they read the SAME rule —
    `scripts/issue_queue.py` via `make issue-queue`, one implementation, no second
-   copy in shell. An issue is held from the implementer by (a) an existing
+   copy in shell. **The label set is ONE list, not one per bot (issue #494).**
+   `issue_queue.QUEUE_LABELS` is `("data-gap-analysis", "tech-debt")`: the
+   implementer's sweep reads BOTH actionable labels as ONE oldest-first queue and
+   takes one issue per run, so a `tech-debt` finding competes on AGE with a data
+   gap instead of waiting behind every one of them. Before that list existed
+   (#345) the findings the bots file for THEMSELVES — 48 `tech-debt` issues —
+   had no reader at all, and a reader of this rule who saw only
+   `data-gap-analysis` would re-introduce exactly that starvation. The reviewer
+   keeps its own `data-gap-analysis` default, so a `tech-debt` body is never
+   silently refined: a reviewer whose verb is rewriting an issue body must not
+   rewrite a bot's evidence-carrying finding. An issue is held from the
+   implementer by (a) an existing
    `ci/data-gap-<n>-*` branch or an open PR from one, (b) the reviewer's 3 h
    window (a fresh `<!-- issue-review: … run=<id> -->` marker on the issue), and
    (c) the reviewer's VERDICT label (`needs-refinement`, and the
@@ -1139,8 +1163,14 @@ this `AGENTS.md` and the `gather-data` skill, then:
 
 - **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issues #113 / #127).
   Trigger surface is `issues: [opened]` carrying the `data-gap-analysis` label
-  (what `make data-gap-issue` files), a **backlog sweep** (`schedule: cron
-  '19 * * * *'` — hourly, off the hour), and an owner `workflow_dispatch`
+  (what `make data-gap-issue` files), a **backlog sweep** (`schedule:` TWO cron
+  slots — `'19 * * * *'` and the backup `'49 * * * *'`, the same rule
+  `refresh-bot` follows because GitHub delays and DROPS on-the-hour crons: a
+  dropped sweep leaves no run at all, which is exactly what
+  `tests/test_sweep_alarm.py` / `make sweep-alarm` (#497) is the alarm for — and
+  the two slots are serialised by the top-level
+  `concurrency: issue-bot-<issue|sweep>`, so they queue instead of racing), and
+  an owner `workflow_dispatch`
   (an issue number, or empty to sweep). The `pick` job (schedule only) chooses the
   OLDEST open labelled issue with **no implementer yet** — no
   `ci/data-gap-<n>-*` branch and no open PR from one — and an empty backlog is a
@@ -1540,6 +1570,10 @@ actually happened.
 | `tests/test_architecture_bot.py` — `test_a_make_written_inside_prose_is_not_a_call` (rules 6c/6d, issue #544) | the inventory claiming a target the pipeline never runs: a `make openspec-check` written into a HEREDOC BODY or a QUOTED string reported as a call, so `ARCHITECTURE.md` §10 described behaviour the workflow does not have; and the opposite failure — a real `make pr-body ISSUE="$ISSUE"` losing its target because its argument is quoted |
 | `tests/test_fix_loop.py` — `test_a_failed_merge_with_no_unmerged_path_says_what_git_said` (rules 6c/6d, issue #563) | the fix loop describing a failed base merge as `CONFLICTED in: <unreadable>` when git left NO unmerged path — handing a round a repair with nothing to resolve, after which every round detached (measured, run 40177729642 on PR #557) — and the working tree left staged by the failed merge |
 | `tests/test_workflows.py` — the search job forwards every credential its leg uses (rules 3e/6d, issue #363) | a refresh search leg given no `HF_TOKEN`, so an authenticated Hugging Face lookup in the leg is impossible while every gate stays green; the job forwards the secret and `_search-preflight` proves both names in the agent's shell |
+
+| `tests/test_issue_review.py` — `test_the_queue_reads_both_labels_as_one_oldest_first_list` (rule 6j, issue #494) | the sweep reading ONE label: `issue_queue.QUEUE_LABELS` collapsing back to `data-gap-analysis` alone, so the findings the bots file for THEMSELVES are unread — measured #345: 48 `tech-debt` issues with no reader at all; a multi-label union returning the same issue twice (the stub answers both `issue list` calls with everything, so a missing dedupe shows up as two queue rows and a rotated head); the two labels no longer competing on AGE, so a `tech-debt` issue always loses to every data gap |
+| `tests/test_issue_triage.py` — `test_three_mock_issues_decide_implement_refine_or_close_against_the_tree` (rules 6e/6j, issue #494) | a triage verdict applied without proof: `scripts/issue_verdict.py` accepting a `close` or `refine` whose `EVIDENCE:` names no `path:line`, no checkable path and no `make`/`python3`/`gh` command, so a lazy close buries a live gap; an `implement` verdict writing a label or closing the issue; a `refine` posting more than one restatement; and a decided hold (`agent:refined`/`agent:closed`) that expires — a human's decision has no TTL |
+| `tests/test_sweep_alarm.py` + `make sweep-alarm` (rule 6b, issue #497) | a DROPPED cron with nothing left to notice it: `issue-bot.yml`'s sweep was measured on 2026-10-19 → 10-21 asking for 24 slots a day and getting ~5 (a 5 h 55 m gap, then a FAILED delivery), because GitHub delays and drops on-the-hour crons — and a dropped run leaves NO run for `queued-alarm` to see; a FAILED delivery counted as fresh/green; no delivery at all reported as a pass instead of its own verdict; the backup `49 * * * *` slot dropped from the workflow; the alarm unwired from `make sweep-alarm`/`queued-alarm.yml` |
 
 When you add a stage or fix a pipeline bug, add its row here and its test in
 the same change (rule 6c).
