@@ -6,7 +6,9 @@
   - test_hardware_still_wins              multi-backend engine on Apple / CPU hardware
   - test_render_and_validator_agree       README puts it in the Metal table; validator passes
   - test_post_signal_coverage             counts real /status/ URLs + engagement
-  - test_post_signal_never_fails          report-only, even at 0% coverage
+  - test_post_signal_coverage_never_fails coverage is report-only, even at 0%
+  - test_placeholder_with_engagement_counts_fails  a count on a placeholder FAILS
+  - test_placeholder_without_counts_stays_allowed  a static placeholder row is allowed
   - test_prompts_ask_for_post_url         all 3 search prompts require …/status/<id> + counts
 
 Run:  python3 tests/test_post_signal.py   or   make test
@@ -124,7 +126,8 @@ def test_post_signal_coverage():
     check("coverage: 1 with engagement counts", counted == 1, counted)
 
 
-def test_post_signal_never_fails():
+def test_post_signal_coverage_never_fails():
+    """COVERAGE is a warning even at 0% — a low-signal placeholder row is history."""
     s = store()
     for e in s["models"][0]["engines"]:
         e["source_post"] = "https://lightbrd.com/"
@@ -141,7 +144,47 @@ def test_post_signal_never_fails():
         V.RAW_DIR = saved
     out = buf.getvalue()
     check("report: 0% coverage is a WARN line", "WARN: post-signal store: 0/3" in out, out)
-    check("report: never adds a failure", not V.FAILURES, V.FAILURES)
+    check("report: coverage never adds a failure", not V.FAILURES, V.FAILURES)
+
+
+def test_placeholder_with_engagement_counts_fails():
+    """A count on a placeholder post is FABRICATED attribution (tech-debt #456/#468):
+    `check_post_signal` must fail instead of accepting a figure nobody can open."""
+    s = store()
+    e = s["models"][0]["engines"][1]          # the placeholder row
+    e["source_post"] = "https://lightbrd.com/"
+    e["likes"] = 2
+    V.FAILURES.clear()
+    saved = V.RAW_DIR
+    V.RAW_DIR = Path(tempfile.mkdtemp()) / "none"
+    buf = io.StringIO()
+    try:
+        with redirect_stdout(buf):
+            V.check_post_signal(s)
+    finally:
+        V.RAW_DIR = saved
+    out = buf.getvalue()
+    errs = list(V.FAILURES)
+    V.FAILURES.clear()
+    check("fabricated: a placeholder post with counts FAILS validation",
+          "placeholder post" in " ".join(errs) or "placeholder post" in out, (out, errs))
+    check("fabricated: the failure names the model and the engine",
+          any("Model One" in f and "llama.cpp" in f for f in errs), errs)
+
+
+def test_placeholder_without_counts_stays_allowed():
+    """The issue's carve-out: a low-signal, static placeholder row must NOT fail."""
+    s = store()                            # its placeholder row carries no counts
+    V.FAILURES.clear()
+    saved = V.RAW_DIR
+    V.RAW_DIR = Path(tempfile.mkdtemp()) / "none"
+    buf = io.StringIO()
+    try:
+        with redirect_stdout(buf):
+            V.check_post_signal(s)
+    finally:
+        V.RAW_DIR = saved
+    check("carve-out: a placeholder with no counts adds no failure", not V.FAILURES, V.FAILURES)
 
 
 def test_prompts_ask_for_post_url():
@@ -171,7 +214,9 @@ def main() -> int:
     test_hardware_still_wins()
     test_render_and_validator_agree()
     test_post_signal_coverage()
-    test_post_signal_never_fails()
+    test_post_signal_coverage_never_fails()
+    test_placeholder_with_engagement_counts_fails()
+    test_placeholder_without_counts_stays_allowed()
     test_prompts_ask_for_post_url()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

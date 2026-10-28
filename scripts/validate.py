@@ -1074,12 +1074,88 @@ def post_signal_coverage(models: list[dict]) -> tuple[int, int, int]:
     return total, real, counted
 
 
+def fabricated_post_signal(models: list[dict]) -> list[tuple[str, str, str, str]]:
+    """Measurements that claim engagement counts from a source_post that identifies no post.
+
+    A count (likes/comments/reshares/views) is a measurement OF a post. When the row's
+    `source_post` is a placeholder — a bare mirror link, a profile page, nothing — the
+    count cannot be traced to the post it claims, so `score_7d` is inflated by a figure
+    nobody can open. That is the "reports the placeholder instead of accepting it" half
+    of the tech-debt issue: a placeholder with NO counts is a legitimately low-signal
+    historical row and stays a warning; a placeholder that CLAIMS signal is a failure.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import update_trending as ut
+    finally:
+        sys.path.pop(0)
+    out: list[tuple[str, str, str, str]] = []
+    for m in models:
+        for e in m.get("engines", []):
+            why = ut.fabricated_post_signal_reason(e)
+            if why:
+                out.append((str(m.get("name") or m.get("id") or "?"),
+                            str(e.get("engine") or "?"), str(e.get("tps") or "?"),
+                            why))
+    return out
+
+
+def misattributed_measurements(models: list[dict]) -> list[tuple[str, str, str, str, str]]:
+    """Measurements whose own text names a DIFFERENT model than the row they sit on.
+
+    The detection has exactly ONE implementation — `update_trending.
+    misattributed_measurement_reason`, which the ingest refusal also calls (rule 6d) —
+    so the validator's report and the ingest seam can never disagree. The scan is
+    REPORT ONLY on purpose: the shipped store holds one row written before the ingest
+    refusal (`qwen-3.6-27b`, whose `quant` reads "Qwen 3.5 35B ..."), and reding every
+    PR for history it cannot repair is what #458/#459 refused to do. The ingest seam
+    stops new ones; this line keeps the historical one visible.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import update_trending as ut
+    finally:
+        sys.path.pop(0)
+    out: list[tuple[str, str, str, str, str]] = []
+    for m in models:
+        for e in m.get("engines", []):
+            why = ut.misattributed_measurement_reason(e, m, {"models": models})
+            if why:
+                out.append((str(m.get("name") or m.get("id") or "?"),
+                            str(e.get("engine") or "?"), str(e.get("tps") or "?"),
+                            str(e.get("source_post") or "?"), why))
+    return out
+
+
+def check_measurement_attribution(store: dict) -> None:
+    """REPORT ONLY (never fails): a measurement whose text names another model."""
+    mis = misattributed_measurements(store.get("models", []))
+    if not mis:
+        print("  OK: measurement-attribution scan: every measurement's text names its own row")
+        return
+    print(f"  WARN: measurement-attribution scan: {len(mis)} measurement(s) name a DIFFERENT "
+          f"model than the row they are stored on — a misplaced figure (ingest now refuses "
+          f"these; this is the history it cannot repair)")
+    for name, engine, tps, post, why in mis[:10]:
+        print(f"    - {name}: {engine} {tps} t/s — {why}; post {post}")
+    if len(mis) > 10:
+        print(f"    ... and {len(mis) - 10} more")
+
+
 def check_post_signal(store: dict) -> None:
-    """REPORT ONLY (never fails): how much of the engagement ranking rests on
-    real per-post data. A measurement whose source_post is a placeholder
-    (https://lightbrd.com/, a profile page) or that carries no counts scores the
-    minimum 1 in score_7d, so low coverage means the rank is close to a plain
-    post count. Old data is legitimately placeholder-only, hence a warning."""
+    """Coverage report — and a FAILURE for a fabricated signal.
+
+    It reports how much of the engagement ranking rests on real per-post data: a
+    measurement whose source_post is a placeholder or that carries no counts scores the
+    minimum 1 in score_7d, so low coverage means the rank is close to a plain post count.
+    Old data is legitimately placeholder-only, hence a warning for coverage.
+
+    It FAILS when a measurement relies on a placeholder source_post AND claims engagement
+    counts (the tech-debt issue's "reports the placeholder instead of accepting it"): the
+    count cannot be traced to a post, so the figure is fabricated attribution. A
+    placeholder with no counts stays allowed — that is the low-signal, static historical
+    row the issue's carve-out protects.
+    """
     def line(label, models):
         total, real, counted = post_signal_coverage(models)
         if not total:
@@ -1088,6 +1164,9 @@ def check_post_signal(store: dict) -> None:
         flag = "OK" if real == total and counted == total else "WARN"
         print(f"  {flag}: post-signal {label}: {real}/{total} ({pct(real)}) real post URLs, "
               f"{counted}/{total} ({pct(counted)}) with engagement counts")
+        for name, engine, tps, why in fabricated_post_signal(models):
+            fail(f"post-signal {label}: {name} ({engine} {tps} t/s) {why} — a count cannot "
+                 f"come from a placeholder post")
     line("store", store.get("models", []))
     if RAW_DIR.exists():
         for f in sorted(RAW_DIR.glob("*.json")):
@@ -1672,7 +1751,11 @@ def main() -> int:
     add("card-fit tables (what fits your card)", "readme", lambda: check_card_tables(store))
     add("trending for your card (tier-local trend)", "readme", lambda: check_card_trending(store))
     add("backends cover measurements", "data", lambda: check_backends_cover_measurements(store))
-    add("post-signal coverage (report only)", "data", lambda: check_post_signal(store))
+    add("post-signal coverage + fabricated-signal refusal", "data", lambda: check_post_signal(store))
+    # A measurement whose text names a DIFFERENT model than its row (tech-debt #456/#468):
+    # report only, because the shipped store holds one row written before the ingest
+    # refusal and reding every PR for history it cannot repair is what #458/#459 refused.
+    add("measurement attribution (report only)", "data", lambda: check_measurement_attribution(store))
     # One physical run under two engine names (issue #459): report only, because the
     # history predates the ingest refusal and cannot be repaired by reding every PR.
     add("duplicate-run scan (report only)", "data", lambda: check_duplicate_runs(store))

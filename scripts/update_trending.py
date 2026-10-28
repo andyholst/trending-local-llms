@@ -507,6 +507,32 @@ def _is_post_url(url: str) -> bool:
     return bool(_POST_URL.search(url or ""))
 
 
+def fabricated_post_signal_reason(measurement: dict) -> str | None:
+    """Why a measurement's engagement counts cannot come from its source_post — or None.
+
+    A count (likes / comments / reshares / views) is a measurement OF a post. When the
+    row's `source_post` identifies no post (a bare mirror link, a profile page, nothing)
+    AND the row carries a positive count, the count cannot be traced to the post it
+    claims: `score_7d` is inflated by a figure nobody can open. A placeholder with NO
+    counts is a legitimately low-signal historical row and stays allowed — the same
+    carve-out the tech-debt issue states. One implementation, called by ingest AND the
+    validator's `check_post_signal` (rule 6d).
+    """
+    url = str(measurement.get("source_post") or "")
+    if _is_post_url(url):
+        return None
+    counts = {}
+    for k in _POST_SIGNALS:
+        try:
+            counts[k] = int(float(measurement.get(k) or 0))
+        except (TypeError, ValueError):
+            counts[k] = 0
+    if not any(v > 0 for v in counts.values()):
+        return None
+    return ("its source_post identifies no post (" + (url or "empty") + ") yet it claims "
+            + ", ".join(f"{k}={v}" for k, v in counts.items() if v > 0))
+
+
 def _post_key(p: dict) -> str:
     """Identity of a seen post. A real post URL is its own identity (the same
     post re-scanned across overlapping windows collapses). A placeholder URL
@@ -1963,6 +1989,130 @@ def refuse_fabricated_engines(
     return kept, refused
 
 
+#: An EXPLICIT alias mapping for measurement attribution: a row's id -> the ids of
+#: models whose names a measurement on that row may legitimately mention (a variant
+#: row naming its base model, a bake-off row naming the model it compares against).
+#: Empty by default: a name that a row's own text mentions but that belongs to a
+#: DIFFERENT model of the SAME family is refused, and an entry here is how a real
+#: exception is documented instead of widening the rule (the "or needs an explicit
+#: alias mapping" half of the tech-debt issue).
+MEASUREMENT_MODEL_ALIASES: dict[str, set[str]] = {}
+
+_COMPARISON_CUE = re.compile(
+    r"\b(?:vs\.?|versus|compar\w*|baseline|than|beats?|against|not the|instead of|while)\b", re.I
+)
+
+
+def _norm_model_name(text: object) -> str:
+    """Case-folded, separator-normalised form of a model name for identity comparison.
+
+    Digits are split from the letters (`Qwen3.8` -> `qwen 3.8`) so the same family is
+    written one way whether a source spells it `Qwen3.8-27B` or `Qwen 3.8 27B`.
+    """
+    t = re.sub(r"[-_]+", " ", str(text or "").lower())
+    t = re.sub(r"(?<=[a-z])(?=\d)", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def measurement_model_identity(name: object) -> tuple[str, str, str] | None:
+    """(family, version, params) from a model name — or None when params are unknown.
+
+    `Qwen3.8-27B` -> ('qwen', '3.8', '27b'); `Qwen 27B` -> ('qwen', None, '27b');
+    `Qwen3.8-Flash-Next 125B` -> ('qwen', '3.8', None) — a variant name puts words
+    between the version and the size, so its params are UNKNOWN and the guard fails
+    open (it never guesses a refusal from a name it could not parse).
+    """
+    n = _norm_model_name(name)
+    m = re.match(r"^([a-z]+)\s*(\d+(?:\.\d+)?)?\s*(\d+(?:\.\d+)?\s*[bm])?\b", n)
+    if not m or not m.group(1):
+        return None
+    params = (m.group(3) or "").replace(" ", "")
+    return (m.group(1), m.group(2), params) if params else None
+
+
+def named_models_in_text(text: object) -> set[tuple[str, str, str]]:
+    """(family, version, params) triples a free-text measurement field NAMES."""
+    t = _norm_model_name(text)
+    out: set[tuple[str, str, str]] = set()
+    for family, ver, params in re.findall(
+        r"\b([a-z][a-z0-9]*)\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?\s*[bm])\b", t
+    ):
+        out.add((family, ver, params.replace(" ", "")))
+    return out
+
+
+def misattributed_measurement_reason(
+    measurement: dict, model: dict, store: dict | None = None
+) -> str | None:
+    """Why a measurement's own text names a DIFFERENT model than the row — or None.
+
+    The proof is narrow on purpose: the text names a model of the SAME FAMILY whose
+    parameter size differs from the row's own — the measured defect: a `Qwen 3.6 27B`
+    row whose `quant` reads "Qwen 3.5 35B served through LM Studio ...". Cross-family
+    mentions are comparison context; a comparison cue rescues a bake-off sentence; a
+    text that names the row's own model too is a multi-model post about this row; and
+    `MEASUREMENT_MODEL_ALIASES` documents the remaining real exceptions. A row whose
+    own params cannot be parsed fails open. There is exactly ONE implementation (rule
+    6d): the ingest refusal and the validator's report both call this.
+    """
+    own = measurement_model_identity(
+        model.get("name") or model.get("full_name") or model.get("id") or model.get("hf")
+    )
+    if own is None:
+        return None
+    text = " ".join(
+        p for p in (str(measurement.get(k) or "") for k in ("quant", "why")) if p
+    ) or str(model.get("why") or "")
+    if not text.strip() or _COMPARISON_CUE.search(text):
+        return None
+    norm = _norm_model_name(text)
+    own_phrases = {
+        _norm_model_name(str(model.get(k) or "").split("/")[-1])
+        for k in ("name", "full_name", "id", "hf") if model.get(k)
+    }
+    if any(p and p in norm for p in own_phrases):
+        return None  # the post measures this row's model too: not a misattribution
+    alias_ids = MEASUREMENT_MODEL_ALIASES.get(str(model.get("id") or "").lower(), set())
+    allowed: set[tuple[str, str, str]] = set()
+    for mid in alias_ids:
+        other = next((x for x in (store or {}).get("models", []) if x.get("id") == mid), None)
+        if other is not None:
+            ident = measurement_model_identity(other.get("name") or other.get("id"))
+            if ident:
+                allowed.add(ident)
+    for family, ver, params in named_models_in_text(text):
+        if family != own[0] or params == own[2]:
+            continue
+        if (family, ver, params) in allowed:
+            continue
+        return (f"its text names {family} {ver or ''} {params}, but the row is "
+                f"{own[0]} {own[1] or ''} {own[2]}").replace("  ", " ")
+    return None
+
+
+def refuse_misattributed_measurements(
+    model: dict, store: dict | None = None
+) -> tuple[list[dict], list[tuple[str, str, str]]]:
+    """Split a model's measurements into (kept, [(engine, why, source_post)] refused).
+
+    Applied at INGEST, before a raw row merges into the store, so a measurement whose
+    text names another model never lands on the wrong row — the same seam as
+    `refuse_fabricated_engines` (issue #458), and the refusal carries the post so a
+    human can open the evidence. An explicit `MEASUREMENT_MODEL_ALIASES` entry
+    documents a row's real exceptions instead of widening the rule.
+    """
+    kept: list[dict] = []
+    refused: list[tuple[str, str, str]] = []
+    for e in model.get("engines") or []:
+        why = misattributed_measurement_reason(e, model, store)
+        if why:
+            refused.append((str(e.get("engine")), why,
+                            str(e.get("source_post") or model.get("source_post") or "unknown")))
+        else:
+            kept.append(e)
+    return kept, refused
+
+
 def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                          verify_hf: bool = False) -> tuple[int, int]:
     """Merge the data/raw/*.json snapshots NEWER than `since` into the store.
@@ -2016,6 +2166,20 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"[ingest] REFUSED fabricated engine {name!r} on {m.get('id')}: {why}; "
                         f"post {post} — a t/s with no engine named by the post is not a valid "
                         f"entry (rule 5)"
+                    )
+        # A MISATTRIBUTED measurement never lands on the wrong row either (tech-debt
+        # #456/#468): a measurement whose own text names a different model inflates the
+        # row's t/s and its posts_7d signal, and AGENTS.md §3 requires every figure to
+        # trace to a post about THAT model. Refused loudly; the rest of the row merges.
+        for m in data.get("models", []):
+            kept, refused = refuse_misattributed_measurements(m, store)
+            if refused:
+                m["engines"] = kept
+                for name, why, post in refused:
+                    print(
+                        f"[ingest] REFUSED misattributed measurement {name!r} on {m.get('id')}: "
+                        f"{why}; post {post} — a measurement must name the model whose row it "
+                        f"is stored on"
                     )
         for m in data.get("models", []):
             mid = m.get("id")
@@ -2080,6 +2244,15 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                     print(f"[ingest] REFUSED {mid!r}: hf missing and not derivable "
                           f"({path.name}) — a model row carries its HF link (rule 5b); "
                           f"the rest of the snapshot still merges")
+                    continue
+                # A NEW model whose every measurement was refused (misattributed, or a
+                # fabricated engine) has nothing a table can show, and `check_model_fields`
+                # fails a row with no measurement. Excluded rather than stored broken: the
+                # rest of the snapshot still merges (same seam as the hf refusal above).
+                if not model.get("engines"):
+                    print(f"[ingest] REFUSED {mid!r}: no measurement left after the "
+                          f"attribution/engine refusal ({path.name}) — a model row needs at "
+                          f"least one valid measurement (rule 5)")
                     continue
                 by_id[mid] = model
                 store["models"].append(model)
