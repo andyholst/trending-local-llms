@@ -192,6 +192,14 @@ DIMENSIONS = (
 
 # Fields whose free text is scanned for a dimension that has no structured key.
 TEXT_FIELDS = ("quant", "hardware", "why")
+
+#: Fields of a CAPTURED row that are NOT evidence a post states a figure. The row's `why`
+#: is the search agent's ranking summary of the model — an agent re-acquiring a known model
+#: restates the store's own sentence, which made issue #470's untraceable `gemma-4-12b`
+#: `256K ctx.` look like an ingest job while the post it cites states no window (measured on
+#: the 2026-10-28 nvidia legs). A measurement's fields stay evidence: they are the run's
+#: own record.
+CAPTURE_ROW_SKIP_FIELDS = ("why",)
 STALE_DAYS = 30
 
 #: A gap dimension whose issue was CLOSED stays judged for this long (issue #491). The verdict a
@@ -292,6 +300,15 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
     This is what separates an ACQUISITION gap (no captured post states the figure — only a
     new search can close it) from an INGEST gap (a post states it and the store has no
     structured value). Reported per dimension, never as a reason to invent a value.
+
+    The row's OWN `why` is deliberately NOT evidence: it is the search agent's ranking
+    summary of the MODEL, not the post's words, and an agent that re-acquires a known model
+    restates what the store already said. Measured on the 2026-10-28 nvidia legs, which
+    carried the store's own `Best overall personal-agent model. Multimodal + audio, 256K ctx.`
+    for `gemma-4-12b` while the post they cite (`…/marcospaulosd/status/2114521574212796923`)
+    states no window and no audio at all — crediting that echo turned issue #470's untraceable
+    figure into a fake "ingest job" that no ingest change could ever close honestly. A
+    MEASUREMENT's fields are that run's record and stay evidence.
     """
     out: dict[str, dict[str, list[str]]] = {}
     if not raw_dir.exists():
@@ -308,6 +325,8 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
             sources = [row] + list(row.get("engines") or [])
             for source in sources:
                 for f in TEXT_FIELDS:
+                    if source is row and f in CAPTURE_ROW_SKIP_FIELDS:
+                        continue
                     value = source.get(f) if isinstance(source, dict) else None
                     if isinstance(value, str) and value.strip():
                         bucket.setdefault(f, []).append(value)

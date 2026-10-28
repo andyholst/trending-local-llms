@@ -503,6 +503,70 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
               missing <= count + added, f"{missing} > {count} + {added} added")
 
 
+def test_a_capture_that_only_echoes_the_stores_prose_is_not_a_post_statement():
+    """A capture's model-level `why` is the agent's summary, never proof a post states it.
+
+    Measured on the 2026-10-28 nvidia legs (the `ci/trending-refresh-20261028-2222` PR):
+    both captured rows carried the store's OWN sentence for `gemma-4-12b` —
+    `Best overall personal-agent model. Multimodal + audio, 256K ctx.` — while the post they
+    cite (`…/marcospaulosd/status/2114521574212796923`) states neither a window nor audio.
+    Crediting that echo flipped issue #470's UNTRACEABLE figure into `unstructured` ("an
+    ingest job"), which no honest ingest change can close: it would have to invent the
+    attribution or delete the store's prose (rule 3b). A MEASUREMENT's fields are that run's
+    record and stay evidence, so the model whose captured measurement states a window is
+    still an ingest job.
+    """
+
+    # Given two models whose store prose states a window the store does not hold …
+    echoed = model("echoed", why="Best overall personal-agent model. 256K ctx.",
+                   engines=[{"engine": "llama.cpp", "tps": "106", "hardware": "RTX 5080 16GB",
+                             "quant": "Q4", "date": "2026-10-26",
+                             "source_post": "https://lightbrd.com/u/status/1"}])
+    quoted = model("quoted", why="Best overall personal-agent model. 256K ctx.",
+                   engines=[{"engine": "llama.cpp", "tps": "106", "hardware": "RTX 5080 16GB",
+                             "quant": "Q4", "date": "2026-10-26",
+                             "source_post": "https://lightbrd.com/u/status/1"}])
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        # … one captured by a leg that only restated the store's sentence in the model-level
+        # `why` (the shape the 2026-10-28 refresh wrote), the other whose captured
+        # MEASUREMENT states a window of its own …
+        (raw / "nvidia-20261028-220238.json").write_text(json.dumps({
+            "backend": "nvidia", "generated_utc": "2026-10-28T22:12:55Z",
+            "models": [
+                {"id": "echoed", "name": "echoed",
+                 "why": "Best overall personal-agent model. 256K ctx.",
+                 "engines": [{"engine": "llama.cpp", "tps": "106",
+                              "hardware": "RTX 5080 16GB", "quant": "Q4",
+                              "source_post": "https://lightbrd.com/u/status/1"}]},
+                {"id": "quoted", "name": "quoted",
+                 "engines": [{"engine": "llama.cpp", "tps": "106",
+                              "hardware": "RTX 5080 16GB",
+                              "quant": "Q4_K_M, 131072-token context",
+                              "source_post": "https://lightbrd.com/u/status/1"}]},
+            ]}))
+        contract = contract_from(td, "context_tokens")
+
+        # When  the store is analysed against that capture
+        report = G.analyse(store_with([echoed, quoted]), contract, raw_dir=raw)
+
+        # Then  the echoed sentence is still UNTRACEABLE — no post states it …
+        check("capture echo: a restated store sentence is not a post statement",
+              report["untraceable"]["context_tokens"] == ["echoed"],
+              report["unstructured"]["context_tokens"] + report["untraceable"]["context_tokens"])
+        # … a measurement's own captured wording still IS an ingest job …
+        check("capture echo: a captured MEASUREMENT statement stays an ingest job",
+              report["unstructured"]["context_tokens"] == ["quoted"],
+              report["unstructured"]["context_tokens"])
+        # … and neither drops out of the partition.
+        parts = (report["not_captured"]["context_tokens"] + report["unstructured"]["context_tokens"]
+                 + report["captured_prose"]["context_tokens"] + report["untraceable"]["context_tokens"])
+        check("capture echo: the classes still partition the missing set",
+              sorted(parts) == sorted(report["missing"]["context_tokens"])
+              and len(parts) == len(set(parts)), parts)
+
+
 def test_an_acquisition_gap_is_not_an_ingest_gap():
     """A missing dimension must say WHICH gap it is (tech-debt `ranked-gaps-need-new-search-data`).
 
@@ -1797,6 +1861,7 @@ def main() -> int:
     test_flash_attention_is_not_a_storage_medium()
     test_a_vram_capacity_is_not_a_weights_figure_even_beside_gguf()
     test_the_real_store_reports_only_figures_it_can_point_at()
+    test_a_capture_that_only_echoes_the_stores_prose_is_not_a_post_statement()
     test_an_acquisition_gap_is_not_an_ingest_gap()
     test_the_real_store_splits_every_missing_dimension()
     test_the_report_and_issue_body_name_an_acquisition_gap()
