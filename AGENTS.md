@@ -1136,6 +1136,18 @@ this `AGENTS.md` and the `gather-data` skill, then:
   comment reads the push step's outcome, so a failed push is never reported
   as 'pushed'. `qa-report.txt` is uploaded as a run artifact. A pushed fix
   re-runs qa-validate, which auto-merges if green; still red → a human.
+  **A bot PR that cannot merge because its base moved is a REPAIR, not a dead
+  end (issue #476, shipped in #478):** the silent-PR sweep (`pr-health`)
+  dispatches `fix-bot` for a `ci/…` branch **capped at 2 `fix-bot:` commits** and
+  `scripts/fix_loop.sh` merges the FETCHED base before its first round, so a
+  failure the base already fixed costs zero LLM rounds. A CONFLICTED merge is
+  KEPT — its conflicted paths and hunks go into the same report the round reads,
+  and generated artifacts (`OPENSPEC.md`, the architecture inventory block) are
+  REGENERATED, never hand-merged; an unmerged index is RED by definition so a
+  lenient check can never call a half-merged branch green. The merge is
+  COMPLETED once the index comes back clean, and `--abort`ed only after the last
+  round, so nothing half-merged is ever pushed. A HUMAN's branch is reported
+  (comment only), never dispatched to — the sweep repairs only `ci/…` branches.
 
 - **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issues #113 / #127).
   Trigger surface is `issues: [opened]` carrying the `data-gap-analysis` label
@@ -1540,6 +1552,7 @@ actually happened.
 | `tests/test_architecture_bot.py` — `test_a_make_written_inside_prose_is_not_a_call` (rules 6c/6d, issue #544) | the inventory claiming a target the pipeline never runs: a `make openspec-check` written into a HEREDOC BODY or a QUOTED string reported as a call, so `ARCHITECTURE.md` §10 described behaviour the workflow does not have; and the opposite failure — a real `make pr-body ISSUE="$ISSUE"` losing its target because its argument is quoted |
 | `tests/test_fix_loop.py` — `test_a_failed_merge_with_no_unmerged_path_says_what_git_said` (rules 6c/6d, issue #563) | the fix loop describing a failed base merge as `CONFLICTED in: <unreadable>` when git left NO unmerged path — handing a round a repair with nothing to resolve, after which every round detached (measured, run 40177729642 on PR #557) — and the working tree left staged by the failed merge |
 | `tests/test_workflows.py` — the search job forwards every credential its leg uses (rules 3e/6d, issue #363) | a refresh search leg given no `HF_TOKEN`, so an authenticated Hugging Face lookup in the leg is impossible while every gate stays green; the job forwards the secret and `_search-preflight` proves both names in the agent's shell |
+| `tests/test_fix_loop.py` — `test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless` + `tests/test_pr_health.py` — `test_only_a_bot_branch_is_repaired_and_the_cap_holds` (rules 6b/6c, issue #476, shipped in #478) | a bot PR that cannot merge because its base moved treated as a dead end: the conflicted base merge ABORTED instead of kept and handed to a round (so nothing is ever repaired); a round leaving `<<<<<<<` conflict markers in the tree; a branch pushed HALF-MERGED (unmerged paths still in the index) or an unresolved conflict reported as green; generated artifacts hand-merged instead of regenerated; the sweep dispatching a repair onto a HUMAN's branch, or dispatching past the 2 `fix-bot:`-commit cap |
 
 When you add a stage or fix a pipeline bug, add its row here and its test in
 the same change (rule 6c).
