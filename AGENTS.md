@@ -146,6 +146,19 @@ retains 30 days of history.
    and `live-smoke` are green); a run that stops at "branch pushed" is a defect.
    The agent never merges, never pushes `master`, and never invents a value to
    close a gap — an unverifiable one is reported on the issue instead.
+   **A sweep that STARTS and then dies before its verdict says so ON the issue
+   (#498).** The `implement` job speaks from the steps that own a comment — the
+   verdict step for `refine`/`close`, `Report the outcome on the issue` for
+   `implement` — so a run that failed before them (a resolver that could not read
+   the issue, a refused checkout or base assertion, an image/smoke failure, an
+   agent that wrote no `triage.md`) posted the start marker and then NOTHING: the
+   issue showed "an implementer has started" for ever. One final `always()` step
+   now calls `make issue-outcome`, and the DECISION plus the body live in
+   `scripts/sweep_outcome.py` (rule 6d): it owes a comment only when the run
+   resolved an OPEN issue, implemented, produced NO verdict and was not closed in
+   flight (the already-fixed notice owns that), it writes ONCE per run (deduped on
+   the run id, carrying the registered `issue-bot-outcome` marker), and a refusal
+   exits 2 loudly instead of reporting a pass.
 
 6f. **Every change is a TRACKED OpenSpec change, and the root `OPENSPEC.md`
    index is how you find them (MANDATORY).** Work MUST start by creating the
@@ -224,7 +237,7 @@ retains 30 days of history.
 
    | bot | artifact it announces on | marker(s) |
    |---|---|---|
-   | `issue-bot` | the issue, BEFORE `make implement-issue` reads it | `issue-bot-start`, `issue-bot-skip`, `issue-bot-verdict`, `issue-bot-already-fixed` |
+   | `issue-bot` | the issue, BEFORE `make implement-issue` reads it | `issue-bot-start`, `issue-bot-skip`, `issue-bot-verdict`, `issue-bot-already-fixed`, `issue-bot-outcome` |
    | `issue-review-bot` | the issue, before its first write | `issue-review`, `issue-review: window` |
    | `fix-bot` | the PR it repairs | `fix-bot-start`, `fix-bot-end` |
    | `refresh-bot` | the PR (and the gap issue) it opens | `refresh-bot-run` |
@@ -1150,6 +1163,18 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   comment reads the push step's outcome, so a failed push is never reported
   as 'pushed'. `qa-report.txt` is uploaded as a run artifact. A pushed fix
   re-runs qa-validate, which auto-merges if green; still red → a human.
+  **A bot PR that cannot merge because its base moved is a REPAIR, not a dead
+  end (issue #476, shipped in #478):** the silent-PR sweep (`pr-health`)
+  dispatches `fix-bot` for a `ci/…` branch **capped at 2 `fix-bot:` commits** and
+  `scripts/fix_loop.sh` merges the FETCHED base before its first round, so a
+  failure the base already fixed costs zero LLM rounds. A CONFLICTED merge is
+  KEPT — its conflicted paths and hunks go into the same report the round reads,
+  and generated artifacts (`OPENSPEC.md`, the architecture inventory block) are
+  REGENERATED, never hand-merged; an unmerged index is RED by definition so a
+  lenient check can never call a half-merged branch green. The merge is
+  COMPLETED once the index comes back clean, and `--abort`ed only after the last
+  round, so nothing half-merged is ever pushed. A HUMAN's branch is reported
+  (comment only), never dispatched to — the sweep repairs only `ci/…` branches.
 
 - **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issues #113 / #127).
   Trigger surface is `issues: [opened]` carrying the `data-gap-analysis` label
@@ -1600,6 +1625,9 @@ actually happened.
 | `tests/test_architecture_bot.py` — `test_a_make_written_inside_prose_is_not_a_call` (rules 6c/6d, issue #544) | the inventory claiming a target the pipeline never runs: a `make openspec-check` written into a HEREDOC BODY or a QUOTED string reported as a call, so `ARCHITECTURE.md` §10 described behaviour the workflow does not have; and the opposite failure — a real `make pr-body ISSUE="$ISSUE"` losing its target because its argument is quoted |
 | `tests/test_fix_loop.py` — `test_a_failed_merge_with_no_unmerged_path_says_what_git_said` (rules 6c/6d, issue #563) | the fix loop describing a failed base merge as `CONFLICTED in: <unreadable>` when git left NO unmerged path — handing a round a repair with nothing to resolve, after which every round detached (measured, run 40177729642 on PR #557) — and the working tree left staged by the failed merge |
 | `tests/test_workflows.py` — the search job forwards every credential its leg uses (rules 3e/6d, issue #363) | a refresh search leg given no `HF_TOKEN`, so an authenticated Hugging Face lookup in the leg is impossible while every gate stays green; the job forwards the secret and `_search-preflight` proves both names in the agent's shell |
+| `tests/test_fix_loop.py` — `test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless` + `tests/test_pr_health.py` — `test_only_a_bot_branch_is_repaired_and_the_cap_holds` (rules 6b/6c, issue #476, shipped in #478) | a bot PR that cannot merge because its base moved treated as a dead end: the conflicted base merge ABORTED instead of kept and handed to a round (so nothing is ever repaired); a round leaving `<<<<<<<` conflict markers in the tree; a branch pushed HALF-MERGED (unmerged paths still in the index) or an unresolved conflict reported as green; generated artifacts hand-merged instead of regenerated; the sweep dispatching a repair onto a HUMAN's branch, or dispatching past the 2 `fix-bot:`-commit cap |
+
+| `tests/test_sweep_outcome.py` + `tests/test_workflows.py` — `test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict` (rules 6b/6e/6j, the #498 half) | a sweep that STARTS and dies before its verdict leaving NOTHING on the issue it picked — the start marker standing as "an implementer has started" for ever while the red run lives only in the Actions tab (the measured #120/#281/#346 class), which drains a day of the 48-issue queue with no artifact on the queue item; the `always()` step missing, not `always()`, or gated so it DOUBLE-posts beside the verdict step; a second post for the same run (dedup broken on the run id, or an EARLIER run's marker suppressing a re-run's); a refusal reported as a pass instead of exit 2; the comment composing itself in the workflow instead of `make issue-outcome` (rule 6d), posted with the owner PAT (it cannot comment, #124), or an `issue-bot-outcome` marker not registered in `scripts/bot_markers.py` |
 
 When you add a stage or fix a pipeline bug, add its row here and its test in
 the same change (rule 6c).

@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **166** · archived: **9**
+Active changes: **168** · archived: **9**
 
 ## Active changes
 
@@ -146,6 +146,7 @@ Active changes: **166** · archived: **9**
 | `repair-in-flight-is-visible` | active | #386 (a repair in flight is invisible in the job log) | — | [bot-agent-run-safety](openspec/changes/repair-in-flight-is-visible/specs/bot-agent-run-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/repair-in-flight-is-visible/proposal.md) |
 | `review-pick-parse` | active | — | — | [issue-review-queue](openspec/changes/review-pick-parse/specs/issue-review-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/review-pick-parse/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
+| `rulebook-names-the-conflict-repair` | active | #476 (the §6b/§8 wording `repair-a-conflicted-pr` — #475, PR #478 — owed and could not write) | — | [rulebook-conflict-repair](openspec/changes/rulebook-names-the-conflict-repair/specs/rulebook-conflict-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/rulebook-names-the-conflict-repair/proposal.md) |
 | `scope-gate-total-vram` | active | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/scope-gate-total-vram/proposal.md) |
 | `scripts-inventory-guarded` | active | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/scripts-inventory-guarded/proposal.md) |
 | `search-hf-verify-before-write` | active | #417 | — | [hf-link-verification](openspec/changes/search-hf-verify-before-write/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/search-hf-verify-before-write/proposal.md) |
@@ -162,6 +163,7 @@ Active changes: **166** · archived: **9**
 | `stated-untraceable-figures` | active | — | — | [data-gap-analysis](openspec/changes/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/stated-untraceable-figures/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `sweep-delivery-alarm` | active | #497 (measured: the hourly sweep asks GitHub for 24 slots a day and gets ~5) | — | [bot-coordination](openspec/changes/sweep-delivery-alarm/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-delivery-alarm/proposal.md) |
+| `sweep-outcome-comment` | active | — | — | [bot-coordination](openspec/changes/sweep-outcome-comment/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-outcome-comment/proposal.md) |
 | `sweep-reverifies-against-the-base` | active | #494 (the owner's ruling: *"the sweep bot analyzes each issue again against the latest | — | [bot-coordination](openspec/changes/sweep-reverifies-against-the-base/specs/bot-coordination/spec.md) | 11/11 | [proposal.md](openspec/changes/sweep-reverifies-against-the-base/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
 | `the-artifact-is-the-alarm` | active | — | — | [bot-alarms](openspec/changes/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/the-artifact-is-the-alarm/proposal.md) |
