@@ -157,6 +157,14 @@ engine build or flags THAT run needed → `engine_min_version` on the measuremen
 a property of the engine that produced the figure, not of the model). **Copy only a figure the post
 gives: never guess, derive or invent one.**
 
+A requirement figure lives where its POST lives — on the measurement that states it, next to that
+`source_post` — never only in the model-level `why`/`quant` prose. A sentence in `why` that states a
+figure no post of this row states is UNTRACEABLE: the analysis cannot tell whether the figure is
+ingest work or nothing, and no later change can structure it without inventing the attribution
+(`make validate` refuses the shape when the row cites no real post at all, and `make data-gaps`
+lists the rest as a capture job). So if the post does not state it, do NOT write it into `why` —
+record the dimensions on the measurement, and keep `why` to what the post actually says.
+
 ### `source_post` is the post itself, with its counters
 
 Set `source_post` to the exact post URL `https://lightbrd.com/<user>/status/<id>` — **never the bare
