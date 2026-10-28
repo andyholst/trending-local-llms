@@ -41,6 +41,37 @@ def section8() -> str:
     return text[text.index("## 8. Regression guards"):]
 
 
+def section6b() -> str:
+    """The §6b pipelines section, up to the next `## ` heading."""
+    text = AGENTS.read_text(encoding="utf-8")
+    start = text.index("## 6b.")
+    nxt = text.find("\n## ", start + 1)
+    return text[start:] if nxt == -1 else text[start:nxt]
+
+
+def test_the_conflict_repair_path_is_named_in_6b():
+    """#476: §6b must name what happens to a bot PR whose base moved.
+
+    The repair shipped in #478 (`scripts/fix_loop.sh` keeps a CONFLICTED base merge and
+    hands its hunks to a round; `pr-health` dispatches for a `ci/…` branch only). The
+    rulebook said nothing, so a reader could not tell a conflicting bot PR is repaired by
+    automation, nor which guard catches a regression in it.
+    """
+    sec = section6b()
+    for phrase, why in (
+        ("dispatches `fix-bot` for a `ci/…` branch", "the sweep's dispatch is not named"),
+        ("capped at 2 `fix-bot:` commits", "the commit cap is not stated"),
+        ("merges the FETCHED base before its first round", "the base merge is not stated"),
+        ("CONFLICTED merge is\n  KEPT", "the kept conflict is not stated"),
+        ("REGENERATED, never hand-merged", "the regenerate rule is not stated"),
+        ("COMPLETED once the index comes back clean", "the completion rule is not stated"),
+        ("`--abort`ed only after the last", "the abort rule is not stated"),
+        ("nothing half-merged is ever pushed", "the half-merged push is not forbidden"),
+        ("A HUMAN's branch is reported", "the human's-branch carve-out is not stated"),
+    ):
+        check(f"6b: {why}", phrase in sec, phrase)
+
+
 def test_the_owed_rows_are_present():
     sec = section8()
     # #400: the CI entry point that never ran.
@@ -78,6 +109,7 @@ def test_the_rows_this_session_owed_are_written():
         "#544": "the inventory claiming a target the pipeline never runs",
         "#563": "the fix loop describing a failed base merge",
         "#363": "a refresh search leg given no `HF_TOKEN`",
+        "#476": "a bot PR that cannot merge because its base moved",
     }
     for issue, phrase in wanted.items():
         row = next((l for l in sec.splitlines() if issue in l and phrase in l), "")
@@ -143,6 +175,7 @@ def test_the_section_still_parses_as_a_table():
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
+    test_the_conflict_repair_path_is_named_in_6b()
     test_the_rows_this_session_owed_are_written()
     test_the_storage_offload_row_is_written()
     test_the_rows_name_modules_that_exist()
