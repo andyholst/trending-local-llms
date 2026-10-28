@@ -9,6 +9,12 @@ what makes the description part of the change. It fails when
     tables (the target list),
   * a target the §3 tables name is not a make target any more,
   * a workflow under `.github/workflows/` is not described,
+  * a workflow under `.github/workflows/` is not named in `AGENTS.md` §6b, the
+    rulebook's own pipeline list — the list a contributor reads FIRST, which was
+    hand-maintained and named 6 of the 12 pipelines in the tree (the `tech-debt`
+    issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines`) — or §6b
+    names a `.yml` that is not a workflow, and a missing `AGENTS.md`, which is
+    a finding rather than a skip so deleting the file cannot silence it,
   * a script under `scripts/` is not described,
   * the description references a workflow/script path that does not exist,
   * a `--only` stage list of a Makefile target names a stage
@@ -48,6 +54,13 @@ DOC_NAME = "ARCHITECTURE.md"
 VALIDATOR = "scripts/validate.py"
 TARGET_SECTION = "## 3."
 NEXT_SECTION = "## 4."
+#: The RULEBOOK's own pipeline list — the section a contributor reads first, and
+#: the fourth place a workflow has to be named (issue `agents-md-6b-enumerates…`).
+#: `ARCHITECTURE.md` §4 is canonical for a pipeline's SHAPE (its §4 section and job
+#: list are checked below); §6b is where the rule that governs it lives.
+AGENTS_DOC = "AGENTS.md"
+RULEBOOK_SECTION = "## 6b."
+RULEBOOK_NEXT_SECTION = "## 7."
 #: The human-readable SCRIPT inventory. §10's generated block names every script
 #: too, so "the name appears somewhere" (the old rule) was satisfied by the block
 #: while §6 — the table a reader actually uses to learn what a script does — lost
@@ -129,6 +142,22 @@ def described_scripts(doc: Path) -> set[str]:
             if token.startswith("scripts/"):
                 names.add(token)
     return names
+
+
+def rulebook_pipelines(agents: Path) -> set[str]:
+    """The workflow names `AGENTS.md` §6b lists (its backticked `*.yml` tokens).
+
+    The section is the one a contributor reads first, and it is hand-maintained:
+    it named 6 of the 12 workflows in the tree while every one of them was
+    described in `ARCHITECTURE.md` §4 — so "is it in the description?" could never
+    notice. The pipeline's SHAPE stays §4's job (canonical, generated, and checked
+    above); this list is the rulebook entry, so it must name every pipeline.
+    """
+    if not agents.is_file():
+        return set()
+    body = section(agents.read_text(encoding="utf-8"), RULEBOOK_SECTION,
+                   RULEBOOK_NEXT_SECTION)
+    return {t for t in _TICKED.findall(body) if t.endswith(".yml")}
 
 
 def validate_stages(script: Path) -> set[str]:
@@ -251,6 +280,21 @@ def findings(root: Path) -> list[str]:
     out += [f"workflow `{w}` is not described in {DOC_NAME}" for w in workflows if w not in text]
     out += [f"{DOC_NAME} references `.github/workflows/{r}`, which does not exist"
             for r in sorted(set(_WF_REF.findall(text))) if r not in workflows]
+
+    # The rulebook's OWN pipeline list, both directions — the one place a
+    # contributor asks "which pipelines does this repo run?" and the one that was
+    # never reconciled when the alarms were added (`AGENTS.md` §6b named 6 of 12).
+    agents = root / AGENTS_DOC
+    if not agents.is_file():
+        out.append(f"{AGENTS_DOC} is missing — its §6b pipeline list is the rulebook's "
+                   f"statement of which pipelines exist (rule 6h)")
+    else:
+        named = rulebook_pipelines(agents)
+        out += [f"workflow `{w}` is not named in {AGENTS_DOC} §6b — every pipeline in the "
+                f"tree belongs in the rulebook's list (its shape is described in "
+                f"{DOC_NAME} §4)" for w in workflows if w not in named]
+        out += [f"{AGENTS_DOC} §6b names `{n}`, which is not a workflow in "
+                f"`.github/workflows/`" for n in sorted(named - set(workflows))]
 
     scripts = sorted(p.name for p in (root / "scripts").glob("*") if p.is_file())
     out += [f"script `scripts/{s}` is not described in {DOC_NAME}" for s in scripts if s not in text]

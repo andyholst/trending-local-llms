@@ -374,7 +374,15 @@ retains 30 days of history.
    stops matching the code is repaired instead of sitting until someone rereads
    it. A change that moves a workflow, a target, a script or a README section
    therefore regenerates the block in the SAME change (never by hand edits between
-   the markers). The split is deliberate:
+   the markers). **Adding a pipeline names it in `AGENTS.md` §6b** — the
+   rulebook's own pipeline list, one line per workflow naming the rule that
+   pipeline enforces — in the SAME change, and
+   `make architecture-check` fails in both directions: a workflow under
+   `.github/workflows/` that §6b does not name (measured: §6b named 6 of the 12
+   workflows while §4 described all of them, so "is it in the description?" could
+   never notice), and a `.yml` §6b names that is not a workflow. A missing
+   `AGENTS.md` is a FINDING, never a skip, so deleting the rulebook cannot silence
+   its own list. The split is deliberate:
    AGENTS.md is the rulebook (what must happen), ARCHITECTURE.md the description
    (how it works); never move a rule into the description or vice versa.
 
@@ -1104,7 +1112,13 @@ this `AGENTS.md` and the `gather-data` skill, then:
    and `gh pr create` — never the default `GITHUB_TOKEN` (see §6b). It never
    pushes to or merges `master` itself.
 
-## 6b. Four pipelines (refresh → validate → fix → implement → review)
+## 6b. The pipelines (refresh → validate → fix → implement → review → alarms)
+
+`ARCHITECTURE.md` §4 is **canonical for a pipeline's SHAPE** — its triggers, its jobs and the
+`make` targets each job calls (generated into §10 and gated by `make architecture-check`).
+THIS section is where the RULE each pipeline enforces lives, and `architecture-check` fails
+when a workflow in `.github/workflows/` is not named here (or when a name here is not a
+workflow), so the list cannot drift back into the hand-maintained half it used to be.
 
 - **`refresh-bot.yml`** — the **bot** pipeline. Scheduled (daily, 06:00 UTC +
   a 17:43 UTC backup slot — GitHub delays/drops on-the-hour crons) + manual
@@ -1296,6 +1310,51 @@ this `AGENTS.md` and the `gather-data` skill, then:
   anywhere**, so it cannot invent a claim about the system. It never merges, never
   pushes `master`, and its PR carries NO closing keyword — it implements no issue,
   and `pr_closure` refuses a PR that claims to close one.
+
+- **`publish-agent-image.yml`** — the **toolchain's publisher** (rule 3e, issue #206):
+  `workflow_dispatch` ONLY. Publishing the image every bot job runs inside is a
+  privileged act, never a side effect of a refresh, so the `guard` job runs FIRST
+  (rule 6j), then `publish`: `make agent-image-ref`, GHCR login with the default
+  `GITHUB_TOKEN` as the triggering actor, `make agent-image-push-check` BEFORE the
+  build (a credential that cannot write fails in seconds with the registry's own
+  words), `make publish-agent-image` (a no-op when this revision's tag exists). No
+  schedule, no `pull_request`, no `workflow_run`: a PR cannot trigger a publish.
+
+- **`pr-closure.yml`** — the **closure check on the artifact it reads** (rule 6e,
+  issue #290): `pull_request` only, `edited` included, because `make pr-closure`'s
+  input is the PR BODY and a body changes without a new commit — `qa-validate`
+  triggers on the default types, so an edit was never re-checked and a body that
+  broke its closure kept a green check. Its own pipeline on purpose: adding
+  `edited` to `qa-validate` would re-run the image builds, the unit suite and the
+  30-minute network-bound `live-smoke` because a sentence changed. Read-only.
+
+- **`pr-health.yml`** — the **silent-PR alarm** (rules 3d/6b, issue #442): twice an
+  hour (`23,53`) + owner dispatch. A CONFLICTING PR runs no workflows at all, so
+  `gh pr checks` answers "no checks reported" and nothing distinguishes it from a
+  quiet queue; the `sweep` job runs `make pr-health REPO=… COMMENT=1`, comments
+  with the DEFAULT token, and exits 1 when a PR is silent — a scheduled red, not a
+  log line. It dispatches `fix-bot` for a bot-owned `ci/…` branch (capped at 2
+  `fix-bot:` commits) and only COMMENTS on a human's branch.
+
+- **`bot-health.yml`** — the **red-cron alarm** (rules 3d/6c, issue #488): four times
+  a day (`23 */6`) + owner dispatch. `make bot-health REPO=… LIMIT=…` derives the
+  cron pipelines FROM the workflows and fails when a pipeline's newest N scheduled
+  runs all failed, naming the newest run URL — a bot whose alarms are red every
+  night had nothing that said so. A pipeline with fewer than N scheduled runs is
+  not red (it has not had N chances) and a `gh` that cannot answer is a loud
+  failure, never a clean bill of health. Read-only.
+
+- **`queued-alarm.yml`** — the **stuck-run alarm** (rule 6c, issue #202): twice an
+  hour (`7,37`) + a `minutes` dispatch input. A job whose runner label matches
+  nothing does not fail — it stays `queued` for ever, so the run never concludes and
+  every PR's checks sit at `PENDING` with no red anywhere; `make queued-alarm` makes
+  that state loud, deduped by marker so a second sweep cannot comment twice.
+
+- **`code-review-bot.yml`** — the **tree and pipeline reviewer** (rules 6c/6m, issue
+  #313): weekly (Monday `23 7`) + owner dispatch, `concurrency: code-review-bot` (queued, never cancelled). `make code-review-scan` reads the real
+  tree and workflows, and `make code-review-file` files ONE issue per NEW finding
+  (marker dedup, capped per run). **No model anywhere**, so a scan is free and
+  cannot invent a finding; it never edits code, opens a PR or comments on one.
 
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
@@ -1546,6 +1605,7 @@ actually happened.
 | `tests/test_lint_linefeeds.py` + `make lint` (rule 6i, issue #186) | a tracked text file that ends without a newline (git's `\ No newline at end of file`, which turns the next append into a spurious last-line change); `--fix` appending more than one newline or not being idempotent; a binary file (NUL in the first 8000) or an empty file being reported as a finding; an UNTRACKED file failing the lint (the set is `git ls-files`); the gate not wired into `qa-validate`, the fix loop's first check or `make test` (rule 6d); `.editorconfig` losing the editor half of the rule |
 | `tests/test_lint_syntax.py` + `make lint` (the trailing-newline rule's sibling, issue #190) | a tracked Python module that raises a `SyntaxWarning` on compile — the measured `scripts/update_trending.py` docstring containing an invalid escape sequence (a lone backslash before a space; PEP 686's warning path ends in an error in a future Python) — or does not parse at all; the warning being hidden because the module was already imported (the warning registry is cleared per file, so the guard cannot be silenced by an earlier import); an UNTRACKED module failing the lint (the set is `git ls-files '*.py'`); the gate not wired into `make lint`, `qa-validate`, the fix loop's first check or `make test` (rule 6d) |
 | `tests/test_architecture.py` (rule 6h, issues #178/#506) | an `ARCHITECTURE.md` that lost a public make target, a workflow or a script; **a script NAMED in the generated §10 block but with no row in §6's table** (measured: 9 of 46 scripts, every bot written that week among them, had no role a reader could use — the old check was satisfied by the block); a description still naming a target that was removed (its §3 tables are the claim, the Makefile the truth); a phantom `.github/workflows/*.yml` or `scripts/*` reference; the check not wired into `qa-validate`, the fix loop or `make test` (rule 6d); the implementer prompt no longer requiring the update |
+| `tests/test_architecture.py` — `test_a_pipeline_missing_from_the_rulebook_is_reported`, `test_a_rulebook_line_with_no_workflow_is_reported`, `test_a_missing_agents_doc_is_a_finding_not_a_skip`, `test_the_rulebook_points_at_the_canonical_pipeline_description`, `test_rule_6h_names_the_rulebook_obligation` (rule 6h, `rulebook-names-every-pipeline`) | the rulebook's pipeline list drifting from the tree: a workflow in `.github/workflows/` that `AGENTS.md` §6b never names (measured: §6b named 6 of the **12** workflows — `bot-health`, `code-review-bot`, `pr-closure`, `pr-health`, `publish-agent-image`, `queued-alarm` were described only in `ARCHITECTURE.md` §4, so "is it in the description?" could never notice, and a reader of the rulebook saw six bots where the repo runs twelve); §6b naming a `.yml` that is not a workflow; a MISSING `AGENTS.md` read as a clean pass, so deleting the rulebook silenced its own guard; a §6b heading claiming a pipeline COUNT (`Four pipelines` under a six-bullet list — the claim was wrong twice over); a bullet that does not name the rule its pipeline enforces; §6b dropping the pointer that `ARCHITECTURE.md` §4 is canonical for a pipeline's SHAPE; and rule 6h no longer stating that a new pipeline is named in §6b in the SAME change |
 | `tests/test_architecture_bot.py` + `make architecture-refresh` (rule 6h, issue #479) | the description drifting from the code in its MECHANICAL half: an `ARCHITECTURE.md` §10 block that no longer names a pipeline's cron, its jobs or a `make` target a step actually calls; a `make` that only appears in a workflow COMMENT (or names no real target) reported as a call; a script with no line in the inventory; a README section or backend table missing from the list a refresh rewrites; a FLOW step whose target, script or artifact the tree no longer has (refused at write time too, so the generator never publishes a claim it could not back); a missing marker silently skipped instead of a loud failure; `architecture-check` no longer failing on a stale block; the daily `architecture-bot.yml` losing its guard, its `base-check`, its "PR only when changed" gate, or opening a PR that claims to close an issue it does not implement; the guard not registered in `tests/test_workflows.py` |
 | `tests/test_pr_health.py` + `make pr-health` (rules 3d/6c, issue #487) | the alarm for a silent PR being silently refused by its own configuration: an EMPTY `MAX_FIXBOT_COMMITS` (the public target forwarded `"$(MAX_FIXBOT_COMMITS)"` unconditionally, so `COMMENT=1` exported a zero-length value) crashing `int("")` before any PR was read — measured on run 39530945300, `sweep: failure` on every schedule since #475; the same `int(os.environ…)` shape in five other scripts; a wrapper that manufactures an empty value again; a helper that silently reads a typo as the default (a non-numeric value must fail naming the variable); the guard, the executed `make pr-health … COMMENT=1` path with a stub `gh`, or the Makefile assertion going missing |
 | `tests/test_check_openspec_tasks.py` (rule 6f, issue #172) | an ACTIVE change left with an unticked `- [ ]` box passing CI (`openspec validate` checks structure only) — the completion half of the gate; an archived change's boxes being checked; a literal `- [ ]` inside a fenced code block counted as a task; the gate not reachable from a make target CI runs (rule 6d) |

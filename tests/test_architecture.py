@@ -12,6 +12,7 @@ Wired into `make test` (rule 6d).
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 import tempfile
@@ -47,14 +48,16 @@ def _module():
 def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify"),
           workflows=("ci.yml",), scripts=("thing.py",), doci_wf=True, doc_script=True,
           doc_roles=None, jobs=("build",), doc_jobs=None,
-          validate_stages=None, only=()):
-    """A minimal repo fixture: Makefile + ARCHITECTURE.md + workflows + scripts.
+          validate_stages=None, only=(), agents_workflows=None):
+    """A minimal repo fixture: Makefile + ARCHITECTURE.md + AGENTS.md + workflows + scripts.
 
     `doc_roles` writes the §6 script table: since issue #506 a script needs a ROLE
     there, and naming it in the generated §10 block does not count.
     `jobs` / `doc_jobs` are the workflow's real jobs and the §4 job names claimed
     for it; `validate_stages` writes a `scripts/validate.py` registering them and
     `only` writes `--only` lists into the fixture Makefile (issue #182).
+    `agents_workflows` is the §6b list in the fixture `AGENTS.md` (rule 6h): it
+    defaults to the workflows in the fixture tree, i.e. the shape the rule requires.
     """
     (td / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (td / "scripts").mkdir(parents=True, exist_ok=True)
@@ -65,6 +68,15 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
         ".PHONY: build verify\n" + "".join(f"{t}:\n\techo {t}\n" for t in targets) + only_target,
         encoding="utf-8",
     )
+    # The RULEBOOK's pipeline list (§6b, rule 6h): one line per pipeline, each
+    # naming the rule it enforces — the shape the section itself requires.
+    listed = tuple(workflows) if agents_workflows is None else tuple(agents_workflows)
+    agents_body = ["# AGENTS.md — fixture", "", "## 6b. The pipelines",
+                   "", "`ARCHITECTURE.md` §4 is canonical for a pipeline's shape.", ""]
+    agents_body += [f"- **`{w}`** — a pipeline (rule 6c)." for w in listed]
+    agents_body += ["", "## 7. Style", "", "- Terse.", ""]
+    (td / "AGENTS.md").write_text("\n".join(agents_body), encoding="utf-8")
+
     for w in workflows:
         (td / ".github" / "workflows" / w).write_text(
             "name: ci\njobs:\n" + "".join(f"  {j}:\n    runs-on: ubuntu-latest\n" for j in jobs),
@@ -336,6 +348,123 @@ def test_doc_states_what_the_guard_does_not_prove():
     check("boundary: the guard's own docstring states it", "cannot read prose" in module_doc, "")
 
 
+def _rulebook_body() -> str:
+    """`AGENTS.md` §6b, read with the checker's OWN section markers."""
+    mod = _module()
+    return mod.section((ROOT / "AGENTS.md").read_text(encoding="utf-8"),
+                       mod.RULEBOOK_SECTION, mod.RULEBOOK_NEXT_SECTION)
+
+
+def _rulebook_bullets() -> dict[str, str]:
+    """`{workflow: bullet text}` for the pipeline bullets in §6b."""
+    body = _rulebook_body()
+    out: dict[str, str] = {}
+    for block in re.split(r"\n(?=- \*\*`)", body):
+        m = re.match(r"- \*\*`([A-Za-z0-9_.-]+\.yml)`\*\*", block)
+        if m:
+            out[m.group(1)] = block
+    return out
+
+
+def test_a_pipeline_missing_from_the_rulebook_is_reported():
+    """rule 6h: a workflow in the tree that `AGENTS.md` §6b never names fails."""
+
+    # Given a tree whose §6b names only ci.yml while the workflows dir holds two
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), workflows=("ci.yml", "extra.yml"),
+                     agents_workflows=("ci.yml",))
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the unlisted pipeline is named against the rulebook's section
+    check("rulebook: an unlisted pipeline is reported",
+          any("workflow `extra.yml` is not named in AGENTS.md §6b" in p for p in problems),
+          problems)
+
+    # And   the same tree with a §6b line naming it is green in that direction
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), workflows=("ci.yml", "extra.yml"),
+                     agents_workflows=("ci.yml", "extra.yml"))
+        problems = _module().findings(root)
+    check("rulebook: naming it turns that finding green",
+          not any("§6b" in p for p in problems), problems)
+
+
+def test_a_rulebook_line_with_no_workflow_is_reported():
+    """rule 6h: §6b naming a `.yml` that is not a workflow is the other direction."""
+
+    # Given a §6b line for a workflow the tree does not hold
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), workflows=("ci.yml",),
+                     agents_workflows=("ci.yml", "ghost.yml"))
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the phantom §6b line is named as such
+    check("rulebook: a line with no workflow is reported",
+          any("AGENTS.md §6b names `ghost.yml`" in p and "not a workflow" in p
+              for p in problems), problems)
+    check("rulebook: the real workflow is not blamed for it",
+          not any("workflow `ci.yml` is not named" in p for p in problems), problems)
+
+
+def test_a_missing_agents_doc_is_a_finding_not_a_skip():
+    """Deleting `AGENTS.md` cannot silence its own pipeline list (rule 6h)."""
+
+    # Given a consistent fixture tree with its rulebook removed
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        (root / "AGENTS.md").unlink()
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the missing rulebook is a finding, never a clean pass
+    check("rulebook: a missing AGENTS.md is a finding",
+          any("AGENTS.md is missing" in p and "§6b" in p for p in problems), problems)
+
+
+def test_the_rulebook_points_at_the_canonical_pipeline_description():
+    """rule 6h: §6b says where a pipeline's SHAPE lives, and names the rule per pipeline."""
+
+    # Given the real rulebook's §6b and the workflows it must cover
+    body = _rulebook_body()
+    bullets = _rulebook_bullets()
+    workflows = sorted(p.name for p in (ROOT / ".github" / "workflows").glob("*.yml"))
+    heading = next((ln for ln in body.splitlines() if ln.startswith("## 6b.")), "")
+
+    # When  the section is read
+    # Then  it points at §4 as canonical, claims no count, and each pipeline carries its rule
+    check("rulebook: §6b names ARCHITECTURE.md §4 as canonical for a pipeline's shape",
+          "ARCHITECTURE.md" in body and "§4" in body and "canonical" in body, body[:400])
+    check("rulebook: §6b names every workflow in the tree",
+          not [w for w in workflows if w not in bullets], str(sorted(bullets)))
+    check("rulebook: every listed pipeline carries the rule it enforces",
+          [w for w in workflows if w in bullets and "rule " not in bullets[w]],
+          str(sorted(bullets)))
+    check("rulebook: the §6b heading claims no pipeline count",
+          not re.search(r"\b(Four|Five|Six|Seven|Eleven|Twelve|\d+)\s+pipelines?\b", heading),
+          heading)
+
+
+def test_rule_6h_names_the_rulebook_obligation():
+    """rule 6h: a new workflow is named in §6b in the SAME change."""
+
+    # Given §2 rule 6h
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    m = re.search(r"^6h\. \*\*.*?(?=^6i\. )", text, re.S | re.M)
+    rule = m.group(0) if m else ""
+
+    # When  a contributor adds a pipeline
+    # Then  the rule tells them §6b must name it and that the guard fails otherwise
+    check("rule 6h: the rule is found", bool(rule), text[:200])
+    check("rule 6h: it names the §6b obligation", "§6b" in rule, rule[:400])
+    check("rule 6h: the naming is in the SAME change and gated by architecture-check",
+          "same change" in rule.lower() and "architecture-check" in rule, rule[:600])
+
+
 def main() -> int:
     print("architecture description + its guard (ARCHITECTURE.md, rule 6h)")
     test_missing_doc_is_a_failure()
@@ -347,6 +476,11 @@ def main() -> int:
     test_a_script_named_only_in_the_generated_block_has_no_role()
     test_validate_only_stage_lists_match_the_validator()
     test_pipeline_job_names_match_the_workflow_job_keys()
+    test_a_pipeline_missing_from_the_rulebook_is_reported()
+    test_a_rulebook_line_with_no_workflow_is_reported()
+    test_a_missing_agents_doc_is_a_finding_not_a_skip()
+    test_the_rulebook_points_at_the_canonical_pipeline_description()
+    test_rule_6h_names_the_rulebook_obligation()
     test_doc_states_what_the_guard_does_not_prove()
     test_real_repo_description_is_current()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
