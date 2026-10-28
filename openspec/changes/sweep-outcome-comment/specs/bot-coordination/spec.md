@@ -14,14 +14,14 @@ verdict (`steps.verdict.outputs.verdict == ''`). The comment MUST be written thr
 - **Given** a run that resolved issue 498 as open and whose `verdict` step never produced a value
 - **When** the shipped `run:` block is executed with `make issue-outcome` stubbed
 - **Then** the step runs, passes the run id, the run URL, the branch and the per-stage outcomes, and uses `${{ github.token }}`
-- **Test:** tests/test_workflows.py::test_issue_bot
+- **Test:** tests/test_workflows.py::test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict
 
 #### Scenario: a run that already has an outcome stays quiet
 
 - **Given** the same step in `issue-bot.yml`
 - **When** its condition is inspected
 - **Then** it requires `steps.verdict.outputs.verdict == ''`, so an `implement`, `refine` or `close` run posts only what its own step posts, and a closed-while-in-flight run posts only the already-fixed notice
-- **Test:** tests/test_workflows.py::test_issue_bot
+- **Test:** tests/test_workflows.py::test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict
 
 ### Requirement: The outcome comment is once per run and carries the registered marker
 

@@ -97,8 +97,12 @@ def posted(td: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def main() -> int:
-    # ---- the decision, as a pure function ------------------------------------------------
+def test_the_decision_names_every_refusal() -> None:
+    """The decision matrix: only `implemented, not closed, no verdict` owes a comment.
+
+    Each refusal NAMES its reason — a silent skip and a skip for the wrong reason look the same in
+    a log, and the second one is how the gap this closes stayed invisible.
+    """
     print("sweep outcome: the decision matrix")
     cases = [
         # (implement, closed, verdict)                 -> owe?
@@ -114,7 +118,9 @@ def main() -> int:
         check(f"owed(implement={implement}, closed={closed}, verdict={verdict!r}) is {want}",
               got is want and bool(why), why)
 
-    # ---- the body: the registered marker, the run, the stages ---------------------------
+
+def test_the_body_carries_the_registered_marker() -> None:
+    """The body starts with the marker REGISTERED in `scripts/bot_markers.py`, never a literal."""
     print("sweep outcome: the comment body")
     marker = bm.start_marker("issue-bot", dt.datetime(2026, 10, 28, 12, 0, 0, tzinfo=dt.timezone.utc),
                              RUN, kind="outcome")
@@ -136,8 +142,11 @@ def main() -> int:
     check("the body says nothing was committed/pushed/opened",
           "Nothing was committed, pushed or opened" in body)
 
-    # ---- the CLI: print (no gh at all), then post, then dedup ---------------------------
-    print("sweep outcome: the CLI")
+
+def test_a_second_post_for_the_same_run_writes_nothing() -> None:
+    """`--post` is ONCE PER RUN: its own marker (or already-fixed notice) suppresses a re-run,
+    an EARLIER run's comment never does."""
+    print("sweep outcome: the CLI, and once per run")
     with tempfile.TemporaryDirectory() as raw:
         td = Path(raw)
         env = env_for(td)
@@ -186,7 +195,10 @@ def main() -> int:
               fixed.returncode == 0 and "already-fixed" in fixed.stdout
               and len(posted(td)) == 2, fixed.stdout)
 
-    # ---- every refusal is loud, and NONE of them writes --------------------------------
+
+def test_a_missing_or_unreadable_issue_is_loud() -> None:
+    """Every refusal is LOUD (exit 2) and NONE of them writes — a tool that cannot read a run's
+    state must never report a pass."""
     print("sweep outcome: refusals")
     with tempfile.TemporaryDirectory() as raw:
         td = Path(raw)
@@ -216,13 +228,15 @@ def main() -> int:
               unreadable.returncode == 2 and "failed" in unreadable.stderr, unreadable.stderr)
         check("…and nothing was posted on the unreadable path", posted(td) == [], posted(td))
 
-    # ---- the wiring: one entry point, called by the pipeline (rules 6d/6m) -------------
+
+def test_the_wiring_has_one_entry_point() -> None:
+    """One entry point, called by the pipeline, and the body lives in the script (rules 6d/6m)."""
     print("sweep outcome: the wiring")
     makefile = MAKEFILE.read_text(encoding="utf-8")
     check("the Makefile carries `issue-outcome`", "\nissue-outcome:" in makefile)
     recipe = makefile.split("\nissue-outcome:", 1)[-1].split("\n\n", 1)[0]
     optional = ("--repo", "--run-id", "--run-url", "--branch", "--stages", "--verdict", "--closed")
-    check("…and it never forwards an empty value (every optional one behind `$(if …)`)",
+    check("…and it never forwards an empty value (every optional one behind `$(if …)` on one line)",
           all(any(flag in ln and "$(if" in ln for ln in recipe.splitlines()) for flag in optional),
           recipe)
     check("…and it calls the script", "scripts/sweep_outcome.py" in makefile)
@@ -232,6 +246,13 @@ def main() -> int:
           "The sweep stopped before it could report an outcome" not in wf,
           "the body belongs in the script")
 
+
+def main() -> int:
+    test_the_decision_names_every_refusal()
+    test_the_body_carries_the_registered_marker()
+    test_a_second_post_for_the_same_run_writes_nothing()
+    test_a_missing_or_unreadable_issue_is_loud()
+    test_the_wiring_has_one_entry_point()
     print(f"\nPASSED {passed} | FAILED {failed}")
     return 1 if failed else 0
 

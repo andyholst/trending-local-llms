@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **165** · archived: **9**
+Active changes: **166** · archived: **9**
 
 ## Active changes
 
@@ -161,6 +161,7 @@ Active changes: **165** · archived: **9**
 | `stated-untraceable-figures` | active | — | — | [data-gap-analysis](openspec/changes/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/stated-untraceable-figures/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `sweep-delivery-alarm` | active | #497 (measured: the hourly sweep asks GitHub for 24 slots a day and gets ~5) | — | [bot-coordination](openspec/changes/sweep-delivery-alarm/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-delivery-alarm/proposal.md) |
+| `sweep-outcome-comment` | active | — | — | [bot-coordination](openspec/changes/sweep-outcome-comment/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-outcome-comment/proposal.md) |
 | `sweep-reverifies-against-the-base` | active | #494 (the owner's ruling: *"the sweep bot analyzes each issue again against the latest | — | [bot-coordination](openspec/changes/sweep-reverifies-against-the-base/specs/bot-coordination/spec.md) | 11/11 | [proposal.md](openspec/changes/sweep-reverifies-against-the-base/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
 | `the-artifact-is-the-alarm` | active | — | — | [bot-alarms](openspec/changes/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/the-artifact-is-the-alarm/proposal.md) |
