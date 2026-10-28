@@ -1,0 +1,88 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-28T21:58:24Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B (Apple Silicon)",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.7",
+          "hardware": "Apple M5 Pro 48GB unified memory (33GB memory budget, 17.3 GB/s SSD)",
+          "quant": "105 GB 4-bit weights streamed from SSD; MoE 10 of 512 experts active per token",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1,
+          "weight_gb": "105",
+          "system_ram_min": "48GB",
+          "storage_offload": "SSD weight streaming at 17.3 GB/s",
+          "context_tokens": "32768"
+        },
+        {
+          "engine": "Slotstream",
+          "tps": "1.41",
+          "hardware": "base Mac mini M2 (SSD reads 1.5 GB/s)",
+          "quant": "105 GB 4-bit weights streamed from a slow SSD",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1,
+          "weight_gb": "105",
+          "storage_offload": "SSD weight streaming at 1.5 GB/s"
+        }
+      ],
+      "vram_tier": "48GB"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B (Apple Silicon, 48GB M5 Pro)",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.69",
+          "hardware": "Apple M5 Pro 48GB Mac (33GB memory budget)",
+          "quant": "native Swift binary, weights streamed from SSD; 20.91-23.69 tok/s",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653",
+          "likes": 1,
+          "comments": 2,
+          "reshares": 8,
+          "views": 726,
+          "interactions": 13,
+          "weight_gb": "105",
+          "system_ram_min": "48GB",
+          "storage_offload": "SSD weight streaming"
+        }
+      ],
+      "vram_tier": "48GB"
+    }
+  ]
+}

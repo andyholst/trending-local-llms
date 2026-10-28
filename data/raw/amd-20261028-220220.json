@@ -1,0 +1,48 @@
+{
+  "backend": "amd",
+  "generated_utc": "2026-10-28T22:02:20Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b-r9700-vllm-dflash2-w4a16",
+      "name": "Qwen3.8-27B on Radeon AI PRO R9700 (vLLM ROCm 7.15, DFlash2)",
+      "full_name": "Qwen3.8-27B W4A16 INT4 on a single 32GB Radeon AI PRO R9700, vLLM on native Windows ROCm 7.15 with a DFlash2 drafter",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "32GB",
+      "vram_min": "32GB",
+      "formats": [
+        {
+          "name": "AWQ-INT4 (compressed-tensors)",
+          "hf": "abihsoro/Qwen3.8-27B-AWQ-INT4"
+        },
+        {
+          "name": "DFlash2 W4A16 drafter",
+          "hf": "syvai/Qwen3.8-27B-DFlash2-W4A16"
+        }
+      ],
+      "backends": [
+        "ROCm"
+      ],
+      "last_seen": "2026-09-10",
+      "why": "Italianclownz: no container and no WSL — vLLM 0.28 on native Windows with ROCm 7.15 hits 80 tok/s single-stream decode with the DFlash2 drafter at depth 4; the 27B weights are 14.68 GiB after repacking the lm_head into the same INT4 group-128 format",
+      "engines": [
+        {
+          "likes": 280,
+          "comments": 4,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 284,
+          "engine": "vLLM",
+          "tps": "80",
+          "hardware": "Radeon AI PRO R9700 32GB (gfx1201), native Windows",
+          "quant": "ROCm 7.15 / HIP; W4A16 INT4 weights, bf16 activations, group size 128, pack-quantized; DFlash2 drafter at depth 4; single-stream decode (981 tok/s prefill on a 4K prompt)",
+          "date": "2026-09-10",
+          "source_post": "https://lightbrd.com/Italianclownz/status/2098163624124592594",
+          "weight_gb": "14.68 GiB INT4 (lm_head repacked to INT4, +16%)"
+        }
+      ]
+    }
+  ]
+}

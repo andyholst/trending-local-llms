@@ -1,0 +1,349 @@
+{
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "95",
+          "date": "2026-10-26",
+          "hardware": "single RTX 5090 32GB",
+          "quant": "UD-Q4_K_XL",
+          "weight_gb": "UD-Q4_K_XL",
+          "likes": 20,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 20,
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2114796704423657751"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "102",
+          "date": "2026-10-27",
+          "hardware": "single RTX 4090 24GB",
+          "quant": "two inference settings changed so Ollama's default FP16 KV cache no longer spills ~30% of the workload into system RAM; 131K context",
+          "context_tokens": "131072",
+          "engine_min_version": "Ollama with the KV-cache offload settings changed from their defaults",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114929393411756271"
+        },
+        {
+          "engine": "Ollama",
+          "tps": "16",
+          "date": "2026-10-27",
+          "hardware": "single RTX 4090 24GB",
+          "quant": "Ollama default configuration (FP16 KV cache, ~30% spills to system RAM); 131K context",
+          "context_tokens": "131072",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114929393411756271"
+        }
+      ],
+      "why": "Flagship local model. 384K views on release. 262K ctx (1M via YaRN).",
+      "last_seen": "2026-10-26",
+      "vram_min": "12GB",
+      "context_tokens": "262144 (262K ctx; 1M via YaRN)",
+      "weight_gb": "13.1GB (UD-Q3_K_XL)",
+      "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
+      "system_ram_min": "128GB"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-27",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "120",
+          "date": "2026-10-26",
+          "hardware": "NVIDIA GPU (card not named in the post)",
+          "quant": "MTP enabled, Q8 KV cache, mmproj offload; 262,144-token context",
+          "context_tokens": "262144",
+          "engine_min_version": "MTP enabled, Q8 KV cache, mmproj offload",
+          "likes": 216,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 216,
+          "source_post": "https://lightbrd.com/reponsedalarabi/status/2114766815653990805"
+        }
+      ],
+      "why": "Qwen3.6-35B-A3B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "system_ram_min": "32GB",
+      "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
+      "context_tokens": "66000",
+      "weight_gb": "Q4_K_M"
+    },
+    {
+      "id": "lfm2.5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "full_name": "LFM2.5-24B-A2B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "24B (A2B MoE)",
+      "hf": "LiquidAI/LFM2.5-24B-A2B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-26",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        },
+        {
+          "name": "MLX",
+          "hf": "LiquidAI/LFM2.5-24B-A2B"
+        }
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50.7",
+          "date": "2026-10-14",
+          "hardware": "RTX 3080 10GB",
+          "quant": "Q4; S1 speed test 644 tok/s in / 50.7 tok/s out; context search/reasoning at 48K",
+          "context_tokens": "49152",
+          "weight_gb": "Q4",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0,
+          "source_post": "https://lightbrd.com/PaulGug/status/2110275665408704970"
+        }
+      ],
+      "why": "LFM2.5-24B-A2B — see source posts.",
+      "context_tokens": "131K",
+      "system_ram_min": "unified memory (Strix Halo APU)",
+      "weight_gb": "14.5GB 4-bit",
+      "engine_min_version": "SGLang day-0 (Liquid's own benchmarks run on vLLM/Liquid inference stack)"
+    },
+    {
+      "id": "gemma-4-12b",
+      "name": "Gemma 4 12B",
+      "full_name": "gemma-4-12B-it",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "google/gemma-4-12B-it"
+        }
+      ],
+      "license": "Gemma",
+      "params": "12B",
+      "hf": "google/gemma-4-12B-it",
+      "vram_tier": "9GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "106",
+          "date": "2026-10-26",
+          "hardware": "single RTX 5080 16GB",
+          "quant": "the poster's own from-scratch pure-CUDA engine (no NVIDIA libraries), batch 1, no speculative decoding",
+          "likes": 1091,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1091,
+          "source_post": "https://lightbrd.com/marcospaulosd/status/2114521574212796923"
+        }
+      ],
+      "why": "Best overall personal-agent model. Multimodal + audio, 256K ctx.",
+      "last_seen": "2026-10-26",
+      "vram_min": "6GB"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B-Distill",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "date": "2026-10-28",
+          "hardware": "RTX 3060 12GB + 16GB system RAM (26 expert layers parked in system RAM); $329 used card",
+          "quant": "Q4_K_M with 26 MoE layers on the CPU",
+          "weight_gb": "Q4_K_M",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "likes": 221,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 221,
+          "source_post": "https://lightbrd.com/tolewis/status/2115390916798058674"
+        }
+      ],
+      "last_seen": "2026-10-19",
+      "why": "Qwen3.8-35B-A3B-Distill — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.8-35B-A3B",
+          "hf": "empero-ai/Qwen3.8-35B-A3B-Distill"
+        }
+      ],
+      "system_ram_min": "16GB",
+      "context_tokens": "262K",
+      "engine_min_version": "llama.cpp with Flash Attention, Q8 KV cache, 26 MoE layers on CPU",
+      "weight_gb": "14.6GB IQ4_XS"
+    },
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "161",
+          "date": "2026-10-27",
+          "hardware": "RTX 5080 16GB + RTX 4060 Ti 16GB, 32GB system RAM (Strata DualGPU)",
+          "quant": "Strata DualGPU with a fine-tuned draft layer; code generation",
+          "engine_min_version": "Strata DualGPU + fine-tuned draft layer",
+          "likes": 10743,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 10743,
+          "source_post": "https://lightbrd.com/dextune/status/2115088131636842866"
+        },
+        {
+          "engine": "Strata",
+          "tps": "143",
+          "date": "2026-10-27",
+          "hardware": "RTX 5080 16GB + RTX 4060 Ti 16GB, 32GB system RAM (Strata DualGPU)",
+          "quant": "Strata DualGPU: experts kept in VRAM and RAM while decoding is pipelined across both cards; code generation",
+          "engine_min_version": "Strata DualGPU",
+          "likes": 10743,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 10743,
+          "source_post": "https://lightbrd.com/dextune/status/2115088131636842866"
+        },
+        {
+          "engine": "Strata",
+          "tps": "29",
+          "date": "2026-10-27",
+          "hardware": "RTX 5080 16GB + RTX 4060 Ti 16GB, 32GB system RAM (Strata DualGPU)",
+          "quant": "Strata DualGPU baseline before decoding was pipelined across both cards; code generation",
+          "engine_min_version": "Strata DualGPU",
+          "likes": 10743,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 10743,
+          "source_post": "https://lightbrd.com/dextune/status/2115088131636842866"
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "date": "2026-10-27",
+          "hardware": "single RTX 4090 24GB + 110GB DDR4",
+          "quant": "hybrid inference: attention on the GPU, expert layers in system RAM; no MTP, DFlash or KV-cache quantization; 250K context",
+          "weight_gb": "111.4GB UD-Q4_K_XL across four shards",
+          "context_tokens": "250000",
+          "system_ram_min": "110GB DDR4",
+          "likes": 6819,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 6819,
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114915498265579648"
+        }
+      ],
+      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "system_ram_min": "32GB",
+      "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
+      "context_tokens": "250K",
+      "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7"
+    }
+  ],
+  "generated_utc": "2026-10-28T22:12:55Z",
+  "backend": "nvidia"
+}

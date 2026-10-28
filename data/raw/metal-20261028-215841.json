@@ -1,0 +1,37 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-10-28T21:58:41Z",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B (M3 Ultra, PyTorch 2.15 MPS)",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "35B-A3B",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-26",
+      "engines": [
+        {
+          "engine": "PyTorch",
+          "tps": "61.3",
+          "hardware": "Apple M3 Ultra (MPS backend, torch.compile)",
+          "quant": "BF16, PyTorch 2.15 MPS Metal kernels; up from 9.4 tok/s on 2.14",
+          "date": "2026-10-26",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2114781884144370049",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 1,
+          "engine_min_version": "PyTorch 2.15 (MPS)"
+        }
+      ],
+      "vram_tier": "24GB"
+    }
+  ]
+}
