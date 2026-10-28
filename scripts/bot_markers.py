@@ -11,7 +11,8 @@ Registry (AGENTS.md §6j carries the same table for humans):
 
   bot                 artifact it announces on        markers
   ------------------  ------------------------------  --------------------------------------
-  issue-bot           the issue (implementer)         issue-bot-start  (+ issue-bot-skip note)
+  issue-bot           the issue (implementer)         issue-bot-start  (+ issue-bot-skip note,
+                                                       + issue-bot-outcome on a DEAD run)
   issue-review-bot    the issue                       issue-review / issue-review: window
   fix-bot             the PR it repairs               fix-bot-start / fix-bot-end
   refresh-bot         the PR (and gap issue) it opens refresh-bot-run
@@ -34,7 +35,12 @@ REGISTRY: dict[str, dict[str, str]] = {
                          # The already-fixed notice (issues #520/#522): written by
                          # `.github/workflows/issue-bot.yml` when the issue closed while the run
                          # was in flight. Registered here after #474's reverse guard found it.
-                         "already_fixed": "issue-bot-already-fixed"},
+                         "already_fixed": "issue-bot-already-fixed",
+                         # The sweep's OWN outcome on a run that died before its verdict
+                         # (`scripts/sweep_outcome.py`): until it existed, a dead run left the
+                         # start marker and nothing else, so the queue item showed an
+                         # implementer "in flight" for ever.
+                         "outcome": "issue-bot-outcome"},
     "issue-review-bot": {"start": "issue-review", "window": "issue-review: window"},
     "fix-bot":          {"start": "fix-bot-start", "end": "fix-bot-end"},
     "refresh-bot":      {"run": "refresh-bot-run"},
@@ -81,6 +87,9 @@ WRITTEN: frozenset = frozenset({
     # so the queue reads this marker's stamp to date it (issue #449).
     ("issue-bot", "verdict"),
     ("issue-bot", "already_fixed"),
+    # Written by `scripts/sweep_outcome.py` (via `make issue-outcome`): the sweep's own
+    # outcome on a run that died BEFORE its verdict step, which used to leave nothing.
+    ("issue-bot", "outcome"),
     ("issue-review-bot", "start"),
     ("issue-review-bot", "window"),
     ("fix-bot", "start"),

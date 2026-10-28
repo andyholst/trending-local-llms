@@ -1996,7 +1996,8 @@ def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
 #: (#124) and the data-gap filing lost its label while `gh` returned 0 (#277).
 _ISSUE_WRITE = re.compile(
     r"gh\s+issue\s+(?:create|edit|comment|close|reopen)"
-    r"|make\s+(?:data-gap-issue|file-findings|issue-skip-note|issue-verdict|code-review-file|queued-alarm)\b")
+    r"|make\s+(?:data-gap-issue|file-findings|issue-skip-note|issue-verdict|issue-outcome"
+    r"|code-review-file|queued-alarm)\b")
 
 
 def _job_can_write_issues(wf: dict, job: dict) -> bool:
