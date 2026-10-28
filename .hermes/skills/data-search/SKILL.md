@@ -127,6 +127,19 @@ engine but **links no repo**, run ONE Firecrawl web search for the engine name p
 the repo only when its name matches the engine and the **page resolves**; never invent or guess a
 URL.
 
+### The `hf` id is looked up, never guessed
+
+A model's `hf` (and every `formats[].hf`) MUST be the canonical `owner/repo` id
+confirmed to resolve — look it up with the authenticated Hugging Face API
+(`https://huggingface.co/api/models?search=<name>`) or `hf search models <name>`
+before you write it. Read `HF_TOKEN` from the environment BY NAME and never
+print, echo or write the value. A plausible `owner/<the model's own name>` is not
+a lookup: `Qwen/Qwopus3.6-35B-A3B-Coder-MTP` 404s because Qwen never published it
+(the real id was `Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF`). If the lookup
+cannot confirm the id, leave `hf` out and say so; `--write-raw` refuses an
+unverified id with a loud warning, so the refresh PR stays green and the gap is
+visible in this leg's log.
+
 ### The five model dimensions
 
 MODEL DIMENSIONS — before writing each model, check the post for these five and record every one it

@@ -1713,10 +1713,15 @@ def normalize_hf_ref(value):
     v = value.strip()
     while v.startswith(_HF_URL_PREFIX):
         v = v[len(_HF_URL_PREFIX):]
-    return v.strip("/")
+    v = v.strip("/")
+    # One HF-id definition (rule 6d): `scripts/hf_id.py` also knows `hf.co`,
+    # `www.`, a query/fragment and an in-repo path. Fall back to the stripped
+    # value when it cannot reduce one (a bare id passes through unchanged), so
+    # this can never turn a value into "" that the caller did not already have.
+    return normalise_hf(v) or v
 
 
-def write_raw_snapshot(backend: str, payload: dict) -> Path:
+def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> Path:
     """Write one backend's raw search findings to data/raw/<backend>-<UTC>.json.
     Each of the four Hermes search prompts (NVIDIA, Metal, CPU, AMD) writes its own
     timestamped file here; never overwrite another backend's file."""
@@ -1735,8 +1740,10 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
     # an `hf` field is a bare repo id (validate/README build the URL by
     # prefixing it) — collapse a full URL / doubled prefix BEFORE it lands in
     # data/raw, so a pasted URL can never 404 the raw-hf link check again.
+    kept_models: list = []
     for _m in payload.get("models") or []:
         if not isinstance(_m, dict):
+            kept_models.append(_m)
             continue
         if _m.get("hf"):
             _m["hf"] = normalize_hf_ref(_m["hf"])
@@ -1748,9 +1755,40 @@ def write_raw_snapshot(backend: str, payload: dict) -> Path:
             _fixed = contract_id(_id) or _slug(_m.get("name") or _id)
             print(f"[write-raw] id normalised {_id!r} -> {_fixed!r} (contract pattern)")
             _m["id"] = _fixed
+            _id = _fixed
+        # A guessed `owner/model` is not data (AGENTS.md rule 2), and the
+        # ingest-time check (#333) only sees a NEW model once this snapshot has
+        # landed and the refresh PR is open — where its only repairer is a bot
+        # round that rewrites the guess SILENTLY. Refuse it HERE, in the leg that
+        # made it (issue #417). Only a DEFINITIVE answer (401/404) refuses: a
+        # 429/5xx/transport keeps the value, because a rate-limited API must
+        # never look like a fabricated id.
+        if verify_hf and _m.get("hf") and hf_repo_resolves(_m["hf"]) is False:
+            print(f"[write-raw] WARN: {safe} refused model {_id!r}: HF "
+                  f"{_m['hf']!r} does not resolve — look the repo up and re-run; "
+                  f"a guessed id must not reach the PR")
+            continue
+        formats: list = []
         for _f in _m.get("formats") or []:
-            if isinstance(_f, dict) and _f.get("hf"):
+            if not isinstance(_f, dict):
+                formats.append(_f)
+                continue
+            if _f.get("hf"):
                 _f["hf"] = normalize_hf_ref(_f["hf"])
+                if _f["hf"] == _m.get("hf"):
+                    formats.append(_f)       # same repo: already verified above
+                    continue
+                if verify_hf and hf_repo_resolves(_f["hf"]) is False:
+                    print(f"[write-raw] WARN: {safe} refused format "
+                          f"{_f.get('name')!r} on model {_id!r}: HF {_f['hf']!r} "
+                          f"does not resolve — look the repo up and re-run")
+                    continue
+            formats.append(_f)
+        if "formats" in _m:
+            _m["formats"] = formats
+        kept_models.append(_m)
+    if "models" in payload:
+        payload["models"] = kept_models
     payload.setdefault("generated_utc", now_utc().strftime("%Y-%m-%dT%H:%M:%SZ"))
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return path
@@ -2536,7 +2574,7 @@ def main() -> int:
     if args.write_raw:
         import sys as _sys
         payload = json.loads(_sys.stdin.read())
-        p = write_raw_snapshot(args.write_raw, payload)
+        p = write_raw_snapshot(args.write_raw, payload, verify_hf=True)
         print("wrote " + p.name)
         return 0
 
