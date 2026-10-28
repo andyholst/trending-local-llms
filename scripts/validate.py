@@ -1142,6 +1142,53 @@ def check_measurement_attribution(store: dict) -> None:
         print(f"    ... and {len(mis) - 10} more")
 
 
+def check_untraceable_figures(store: dict) -> None:
+    """A stated figure with no post behind it: FAIL the unattributable, REPORT the history.
+
+    A requirement figure (context window, weight footprint, system RAM, storage offload,
+    engine build) written into a model's own `why`/`quant`/`hardware` prose has no
+    structured home AND no post of its own: the measurement's `source_post` is where a
+    figure's attribution lives, so a model-level sentence no post states can never be moved
+    into `context_tokens`/`weight_gb` without inventing the attribution that
+    `tests/test_data_gap_analysis.py::test_structured_dimensions_trace_to_a_real_post`
+    forbids (issue #470).
+
+    Two halves, because history and new data are not the same thing:
+
+    * **FAIL** — the prose states a figure while NO measurement on the row cites a real
+      `…/status/<id>` post. Nothing on the row can ever attribute it, so it must never be
+      written; the shipped store holds none, which is what makes this a gate rather than a
+      standing red.
+    * **REPORT** — the prose states a figure and at least one real post exists on the row,
+      but no CAPTURED post states it. That is the untraceable class `make data-gaps` lists
+      (a capture job, never an ingest one); it is history the store cannot repair without
+      breaking additive-only (rule 3b), so it is reported, never failed.
+
+    The classification has ONE implementation — `data_gap_analysis.unattributed_figures` /
+    `stated_untraceable` (rule 6d) — so the CI line and the filed report cannot disagree.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import data_gap_analysis as gaps
+    finally:
+        sys.path.pop(0)
+    for key, ids in sorted(gaps.unattributed_figures(store).items()):
+        for mid in ids:
+            fail(f"untraceable figure: `{mid}` states `{key}` in its free text while NO "
+                 f"measurement cites a real …/status/<id> post — a model-level figure no post "
+                 f"supports cannot be structured; put the figure on the measurement whose post "
+                 f"states it")
+    untraceable = {k: v for k, v in gaps.stated_untraceable(store).items() if v}
+    if not untraceable:
+        print("  OK: untraceable-figure scan: every stated figure has a captured post behind it")
+        return
+    total = sum(len(v) for v in untraceable.values())
+    print(f"  WARN: untraceable-figure scan: {total} model(s) state a requirement figure that NO "
+          f"captured post states — a capture job, not an ingest one (listed by `make data-gaps`)")
+    for key, ids in sorted(untraceable.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        print(f"    - {key}: " + ", ".join(ids[:6]) + (" …" if len(ids) > 6 else ""))
+
+
 def check_post_signal(store: dict) -> None:
     """Coverage report — and a FAILURE for a fabricated signal.
 
@@ -1756,6 +1803,8 @@ def main() -> int:
     # report only, because the shipped store holds one row written before the ingest
     # refusal and reding every PR for history it cannot repair is what #458/#459 refused.
     add("measurement attribution (report only)", "data", lambda: check_measurement_attribution(store))
+    add("untraceable stated figures (fail unattributable, report the class)", "data",
+        lambda: check_untraceable_figures(store))
     # One physical run under two engine names (issue #459): report only, because the
     # history predates the ingest refusal and cannot be repaired by reding every PR.
     add("duplicate-run scan (report only)", "data", lambda: check_duplicate_runs(store))

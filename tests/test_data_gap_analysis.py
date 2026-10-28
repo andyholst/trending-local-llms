@@ -34,6 +34,18 @@ _PASS = 0
 _FAIL = 0
 
 
+def prose_ids(report: dict, key: str) -> list:
+    """Ids whose figure is stated in FREE TEXT, whichever capture-side class it lands in.
+
+    A prose statement is either an INGEST job (`unstructured`: a captured post states it
+    too) or UNTRACEABLE (`untraceable`: no captured post does — issue #470). A test about
+    the DETECTOR asks about the free-text statement, so it asks about both; the tests that
+    are about the split name the class they mean.
+    """
+    return sorted(set((report.get("unstructured") or {}).get(key, []))
+                  | set((report.get("untraceable") or {}).get(key, [])))
+
+
 def check(name, cond, detail=""):
     global _PASS, _FAIL
     if cond:
@@ -193,7 +205,7 @@ def test_free_text_mention_is_unstructured_not_present():
                        raw_dir=Path("/nonexistent"))
 
     # Then  it is reported as free-text-only, and never as having the dimension
-    check("free-text RAM is flagged unstructured", report["unstructured"]["system_ram_min"] == ["gemma-4-e2b"])
+    check("free-text RAM is flagged unstructured", prose_ids(report, "system_ram_min") == ["gemma-4-e2b"])
     check("the model still counts as missing system_ram_min", report["missing"]["system_ram_min"] == ["gemma-4-e2b"])
     check("the finding names the free-text case",
           any("free text" in f for f in report["findings"]), str(report["findings"]))
@@ -221,8 +233,8 @@ def test_a_measurement_level_value_is_captured():
     check("a measurement-level value is NOT missing",
           report["missing"]["storage_offload"] == ["m-silent"], report["missing"]["storage_offload"])
     check("…and is not reported as free-text-only either",
-          "m-measured" not in report["unstructured"]["storage_offload"],
-          report["unstructured"]["storage_offload"])
+          "m-measured" not in prose_ids(report, "storage_offload"),
+          prose_ids(report, "storage_offload"))
     # …while a model that states it nowhere is still the gap it always was
     check("a model with the value nowhere is still missing",
           "m-silent" in report["missing"]["storage_offload"], report["missing"]["storage_offload"])
@@ -240,7 +252,7 @@ def test_a_storage_offload_needs_a_medium_and_an_offload(  ):
         m = model("m", params="70B")
         m["engines"][0]["quant"] = quant_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
-                         raw_dir=Path("/nonexistent"))["unstructured"]["storage_offload"]
+                         raw_dir=Path("/nonexistent"))["untraceable"]["storage_offload"]
 
     # Then  a memory offload is NOT a storage offload
     check("storage_offload: 'offloaded to the CPU' is a RAM story",
@@ -275,7 +287,7 @@ def test_a_capacity_mention_is_not_an_unstructured_weights_figure():
     report = G.analyse(store_with([card, stated, mac]),
                        {"model": set(), "measurement": set(), "search_model": set()},
                        raw_dir=Path("/nonexistent"))
-    unstructured = report["unstructured"]["weight_gb"]
+    unstructured = prose_ids(report, "weight_gb")
 
     # Then  only the model that STATES a footprint is prose-only
     check("weight_gb: a card's VRAM is not an unstructured weights figure",
@@ -313,7 +325,7 @@ def test_an_engine_note_is_not_per_model_prose_evidence():
     # When  the store is analysed
     report = G.analyse(store, {"model": set(), "measurement": set(), "search_model": set()},
                        raw_dir=Path("/nonexistent"))
-    unstructured = report["unstructured"]["context_tokens"]
+    unstructured = prose_ids(report, "context_tokens")
 
     # Then  the engine's sentence is NOT read as the silent model's prose…
     check("context_tokens: an engine note is not per-model prose evidence",
@@ -340,7 +352,7 @@ def test_a_context_window_needs_a_figure():
         m = model("m", params="70B")   # storage_offload applies to a model that could need it
         m["engines"][0]["quant"] = field_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
-                         raw_dir=Path("/nonexistent"))["unstructured"]["context_tokens"]
+                         raw_dir=Path("/nonexistent"))["untraceable"]["context_tokens"]
 
     # Then  a topic word with no figure is NOT a context window
     check("context_tokens: 'kv-cache q4_0' is a cache QUANT, not a window",
@@ -370,7 +382,7 @@ def test_flash_attention_is_not_a_storage_medium():
         m = model("m", params="70B")   # storage_offload applies to a model that could need it
         m["engines"][0]["quant"] = field_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
-                         raw_dir=Path("/nonexistent"))["unstructured"]["storage_offload"]
+                         raw_dir=Path("/nonexistent"))["untraceable"]["storage_offload"]
 
     # Then  Flash Attention is not a storage offload
     check("storage_offload: 'Flash Attention' is an attention kernel, not an SSD",
@@ -398,7 +410,7 @@ def test_a_vram_capacity_is_not_a_weights_figure_even_beside_gguf():
         m = model("m")
         m["engines"][0]["quant"] = field_text
         return G.analyse(store_with([m]), {"model": set(), "measurement": set(), "search_model": set()},
-                         raw_dir=Path("/nonexistent"))["unstructured"]["weight_gb"]
+                         raw_dir=Path("/nonexistent"))["untraceable"]["weight_gb"]
 
     # Then  a VRAM / RAM / unified-memory capacity is not a weight footprint
     check("weight_gb: '16GB on VRAM' beside GGUF is not a weights figure",
@@ -437,6 +449,9 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
     unpinned = [f"{k}:{mid}" for k, ids in report["unstructured"].items() for mid in ids
                 if not any(next(d for d in G.DIMENSIONS if d["key"] == k)["text"].search(t)
                            for t in own_text(by_id[mid]))]
+    unpinned += [f"{k}:{mid}" for k, ids in report["untraceable"].items() for mid in ids
+                 if not any(next(d for d in G.DIMENSIONS if d["key"] == k)["text"].search(t)
+                            for t in own_text(by_id[mid]))]
     check("real store: every 'unstructured' claim is a figure in the model's own text",
           unpinned == [], str(unpinned))
 
@@ -458,6 +473,12 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
           set(report["unstructured"]["context_tokens"])
           <= {"qwen-3.6-27b", "gemma-4-12b"} | added_since_measurement,
           str(report["unstructured"]["context_tokens"]))
+    # …and the ONE model whose sentence no captured post states is NOT an ingest claim: it
+    # is the untraceable class (issue #470), reported apart from the ingest work.
+    check("real store: an untraceable stated figure is its own class, not 'unstructured'",
+          report["untraceable"]["context_tokens"] == ["gemma-4-12b"]
+          and "gemma-4-12b" not in report["unstructured"]["context_tokens"],
+          str(report["untraceable"]["context_tokens"]))
     check("real store: weight_gb prose claims are the stated footprints + models added since",
           set(report["unstructured"]["weight_gb"])
           <= {"qwen3.6-27b", "muse-glimmer-30b"} | added_since_measurement,
@@ -532,7 +553,7 @@ def test_an_acquisition_gap_is_not_an_ingest_gap():
         # … the classes are a PARTITION of the missing set, never an extra count …
         dim = next(d for d in G.DIMENSIONS if d["key"] == "context_tokens")
         parts = (report["not_captured"][dim["key"]] + report["unstructured"][dim["key"]]
-                 + report["captured_prose"][dim["key"]])
+                 + report["captured_prose"][dim["key"]] + report["untraceable"][dim["key"]])
         check("the classes partition the missing set (disjoint, no double count)",
               sorted(parts) == sorted(report["missing"][dim["key"]]) and len(parts) == len(set(parts)),
               parts)
@@ -562,7 +583,7 @@ def test_the_real_store_splits_every_missing_dimension():
     for dim in G.DIMENSIONS:
         key = dim["key"]
         parts = (report["not_captured"][key] + report["unstructured"][key]
-                 + report["captured_prose"][key])
+                 + report["captured_prose"][key] + report["untraceable"][key])
         check(f"real store: {key}'s classes partition the missing set",
               sorted(parts) == sorted(report["missing"][key]) and len(parts) == len(set(parts)),
               f"{len(parts)} parts vs {len(report['missing'][key])} missing")
@@ -617,6 +638,112 @@ def test_the_report_and_issue_body_name_an_acquisition_gap():
     body2, _ = G.issue_body(empty, None)
     check("issue body: no acquisition section when nothing is missing",
           "\n## Not stated by any captured post (acquisition gap)" not in body2, body2[:200])
+
+
+def test_a_stated_figure_no_post_supports_is_its_own_class():
+    """Issue #470: a model-level figure no post supports is NOT an ingest job.
+
+    The store stated `256K ctx.` for a model whose measurements cite a real post that states
+    no window, and the analysis reported it as `unstructured` — "stated in prose only, an
+    ingest job". No ingest change can close it without inventing the attribution (the
+    traceability rule below), so it is its own class: a CAPTURE job. The three shapes are
+    told apart here, and the validator FAILS the one no post can ever support.
+    """
+
+    # Given three models with no structured context_tokens …
+    store_only = model("store-only", why="Best overall personal-agent model. 256K ctx.")
+    captured = model("captured", why="Best agent model, 256K ctx.")
+    no_post = model("no-post", why="Long-context agent model, 256K ctx.", engines=[
+        {"engine": "llama.cpp", "tps": "40", "hardware": "RTX 4090 24GB", "quant": "Q4",
+         "date": "2026-10-14", "source_post": "https://lightbrd.com/"},
+        {"engine": "llama.cpp", "tps": "30", "hardware": "M5 Max", "quant": "Q4",
+         "date": "2026-10-14", "source_post": "https://lightbrd.com/rohanpaul_ai"}])
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        # … one of whose CAPTURED posts states a window, while the others' posts state none
+        (raw / "nvidia-20261014-060000.json").write_text(json.dumps({
+            "backend": "nvidia", "generated_utc": "2026-10-14T06:00:00Z",
+            "models": [{"id": "captured", "name": "captured",
+                        "engines": [{"engine": "llama.cpp", "tps": "40",
+                                     "hardware": "RTX 4090 24GB",
+                                     "quant": "Q4_K_M, 131072-token context",
+                                     "source_post": "https://lightbrd.com/u/status/7"}]}]}))
+        contract = contract_from(td, "context_tokens")
+        store = store_with([store_only, captured, no_post])
+
+        # When  the store is analysed against that capture
+        report = G.analyse(store, contract, raw_dir=raw)
+
+        # Then  the two models whose sentence NO captured post states are the untraceable
+        #       class, and the one a post DOES state stays an ingest job …
+        check("untraceable: a stated figure no post states is its own class",
+              sorted(report["untraceable"]["context_tokens"]) == ["no-post", "store-only"],
+              report["untraceable"]["context_tokens"])
+        check("untraceable: a figure a captured post states stays an ingest job",
+              report["unstructured"]["context_tokens"] == ["captured"],
+              report["unstructured"]["context_tokens"])
+        # … the class is part of the partition, never an extra count …
+        parts = (report["not_captured"]["context_tokens"] + report["unstructured"]["context_tokens"]
+                 + report["captured_prose"]["context_tokens"] + report["untraceable"]["context_tokens"])
+        check("untraceable: the classes partition the missing set",
+              sorted(parts) == sorted(report["missing"]["context_tokens"]) and len(parts) == len(set(parts)),
+              parts)
+        # … it adds NO signature entry (an issue per sentence would re-file for ever) …
+        check("untraceable: adds no issue-triggering signature entry",
+              not any("untraceable" in s or "no-post" in s for s in report["signature"]),
+              report["signature"])
+        # … and BOTH artefacts a human reads name the class and its models.
+        text = G.render(report)
+        body, _ = G.issue_body(report, None)
+        for label, doc in (("report", text), ("issue body", body)):
+            check(f"{label}: names the untraceable class",
+                  "## Stated but untraceable" in doc, doc[:300])
+            check(f"{label}: names a model in the class", "store-only" in doc, doc[:300])
+            check(f"{label}: says it is a capture job, not an ingest one",
+                  "capture job" in doc, doc[:300])
+        # … a store with no such figure does not invent the section
+        empty = G.analyse(store_with([model("plain")]), contract, raw_dir=Path(td) / "absent")
+        check("report: no untraceable section when nothing is stated", "- none" in G.render(empty))
+
+        # And  the VALIDATE half refuses the shape no post can ever support …
+        import validate as V  # noqa: E402  (sys.path already carries scripts/)
+        from contextlib import redirect_stdout
+        import io
+        V.FAILURES.clear()
+        out = io.StringIO()
+        with redirect_stdout(out):
+            V.check_untraceable_figures(store_with([no_post]))
+        printed = out.getvalue()
+        check("validate: FAILS a stated figure with no real post on the row",
+              any("untraceable figure" in f and "no-post" in f for f in V.FAILURES),
+              str(V.FAILURES))
+        check("validate: the failure says where the figure belongs",
+              "put the figure on the measurement" in printed, printed[:300])
+        # … and only REPORTS the history a real post exists for (never reds the PR on it)
+        V.FAILURES.clear()
+        out = io.StringIO()
+        with redirect_stdout(out):
+            V.check_untraceable_figures(store_with([store_only]))
+        check("validate: reports a stated figure no captured post states, never fails it",
+              V.FAILURES == [] and "untraceable-figure scan" in out.getvalue(),
+              str((V.FAILURES, out.getvalue()[:200])))
+        # … and a store whose figures all trace prints the OK line (the guard is not vacuous)
+        V.FAILURES.clear()
+        out = io.StringIO()
+        with redirect_stdout(out):
+            V.check_untraceable_figures(store_with([model("plain")]))
+        check("validate: OK when no model states a figure in prose",
+              V.FAILURES == [] and "OK: untraceable-figure scan" in out.getvalue(), out.getvalue()[:200])
+
+    # And  the SEARCH PROMPT the legs preload stops the shape being written at all (rule 6p):
+    #       a figure lives where its post lives, never only in the model-level prose.
+    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    flat = " ".join(skill.split())
+    check("skill: a requirement figure lives on the measurement whose post states it",
+          "A requirement figure lives where its POST lives" in flat, flat[:200])
+    check("skill: says a figure no post states is untraceable and is not written into `why`",
+          "UNTRACEABLE" in flat and "do NOT write it into `why`" in flat, flat[:200])
 
 
 def test_signature_tracks_the_store_not_the_noise():
@@ -1673,6 +1800,7 @@ def main() -> int:
     test_an_acquisition_gap_is_not_an_ingest_gap()
     test_the_real_store_splits_every_missing_dimension()
     test_the_report_and_issue_body_name_an_acquisition_gap()
+    test_a_stated_figure_no_post_supports_is_its_own_class()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))

@@ -321,6 +321,81 @@ def captured_dim_texts(capture: dict, model_id, dim: dict) -> list[str]:
             for t in bucket.get(f, [])]
 
 
+def has_real_post(model: dict) -> bool:
+    """Does any of the model's measurements cite a real `…/status/<id>` post?
+
+    The ONE definition of "a post behind this row" for the untraceable-figure class: a
+    bare mirror URL and a profile page name no post, so they support no sentence (rule 3,
+    `source_post` must be the post itself). `update_trending._is_post_url` is the resolver,
+    never a second copy of the URL shape.
+    """
+    return any(update_trending._is_post_url(str(e.get("source_post", "")))
+               for e in (model.get("engines") or []))
+
+
+#: The class name `make data-gaps` reports and the issue body names. A figure can be
+#: STATED in a model's own `why`/`quant` prose and still be untraceable: no captured post
+#: states it, so no change can move it into the structured key without breaking the rule
+#: that every stored figure traces to a real post (issue #470).
+UNTRACEABLE = "untraceable"
+
+
+def stated_untraceable(store: dict, capture: dict | None = None,
+                       raw_dir: Path = RAW_DIR) -> dict[str, list[str]]:
+    """Per dimension: model ids whose ONLY statement of the figure no post supports.
+
+    This is its own class, and the reason is the whole point of #470: the analysis used to
+    report these models as `unstructured` — "stated in prose only, an ingest job" — which
+    reads as structurable work, while the store holds no post for the sentence that states
+    it. An ingest job on them can only invent the attribution or delete the prose (rule
+    3b), so the fix is a CAPTURE job: a search that brings back the post stating it, or a
+    prompt that stops writing a model-level figure no post supports.
+
+    A model is in the class when the dimension's `text` pattern matches the model's OWN
+    free text (`why`/`quant`/`hardware`) and NO captured post's text does. A model whose
+    captured post DOES state it is an ingest job (`unstructured`/`captured_prose`) and is
+    not reported here — the difference is whether the sentence has a post behind it.
+
+    The one implementation of the class: `scripts/validate.py`'s
+    `check_untraceable_figures` imports it, so the report and CI cannot disagree (rule 6d).
+    """
+    if capture is None:
+        capture = captured_text(store, raw_dir)
+    out: dict[str, list[str]] = {}
+    for dim in DIMENSIONS:
+        ids = []
+        for m in store.get("models") or []:
+            if _stated(m, dim["key"]):
+                continue
+            if not any(dim["text"].search(t) for t in _dim_texts(m, dim)):
+                continue                      # states no figure at all — a missing dimension
+            if any(dim["text"].search(t) for t in captured_dim_texts(capture, m.get("id", "?"), dim)):
+                continue                      # a captured post states it — an INGEST job
+            ids.append(m.get("id", "?"))
+        out[dim["key"]] = ids
+    return out
+
+
+def unattributed_figures(store: dict) -> dict[str, list[str]]:
+    """Per dimension: models whose stated figure has NO real post on the row at all.
+
+    A stricter half of the same defect, and the half CI can FAIL on: the model's prose
+    states a requirement figure while every one of its measurements cites a placeholder
+    or a profile page. Nothing on the row can ever attribute that sentence, so it must
+    never be written (the search prompt says so) and `check_untraceable_figures` refuses
+    it. The shipped store holds none of these, so the check is green on history while a
+    new one turns the PR red — the shape the issue asks the "validate pair" to stop.
+    """
+    out: dict[str, list[str]] = {}
+    for dim in DIMENSIONS:
+        ids = [m.get("id", "?") for m in (store.get("models") or [])
+               if not _stated(m, dim["key"])
+               and not has_real_post(m)
+               and any(dim["text"].search(t) for t in _dim_texts(m, dim))]
+        out[dim["key"]] = ids
+    return out
+
+
 def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     """The gap report: per-dimension coverage, free-text-only mentions, and the
     store/maintenance gaps the refresh cannot see."""
@@ -333,6 +408,7 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     unstructured: dict[str, list[str]] = {}
     captured: dict[str, list[str]] = {}   # prose only in the CAPTURE, not in the store text
     not_captured: dict[str, list[str]] = {}   # NO captured post states it — a new search is the fix
+    untraceable: dict[str, list[str]] = {}    # store prose states it, NO post states it (#470)
     contract_gaps: dict[str, str] = {}
 
     # What the search actually brought back, per store id (the record of each real post).
@@ -353,23 +429,35 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         text_models = []
         capture_only = []
         uncaptured = []
+        untraceable_ids = []
         for m in applicable:
             if _stated(m, key):
                 continue
             mid = m.get("id", "?")
             # The model's OWN prose (the store side, unchanged) …
-            if any(dim["text"].search(t) for t in _dim_texts(m, dim)):
+            own = any(dim["text"].search(t) for t in _dim_texts(m, dim))
+            # … and the CAPTURED post's prose, which the store may have pruned — the same
+            # rule, over the text the search actually recorded. Computed once, because the
+            # PAIR decides the class: a sentence a captured post states is an INGEST job,
+            # a sentence only the store states is UNTRACEABLE (issue #470).
+            post = any(dim["text"].search(t) for t in captured_dim_texts(capture, mid, dim))
+            if own and post:
                 text_models.append(mid)
-            # … then the CAPTURED post's prose, which the store may have pruned — the same
-            # rule, over the text the search actually recorded.
-            elif any(dim["text"].search(t) for t in captured_dim_texts(capture, mid, dim)):
+            elif post:
                 capture_only.append(mid)
+            elif own:
+                # Stated in the store, stated by NO captured post: there is nothing an
+                # ingest job can point the structured value at. Its own class, because
+                # reporting it as "prose only, an ingest job" sends triage to work no
+                # post can close (§ #470).
+                untraceable_ids.append(mid)
             # … and neither: no post we ever captured states this figure at all.
             else:
                 uncaptured.append(mid)
         unstructured[key] = text_models
         captured[key] = capture_only
         not_captured[key] = uncaptured
+        untraceable[key] = untraceable_ids
 
     # maintenance gaps the merge/sort cannot report
     as_of = None
@@ -397,13 +485,20 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     for key, ids in missing.items():
         if ids:
             un = len(not_captured.get(key, []))
+            unt = len(untraceable.get(key, []))
             gaps.append(f"{len(ids)}/{len(models)} models have no structured `{key}` "
                         f"({un} not stated by any captured post — a new search is the only fix; "
-                        f"{len(ids) - un} stated in prose only — an ingest job; "
-                        f"e.g. {', '.join(ids[:5])})")
+                        f"{len(ids) - un - unt} stated in prose only — an ingest job; "
+                        + (f"{unt} stated but untraceable — no post behind the figure; " if unt else "")
+                        + f"e.g. {', '.join(ids[:5])})")
     for key, ids in unstructured.items():
         if ids:
             gaps.append(f"{len(ids)} model(s) name the value only in free text, not in `{key}`: "
+                        f"{', '.join(ids[:5])}")
+    for key, ids in untraceable.items():
+        if ids:
+            gaps.append(f"{len(ids)} model(s) state the value in `{key}`'s free text with NO post "
+                        f"behind it (untraceable — a capture job, not an ingest job): "
                         f"{', '.join(ids[:5])}")
     if stale:
         gaps.append(f"{len(stale)} model(s) have no measurement in the last {STALE_DAYS} days: "
@@ -444,6 +539,10 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         "contract_gaps": contract_gaps,
         "missing": missing,
         "not_captured": not_captured,
+        # Its own class, deliberately NOT a signature entry: a signature entry files an
+        # issue, and an issue for a sentence no post backs would file the same dimension
+        # again every refresh (the #472 churn) while only a new CAPTURE can retire it.
+        "untraceable": untraceable,
         "captured_prose": captured,
         "not_applicable": not_applicable,
         "unstructured": unstructured,
@@ -482,12 +581,17 @@ def _gap_kind(report: dict, key: str) -> str:
         prose = len((report.get("unstructured") or {}).get(dim) or [])
         return f" — {prose} stated in prose only (ingest gap)" if prose else ""
     un = len((report.get("not_captured") or {}).get(dim) or [])
-    ingest = len(ids) - un
+    unt = len((report.get("untraceable") or {}).get(dim) or [])
+    ingest = len(ids) - un - unt
     parts = []
     if un:
         parts.append(f"{un} not stated by any captured post (acquisition gap)")
     if ingest:
         parts.append(f"{ingest} stated in prose only (ingest gap)")
+    if unt:
+        # Its own kind, never folded into "ingest": no post states the sentence, so a
+        # structured value cannot be attributed to one (#470).
+        parts.append(f"{unt} stated but untraceable — no post behind the figure (capture gap)")
     return f" — {', '.join(parts)}" if parts else ""
 
 
@@ -527,6 +631,19 @@ def render(report: dict) -> str:
             lines.append(f"- **{key}** — {len(ids)} model(s) whose CAPTURED post states it but whose "
                          f"store row does not: " + ", ".join(ids[:6]) + (" …" if len(ids) > 6 else ""))
     if not ingest and not any((report.get("captured_prose") or {}).values()):
+        lines.append("- none")
+    # The class issue #470 asks for: the store STATES the figure, but no post does, so no
+    # ingest change can move it into the structured key without inventing the attribution
+    # (`tests/test_data_gap_analysis.py::test_structured_dimensions_trace_to_a_real_post`
+    # is the rule it would break). Named as its own job — a CAPTURE job — so nobody reads
+    # it as the ingest work the section above describes.
+    lines += ["", "## Stated but untraceable (no post behind the figure — a capture job)", ""]
+    untraceable = {k: v for k, v in (report.get("untraceable") or {}).items() if v}
+    for key, ids in sorted(untraceable.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        lines.append(f"- **{key}** — {len(ids)} model(s) state it in free text and NO captured "
+                     f"post does, so there is nothing to attribute the value to: "
+                     + ", ".join(ids[:6]) + (" …" if len(ids) > 6 else ""))
+    if not untraceable:
         lines.append("- none")
     lines += ["", "## Dimensions that cannot apply (never counted as missing)", ""]
     na = {k: v for k, v in (report.get("not_applicable") or {}).items() if v}
@@ -727,6 +844,19 @@ def issue_body(report: dict, previous: dict | None) -> tuple[str, str]:
         body += [f"- **{k}** — {len(ids)} model(s): " + ", ".join(ids[:10])
                  + (" …" if len(ids) > 10 else "")
                  for k, ids in sorted(acquisition.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
+    untraceable = {k: v for k, v in (report.get("untraceable") or {}).items() if v}
+    if untraceable:
+        body += ["", "## Stated but untraceable (a capture job, not an ingest job)", "",
+                 "The store's own prose states these figures and NO captured post does, so",
+                 "there is no post to attribute the structured value to. Structuring them",
+                 "would invent the attribution (`tests/test_data_gap_analysis.py::",
+                 "test_structured_dimensions_trace_to_a_real_post`), and deleting the prose",
+                 "would break additive-only (rule 3b). What closes them is a SEARCH that",
+                 "brings back the post stating the figure — and a prompt that stops writing",
+                 "a model-level figure no post supports."]
+        body += [f"- **{k}** — {len(ids)} model(s): " + ", ".join(ids[:10])
+                 + (" …" if len(ids) > 10 else "")
+                 for k, ids in sorted(untraceable.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
     body += ["", "## Contract gaps", ""]
     body += [f"- {why}" for why in report["contract_gaps"].values()] or ["- none"]
     if added:
