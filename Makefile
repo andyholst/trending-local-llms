@@ -1190,6 +1190,26 @@ issue-state: ## Print the issue's state: exit 0 = open, 4 = closed, 2 = unreadab
 issue-verdict: ## Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>)
 	@python3 scripts/issue_verdict.py $(if $(ISSUE),--issue $(ISSUE),) $(if $(TRIAGE_FILE),--file $(TRIAGE_FILE),)
 
+# The sweep's OWN outcome on a run that died before its verdict. The `implement` job speaks on
+# the issue it picked only from a step that OWNS a comment (the verdict step, or the outcome
+# comment gated on `verdict == implement`), so a run that started and then died (a resolver that
+# could not read the issue, a refused base/image/smoke step, an agent that wrote no triage.md)
+# posted the start marker and NOTHING ELSE: the issue kept showing an implementer in flight, and
+# the queue lost that hour with no artifact on the queue item itself. The DECISION lives in
+# scripts/sweep_outcome.py (rule 6d) — and it refuses one comment per run, deduped on the run id,
+# so a re-run of the same run writes nothing. Every empty argument is TOLERATED (rule #487: an
+# empty value forwarded into an int() crashed a whole sweep before it read a PR).
+issue-outcome: ## Say on the picked issue that the sweep died before its verdict (ISSUE=<n>, REPO=, RUN_ID=, RUN_URL=, BRANCH=, STAGES=, VERDICT=, CLOSED=1)
+	@python3 scripts/sweep_outcome.py --issue "$(ISSUE)" \
+		$(if $(REPO),--repo "$(REPO)",) \
+		$(if $(RUN_ID),--run-id "$(RUN_ID)",) \
+		$(if $(RUN_URL),--run-url "$(RUN_URL)",) \
+		$(if $(BRANCH),--branch "$(BRANCH)",) \
+		$(if $(STAGES),--stages "$(STAGES)",) \
+		$(if $(VERDICT),--verdict "$(VERDICT)",) \
+		$(if $(CLOSED),--closed,) \
+		--post
+
 # The implementer's INPUT (issue #210): the WHOLE thread — title, body, every
 # comment oldest-first with author and ISO8601Z, then the decision instruction the
 # verdict answers. The reviewer was already told to read the whole thread; the

@@ -765,3 +765,39 @@ jobs:
           echo "failure, and a missing alias / dead key / burned token budget is a pipeline defect,"
           echo "not a data problem."
           exit 1
+
+      # The sweep's OWN outcome when it died before its verdict (the second half of #498).
+      #
+      # Every comment this job posts comes from a step that OWNS one: the verdict step
+      # (`refine` / `close`) and `Report the outcome on the issue` (`implement`, gated on the
+      # verdict's value). So a run that STARTED and then died — a resolver that could not read
+      # the issue, a refused base/image/smoke step, an agent that wrote no `triage.md` so
+      # `make issue-verdict` exits 2 — posted the start marker and NOTHING ELSE. The issue kept
+      # showing "an implementer has started" for ever, the red job lived only in the Actions tab
+      # (#488), and since #496 one dead sweep is a day of queue with no artifact on the queue
+      # item itself.
+      #
+      # The condition is deliberately narrow so no path posts twice: `verdict == ''` means the
+      # verdict step never produced a value, which is the only state where nothing else spoke for
+      # this run. A closed-while-in-flight run left its already-fixed notice; a refine/close run
+      # commented from the verdict step; an implement run from the outcome comment. DECISION and
+      # body live in `scripts/sweep_outcome.py` through `make issue-outcome` (rule 6d), which is
+      # idempotent per run id, so a re-run of the same run writes nothing.
+      - name: Report the sweep's own outcome when it died before its verdict
+        id: sweep_outcome
+        if: >-
+          always() && steps.iss.outputs.implement == 'true'
+          && steps.recheck.outputs.closed != 'true'
+          && steps.verdict.outputs.verdict == ''
+        env:
+          # Default token + `permissions: issues: write` — the owner PAT cannot comment (#124).
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          make issue-outcome \
+            ISSUE="${{ steps.iss.outputs.issue }}" \
+            REPO="$REPO" \
+            RUN_ID="$GITHUB_RUN_ID" \
+            RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            BRANCH="${{ steps.iss.outputs.branch }}" \
+            STAGES="resolve=${{ steps.iss.outcome }} recheck=${{ steps.recheck.outcome }} implement=${{ steps.impl.outcome }} verdict=${{ steps.verdict.outcome }}"

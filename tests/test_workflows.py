@@ -1696,6 +1696,70 @@ def test_issue_bot_announces_its_window():
           "start.md" in (ROOT / ".gitignore").read_text(), "")
 
 
+def test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict():
+    """The second half of #498: a sweep that STARTED and died before its verdict says so ON the
+    issue.
+
+    The `implement` job used to speak only from a step that OWNS a comment (the verdict step for
+    `refine`/`close`, `Report the outcome on the issue` for `implement`), so a run that failed at
+    the resolver, the base assertion, the image/smoke step or inside the agent (no `triage.md`, so
+    `make issue-verdict` exits 2) left the issue showing "an implementer has started" for ever.
+    One final `always()` step calls `make issue-outcome`; the DECISION and the body live in
+    `scripts/sweep_outcome.py` (rule 6d), and it must stay narrow enough that no path double-posts.
+    """
+
+    # Given the implement job and its steps, in order
+    wf = load("issue-bot.yml")
+    impl = wf["jobs"]["implement"]
+    names = [s.get("name", "") for s in steps(impl)]
+    st = next((s for s in steps(impl)
+               if "sweep" in s.get("name", "").lower() and "outcome" in s.get("name", "").lower()), {})
+    cond = str(st.get("if", ""))
+
+    # Then  the step exists, is `always()`, and cannot double-post
+    check("issue-bot: a step reports the sweep's OWN outcome when it died before its verdict",
+          bool(st), names)
+    check("issue-bot: the sweep-outcome step runs on EVERY path (always())", "always()" in cond, cond)
+    check("issue-bot: …only for a run that resolved an open issue",
+          "steps.iss.outputs.implement == 'true'" in cond, cond)
+    check("issue-bot: …not when the issue was closed in flight (the already-fixed notice owns it)",
+          "steps.recheck.outputs.closed != 'true'" in cond, cond)
+    check("issue-bot: …and only when NO verdict was produced",
+          "steps.verdict.outputs.verdict == ''" in cond, cond)
+    check("issue-bot: …never beside a verdict step that already commented",
+          "verdict == 'implement'" not in cond and "verdict == 'refine'" not in cond
+          and "verdict == 'close'" not in cond, cond)
+
+    # And  the write goes through the target with the DEFAULT token (the PAT cannot comment, #124)
+    body = st.get("run", "")
+    check("issue-bot: the sweep-outcome step calls `make issue-outcome`",
+          "make issue-outcome" in body, body[:200])
+    check("issue-bot: …and does not compose a second comment of its own",
+          "gh issue comment" not in body, body[:200])
+    check("issue-bot: it names the issue, the run, the branch and the per-stage outcomes",
+          all(k in body for k in ("ISSUE=", "RUN_ID=", "RUN_URL=", "BRANCH=", "STAGES=")),
+          body[:400])
+    check("issue-bot: the comment uses the default token, not the PAT",
+          st.get("env", {}).get("GH_TOKEN") == "${{ github.token }}"
+          and "secrets." not in str(st.get("env", {})), st.get("env"))
+    check("issue-bot: the job that posts it declares `issues: write` on that token",
+          _job_can_write_issues(wf, impl), impl.get("permissions") or wf.get("permissions"))
+
+    # Then  it runs AFTER the checkout and after the steps that already own the other paths
+    at = names.index(st.get("name")) if st else None
+
+    def pos(prefix: str) -> int | None:
+        return next((i for i, n in enumerate(names) if n.startswith(prefix)), None)
+
+    owners = ["Checkout master", "Implement the issue", "Apply the implementer's verdict",
+              "Report the outcome on the issue", "Fail loudly when the implementation did not happen"]
+    owner_at = {p: pos(p) for p in owners}
+    check("issue-bot: the sweep-outcome step runs after the checkout and every step that owns a "
+          "comment (a dead run is the only state left)",
+          at is not None and all(v is not None and at > v for v in owner_at.values()),
+          f"sweep_outcome={at} owners={owner_at}")
+
+
 def test_the_queue_rule_has_one_implementation():
     """Both bots read `make issue-queue`; neither pastes the rule again (#179)."""
 
@@ -1996,7 +2060,8 @@ def test_issue_bot_asserts_the_base_it_cuts_from() -> None:
 #: (#124) and the data-gap filing lost its label while `gh` returned 0 (#277).
 _ISSUE_WRITE = re.compile(
     r"gh\s+issue\s+(?:create|edit|comment|close|reopen)"
-    r"|make\s+(?:data-gap-issue|file-findings|issue-skip-note|issue-verdict|code-review-file|queued-alarm)\b")
+    r"|make\s+(?:data-gap-issue|file-findings|issue-skip-note|issue-verdict|issue-outcome"
+    r"|code-review-file|queued-alarm)\b")
 
 
 def _job_can_write_issues(wf: dict, job: dict) -> bool:
@@ -2629,6 +2694,7 @@ def main() -> int:
     test_implement_prompt_requires_openspec_and_findings()
     test_issue_bot_files_findings_only_when_green()
     test_issue_bot_announces_its_window()
+    test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict()
     test_the_fail_loudly_step_asks_whether_the_issue_still_needs_doing()
     test_the_queue_rule_has_one_implementation()
     test_issue_review_bot()
