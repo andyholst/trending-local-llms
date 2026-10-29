@@ -252,7 +252,7 @@ def test_the_other_two_pr_bodies_are_composed_too():
     ab = (ROOT / ".github" / "workflows" / "architecture-bot.yml").read_text()
     check("workflow: refresh-bot redirects the target", "make refresh-pr-body > \"$PR_BODY\"" in rf, "")
     check("workflow: refresh-bot carries no inline contract sentence",
-          "Hermes CLI refresh (deepseek-v4.1-flash-1017 via Nous)" not in rf, "")
+          "Hermes CLI refresh (deepseek-v4-flash-0731 via Nous)" not in rf, "")
     check("workflow: architecture-bot pipes the target into gh",
           "make architecture-pr-body RUN_URL=\"$RUN_URL\" | gh pr create" in ab, "")
     check("workflow: architecture-bot carries no inline body printf",
