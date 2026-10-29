@@ -29,7 +29,8 @@ on:
   # on-the-hour crons (the refresh-bot lesson). The window, not the offset, is
   # what separates the two bots — each run re-checks the queue it shares.
   schedule:
-    - cron: "41 * * * *"
+    - cron: "41 * * * 3"
+
   workflow_dispatch:
     inputs:
       issue_number:

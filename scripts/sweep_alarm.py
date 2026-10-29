@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Fail loudly when the hourly sweep has not been DELIVERED (issue #497).
+"""Fail loudly when the weekly sweep has not been DELIVERED (issue #497).
 
-`issue-bot.yml` asks GitHub for `cron: "19 * * * *"` and takes ONE issue per delivery. GitHub
+`issue-bot.yml` asks GitHub for `cron: "19 * * * 3"` (Wednesdays) and takes ONE issue per delivery. GitHub
 drops and delays scheduled runs: the recorded sequence for 2026-10-19 → 2026-10-21 was
 
     01:41:54  ← 3h17 ← 22:24:00 (FAILED)  ← 3h53 ← 18:31:58
     18:31:58  ← 4h52 ← 13:39:43          ← 5h55 ← 07:44:08
 
-— ~5 deliveries a day out of 24 slots. `queued-alarm` cannot see this: it reads runs that EXIST
+— on a daily cadence those measured ~5 deliveries a day out of 24 slots; the sweep is now weekly (Wednesday). `queued-alarm` cannot see this: it reads runs that EXIST
 (`queued` / `in_progress`), and a slot GitHub never created has no run to look at. This tool
 reads the ARTIFACT instead — the newest `schedule` run of the sweep:
 
-  * age of the newest delivery, against `--max-age-hours` (default 3),
+  * age of the newest delivery, against `--max-age-hours` (default 168),
   * how many slots it should have had by now, and the gaps between the runs it can see,
   * the last run's conclusion, so a sweep that is red on every delivery is visible too.
 
@@ -30,9 +30,11 @@ import subprocess
 import sys
 
 WORKFLOW = "issue-bot.yml"
-#: The sweep runs at :19 past every hour. Kept here as the schedule the alarm measures against,
-#: so "3 hours stale" means "3 slots were missed", not "3 × some interval".
+#: The sweep runs at :19 on Wednesdays. Kept here as the schedule the alarm measures against,
+#: so "1 week stale" means "1 slot was missed", not "some interval".
 SLOT_MINUTE = 19
+#: Python `date.weekday()`: 0=Mon … 2=Wed. Matches the cron `* * 3`.
+SLOT_WEEKDAY = 2
 
 
 def _gh(args: list[str]) -> str:
@@ -71,12 +73,13 @@ def deliveries(repo: str, limit: int = 20) -> list[dict]:
 
 
 def missed_slots(newest: dt.datetime, now: dt.datetime) -> int:
-    """How many `:19` slots should have produced a run since `newest` (exclusive)."""
+    """How many Wednesday `:19` slots should have produced a run since `newest` (exclusive)."""
     if newest >= now:
         return 0
     count, cursor = 0, newest
     while True:
-        nxt = (cursor + dt.timedelta(hours=1)).replace(minute=SLOT_MINUTE, second=0, microsecond=0)
+        nxt = (cursor + dt.timedelta(days=7)).replace(hour=1, minute=SLOT_MINUTE, second=0, microsecond=0)
+        nxt = nxt - dt.timedelta(days=(nxt.weekday() - SLOT_WEEKDAY) % 7)
         if nxt > now:
             break
         count += 1
@@ -126,7 +129,7 @@ def render(verdict: dict, rows: list[dict], max_age_hours: float) -> str:
         f"  newest schedule run: {verdict['newest'].strftime('%Y-%m-%dT%H:%M:%SZ')} "
         f"({verdict['conclusion']})",
         f"  slots missed since then: {verdict['missed']} (the sweep asks for one at :{SLOT_MINUTE:02d} "
-        f"every hour)",
+        f"every Wednesday)",
     ]
     if verdict.get("gaps"):
         lines.append("  gaps between the deliveries it can see: "
@@ -138,7 +141,7 @@ def render(verdict: dict, rows: list[dict], max_age_hours: float) -> str:
         lines.append("  the delivery is FRESH: this is not a dropped cron, it is a sweep that "
                      "ran and did not succeed (issue #498) — the queue did not drain")
     lines += [
-        f"  the hourly queue is not being drained at one issue per hour; MAX_AGE_HOURS="
+        f"  the weekly queue is not being drained at one issue per Wednesday; MAX_AGE_HOURS="
         f"{max_age_hours}",
         "  a dropped cron has no run to look at — that is why this reads the ARTIFACT (issue #497)",
     ]
@@ -151,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Fail loudly when the hourly sweep has not been DELIVERED (issue #497)")
     ap.add_argument("--repo", required=True, help="owner/name")
-    ap.add_argument("--max-age-hours", type=float, default=3.0,
+    ap.add_argument("--max-age-hours", type=float, default=168.0,
                     help="how stale the newest delivery may be (default 3)")
     ap.add_argument("--now", default=None, help="Iso8601 instant to measure from (tests)")
     ap.add_argument("--limit", type=int, default=20, help="how many deliveries to read")

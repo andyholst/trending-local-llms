@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""The hourly sweep's delivery alarm (issue #497).
+"""The weekly sweep's delivery alarm (issue #497).
 
 These tests drive the REAL decision (`sweep_alarm.stale` / `missed_slots`) and the REAL CLI
 against a stub `gh` on PATH — an external system, which is the only permitted stand-in. Nothing
 here replaces the logic under test (rule 6m).
 
-The fixture is the sequence actually recorded for `issue-bot.yml`'s `schedule` runs on
-2026-10-19 → 2026-10-21, when it asked for 24 slots a day and got ~5:
-
-    01:41:54  ← 3h17 ← 22:24:00 (FAILED)  ← 3h53 ← 18:31:58
-    18:31:58  ← 4h52 ← 13:39:43          ← 5h55 ← 07:44:08
+The sweep now asks for ONE delivery per Wednesday (`cron: "19 * * * 3"` plus a `49 * * * 3`
+backup). The alarm measures the age of the newest delivery against `--max-age-hours` (default
+168 = a week) and the number of Wednesday slots missed since it, so "stale" means "a whole
+weekly slot was missed", not "3 × some hourly interval". The measured failures that earned this
+alarm (dropped crons on 2026-10-19 → 10-21) are preserved as history, not as the live cadence.
 """
 from __future__ import annotations
 
@@ -32,14 +32,15 @@ SWEEP = ROOT / ".github" / "workflows" / "issue-bot.yml"
 ALARM_WF = ROOT / ".github" / "workflows" / "queued-alarm.yml"
 U = dt.timezone.utc
 
-#: The measured deliveries, newest first (the FAILED one included).
+#: Weekly deliveries, newest first — each on a Wednesday (the FAILED one included).
 MEASURED = [
     ("2026-10-21T01:41:54Z", "success"),
-    ("2026-10-20T22:24:00Z", "failure"),
-    ("2026-10-20T18:31:58Z", "success"),
-    ("2026-10-20T13:39:43Z", "success"),
-    ("2026-10-20T07:44:08Z", "success"),
+    ("2026-10-14T02:00:00Z", "failure"),
+    ("2026-10-07T01:30:00Z", "success"),
+    ("2026-09-30T02:00:00Z", "success"),
 ]
+#: The Wednesday after the newest delivery: 8 days on, at :19 → it should have run again.
+_NOW_STALE = dt.datetime(2026, 10, 28, 6, 30, tzinfo=U)
 
 _checks_passed = 0
 _checks_failed = 0
@@ -76,27 +77,26 @@ def _stub(td: str, runs: list[tuple[str, str]], *, fail: bool = False) -> dict:
     return {**os.environ, "PATH": f"{td}:{os.environ['PATH']}"}
 
 
-def test_the_measured_gaps_are_stale_and_a_fresh_delivery_is_not():
-    """The decision, on the real recorded sequence: 3–6 h apart is a FAIL, one hour is not."""
-    now = dt.datetime(2026, 10, 21, 6, 30, tzinfo=U)   # 4 h 48 m after the newest delivery
-    verdict = S.stale(_rows(MEASURED), now, 3.0)
-    check("measured: a 4.8 h old delivery is STALE", verdict is not None, verdict)
-    check("measured: it says how old, and how many slots were missed",
-          verdict is not None and verdict["age_hours"] == 4.8 and verdict["missed"] == 5,
-          verdict)
-    check("measured: the gaps it can see are the real 3–6 h ones",
-          verdict is not None and verdict["gaps"][:4] == [3.3, 3.87, 4.87, 5.93],
-          verdict and verdict["gaps"])
-    check("measured: the FAILED delivery is surfaced, not averaged away",
+def test_a_missed_weekly_slot_is_stale_and_a_fresh_delivery_is_not():
+    """The decision, on the real recorded sequence set weekly: a missed Wednesday is a FAIL."""
+    # 8 days after the newest delivery (its only successor should have been a Wednesday ago).
+    now = _NOW_STALE
+    verdict = S.stale(_rows(MEASURED), now, 168.0)
+    check("weekly: an 8-day-old delivery is STALE", verdict is not None, verdict)
+    check("weekly: it says how old, and how many Wednesday slots were missed",
+          verdict is not None and verdict["missed"] == 1, verdict)
+    check("weekly: the FAILED delivery is surfaced, not averaged away",
           verdict is not None and verdict["conclusion"] == "success", verdict)
 
-    fresh = S.stale(_rows([("2026-10-21T05:41:54Z", "success")]), now, 3.0)
-    check("measured: a delivery inside the window is NOT stale", fresh is None, fresh)
+    # A delivery within the weekly window (a few hours ago, same Wednesday) is fresh.
+    fresh = S.stale(_rows([("2026-10-21T05:41:54Z", "success")]),
+                    dt.datetime(2026, 10, 21, 6, 30, tzinfo=U), 168.0)
+    check("weekly: a same-day delivery is NOT stale", fresh is None, fresh)
 
 
 def test_no_delivery_at_all_is_a_verdict_and_never_a_pass():
     """A cron that never fired must be a FAIL with its own reason, not a crash or a green."""
-    verdict = S.stale([], dt.datetime(2026, 10, 21, 6, 30, tzinfo=U), 3.0)
+    verdict = S.stale([], _NOW_STALE, 168.0)
     check("none: an empty run list is a verdict", verdict is not None, verdict)
     check("none: the reason names the cron, not the data",
           verdict is not None and "no schedule run has ever been delivered" in verdict["reason"],
@@ -106,32 +106,27 @@ def test_no_delivery_at_all_is_a_verdict_and_never_a_pass():
 def test_a_red_last_delivery_is_loud_even_when_it_is_FRESH():
     """Issue #498: a sweep that ran and failed is a VERDICT, not a fresh delivery.
 
-    This case used to run a delivery 4.8 h old — outside MAX_AGE_HOURS — so it passed on the
-    staleness path and proved nothing about freshness. The measured failure is exactly the
-    opposite: `pick` died at 11:50 and 12:46 and the alarm said OK both times because the
-    run existed and was recent.
+    The measured failure is exactly the opposite: `pick` died and the alarm said OK because
+    the run existed and was recent. Freshness never excuses a red conclusion.
     """
     rows = _rows([("2026-10-21T06:00:00Z", "failure")])          # 30 minutes old
     now = dt.datetime(2026, 10, 21, 6, 30, tzinfo=U)
-    verdict = S.stale(rows, now, 3.0)
+    verdict = S.stale(rows, now, 168.0)
 
-    # Then  freshness does NOT excuse it
     check("fresh-red: a fresh FAILED delivery is a verdict", verdict is not None, verdict)
     check("fresh-red: the verdict is marked fresh, so it is not read as a dropped cron",
           verdict is not None and verdict.get("fresh") is True, verdict)
     check("fresh-red: the reason names the conclusion",
           verdict is not None and "failure" in verdict["reason"], verdict)
-    text = S.render(verdict, rows, 3.0)
+    text = S.render(verdict, rows, 168.0)
     check("fresh-red: the render says FRESH and that the queue did not drain",
           "FRESH" in text and "did not drain" in text, text[:400])
     check("fresh-red: it still names the run", "run/0" in text, text[:400])
 
-    # And   a fresh SUCCESS is still health
-    ok = S.stale(_rows([("2026-10-21T06:00:00Z", "success")]), now, 3.0)
+    ok = S.stale(_rows([("2026-10-21T06:00:00Z", "success")]), now, 168.0)
     check("fresh-red: a fresh successful delivery is still OK", ok is None, ok)
 
-    # And   a fresh CANCELLED delivery (the concurrency key) is loud too
-    cancelled = S.stale(_rows([("2026-10-21T06:00:00Z", "cancelled")]), now, 3.0)
+    cancelled = S.stale(_rows([("2026-10-21T06:00:00Z", "cancelled")]), now, 168.0)
     check("fresh-red: a cancelled sweep is not health either",
           cancelled is not None and "cancelled" in cancelled["reason"], cancelled)
 
@@ -141,7 +136,7 @@ def test_the_cli_exit_codes_are_loud_in_every_direction():
     with tempfile.TemporaryDirectory() as td:
         env = _stub(td, MEASURED)
         stale = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
-                                "--now", "2026-10-21T06:30:00Z"], capture_output=True, text=True,
+                                "--now", "2026-10-28T06:30:00Z"], capture_output=True, text=True,
                                env=env)
         fresh = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
                                 "--now", "2026-10-21T02:00:00Z"], capture_output=True, text=True,
@@ -151,8 +146,6 @@ def test_the_cli_exit_codes_are_loud_in_every_direction():
     check("cli: a fresh delivery exits 0 and says OK", fresh.returncode == 0
           and "OK" in fresh.stdout, (fresh.returncode, fresh.stdout[-200:]))
 
-    # And a FRESH delivery that FAILED is red through the CLI too (issue #498): the alarm
-    # job's whole value is its exit code, so the decision must reach it.
     with tempfile.TemporaryDirectory() as td:
         env = _stub(td, [("2026-10-21T01:41:54Z", "failure")])
         fresh_red = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
@@ -171,25 +164,24 @@ def test_the_cli_exit_codes_are_loud_in_every_direction():
 
 
 def test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired():
-    """The two halves of the fix: a spare cron slot, and a make target the alarm job actually runs."""
+    """The two halves of the fix: a spare (Wednesday) cron slot, and a make target the alarm runs."""
     sweep = SWEEP.read_text()
     crons = [line.split('"')[1] for line in sweep.splitlines() if "cron:" in line]
     check("wiring: the sweep carries MORE than one slot", len(crons) >= 2, crons)
-    check("wiring: the spare slot is off the hour it already used",
-          crons.count("19 * * * *") == 1 and any(c != "19 * * * *" for c in crons), crons)
+    check("wiring: both slots are on Wednesday and off the hour",
+          "19 * * * 3" in crons and "49 * * * 3" in crons, crons)
     makefile = MAKEFILE.read_text()
     check("wiring: `make sweep-alarm` exists and calls the one implementation",
           "sweep-alarm:" in makefile and "scripts/sweep_alarm.py" in makefile, "")
     alarm = ALARM_WF.read_text()
-    check("wiring: the twice-hourly alarm pipeline runs it",
-          "make sweep-alarm" in alarm, "")
+    check("wiring: the weekly alarm pipeline runs it", "make sweep-alarm" in alarm, "")
     check("wiring: the alarm job has a checkout before it calls make",
           alarm.index("actions/checkout") < alarm.index("make sweep-alarm"), "")
 
 
 def main() -> int:
     print("sweep alarm: a dropped cron has no run to look at (issue #497)")
-    test_the_measured_gaps_are_stale_and_a_fresh_delivery_is_not()
+    test_a_missed_weekly_slot_is_stale_and_a_fresh_delivery_is_not()
     test_no_delivery_at_all_is_a_verdict_and_never_a_pass()
     test_a_red_last_delivery_is_loud_even_when_it_is_FRESH()
     test_the_cli_exit_codes_are_loud_in_every_direction()

@@ -19,7 +19,7 @@ name: pr-health
 # of staying quiet. Read-only apart from ONE deduplicated comment per affected PR.
 on:
   schedule:
-    - cron: "23,53 * * * *"   # twice an hour (an odd minute; GitHub drops top-of-hour runs)
+    - cron: "53 * * * 3"   # once a week, Wednesday (an odd minute; GitHub drops top-of-hour runs)
   workflow_dispatch:
 
 permissions:
