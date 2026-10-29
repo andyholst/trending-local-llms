@@ -26,20 +26,23 @@ name: issue-bot
 on:
   issues:
     types: [opened]
-  # Backlog sweep (issue #127): hourly, off the hour. GitHub delays/drops
-  # on-the-hour crons (the refresh-bot lesson), so this is :19. Hourly rather
-  # than 6-hourly because the sweep implements ONE issue per run: a backlog of
-  # N open gap issues (the analysis can file several in a day) drains in N
-  # hours, and a sweep that finds nothing is a green no-op — so the cadence
-  # costs nothing when there is no work. One run ONE issue — the oldest open
-  # data-gap issue that has no implementer yet.
+  # Backlog sweep (issue #127): weekly, on Wednesday, off the hour. GitHub delays/drops
+  # on-the-hour crons (the refresh-bot lesson), so this is :19. Weekly because the sweep
+  # implements ONE issue per run: a backlog of N open gap issues were draining in N hours
+  # at the old hourly cadence; the owner moved the whole fleet to one run a week (the
+  # `weekly-cadence` issues #670–#677). A sweep that finds nothing is a green no-op, so
+  # the quieter cadence costs nothing when there is no work. One run ONE issue — the oldest
+  # open issue with no implementer yet.
   schedule:
-    - cron: "19 * * * *"
-    # A SECOND slot, for the same reason refresh-bot carries a backup (issue #497): GitHub drops
-    # and delays scheduled runs, and the recorded deliveries of the :19 slot were 3–6 h apart —
-    # ~5 a day out of 24. `concurrency: issue-bot-<…>` serialises the sweeps and a run with
-    # nothing to do is a green no-op, so the spare slot costs nothing and buys coverage.
-    - cron: "49 * * * *"
+    - cron: "19 * * * 3"
+
+    # A SECOND slot, for the same reason refresh-bot carries a backup (issue #497): GitHub
+    # drops and delays scheduled runs, and the recorded deliveries of the :19 slot were
+    # 3–6 h apart. `concurrency: issue-bot-<…>` serialises the two and a run with nothing to
+    # do is a green no-op, so the spare slot costs nothing and buys coverage for the one day
+    # a week the sweep actually runs.
+    - cron: "49 * * * 3"
+
   workflow_dispatch:
     inputs:
       issue_number:

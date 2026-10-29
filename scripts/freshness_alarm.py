@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """An alarm over the ARTIFACT, not over the run (issue #452).
 
-`refresh-bot` is scheduled twice a day (`06:00` and a `17:43` backup) precisely because GitHub
+`refresh-bot` is scheduled weekly (Wednesday `06:00` and a `17:43` same-day backup) precisely because GitHub
 delays or drops on-the-hour crons. On 2026-10-20 the **06:00 run never started at all** and nothing
 said so: `queued-alarm` reads runs that EXIST (a run GitHub never created has no row to read), the
 sweep alarms read a delivery that exists, and `bot-health` (issue #488) reads the runs a pipeline
 DID produce. Every alarm watched a run that started and went wrong.
 
-The blast radius is the product: with the backup at 17:43 a dropped `06:00` leaves the index up to
-11.7 h stale, and the whole fleet reports green while the visible artifact ages.
+The blast radius is the product: with the backup at 17:43 a dropped `06:00` leaves the index up to a week
+stale (one lost weekly slot), and the whole fleet reports green while the visible artifact ages.
 
 So this reads the ARTIFACT — the newest committed snapshot's own timestamp — and fails when it is
 older than `MAX_AGE_HOURS`, naming the age, the newest run the pipeline did produce (if any) and
@@ -34,9 +34,9 @@ SNAPSHOTS = Path("data") / "snapshots"
 #: `trending-<YYYYMMDD>-<HHMMSS>.json` — the name IS the timestamp the merge wrote it at.
 _NAME = re.compile(r"^trending-(\d{8})-(\d{6})\.json$")
 CLOCK_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-#: Twice a day, so the longest legitimate gap is ~11.7 h plus one run; 14 h leaves room for a slow
-#: refresh without ever passing a whole missed slot.
-DEFAULT_MAX_AGE_HOURS = 14
+#: Weekly (Wednesday), so the longest legitimate gap is ~7 days plus one run; 170 h (a
+#: week + a day) leaves room for a slow Wednesday without ever passing a whole missed slot.
+DEFAULT_MAX_AGE_HOURS = 170
 
 
 def newest_snapshot(root: Path) -> tuple[datetime, Path] | None:
@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
     if age > args.max_age_hours:
         print(f"[freshness] FAIL: the newest refresh is {age:.1f}h old, over the "
               f"{args.max_age_hours:g}h window — the index a reader sees is stale. A refresh runs "
-              f"twice a day (06:00 + a 17:43 backup), so this means a slot was missed or produced "
+              f"weekly (Wednesday 06:00 + a 17:43 backup), so this means a week was missed or produced "
               f"nothing: check the last run line above, then dispatch refresh-bot.", file=sys.stderr)
         return 1
     print(f"[freshness] OK: the newest refresh is inside the {args.max_age_hours:g}h window")

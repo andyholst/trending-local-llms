@@ -94,7 +94,8 @@ def test_the_rows_for_the_two_label_queue_and_the_sweep_alarm_are_written():
 
     # The three rule paragraphs the rows describe (§6b slots, §6e verdict, §6j label set).
     b = rule_section("6b")
-    check("6b: both cron slots are named", "'19 * * * *'" in b and "'49 * * * *'" in b)
+    check("6b: both Wednesday cron slots are named",
+          "'19 * * * 3'" in b and "'49 * * * 3'" in b)
     check("6b: … with the dropped-cron reason", "DROPS on-the-hour crons" in b)
     check("6b: … and the serialising concurrency",
           "concurrency: issue-bot-<issue|sweep>" in b)

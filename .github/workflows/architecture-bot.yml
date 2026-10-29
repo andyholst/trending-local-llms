@@ -25,7 +25,8 @@ on:
     # HOURLY, an odd minute (issue #526): a stale OPENSPEC.md reds every `qa-validate` push run on
     # master, so a daily sweep would leave master red for up to a day. The run is cheap — two
     # generators and two checks, no model — and it opens a PR only when a file actually changed.
-    - cron: "13 * * * *"
+    - cron: "13 * * * 3"
+
   workflow_dispatch:
 
 permissions:

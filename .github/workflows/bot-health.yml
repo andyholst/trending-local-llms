@@ -16,7 +16,7 @@ name: bot-health
 
 on:
   schedule:
-    - cron: "23 */6 * * *"   # four times a day, off the hour (GitHub drops top-of-hour runs)
+    - cron: "23 * * * 3"   # once a week, Wednesday (an odd minute; GitHub drops top-of-hour runs)
   workflow_dispatch:
     inputs:
       limit:

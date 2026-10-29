@@ -15,7 +15,7 @@ name: code-review-bot
 
 on:
   schedule:
-    - cron: "23 7 * * 1"   # Monday 07:23 UTC — its own slot, no other bot's minute (issue #238)
+    - cron: "7 6 * * 3"   # Wednesday 06:07 UTC — its own slot, no other bot's minute (issue #238)
   workflow_dispatch:
     inputs:
       dry:

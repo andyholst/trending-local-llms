@@ -50,7 +50,7 @@ def test_a_fresh_snapshot_passes():
     with tempfile.TemporaryDirectory() as d:
         root = tree(Path(d), ["trending-20261025-060000.json"])
         p = run("--root", str(root), "--now", "2026-10-25T12:00:00Z")
-        check("fresh: a 6 h old snapshot is inside the 14 h window", p.returncode == 0,
+        check("fresh: a 6 h old snapshot is inside the weekly (170 h) window", p.returncode == 0,
               (p.returncode, p.stderr[-200:]))
         check("fresh: it names the snapshot it measured", "trending-20261025-060000.json" in p.stdout,
               p.stdout)
@@ -58,11 +58,12 @@ def test_a_fresh_snapshot_passes():
 
 def test_a_stale_snapshot_fails_and_names_the_age():
     with tempfile.TemporaryDirectory() as d:
-        root = tree(Path(d), ["trending-20261024-180000.json"])
+        root = tree(Path(d), ["trending-20261010-060000.json"])
         p = run("--root", str(root), "--now", "2026-10-25T12:00:00Z")
-        check("stale: an 18 h old snapshot fails the alarm", p.returncode == 1, p.returncode)
+        # A snapshot from 15 days earlier is well outside the weekly window (170 h).
+        check("stale: a 15-day-old snapshot fails the alarm", p.returncode == 1, p.returncode)
         check("stale: it states the age and the window",
-              "18.0h old" in p.stderr and "14h window" in p.stderr, p.stderr[-300:])
+              "366.0h old" in p.stderr and "170h window" in p.stderr, p.stderr[-300:])
         check("stale: it says what a human should do",
               "dispatch refresh-bot" in p.stderr, p.stderr[-300:])
 
@@ -89,8 +90,8 @@ def test_a_file_mtime_never_makes_a_stale_tree_fresh():
     """A clone's mtime is the CLONE time: measuring it would make every run look fresh."""
     import os
     with tempfile.TemporaryDirectory() as d:
-        root = tree(Path(d), ["trending-20261020-060000.json"])
-        path = root / "data" / "snapshots" / "trending-20261020-060000.json"
+        root = tree(Path(d), ["trending-20261003-060000.json"])
+        path = root / "data" / "snapshots" / "trending-20261003-060000.json"
         os.utime(path, (2_000_000_000, 2_000_000_000))     # "modified now"
         p = run("--root", str(root), "--now", "2026-10-25T12:00:00Z")
         check("mtime: a touched stale snapshot is still stale", p.returncode == 1, p.returncode)

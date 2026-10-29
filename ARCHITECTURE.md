@@ -230,7 +230,7 @@ keep it honest (issue #207):
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
 | `sweep-alarm` (`REPO=` `MAX_AGE_HOURS=3`) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the newest `schedule` run of `issue-bot.yml` and exits 1 when it is older than `MAX_AGE_HOURS`, naming the age, the missed `:19` slots, the gaps and the last conclusion (2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
 | `bot-health` (`REPO=` `LIMIT=`) | Fail when a cron pipeline's newest N **scheduled** runs all failed, naming the newest run URL (issue #488). The pipelines are DERIVED from the workflows (a `- cron:` line), so a pipeline added tomorrow is covered without editing the script; a window shorter than N is not a failure, `gh` failing is loud, and `--limit 0` is refused (`scripts/bot_health.py`) |
-| `freshness-alarm` (`REPO=` `MAX_AGE_HOURS=`) | Fail when the newest committed snapshot is older than the window (default 14 h — one missed twice-daily slot), naming the age, the newest scheduled refresh run and the remedy (issue #452). An alarm over the ARTIFACT: a cron GitHub DROPPED leaves no run row for any other alarm to read (`scripts/freshness_alarm.py`) |
+| `freshness-alarm` (`REPO=` `MAX_AGE_HOURS=`) | Fail when the newest committed snapshot is older than the window (default 170 h — one missed weekly slot), naming the age, the newest scheduled refresh run and the remedy (issue #452). An alarm over the ARTIFACT: a cron GitHub DROPPED leaves no run row for any other alarm to read (`scripts/freshness_alarm.py`) |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
 | `pr-health` (`REPO=` `COMMENT=1`) | The silent-PR alarm (issue #442): an OPEN PR GitHub cannot merge (`CONFLICTING`) gets NO `pull_request` runs at all — its checks are ABSENT, not failed — and a PR whose head commit has no runs is a pipeline that never started. `scripts/pr_health.py` lists the open non-draft PRs, keeps the two reasons apart, prints the head branch and, with `COMMENT=1`, leaves ONE deduplicated note naming the fix (`make worktree-resume` → merge the base → `git push origin HEAD:refs/heads/<PR head>` — the measured #436 shape, where a repair went to a differently-named local branch). Exit 1 when a PR is silent. Run by `pr-health.yml` |
 | `code-review-scan` (`REPO=` `STATIC=1` `JSON=1`) | The code-review bot's checks (issue #253): `scripts/code_review.py scan` reads the tree + the pipelines and prints the findings. No model, writes nothing |
@@ -252,7 +252,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) — and when the generated inventory block (§10) no longer matches the tree (`scripts/architecture_bot.py --check`, issue #479). Two structural claims are checked too (issue #182): every `--only` stage list of the `validate*` targets against `scripts/validate.py`'s stage map (both directions), and every job §4 claims for a workflow against that workflow's real `jobs:` keys (both directions, plus "no §4 section"). Prose is NOT read — see the boundary at the top of this file |
-| `architecture-refresh` | Regenerate the inventory block in §10 from the tree itself: every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script from its own docstring, and the README sections a refresh rewrites (`scripts/architecture_bot.py --write`, issue #479). Host target, stdlib only; `architecture-bot.yml` runs it daily and opens a PR only when the block changed |
+| `architecture-refresh` | Regenerate the inventory block in §10 from the tree itself: every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script from its own docstring, and the README sections a refresh rewrites (`scripts/architecture_bot.py --write`, issue #479). Host target, stdlib only; `architecture-bot.yml` runs it weekly and opens a PR only when the block changed |
 
 ### PR lifecycle (rule 6e)
 
@@ -338,15 +338,16 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 
 ## 4. The pipelines
 
-Twelve workflows in `.github/workflows/`. Eight have a cron: **`refresh-bot.yml`**
-(daily `06:00`, backup `17:43`), **`issue-bot.yml`** (hourly, `19`),
-**`issue-review-bot.yml`** (hourly, `41`), **`queued-alarm.yml`** (twice an hour,
-`7,37`), **`pr-health.yml`** (twice an hour, `23,53`),
-**`code-review-bot.yml`** (weekly Monday `23 7`, its own slot),
-**`bot-health.yml`** (four times a day, `23 */6`) and
-**`architecture-bot.yml`** (daily `05:13`, issue #479). GitHub delays and
-sometimes **drops** on-the-hour crons, hence the odd minutes (:13, :19, :41,
-:07/:37, :23/:53, :23 every 6 h, 17:43, 07:23). The other four are event- or dispatch-driven:
+Twelve workflows in `.github/workflows/`. Eight have a cron, each ONCE a week on
+Wednesday (owner cadence directive, `weekly-cadence` #670–#677): **`refresh-bot.yml`**
+(Wednesday `06:00`, same-day backup `17:43`), **`issue-bot.yml`** (Wednesday, `19` +
+backup `49`), **`issue-review-bot.yml`** (Wednesday, `41`), **`queued-alarm.yml`**
+(Wednesday, `37`), **`pr-health.yml`** (Wednesday, `53`),
+**`code-review-bot.yml`** (Wednesday `06:07`, its own slot),
+**`bot-health.yml`** (Wednesday, `23`) and
+**`architecture-bot.yml`** (Wednesday `13`, issue #479). Off the odd minute on one
+day a week, so a dropped top-of-hour run cannot take out the whole week: :07, :13, :19,
+:23, :37, :41, :49, :53, 17:43. The other four are event- or dispatch-driven:
 `qa-validate.yml` (`pull_request`/`push`/dispatch), `fix-bot.yml` and
 `publish-agent-image.yml` (dispatch only) and `pr-closure.yml` (`pull_request`).
 The rulebook entry for each of them — the rule it enforces — is `AGENTS.md` §6b,
@@ -355,13 +356,13 @@ which must name every workflow here.
 The **living inventory** of every pipeline — its triggers, its jobs and the
 `make` targets those jobs call, with the Makefile's own description of each — is
 generated, not written by hand: §10 is derived from the tree by
-`scripts/architecture_bot.py` (`make architecture-refresh`), refreshed hourly by
+`scripts/architecture_bot.py` (`make architecture-refresh`), refreshed weekly by
 `architecture-bot.yml` — which also regenerates `OPENSPEC.md` (`make openspec-index`, issue #526)
 — and gated by `make architecture-check`. What follows is
 the prose that explains *why* each pipeline exists; §10 is the part that cannot
 drift.
 
-### `.github/workflows/architecture-bot.yml` — the generated documents' keeper (hourly `13` + dispatch)
+### `.github/workflows/architecture-bot.yml` — the generated documents' keeper (weekly `13` + dispatch)
 
 `concurrency: architecture-bot` (queued, never cancelled). `ARCHITECTURE.md` is part of
 every change (rule 6h), but its mechanical half — which bot has which job, which `make`
@@ -438,7 +439,7 @@ Two jobs, seconds long, read-only (no push, no comment, no merge). Its own pipel
 adding `edited` to `qa-validate` would re-run the image builds, the unit suite and the
 30-minute network-bound `live-smoke` — a real Firecrawl spend — because a sentence changed.
 
-### `.github/workflows/pr-health.yml` — the silent-PR alarm (twice an hour, `23,53`)
+### `.github/workflows/pr-health.yml` — the silent-PR alarm (weekly, `53`)
 
 A conflicting PR runs no workflows at all (issue #442), so `gh pr checks` answers "no checks
 reported" and nothing distinguishes it from a quiet queue.
@@ -450,7 +451,7 @@ reported" and nothing distinguishes it from a quiet queue.
 
 ### `.github/workflows/bot-health.yml` — the red-cron alarm (schedule + dispatch)
 
-Four times a day (`23 */6 * * *`, off the hour) plus an owner dispatch.
+Once a week (`23 * * * 3`, Wednesday, off the hour) plus an owner dispatch.
 
 - **`guard`** — the FIRST job (rule 6j); the scheduled run passes it by design.
 - **`health`** (`needs: guard`) — `actions/checkout`, then `make bot-health REPO=… LIMIT=…`. It
@@ -482,7 +483,7 @@ check is deterministic, so a scan is free and cannot invent a finding.
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
 | `review` | `make code-review-scan` (the checks read the real tree + workflows; writes nothing) → `make code-review-file` (`scripts/code_review.py`: ONE issue per NEW finding, `<!-- code-review:<key> -->` marker dedup, capped per run). It never edits code, never opens a PR, never merges, never comments on anyone's PR |
 
-### `.github/workflows/issue-bot.yml` — the implementer (hourly sweep + owner dispatch)
+### `.github/workflows/issue-bot.yml` — the implementer (weekly sweep + owner dispatch)
 
 `concurrency: issue-bot-<issue|sweep>` (a sweep and an `issues` event for the
 same issue queue instead of racing).
@@ -500,7 +501,7 @@ requests R/W) is used where a push or a dispatch must re-trigger CI; the default
 findings filing — the PAT cannot comment. No workflow pushes `master`; only
 `auto-merge` merges, and only through a green PR.
 
-### `.github/workflows/issue-review-bot.yml` — the reviewer (hourly sweep + owner dispatch)
+### `.github/workflows/issue-review-bot.yml` — the reviewer (weekly sweep + owner dispatch)
 
 `concurrency: issue-review-bot` (whole runs queue) plus a per-issue group
 (`issue-review-issue-<n>`) so two reviews of one issue queue instead of racing.
@@ -516,7 +517,7 @@ branch or merges, and never holds the owner PAT (it comments with
 `github.token`, like issue-bot's outcome comment). The quiet window is
 `REVIEW_GAP_HOURS := 3` in the Makefile: one constant for both bots — a run in
 flight, implementer activity younger than the gap, or the issue within the
-implementer's next 3 hourly sweeps all keep the body off-limits.
+implementer's next 3 sweeps all keep the body off-limits.
 
 ---
 
@@ -589,7 +590,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/worktree_base.py` | Where work starts (rule 6n, issue #271): `check` fetches the base and fails unless this checkout IS the fetched tip; `new` starts a branch at that tip in a worktree (`../<repo>-wt/<kebab>`) or in place, refusing an existing branch, a worktree inside the repo, and the base branch as a target; `resume` fetches an existing branch before attaching, reuses its worktree, reports `behind_base=`, and never resets a branch with commits that are not on the remote; `advance` fast-forwards a CLEAN checkout onto the fetched tip for a job that has written nothing yet (`refresh-bot`'s `aggregate`, issue #448), refusing a dirty tree or a diverged HEAD. Every worktree path proves the caller's HEAD, branch and local base branch are untouched. Reached only through `make base-check` / `base-advance` / `worktree-new` / `worktree-resume` (rules 6d/6m) |
 | `scripts/query_coverage.py` | CLI over the query-coverage rule: `--queries` prints the derived model queries the four search prompts append as `$(MODEL_QUERIES)`; the default run prints the coverage report and exits 1 when a top-N trending model is named by no query. The rule itself — which query names which model — has ONE implementation in `scripts/update_trending.py` (rule 6d), so the prompts, the guard and its tests can never disagree (issue #264) |
 | `scripts/smoke_search.py` | The per-query reachability smoke with its retry policy |
-| `scripts/architecture_bot.py` | The LIVING half of this document (issue #479, rule 6h): derives §10 from the tree — every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script, the `README.md` sections a refresh rewrites. `--write` regenerates between the markers, `--check` fails on a stale block, and a flow step the tree no longer backs is refused (never written). Reached only through `make architecture-refresh` / `architecture-check` (rules 6d/6m); the daily `architecture-bot.yml` runs both |
+| `scripts/architecture_bot.py` | The LIVING half of this document (issue #479, rule 6h): derives §10 from the tree — every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script, the `README.md` sections a refresh rewrites. `--write` regenerates between the markers, `--check` fails on a stale block, and a flow step the tree no longer backs is refused (never written). Reached only through `make architecture-refresh` / `architecture-check` (rules 6d/6m); the weekly `architecture-bot.yml` runs both |
 | `scripts/code_review.py` | The code-review bot's decision half (issue #253): `scan` runs DETERMINISTIC checks over the tree and the pipelines (no model, writes nothing), `file` opens ONE issue per NEW finding with a `<!-- code-review:<key> -->` dedup marker, capped per run. Analysis only — it never edits code, never merges, never comments on anyone's PR |
 | `scripts/env_int.py` | ONE reading of a numeric SETTING (issue #487): `env_int`/`env_float` treat unset **or** blank (`""`, `"   "`) as the default — the shape an unconditionally-forwarded make variable takes at run time — and a non-numeric value raises `EnvSettingError` naming the variable and what it held (a typo is never silently the default). Every `int`/`float` environment read in `scripts/` goes through it; a bare `int(os.environ…)` fails `tests/test_pr_health.py` |
 | `scripts/pr_health.py` | The silent-PR alarm (issue #442) and its repair half (issue #475): lists open non-draft PRs, flags every one that is `CONFLICTING` or has NO check runs on its head commit (a conflicting PR runs no workflows at all), names the fix, and — `--repair` — dispatches `fix-bot` for a silent `ci/…` PR, capped at `MAX_FIXBOT_COMMITS` fix-bot commits per PR. `--comment` leaves ONE deduplicated note per affected PR; read-only apart from that. Exit 1 when any PR is silent, so the scheduled sweep goes red |
@@ -670,7 +671,7 @@ Filed, not fixed (each is its own issue, per rule 6g):
 ## 10. The living inventory (generated)
 
 The block below is **derived from the tree itself** by `scripts/architecture_bot.py` and
-rewritten by `make architecture-refresh` — the hourly `architecture-bot.yml` runs it and
+rewritten by `make architecture-refresh` — the weekly `architecture-bot.yml` runs it and
 opens a PR only when the block actually changed. The same bot keeps `OPENSPEC.md` current
 (issue #526): a squash merge of two concurrent `openspec/changes/**` entries keeps one index
 file and leaves the other change's row out, which reds every `qa-validate` push run on master
@@ -693,19 +694,19 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/architecture-bot.yml` — architecture-bot
 
-- **when:** cron `13 * * * *`, `workflow_dispatch`
+- **when:** cron `13 * * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `refresh` (needs `guard`)
 - **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make openspec-index` — Regenerate the root OPENSPEC.md index from openspec/changes/**; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make architecture-pr-body` — Print the ARCHITECTURE PR body (no closing keyword; issue #542)
 
 #### `.github/workflows/bot-health.yml` — bot-health
 
-- **when:** cron `23 */6 * * *`, `workflow_dispatch`
+- **when:** cron `23 * * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `health` (needs `guard`)
 - **calls:** `make bot-health` — Fail when a cron pipeline's own scheduled runs are all red (issue #488)
 
 #### `.github/workflows/code-review-bot.yml` — code-review-bot
 
-- **when:** cron `23 7 * * 1`, `workflow_dispatch`
+- **when:** cron `7 6 * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `review` (needs `guard`)
 - **calls:** `make code-review-scan` — The code-review bot's checks: tree + pipelines -> findings (REPO=<owner/name>, STATIC=1 skips the checks that read the GitHub API, JSON=1 machine output; writes nothing); `make code-review-file` — File ONE issue per NEW code-review finding, capped per run (REPO=<owner/name>, CAP= issues per run, DRY=1 previews) — never edits code, never merges
 
@@ -717,13 +718,13 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/issue-bot.yml` — issue-bot
 
-- **when:** cron `19 * * * *`, `49 * * * *`, `issues`, `workflow_dispatch`
+- **when:** cron `19 * * * 3`, `49 * * * 3`, `issues`, `workflow_dispatch`
 - **jobs:** `guard`, `pick` (needs `guard`), `implement` (needs `guard`, `pick`)
 - **calls:** `make issue-pick` — Print the ONE key=value line a sweep reads (`issue=<n>` or `issue=`; issues #547/#548); `make issue-skip-note` — Say on the held issue why the sweep skipped it (one comment per review round); `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make image-ensure`; `make hermes-smoke`; `make issue-thread` — Print an issue's whole thread for the implementer (ISSUE=<n>, REPO=<owner/name>); `make issue-state` — Print the issue's state: exit 0 = open, 4 = closed, 2 = unreadable (ISSUE=<n>, REPO=) (issue #520); `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make implement-issue`; `make issue-verdict` — Apply the implementer's TRIAGE verdict from triage.md (ISSUE=<n>, TRIAGE_FILE=<path>); `make git-identity`; `make check-conflict-markers` — Fail when a tracked file carries a merge-conflict block (issue #588); `make branch-adopt` — Cut or attach BRANCH at COMMIT time, reporting behind_base=N and asserting NO base (issue #500) (BRANCH=, BASE=); `make reset-working-files` — Unstage the bot's working files (one list: $(WORKING_FILES); issue #543); `make base-rebase` — Fetch the base and rebase BRANCH onto it; a conflict KEEPS the work and still SUCCEEDS (`base_rebase=conflict`) (BRANCH=, BASE=); `make pr-body` — Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>]; `make pr-title` — Print the implementation PR TITLE for ISSUE=<n> [KIND=data-gap|tech-debt] (issue #541); `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo); `make issue-outcome` — Say on the picked issue that the sweep died before its verdict (ISSUE=<n>, REPO=, RUN_ID=, RUN_URL=, BRANCH=, STAGES=, VERDICT=, CLOSED=1); `make lint` — Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked or blocked, the index current; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make fix`
 
 #### `.github/workflows/issue-review-bot.yml` — issue-review-bot
 
-- **when:** cron `41 * * * *`, `workflow_dispatch`
+- **when:** cron `41 * * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `pick` (needs `guard`), `review` (needs `guard`, `pick`)
 - **calls:** `make review-issue-guard` — Re-check that ISSUE= may still be written (PATH=body|window); `make review-issue-pick` — Choose the ONE issue this review run works (action=/issue=/path=); `make image-ensure`; `make hermes-smoke`; `make review-issue-mark` — Open the reviewer's window on ISSUE= (PATH=body|window); `make review-issue`; `make scrub-log` — Redact a captured agent log and print at most a bounded tail, never the raw stream (FILE=… [LOG_OUT=…] [TAIL=40]); `make review-issue-check-markers` — Fail when FILE= dropped an invisible marker from ISSUE='s body; `make review-issue-window`; `make review-issue-body-hash` — Print the body hash of ISSUE= (proves the window path edited nothing); `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when; `make file-findings` — File ONE issue per finding in findings.md (host-side: needs gh + the repo); `make review-issue-finish` — Close the reviewer's window on ISSUE=
 
@@ -735,7 +736,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/pr-health.yml` — pr-health
 
-- **when:** cron `23,53 * * * *`, `workflow_dispatch`
+- **when:** cron `53 * * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `sweep` (needs `guard`)
 - **calls:** `make pr-health`
 
@@ -753,13 +754,13 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/queued-alarm.yml` — queued-alarm
 
-- **when:** cron `7,37 * * * *`, `workflow_dispatch`
+- **when:** cron `37 * * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `alarm` (needs `guard`)
 - **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1); `make sweep-alarm` — Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3); `make freshness-alarm` — Fail when the newest refresh snapshot is older than MAX_AGE_HOURS (issue #452)
 
 #### `.github/workflows/refresh-bot.yml` — refresh-bot
 
-- **when:** cron `0 6 * * *`, `43 17 * * *`, `workflow_dispatch`
+- **when:** cron `0 6 * * 3`, `43 17 * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `build` (needs `guard`), `test-image` (needs `guard`, `build`), `openspec-image` (needs `guard`), `search` (needs `build`), `aggregate` (needs `guard`, `build`, `search`)
 - **calls:** `make rebuild-decision` — Print built/test_built/publish_openspec + tags + reasons (FORCE=<bool>, DOW=<1-7>); `make image-ensure-base`; `make _search-smoke`; `make model-caps`; `make hermes-smoke`; `make search-*`; `make engine-check`; `make base-advance` — Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet); `make image-ensure`; `make merge-fetch`; `make test`; `make engine-meta-capture` — Capture GitHub metadata for registry engines the offline test fixture lacks; `make correct-raw`; `make qa-report`; `make data-gaps`; `make data-gap-issue`; `make git-identity`; `make merge`; `make refresh-sync` — Move a refresh's generated tree onto the fetched <BASE>, keeping its raw snapshots (issue #177); `make refresh-require-tip` — Fail unless the refresh branch contains the freshly fetched <BASE> (issue #177); `make refresh-run-block`; `make refresh-pr-body` — Print the REFRESH PR body: the run's window block + the contract (issue #542)
 
@@ -846,7 +847,7 @@ One line each, taken from the script's own docstring.
 - `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122).
 - `scripts/self_correct_raw.py` — Self-correct raw search snapshots so they conform to data/search_contract.json.
 - `scripts/smoke_search.py` — Bounded reachability smoke for the four Hermes search targets.
-- `scripts/sweep_alarm.py` — Fail loudly when the hourly sweep has not been DELIVERED (issue #497).
+- `scripts/sweep_alarm.py` — Fail loudly when the weekly sweep has not been DELIVERED (issue #497).
 - `scripts/sweep_outcome.py` — The sweep's own outcome comment when a run dies before its verdict.
 - `scripts/update_trending.py` — Update the trending-local-llms data store and regenerate README.md.
 - `scripts/validate.py` — QA validation for the trending-local-llms data store + README.

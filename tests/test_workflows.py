@@ -113,7 +113,7 @@ def test_refresh_bot():
           "gh workflow run" not in run_text(agg), "")
     check("refresh: aggregate runs even if a search leg failed", "always()" in str(agg.get("if", "")), agg.get("if"))
     crons = [c.get("cron", "") for c in (wf["on"].get("schedule") or [])]
-    check("refresh: two daily schedule slots (GitHub delays/drops scheduled runs)", len(crons) >= 2, crons)
+    check("refresh: two weekly Wednesday schedule slots (GitHub delays/drops scheduled runs)", len(crons) >= 2, crons)
     check("refresh: a backup slot off the top of the hour (minute != 0)",
           any(c.split()[0] not in ("0", "00", "*") for c in crons if c), crons)
 
@@ -914,6 +914,34 @@ def test_guard_is_before_any_secret():
                       job in _deps(jobs, name), f"needs={jobs[name].get('needs')}")
 
 
+def test_every_pipeline_runs_weekly_on_wednesday():
+    """The `weekly-cadence` directive (#670–#677): every `on.schedule` cron is on
+    Wednesday (`* * 3`), once a week; the data gatherer is allowed its second same-day slot.
+
+    A pipeline that drifts back to an hourly/daily/weekday cron turns this red, so the
+    owner's "run once a week on Wednesday" cannot rot back into the old cadence silently.
+    """
+    wf_dir = ROOT / ".github" / "workflows"
+    seen: list[tuple[str, list[str]]] = []
+    for wf_name in sorted(p.name for p in wf_dir.glob("*.yml")):
+        crons = [c.get("cron", "") for c in (load(wf_name)["on"].get("schedule") or [])]
+        if not crons:
+            continue
+        bad = [c for c in crons if not c.endswith(" * * 3")]
+        check(f"cadence: {wf_name} only schedules Wednesday", not bad, (crons, bad))
+        if wf_name == "refresh-bot.yml":
+            check("cadence: refresh-bot runs twice on Wednesday (06:00 + 17:43 backup)",
+                  crons == ["0 6 * * 3", "43 17 * * 3"], crons)
+        elif wf_name == "issue-bot.yml":
+            # Like refresh-bot, the implementer sweep keeps its same-day backup slot.
+            check("cadence: issue-bot runs twice on Wednesday (:19 + :49 backup)",
+                  crons == ["19 * * * 3", "49 * * * 3"], crons)
+        else:
+            check(f"cadence: {wf_name} runs no more than once a week", len(crons) == 1, crons)
+        seen.append((wf_name, crons))
+    check("cadence: every cron-bearing pipeline is covered", len(seen) >= 8, seen)
+
+
 def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
     """A cron bot's scheduled run must not depend on which identity GitHub
     attributes it to (issue #238): its guard carries the schedule bypass, and a
@@ -1247,16 +1275,15 @@ def test_issue_bot():
           resolve.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", resolve.get("env"))
     check("issue-bot: the PR step still uses the owner PAT (a GITHUB_TOKEN PR is held for approval)",
           PAT in str(step(impl, "Open the PR").get("env", {}).get("GH_TOKEN", "")))
-    # Sweep the existing backlog (#127): an HOURLY run implements ONE open
-    # labelled issue that no implementer has touched yet. Hourly rather than
-    # 6-hourly: the sweep takes ONE issue per run, so a backlog of N gap issues
-    # (the analysis can file several in a day) otherwise waits up to 6 h per
-    # issue, and an empty sweep is a green no-op either way. #163 sat unlabelled
-    # for 5 h with nobody to pick it up — the cadence is what bounds that.
+    # Sweep the existing backlog (#127): a WEEKLY (Wednesday) run implements ONE open
+    # labelled issue that no implementer has touched yet. Weekly rather than hourly:
+    # the owner moved the whole fleet to one run a week (`weekly-cadence` #670–#677);
+    # at the retired hourly cadence a backlog of N gap issues drained in N hours and an
+    # empty sweep was a green no-op either way — the cadence is what bounded the wait.
     sched = trig.get("schedule")
     crons = [str(s.get("cron", "")) for s in (sched if isinstance(sched, list) else [])]
-    check("issue-bot: sweeps the backlog hourly",
-          "19 * * * *" in crons, sched)
+    check("issue-bot: sweeps the backlog weekly, on Wednesday",
+          "19 * * * 3" in crons, sched)
     check("issue-bot: the sweep never sits on the hour (GitHub delays/drops those crons)",
           bool(crons) and all(c.split()[0] != "0" for c in crons), crons)
     pick = jobs.get("pick", {})
@@ -1687,7 +1714,7 @@ def test_issue_bot_announces_its_window():
     # to Actions/Contents/Pull-requests and cannot comment (#124, measured).
     check("issue-bot: the announcement uses the default token, not the PAT",
           announce.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", announce.get("env"))
-    # Both entry paths (an opened issue and the hourly sweep) announce a window.
+    # Both entry paths (an opened issue and the weekly sweep) announce a window.
     check("issue-bot: the announcement is not gated to one trigger path",
           announce.get("if") == "steps.iss.outputs.implement == 'true'", announce.get("if"))
     # The window must not be announced before the issue resolved, and must be a
@@ -1793,15 +1820,15 @@ def test_issue_review_bot():
     review = wf["jobs"]["review"]
     all_run = "\n".join(run_text(j) for j in wf["jobs"].values())
 
-    # Then  it reacts to the hourly cron and an owner dispatch ONLY — a review
+    # Then  it reacts to the weekly (Wednesday) cron and an owner dispatch ONLY — a review
     # must not fire on every issue event (an edit or a comment is not a review).
     check("review: trigger surface is schedule + workflow_dispatch only",
           set(triggers) == {"schedule", "workflow_dispatch"}, list(triggers))
     crons = [c["cron"] for c in triggers["schedule"]]
-    check("review: hourly and OFF the hour (GitHub drops on-the-hour crons)",
-          crons == ["41 * * * *"], crons)
+    check("review: weekly on Wednesday and OFF the hour (GitHub drops on-the-hour crons)",
+          crons == ["41 * * * 3"], crons)
     check("review: the offset is not the implementer's sweep",
-          "19 * * * *" not in crons, crons)
+          "19 * * * 3" not in crons, crons)
     check("review: a re-run is owner-gated before any secret",
           "guard" in review.get("needs", []) and bool(steps(guard)), review.get("needs"))
     check("review: the guard refuses anyone but the owner / a write collaborator",
@@ -2676,6 +2703,7 @@ def main() -> int:
     test_guard_behaviour()
     test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
+    test_every_pipeline_runs_weekly_on_wednesday()
     test_the_guard_registry_is_derived_from_the_tree()
     test_a_repo_event_run_is_admitted_by_its_guard()
     test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()

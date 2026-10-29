@@ -367,7 +367,7 @@ def test_the_keeper_regenerates_both_generated_documents():
     on = doc.get("on") or doc.get(True) or {}   # YAML 1.1 parses a bare `on:` as True
     crons = [c.get("cron") for c in (on.get("schedule") or [])]
     check("index: the slot is HOURLY, so a stale index converges in an hour (issue #526)",
-          crons == ["13 * * * *"], str(crons))
+          crons == ["13 * * * 3"], str(crons))
 
 
 def test_the_shipped_steps_actually_commit_push_and_open_a_pr():

@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **169** · archived: **9**
+Active changes: **170** · archived: **9**
 
 ## Active changes
 
@@ -183,6 +183,7 @@ Active changes: **169** · archived: **9**
 | `vram-min-prose` | active | #431 — `tech-debt: a prose vram_min is published as its first number (32GB GPU + system RAM -> 32GB)` | — | [card-fit](openspec/changes/vram-min-prose/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/vram-min-prose/proposal.md) |
 | `vram-need-cpu-marker` | active | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/vram-need-cpu-marker/proposal.md) |
 | `vram-tier-vocabulary` | active | #341 — `tech-debt: \`vram_tier\` holds values the contract does not describe, and nothing notices` | — | [vram-tier](openspec/changes/vram-tier-vocabulary/specs/vram-tier/spec.md) | 8/8 | [proposal.md](openspec/changes/vram-tier-vocabulary/proposal.md) |
+| `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `worktree-base-fresh` | active | — | — | [worktree-base](openspec/changes/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/worktree-base-fresh/proposal.md) |
 
 ## Archived changes
