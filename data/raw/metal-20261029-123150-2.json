@@ -1,0 +1,38 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "27B",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-28",
+      "why": "Qwen3.8-27B reportedly reaching 70 tokens/sec on an M5 Max MacBook Pro using DFlash 2 speculative decoding (draft-and-verify) on Apple Silicon.",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "Apple M5 Max MacBook Pro (Apple Silicon)",
+          "quant": "speculative decoding (DFlash 2 draft-and-verify on MLX)",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115627796630241684",
+          "likes": 368,
+          "comments": 2,
+          "reshares": 3,
+          "views": 0,
+          "interactions": 374
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-29T12:31:50Z"
+}

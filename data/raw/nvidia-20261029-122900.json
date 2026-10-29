@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "GGUF",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B (6B active)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "32GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-28",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "125",
+          "date": "2026-10-28",
+          "hardware": "single RTX 5090 32GB",
+          "quant": "IQ3_S",
+          "likes": 46,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 47,
+          "weight_gb": "IQ3_S",
+          "source_post": "https://lightbrd.com/UnrealRafael/status/2115587389665992903"
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-29T00:00:00Z"
+}
