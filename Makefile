@@ -95,7 +95,7 @@ TEST_RUN := docker run --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(G
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
 
 
-HERMES_MODEL := deepseek/deepseek-v4.1-flash-1017
+HERMES_MODEL := deepseek/deepseek-v4-flash-0731
 NOUS_BASE   := https://inference-api.nousresearch.com/v1
 # The ONE name of the model alias every hermes call passes with `-m` (issue #207):
 # `_setup` writes `model.aliases.$(HERMES_ALIAS).*` and `_hermes-alias-check` reads
@@ -116,12 +116,10 @@ HERMES_PACKAGE     ?= hermes-agent
 # 384K output). Input context is also raised to the model's 1M-token ceiling
 # (model card: 1M input / 384K output) so a long AGENTS.md + skill + mirrors
 # page is never squeezed. One variable each so CI + local runs agree.
-# The 65,536 figure below was measured against the PREVIOUS pin of this family
-# (/v1/models -> top_provider.max_completion_tokens).
-# The current pin, deepseek/deepseek-v4.1-flash-1017, declares NO
-# max_completion_tokens on the endpoint, so we keep the conservative 65,536
-# until a live measurement of the new SKU. A larger value is accepted SILENTLY
-# and clamped, which is how 384000 once hid the real cap.
+# The current pin, deepseek/deepseek-v4-flash-0731, publishes
+# max_completion_tokens 65536 (/v1/models, 2026-10-29). HERMES_MAX_TOKENS sits
+# on that cap. A larger value is accepted SILENTLY and clamped, which is how
+# 384000 once hid the real cap.
 # `make model-caps` checks this live against the catalog (no declared cap -> no
 # false alarm; if a cap is declared it must be >= HERMES_MAX_TOKENS).
 

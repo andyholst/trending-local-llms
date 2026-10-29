@@ -5,10 +5,9 @@ The Metal (and earlier CPU) refresh leg died with 'No visible answer was
 produced ... reasoning consumed the entire budget'. Root cause: the endpoint
 capped the then-current SKU at 65,536 output tokens (our 384000 was silently
 clamped) and effort 'low' still reasons; only reasoning OFF gives 0 reasoning
-tokens. Plus the prompt built one giant final payload. The pin has since moved
-to the dated deepseek/deepseek-v4.1-flash-1017, which declares NO
-max_completion_tokens — so
-HERMES_MAX_TOKENS keeps the conservative 65,536 until a live measurement.
+tokens. Plus the prompt built one giant final payload. The pin is the dated
+deepseek/deepseek-v4-flash-0731, which publishes max_completion_tokens 65536,
+so HERMES_MAX_TOKENS sits on that cap.
 
   - test_makefile_budget_settings     searches --reasoning none, fix low, max_tokens <= 65536
   - test_no_stale_model_pin           no retired SKU string left in the pipeline files
@@ -35,14 +34,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import model_caps_check as MC  # noqa: E402
 import update_trending as UT  # noqa: E402
 
-MODEL = "deepseek/deepseek-v4.1-flash-1017"
+MODEL = "deepseek/deepseek-v4-flash-0731"
 # The UNDATED family alias the endpoint ALSO serves. Pinning it lets the provider
 # repoint the model under a published image whose tag, budget and measured caps
 # all stay put — the install-URL defect (#218) one layer down — so the pin must
-# be the dated snapshot.
-FLOATING = "deepseek/deepseek-v4.1-flash"
+# be the dated snapshot. The undated id is the April 23 release, not this pin.
+FLOATING = "deepseek/deepseek-v4-flash"
 # The retired pin, split so THIS guard file never matches its own scan.
-OLD_MODEL = "deepseek/deepseek-v4-flash" + "-0731"
+OLD_MODEL = "deepseek/deepseek-v4.1-flash" + "-1017"
 _PASS = 0
 _FAIL = 0
 

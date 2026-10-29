@@ -783,15 +783,16 @@ The README is **generated**, not hand-maintained:
   Hugging Face → HTTP 403). Prose inside a prompt uses single quotes; only the
   JSON body uses `\"`.
 - **Model budget (measured, not assumed).** The pinned model is the DATED
-  snapshot `deepseek/deepseek-v4.1-flash-1017`, never the floating
-  `deepseek/deepseek-v4.1-flash` alias: the endpoint serves both, and an alias
+  snapshot `deepseek/deepseek-v4-flash-0731`, never the floating
+  `deepseek/deepseek-v4-flash` alias: the endpoint serves both, and an alias
   can be repointed under us while the image, the tag and the measured budget
   all say nothing changed (the same defect as the install URL pin, #218).
-  The **65,536**-token cap was measured on the PREVIOUS pin of the same family
-  (`/v1/models` → `max_completion_tokens`); V4.1 Flash declares no
-  `max_completion_tokens`, so `HERMES_MAX_TOKENS := 65536` stays conservative
-  until it is re-measured — a larger `max_tokens` is accepted SILENTLY and
-  clamped, which is how 384000 once hid the real cap. The flash SKU thinks by
+  Nous has no `deepseek-v4.1-flash-0731`. The July 31 snapshot is V4 Flash
+  (`canonical_slug` stays on `…-0731`); the undated `deepseek-v4-flash` id is
+  the April 23 release. This pin publishes `max_completion_tokens` **65,536**
+  (`/v1/models`, read 2026-10-29), so `HERMES_MAX_TOKENS := 65536` sits on the
+  cap — a larger `max_tokens` is accepted SILENTLY and clamped, which is how
+  384000 once hid the real cap. The flash SKU thinks by
   default and only takes a generic `reasoning` switch: effort `low` still
   spends reasoning tokens (a Metal search burned the whole cap: "No visible
   answer was produced … reasoning consumed the entire budget"), while
@@ -1090,7 +1091,7 @@ unescaped pipes only.
 ## 6. Refresh workflow — GitHub Actions invoking the Hermes CLI
 
 The refresh is driven by the **GitHub Actions pipelines** (`refresh-bot.yml`,
-`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4.1-flash-1017 via
+`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4-flash-0731 via
 the Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
 this `AGENTS.md` and the `gather-data` skill, then:
 

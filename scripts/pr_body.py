@@ -120,7 +120,7 @@ Auto-merged (squash, branch deleted) by qa-validate once `validate` and
 # The refresh body's contract sentence, kept HERE so the workflow redirects a target instead of
 # building the text inline (issue #542). The run's WINDOW block is prepended by `refresh_body()`.
 REFRESH_CONTRACT = (
-    "Hermes CLI refresh (deepseek-v4.1-flash-1017 via Nous). Three separate per-backend searches "
+    "Hermes CLI refresh (deepseek-v4-flash-0731 via Nous). Three separate per-backend searches "
     "(NVIDIA, Metal, CPU), each writing its own timestamped raw snapshot. No existing model "
     "removed. Auto-merged when qa-validate is green; red stays open for review. Refs #1"
 )
