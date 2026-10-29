@@ -563,6 +563,19 @@
       "description": "GLM-5.3-Flash EXL3 on one 24 GB RTX 3090 + DDR4: elastic GPU expert cache, zero-copy experts, AVX2 CPU tier, OpenAI API",
       "topics": []
     },
+    "trymirai/uzu": {
+      "full_name": "trymirai/uzu",
+      "description": "A high-performance inference engine for AI models",
+      "topics": [
+        "ai",
+        "high-performance",
+        "inference",
+        "llm",
+        "metal",
+        "rust",
+        "tts"
+      ]
+    },
     "turboderp-org/exllamav3": {
       "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
       "full_name": "turboderp-org/exllamav3",
