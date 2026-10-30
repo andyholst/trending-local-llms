@@ -501,6 +501,16 @@ _setup:
 	else \
 		echo "== nerve plugin NOT installed in this image; \`make nerve-check\` fails until it is =="; \
 	fi
+	@# The bot legs run one-shot `hermes` with `--yolo --accept-hooks` (issue #351) in a
+	@# runner. Those two flags approve SHELL prompts and HOOKS — they do NOT answer
+	@# the model's own `clarify` tool. A leg that asks a question therefore prints
+	@# "Input required; detached without cancelling" and exits 3, killing that leg's
+	@# refresh (measured on the amd leg, run 40407812898, and the cpu leg, run
+	@# 40872677522). The root fix is to REMOVE the tool, not to trust the prompt to
+	@# not use it: disable the `clarify` toolset here, once, at provision time, so no
+	@# recipe can resurrect it. Strict on failure: an agent that can still ask is the bug.
+	@hermes tools disable clarify >/dev/null 2>&1 || \
+		{ echo "FAIL: 'hermes tools disable clarify' unsupported — the bot's legs can still call \`clarify\` and DETACH (the recurring refresh-leg failure)"; exit 1; }
 	@# The bot contracts live in .hermes/skills and every leg preloads one with
 	@# `hermes -s` (issue #549). Register the checkout's directory in THIS Hermes
 	@# home and read it back: a container where `-s` resolves nothing would run

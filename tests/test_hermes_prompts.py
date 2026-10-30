@@ -132,6 +132,25 @@ def test_a_recipe_with_only_yolo_is_refused():
               old.replace("--yolo --accept-hooks", "--yolo"))), "")
 
 
+def test_the_provisioning_seam_disables_clarify():
+    """issue #679, measured on the amd leg (run 40407812898) and the cpu leg (run
+    40872677522): a search leg's model occasionally calls `clarify`, and `--yolo
+    --accept-hooks` answer SHELL and HOOK prompts, not the model's own clarify — so a
+    detached leg prints "Input required; detached without cancelling" and exits 3,
+    killing that leg's refresh. `bot-unattended` says "never ask" but the model still
+    asked. The only reliable fix is to REMOVE the tool: the provisioning seam
+    (`_setup`), which every leg's image runs, must `hermes tools disable clarify`.
+    """
+    text = (ROOT / "Makefile").read_text()
+    block = text.split("_setup:", 1)[1].split("\n.PHONY", 1)[0]
+    check("clarify: the _setup seam disables the clarify toolset",
+          "hermes tools disable clarify" in block, block[:400])
+    # …and it does so STRICTLY — an agent that can still ask is the bug, so a
+    # Hermes build that cannot disable clarify must fail the setup, not continue.
+    check("clarify: the disable is strict (failure fails the setup)",
+          "exit 1" in block and "|| \\" in block, block[-200:])
+
+
 
 
 
@@ -352,6 +371,7 @@ def main() -> int:
     test_every_headless_agent_call_passes_the_noninteractive_flag_set()
     test_the_alias_has_exactly_one_definition()
     test_a_recipe_with_only_yolo_is_refused()
+    test_the_provisioning_seam_disables_clarify()
     test_prompt_permutations()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
