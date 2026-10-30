@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **170** · archived: **9**
+Active changes: **171** · archived: **9**
 
 ## Active changes
 
@@ -101,6 +101,7 @@ Active changes: **170** · archived: **9**
 | `marker-written-outside-registry` | active | — | — | [bot-markers](openspec/changes/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/marker-written-outside-registry/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
+| `no-clarify-detach` | active | — | — | [unattended-leg](openspec/changes/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/no-clarify-detach/proposal.md) |
 | `no-dead-step-env` | active | — | — | [bot-alarm-configuration](openspec/changes/no-dead-step-env/specs/bot-alarm-configuration/spec.md) | 6/6 | [proposal.md](openspec/changes/no-dead-step-env/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |
 | `no-marker-reaches-the-tree` | active | — | — | [bot-commit-safety](openspec/changes/no-marker-reaches-the-tree/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/no-marker-reaches-the-tree/proposal.md) |
