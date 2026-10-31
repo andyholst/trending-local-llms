@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "37.6",
+          "hardware": "RTX 3060 12GB",
+          "quant": "PQ2_0, prism-b10777, Windows CUDA 12.4; 9.1 GB",
+          "date": "2026-10-28",
+          "weight_gb": "9.1GB",
+          "engine_min_version": "prism-b10777",
+          "source_post": "https://lightbrd.com/RcaZenith/status/2115388093817659711",
+          "likes": 37,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 37
+        }
+      ],
+      "full_name": "Bonsai 2 27B",
+      "license": "Unknown",
+      "params": "unknown",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-30",
+      "type": "LLM (ternary)",
+      "vram_tier": "12GB",
+      "vram_min": "8GB"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:41:25Z"
+}

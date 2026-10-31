@@ -207,6 +207,18 @@
       "description": "DeepSeek-V4.1-Flash expert streaming on a ~20 GB GPU: faster prefill for JigSawPT's dsv41-porte branch (fork of JigSawPT/llama.cpp). See README-dsv41.md.",
       "topics": []
     },
+    "incoai/splash": {
+      "full_name": "incoai/splash",
+      "description": "A local inference engine for Apple silicon, built around the model.",
+      "topics": [
+        "apple-silicon",
+        "coding-agents",
+        "llm-inference",
+        "macos",
+        "metal",
+        "speculative-decoding"
+      ]
+    },
     "jakeatx/llamampere": {
       "description": "llama.cpp fork for significantly improved performance on Ampere (especially RTX 3090 / 3090 Ti): example: 95+ tok/s over a 100K-token generation at temperature 1 for qwen3.8, supporting full 262K ctx.",
       "full_name": "JakeATX/llamAmpere",

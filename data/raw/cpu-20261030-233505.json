@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-30T23:41:00Z",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B (Google DeepMind edge)",
+      "hf": "google/gemma-4-E2B",
+      "params": "2B (E2B)",
+      "type": "LLM",
+      "license": "Gemma Terms of Use",
+      "vram_tier": "8GB",
+      "vram_min": "4GB",
+      "system_ram_min": "1432MB",
+      "engines": [
+        {
+          "engine": "LiteRT",
+          "tps": "9",
+          "hardware": "Raspberry Pi 5 (CPU), LiteRT on-device",
+          "quant": "LiteRT cluster on CPU (1432 MB peak RAM)",
+          "date": "2026-09-05",
+          "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+          "likes": 549,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "system_ram_min": "1432MB",
+          "engine_min_version": "LiteRT-LM via LiteRT CLI (convert, quantize, benchmark, infer)"
+        }
+      ],
+      "last_seen": "2026-09-05",
+      "backends": [
+        "CPU"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (M5 Max 36GB, Rapid-MLX / oMLX / LM Studio)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Rapid-MLX",
+          "tps": "37.9",
+          "hardware": "M5 Max 36GB (Apple Silicon, unified memory)",
+          "quant": "4-bit, Rapid-MLX (MTP), single-stream decode",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115965916588786115"
+        },
+        {
+          "engine": "oMLX",
+          "tps": "25.3",
+          "hardware": "M5 Max 36GB (Apple Silicon, unified memory)",
+          "quant": "4-bit, oMLX (SSD caching), single-stream decode",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115965916588786115"
+        },
+        {
+          "engine": "LM Studio",
+          "tps": "26.0",
+          "hardware": "M5 Max 36GB (Apple Silicon, unified memory)",
+          "quant": "4-bit, LM Studio, single-stream decode",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115965916588786115"
+        }
+      ],
+      "last_seen": "2026-10-30"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (M5 Max MacBook Pro, Inco Splash)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Inco Splash",
+          "tps": "144",
+          "hardware": "M5 Max MacBook Pro (Apple Silicon, unified memory)",
+          "quant": "model-specific inference engine (speculative decoding)",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115965052956143959",
+          "engine_repo": "https://github.com/incoai/splash"
+        }
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:38:35Z"
+}

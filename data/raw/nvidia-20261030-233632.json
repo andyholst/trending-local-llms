@@ -1,0 +1,70 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "20.8",
+          "hardware": "NVIDIA GeForce RTX 3060 12GB (OCuLink), AMD Ryzen 7 PRO 8845HS",
+          "quant": "IQ1_M, 8-bit KV cache, MTP enabled, 32K context",
+          "date": "2026-10-30",
+          "context_tokens": "32768",
+          "system_ram_min": "31GB",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115959244088390062",
+          "likes": 6,
+          "comments": 2,
+          "reshares": 2,
+          "views": 687,
+          "interactions": 687
+        }
+      ],
+      "full_name": "Qwen3.8-Flash-Next 125B",
+      "license": "Unknown",
+      "params": "unknown",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-30",
+      "type": "LLM (MoE)",
+      "vram_tier": "12GB",
+      "vram_min": "12GB"
+    },
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "hf": "Qwen/Qwen3.8-27B",
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "133",
+          "hardware": "single RTX 3090 24GB",
+          "quant": "DFlash2 speculative decoding + context lookup + prefix caching, quantized KV cache; ordinary conversation decode (381 tok/s only on text copied from the prompt)",
+          "date": "2026-10-29",
+          "engine_min_version": "DFlash2 with context lookup",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115954253005017548",
+          "likes": 48,
+          "comments": 3,
+          "reshares": 3,
+          "views": 3584,
+          "interactions": 3584
+        }
+      ],
+      "full_name": "Qwen3.8-27B (TeksEdge DFlash2 + lookup, RTX 3090)",
+      "license": "Unknown",
+      "params": "unknown",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-30",
+      "type": "LLM",
+      "vram_tier": "24GB",
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:41:25Z"
+}
