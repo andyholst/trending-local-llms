@@ -1,0 +1,54 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-30T23:42:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next 125B (MoE, Strata on old Xeon CPUs)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "params": "125B (MoE)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "48GB",
+      "vram_min": "20GB",
+      "system_ram_min": "64GB",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "75",
+          "hardware": "2x Intel Xeon E5-2670 v2 (no AVX2), 64GB DDR3, PCIe 2.0 + 2x CMP 50HX mining cards (10GB->20GB each); 98% experts on cards, 2% on CPU",
+          "quant": "MoE experts split GPU/CPU (DDR3-64GB)",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/VRAMCalculator/status/2116179596315856980",
+          "likes": 124,
+          "comments": 15,
+          "reshares": 8,
+          "views": 6871,
+          "system_ram_min": "64GB",
+          "context_tokens": "172144",
+          "engine_min_version": "Strata 0.2.0 (xrip custom build), 19 CPU workers, no-AVX2 CPU support (added 2026-10-04)"
+        },
+        {
+          "engine": "Strata",
+          "tps": "68",
+          "hardware": "NVIDIA RTX 3060 12GB + 48GB DDR5 RAM + consumer Intel CPU, PCIe 5.0 NVMe SSD (Ubuntu)",
+          "quant": "~83.6GB quantized MoE (Q4-like)",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/uctive/status/2116142805064048686",
+          "likes": 274,
+          "comments": 1,
+          "reshares": 2,
+          "views": 0,
+          "system_ram_min": "48GB",
+          "context_tokens": "32768"
+        }
+      ],
+      "last_seen": "2026-10-30",
+      "backends": [
+        "CUDA",
+        "CPU"
+      ]
+    }
+  ]
+}

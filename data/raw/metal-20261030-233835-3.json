@@ -1,0 +1,69 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "full_name": "Qwen3.5-9B (M1 Max 64GB, five local engines)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.5-9B",
+          "hf": "Qwen/Qwen3.5-9B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "36.59",
+          "hardware": "M1 Max 64GB MacBook Pro (Apple Silicon)",
+          "quant": "4-bit, single stream, short question, temp 0",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2115484975311233426",
+          "likes": 4,
+          "views": 120
+        },
+        {
+          "engine": "Magnitude",
+          "tps": "41.61",
+          "hardware": "M1 Max 64GB MacBook Pro (Apple Silicon)",
+          "quant": "4-bit, single stream, short question, temp 0",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2115484975311233426",
+          "likes": 4,
+          "views": 120
+        },
+        {
+          "engine": "Ollama",
+          "tps": "47.27",
+          "hardware": "M1 Max 64GB MacBook Pro (Apple Silicon)",
+          "quant": "4-bit, single stream, short question, temp 0",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2115484975311233426",
+          "likes": 4,
+          "views": 120
+        },
+        {
+          "engine": "uzu",
+          "tps": "55.19",
+          "hardware": "M1 Max 64GB MacBook Pro (Apple Silicon)",
+          "quant": "4-bit, single stream, short question, temp 0",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/AIQuanting/status/2115484975311233426",
+          "likes": 4,
+          "views": 120
+        }
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:38:35Z"
+}

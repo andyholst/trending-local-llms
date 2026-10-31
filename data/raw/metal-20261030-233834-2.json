@@ -1,0 +1,40 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (M5 Max MacBook Pro, DFlash 2)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "70",
+          "hardware": "M5 Max MacBook Pro (Apple Silicon, unified memory)",
+          "quant": "DFlash 2 speculative decoding (claimed max 4.6x vs autoregressive)",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115627796630241684",
+          "likes": 2,
+          "comments": 3,
+          "views": 412
+        }
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:38:35Z"
+}

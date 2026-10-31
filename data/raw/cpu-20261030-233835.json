@@ -1,0 +1,38 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-10-30T23:45:00Z",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "full_name": "Bonsai 2 27B (ternary, based on Qwen3.8-27B)",
+      "hf": "PrismML/Bonsai-2-27b",
+      "params": "27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "system_ram_min": "12GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "NVIDIA RTX 3060 12GB VRAM (5.95GB ternary weights, Hermes Agent, 125K context)",
+          "quant": "ternary (Bonsai 2), ~22 tok/s average over 5h session; ~50 tok/s fresh",
+          "date": "2026-10-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105846759754788886",
+          "likes": 48,
+          "comments": 3,
+          "reshares": 6,
+          "views": 7148,
+          "weight_gb": "5.95GB",
+          "context_tokens": "131072"
+        }
+      ],
+      "last_seen": "2026-10-02",
+      "backends": [
+        "CUDA"
+      ]
+    }
+  ]
+}

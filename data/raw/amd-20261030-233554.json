@@ -1,0 +1,40 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "552B backbone (MoE)",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "128GB unified",
+      "vram_min": "128GB unified (APU shared memory, no discrete GPU)",
+      "backends": [
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "12-14",
+          "hardware": "GMKtec EVO-X2 Windows mini PC, Ryzen AI Max+ 395 (Strix Halo integrated Radeon), 128GB unified memory, no discrete GPU",
+          "quant": "2-bit / ISTA-DASLab IQ2_XXS 2.00 bpw, Faster mode (5 of 6 selected experts per step), Strata 0.2.7 Windows engine for Strix Halo",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/llmrequirements/status/2116236484738945104",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 49,
+          "interactions": 49,
+          "system_ram_min": "128GB",
+          "weight_gb": "~257 GB on NVMe (138 GB weights + 111 GB shared lookup table + 8 GB drafter)",
+          "storage_offload": "part of the model read from the SSD while it answers",
+          "engine_min_version": "Strata 0.2.7"
+        }
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:35:54Z"
+}

@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "bonsai-2-27b",
+      "name": "Bonsai 2 27B",
+      "hf": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "engines": [
+        {
+          "engine": "llama.cpp (PrismML fork)",
+          "tps": "49",
+          "hardware": "RTX 2070 Super 8GB",
+          "quant": "ternary Bonsai 2 (compressed Qwen3.8-27B, 5.9GB), short prompts",
+          "date": "2026-10-30",
+          "weight_gb": "5.9GB",
+          "source_post": "https://lightbrd.com/SJRonanMD/status/2116279475608662229",
+          "likes": 63,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 63
+        }
+      ],
+      "full_name": "Bonsai 2 27B",
+      "license": "Unknown",
+      "params": "unknown",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:41:25Z"
+}

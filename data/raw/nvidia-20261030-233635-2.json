@@ -1,0 +1,33 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "ornith-1.5-9b",
+      "name": "Ornith 1.5 9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "engines": [
+        {
+          "engine": "Magnitude",
+          "tps": "112",
+          "hardware": "laptop RTX A5000 16GB",
+          "quant": "Q4_K_M, Magnitude + DFlash speculative decoding, reasoning on; ~46 tok/s without DFlash, ~44 Ollama",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/ImexAutopa89371/status/2115767672323334206",
+          "likes": 40,
+          "comments": 2,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 40
+        }
+      ],
+      "full_name": "Ornith 1.5 9B",
+      "license": "Unknown",
+      "params": "unknown",
+      "backends": [
+        "CUDA"
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:41:25Z"
+}

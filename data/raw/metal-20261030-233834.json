@@ -1,0 +1,129 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B (DFlash2 on a MacBook: standard vs MTP vs DFlash2)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-27B",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "88",
+          "hardware": "MacBook (Apple Silicon, unified memory)",
+          "quant": "4-bit, DFlash2 speculative decoding; MTP 79 and standard 34 tok/s for comparison",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115956168082198714",
+          "likes": 9,
+          "comments": 2,
+          "reshares": 12,
+          "views": 845
+        }
+      ],
+      "last_seen": "2026-10-30"
+    },
+    {
+      "id": "nemotron-3.5-bolt-e4b",
+      "name": "Nemotron 3.5 Bolt E4B",
+      "full_name": "Nemotron 3.5 Bolt E4B (NVFP4-compressed 4B-class, local on MacBook via Ollama)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Nemotron 3.5 Bolt E4B",
+          "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "4B",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "30",
+          "hardware": "MacBook (Apple Silicon, unified memory)",
+          "quant": "NVFP4-compressed 4B-class, Ollama MLX runtime",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/CobusGreylingZA/status/2115885690777108701",
+          "likes": 8,
+          "comments": 8,
+          "reshares": 159,
+          "views": 10150
+        }
+      ],
+      "last_seen": "2026-10-30"
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "full_name": "Qwen3.5-9B (Apple Silicon, uzu/MLX/llama.cpp on base M5 MacBook Pro)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.5-9B",
+          "hf": "Qwen/Qwen3.5-9B"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "Qwen/Qwen3.5-9B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "uzu",
+          "tps": "92.1",
+          "hardware": "base M5 MacBook Pro (Apple Silicon, 4-bit 9B, tree speculative decoding)",
+          "quant": "4-bit, drafting on",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/tolewis/status/2115776851448660318",
+          "likes": 1,
+          "views": 82
+        },
+        {
+          "engine": "MLX",
+          "tps": "25.1",
+          "hardware": "base M5 MacBook Pro (Apple Silicon, 4-bit 9B)",
+          "quant": "4-bit, drafting off",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/tolewis/status/2115776851448660318",
+          "likes": 1,
+          "views": 82
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "22.0",
+          "hardware": "base M5 MacBook Pro (Apple Silicon, 4-bit 9B)",
+          "quant": "4-bit, drafting off (MTP off)",
+          "date": "2026-10-29",
+          "source_post": "https://lightbrd.com/tolewis/status/2115776851448660318",
+          "likes": 1,
+          "views": 82
+        }
+      ],
+      "last_seen": "2026-10-30"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:38:34Z"
+}

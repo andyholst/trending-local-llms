@@ -1,0 +1,45 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next",
+      "full_name": "Qwen3.8-Flash-Next 125B (Slotstream on 48GB M5 Pro, SSD-streamed experts)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next MLX 4-bit",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Slotstream",
+          "tps": "23.69",
+          "hardware": "48 GB M5 Pro (Apple Silicon), 33 GB memory budget",
+          "quant": "SSD-streamed expert MoE, MLX + Metal through Swift",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/KanikaBK/status/2115368981678989443",
+          "likes": 16,
+          "comments": 4,
+          "reshares": 19,
+          "views": 2086,
+          "system_ram_min": "33GB budget (48GB M5 Pro)",
+          "storage_offload": "SSD expert streaming"
+        }
+      ],
+      "last_seen": "2026-10-30",
+      "system_ram_min": "105GB (model requires 105GB; Slotstream streams experts from SSD)",
+      "storage_offload": "SSD expert streaming (treats SSD as RAM extension)"
+    }
+  ],
+  "generated_utc": "2026-10-30T23:38:35Z"
+}
