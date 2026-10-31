@@ -31,7 +31,10 @@
         "CPU",
         "ROCm"
       ],
-      "last_seen": "2026-10-30"
+      "last_seen": "2026-10-30",
+      "type": "LLM (MoE)",
+      "vram_tier": "8GB",
+      "vram_min": "8GB"
     }
   ],
   "generated_utc": "2026-10-30T23:41:25Z"

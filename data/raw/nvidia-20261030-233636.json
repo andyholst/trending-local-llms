@@ -29,7 +29,10 @@
         "Metal",
         "CPU"
       ],
-      "last_seen": "2026-10-30"
+      "last_seen": "2026-10-30",
+      "type": "LLM (ternary)",
+      "vram_tier": "12GB",
+      "vram_min": "8GB"
     }
   ],
   "generated_utc": "2026-10-30T23:41:25Z"

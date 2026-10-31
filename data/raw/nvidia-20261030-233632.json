@@ -29,7 +29,10 @@
         "CUDA",
         "ROCm"
       ],
-      "last_seen": "2026-10-30"
+      "last_seen": "2026-10-30",
+      "type": "LLM (MoE)",
+      "vram_tier": "12GB",
+      "vram_min": "12GB"
     },
     {
       "id": "qwen3.8-27b-dflash2-teksedge3090",
@@ -57,7 +60,10 @@
       "backends": [
         "CUDA"
       ],
-      "last_seen": "2026-10-30"
+      "last_seen": "2026-10-30",
+      "type": "LLM",
+      "vram_tier": "24GB",
+      "vram_min": "24GB"
     }
   ],
   "generated_utc": "2026-10-30T23:41:25Z"
