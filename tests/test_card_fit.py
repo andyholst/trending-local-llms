@@ -288,7 +288,7 @@ def test_the_shipped_store_and_readme_answer_the_question():
     """No fixture, no stub: the REAL `data/models.json` and the REAL `README.md`,
     read through the real functions and the real validators (rule 6m). A fixture
     can agree with a broken derivation; the shipped files cannot."""
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     models, reg = store["models"], store.get("engines", {})
     text = (ROOT / "README.md").read_text()
     sec = V._card_section(text)
@@ -343,7 +343,7 @@ def test_the_store_holds_what_the_trending_list_needs():
     engagement window, a figure per engine with its hardware, and a least-VRAM
     claim. This asserts the shipped store's own coverage, so a silent degrade to
     "not stated" everywhere is visible instead of plausible."""
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     models = store["models"]
     check("store: every model has an engagement object with seen_posts",
           all(isinstance(m.get("engagement"), dict) and "seen_posts" in m["engagement"] for m in models))

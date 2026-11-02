@@ -131,7 +131,7 @@ def test_new_contracts_validate_the_real_files():
 
 
 def test_validate_split_flatten_is_green():
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     failures_before = len(V.FAILURES)
     V.check_split_flatten(store)
     check("validate.check_split_flatten passes on the real store",
@@ -139,11 +139,11 @@ def test_validate_split_flatten_is_green():
 
 
 def test_shipped_split_matches_flat_store():
-    cat, meas, posts = UT.split_store(json.loads((ROOT / "data" / "models.json").read_text()))
+    cat, meas, posts = UT.split_store(UT.load_store())
     shipped_m = json.loads((ROOT / "data" / "measurements.json").read_text())
     shipped_p = json.loads((ROOT / "data" / "posts.json").read_text())
-    check("shipped measurements.json == split_store(models.json)", shipped_m == meas)
-    check("shipped posts.json == split_store(models.json)", shipped_p == posts)
+    check("shipped measurements.json == split_store(flat view)", shipped_m == meas)
+    check("shipped posts.json == split_store(flat view)", shipped_p == posts)
 
 
 def main() -> int:

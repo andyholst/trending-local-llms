@@ -1877,7 +1877,8 @@ def main() -> int:
     if not DATA.exists():
         print("FAIL: data/models.json missing")
         return 1
-    store = json.loads(DATA.read_text())
+    import update_trending as _ut
+    store = _ut.load_store()
 
     checks = []
     def add(label, name, fn):

@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import validate as V  # noqa: E402
+import update_trending as UT  # noqa: E402
 
 _PASS = 0
 _FAIL = 0
@@ -100,7 +101,7 @@ def test_the_scan_is_report_only_and_registered():
 
 
 def test_the_shipped_store_reports_the_known_pair():
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     dups = V.duplicate_runs(store.get("models", []))
     check("dup: the shipped store reports at least one pair (the scan is not vacuous)",
           len(dups) >= 1, len(dups))

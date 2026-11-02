@@ -43,6 +43,8 @@ def _fixture(td: Path) -> dict:
     data = td / "data"
     (data / "snapshots").mkdir(parents=True)
     shutil.copy(ROOT / "data" / "models.json", data / "models.json")
+    shutil.copy(ROOT / "data" / "measurements.json", data / "measurements.json")
+    shutil.copy(ROOT / "data" / "posts.json", data / "posts.json")
     shutil.copy(ROOT / "README.md", td / "README.md")
     return {**os.environ, "TRENDING_DATA_DIR": str(data), "TRENDING_README": str(td / "README.md")}
 

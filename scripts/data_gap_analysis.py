@@ -239,6 +239,27 @@ def load(path: Path, default=None):
     return json.loads(path.read_text())
 
 
+def _load_flat_store():
+    """Load the store the way every reader does (issue #697 switch-over): the
+    flat in-memory view, reconstructed from the catalog + measurements + posts
+    when the split files are present, else the legacy flat models.json as-is."""
+    import update_trending as UT  # noqa: E402  (sys.path inserts scripts/)
+    if not (DATA / "measurements.json").exists() or not (DATA / "posts.json").exists():
+        raw = load(STORE)
+        if raw is None:
+            return None
+        # legacy flat store / temp-dir fixture: return unchanged (it already has engines[])
+        return raw
+    store = load(STORE)
+    if store is None:
+        return None
+    try:
+        return UT.flatten_store(store, load(DATA / "measurements.json", {}),
+                                load(DATA / "posts.json", {}))
+    except Exception:
+        return store  # degrade to the catalog as-is rather than mask a reader bug
+
+
 def contract_keys() -> dict:
     """The keys the contracts can actually hold, so a dimension the store cannot
     represent is reported as a CONTRACT gap (the field is pruned at ingest)."""
@@ -925,7 +946,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="record the current gap signature as the baseline (no issue)")
     a = ap.parse_args(argv)
 
-    store = load(STORE)
+    store = _load_flat_store()
     if store is None:
         print(f"[data-gaps] {STORE} missing", file=sys.stderr)
         return 1
