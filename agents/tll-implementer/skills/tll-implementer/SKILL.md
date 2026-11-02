@@ -45,7 +45,7 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 - You do not start because an issue exists. You start because the planner dispatched it.
 - You do not run `gh pr merge`, do not approve your own pull request, and do not push to `master`.
 - You do not add a Hermes cron or a GitHub Actions schedule. You do not label the issue `tech-debt` or `data-gap-analysis`.
-- You do not take a red-PR repair. That stays with `trending-local-llm-issue-implementer`.
+- A red pull request is yours only when `tll-planner` names it in a comment. You do not pick one up on your own.
 
 ## Pitfalls
 

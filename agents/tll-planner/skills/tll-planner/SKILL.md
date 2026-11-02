@@ -1,6 +1,6 @@
 ---
 name: tll-planner
-description: Checks the weekly trending-local-llms data sync and dispatches the host fleet. Does not implement or merge. No cron.
+description: Triage planner for trending-local-llms. Checks the data sync and dispatches the host fleet. Does not implement or merge. No cron.
 version: 1.0.0
 author: Hermes Agent
 license: CC-BY-4.0
@@ -21,7 +21,7 @@ The only skill that stays enabled is `tll-planner`.
 There is no Hermes cron for this profile.
 <!-- host-bot-tools:end -->
 
-# TLL Data Sync
+# TLL Triage Planner
 
 ## When to use
 
@@ -45,7 +45,7 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 - You do not open a branch, push, or open a pull request.
 - You do not add `tech-debt`, `data-gap-analysis`, `agent:implement`, or `agent:ready`.
 - You do not create `cron/jobs.json` and you do not edit a GitHub Actions `schedule:`.
-- You do not tell `trending-local-llm-issue-implementer` to take these issues.
+- You do not recreate `trending-local-llm-issue-implementer`.
 
 ## Pitfalls
 

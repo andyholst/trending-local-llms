@@ -16,6 +16,7 @@ PROFILES = (
 )
 CRON = re.compile(r"(?m)^\s*-\s*cron:\s*|\b\d+\s+\d+\s+\*\s+\*\s+\S+")
 LEAVE = "Existing GitHub Actions schedules stay as they are."
+RETIRED = "Do not recreate `trending-local-llm-issue-implementer`."
 
 
 def main() -> int:
@@ -49,6 +50,25 @@ def main() -> int:
             failed += 1
         else:
             print(f"ok   agents/{profile}/SOUL.md leaves existing schedules alone")
+        if RETIRED not in soul:
+            print(f"FAIL agents/{profile}/SOUL.md does not retire the old implementer profile")
+            failed += 1
+        else:
+            print(f"ok   agents/{profile}/SOUL.md retires the old implementer profile")
+        if "red-PR fixer" in soul:
+            print(f"FAIL agents/{profile}/SOUL.md still calls the old profile the red-PR fixer")
+            failed += 1
+    readme = (ROOT / "agents" / "README.md").read_text(encoding="utf-8")
+    if "The triage planner is `tll-planner`." not in readme:
+        print("FAIL agents/README.md does not name the triage planner")
+        failed += 1
+    else:
+        print("ok   agents/README.md names the triage planner")
+    if "trending-local-llm-issue-implementer" not in readme or "Do not recreate it." not in readme:
+        print("FAIL agents/README.md does not retire the old profile")
+        failed += 1
+    else:
+        print("ok   agents/README.md retires the old profile")
     if failed:
         print(f"FAIL {failed}")
         return 1

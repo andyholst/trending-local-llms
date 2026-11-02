@@ -13,3 +13,15 @@ The files under `agents/tll-planner/`, `agents/tll-architect/`, `agents/tll-secu
 - **THEN** each one says existing schedules stay as they are, and none contains a cron expression.
 
 - **Test:** `tests/test_host_fleet_souls.py`
+
+### Requirement: the triage planner is the only dispatcher
+
+`agents/README.md` SHALL name `tll-planner` as the triage planner, and every lane soul SHALL say not to recreate `trending-local-llm-issue-implementer`.
+
+#### Scenario: the fleet document names the planner and retires the old profile
+
+- **GIVEN** `agents/README.md` and the five `SOUL.md` files,
+- **WHEN** the host-fleet guard reads them,
+- **THEN** the readme names `tll-planner` as the triage planner, and each soul says not to recreate the retired profile.
+
+- **Test:** `tests/test_host_fleet_souls.py`

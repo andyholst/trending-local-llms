@@ -11,6 +11,7 @@ The five host lanes for this repo live under `~/.hermes/profiles/tll-*`. The rep
 
 - `agents/tll-planner/`, `agents/tll-architect/`, `agents/tll-security/`, `agents/tll-reviewer/`, and `agents/tll-implementer/`: each lane's `SOUL.md` and `skills/<profile>/SKILL.md`, copied from the host profiles.
 - `tests/test_host_fleet_souls.py`: the copy contains no cron expression and tells the lane not to add or edit a schedule.
+- `agents/README.md` names `tll-planner` as the triage planner and retires `trending-local-llm-issue-implementer`.
 - No file under `.github/workflows/` changes. Existing schedules stay as they are.
 
 ## Impact
