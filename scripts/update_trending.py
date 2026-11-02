@@ -2109,6 +2109,53 @@ def refuse_fabricated_engines(
 #: alias mapping" half of the tech-debt issue).
 MEASUREMENT_MODEL_ALIASES: dict[str, set[str]] = {}
 
+#: The single source of truth for an IDENTICAL cross-model measurement tuple.
+#: Keyed by the same identity key the report-only scan uses — (engine, tps,
+#: hardware, source_post) -> [model ids]. Every remaining tuple is one of:
+#:   * the SAME model under two store ids (qwen3.8-27b / -swift, bonsai = ternary
+#:     qwen3.8-27b, phone variants, qwen3-30b = its A3B id), or
+#:   * a post that measured BOTH models (the GuideboardLabs Agon bench reports the
+#:     same median for LFM2.5 and Qwen3.6-35B-A3B on vLLM; laky_fx's PS5 demo
+#:     reports each model's own range.
+#: The #695 test imports this list so the ingest-time refusal and the post-merge
+#: gate read the SAME allow-list and never disagree (issue #702).
+CROSS_MODEL_ALLOW_LIST: dict[tuple[str, str, str, str], set[str]] = {
+    ("llama.cpp", "80.76", "RTX 4090 24GB",
+     "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648"):
+        {"qwen3.8-27b", "qwen3.8-27b-dflash2-teksedge3090"},
+    ("llama.cpp", "45", "RX 9070 XT 16GB",
+     "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112"):
+        {"qwen3.8-27b", "qwen3.8-27b-swift"},
+    ("MLX", "34.5", "Mac Studio M4 Max, 128GB unified memory",
+     "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783"):
+        {"bonsai-2-27b-mac-m4-max", "qwen3.8-27b"},
+    ("llama.cpp", "69", "2024 MacBook Pro M4 Pro, 48GB unified memory",
+     "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273"):
+        {"qwen3.6-35b-a3b", "qwen3.6-35b-a3b-kapitsa-m4-pro-mtp"},
+    ("vLLM", "25.4", "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo)",
+     "https://lightbrd.com/GuideboardLabs/status/2110246672166699354"):
+        {"lfm2.5-24b-a2b", "qwen3.6-35b-a3b"},
+    ("llama.cpp", "190", "RX 7900 XTX 24GB",
+     "https://lightbrd.com/Whimsicali/status/2075976039113904260"):
+        {"qwen3.6-35b-a3b", "qwopus3.6-35b-a3b-coder-mtp"},
+    ("MLX", "9", "M1 Pro MacBook Pro 16GB",
+     "https://lightbrd.com/allambition/status/2101077523027435878"):
+        {"bonsai-2-27b", "qwen3.8-27b-bonsai-2"},
+    ("MLX", "120", "iPhone 18 Pro Max",
+     "https://lightbrd.com/eltc9584/status/2111091999638229038"):
+        {"bonsai-2-2b", "bonsai-2-2b-phone"},
+    ("MLX", "34", "iPhone 18 Pro Max",
+     "https://lightbrd.com/eltc9584/status/2111091999638229038"):
+        {"bonsai-2-9b", "bonsai-2-9b-phone"},
+    ("MLX", "106", "Apple M5 Pro Mac mini, 64GB unified memory",
+     "https://lightbrd.com/pratikg/status/2108994425166967019"):
+        {"qwen3-30b", "qwen3-30b-a3b"},
+    ("llama.cpp (strix-llama.cpp fork)", "21",
+     "jailbroken PS5, 12 GiB unified GDDR6, Vulkan on Mihawk-99's RADV port",
+     "https://lightbrd.com/laky_fx/status/2111512795803988237"):
+        {"qwen3.5-0.8b", "qwen3.8-27b-ps5-llamacpp"},
+}
+
 _COMPARISON_CUE = re.compile(
     r"\b(?:vs\.?|versus|compar\w*|baseline|than|beats?|against|not the|instead of|while)\b", re.I
 )
@@ -2224,6 +2271,81 @@ def refuse_misattributed_measurements(
     return kept, refused
 
 
+def _cross_model_identity(e: dict) -> tuple[str, str, str, str]:
+    """The identity key a same-post cross-model copy is defined by.
+
+    Exactly the key `validate.same_post_cross_model_duplicates` uses — an
+    identical (engine, tps, hardware, source_post) stored on two model ids. The
+    ingest-time refusal and the report-only scan therefore never disagree about
+    what a copy is (issue #702).
+    """
+    return (str(e.get("engine") or ""), str(e.get("tps") or ""),
+            str(e.get("hardware") or ""), str(e.get("source_post") or ""))
+
+
+def cross_model_carriers(
+    store: dict
+) -> dict[tuple[str, str, str, str], set[str]]:
+    """(engine, tps, hardware, source_post) -> {model ids} ALREADY carrying it.
+
+    Built from the established store only, exactly as the underlying defect is
+    defined — a raw measurement whose tuple ALREADY EXISTS on a different,
+    already-merged model id (issue #702: \"already exists on a different model
+    id\"). The batch row being checked is compared against these carriers, so a
+    legitimate established owner is never refused; only the copy arriving at
+    ingest is.
+    """
+    carriers: dict[tuple[str, str, str, str], set[str]] = {}
+    for m in store.get("models") or []:
+        mid = str(m.get("id") or m.get("name") or "?")
+        for e in m.get("engines") or []:
+            carriers.setdefault(_cross_model_identity(e), set()).add(mid)
+    return carriers
+
+
+def refuse_cross_model_duplicate_measurements(
+    model: dict, carriers: dict[tuple[str, str, str, str], set[str]]
+) -> tuple[list[dict], list[tuple[str, str, str]]]:
+    """Split a model's measurements into (kept, [(engine, why, source_post)] refused).
+
+    APPLIED AT INGEST (issue #702), before a raw row merges into the store,
+    mirroring the #458 fabricated-engine and #468 misattribution seams: a
+    measurement whose (engine, tps, hardware, source_post) tuple is ALREADY
+    carried by a DIFFERENT, already-merged model id is a copy of another model's
+    figure onto this model — refused loudly with the owning model id, never
+    merged. A tuple that the documented allow-list pins as legitimate
+    (same-family variant ids, or a post that genuinely measured both models) is
+    kept; the allow-list and the #695 post-merge gate read the SAME
+    `CROSS_MODEL_ALLOW_LIST`, so the two gates never disagree. A measurement
+    with no source post cannot be a "copied from another model's post" — its
+    identity tuple keys on an empty post — so it is kept (fail open; never
+    refuse what is not provable).
+    """
+    kept: list[dict] = []
+    refused: list[tuple[str, str, str]] = []
+    this_id = str(model.get("id") or model.get("name") or "?")
+    for e in model.get("engines") or []:
+        ident = _cross_model_identity(e)
+        if not e.get("source_post"):
+            kept.append(e)
+            continue
+        others = carriers.get(ident, set()) - {this_id}
+        if not others:
+            kept.append(e)
+            continue  # no other model carries this tuple
+        allowed = CROSS_MODEL_ALLOW_LIST.get(ident)
+        if allowed is not None and (set(others) | {this_id}) == allowed:
+            kept.append(e)  # documented legitimate pair
+            continue
+        owner = ", ".join(sorted(others))
+        refused.append((
+            str(e.get("engine")),
+            f"identical (engine, tps, hardware, source_post) already carried by {owner}",
+            str(e.get("source_post") or "unknown"),
+        ))
+    return kept, refused
+
+
 def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                          verify_hf: bool = False) -> tuple[int, int]:
     """Merge the data/raw/*.json snapshots NEWER than `since` into the store.
@@ -2291,6 +2413,24 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"[ingest] REFUSED misattributed measurement {name!r} on {m.get('id')}: "
                         f"{why}; post {post} — a measurement must name the model whose row it "
                         f"is stored on"
+                    )
+        # A CROSS-MODEL copy never becomes data either (issues #693/#702): a measurement
+        # whose (engine, tps, hardware, source_post) is ALREADY carried by a different,
+        # already-merged model id is one model's figure silently copied onto another the
+        # post never measured. The #458/#468 seams refuse by engine name / by the row's
+        # own text; a copy whose text names no other model slips past both — so refuse by
+        # identity tuple here, at the seam where the value would enter the store, loudly
+        # and by name, exactly as the post-merge gate (#695) sees the same tuples.
+        _carriers = cross_model_carriers(store)
+        for m in data.get("models", []):
+            kept, refused = refuse_cross_model_duplicate_measurements(m, _carriers)
+            if refused:
+                m["engines"] = kept
+                for name, why, post in refused:
+                    print(
+                        f"[ingest] REFUSED cross-model duplicate measurement {name!r} on "
+                        f"{m.get('id')}: {why}; post {post} — a t/s tuple already stored "
+                        f"on another model is a copy, not a measurement of this model"
                     )
         for m in data.get("models", []):
             mid = m.get("id")

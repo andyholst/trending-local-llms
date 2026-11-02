@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **177** · archived: **9**
+Active changes: **178** · archived: **9**
 
 ## Active changes
 
@@ -59,6 +59,7 @@ Active changes: **177** · archived: **9**
 | `conflict-merge-says-why` | active | — | — | [bot-conflict-repair](openspec/changes/conflict-merge-says-why/specs/bot-conflict-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/conflict-merge-says-why/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | active | #382 | — | [raw-snapshot-quarantine](openspec/changes/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/correct-raw-diagnoses-a-missing-hf/proposal.md) |
 | `cross-model-attribution` | active | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/cross-model-attribution/proposal.md) |
+| `cross-model-ingest-refusal` | active | — | — | [cross-model-ingest-refusal](openspec/changes/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/cross-model-ingest-refusal/proposal.md) |
 | `data-gap-acquired-footprint-capture` | active | #395 — `data-gap: storage_offload (40 models)` | — | [data-gap-backfill](openspec/changes/data-gap-acquired-footprint-capture/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-acquired-footprint-capture/proposal.md) |
 | `data-gap-baseline` | active | #174 | — | [data-gap-baseline](openspec/changes/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-baseline/proposal.md) |
 | `data-gap-engine-min-version` | active | #163 | — | [data-gap-backfill](openspec/changes/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-engine-min-version/proposal.md) |
