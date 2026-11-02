@@ -56,7 +56,12 @@ flatten-equality oracle so no value is ever lost.
   through the same split/flatten round-trip the writers now emit.
 - **Shipped data** — `data/models.json` regenerated as the catalog from the current
   store; `data/measurements.json` + `data/posts.json` stay the canonical measurement +
-  post stores; `README.md` byte-identical (the renderer keeps using the flattened view).
+  post stores. The rendered `README.md` is regenerated from the flattened view; its
+  engagement-derived buzz/trend lines are **re-resolved from the canonical
+  `data/posts.json`** (the intended GWT2 consequence), so a corrected post entry raises
+  every referencing row — the README is re-resolved to the canonical value, not claimed
+  byte-identical. (`tests/test_measurements_split.py::test_flatten_engagement_equals_posts_value_for_value`
+  guards that every row's engagement equals `posts[source_post]` value-for-value.)
 
 ## Impact
 

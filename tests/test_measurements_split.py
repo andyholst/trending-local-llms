@@ -86,6 +86,42 @@ def test_engagement_resolved_once_from_posts():
     check("engagement: at least one reference checked (not vacuous)", checked > 0, str(checked))
 
 
+# (b2) Value-for-value: flatten(row).engagement == posts[source_post].engagement (issue #699)
+def test_flatten_engagement_equals_posts_value_for_value():
+    catalog, measurements, posts = _real_files()
+    flat = UT.flatten_store(catalog, measurements, posts)
+    by_id = {m["id"]: m for m in flat["models"]}
+    # Compare every resolved row's five counters against the canonical posts entry
+    # value-for-value (NOT merely non-shrinking) — this is the primary resolution contract.
+    matched = no_entry = total = 0
+    mismatches: list[str] = []
+    for mid, rows in measurements.items():
+        m = by_id.get(mid)
+        if m is None:
+            continue
+        for r, e in zip(rows, m.get("engines", [])):
+            total += 1
+            sp = r.get("source_post", "")
+            p = posts.get(sp)
+            if p is None:
+                # no canonical entry => row resolves each counter to 0
+                no_entry += 1
+                if not all(int(e.get(c) or 0) == 0 for c in UT._MEASUREMENT_COUNTERS):
+                    mismatches.append(f"{mid} {e.get('engine')}: no-entry row has nonzero counters")
+                continue
+            matched += 1
+            for c in UT._MEASUREMENT_COUNTERS:
+                rv = int(e.get(c) or 0)
+                pv = int(p.get(c) or 0)
+                if rv != pv:
+                    mismatches.append(f"{mid} {e.get('engine')} [{sp}] {c}: row={rv} posts={pv}")
+    check("value-fidelity: every row with a canonical post entry equals it value-for-value (all 5 counters)",
+          mismatches == [], "; ".join(mismatches[:5]))
+    check("value-fidelity: rows compared (not vacuous)", total > 0, str(total))
+    check("value-fidelity: rows matched to a canonical post entry + nonexistent-entry rows",
+          matched + no_entry == total, f"{matched}+{no_entry} != {total}")
+
+
 # (c) Flattened view == old inline view, guarded by check_no_value_loss (GWT 3)
 def test_flatten_equals_old_inline_guarded():
     failures_before = len(V.FAILURES)
@@ -144,6 +180,7 @@ def test_support_surface_reads_same_store():
 def main() -> int:
     test_catalog_has_no_inline_engines()
     test_engagement_resolved_once_from_posts()
+    test_flatten_engagement_equals_posts_value_for_value()
     test_flatten_equals_old_inline_guarded()
     test_renderer_materialises_same_ranking()
     test_support_surface_reads_same_store()

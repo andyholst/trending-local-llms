@@ -53,11 +53,11 @@ measurement is dropped and no counter shrinks (the #463/#525/#411/#650 loss clas
 (model, engine, vram/ram-fit) sorts top exactly as before, and footprint-aware card-fit tables
 keep reading the same per-row evidence.
 
-#### Scenario: render via load_store is byte-identical
+#### Scenario: render via load_store matches t/s bands and card-fit while buzz re-resolves from posts
 
 - **Given** the same flat store
 - **When** `render_readme(load_store(catalog, measurements, posts))` runs
-- **Then** best-t/s ranking and card-fit rows match the flat-store render
+- **Then** best-t/s ranking and card-fit rows match the flat-store render, and engagement-influenced buzz/trend lines are re-resolved from `posts.json` (the intended GWT2 consequence)
 - **Test:** tests/test_measurements_split.py::test_renderer_materialises_same_ranking
 
 ### Requirement: The engine support-surface reads the same store
