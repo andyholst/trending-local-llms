@@ -43,9 +43,13 @@ sys.path.insert(0, str(ROOT / "scripts"))  # import update_trending helpers
 # Allow tests to run the make targets against a small fixture in a temp dir.
 _DATA_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
 DATA = _DATA_DIR / "models.json"
+MEASUREMENTS = _DATA_DIR / "measurements.json"
+POSTS = _DATA_DIR / "posts.json"
 SNAPSHOT_DIR = _DATA_DIR / "snapshots"
 README = Path(os.environ.get("TRENDING_README", str(ROOT / "README.md")))
 CONTRACT = _DATA_DIR / "model_contract.json"
+MEASUREMENTS_CONTRACT = _DATA_DIR / "measurements_contract.json"
+POSTS_CONTRACT = _DATA_DIR / "posts_contract.json"
 SEARCH_CONTRACT = _DATA_DIR / "search_contract.json"
 RAW_DIR = _DATA_DIR / "raw"
 
@@ -443,6 +447,122 @@ def check_schema(store: dict) -> None:
         fail(f"schema: {e.message} (at {list(e.absolute_path or [])})")
     else:
         print(f"  OK: models.json conforms to model_contract.json ({len(store['models'])} models)")
+
+
+def check_measurements_contract() -> None:
+    """Validate data/measurements.json against data/measurements_contract.json.
+    Each measurement row is {engine, tps, hardware, quant, date, source_post,
+    [footprint…]} — NO engagement counters (those live in posts.json). Absent
+    file = additive slice not generated (a temp-dir fixture), not a failure."""
+    try:
+        import jsonschema  # noqa: F401
+    except ImportError:
+        fail("measurements-contract: 'jsonschema' is not installed")
+        return
+    if not MEASUREMENTS.exists():
+        print("  (no data/measurements.json — additive slice not yet generated)")
+        return
+    if not MEASUREMENTS_CONTRACT.exists():
+        fail("data/measurements_contract.json missing")
+        return
+    data = json.loads(MEASUREMENTS.read_text())
+    schema = json.loads(MEASUREMENTS_CONTRACT.read_text())
+    try:
+        jsonschema.validate(instance=data, schema=schema)
+    except jsonschema.ValidationError as e:
+        fail(f"measurements-contract: {e.message} (at {list(e.absolute_path or [])})")
+    else:
+        print(f"  OK: measurements.json conforms to measurements_contract.json "
+              f"({sum(len(v) for v in data.values())} measurement rows)")
+
+
+def check_posts_contract() -> None:
+    """Validate data/posts.json against data/posts_contract.json. Keyed by
+    source_post URL -> {date, likes, comments, reshares, views, interactions}.
+    Absent file = additive slice not generated (a temp-dir fixture), not a
+    failure."""
+    try:
+        import jsonschema  # noqa: F401
+    except ImportError:
+        fail("posts-contract: 'jsonschema' is not installed")
+        return
+    if not POSTS.exists():
+        print("  (no data/posts.json — additive slice not yet generated)")
+        return
+    if not POSTS_CONTRACT.exists():
+        fail("data/posts_contract.json missing")
+        return
+    data = json.loads(POSTS.read_text())
+    schema = json.loads(POSTS_CONTRACT.read_text())
+    try:
+        jsonschema.validate(instance=data, schema=schema)
+    except jsonschema.ValidationError as e:
+        fail(f"posts-contract: {e.message} (at {list(e.absolute_path or [])})")
+    else:
+        print(f"  OK: posts.json conforms to posts_contract.json ({len(data)} posts)")
+
+
+def check_split_flatten(store: dict) -> None:
+    """Prove the normalised split is lossless: the shipped data/measurements.json
+    and data/posts.json must be exactly split_store(flat models.json), and
+    flatten() of those files must reconstruct the same inline store. This is the
+    #689 flatten-equality guard (the #463/#525 loss class): a split that drops a
+    measurement row or shrinks a footprint reddens the PR here, while the flat
+    store stays the canonical thing every existing reader keeps using."""
+    import update_trending as ut
+    if not (MEASUREMENTS.exists() and POSTS.exists()):
+        print("  (no split store files — additive slice not yet generated)")
+        return
+    shipped_measurements = json.loads(MEASUREMENTS.read_text())
+    shipped_posts = json.loads(POSTS.read_text())
+    expected_catalog, expected_measurements, expected_posts = ut.split_store(store)
+
+    problems = []
+    if shipped_measurements != expected_measurements:
+        problems.append("data/measurements.json does not match split_store(models.json)")
+    if shipped_posts != expected_posts:
+        problems.append("data/posts.json does not match split_store(models.json)")
+
+    # flatten() of the SHIPPED files must rebuild the same measurement rows
+    flat = ut.flatten_store(expected_catalog, shipped_measurements, shipped_posts)
+    by_id = {m["id"]: m for m in store["models"]}
+    found = total = 0
+    for m in flat["models"]:
+        cur = by_id.get(m["id"])
+        if cur is None:
+            continue
+        old_rows = {ut._measurement_identity(e) for e in cur.get("engines", [])}
+        new_rows = {ut._measurement_identity(e) for e in m.get("engines", [])}
+        total += len(old_rows)
+        dropped = old_rows - new_rows
+        if dropped:
+            problems.append(f"model {m['id']} lost measurements {sorted(dropped)[:3]}")
+        else:
+            found += len(old_rows)
+
+    import collections
+    old_posts = collections.defaultdict(lambda: collections.defaultdict(int))
+    for m in store["models"]:
+        for e in m.get("engines", []):
+            sp = e.get("source_post", "")
+            for c in ("likes", "comments", "reshares", "views", "interactions"):
+                old_posts[sp][c] += int(e.get(c) or 0)
+    new_posts = collections.defaultdict(int)
+    for m in flat["models"]:
+        for e in m.get("engines", []):
+            sp = e.get("source_post", "")
+            for c in ("likes", "comments", "reshares", "views", "interactions"):
+                new_posts[sp] += int(e.get(c) or 0)
+    shrunk = [sp for sp in old_posts
+              if any(new_posts[sp] < old_posts[sp][c] for c in ("likes", "comments", "reshares", "views", "interactions"))]
+    if shrunk:
+        problems.append(f"engagement shrunk for posts {sorted(shrunk)[:3]}")
+
+    if problems:
+        for p in problems:
+            fail(f"split-flatten: {p}")
+    else:
+        print(f"  OK: split files == split_store(models.json) ({found}/{total} measurements, counters preserved)")
 
 
 def check_search_contract() -> None:
@@ -1785,6 +1905,9 @@ def main() -> int:
     add("registry holds only inference engines", "data", lambda: check_engine_kind(store))
     add("model fields + links", "schema", lambda: check_model_fields(store))
     add("schema conformance (model_contract.json)", "schema", lambda: check_schema(store))
+    add("measurements conformance (measurements_contract.json)", "schema", lambda: check_measurements_contract())
+    add("posts conformance (posts_contract.json)", "schema", lambda: check_posts_contract())
+    add("split flatten guard (flatten == store)", "schema", lambda: check_split_flatten(store))
     add("search/raw contract (search_contract.json)", "search", lambda: check_search_contract())
     add("raw -> models.json mapping", "mapping", lambda: check_raw_mapping(store))
     add("newline terminators", "data", lambda: check_newline_terminators())

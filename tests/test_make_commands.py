@@ -71,6 +71,8 @@ def build_fixture(tmp: Path) -> dict:
     # copy the real contracts so schema checks pass
     shutil.copy(ROOT / "data" / "model_contract.json", data / "model_contract.json")
     shutil.copy(ROOT / "data" / "search_contract.json", data / "search_contract.json")
+    shutil.copy(ROOT / "data" / "measurements_contract.json", data / "measurements_contract.json")
+    shutil.copy(ROOT / "data" / "posts_contract.json", data / "posts_contract.json")
 
     # one raw snapshot per backend (small)
     for backend, eng, tps in [("nvidia", "llama.cpp", "50"), ("metal", "MLX", "85")]:

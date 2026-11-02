@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **172** · archived: **9**
+Active changes: **173** · archived: **9**
 
 ## Active changes
 
@@ -101,6 +101,7 @@ Active changes: **172** · archived: **9**
 | `live-checks-fail-loud` | active | — | — | [live-checks](openspec/changes/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/live-checks-fail-loud/proposal.md) |
 | `marker-written-outside-registry` | active | — | — | [bot-markers](openspec/changes/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/marker-written-outside-registry/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
+| `measurement-store-split` | active | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/measurement-store-split/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
 | `no-clarify-detach` | active | — | — | [unattended-leg](openspec/changes/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/no-clarify-detach/proposal.md) |
 | `no-dead-step-env` | active | — | — | [bot-alarm-configuration](openspec/changes/no-dead-step-env/specs/bot-alarm-configuration/spec.md) | 6/6 | [proposal.md](openspec/changes/no-dead-step-env/proposal.md) |

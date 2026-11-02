@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/andyholst/trending-local-llms/data/measurements_contract.json",
+  "title": "trending-local-llms measurements contract",
+  "description": "JSON Schema that data/measurements.json must conform to. Keyed by model_id -> array of per-engine t/s measurement rows. Each row carries the footprint of THE RUN that produced the figure and a reference to the source post; engagement counters do NOT live here (they are published once in data/posts.json, issue #689). Enforced by scripts/validate.py.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": [
+        "engine",
+        "tps",
+        "date",
+        "source_post"
+      ],
+      "properties": {
+        "engine": {
+          "type": "string",
+          "description": "Inference engine that produced the t/s figure."
+        },
+        "tps": {
+          "type": "string",
+          "description": "Tokens/sec, always per engine."
+        },
+        "hardware": {
+          "type": "string"
+        },
+        "quant": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "source_post": {
+          "type": "string",
+          "format": "uri",
+          "description": "The X post (lightbrd mirror) that reported this figure; its engagement is resolved from posts.json."
+        },
+        "weight_gb": {
+          "type": "string",
+          "description": "OPTIONAL. Weight footprint of the QUANT THIS MEASUREMENT RAN IN, as the post states it."
+        },
+        "context_tokens": {
+          "type": "string",
+          "description": "OPTIONAL. Context window this measurement ran with, as the post states it."
+        },
+        "system_ram_min": {
+          "type": "string",
+          "description": "OPTIONAL. System RAM / unified memory this measurement needed, as the post states it."
+        },
+        "storage_offload": {
+          "type": "string",
+          "description": "OPTIONAL. Storage-offload this measurement needed, as the post states it."
+        },
+        "engine_min_version": {
+          "type": "string",
+          "description": "OPTIONAL. Engine minimum build / required flags THIS measurement needed."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Engagement counters are intentionally ABSENT from the row: they live in posts.json under source_post. Footprint keys are declared; a genuinely new measurement dimension must be added to this contract in the same change (additive-only, AGENTS §2.3b)."
+    }
+  }
+}
