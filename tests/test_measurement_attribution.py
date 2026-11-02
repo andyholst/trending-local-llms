@@ -199,7 +199,7 @@ def test_ingest_drops_a_new_row_whose_only_measurement_is_refused():
 
 
 def test_the_shipped_store_reports_the_known_row():
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     mis = V.misattributed_measurements(store.get("models", []))
     check("scan: the shipped store reports the qwen-3.6-27b row",
           any("qwen-3.6-27b" in m[0] or "Qwen 3.6 27B" in m[0] for m in mis), mis[:2])

@@ -162,7 +162,7 @@ def test_engine_repo_stripped():
 
 
 def _real_store():
-    return json.loads((ROOT / "data" / "models.json").read_text())
+    return UT.load_store()
 
 
 def test_real_pr72_snapshot():

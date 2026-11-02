@@ -304,7 +304,7 @@ def test_the_validator_catches_a_falsified_tier():
 def test_the_shipped_readme_and_store():
     """No fixture, no stub: the REAL `data/models.json` and the REAL `README.md`
     through the real functions and the real check (rule 6m)."""
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     models, reg = store["models"], store.get("engines", {})
     text = (ROOT / "README.md").read_text()
     sec = V._trending_card_section(text)

@@ -47,7 +47,7 @@ def check(name, cond, detail: object = ""):
 
 
 def real_store() -> dict:
-    return json.loads((ROOT / "data" / "models.json").read_text())
+    return UT.load_store()
 
 
 def bonsai(s):

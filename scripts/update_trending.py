@@ -93,6 +93,27 @@ def flatten_store(catalog: dict, measurements: dict, posts: dict) -> dict:
     return store
 
 
+def load_store() -> dict:
+    """Load the store for every reader (issue #697 switch-over).
+
+    Reads the three files of the normalised store — `data/models.json` (the catalog,
+    no inline `engines[]`), `data/measurements.json` and `data/posts.json` — and returns
+    the FLAT in-memory shape every existing reader (render_readme, sort_models, ingest,
+    validate) operates on, via `flatten_store(catalog, measurements, posts)`.
+
+    Legacy / temp-dir stores that were written before the split (a flat `models.json`
+    with inline `engines[]` and no measurements/posts files) load unchanged as-is, so
+    `make _merge` fixtures and snapshots stay readable. A store whose split files are
+    missing falls back to the flat store exactly as it was written.
+    """
+    store = json.loads(DATA.read_text())
+    if MEASUREMENTS.exists() and POSTS.exists():
+        measurements = json.loads(MEASUREMENTS.read_text())
+        posts = json.loads(POSTS.read_text())
+        return flatten_store(store, measurements, posts)
+    return store
+
+
 def split_store(store: dict) -> tuple[dict, dict, dict]:
     """Split a flat store into (catalog, measurements, posts).
 
@@ -2844,7 +2865,7 @@ def main() -> int:
     if not DATA.exists():
         print("[error] missing data/models.json", file=sys.stderr)
         return 1
-    store = json.loads(DATA.read_text())
+    store = load_store()
 
     if args.render_only:
         # Render-only (issue #195). The README is rendered AS OF the store's own
@@ -2924,17 +2945,21 @@ def main() -> int:
         print(readme)
         return 0
 
-    # The store stays FLAT on disk today (all existing readers keep working).
-    # The normalised split is written ALONGSIDE (additive, issue #689): a
-    # corrected post edits data/posts.json once; the split-flatten guard in
-    # validate.py proves measurements/posts reconstruct the same inline view.
-    DATA.write_text(json.dumps(store, indent=2, ensure_ascii=False) + "\n")
-    _catalog, measurements, posts = split_store(store)
+    # The normalised store persists as THREE files (issue #689/#697 switch-over):
+    # data/models.json is the CATALOG (model identity, top-level `engines` registry,
+    # per-model `engagement` — no inline `engines[]`), data/measurements.json holds the
+    # measurement rows and data/posts.json the engagement published once per source_post.
+    # Read back through load_store()/flatten_store() every reader reconstructs the same
+    # flat in-memory view it always used, and the FLAT snapshot stays the pre-switch
+    # oracle the flatten-equality guard (validate.check_no_value_loss / check_split_flatten)
+    # compares against, so no measurement or counter is ever lost (#463/#525/#411/#650).
+    catalog, measurements, posts = split_store(store)
+    DATA.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
     MEASUREMENTS.write_text(json.dumps(measurements, indent=2, ensure_ascii=False) + "\n")
     POSTS.write_text(json.dumps(posts, indent=2, ensure_ascii=False) + "\n")
     README.write_text(readme)
     snap = write_snapshot(store)
-    print("[ok] wrote data/models.json, data/measurements.json, data/posts.json, README.md, snapshot " + snap.name)
+    print("[ok] wrote data/models.json (catalog), data/measurements.json, data/posts.json, README.md, snapshot " + snap.name)
     return 0
 
 if __name__ == "__main__":

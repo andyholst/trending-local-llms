@@ -524,7 +524,14 @@ def test_wiring_parity():
 
 def test_real_store():
     """Acceptance (#76): the real store/README carry a real AMD measurement."""
-    s = json.loads((ROOT / "data" / "models.json").read_text())
+    # The REAL shipped store, as the flat view a reader materialises (#697), read
+    # from the repo data/ explicitly so this file keeps testing the shipped tree
+    # even when a make-command fixture points TRENDING_DATA_DIR at a temp dir.
+    import json as _json
+    _d = ROOT / "data"
+    s = UT.flatten_store(_json.loads((_d / "models.json").read_text()),
+                         _json.loads((_d / "measurements.json").read_text()),
+                         _json.loads((_d / "posts.json").read_text()))
     reg = s.get("engines", {})
     rocm = [(m["id"], e) for m in s["models"] for e in m.get("engines", [])
             if UT.measurement_backend(e, reg) == "ROCm"]

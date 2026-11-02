@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import data_gap_analysis as G  # noqa: E402
+import update_trending as UT  # noqa: E402
 
 _PASS = 0
 _FAIL = 0
@@ -436,7 +437,7 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
     `missing` stayed 30 / 36 / 44 / 58 / 35 — those are real acquisition gaps."""
 
     # Given the real store and contracts
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
     by_id = {m.get("id"): m for m in store["models"]}
 
@@ -639,7 +640,7 @@ def test_the_real_store_splits_every_missing_dimension():
     """On the repository's own store and snapshots, the split is a consistent partition and the
     ranked gaps really are acquisition gaps — not a claim about a fixture."""
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
     capture = G.captured_text(store, G.RAW_DIR)
 
@@ -676,7 +677,7 @@ def test_the_report_and_issue_body_name_an_acquisition_gap():
     """The filed issue must say which kind of gap it is, or the next triage reads it as ingest
     work again (the re-filing loop this issue exists to end)."""
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
     text = G.render(report)
     body, title = G.issue_body(report, None)
@@ -1045,7 +1046,7 @@ def test_real_store_dimensions_are_capturable_and_partly_filled():
 
     # Given the real store and the real contracts
     contract = G.contract_keys()
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     report = G.analyse(store, contract, raw_dir=G.RAW_DIR)
     dims = [d["key"] for d in G.DIMENSIONS]
 
@@ -1081,7 +1082,7 @@ def test_structured_dimensions_trace_to_a_real_post():
 
     import update_trending as UT  # noqa: E402
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     dims = [d["key"] for d in G.DIMENSIONS]
     untraceable = [
         f"{m.get('id')}:{k}"
@@ -1524,7 +1525,7 @@ def test_engine_min_version_backfill_traces_to_the_captured_source_text():
 
     import update_trending as UT  # noqa: E402
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     captured = _captured_text()
     carried = [m for m in store["models"] if m.get("engine_min_version")]
 
@@ -1557,7 +1558,7 @@ def test_engine_min_version_coverage_can_never_shrink():
     floor of models, and the analysis reports fewer models missing it than the
     29/30 the filed issue (#163) recorded."""
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
     n = sum(1 for m in store["models"] if m.get("engine_min_version"))
     missing = len(report["missing"]["engine_min_version"])
@@ -1604,7 +1605,7 @@ def test_storage_offload_backfill_traces_to_the_captured_source_text():
 
     import update_trending as UT  # noqa: E402
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     captured = _captured_text()
     carried = [m for m in store["models"] if m.get("storage_offload")]
 
@@ -1638,7 +1639,7 @@ def test_storage_offload_coverage_can_never_shrink():
     floor of models, and the analysis reports fewer models missing it than the
     41/49 the filed issue (#364) recorded."""
 
-    store = G.load(G.STORE)
+    store = G._load_flat_store()
     report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
     n = sum(1 for m in store["models"] if m.get("storage_offload"))
     missing = len(report["missing"]["storage_offload"])
@@ -1673,7 +1674,7 @@ def _captured_raw_text() -> dict[str, str]:
     NAME resolves: a capture of ANOTHER model stays that model's evidence (one
     post is sometimes captured under two different models, and copying a value
     across models is the fabrication this stage must never make)."""
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     by_name = {str(m.get("name") or "").strip().lower(): m.get("id")
                for m in store.get("models", []) if m.get("name")}
     store_ids = {m.get("id") for m in store.get("models", [])}
@@ -1697,7 +1698,7 @@ def _captured_raw_text() -> dict[str, str]:
 def test_measurement_dimensions_trace_to_the_captured_snapshot():
     """Every per-measurement dimension value in the store is the captured post's own
     wording — a value no raw snapshot states is a fabrication."""
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     text = _captured_raw_text()
     invented = []
     for m in store["models"]:
@@ -1714,7 +1715,7 @@ def test_measurement_dimensions_trace_to_the_captured_snapshot():
 def test_measurement_dimension_coverage_can_never_shrink():
     """A floor on measurements carrying a structured dimension, so a regeneration
     that drops the backfill cannot pass silently."""
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     carrying = sum(1 for m in store["models"] for e in m.get("engines", [])
                    if any(e.get(k) for k in MEASUREMENT_DIMENSIONS))
     check("coverage: at least 46 measurements carry a structured dimension "
@@ -1818,7 +1819,7 @@ def test_a_captured_measurement_footprint_is_never_lost_from_the_store():
     oMLX and mlx-serve runs' `engine_min_version` on `qwen3.8-27b` and
     `bonsai-2-2b`'s `0.43GB ternary` weight footprint."""
 
-    store = json.loads((ROOT / "data" / "models.json").read_text())
+    store = UT.load_store()
     stated = _captured_measurement_values()
     checked, lost = _lost_captured_footprints(store["models"], stated)
 
