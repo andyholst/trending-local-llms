@@ -1,7 +1,7 @@
 # Host Hermes fleet souls and skills
 
 **Issue:** [#682](https://github.com/andyholst/trending-local-llms/issues/682)
-**PR:** —
+**PR:** [#688](https://github.com/andyholst/trending-local-llms/pull/688)
 
 ## Why
 
