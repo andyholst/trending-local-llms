@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/andyholst/trending-local-llms/data/posts_contract.json",
+  "title": "trending-local-llms posts contract",
+  "description": "JSON Schema that data/posts.json must conform to. Keyed by source_post URL -> {date, likes, comments, reshares, views, interactions}. Engagement published ONCE per post; measurement rows reference it by source_post instead of restating it (issue #689 — the #463/#525 loss class). Enforced by scripts/validate.py.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "object",
+    "required": [
+      "date"
+    ],
+    "properties": {
+      "date": {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+      },
+      "likes": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "comments": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "reshares": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "views": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "interactions": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "additionalProperties": false,
+    "description": "Counters are optional per row (a real mirror page may not report views). An absent counter resolves to 0 on the flattened measurement row — never a penalty."
+  }
+}

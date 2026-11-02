@@ -14,6 +14,7 @@ Run:  python3 scripts/update_trending.py [--dry-run] [--no-fetch]
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -31,10 +32,99 @@ from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition
 # instead of the real data/ tree. When set, all data paths resolve under it.
 _DATA_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
 DATA = _DATA_DIR / "models.json"
+MEASUREMENTS = _DATA_DIR / "measurements.json"
+POSTS = _DATA_DIR / "posts.json"
 README = Path(os.environ.get("TRENDING_README", str(ROOT / "README.md")))
 SCRAPE_DIR = _DATA_DIR / "scrape"
 SNAPSHOT_DIR = _DATA_DIR / "snapshots"
 RAW_DIR = _DATA_DIR / "raw"
+
+# --- normalised store split (issue #689) -----------------------------------
+# The store persisted as THREE files so the measurement volume grows with post
+# count, not with every model object:
+#   models.json       the catalog (model identity + top-level `engines` registry
+#                     + per-model `engagement` aggregate), NO inline engines[].
+#   measurements.json keyed by model_id -> list of {engine, tps, hardware, quant,
+#                     date, source_post, [footprint…]} measurement rows, NO
+#                     engagement counters on the row.
+#   posts.json        keyed by source_post URL -> {date, likes, comments,
+#                     reshares, views, interactions}; engagement published once
+#                     and referenced by measurement rows (the #463/#525 loss fix).
+# flatten() reconstructs the exact pre-split in-memory store (models with inline
+# engines[]) so every reader (render_readme, sort_models, ingest, validate)
+# keeps operating on the flat shape; split_store() is its inverse. The additive
+# guard (validate.check_no_value_loss) runs against flatten(catalog, measurements,
+# posts) so nothing is lost in the split.
+_MEASUREMENT_COUNTERS = ("likes", "comments", "reshares", "views", "interactions")
+_MEASUREMENT_FOOTPRINT = ("weight_gb", "context_tokens", "system_ram_min",
+                          "storage_offload", "engine_min_version")
+
+
+def _measurement_identity(e: dict) -> tuple:
+    """Identity of a measurement row, excluding engagement counters: the split
+    is lossless exactly when every (model, engine, tps, hardware, date,
+    source_post, footprint) tuple survives flatten(). Counters move to
+    posts.json and may only grow (AGENTS §2.3b), so they are not identity."""
+    parts = ["engine", "tps", "hardware", "quant", "date", "source_post"]
+    parts += [k for k in _MEASUREMENT_FOOTPRINT if k != "source_post"]
+    key = tuple((k, str(e.get(k, ""))) for k in parts)
+    return key
+
+
+def flatten_store(catalog: dict, measurements: dict, posts: dict) -> dict:
+    """Reconstruct the pre-split flat store: each model carries its inline
+    `engines[]` rows with engagement counters resolved from posts.json.
+
+    A measurement row is `{engine, tps, hardware, quant, date, source_post,
+    [footprint…]}` (no counters); flatten() splices back the counters of its
+    source_post from posts.json. Bars/rows whose source_post has no post entry
+    (a mirror link / profile page) resolve engagement to 0 — never a penalty.
+    """
+    store = copy.deepcopy(catalog)
+    for m in store["models"]:
+        rows = []
+        for r in measurements.get(m.get("id", ""), []) or []:
+            row = dict(r)
+            p = posts.get(row.get("source_post", "")) or {}
+            for c in _MEASUREMENT_COUNTERS:
+                row[c] = int(p.get(c) or 0)
+            rows.append(row)
+        m["engines"] = rows
+    return store
+
+
+def split_store(store: dict) -> tuple[dict, dict, dict]:
+    """Split a flat store into (catalog, measurements, posts).
+
+    - catalog: model rows with `engines[]` removed (everything else kept).
+    - measurements: {model_id: [{engine, tps, hardware, quant, date, source_post,
+      [footprint…]}]} — counters stripped off the row.
+    - posts: {source_post: {date, likes, comments, reshares, views, interactions}}.
+      Engagement is AGNOSTIC to which model row first reported it: a corrected
+      like count edits ONE post entry and every referencing model sees it. For a
+      post referenced by several rows the stored counters are the MAX across them
+      (counters only ever grow, AGENTS §2.3b), so flatten() can never shrink a
+      counter that a snapshot recorded.
+    """
+    catalog = copy.deepcopy(store)
+    measurements: dict[str, list[dict]] = {}
+    posts: dict[str, dict] = {}
+    for m in catalog.get("models", []):
+        mid = m.get("id", "")
+        rows = []
+        for e in m.get("engines", []):
+            row = {k: v for k, v in e.items() if k not in _MEASUREMENT_COUNTERS}
+            rows.append(row)
+            sp = e.get("source_post", "")
+            if sp:
+                p = posts.setdefault(sp, {"date": e.get("date", "")})
+                if not p.get("date") and e.get("date"):
+                    p["date"] = e["date"]
+                for c in _MEASUREMENT_COUNTERS:
+                    p[c] = max(int(p.get(c) or 0), int(e.get(c) or 0))
+        measurements[mid] = rows
+        m.pop("engines", None)
+    return catalog, measurements, posts
 
 # Four backend search groups (last-3-day window), refined by live probing (Sep 28
 # 2026; AMD Oct 2 2026) for maximum matches per backend. NVIDIA/CUDA and
@@ -2834,10 +2924,17 @@ def main() -> int:
         print(readme)
         return 0
 
+    # The store stays FLAT on disk today (all existing readers keep working).
+    # The normalised split is written ALONGSIDE (additive, issue #689): a
+    # corrected post edits data/posts.json once; the split-flatten guard in
+    # validate.py proves measurements/posts reconstruct the same inline view.
     DATA.write_text(json.dumps(store, indent=2, ensure_ascii=False) + "\n")
+    _catalog, measurements, posts = split_store(store)
+    MEASUREMENTS.write_text(json.dumps(measurements, indent=2, ensure_ascii=False) + "\n")
+    POSTS.write_text(json.dumps(posts, indent=2, ensure_ascii=False) + "\n")
     README.write_text(readme)
     snap = write_snapshot(store)
-    print("[ok] wrote data/models.json, README.md, snapshot " + snap.name)
+    print("[ok] wrote data/models.json, data/measurements.json, data/posts.json, README.md, snapshot " + snap.name)
     return 0
 
 if __name__ == "__main__":
