@@ -2586,7 +2586,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 19,
+        "last_7d_likes": 18,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
@@ -2733,18 +2733,6 @@
             "views": 0
           },
           {
-            "url": "https://lightbrd.com/xfxjapan/status/2096715285923520644",
-            "date": "2026-10-24",
-            "engine": "llama.cpp",
-            "tps": "51.8",
-            "hardware": "Radeon AI PRO R9700 32GB",
-            "quant": "Vulkan backend, MTP=2, AMD-published preliminary validation on Windows",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
             "url": "https://lightbrd.com/jmurillocode/status/2091598658425004160",
             "date": "2026-10-24",
             "engine": "llama.cpp",
@@ -2877,11 +2865,11 @@
             "views": 0
           }
         ],
-        "posts_7d": 19,
-        "buzz_7d": 31.7,
-        "score_7d": 31.7,
-        "speed_bonus": 5.0,
-        "trend_score": 36.7
+        "posts_7d": 18,
+        "buzz_7d": 30.7,
+        "score_7d": 30.7,
+        "speed_bonus": 0.0,
+        "trend_score": 30.7
       },
       "system_ram_min": "32GB",
       "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
@@ -6070,18 +6058,6 @@
             "comments": 0,
             "reshares": 1,
             "views": 73
-          },
-          {
-            "url": "https://lightbrd.com/PaulGugAI/status/2110275665408704970",
-            "date": "2026-10-14",
-            "engine": "llama.cpp",
-            "tps": "50.7",
-            "hardware": "RTX 3080 10GB",
-            "quant": "QAT GGUF, Q4",
-            "likes": 61,
-            "comments": 10,
-            "reshares": 6,
-            "views": 6500
           },
           {
             "url": "https://lightbrd.com/Milo_AIx/status/2110069604961620027",
@@ -9667,7 +9643,7 @@
         "CPU",
         "Metal"
       ],
-      "last_seen": "2026-10-10",
+      "last_seen": "2026-04-16",
       "weight_gb": "769MB Q4_K_M",
       "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)",
       "supported_engines": [
@@ -9679,20 +9655,7 @@
         "comments": 0,
         "views": 0,
         "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/pratikg/status/2108994425166967019",
-            "date": "2026-10-10",
-            "engine": "MLX",
-            "tps": "18",
-            "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
-            "quant": "MLX build",
-            "likes": 52787,
-            "comments": 30,
-            "reshares": 226,
-            "views": 61993
-          }
-        ],
+        "seen_posts": [],
         "posts_7d": 0,
         "buzz_7d": 0,
         "score_7d": 0,

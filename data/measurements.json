@@ -2136,14 +2136,6 @@
       "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
     },
     {
-      "engine": "llama.cpp",
-      "tps": "51.8",
-      "hardware": "Radeon AI PRO R9700 32GB",
-      "quant": "Vulkan backend, MTP=2, AMD-published preliminary validation on Windows",
-      "date": "2026-09-06",
-      "source_post": "https://lightbrd.com/xfxjapan/status/2096715285923520644"
-    },
-    {
       "engine": "FreeToken",
       "tps": "39.3",
       "hardware": "RTX 4060 laptop 8GB",
@@ -3849,14 +3841,6 @@
     },
     {
       "engine": "llama.cpp",
-      "tps": "50.7",
-      "hardware": "RTX 3080 10GB",
-      "quant": "QAT GGUF, Q4",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/PaulGugAI/status/2110275665408704970"
-    },
-    {
-      "engine": "llama.cpp",
       "tps": "0.39",
       "hardware": "15x $55 off-brand Android TV boxes (4GB RAM each), pipeline parallelism",
       "quant": "Anthropic Frontier Red Team sharded Gemma-4-26B-A4B across 15 nodes with pipeline parallelism; distributed inference at ~0.39 tok/s",
@@ -5268,28 +5252,6 @@
       "source_post": "https://lightbrd.com/allambition/status/2101077523027435878"
     }
   ],
-  "gemma-3-1b": [
-    {
-      "engine": "MLX",
-      "tps": "18",
-      "hardware": "Apple M5 Pro Mac mini, 64GB unified memory",
-      "quant": "MLX build",
-      "date": "2026-10-10",
-      "source_post": "https://lightbrd.com/pratikg/status/2108994425166967019",
-      "system_ram_min": "64GB unified memory"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "2.9",
-      "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
-      "quant": "Gemma 3 1B Q4_K_M (769MB); prompt 5.9 t/s, gen 2.9 t/s",
-      "date": "2026-04-16",
-      "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
-      "weight_gb": "769MB (Q4_K_M)",
-      "system_ram_min": "8GB",
-      "engine_min_version": "llama.cpp b8816"
-    }
-  ],
   "gemma-3-27b": [
     {
       "engine": "MLX",
@@ -5564,6 +5526,19 @@
       "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
       "date": "2026-08-13",
       "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+    }
+  ],
+  "gemma-3-1b": [
+    {
+      "engine": "llama.cpp",
+      "tps": "2.9",
+      "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+      "quant": "Gemma 3 1B Q4_K_M (769MB); prompt 5.9 t/s, gen 2.9 t/s",
+      "date": "2026-04-16",
+      "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+      "weight_gb": "769MB (Q4_K_M)",
+      "system_ram_min": "8GB",
+      "engine_min_version": "llama.cpp b8816"
     }
   ],
   "gpt-oss-120b": [
