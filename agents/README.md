@@ -10,6 +10,8 @@ There is no `trending-local-llm-issue-implementer` profile. Do not recreate it.
 | `tll-architect` | Proposes a clearer aggregation. Does not implement. |
 | `tll-security` | Watches code and container images. Files the finding. |
 | `tll-reviewer` | Finds gaps in the data and the logic. Files the gap. |
+| `tll-tester` | Tests each pull request against the issue acceptance criteria. Reports the evidence. |
+| `tll-pr-rebase` | Rebases a conflicting pull request onto master. Does not merge. |
 | `tll-implementer` | Lands one dispatched issue, including a red pull request the planner names. |
 
 No profile in this fleet has a Hermes cron. Existing GitHub Actions schedules stay as they are. Each lane's `SOUL.md` and `skills/<profile>/SKILL.md` in this tree are the copy of the host profile.
