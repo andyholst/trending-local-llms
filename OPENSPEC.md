@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **175** · archived: **9**
+Active changes: **176** · archived: **9**
 
 ## Active changes
 
@@ -65,6 +65,7 @@ Active changes: **175** · archived: **9**
 | `data-gap-measurement-dimensions` | active | #376 — `data-gap: storage_offload (38 models)` | — | [data-gap-capture](openspec/changes/data-gap-measurement-dimensions/specs/data-gap-capture/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-measurement-dimensions/proposal.md) |
 | `data-gap-storage-offload` | active | #364 — `data-gap: storage_offload (41 models)` | — | [data-gap-backfill](openspec/changes/data-gap-storage-offload/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/data-gap-storage-offload/proposal.md) |
 | `dimension-applicability` | active | — | — | [data-gap-analysis](openspec/changes/dimension-applicability/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/dimension-applicability/proposal.md) |
+| `engagement-tasks-claim` | active | #699 (follow-up) — correct the residual false "typed README byte-identical" claim in the | — | [engagement-tasks-claim](openspec/changes/engagement-tasks-claim/specs/engagement-tasks-claim/spec.md) | 7/7 | [proposal.md](openspec/changes/engagement-tasks-claim/proposal.md) |
 | `engagement-value-fidelity` | active | #699 — `ENH: #698 reader switch silently re-resolves engagement` | — | [engagement-value-fidelity](openspec/changes/engagement-value-fidelity/specs/engagement-value-fidelity/spec.md) | 9/9 | [proposal.md](openspec/changes/engagement-value-fidelity/proposal.md) |
 | `engine-meta-capture-at-ingest` | active | #334 | — | [engine-meta-capture](openspec/changes/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/engine-meta-capture-at-ingest/proposal.md) |
 | `env-int-empty-is-missing` | active | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/env-int-empty-is-missing/proposal.md) |
