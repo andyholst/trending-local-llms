@@ -9,6 +9,6 @@
 - [x] 7. Engine support-surface (#338) reads the same flattened store
 - [x] 8. tests/test_measurements_split.py NEW module: (a) catalog has no inline engines, (b) engagement resolved once from posts.json, (c) flatten == old inline guarded by check_no_value_loss, (d) renderer materialises catalog x measurements with unchanged ranking, (e) support-surface reads same store — real logic, no mocks, E2E companion per external-call mock
 - [x] 9. tests/test_split_store.py updated so fixtures read through the same split/flatten round-trip
-- [x] 10. `README.md` byte-identical; `make lint`, `make test`, `make validate` (data/schema) and `make openspec-check` green
+- [x] 10. `README.md` regenerated from the flattened view; its engagement-derived buzz/trend lines are re-resolved from the canonical `data/posts.json` (the intended GWT2 consequence, corrected on issue #699) — not claimed byte-identical; `make lint`, `make test`, `make validate` (data/schema) and `make openspec-check` green
 - [x] 11. `OPENSPEC.md` regenerated; `openspec-index-check` and `check_openspec_tasks` green
 - [x] 12. Commits authored `Andy Holst <andy.holst@protonmail.com>`; `make lint-fix` run before commit so the first CI `validate` is not red on trailing newlines
