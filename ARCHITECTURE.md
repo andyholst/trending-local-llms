@@ -330,7 +330,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 |---|---|
 | `implement-issue` | The implementer prompt: `_setup` + `_implement-issue` in ONE container. Requires the OpenSpec change (created first, indexed, gate green), the `findings.md` analysis, and the `ARCHITECTURE.md` update |
 | `fix` | Repair a red CI: `_setup`, `correct-raw`, the Hermes fix prompt (reads `qa-report.txt`), `_merge` — through the `scrubbed_run` seam, so a caller (the fix loop, a human) sees only a bounded, REDACTED tail of the agent's conversation (issue #355) |
-| `test` | The whole unit suite in the test image (`_test` → `scripts/run_tests.sh`) |
+| `test` | The whole unit suite in the test image (`_test` → `scripts/run_tests.sh`). The client is `scripts/docker_test_run.sh`, which removes that container when the client dies (issue #720) |
 | `refresh` | The full pipeline in one container: setup, search, merge, validate, test |
 | `all` | Alias for `refresh` |
 
@@ -572,6 +572,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/self_correct_raw.py` | Prunes stray keys / fills `last_seen` in `data/raw/*` before validation. **Quarantines** — never aborts on — a model row it cannot complete: an `hf` that cannot be derived (and does not resolve to a stored model, whose `hf` is reused instead), or a model left with no measurement carrying a `source_post`; each is reported in one loud `QUARANTINED:` line naming the model and its posts and excluded, the rest of the capture still merges, and only a capture where no snapshot could be read exits 1 (issue #381). An un-derivable `hf` also gets a bounded DIAGNOSIS of what the captured row held — the field carrying an HF repo link that never reached `hf`, an `hf` value that is not an `owner/repo` id, a `formats[i].hf`, an `hf` on a sibling row of the same snapshot, or no HF-shaped token anywhere — so "the post states no repo" and "the agent forgot to copy one it had" are distinguishable from the run's own artifact alone (issue #382). Writes a snapshot only when it actually changed it and then refreshes its `generated_utc`, so a corrected snapshot is re-merged by the next `make merge` instead of being skipped as old (issue #175) |
 | `scripts/hf_id.py` | One HF-identifier definition (a URL-shaped `hf` is reduced to `owner/repo`) |
 | `scripts/qa_report.sh` | Runs the aggregate's QA targets; a *finding* is reported, a target that could not run fails the run |
+| `scripts/docker_test_run.sh` | Names the container every `TEST_RUN` target starts (`make test`, `make validate`, and the other QA targets) and removes it when that client dies, including a kill the `docker run --rm` flag does not see (issue #720) |
 | `scripts/run_tests.sh` | The ONE unit-test runner (`make test` → `_test`, issues #176/#192): discovers `tests/test_*.py`, runs each in its own process, and stops at the FIRST red with that module's own output (`--list` prints what it would run; a directory with no modules is red) |
 | `scripts/fix_loop.sh` | The fix loop's control flow (check → report → `make fix`, ≤ `FIX_ROUNDS`, reasoning-budget retry). `REQUIRE_FINDINGS=1` makes it demand the analysis file |
 | `scripts/hermes_smoke.sh` | The routing smoke (passes on a refusal-free answer through the alias; retries once) |
@@ -688,7 +689,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 171 make targets, 56 files in `scripts/`)
+### Bots in the tree (12 pipelines, 171 make targets, 57 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -810,6 +811,7 @@ One line each, taken from the script's own docstring.
 - `scripts/check_secret_output.py` — No secret VALUE may reach a log, a summary or a process list — for every key, not just one.
 - `scripts/code_review.py` — A code-review bot for this repo: read the TREE and the PIPELINES, file ONE issue per finding
 - `scripts/data_gap_analysis.py` — Post-refresh data-gap analysis (issue #115).
+- `scripts/docker_test_run.sh` — docker_test_run.sh — remove the test container when the client dies.
 - `scripts/engine_registry.py` — Engine registry: classify + auto-register new inference engines at ingest.
 - `scripts/ensure_image.py` — Prepare the runner images for THIS revision — one code path, CI and local.
 - `scripts/env_int.py` — Read an integer setting from the environment — EMPTY means MISSING (issue #487).
