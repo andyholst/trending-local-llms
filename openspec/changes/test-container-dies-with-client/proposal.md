@@ -1,6 +1,7 @@
 # The test container dies with its client
 
 Issue: #720
+PR: #721
 
 ## Why
 
