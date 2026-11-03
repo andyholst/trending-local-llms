@@ -1664,6 +1664,41 @@ def test_secret_output_guard_wired_into_qa_validate():
     check("guard: passes on this repository", r.returncode == 0, (r.stdout + r.stderr)[:400])
 
 
+def test_action_pin_guard_wired_into_qa_validate():
+    """A PR runs the immutable-SHA pin guard (workflow uses: + tool-image seam).
+
+    Issue #735 (#714 Slice 1, folding #717): every third-party workflow `uses:`
+    ref must be a 40-hex SHA or on the allow-ref list, and every third-party tool
+    image must be pinned (digest or fleet `<sha12>` tag) or allowlisted. A guard
+    the PR pipeline does not run is advisory prose (rule 6d).
+    """
+    wf = load("qa-validate.yml")
+    validate = wf["jobs"]["validate"]
+    v = run_text(validate)
+
+    check("qa-validate: the validate job runs `make action-pin-check`",
+          "make action-pin-check" in v, v[:400])
+    check("qa-validate: the pin guard runs after the image is prepared",
+          v.index("make action-pin-check") > v.index("make image-ensure")
+          if "make action-pin-check" in v and "make image-ensure" in v else False,
+          "action-pin-check must run after image-ensure (it routes through PYTHON_RUN)")
+
+    mk = (ROOT / "Makefile").read_text()
+    check("make: `action-pin-check` target exists",
+          "action-pin-check:" in mk, "")
+    check("make: the guard script is a `make` target (rule 6d)",
+          "action_pin_check.py" in mk, "")
+    check("make: the guard's test is wired into `make test`'s `_test` chain",
+          wired(ROOT / "tests" / "test_action_pin.py"), "")
+
+    # And the guard genuinely passes on THIS repo (the current mutable refs are
+    # on the documented allowlist, so master-as-is is green).
+    import subprocess, sys
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/action_pin_check.py")],
+                       capture_output=True, text=True)
+    check("guard: passes on this repository", r.returncode == 0, (r.stdout + r.stderr)[:400])
+
+
 def test_implement_prompt_requires_openspec_and_findings():
     """The implementer prompt demands the tracked change and the findings analysis.
 
@@ -2801,6 +2836,7 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
         "findings-check: python-env-image": "python3 scripts/file_findings.py --check",
         "check-secret-output: python-env-image": "python3 scripts/check_secret_output.py check",
         "query-coverage: python-env-image": "python3 scripts/query_coverage.py $(if $(TOP),--top $(TOP),)",
+        "action-pin-check: python-env-image": "python3 scripts/action_pin_check.py",
     }
     for target_line, cmd in seeded.items():
         check(f"seam (Slice 2): {target_line.split(':')[0]} routes through $(PYTHON_RUN)",
@@ -2855,6 +2891,7 @@ def main() -> int:
     test_no_pipeline_opens_a_draft_pr()
     test_qa_validate_runs_the_openspec_gate()
     test_secret_output_guard_wired_into_qa_validate()
+    test_action_pin_guard_wired_into_qa_validate()
     test_implement_prompt_requires_openspec_and_findings()
     test_issue_bot_files_findings_only_when_green()
     test_issue_bot_announces_its_window()
