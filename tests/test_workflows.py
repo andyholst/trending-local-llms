@@ -1105,7 +1105,9 @@ def test_auto_merge():
     check("auto-merge: never a draft PR", "draft == false" in cond, cond)
     check("auto-merge: only same-repo PRs (no forks)", "head.repo.full_name == github.repository" in cond, cond)
     check("auto-merge: never from master/main", "'master'" in cond and "'main'" in cond, cond)
-    st = step(am, "merge")
+    # The merge step is the one that actually CALLS `gh pr merge` — the hold step's
+    # name also carries the substring "merge" (issue #722), so find by behaviour.
+    st = next(s for s in steps(am) if "gh pr merge" in s.get("run", ""))
     run = st.get("run", "")
     check("auto-merge: uses the owner PAT (GITHUB_TOKEN merge starts no master CI)",
           PAT in str(st.get("env", {}).get("GH_TOKEN", "")), st.get("env"))
@@ -1115,6 +1117,70 @@ def test_auto_merge():
           "--match-head-commit" in run and "pull_request.head.sha" in str(st.get("env", {})), run)
     check("auto-merge: never --admin (bypasses checks)", "--admin" not in run, run)
     check("auto-merge: one merge attempt per PR at a time", bool(am.get("concurrency")), am.get("concurrency"))
+    # Issue #722: a do-not-merge-labeled PR must NEVER auto-merge, however green.
+    hold = step(am, "do-not-merge")
+    names = [s.get("name", "") for s in steps(am)]
+    hold_at = next((i for i, n in enumerate(names) if "do-not-merge" in n), -1)
+    merge_at = next((i for i, n in enumerate(names) if "Squash-merge" in n), -1)
+    check("auto-merge: a do-not-merge hold step exists", bool(hold), names)
+    check("auto-merge: the hold runs BEFORE the squash-merge (mid-run label is still caught via if)",
+          0 <= hold_at < merge_at, (hold_at, merge_at))
+    hrun = hold.get("run", "")
+    check("auto-merge: the hold reads the PR labels", "repos/$REPO/issues/$PR_NUM/labels" in hrun, hrun[:120])
+    check("auto-merge: a labeled PR is HOLDING, not merged (clean exit, no merge call)",
+          "do-not-merge" in hrun and "gh pr merge" not in hrun and "not auto-merge" in hrun.lower(), hrun[:160])
+    check("auto-merge: the merge step is skipped while the hold fires (label can appear mid-run)",
+          "steps.dnm-check.outputs.hold != 'true'" in str(st.get("if", "")), st.get("if"))
+
+
+def _run_dnm_hold(labels: list[str]) -> tuple[int, str, str]:
+    """Execute the REAL auto-merge hold step's shell with a stub `gh`.
+
+    Returns (rc, output, the GITHUB_OUTPUT value). `gh` answers the
+    `/issues/<n>/labels` API from `labels` so the label-present/absent paths are
+    exercised against the actual workflow step (issue #722), not a replica.
+    """
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    hold = step(load("qa-validate.yml")["jobs"]["auto-merge"], "do-not-merge")
+    td = Path(tempfile.mkdtemp())
+    try:
+        if labels:
+            joined = ",".join(labels)
+            script = "#!/usr/bin/env bash\n" + "echo '" + joined + "'\nexit 0\n"
+        else:
+            script = "#!/usr/bin/env bash\necho ''\nexit 0\n"
+        gh = td / "gh"
+        gh.write_text(script)
+        gh.chmod(0o755)
+        out = td / "out"
+        env = dict(os.environ, PATH=f"{td}:{os.environ['PATH']}", GH_TOKEN="x",
+                   REPO="andyholst/trending-local-llms", PR_NUM="722", GITHUB_OUTPUT=str(out))
+        p = subprocess.run(["bash", "-e", "-c", hold["run"]], env=env, capture_output=True, text=True)
+        ghout = out.read_text() if out.exists() else ""
+        return p.returncode, p.stdout + p.stderr, ghout.split("=", 1)[1].strip() if "=" in ghout else ghout.strip()
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+
+def test_auto_merge_holds_a_do_not_merge_labeled_pr():
+    """Issue #722: the REAL hold step holds a labeled PR and allows an unlabeled one.
+
+    The two live incidents (#713, #719) auto-merged after advisory holds because
+    the gate had no mechanical label check. This runs the exact `run:` block the
+    workflow carries, against a stub `gh`, for both label states."""
+    rc, out, holdval = _run_dnm_hold(["enhancement", "do-not-merge"])
+    check("auto-merge-hold: a labeled PR exits 0 (a hold, not a failure)", rc == 0, f"rc={rc} {out[-200:]}")
+    check("auto-merge-hold: the labeled PR reports hold=true", holdval == "true", holdval)
+    check("auto-merge-hold: the labeled PR is described as holding (no merge)",
+          "do-not-merge label present" in out and "not auto-merge" in out.lower(), out[-200:])
+    rc, out, holdval = _run_dnm_hold(["enhancement"])
+    check("auto-merge-hold: an unlabeled PR exits 0", rc == 0, f"rc={rc} {out[-200:]}")
+    check("auto-merge-hold: the unlabeled PR reports hold=false (merge allowed)", holdval == "false", holdval)
+    check("auto-merge-hold: the unlabeled PR is allowed to merge",
+          "auto-merge allowed" in out, out[-200:])
 
 
 def test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log():
@@ -2710,6 +2776,7 @@ def main() -> int:
     test_bot_verification_protocol_is_documented_and_guarded()
     test_nothing_pushes_master()
     test_auto_merge()
+    test_auto_merge_holds_a_do_not_merge_labeled_pr()
     test_images_follow_their_inputs()
     test_every_job_prepares_the_images_it_uses()
     test_issue_bot_push_scope_rejection()

@@ -302,11 +302,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # do-not-merge label hold (#722): GitHub-native auto-merge fires the instant
+      # validate+live-smoke go green, which has twice merged an advisory-held PR
+      # (#713, #719). Before the squash-merge step read the PR labels; if the
+      # `do-not-merge` label is present, hold: echo the hold and exit without calling
+      # `gh pr merge` so the PR stays OPEN and the run stays green/honest (a hold,
+      # not a failure). The squash-merge step below also mirrors this in its `if:`
+      # so a label that appears mid-run still pries the merge step off.
+      - name: Hold if PR carries the do-not-merge label (#722)
+        id: dnm-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          LABELS=$(gh api "repos/$REPO/issues/$PR_NUM/labels" --jq '[.[] | .name] | join(",")')
+          echo "PR #$PR_NUM labels: ${LABELS:-<none>}"
+          if echo "${LABELS}" | tr ',' '\n' | grep -qx 'do-not-merge'; then
+            echo "do-not-merge label present on PR #$PR_NUM — holding; will NOT auto-merge."
+            echo "hold=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "PR #$PR_NUM not labeled do-not-merge — auto-merge allowed."
+            echo "hold=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Squash-merge ONLY the exact commit that was validated (--match-head-commit):
       # a push after this run started leaves the PR open for the newer run.
       # Owner PAT, not GITHUB_TOKEN: a merge made with GITHUB_TOKEN starts no
       # workflows, so the post-merge qa-validate on master would never run.
       - name: Squash-merge the green PR + delete its branch (owner PAT)
+        if: steps.dnm-check.outputs.hold != 'true'
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
