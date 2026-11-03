@@ -70,7 +70,7 @@ jobs:
       # `gh` resolves the repository from the remote, so the sweep needs a checkout (and the
       # Makefile — every call goes through `make`, rule 6m).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       # REPAIR, not just alarm (issue #475): a silent PR on a `ci/…` branch is dispatched to
       # fix-bot, whose loop merges the base and lets a Hermes round resolve the conflicts.

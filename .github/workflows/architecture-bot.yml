@@ -77,7 +77,7 @@ jobs:
       # GITHUB_TOKEN PR is authored by `github-actions[bot]` and waits for an approval click
       # (rule 6b), so the PR this bot opens would never be validated or merged.
       - name: Checkout master
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: master
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}

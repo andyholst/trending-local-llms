@@ -117,7 +117,7 @@ jobs:
       # bots through `make issue-queue` (issue #179): one implementation, no
       # second copy of the rule in shell. The checkout IS needed now — the job
       # reads the repo's own target instead of pasting the rule inline.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: master
       - name: Pick the oldest unhandled data-gap issue (the shared queue)
@@ -242,7 +242,7 @@ jobs:
 
       - name: Checkout master (PAT, so its push re-triggers CI)
         if: steps.iss.outputs.implement == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: master
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
@@ -590,7 +590,7 @@ jobs:
       - name: Upload the QA report (what the loop saw)
         if: always() && steps.iss.outputs.implement == 'true'
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: issue-bot-qa-report
           # The REDACTED agent log, never the raw one (issue #351): the raw stream
@@ -610,7 +610,7 @@ jobs:
         # the branch did not reach the remote.
         if: always() && steps.push.outputs.pushed != 'true'
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: issue-implementation-patch
           path: issue-implementation.patch
