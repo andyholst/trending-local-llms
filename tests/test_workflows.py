@@ -1710,6 +1710,36 @@ def test_action_pin_guard_wired_into_qa_validate():
     check("guard: passes on this repository", r.returncode == 0, (r.stdout + r.stderr)[:400])
 
 
+def test_weekly_security_scan_slice1_targets():
+    """#741 (#715 Slice 1): the four per-scanner images + targets are up and
+    every scanner image ref is digest-pinned, so the guard serves them without
+    an allowlist (the #715 allow-till deadline is satisfied on master-as-is)."""
+    mk = (ROOT / "Makefile").read_text()
+    # Four make targets, each running its own scanner image mounted at /workspace.
+    targets = [t for t in ("trivy-scan", "containerfile-scan", "grype-scan", "syft-sbom")
+               if f"\n{t}:" in mk or mk.startswith(f"{t}:")]
+    check("make: all four scanner targets exist",
+          targets == ["trivy-scan", "containerfile-scan", "grype-scan", "syft-sbom"],
+          f"missing: {[t for t in ('trivy-scan','containerfile-scan','grype-scan','syft-sbom') if t not in targets]}")
+    # Each scanner consumes its own image via a pinned @sha256: digest ref.
+    for name in ("TRIVY_IMAGE", "CONTAINERFILE_IMAGE", "GRYPE_IMAGE", "SYFT_IMAGE"):
+        check(f"make: `{name}` is set and @sha256:-pinned",
+              f"{name} :=" in mk and f"{name} := " in mk and "@sha256:" in
+              mk.split(f"{name} :=")[1].splitlines()[0], "")
+    # A scanner that silently does nothing is caught by a self-test target
+    # (host-side like secret-scan-self-test: trivy/grype fetch a vuln DB, so it
+    # MUST NOT be part of the no-network validate job).
+    check("make: `security-scan-self-test` target exists",
+          "security-scan-self-test:" in mk and "security_scan_self_test.py" in mk, "")
+
+    # And the guard passes on THIS repo now that every scanner image is pinned.
+    import subprocess, sys
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/action_pin_check.py")],
+                       capture_output=True, text=True)
+    check("guard: the 4 scanner refs are pinned, guard GREEN on this repo",
+          r.returncode == 0, (r.stdout + r.stderr)[:300])
+
+
 def test_implement_prompt_requires_openspec_and_findings():
     """The implementer prompt demands the tracked change and the findings analysis.
 
@@ -2904,6 +2934,7 @@ def main() -> int:
     test_qa_validate_runs_the_openspec_gate()
     test_secret_output_guard_wired_into_qa_validate()
     test_action_pin_guard_wired_into_qa_validate()
+    test_weekly_security_scan_slice1_targets()
     test_implement_prompt_requires_openspec_and_findings()
     test_issue_bot_files_findings_only_when_green()
     test_issue_bot_announces_its_window()

@@ -319,6 +319,11 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 | `secret-scan-self-test` | Plant a fake credential and require gitleaks to catch it (`scripts/secret_scan_self_test.py`) — a scanner that silently does nothing fails |
 | `check-secret-output` | Fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal (`scripts/check_secret_output.py`) — the run-time leak shapes gitleaks cannot see |
 | `action-pin-check` | Fail when a third-party workflow `uses:` ref or tool-image tag is mutable and not on the allowlist (`scripts/action_pin_check.py`, issue #735): every third-party `uses:` must be a 40-hex SHA or on `ALLOWED_WORKFLOW_REFS`, and every third-party tool image (Makefile `*_IMAGE :=` / `scripts/*.py` / Dockerfile `ARG`) must be pinned (digest or fleet `<sha12>` tag) or on `ALLOWED_IMAGE_REFS` — fails closed; current mutable refs are allowlisted with allow-till deadlines (#714/#715) |
+| `trivy-scan` | Container/dependency vulnerability scan of the working tree with Trivy (`${TRIVY_IMAGE}`, pinned `@sha256:`, issue #715 Slice 1): `DIR=<scan dir>` defaults to `/workspace`, exit 1 on a finding |
+| `containerfile-scan` | Containerfile/Dockerfile lint with hadolint (`${CONTAINERFILE_IMAGE}`, pinned `@sha256:`, issue #715 Slice 1) — flags the repo's Dockerfile(s); exit 1 on a violation |
+| `grype-scan` | Container/dependency vulnerability scan with Grype (`${GRYPE_IMAGE}`, pinned `@sha256:`, issue #715 Slice 1): `DIR=<scan dir>` defaults to `/workspace`, exit 2 (threshold) on a finding |
+| `syft-sbom` | Syft SBOM of the scan dir (`OUT=<file>` required) — the catalog feed the weekly workflow will consume (`${SYFT_IMAGE}`, pinned `@sha256:`, issue #715 Slice 1) |
+| `security-scan-self-test` | Plant a known-vulnerable fixture and require trivy + grype to flag it (`scripts/security_scan_self_test.py`, issue #715) — a vulnerability scanner that silently does nothing fails |
 | `secret-output-report` | Show which files name a secret-shaped variable, and whether any prints it (`scripts/check_secret_output.py report`) |
 | `scrub-log` | Redact a captured agent log and print at most a bounded tail, never the raw stream (`FILE=… [LOG_OUT=…] [TAIL=40]`, `scripts/scrub_log.py`) — the secret VALUES are read from the environment **by name** (one list, in `check_secret_output.py`) and every spelling of each (raw, URL-encoded, base64) plus every credential SHAPE becomes `***`; the REDACTED whole log is what a bot uploads as its artifact |
 | `check-commit-authorship` | Fail when a commit's author/committer identity, or a crediting trailer in its message, is not an allowed one (`scripts/check_commit_authorship.py`) — the only identities are Andy Holst and Asimov Agent (issue #317) |
@@ -583,6 +588,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
 | `scripts/agent_shell_keys_check.py` | The agent-shell credential guard (`make agent-shell-keys-check`, issue #359): drives Hermes's real `LocalEnvironment` and reports, per key, whether the container's value is visible in the agent's shell — lengths only, never a value; a key missing from the container is a loud exit 2 |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
+| `scripts/security_scan_self_test.py` | Proves the vulnerability scanners catch a known CVE (`make security-scan-self-test`, issue #715): a planted `flask==2.2.2`/`werkzeug==2.2.2` fixture must RED trivy+grype and an empty tree must pass |
 | `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal, a captured agent stream with no redactor (`raw-agent-log-captured`), a step printing a captured log (`raw-agent-log-printed`), and a Python script that reads a key value and prints it (issue #351) |
 | `scripts/action_pin_check.py` | The immutable-SHA pin guard (`make action-pin-check`, issue #735): refuses a mutable third-party workflow `uses:` ref (not a 40-hex SHA, not on `ALLOWED_WORKFLOW_REFS`) and a mutable third-party tool-image tag (Makefile `*_IMAGE :=` / `scripts/*.py` / Dockerfile `ARG`, not a digest or fleet `<sha12>` tag, not on `ALLOWED_IMAGE_REFS`) — fails closed; own reusable workflows and fleet-owned images exempt; current mutable refs allowlisted with allow-till deadlines (#714/#715) |
 | `scripts/require_env.py` | The loud credential pre-flight (`_search-preflight`, issue #357): fails (exit 2) when a named environment variable is missing or EMPTY — the shape a missing GitHub secret takes at run time — naming the variable and how to set it, and never printing a value. `--allow-unconfigured` is a loud local opt-out that reports NOT CONFIGURED |
@@ -692,7 +698,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 173 make targets, 58 files in `scripts/`)
+### Bots in the tree (12 pipelines, 178 make targets, 59 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -851,6 +857,7 @@ One line each, taken from the script's own docstring.
 - `scripts/run_tests.sh` — run_tests.sh — the ONE test runner (issues #176 and #192).
 - `scripts/scrub_log.py` — Redact a captured agent log before any of it reaches a bot job's console.
 - `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122).
+- `scripts/security_scan_self_test.py` — Prove the container/dependency scanners detect a known vulnerability (#715).
 - `scripts/self_correct_raw.py` — Self-correct raw search snapshots so they conform to data/search_contract.json.
 - `scripts/smoke_search.py` — Bounded reachability smoke for the four Hermes search targets.
 - `scripts/sweep_alarm.py` — Fail loudly when the weekly sweep has not been DELIVERED (issue #497).

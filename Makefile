@@ -1100,8 +1100,43 @@ pr-body: ## Print the implementation PR body for ISSUE=<n> [BRANCH=<head branch>
 # container image, pinned by tag: the pipeline image has no docker inside, so the
 # scanner cannot live in it. `make secret-scan` scans the working tree (staged
 # files included) — run it BEFORE every push; CI runs it on every PR.
-GITLEAKS_IMAGE := ghcr.io/gitleaks/gitleaks:v8.30.1
+GITLEAKS_IMAGE := ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
 GITLEAKS_RUN := docker run --rm -v "$$PWD":/repo -w /repo $(GITLEAKS_IMAGE)
+
+# ---- weekly container/dependency vulnerability scan (issue #715, Slice 1) ----
+# One image PER scanner, each pinned to an immutable index digest (the
+# tool-image seam in `scripts/action_pin_check.py` accepts `@sha256:…`), so the
+# guard serves every scanner without an accumulating allowlist. `$$PWD` is
+# bind-mounted at /workspace; each scanner runs against it in its own image,
+# the same GITLEAKS_RUN shape above. The weekly `security-scan.yml` schedule +
+# findings wiring + gate fail are Slices 2/3 of #715 — these targets are the
+# pinned images the schedule will run.
+TRIVY_IMAGE := ghcr.io/aquasecurity/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+TRIVY_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace $(TRIVY_IMAGE)
+CONTAINERFILE_IMAGE := ghcr.io/hadolint/hadolint:v2.12.0@sha256:30a8fd2e785ab6176eed53f74769e04f125afb2f74a6c52aef7d463583b6d45e
+CONTAINERFILE_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace $(CONTAINERFILE_IMAGE)
+GRYPE_IMAGE := ghcr.io/anchore/grype:v0.104.2@sha256:7416f2fada8bd8f99095d955a6fed700b714b51ceb8150f838920932954b04aa
+GRYPE_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace $(GRYPE_IMAGE)
+SYFT_IMAGE := ghcr.io/anchore/syft:v1.26.0@sha256:de078f51704a213906970b1475edd6006b8af50aa159852e125518237487b8c6
+SYFT_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace $(SYFT_IMAGE)
+
+.PHONY: trivy-scan containerfile-scan grype-scan syft-sbom
+trivy-scan: ## Trivy container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding)
+	$(TRIVY_RUN) fs --scanners vuln --quiet --no-progress --exit-code 1 $(if $(DIR),$(DIR),/workspace)
+
+containerfile-scan: ## Containerfile/Dockerfile linter (hadolint) over the repo's Dockerfiles (exit 1 on a violation)
+	$(CONTAINERFILE_RUN) /workspace/Dockerfile /workspace/Dockerfile.test /workspace/Dockerfile.python-env
+
+grype-scan: ## Grype container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding)
+	$(GRYPE_RUN) dir:$(if $(DIR),$(DIR),/workspace) --quiet
+
+syft-sbom: ## Syft software-bill-of-materials of the working tree (DIR=<scan dir>; writes the SBOM to stdout)
+	@test -n "$(OUT)" || { echo "Usage: make syft-sbom OUT=<sbom.json> [DIR=<scan dir>]"; exit 1; }
+	$(SYFT_RUN) dir:$(if $(DIR),$(DIR),/workspace) -o syft-json --quiet > $(OUT)
+
+.PHONY: security-scan-self-test
+security-scan-self-test: ## Prove the scanners are not a false green: a planted known-CVE fixture MUST fail trivy+grype, a clean one pass (issue #715)
+	python3 scripts/security_scan_self_test.py
 
 .PHONY: _secret-scan
 _secret-scan:

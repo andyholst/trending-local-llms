@@ -7,9 +7,11 @@ the actual `.github/workflows/` + Makefile + scripts + Dockerfile tree, exactly
 as it does in CI. No docker CLI is involved (the guard is pure filesystem).
 
 Issue #737 (#714 Slice 2) migrated all 37 third-party workflow `uses:` refs to
-immutable 40-hex SHAs and emptied ALLOWED_WORKFLOW_REFS; the tests below prove
-the migration (no tag-based third-party ref remains, workflow allowlist empty,
-gitleaks image ref still allowlisted for #715).
+immutable 40-hex SHAs and emptied ALLOWED_WORKFLOW_REFS. Issue #741 (#715 Slice
+1) pinned gitleaks + the four scanner images (trivy/containerfile/grype/syft)
+to immutable `@sha256:` digests and emptied ALLOWED_IMAGE_REFS — the #715
+allow-till deadline is satisfied on master-as-is, and a NEW mutable third-party
+ref (workflow or image) is refused. The tests below prove the migration.
 
 The done-when:
   * a tree containing a mutable third-party `uses:` ref (not a 40-hex SHA, not
@@ -17,9 +19,9 @@ The done-when:
   * the same ref pinned to a 40-hex SHA → exits 0 (GREEN);
   * a mutable third-party tool image (e.g. gitleaks `v8.30.1`) not allowlisted →
     RED; pinned via `@sha256:` digest or a fleet `<sha12>` tag → GREEN;
-  * the guard is GREEN on THIS repo as it stands (the current mutable refs are
-    on the documented allowlist, so master-as-is passes while a NEW mutable ref
-    is refused).
+  * the guard is GREEN on THIS repo as it stands (ALLOWED_WORKFLOW_REFS and
+    ALLOWED_IMAGE_REFS are both empty, so master-as-is passes only because every
+    third-party ref is pinned).
 
 Wired into `make test` (rule 6d). Runs as a plain script.
 """
@@ -120,19 +122,21 @@ def test_own_reusable_workflow_exempt():
 
 
 def test_mutable_image_reds():
-    """A mutable third-party image tag (gitleaks v8.30.1) refuses the tree."""
+    """A mutable third-party image tag refuses the tree (allowlist is empty)."""
     with tempfile.TemporaryDirectory() as td:
-        # gitleaks v8.30.1 IS allowlisted (current tree), so use a mutable ref NOT
-        # on the allowlist to prove RED — a NEW mutable tool image.
+        # ALLOWED_IMAGE_REFS is EMPTY (#741) — a bare mutable tag (e.g. a NEW
+        # trivy tag, or the pinned gitleaks expressed WITHOUT its digest) is
+        # RED, and only a digested/fleet-<sha12> ref is the green control.
+        digest = "sha256:" + "b" * 64
         root = _tree(Path(td) / "green", {
-            "Makefile": "GITLEAKS_IMAGE := ghcr.io/gitleaks/gitleaks:v8.30.1\n",
+            "Makefile": f"TRIVY_IMAGE := ghcr.io/aquasecurity/trivy@{digest}\n",
         })
         root_red = _tree(Path(td) / "red", {
             "Makefile": "TRIVY_IMAGE := ghcr.io/aquasecurity/trivy:v0.50.1\n",
         })
-        check("image: an allowlisted current mutable tag is green",
+        check("image: a pinned digest is GREEN (empty allowlist)",
               _run(root) == 0, f"exit={_run(root)}")
-        check("image: a NEW mutable third-party tag is RED",
+        check("image: a NEW mutable third-party tag is RED (empty allowlist)",
               _run(root_red) != 0, f"exit={_run(root_red)}")
 
 
@@ -197,15 +201,29 @@ def test_no_tag_based_third_party_refs_in_pinned_workflows():
 
 
 def test_workflow_allowlist_empty_after_migration():
-    """#737 (#714 Slice 2): ALLOWED_WORKFLOW_REFS is empty — all 37 refs are
-    pinned, so the #714 allow-till deadline is satisfied. Only the gitleaks
-    image ref remains on ALLOWED_IMAGE_REFS (allow-till #715)."""
+    """#737 (#714 Slice 2) + #741 (#715 Slice 1): ALLOWED_WORKFLOW_REFS and
+    ALLOWED_IMAGE_REFS are BOTH empty — all 37 workflow refs are pinned to
+    40-hex SHAs and gitleaks + the four scanners (trivy/containerfile/grype/syft)
+    are pinned to `@sha256:` digests, so the #714/#715 allow-till deadlines are
+    satisfied; a NEW mutable third-party ref is refused fails-closed."""
     check("migration: ALLOWED_WORKFLOW_REFS is empty (0 workflow allowlisted)",
           len(apc.ALLOWED_WORKFLOW_REFS) == 0,
           f"still allowlisted: {sorted(apc.ALLOWED_WORKFLOW_REFS)}")
-    check("migration: gitleaks image ref stays allowlisted (allow-till #715)",
-          apc.ALLOWED_IMAGE_REFS.get("ghcr.io/gitleaks/gitleaks:v8.30.1") is not None,
-          "gitleaks allow-till #715 entry missing")
+    check("migration: ALLOWED_IMAGE_REFS is empty (0 image allowlisted)",
+          len(apc.ALLOWED_IMAGE_REFS) == 0,
+          f"still allowlisted: {sorted(apc.ALLOWED_IMAGE_REFS)}")
+    # every third-party image ref our Makefile names is pinned (digest or sha12)
+    import re
+    sha_digest = re.compile(r"@sha256:[0-9a-f]{64}$")
+    fleet_sha12 = re.compile(r":([A-Za-z0-9._-]+)-[0-9a-f]{12}$")
+    bad = []
+    for line_no, img in apc._makefile_image_refs((ROOT / "Makefile").read_text()):
+        fleet = img.startswith(apc._FLEET_OWNED)
+        pinned = bool(sha_digest.search(img)) or bool(fleet_sha12.search(img))
+        if not fleet and not pinned and img not in apc.ALLOWED_IMAGE_REFS:
+            bad.append(f"Makefile:{line_no}: {img}")
+    check("migration: every third-party image ref in the Makefile is pinned",
+          not bad, "; ".join(bad[:4]))
 
 
 def test_wired_into_make_test():
