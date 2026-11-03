@@ -197,16 +197,29 @@ def python_tag() -> str:
     return f"{IMAGE_REPO}-python-env:python-{python_hash()}"
 
 
+def python_env_ready() -> bool:
+    """Whether the LOCAL python-env image is present (no registry round-trip)."""
+    return subprocess.run(
+        ["docker", "image", "inspect", PYTHON_IMAGE], capture_output=True
+    ).returncode == 0
+
+
 def ensure_python() -> str:
-    """The python-env image (issue #712): the one path for the PYTHON_RUN seam."""
-    if published(python_tag()):
-        _run("docker", "pull", python_tag())
-        _run("docker", "tag", python_tag(), PYTHON_IMAGE)
-        return f"python-env: pulled {python_tag()} -> {PYTHON_IMAGE}"
+    """Issue #712 Slice 1: build the python-env image from Dockerfile.python-env
+    when a local copy is absent; reuse it when present.
+
+    This is intentionally LOCAL-ONLY (no registry probe): unlike base/test/openspec
+    there is no publisher for this image in Slice 1, so the package has never been
+    created and a token read fails `denied` (issue #235 treats that as a LOUD error,
+    not "absent") — a pull-or-build probe would red every fresh CI job on first use.
+    A host with Docker but not the pinned Python builds it here and runs PYTHON_RUN.
+    """
+    if python_env_ready():
+        return f"python-env: {PYTHON_IMAGE} is present locally — nothing to do"
     _run("docker", "build", "-f", "Dockerfile.python-env", "-t", PYTHON_IMAGE, ".")
     return (
-        f"python-env: {python_tag()} is not published; built {PYTHON_IMAGE} "
-        "from this revision's Dockerfile.python-env"
+        f"python-env: built {PYTHON_IMAGE} locally from this revision's "
+        "Dockerfile.python-env"
     )
 
 
@@ -391,6 +404,11 @@ def decide(force: bool, dow: int) -> dict:
               (#141).
       openspec — publish when its own hash tag is missing.
 
+    python-env is deliberately NOT in this decision: Slice 1 of #712 has no
+    publisher for it, so a token `manifest inspect` of a never-created package
+    would read `denied` and fail this decision (issue #235). It is a LOCAL-BUILD
+    image (`ensure-python`), ensured by the image-ensure of a job that runs it.
+
     `published()` goes through the `docker` CLI, so a test fakes it exactly as the
     other ensure paths do, and the day is an argument — never `date +%u` inline in
     a workflow.
@@ -399,7 +417,6 @@ def decide(force: bool, dow: int) -> dict:
     base_ok = published(base_tag())
     test_ok = published(test_tag())
     openspec_ok = published(openspec_tag())
-    python_ok = published(python_tag())
     sunday = dow == 7
 
     def _reasons(extra: list[str]) -> str:
@@ -427,28 +444,20 @@ def decide(force: bool, dow: int) -> dict:
     if not openspec_ok:
         openspec_reasons.append("openspec-tag-missing")
 
-    python_reasons = []
-    if not python_ok:
-        python_reasons.append("python-env-tag-missing")
-
     return {
         "built": "yes" if base_reasons else "no",
         "test_built": "yes" if test_reasons else "no",
         "publish_openspec": "yes" if openspec_reasons else "no",
-        "publish_python_env": "yes" if python_reasons else "no",
         "base_tag": base_tag(),
         "test_tag": test_tag(),
         "openspec_tag": openspec_tag(),
-        "python_env_tag": python_tag(),
         "reason": _reasons(base_reasons),
         "test_reason": _reasons(test_reasons),
         "openspec_reason": _reasons(openspec_reasons),
-        "python_env_reason": _reasons(python_reasons),
         "latest_published": "yes" if latest_ok else "no",
         "base_published": "yes" if base_ok else "no",
         "test_published": "yes" if test_ok else "no",
         "openspec_published": "yes" if openspec_ok else "no",
-        "python_env_published": "yes" if python_ok else "no",
     }
 
 

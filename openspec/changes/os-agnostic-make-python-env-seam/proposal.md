@@ -21,9 +21,12 @@ schema/contract/API/table/data-shape change.
 - `Dockerfile.python-env` — a plain `python:3.12-slim` + the pinned runtime deps
   (`requirements.txt`) + git. NOT the agent image (no Hermes/nerve).
 - `scripts/ensure_image.py` — `PYTHON_FILES`/`python_hash()`/`python_tag()`/
-  `ensure_python()`; wired into `tags` (new `PYTHON_TAG`), `ensure`
-  (`image-ensure` also ensures python-env), `decide` (new `publish_python_env` /
-  `python_env_tag` / `python_env_published`).
+  `ensure_python()` (a LOCAL-BUILD ensure: builds from `Dockerfile.python-env` when
+  the local image is absent, reuses it when present, and never probes the registry —
+  the package is not published in Slice 1, and a token read of a never-created package
+  reads `denied`, which issue #235 treats as a loud error, not absence); `ensure-python`
+  wired into the `ensure` dispatch (`image-ensure` also ensures it). `decide` is left
+  unchanged (python-env has no publisher in Slice 1, so it is not a rebuild-decision).
 - `Makefile` — `PYTHON_RUN` seam macro (docker-run into the python-env image
   with `-v "$$PWD":/workspace -w /workspace -e PYTHONUNBUFFERED=1`, as the
   invoking user) + `python-env-image` ensure target. `openspec-index` and

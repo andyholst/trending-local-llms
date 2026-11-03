@@ -202,7 +202,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `openspec-image` | Ensure the CLI image (pull the published hash tag, else build from `openspec/Dockerfile`) |
-| `python-env-image` | Ensure the python-env image for the `PYTHON_RUN` seam (issue #712): pull the published hash tag, else build from `Dockerfile.python-env` (plain `python:3.12-slim` + the pinned runtime deps; no Hermes/nerve) |
+| `python-env-image` | Ensure the python-env image for the `PYTHON_RUN` seam (issue #712): build from `Dockerfile.python-env` when absent (plain `python:3.12-slim` + the pinned runtime deps; no Hermes/nerve), never a registry probe (no publisher in Slice 1) |
 | `openspec-new` (`NAME=`) | `openspec new change <NAME>` — create a tracked change |
 | `openspec-validate` (`NAME=`) | `openspec validate <NAME>` for one change |
 | `openspec-status` | `openspec status` — every change and its progress |

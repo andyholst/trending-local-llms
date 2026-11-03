@@ -284,7 +284,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
-python-env-image: ## Ensure the python-env image for the PYTHON_RUN seam (pull the published hash tag, else build it)
+python-env-image: ## Ensure the python-env image for the PYTHON_RUN seam (build from Dockerfile.python-env when absent; no registry probe)
 	python3 scripts/ensure_image.py ensure-python
 
 openspec-new: openspec-image ## openspec new change <NAME>

@@ -27,19 +27,27 @@ AND the recipe contains no per-recipe docker boilerplate.
 - **Then** both its steps start with `$(PYTHON_RUN)` (`architecture_check.py` and `architecture_bot.py --check`)
 - **Test:** `tests/test_workflows.py` — asserts both lines route through `$(PYTHON_RUN)`
 
-#### Scenario: the python-env image has its own published hash tag and ensure path
+#### Scenario: the python-env image has its own hash tag and ensure path
 
 - **Given** `scripts/ensure_image.py`
 - **When** `tags` is printed
 - **Then** it includes `PYTHON_TAG` = sha12(`Dockerfile.python-env` + `requirements.txt`)
 - **Test:** `tests/test_ensure_image.py` — `python_hash`/`python_tag` tests
 
-#### Scenario: every pushed python-env tag is the hash of this revision's inputs
+#### Scenario: the python-env image is built locally and never probes the registry
 
-- **Given** this revision's `Dockerfile.python-env` + `requirements.txt`
-- **When** `make python-env-image` ensures the image
-- **Then** it pulls the published hash tag when present, else builds from this revision's inputs
-- **Test:** `tests/test_ensure_image.py` — `ensure-python` published/built paths (real script, stubbed `docker`)
+- **Given** `scripts/ensure_image.py` `ensure-python` and a host with no local python-env image
+- **When** `make python-env-image` is run
+- **Then** it builds from `Dockerfile.python-env` + `requirements.txt`
+- **And** it does NOT ask the registry whether the image is published (a never-published package reads `denied`, which issue #235 treats as a loud error)
+- **Test:** `tests/test_ensure_image.py` — `ensure-python` never issues `docker manifest inspect`
+
+#### Scenario: a local python-env image is reused, not rebuilt
+
+- **Given** the python-env image is already present locally
+- **When** `make python-env-image` is run
+- **Then** it reuses the image and builds nothing (no registry round-trip)
+- **Test:** `tests/test_ensure_image.py` — `ensure-python` with the local image present issues no `docker build`
 
 ### Requirement: the migrated recipe carries no per-recipe docker boilerplate
 
