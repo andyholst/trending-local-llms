@@ -546,33 +546,39 @@ def test_tps_embedded_text_permutations():
 def test_models_order_matches_readme():
     """Guard (issue #708): the store models[] order must equal the README 'Most
     loved' table order — mirroring the llgenie readme_order contract that broke
-    at 24 positions after #695. Runs the REAL check function: the committed
-    README against the real store passes (0 divergences); a copy with two 'Most
-    loved' rows swapped must be caught (the exact class the llgenie contract
-    rejects)."""
-    # pass: committed README + real store (the reordered-on-master store)
-    reset()
-    real_store = json.loads((ROOT / "data" / "models.json").read_text())
-    V.check_models_order_matches_readme(real_store)
-    check("order: committed README vs real store passes (0 divergences)",
-          len(V.FAILURES) == 0, str(V.FAILURES))
-    # fail: a copy of the README with the first two 'Most loved' rows swapped
+    at 24 positions after #695. Self-contained: builds a small synthetic store +
+    README in a temp dir (no dependence on the repo README/store, which is what
+    the `_validate-search`/`_validate-mapped` fixtures run this under). The
+    matching order passes 0-divergence; a copy with two 'Most loved' rows swapped
+    must be caught (the exact class the llgenie contract rejects)."""
+    models = []
+    for name in ["A0 Alpha", "B1 Beta", "C2 Gamma", "D3 Delta"]:
+        models.append({"id": name.lower().replace(" ", "-"), "name": name})
+    store = {"models": models}
+    hdr = "## ❤️ Most loved open-weight models on X"
+    rows = "".join(f"| [**{m['name']}**](hw) | rank | 1.0 |\n" for m in models)
+    readme = f"# Trending Local LLMs\n\n{hdr}\n\n| Model | Rank | Score |\n|-------|------|-------|\n{rows}\n## 🕑 Recent\n"
     saved_readme = V.README
     with tempfile.TemporaryDirectory() as td:
-        text = (ROOT / "README.md").read_text()
-        hdr = "## ❤️ Most loved open-weight models on X"
-        section = text.split(hdr, 1)[1].split("\n## ", 1)[0]
-        rows = [l for l in section.splitlines() if l.startswith("| [**")]
-        assert len(rows) > 1, "no 'Most loved' rows in README"
-        # swap the first two rows inside the full readme
-        swapped = text.replace(rows[0], "\u0000ROWA\u0000").replace(rows[1], rows[0]).replace("\u0000ROWA\u0000", rows[1])
-        assert swapped != text, "swap had no effect"
-        bad = Path(td) / "README.md"
-        bad.write_text(swapped)
-        V.README = bad
+        p = Path(td) / "README.md"
+        p.write_text(readme)
+        V.README = p
+        # pass: store order == README order
         try:
             reset()
-            V.check_models_order_matches_readme(real_store)
+            V.check_models_order_matches_readme(store)
+            check("order: matching README passes 0 divergences",
+                  len(V.FAILURES) == 0, str(V.FAILURES))
+            # fail: swap the first two 'Most loved' rows
+            row0 = f"| [**{models[0]['name']}**]"
+            row1 = f"| [**{models[1]['name']}**]"
+            swapped_text = (readme
+                            .replace(row0, "\u0000ROW0\u0000")
+                            .replace(row1, row0)
+                            .replace("\u0000ROW0\u0000", row1))
+            p.write_text(swapped_text)
+            reset()
+            V.check_models_order_matches_readme(store)
             check("order: catches a swapped 'Most loved' row",
                   len(V.FAILURES) == 1 and "order != README 'Most loved' order" in V.FAILURES[0],
                   str(V.FAILURES))
