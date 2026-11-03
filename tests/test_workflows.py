@@ -2793,6 +2793,31 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
           "openspec-index: python-env-image" in make
           and "architecture-check: python-env-image" in make)
 
+    # Slice 2 of #712: the guard/validator batch routes through the seam, each
+    # still a pure `python3 scripts/…` command (no per-recipe docker harness).
+    seeded = {
+        "openspec-tasks-check: python-env-image": "python3 scripts/check_openspec_tasks.py $(NAME)",
+        "openspec-index-check: python-env-image": "python3 scripts/openspec_index.py --check",
+        "findings-check: python-env-image": "python3 scripts/file_findings.py --check",
+        "check-secret-output: python-env-image": "python3 scripts/check_secret_output.py check",
+        "query-coverage: python-env-image": "python3 scripts/query_coverage.py $(if $(TOP),--top $(TOP),)",
+    }
+    for target_line, cmd in seeded.items():
+        check(f"seam (Slice 2): {target_line.split(':')[0]} routes through $(PYTHON_RUN)",
+              target_line in make
+              and f"$(PYTHON_RUN) {cmd}" in make,
+              f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
+    # The gh-bound and pre-image-ensure targets stay HOST-side (documented
+    # exceptions) — they must NOT gain a PYTHON_RUN prefix in this slice.
+    for host_only in ("openspec-archive-check", "check-commit-authorship",
+                      "file-findings", "verify-closure"):
+        block = make[make.index(host_only + ":"):]
+        block = block[: block.index("\n\n")] if "\n\n" in block else block
+        check(f"seam (Slice 2): {host_only} stays host-only (no PYTHON_RUN)",
+              "$(PYTHON_RUN)" not in block,
+              f"{host_only} was routed into the container when it must stay host-side")
+
+
 
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")

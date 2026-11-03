@@ -280,6 +280,20 @@ PYTHON_IMAGE := trending-local-llms-python-env:latest
 PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -w /workspace \
 	-e PYTHONUNBUFFERED=1 $(PYTHON_IMAGE)
 
+# ---- host-only exceptions to the python-env seam (issue #712, Slice 2) ------
+# Not every host `python3 scripts/…` target routes through PYTHON_RUN; these stay
+# on the runner, deliberately (each is doc'd at its own target too):
+#  - gh-bound verifiers (openspec-archive-check, data-gap-issue/baseline,
+#    code-review-file, file-findings, verify-closure, pr-closure, pr-health):
+#    they read GitHub state / file issues, so they need the runner's `gh`+token;
+#    the python-env image deliberately carries no gh.
+#  - lint / lint-fix and check-commit-authorship: they run BEFORE `image-ensure`
+#    in qa-validate by design ("cheapest gate first, needs no image"; the latter
+#    is Git-only) — routing them through the container would force a python-env
+#    build at the top of the guard job on every fresh runner. Kept host-side.
+#  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
+#    data-gaps report) must NOT be rewrapped (no docker-in-docker).
+
 .PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
@@ -305,14 +319,14 @@ openspec-archive: openspec-image ## Move a completed change to openspec/changes/
 openspec-shell: openspec-image ## Interactive shell into the repo with the openspec CLI
 	docker run --rm -it -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE) /bin/sh
 
-openspec-tasks-check: ## Fail when an ACTIVE change still has an unticked `- [ ]` task; `- [~] … — blocked: <who/why>` is reported as review-required (NAME=<change> for one)
-	python3 scripts/check_openspec_tasks.py $(NAME)
+openspec-tasks-check: python-env-image ## Fail when an ACTIVE change still has an unticked `- [ ]` task; `- [~] … — blocked: <who/why>` is reported as review-required (NAME=<change> for one)
+	$(PYTHON_RUN) python3 scripts/check_openspec_tasks.py $(NAME)
 
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
 
-openspec-index-check: ## Fail when OPENSPEC.md is stale, or a change on disk has no row
-	python3 scripts/openspec_index.py --check
+openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a change on disk has no row
+	$(PYTHON_RUN) python3 scripts/openspec_index.py --check
 
 # The lifecycle's END (rule 6f, issue #183): a change whose PR merged must be
 # archived in that PR, so an ACTIVE change naming a merged PR is a defect. Needs
@@ -329,8 +343,8 @@ openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI g
 file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh + the repo)
 	python3 scripts/file_findings.py --file $(if $(PR),--pr $(PR)) $(if $(ISSUE),--issue $(ISSUE))
 
-findings-check: ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
-	python3 scripts/file_findings.py --check
+findings-check: python-env-image ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
+	$(PYTHON_RUN) python3 scripts/file_findings.py --check
 
 architecture-check: python-env-image ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h)
 	$(PYTHON_RUN) python3 scripts/architecture_check.py
@@ -626,8 +640,8 @@ MODEL_QUERIES = $(shell python3 scripts/query_coverage.py --queries 2>/dev/null)
 # searches use. Exit 1 when one is not, so a stale or broken derivation is LOUD
 # and separable from "the query ran and found nothing" (issue #264).
 .PHONY: query-coverage
-query-coverage: ## Report which of the top trending models the search queries name, and fail when one is named by none (TOP=N, default 10)
-	python3 scripts/query_coverage.py $(if $(TOP),--top $(TOP),)
+query-coverage: python-env-image ## Report which of the top trending models the search queries name, and fail when one is named by none (TOP=N, default 10)
+	$(PYTHON_RUN) python3 scripts/query_coverage.py $(if $(TOP),--top $(TOP),)
 
 # ---- the four search legs: ONE skill, four parameter sets (issue #638) ------
 # The rules a search leg obeys — the fixed scrape request, the key read BY NAME, the
@@ -1118,8 +1132,8 @@ secret-scan-self-test:
 # `env` dump, a committed credential-shaped literal. Pure python + host
 # filesystem scan, so host and container agree (like `make lint`).
 .PHONY: check-secret-output secret-output-report
-check-secret-output: ## CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal
-	python3 scripts/check_secret_output.py check
+check-secret-output: python-env-image ## CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal
+	$(PYTHON_RUN) python3 scripts/check_secret_output.py check
 secret-output-report: ## Show which files name a secret-shaped variable, and whether any prints it
 	python3 scripts/check_secret_output.py report
 
