@@ -584,6 +584,20 @@ def test_models_order_matches_readme():
                   str(V.FAILURES))
         finally:
             V.README = saved_readme
+    # fixture-tolerant: a README without the 'Most loved' table must NOT fail
+    # (it is not enforceable); the guard report-skips instead — this is what lets
+    # the harness fixture's placeholder README pass `_validate-search`/`_validate-mapped`
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "README.md"
+        p.write_text("# placeholder\n")
+        V.README = p
+        try:
+            reset()
+            V.check_models_order_matches_readme(store)
+            check("order: README without 'Most loved' table is skipped (not failed)",
+                  len(V.FAILURES) == 0, str(V.FAILURES))
+        finally:
+            V.README = saved_readme
 
 
 def main() -> int:
