@@ -202,6 +202,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `openspec-image` | Ensure the CLI image (pull the published hash tag, else build from `openspec/Dockerfile`) |
+| `python-env-image` | Ensure the python-env image for the `PYTHON_RUN` seam (issue #712): build from `Dockerfile.python-env` when absent (plain `python:3.12-slim` + the pinned runtime deps; no Hermes/nerve), never a registry probe (no publisher in Slice 1) |
 | `openspec-new` (`NAME=`) | `openspec new change <NAME>` — create a tracked change |
 | `openspec-validate` (`NAME=`) | `openspec validate <NAME>` for one change |
 | `openspec-status` | `openspec status` — every change and its progress |
@@ -689,7 +690,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 171 make targets, 57 files in `scripts/`)
+### Bots in the tree (12 pipelines, 172 make targets, 57 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 

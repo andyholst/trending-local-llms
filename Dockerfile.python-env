@@ -1,0 +1,50 @@
+# trending-local-llms — python-env image (issue #712, Slice 1)
+#
+# The python-env image is where every `python3 scripts/…` `_command` runs once
+# routed through the `PYTHON_RUN` seam, so a host that has Docker but NOT the
+# pinned Python/deps can still run those targets (OS-agnostic make). It carries
+# the pinned runtime deps (requirements.in -> requirements.txt); the repository
+# itself is bind-mounted at /workspace, so `scripts/` and the Makefile are
+# reachable and any hero writes land back on the host.
+#
+# This is a SEPARATE image from the base agent image on purpose: the base bakes
+# the Hermes CLI + nerve plugin (a big surface); a plain python-env is what a
+# `python3 scripts/X.py` `_command` needs and nothing more. It does NOT carry
+# hermes, and its hash (scripts/ensure_image.py PYTHON_FILES) is independent of
+# the base/openspec images, so it builds once and is pulled by hash tag like the
+# openspec image (issues #135/#141).
+#
+# Ensure/drive through the Makefile, not by hand:
+#     make python-env-image          # pull the published hash tag, else build
+#     # recipes route through the seam:
+#     $(PYTHON_RUN) python3 scripts/openspec_index.py --write
+#
+# Mount layout inside the container:
+#     /workspace -> repository root (bind mount, rw): scripts/, Makefile, data/
+#
+FROM python:3.12-slim
+
+# git is needed by the scripts that read the tracked-file set / the diff
+# (e.g. scripts/architecture_check.py globs .github, openspec_index reads the
+# tree); curl+ca-certificates are NOT needed here (no fetch in Slice 1's routed
+# scripts) but keep git so the guard scripts behave identically to host runs.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Install the pinned runtime deps (requirements.in -> requirements.txt) FIRST
+# (cache layer — re-runs only when requirements.txt changes). The test-only
+# libs (markdown-it-py, tabulate, pyyaml) are deliberately NOT installed: the
+# routed Slice-1 scripts (openspec_index, architecture_check/bot) are stdlib +
+# git only, and adding the test image's libs here would blur python-env vs
+# test-env (requirements-test stays on Dockerfile.test / TEST_IMAGE).
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1
+
+# Default: no-op (the seam passes the command); present so `docker run` without
+# a command fails cleanly instead of running an implicit interactive python.
+CMD ["true"]

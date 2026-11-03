@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **182** · archived: **10**
+Active changes: **184** · archived: **10**
 
 ## Active changes
 
@@ -127,6 +127,7 @@ Active changes: **182** · archived: **10**
 | `openspec-archive-lifecycle` | active | #183 | — | [openspec-lifecycle](openspec/changes/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-archive-lifecycle/proposal.md) |
 | `order-guard-exact-heading` | active | — | — | [order-guard-exact-heading](openspec/changes/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | active | — | — | [order-guard-fixture-tolerant](openspec/changes/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/order-guard-fixture-tolerant/proposal.md) |
+| `os-agnostic-make-python-env-seam` | active | — | — | [os-agnostic-make-python-env-seam](openspec/changes/os-agnostic-make-python-env-seam/specs/os-agnostic-make-python-env-seam/spec.md) | 8/8 | [proposal.md](openspec/changes/os-agnostic-make-python-env-seam/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `pin-flash-1017-snapshot` | active | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/pin-flash-1017-snapshot/proposal.md) |

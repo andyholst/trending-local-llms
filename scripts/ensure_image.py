@@ -66,6 +66,12 @@ TEST_FILES = ("Dockerfile.test", "requirements-test.txt")
 # The OpenSpec CLI image is independent of the base (Node, not Python), so its
 # tag hashes only its own Dockerfile.
 OPENSPEC_FILES = ("openspec/Dockerfile",)
+# The python-env image (issue #712): a plain python:3.12-slim + pinned runtime
+# deps, into which `python3 scripts/…` `_command` recipes run via the PYTHON_RUN
+# seam. Independent of the base (no Hermes/nerve), so it hashes only its own
+# Dockerfile + the pinned deps it installs — a requirements.txt change stale the
+# tag just like a Dockerfile change.
+PYTHON_FILES = ("Dockerfile.python-env", "requirements.txt")
 
 IMAGE_REPO = os.environ.get("IMAGE_REPO", "ghcr.io/andyholst/trending-local-llms")
 IMAGE = os.environ.get("IMAGE", "trending-local-llms:latest")
@@ -79,6 +85,7 @@ REGISTRY_SCHEME = os.environ.get("IMAGE_REGISTRY_SCHEME", "https")
 PUSH_TIMEOUT = env_int("IMAGE_PUSH_TIMEOUT", 60)
 TEST_IMAGE = os.environ.get("TEST_IMAGE", "trending-local-llms-test:latest")
 OPENSPEC_IMAGE = os.environ.get("OPENSPEC_IMAGE", "trending-local-llms-openspec:latest")
+PYTHON_IMAGE = os.environ.get("PYTHON_IMAGE", "trending-local-llms-python-env:latest")
 
 
 def _digest(parts: tuple[str, ...]) -> str:
@@ -175,6 +182,44 @@ def ensure_openspec() -> str:
     return (
         f"openspec: {openspec_tag()} is not published; built {OPENSPEC_IMAGE} "
         "from this revision's openspec/Dockerfile"
+    )
+
+
+def python_hash() -> str:
+    """The python-env image's content hash (issue #712): its Dockerfile + the
+    pinned runtime deps it installs. Independent of the base (it does not layer
+    on it), so a base/openspec change does not stale this tag."""
+
+    return _digest(PYTHON_FILES)
+
+
+def python_tag() -> str:
+    return f"{IMAGE_REPO}-python-env:python-{python_hash()}"
+
+
+def python_env_ready() -> bool:
+    """Whether the LOCAL python-env image is present (no registry round-trip)."""
+    return subprocess.run(
+        ["docker", "image", "inspect", PYTHON_IMAGE], capture_output=True
+    ).returncode == 0
+
+
+def ensure_python() -> str:
+    """Issue #712 Slice 1: build the python-env image from Dockerfile.python-env
+    when a local copy is absent; reuse it when present.
+
+    This is intentionally LOCAL-ONLY (no registry probe): unlike base/test/openspec
+    there is no publisher for this image in Slice 1, so the package has never been
+    created and a token read fails `denied` (issue #235 treats that as a LOUD error,
+    not "absent") — a pull-or-build probe would red every fresh CI job on first use.
+    A host with Docker but not the pinned Python builds it here and runs PYTHON_RUN.
+    """
+    if python_env_ready():
+        return f"python-env: {PYTHON_IMAGE} is present locally — nothing to do"
+    _run("docker", "build", "-f", "Dockerfile.python-env", "-t", PYTHON_IMAGE, ".")
+    return (
+        f"python-env: built {PYTHON_IMAGE} locally from this revision's "
+        "Dockerfile.python-env"
     )
 
 
@@ -359,6 +404,11 @@ def decide(force: bool, dow: int) -> dict:
               (#141).
       openspec — publish when its own hash tag is missing.
 
+    python-env is deliberately NOT in this decision: Slice 1 of #712 has no
+    publisher for it, so a token `manifest inspect` of a never-created package
+    would read `denied` and fail this decision (issue #235). It is a LOCAL-BUILD
+    image (`ensure-python`), ensured by the image-ensure of a job that runs it.
+
     `published()` goes through the `docker` CLI, so a test fakes it exactly as the
     other ensure paths do, and the day is an argument — never `date +%u` inline in
     a workflow.
@@ -475,9 +525,13 @@ def _dispatch(argv: list[str]) -> int:
         print(f"BASE_TAG={base_tag()}")
         print(f"TEST_TAG={test_tag()}")
         print(f"OPENSPEC_TAG={openspec_tag()}")
+        print(f"PYTHON_TAG={python_tag()}")
         return 0
     if action == "ensure-openspec":
         print(ensure_openspec())
+        return 0
+    if action == "ensure-python":
+        print(ensure_python())
         return 0
     if action == "ensure-base":
         print(ensure_base())
@@ -488,6 +542,7 @@ def _dispatch(argv: list[str]) -> int:
     if action == "ensure":
         print(ensure_base())
         print(ensure_test())
+        print(ensure_python())
         return 0
     # ---- the publish path (issue #206): a deliberate, guarded act ----
     if action == "ref":
@@ -515,7 +570,7 @@ def _dispatch(argv: list[str]) -> int:
         return 0
     print(
         "usage: ensure_image.py "
-        "[ensure|ensure-base|ensure-test|ensure-openspec|tags|ref|push-check|"
+        "[ensure|ensure-base|ensure-test|ensure-openspec|ensure-python|tags|ref|push-check|"
         "publish [--force]|decide [--force <bool>] [--dow <1-7>]]",
         file=sys.stderr,
     )

@@ -386,6 +386,11 @@ def test_wired_into_make_test():
           wired(__file__), "")
     check("make: `image-ensure` calls the script the tests exercise",
           "image-ensure:\n\tpython3 scripts/ensure_image.py ensure" in mk, "")
+    # Issue #712 Slice 1: a job that runs the suite ensures the python-env image
+    # too, so a migrated PYTHON_RUN recipe never starts unprovisioned.
+    check("make: the python-env image is ensured via image-ensure",
+          "ensure-python" in (ROOT / "scripts" / "ensure_image.py").read_text()
+          and "python-env-image" in mk, "")
 
 
 
@@ -404,6 +409,93 @@ def _test_tag():
 def _openspec_tag():
     rc, _, out = _run(["tags"])
     return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["OPENSPEC_TAG"]
+
+
+def _python_tag():
+    rc, _, out = _run(["tags"])
+    return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["PYTHON_TAG"]
+
+
+def test_python_env_image_is_built_locally_and_does_not_probe_the_registry():
+    """Issue #712 Slice 1: the python-env image is a LOCAL build.
+
+    Unlike base/test/openspec there is NO publisher for python-env in Slice 1, so
+    the GHCR package has never been created and a token `manifest inspect` of it
+    reads `denied` (issue #235: that is a LOUD error, NOT "absent"). Therefore
+    `ensure-python` must NOT probe the registry at all — it builds from
+    Dockerfile.python-env when a local copy is absent, and reuses it when present.
+    A host with Docker but not the pinned Python can run PYTHON_RUN recipes.
+    """
+    py_hash = _expected_hash(["Dockerfile.python-env", "requirements.txt"])
+    py_tag = f"{IMAGE_REPO}-python-env:python-{py_hash}"
+
+    # When  the tags are printed
+    rc, _, out = _run(["tags"])
+    tags = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+
+    # Then  the python-env tag names this revision's own inputs (not the base's)
+    check("tags: exit 0 includes PYTHON_TAG", rc == 0 and "PYTHON_TAG" in tags, out)
+    check("tags: PYTHON_TAG is sha12(Dockerfile.python-env + requirements.txt)",
+          tags.get("PYTHON_TAG") == py_tag, f"{tags.get('PYTHON_TAG')} vs {py_tag}")
+    check("tags: the python-env tag differs from the base/openspec tags",
+          tags.get("PYTHON_TAG") != tags.get("BASE_TAG")
+          and tags.get("PYTHON_TAG") != tags.get("OPENSPEC_TAG"), "")
+
+    # Given a host with no local python-env image
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "docker"
+        stub.write_text(_DOCKER_STUB)
+        stub.chmod(0o755)
+        log = td / "calls.log"
+        log.write_text("")
+        avail = td / "available.txt"
+        # Fresh host: NO local python-env image and the registry refuses to answer
+        # (never-created package -> `denied`, issue #235). The stub's `image
+        # inspect` answers from the same file, so leaving it empty means the local
+        # image is absent too, and the registry error simulates the `denied`.
+        avail.write_text("")
+        env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
+               "FAKE_DOCKER_LOG": str(log), "FAKE_DOCKER_AVAILABLE": str(avail),
+               "FAKE_DOCKER_MANIFEST_ERROR": "denied: permission_denied",
+               "IMAGE_REPO": IMAGE_REPO}
+        proc = subprocess.run([sys.executable, str(SCRIPT), "ensure-python"],
+                              cwd=ROOT, capture_output=True, text=True, env=env)
+        calls = [l.split() for l in log.read_text().splitlines() if l.strip()]
+    # Then  it is BUILT from Dockerfile.python-env, and the registry is never asked
+    check("ensure-python (fresh): exit 0", proc.returncode == 0,
+          proc.stdout + proc.stderr)
+    check("ensure-python (fresh): builds from Dockerfile.python-env",
+          ["build", "-f", "Dockerfile.python-env", "-t",
+           "trending-local-llms-python-env:latest", "."] in calls, str(calls))
+    check("ensure-python (fresh): never asks the registry",
+          not any(c[:2] == ["manifest", "inspect"] for c in calls), str(calls))
+    check("ensure-python (fresh): builds even when the registry can't answer",
+          "manifes" not in proc.stdout + proc.stderr, proc.stdout + proc.stderr)
+
+    # Given the LOCAL image is already present
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "docker"
+        stub.write_text(_DOCKER_STUB)
+        stub.chmod(0o755)
+        log = td / "calls.log"
+        log.write_text("")
+        avail = td / "available.txt"
+        avail.write_text("trending-local-llms-python-env:latest\n")
+        env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
+               "FAKE_DOCKER_LOG": str(log), "FAKE_DOCKER_AVAILABLE": str(avail),
+               "IMAGE_REPO": IMAGE_REPO}
+        proc = subprocess.run([sys.executable, str(SCRIPT), "ensure-python"],
+                              cwd=ROOT, capture_output=True, text=True, env=env)
+        calls = [l.split() for l in log.read_text().splitlines() if l.strip()]
+    # Then  it is reused, never rebuilt, and the registry is still never asked
+    check("ensure-python (present): exit 0", proc.returncode == 0,
+          proc.stdout + proc.stderr)
+    check("ensure-python (present): does NOT rebuild",
+          not any(c[:2] == ["build", "-f"] for c in calls), str(calls))
+    check("ensure-python (present): never asks the registry",
+          not any(c[:2] == ["manifest", "inspect"] for c in calls), str(calls))
 
 
 def _decide(available, dow="1", force="false"):
@@ -512,6 +604,7 @@ def main() -> int:
     test_a_publish_is_not_done_until_the_registry_serves_it()
     test_force_reaches_the_script_as_a_value_not_a_bare_flag()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
+    test_python_env_image_is_built_locally_and_does_not_probe_the_registry()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()
     test_wired_into_make_test()
