@@ -1461,6 +1461,41 @@ def check_readme_has_all_models(store: dict) -> None:
     print(f"  OK: all {len(store['models'])} models present in README.md")
 
 
+_MOST_LOVED_HDR = "## ❤️ Most loved open-weight models on X"
+
+
+def check_models_order_matches_readme(store: dict) -> None:
+    """The store models[] array must be in the README 'Most loved' table order.
+
+    Producers vendoring data/models.json + README (llgenie sync_registry)
+    enforce strict order equality: the 'Most loved' table lists every model in
+    rank order (the render's sort_models output), so the committed models[]
+    array and the README rows must agree. A drift (models.json order != README
+    order) breaks that contract — #708 caught the 24-position drift #695
+    introduced. This guard mirrors the vendored check_readme_matches so a
+    producer reorder can't silently diverge again.
+    """
+    if not README.exists():
+        fail("README.md missing")
+        return
+    text = README.read_text()
+    if _MOST_LOVED_HDR not in text:
+        fail("README has no 'Most loved' table")
+        return
+    section = text.split(_MOST_LOVED_HDR, 1)[1].split("\n## ", 1)[0]
+    readme_order = re.findall(r"^\| \[\*\*(.+?)\*\*\]", section, re.M)
+    json_order = [m["name"] for m in store["models"]]
+    n = min(len(json_order), len(readme_order))
+    divergences = [i for i in range(n) if json_order[i] != readme_order[i]]
+    if len(json_order) != len(readme_order):
+        fail(f"models.json count ({len(json_order)}) != README 'Most loved' count ({len(readme_order)})")
+    if divergences:
+        first = ", ".join(f"[{i}]{json_order[i]} != {readme_order[i]}" for i in divergences[:6])
+        fail(f"models.json order != README 'Most loved' order at {len(divergences)} position(s): {first}")
+        return
+    print(f"  OK: models.json order == README 'Most loved' order ({len(json_order)} models, 0 divergences)")
+
+
 def check_readme_sync(store: dict) -> None:
     """Verify README.md is in sync with data/models.json — i.e. BOTH changed
     together. Every model and every engine measurement in the JSON must appear
@@ -1947,6 +1982,7 @@ def main() -> int:
     add("no-removal guarantee", "removal", lambda: check_no_removal(store, snap_dir))
     add("additive-only (no key/value loss)", "removal", lambda: check_no_value_loss(store, snap_dir))
     add("no duplicate models", "data", lambda: check_no_duplicates(store))
+    add("models.json order == README Most loved order", "data", lambda: check_models_order_matches_readme(store))
     add("vram_tier vocabulary (report only)", "data", lambda: check_vram_tier_vocabulary(store))
     add("vram_min vocabulary (report only)", "data", lambda: check_vram_min_vocabulary(store))
     add("card gaps (report only)", "readme", lambda: check_card_gap_report(store))
