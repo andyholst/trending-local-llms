@@ -386,6 +386,11 @@ def test_wired_into_make_test():
           wired(__file__), "")
     check("make: `image-ensure` calls the script the tests exercise",
           "image-ensure:\n\tpython3 scripts/ensure_image.py ensure" in mk, "")
+    # Issue #712 Slice 1: a job that runs the suite ensures the python-env image
+    # too, so a migrated PYTHON_RUN recipe never starts unprovisioned.
+    check("make: the python-env image is ensured via image-ensure",
+          "ensure-python" in (ROOT / "scripts" / "ensure_image.py").read_text()
+          and "python-env-image" in mk, "")
 
 
 
@@ -404,6 +409,54 @@ def _test_tag():
 def _openspec_tag():
     rc, _, out = _run(["tags"])
     return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["OPENSPEC_TAG"]
+
+
+def _python_tag():
+    rc, _, out = _run(["tags"])
+    return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)["PYTHON_TAG"]
+
+
+def test_python_env_image_is_hash_tagged_and_built_or_pulled():
+    """Issue #712 Slice 1: the python-env image follows the SAME rule as the
+    other images — a tag naming this revision's inputs (Dockerfile.python-env +
+    requirements.txt), pulled when published, built here when not — so a host
+    with Docker but not the pinned Python can run `PYTHON_RUN` recipes."""
+    py_hash = _expected_hash(["Dockerfile.python-env", "requirements.txt"])
+    py_tag = f"{IMAGE_REPO}-python-env:python-{py_hash}"
+
+    # When  the tags are printed
+    rc, _, out = _run(["tags"])
+    tags = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+
+    # Then  the python-env tag names this revision's own inputs (not the base's)
+    check("tags: exit 0 includes PYTHON_TAG", rc == 0 and "PYTHON_TAG" in tags, out)
+    check("tags: PYTHON_TAG is sha12(Dockerfile.python-env + requirements.txt)",
+          tags.get("PYTHON_TAG") == py_tag, f"{tags.get('PYTHON_TAG')} vs {py_tag}")
+    check("tags: the python-env tag differs from the base/openspec tags",
+          tags.get("PYTHON_TAG") != tags.get("BASE_TAG")
+          and tags.get("PYTHON_TAG") != tags.get("OPENSPEC_TAG"), "")
+
+    # Given a registry without that tag
+    rc, calls, log = _run(["ensure-python"], available=[])
+
+    # Then  the python-env image is built here from its own Dockerfile
+    check("ensure-python (unpublished): exit 0", rc == 0, log)
+    check("ensure-python (unpublished): builds from Dockerfile.python-env",
+          ["build", "-f", "Dockerfile.python-env", "-t", "trending-local-llms-python-env:latest", "."] in calls,
+          str(calls))
+    check("ensure-python (unpublished): never pulls",
+          not any(c[:1] == ["pull"] for c in calls), str(calls))
+
+    # Given the tag IS published
+    rc, calls, log = _run(["ensure-python"], available=[py_tag])
+
+    # Then  it is pulled and tagged locally, never rebuilt
+    check("ensure-python (published): exit 0", rc == 0, log)
+    check("ensure-python (published): pulls the published tag", ["pull", py_tag] in calls, str(calls))
+    check("ensure-python (published): tags it locally",
+          ["tag", py_tag, "trending-local-llms-python-env:latest"] in calls, str(calls))
+    check("ensure-python (published): never rebuilds",
+          not any(c[:1] == ["build"] for c in calls), str(calls))
 
 
 def _decide(available, dow="1", force="false"):
@@ -512,6 +565,7 @@ def main() -> int:
     test_a_publish_is_not_done_until_the_registry_serves_it()
     test_force_reaches_the_script_as_a_value_not_a_bare_flag()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
+    test_python_env_image_is_hash_tagged_and_built_or_pulled()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()
     test_wired_into_make_test()

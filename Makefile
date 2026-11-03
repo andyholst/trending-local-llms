@@ -263,9 +263,29 @@ OPENSPEC_IMAGE := trending-local-llms-openspec:latest
 # root-owned change directory the working tree could not write to).
 OS_OPTS := --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -v "$$PWD":/repo:rw -w /repo $(OPENSPEC_IMAGE)
 
-.PHONY: openspec-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check
+# ---- the python-env seam (issue #712, Slice 1) -----------------------------
+# Every `python3 scripts/…` `_command` runs inside the python-env image via this
+# ONE seam, so a host with Docker but not the pinned Python/deps still runs the
+# targets (OS-agnostic make). `$$PWD` is bind-mounted at /workspace (mounted src,
+# so scripts/ + the Makefile are reachable and hero writes land back on host).
+# The recipe stays a PURE command (`python3 scripts/X.py ...`) — the container
+# harness lives here, not per-recipe.
+PYTHON_IMAGE := trending-local-llms-python-env:latest
+# Runs as the invoking user (like OS_OPTS) so a write lands owned by the repo's
+# owner; PYTHONUNBUFFERED mirrors DOCKER_RUN so Python output streams live
+# (issue #591). No HOME=/tmp: these scripts don't need a writable $HOME.
+# PYTHON_RUN is the docker harness ONLY (mount, workdir, user, env) — the
+# recipe keeps the pure command (`python3 scripts/X.py ...`), so a reader sees
+# exactly what runs and the container seam stays in one place (issue #712).
+PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -w /workspace \
+	-e PYTHONUNBUFFERED=1 $(PYTHON_IMAGE)
+
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
+
+python-env-image: ## Ensure the python-env image for the PYTHON_RUN seam (pull the published hash tag, else build it)
+	python3 scripts/ensure_image.py ensure-python
 
 openspec-new: openspec-image ## openspec new change <NAME>
 	@test -n "$(NAME)" || { echo "Usage: make openspec-new NAME=<kebab-name>"; exit 1; }
@@ -288,8 +308,8 @@ openspec-shell: openspec-image ## Interactive shell into the repo with the opens
 openspec-tasks-check: ## Fail when an ACTIVE change still has an unticked `- [ ]` task; `- [~] … — blocked: <who/why>` is reported as review-required (NAME=<change> for one)
 	python3 scripts/check_openspec_tasks.py $(NAME)
 
-openspec-index: ## Regenerate the root OPENSPEC.md index from openspec/changes/**
-	python3 scripts/openspec_index.py --write
+openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
+	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
 
 openspec-index-check: ## Fail when OPENSPEC.md is stale, or a change on disk has no row
 	python3 scripts/openspec_index.py --check
@@ -312,9 +332,9 @@ file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh
 findings-check: ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
 	python3 scripts/file_findings.py --check
 
-architecture-check: ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h)
-	python3 scripts/architecture_check.py
-	python3 scripts/architecture_bot.py --check
+architecture-check: python-env-image ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h)
+	$(PYTHON_RUN) python3 scripts/architecture_check.py
+	$(PYTHON_RUN) python3 scripts/architecture_bot.py --check
 
 # The LIVING half of this document (issue #479): the inventory of every pipeline
 # (its triggers, its jobs, the make targets they call), the product end to end and

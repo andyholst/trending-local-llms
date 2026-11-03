@@ -2750,6 +2750,50 @@ def test_a_captured_recipe_is_silent():
           "issue-pick" in captured, captured)
 
 
+def test_python_env_seam_routes_migrated_recipes_through_the_container():
+    """Slice 1 of #712: the python-env seam. A recipe routed through PYTHON_RUN
+    stays a pure `python3 scripts/…` call; the container harness lives in the
+    ONE seam, so a host with Docker but not the pinned Python/deps runs it.
+    This encodes a real gap: before Slice 1, `make openspec-index` and
+    `make architecture-check` called `python3` directly on the HOST (the
+    runner's OS/toolchain leaked into the pipeline, defeating the fleet's
+    container-first rule)."""
+    make = (ROOT / "Makefile").read_text(encoding="utf-8")
+
+    # The seam exists once, with the docker harness in it, not per-recipe.
+    check("seam: PYTHON_RUN is defined once in the Makefile",
+          make.count("PYTHON_RUN :=") == 1
+          and "-v \"$$PWD\":/workspace" in make
+          and "-w /workspace" in make
+          and "PYTHONUNBUFFERED=1" in make
+          and "--user $$(id -u):$$(id -g)" in make,
+          "PYTHON_RUN := count: " + str(make.count("PYTHON_RUN :=")))
+
+    # openspec-index routes through the seam, keeping the pure command.
+    idx = make.index("openspec-index:")
+    idx_block = make[idx:make.index("\n\n", idx)]
+    check("seam: openspec-index runs through $(PYTHON_RUN) as a pure command",
+          "$(PYTHON_RUN) python3 scripts/openspec_index.py --write" in idx_block
+          and "$(PYTHON_RUN)" in idx_block.split(":")[1],
+          idx_block.replace("\n", " | "))
+
+    # architecture-check routes BOTH guard steps through the seam.
+    arch = make.index("architecture-check:")
+    arch_block = make[arch:make.index("\n\n", arch)]
+    check("seam: architecture-check runs both steps through $(PYTHON_RUN)",
+          "$(PYTHON_RUN) python3 scripts/architecture_check.py" in arch_block
+          and "$(PYTHON_RUN) python3 scripts/architecture_bot.py --check" in arch_block,
+          arch_block.replace("\n", " | "))
+
+    # python-env-image ensure target exists and is a prerequisite of both.
+    check("seam: python-env-image target exists",
+          re.search(r"^python-env-image:\s*##", make, re.M) is not None
+          and "ensure_image.py ensure-python" in make)
+    check("seam: python-env-image is ensured before both migrated targets",
+          "openspec-index: python-env-image" in make
+          and "architecture-check: python-env-image" in make)
+
+
 def main() -> int:
     print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
@@ -2806,6 +2850,7 @@ def main() -> int:
     test_a_step_setting_lives_in_env_or_on_the_command_line_never_both()
     test_a_captured_recipe_is_silent()
     test_the_issue_is_re_read_right_before_the_agent_starts()
+    test_python_env_seam_routes_migrated_recipes_through_the_container()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

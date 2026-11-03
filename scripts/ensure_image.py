@@ -66,6 +66,12 @@ TEST_FILES = ("Dockerfile.test", "requirements-test.txt")
 # The OpenSpec CLI image is independent of the base (Node, not Python), so its
 # tag hashes only its own Dockerfile.
 OPENSPEC_FILES = ("openspec/Dockerfile",)
+# The python-env image (issue #712): a plain python:3.12-slim + pinned runtime
+# deps, into which `python3 scripts/…` `_command` recipes run via the PYTHON_RUN
+# seam. Independent of the base (no Hermes/nerve), so it hashes only its own
+# Dockerfile + the pinned deps it installs — a requirements.txt change stale the
+# tag just like a Dockerfile change.
+PYTHON_FILES = ("Dockerfile.python-env", "requirements.txt")
 
 IMAGE_REPO = os.environ.get("IMAGE_REPO", "ghcr.io/andyholst/trending-local-llms")
 IMAGE = os.environ.get("IMAGE", "trending-local-llms:latest")
@@ -79,6 +85,7 @@ REGISTRY_SCHEME = os.environ.get("IMAGE_REGISTRY_SCHEME", "https")
 PUSH_TIMEOUT = env_int("IMAGE_PUSH_TIMEOUT", 60)
 TEST_IMAGE = os.environ.get("TEST_IMAGE", "trending-local-llms-test:latest")
 OPENSPEC_IMAGE = os.environ.get("OPENSPEC_IMAGE", "trending-local-llms-openspec:latest")
+PYTHON_IMAGE = os.environ.get("PYTHON_IMAGE", "trending-local-llms-python-env:latest")
 
 
 def _digest(parts: tuple[str, ...]) -> str:
@@ -175,6 +182,31 @@ def ensure_openspec() -> str:
     return (
         f"openspec: {openspec_tag()} is not published; built {OPENSPEC_IMAGE} "
         "from this revision's openspec/Dockerfile"
+    )
+
+
+def python_hash() -> str:
+    """The python-env image's content hash (issue #712): its Dockerfile + the
+    pinned runtime deps it installs. Independent of the base (it does not layer
+    on it), so a base/openspec change does not stale this tag."""
+
+    return _digest(PYTHON_FILES)
+
+
+def python_tag() -> str:
+    return f"{IMAGE_REPO}-python-env:python-{python_hash()}"
+
+
+def ensure_python() -> str:
+    """The python-env image (issue #712): the one path for the PYTHON_RUN seam."""
+    if published(python_tag()):
+        _run("docker", "pull", python_tag())
+        _run("docker", "tag", python_tag(), PYTHON_IMAGE)
+        return f"python-env: pulled {python_tag()} -> {PYTHON_IMAGE}"
+    _run("docker", "build", "-f", "Dockerfile.python-env", "-t", PYTHON_IMAGE, ".")
+    return (
+        f"python-env: {python_tag()} is not published; built {PYTHON_IMAGE} "
+        "from this revision's Dockerfile.python-env"
     )
 
 
@@ -367,6 +399,7 @@ def decide(force: bool, dow: int) -> dict:
     base_ok = published(base_tag())
     test_ok = published(test_tag())
     openspec_ok = published(openspec_tag())
+    python_ok = published(python_tag())
     sunday = dow == 7
 
     def _reasons(extra: list[str]) -> str:
@@ -394,20 +427,28 @@ def decide(force: bool, dow: int) -> dict:
     if not openspec_ok:
         openspec_reasons.append("openspec-tag-missing")
 
+    python_reasons = []
+    if not python_ok:
+        python_reasons.append("python-env-tag-missing")
+
     return {
         "built": "yes" if base_reasons else "no",
         "test_built": "yes" if test_reasons else "no",
         "publish_openspec": "yes" if openspec_reasons else "no",
+        "publish_python_env": "yes" if python_reasons else "no",
         "base_tag": base_tag(),
         "test_tag": test_tag(),
         "openspec_tag": openspec_tag(),
+        "python_env_tag": python_tag(),
         "reason": _reasons(base_reasons),
         "test_reason": _reasons(test_reasons),
         "openspec_reason": _reasons(openspec_reasons),
+        "python_env_reason": _reasons(python_reasons),
         "latest_published": "yes" if latest_ok else "no",
         "base_published": "yes" if base_ok else "no",
         "test_published": "yes" if test_ok else "no",
         "openspec_published": "yes" if openspec_ok else "no",
+        "python_env_published": "yes" if python_ok else "no",
     }
 
 
@@ -475,9 +516,13 @@ def _dispatch(argv: list[str]) -> int:
         print(f"BASE_TAG={base_tag()}")
         print(f"TEST_TAG={test_tag()}")
         print(f"OPENSPEC_TAG={openspec_tag()}")
+        print(f"PYTHON_TAG={python_tag()}")
         return 0
     if action == "ensure-openspec":
         print(ensure_openspec())
+        return 0
+    if action == "ensure-python":
+        print(ensure_python())
         return 0
     if action == "ensure-base":
         print(ensure_base())
@@ -488,6 +533,7 @@ def _dispatch(argv: list[str]) -> int:
     if action == "ensure":
         print(ensure_base())
         print(ensure_test())
+        print(ensure_python())
         return 0
     # ---- the publish path (issue #206): a deliberate, guarded act ----
     if action == "ref":
@@ -515,7 +561,7 @@ def _dispatch(argv: list[str]) -> int:
         return 0
     print(
         "usage: ensure_image.py "
-        "[ensure|ensure-base|ensure-test|ensure-openspec|tags|ref|push-check|"
+        "[ensure|ensure-base|ensure-test|ensure-openspec|ensure-python|tags|ref|push-check|"
         "publish [--force]|decide [--force <bool>] [--dow <1-7>]]",
         file=sys.stderr,
     )
