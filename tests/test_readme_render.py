@@ -312,6 +312,27 @@ def test_score_7d_stays_float_through_ingest():
     check("coerce: undeclared key pruned", "bogus" not in eng, eng)
 
 
+def test_readme_contains_pinned_action_howto():
+    """#739 (#714 Slice 3, docs): the rendered README carries the
+    'Bumping a pinned GitHub Action' how-to with the four required points —
+    fail-closed guard, SHA resolution + verification, empty
+    ALLOWED_WORKFLOW_REFS, and the same-major bump warning. Real render path
+    (render_readme on a real fixture store), exactly the content a reader sees."""
+    s = store()
+    UT.sort_models(s["models"], TODAY)
+    md = UT.render_readme(copy.deepcopy(s), TODAY)
+    check("docs: guard fail-closed on non-40-hex uses: ref is explained",
+          "make action-pin-check" in md and "fails the gate" in md, "")
+    check("docs: bump path resolves + verifies the new SHA",
+          "gh api repos/<owner>/<repo>/git/ref/tags/v<tag>" in md and "VERIFY the commit belongs to that action" in md, "")
+    check("docs: ALLOWED_WORKFLOW_REFS stays empty",
+          "Keep `ALLOWED_WORKFLOW_REFS` empty" in md, "")
+    check("docs: no casual MAJOR bump",
+          "Do not bump MAJOR versions casually" in md, "")
+    check("docs: cross-refs the gate's position in qa-validate after image-ensure",
+          "run by `qa-validate` right after `image-ensure`" in md, "")
+
+
 def main() -> int:
     print("ranking + README layout (issue #52)")
     test_rank_follows_engagement_not_post_count()
@@ -328,6 +349,7 @@ def main() -> int:
     test_validator_catches_misplaced_measurement()
     test_readme_generated_is_date_stable()
     test_score_7d_stays_float_through_ingest()
+    test_readme_contains_pinned_action_howto()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

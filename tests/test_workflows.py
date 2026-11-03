@@ -264,6 +264,17 @@ def test_qa_validate():
     check("qa: dispatch capped by prior fix-bot commits", "MAX_FIXBOT_COMMITS" in ds.get("run", ""), "")
 
 
+def test_qa_validate_header_points_at_pinned_action_howto():
+    """#739 (#714 Slice 3): the qa-validate header comment points operators at
+    the README 'Bumping a pinned GitHub Action' section (the guard runs in this
+    workflow), so the guard is both enforcement AND a documented workflow."""
+    text = (WF / "qa-validate.yml").read_text()
+    check("qa: header notes refs are pinned to immutable SHAs",
+          "pinned to an immutable 40-hex" in text, "")
+    check("qa: header points at the README bump section",
+          '"Bumping a pinned GitHub Action" in README.md' in text, "")
+
+
 def test_fix_bot():
     wf = load("fix-bot.yml")
     on = wf["on"]
@@ -2864,6 +2875,7 @@ def main() -> int:
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
     test_the_closure_check_reruns_when_the_pr_body_is_edited()
     test_qa_validate()
+    test_qa_validate_header_points_at_pinned_action_howto()
     test_fix_bot()
     test_fix_bot_announces_its_window()
     test_fix_bot_push_behaviour()

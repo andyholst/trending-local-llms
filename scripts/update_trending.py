@@ -1819,6 +1819,14 @@ Best measured t/s per model on each engine ({legend}). Only engines with at leas
 - **QA before a refresh lands:** `make qa-report` runs the aggregate job's QA targets — a *finding* (data quality) is reported, but a target that **could not run** (no image / no such command) fails the run, so a green refresh means the checks actually ran.
 - All changes go through a **feature branch + PR**; automation never pushes to `master`. A PR is auto-merged (squash, branch deleted) only when CI (`validate` + `live-smoke`) is green.
 
+### Bumping a pinned GitHub Action
+
+Every third-party workflow `uses:` ref in `.github/workflows/**` is pinned to an immutable 40-hex commit SHA (all 37 migrated in #737), and `make action-pin-check` — part of the CI gate, run by `qa-validate` right after `image-ensure` — refuses anything else: a tag like `@v4` fails the gate.
+
+- **To bump an action:** resolve the new 40-hex SHA from the upstream repo — `gh api repos/<owner>/<repo>/git/ref/tags/v<tag>` prints the tag's object (if it is an annotated tag, dereference once more with `git/tags/<sha>`), or read the SHA from the action's release page. VERIFY the commit belongs to that action before trusting it, then replace the `<40-hex>` ref in the matching `.github/workflows/*.yml` line.
+- **Keep `ALLOWED_WORKFLOW_REFS` empty.** All third-party refs are pinned, so the allowlist in `scripts/action_pin_check.py` must stay empty; only genuinely-exempt own-reusable/fork refs belong there.
+- **Do not bump MAJOR versions casually** — pin the same major's SHA (e.g. stay on the v4 line, not v5/v7) and review the action's release notes first.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).

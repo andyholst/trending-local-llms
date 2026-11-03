@@ -63,9 +63,32 @@ third-party workflow ref is refused (fails closed). `make action-pin-check` is
 GREEN on master-as-is. The gitleaks tool-image ref stays on
 `ALLOWED_IMAGE_REFS` (allow-till #715).
 
+## #739 (#714 Slice 3): README + workflow-header how-to for bumping a pinned action
+
+Slice 3 is documentation only (additive, non-breaking): now that the guard
+enforces and all 37 refs are pinned, the operator path to bump an action safely
+is documented so the guard is both enforcement AND a workflow.
+
+- **README.md** — a new "Bumping a pinned GitHub Action" section under "How to
+  contribute" (template in `scripts/update_trending.py`, regenerated via
+  `make render-readme`, issue #195 path — no data diff) covering: the guard
+  (`make action-pin-check`, run by `qa-validate` right after `image-ensure`)
+  refuses any non-40-hex third-party `uses:` ref and fails closed; how to
+  resolve + VERIFY the new SHA for the desired major version (`gh api
+  repos/<owner>/<repo>/git/ref/tags/v<tag>`, annotated-tag dereference, or the
+  upstream release page) and replace the ref in the matching
+  `.github/workflows/*.yml`; keep `ALLOWED_WORKFLOW_REFS` empty (all refs
+  pinned — only genuinely-exempt own-reusable/fork refs belong there); do not
+  bump MAJOR versions casually (stay on the same major's SHA line, review the
+  action's release notes).
+- **`.github/workflows/qa-validate.yml`** — a concise header comment pointing
+  at that README section (the guard runs in this workflow).
+- **No logic/allowlist/workflow-SHA change**: no `uses:` value changed, script
+  logic untouched (template tail + regenerated README only), guard stays GREEN.
+
 ## Out of scope (later slices / other issues)
 
 - Migrating the workflow `uses:` refs from tag → SHA — DONE in #737 (Slice 2).
+- README/comment "how to bump an action" friction docs — DONE in #739 (Slice 3).
 - Pinning gitleaks / the tool images through `ensure_image.py`'s `<sha12>`
   scheme (a later #715 slice).
-- README/comment "how to bump an action" friction docs (#714 Slice 3).

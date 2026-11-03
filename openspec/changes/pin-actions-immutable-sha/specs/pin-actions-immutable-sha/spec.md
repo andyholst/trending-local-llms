@@ -136,3 +136,43 @@ AND the gitleaks image ref remains allowlisted for #715.
 - **When** `ALLOWED_WORKFLOW_REFS` is read
 - **Then** it is empty (the #714 allow-till deadline is satisfied), while the gitleaks image ref stays on `ALLOWED_IMAGE_REFS` (allow-till #715)
 - **Test:** `tests/test_action_pin.py::test_workflow_allowlist_empty_after_migration` — asserts allowlist empty + gitleaks entry present
+
+### Requirement: operator how-to for bumping a pinned action is documented (#739, #714 Slice 3)
+
+The README carries a "Bumping a pinned GitHub Action" section and the primary
+gate workflow carries a header comment so the guard is both enforcement AND a
+documented workflow. Docs only — no logic/allowlist/workflow-SHA change.
+
+WHEN an operator needs to bump a pinned GitHub Action
+THEN the README section explains the guard fails closed on any non-40-hex
+third-party `uses:` ref,
+AND explains how to resolve + VERIFY the new SHA for the desired major version
+(`gh api repos/<owner>/<repo>/git/ref/tags/v<tag>`, annotated-tag dereference,
+or the upstream release page) and replace it in the matching
+`.github/workflows/*.yml`,
+AND states that `ALLOWED_WORKFLOW_REFS` must stay empty (all refs pinned),
+AND warns not to bump MAJOR versions casually (stay on the same major's SHA,
+review release notes),
+AND `qa-validate.yml` carries a concise header comment pointing at that section,
+AND the guard stays GREEN and no `uses:` value changed.
+
+#### Scenario: the README documents bumping a pinned action
+
+- **Given** the repo README (regenerated from the template, issue #195 `--render-only` path)
+- **When** the "How to contribute" section is read
+- **Then** it contains a "Bumping a pinned GitHub Action" subsection covering the fail-closed guard, SHA resolution+verification, the empty `ALLOWED_WORKFLOW_REFS` rule, and the same-major bump warning
+- **Test:** `tests/test_readme_render.py::test_readme_contains_pinned_action_howto` — renders the README from the store and asserts the four points
+
+#### Scenario: the primary gate workflow points operators at the README
+
+- **Given** `.github/workflows/qa-validate.yml`
+- **When** its header comment is read
+- **Then** it notes the refs are pinned to immutable SHAs and points to the README "Bumping a pinned GitHub Action" section
+- **Test:** `tests/test_workflows.py::test_qa_validate_header_points_at_pinned_action_howto` — real qa-validate.yml, header carries the README pointer
+
+#### Scenario: the documentation change leaves the guard green and the diff docs-only
+
+- **Given** the tree after the #739 doc change
+- **When** the guard runs and the diff is inspected
+- **Then** `make action-pin-check` exits 0, no `uses:` value changed, and `scripts/action_pin_check.py` is untouched
+- **Test:** `tests/test_action_pin.py::test_guard_green_on_this_repo` — guard still GREEN on the doc-only tree
