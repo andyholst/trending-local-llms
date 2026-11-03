@@ -294,7 +294,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check action-pin-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -345,6 +345,15 @@ file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh
 
 findings-check: python-env-image ## Fail when findings.md is missing or a finding lacks evidence / why / done-when
 	$(PYTHON_RUN) python3 scripts/file_findings.py --check
+
+# Immutable-SHA pin guard (issue #735, #714 Slice 1, folding #717): every
+# third-party workflow `uses:` ref must be a 40-hex SHA or on the allow-ref list,
+# and every third-party tool image (Makefile *_IMAGE / scripts / Dockerfile ARG)
+# must be pinned (digest or fleet `<sha12>` tag) or allowlisted. Fails closed.
+# Current mutable refs are on an allowlist with allow-till deadlines (the
+# migration slices of #714/#715 will pin them); a NEW mutable ref is refused.
+action-pin-check: python-env-image ## Fail when a third-party workflow uses: ref or tool-image tag is mutable and not allowlisted (issue #735)
+	$(PYTHON_RUN) python3 scripts/action_pin_check.py
 
 architecture-check: python-env-image ## Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h)
 	$(PYTHON_RUN) python3 scripts/architecture_check.py

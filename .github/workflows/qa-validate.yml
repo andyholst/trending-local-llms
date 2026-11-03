@@ -178,6 +178,15 @@ jobs:
       - name: No secret VALUE reaches a log/argv/env (check_secret_output)
         run: make check-secret-output
 
+      # Immutable-SHA pin guard (issue #735, #714 Slice 1, folding #717): every
+      # third-party workflow `uses:` ref must be a 40-hex SHA or on the allow-ref
+      # list, and every third-party tool image must be pinned (digest or fleet
+      # `<sha12>` tag) or allowlisted. Fails closed — a NEW mutable third-party
+      # ref refuses the PR. Current refs are allowlisted with allow-till
+      # deadlines (#714/#715 migration slices will pin them).
+      - name: No mutable third-party workflow/tool-image ref (action-pin-check)
+        run: make action-pin-check
+
       # The nerve credential reaches the container only as `-e` under the NAME
       # the plugin actually resolves — pinned plugin, no literal, and a loud
       # failure when the key is absent (issue #120, AGENTS.md rule 3e).
