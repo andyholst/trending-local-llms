@@ -41,9 +41,31 @@ while a NEW mutable ref is refused.
   `ALLOWED_IMAGE_REFS`, each documented "allow-till #714/#715" (the migration
   slices that will pin them). A NEW mutable ref not on the list is refused.
 
+## #737 (#714 Slice 2): the 37 refs are migrated to immutable SHAs
+
+This change dir stays the single tracked change for #714; Slice 2 extended it.
+All 37 third-party workflow `uses:` refs in `.github/workflows/**` are pinned to
+the current immutable 40-hex commit SHA of the action revision for the SAME
+major version as the tag they replace:
+
+- `actions/checkout@v4` ×20 → `11d5960a…`
+- `docker/setup-buildx-action@v3` ×4 → `8d2750c6…`
+- `actions/upload-artifact@v4` ×4 → `ea165f8d…`
+- `docker/login-action@v3` ×3 → `c94ce9fb…`
+- `docker/build-push-action@v6` ×3 → `10e90e36…`
+- `actions/cache@v4` ×2 → `0057852b…`
+- `actions/download-artifact@v4` ×1 → `d3f86a10…`
+
+Each SHA was verified to exist in its upstream repo and to back the same-major
+tag it replaces. After the migration `ALLOWED_WORKFLOW_REFS` is empty — the #714
+allow-till deadline is satisfied with no dangling hold — so a NEW mutable
+third-party workflow ref is refused (fails closed). `make action-pin-check` is
+GREEN on master-as-is. The gitleaks tool-image ref stays on
+`ALLOWED_IMAGE_REFS` (allow-till #715).
+
 ## Out of scope (later slices / other issues)
 
-- Migrating the workflow `uses:` refs from tag → SHA (a later #714 slice).
+- Migrating the workflow `uses:` refs from tag → SHA — DONE in #737 (Slice 2).
 - Pinning gitleaks / the tool images through `ensure_image.py`'s `<sha12>`
   scheme (a later #715 slice).
 - README/comment "how to bump an action" friction docs (#714 Slice 3).

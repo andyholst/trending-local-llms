@@ -105,7 +105,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           # The PR's OWN tree, never the merge result (issue #432). `pull_request`
           # otherwise checks out the MERGE COMMIT, so `make openspec-check` compared the
@@ -232,7 +232,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Prepare runner images (published for this revision, else build)
         run: make image-ensure
@@ -309,7 +309,7 @@ jobs:
       # `make` call in a job that never checked the repository out dies with
       # `No targets specified and no makefile found` (the measured class of issue #281).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       # do-not-merge label hold (#722): GitHub-native auto-merge fires the instant
       # validate+live-smoke go green, which has twice merged an advisory-held PR

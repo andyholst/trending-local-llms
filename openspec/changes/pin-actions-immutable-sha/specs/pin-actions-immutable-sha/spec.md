@@ -106,3 +106,33 @@ AND the current mutable refs are on the allowlist with allow-till deadlines.
 - **When** the guard runs
 - **Then** it exits 0 (current mutable refs are allowlisted)
 - **Test:** `tests/test_action_pin.py::test_guard_green_on_this_repo` — real guard on the real tree, GREEN
+
+### Requirement: all third-party workflow refs migrate to immutable SHAs (#737, #714 Slice 2)
+
+The 37 third-party workflow `uses:` refs in `.github/workflows/**` are pinned to
+the current immutable 40-hex commit SHA of the pinned action revision for the
+SAME major version as the tag they replace (checkout@v4 → its v4 line SHA,
+setup-buildx@v3 → its v3 SHA, etc.). After the migration `ALLOWED_WORKFLOW_REFS`
+is empty — the #714 allow-till deadline is satisfied with no dangling hold — so
+a NEW mutable third-party ref is refused. The gitleaks tool-image ref stays on
+`ALLOWED_IMAGE_REFS` (allow-till #715).
+
+WHEN the workflows are scanned after the migration
+THEN every third-party `uses:` ref is a full 40-hex SHA,
+AND `ALLOWED_WORKFLOW_REFS` is empty (0 workflow entries allowlisted),
+AND `make action-pin-check` is GREEN on this repository (no dangling hold),
+AND the gitleaks image ref remains allowlisted for #715.
+
+#### Scenario: no tag-based third-party ref remains in the pinned workflows
+
+- **Given** the repository's `.github/workflows/**` after the migration
+- **When** each third-party `uses:` ref is read
+- **Then** every ref is a full 40-hex SHA; no tag-based third-party ref remains
+- **Test:** `tests/test_action_pin.py::test_no_tag_based_third_party_refs_in_pinned_workflows` — scans the real tree, no tag refs
+
+#### Scenario: the workflow allowlist is empty after the migration
+
+- **Given** `scripts/action_pin_check.py` after the migration
+- **When** `ALLOWED_WORKFLOW_REFS` is read
+- **Then** it is empty (the #714 allow-till deadline is satisfied), while the gitleaks image ref stays on `ALLOWED_IMAGE_REFS` (allow-till #715)
+- **Test:** `tests/test_action_pin.py::test_workflow_allowlist_empty_after_migration` — asserts allowlist empty + gitleaks entry present

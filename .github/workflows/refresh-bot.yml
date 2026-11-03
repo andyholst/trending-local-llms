@@ -113,11 +113,11 @@ jobs:
       test_tag: ${{ steps.decide.outputs.test_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -153,7 +153,7 @@ jobs:
           done
           printf '%s\n' "$OUT" | sed -n '/^  (/p'
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: /tmp/.buildx-cache
           key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile', 'requirements.txt') }}
@@ -161,7 +161,7 @@ jobs:
             docker-${{ runner.os }}-
       - name: Build + push image (missing, Dockerfile changed, Sunday, or forced)
         if: steps.decide.outputs.built == 'yes'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: .
           push: true
@@ -191,17 +191,17 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Cache Docker layers (test image)
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: /tmp/.buildx-cache-test
           key: docker-test-${{ runner.os }}-${{ hashFiles('Dockerfile.test', 'requirements-test.txt') }}
@@ -211,7 +211,7 @@ jobs:
       # this revision's base (or reused it when the hash tag already matched).
       - name: Build + push the test image (missing, changed, Sunday, or forced)
         if: needs.build.outputs.test_built == 'yes'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: .
           file: Dockerfile.test
@@ -239,11 +239,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -259,7 +259,7 @@ jobs:
           done
       - name: Build + push the OpenSpec image (its hash tag is not published)
         if: steps.decide.outputs.publish_openspec == 'no'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: openspec
           file: openspec/Dockerfile
@@ -298,7 +298,7 @@ jobs:
       TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Prepare the base image (published for this revision, else build)
         run: make image-ensure-base
@@ -330,7 +330,7 @@ jobs:
         run: make engine-check
 
       - name: Upload raw snapshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: raw-${{ matrix.backend }}
           path: data/raw/*.json
@@ -386,7 +386,7 @@ jobs:
       # was indistinguishable from noise: a real defect in the data or in a module
       # looked exactly like the standing failure, and the run stayed green.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           fetch-depth: 0
@@ -415,7 +415,7 @@ jobs:
 
       - name: Download raw snapshots
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           path: data/raw
           pattern: raw-*

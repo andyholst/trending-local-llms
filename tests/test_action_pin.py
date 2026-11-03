@@ -6,6 +6,11 @@
 the actual `.github/workflows/` + Makefile + scripts + Dockerfile tree, exactly
 as it does in CI. No docker CLI is involved (the guard is pure filesystem).
 
+Issue #737 (#714 Slice 2) migrated all 37 third-party workflow `uses:` refs to
+immutable 40-hex SHAs and emptied ALLOWED_WORKFLOW_REFS; the tests below prove
+the migration (no tag-based third-party ref remains, workflow allowlist empty,
+gitleaks image ref still allowlisted for #715).
+
 The done-when:
   * a tree containing a mutable third-party `uses:` ref (not a 40-hex SHA, not
     allowlisted) → the guard exits non-zero (RED);
@@ -75,20 +80,20 @@ def _workflow(uses_line: str) -> str:
 def test_workflow_uses_mutable_ref_reds():
     """A mutable third-party `uses:` tag not on the allowlist refuses the tree."""
     with tempfile.TemporaryDirectory() as td:
-        # `actions/checkout@v4` IS allowlisted (it is the current tree's ref), so
-        # the guard is green on it — the RED proof uses a mutable ref NOT on the
-        # allowlist, which is what a NEW mutable dep would look like.
+        # Post-#737 (empty ALLOWED_WORKFLOW_REFS) a bare mutable tag is ALWAYS
+        # refused — a pinned 40-hex SHA is the green control, and a mutable tag
+        # (any, not on the now-empty allowlist) is the RED proof.
         root = _tree(Path(td) / "green", {
-            ".github/workflows/demo.yml": _workflow("uses: actions/checkout@v4"),
+            ".github/workflows/demo.yml": _workflow(f"uses: actions/checkout@{_SHA40}"),
             "Makefile": "TEST_IMAGE := trending-local-llms-test:latest\n",
         })
         root_red = _tree(Path(td) / "red", {
-            ".github/workflows/demo.yml": _workflow("uses: actions/setup-python@v5"),
+            ".github/workflows/demo.yml": _workflow("uses: actions/checkout@v4"),
             "Makefile": "TEST_IMAGE := trending-local-llms-test:latest\n",
         })
-        check("workflow: an allowlisted current tag is green",
+        check("workflow: a pinned 40-hex SHA ref is green",
               _run(root) == 0, f"exit={_run(root)}")
-        check("workflow: a NEW mutable tag not allowlisted is RED",
+        check("workflow: a mutable tag (allowlist empty) is RED",
               _run(root_red) != 0, f"exit={_run(root_red)}")
 
 
@@ -171,6 +176,38 @@ def test_guard_green_on_this_repo():
           _run(ROOT) == 0, f"exit={_run(ROOT)}")
 
 
+def test_no_tag_based_third_party_refs_in_pinned_workflows():
+    """#737 (#714 Slice 2): the pinned workflows contain NO tag-based third-party
+    `uses:` refs — every third-party ref is a full 40-hex SHA. Reads the real
+    tree, exactly as CI does. Own reusable (`./.github/workflows/…`) and
+    `docker://` refs are exempt by design and not third-party."""
+    import re
+    bad: list[str] = []
+    uses_re = re.compile(r"uses:\s*([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)@(\S+)")
+    sha40 = re.compile(r"^[0-9a-f]{40}$")
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for line_no, line in enumerate(wf.read_text().splitlines(), 1):
+            for m in uses_re.finditer(line):
+                owner_repo, ref = m.group(1), m.group(2)
+                if sha40.match(ref):
+                    continue
+                bad.append(f"{wf.relative_to(ROOT)}:{line_no}: `{owner_repo}@{ref}`")
+    check("migration: no tag-based third-party `uses:` ref remains in .github/workflows",
+          not bad, "; ".join(bad[:5]))
+
+
+def test_workflow_allowlist_empty_after_migration():
+    """#737 (#714 Slice 2): ALLOWED_WORKFLOW_REFS is empty — all 37 refs are
+    pinned, so the #714 allow-till deadline is satisfied. Only the gitleaks
+    image ref remains on ALLOWED_IMAGE_REFS (allow-till #715)."""
+    check("migration: ALLOWED_WORKFLOW_REFS is empty (0 workflow allowlisted)",
+          len(apc.ALLOWED_WORKFLOW_REFS) == 0,
+          f"still allowlisted: {sorted(apc.ALLOWED_WORKFLOW_REFS)}")
+    check("migration: gitleaks image ref stays allowlisted (allow-till #715)",
+          apc.ALLOWED_IMAGE_REFS.get("ghcr.io/gitleaks/gitleaks:v8.30.1") is not None,
+          "gitleaks allow-till #715 entry missing")
+
+
 def test_wired_into_make_test():
     check("wiring: action_pin_check test is discovered by `make test`",
           wired(ROOT / "tests" / "test_action_pin.py"), "")
@@ -186,6 +223,8 @@ def main() -> int:
     test_image_fleet_sha12_green()
     test_fleet_owned_image_exempt()
     test_guard_green_on_this_repo()
+    test_no_tag_based_third_party_refs_in_pinned_workflows()
+    test_workflow_allowlist_empty_after_migration()
     test_wired_into_make_test()
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

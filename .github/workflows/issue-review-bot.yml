@@ -96,7 +96,7 @@ jobs:
       issue: ${{ steps.pick.outputs.issue }}
       path: ${{ steps.pick.outputs.path }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: master
       - name: Pick ONE issue to review (the queue both bots share)
@@ -198,7 +198,7 @@ jobs:
           fi
           echo "review=true" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         if: steps.iss.outputs.review == 'true'
         with:
           ref: master

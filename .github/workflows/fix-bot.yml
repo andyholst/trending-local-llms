@@ -170,7 +170,7 @@ jobs:
 
       - name: Checkout PR branch (PAT, so the push re-triggers qa-validate)
         if: steps.pr.outputs.has_pr == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ steps.pr.outputs.branch }}
           token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
@@ -202,7 +202,7 @@ jobs:
       - name: Upload the QA report (what the loop saw)
         if: always() && steps.pr.outputs.has_pr == 'true'
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: qa-report
           # The REDACTED agent transcript travels with the report (issue #566). A leg that

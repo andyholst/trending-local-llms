@@ -73,7 +73,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       # The check reads the webhook payload by PATH ($GITHUB_EVENT_PATH, the Makefile's own
       # PR_EVENT default) — the body is not interpolated into this block, and `edited` events

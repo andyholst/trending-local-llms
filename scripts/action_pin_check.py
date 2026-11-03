@@ -20,6 +20,11 @@ tags currently in the tree (allow-till #714's migration slice) and gitleaks
 refused — the guard is real on master-as-is because it catches the next mutable
 ref, while the current ones are tracked, not silently tolerated.
 
+As of #737 (#714 Slice 2) the workflow allowlist is EMPTY — all 37 third-party
+workflow `uses:` refs are pinned to immutable 40-hex SHAs, so only the gitleaks
+image ref remains on the image allowlist (allow-till #715). A NEW mutable
+third-party workflow ref or tool-image tag is refused.
+
 Run:  python3 scripts/action_pin_check.py [--root DIR]
 Exit: 0 = every third-party workflow ref is a 40-hex SHA or allowlisted, and
           every third-party tool image is pinned or allowlisted
@@ -58,18 +63,17 @@ _IMAGE = re.compile(
 )
 _FLEET_OWNED = ("trending-local-llms", "ghcr.io/andyholst/trending-local-llms")
 
-#: The explicit own-repo allow-ref list for workflow `uses:` — each entry is the
-#: CURRENT mutable tag in the tree, with the slice that will pin it. A mutable
-#: third-party ref NOT here is refused. Keys are `<owner>/<repo>@<ref>`.
-ALLOWED_WORKFLOW_REFS: dict[str, str] = {
-    "actions/checkout@v4": "allow-till #714 migration slice",
-    "actions/cache@v4": "allow-till #714 migration slice",
-    "actions/download-artifact@v4": "allow-till #714 migration slice",
-    "actions/upload-artifact@v4": "allow-till #714 migration slice",
-    "docker/setup-buildx-action@v3": "allow-till #714 migration slice",
-    "docker/login-action@v3": "allow-till #714 migration slice",
-    "docker/build-push-action@v6": "allow-till #714 migration slice",
-}
+#: The explicit own-repo allow-ref list for workflow `uses:` — each entry is a
+#: mutable third-party tag that is NOT yet pinned, with the slice that will pin
+#: it. A mutable third-party ref NOT here is refused. Keys are
+#: `<owner>/<repo>@<ref>`.
+#:
+#: As of #737 (#714 Slice 2) this list is EMPTY: all 37 third-party workflow
+#: `uses:` refs in `.github/workflows/**` are pinned to immutable 40-hex commit
+#: SHAs, so the #714 allow-till deadline is satisfied. A NEW mutable third-party
+#: ref is refused (fails closed). Own reusable workflows (`./.github/workflows/…`)
+#: and `docker://` refs are exempt at scan time and never need an entry here.
+ALLOWED_WORKFLOW_REFS: dict[str, str] = {}
 
 #: The explicit allowlist for third-party tool-image refs — the CURRENT mutable
 #: tag, with the slice that will pin it through ensure_image.py's sha12 scheme.
