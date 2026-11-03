@@ -9623,47 +9623,6 @@
       "system_ram_min": "24GB"
     },
     {
-      "id": "gemma-3-1b",
-      "name": "Gemma 3 1B",
-      "full_name": "Gemma 3 1B Instruct",
-      "type": "LLM",
-      "formats": [
-        {
-          "name": "LLM",
-          "hf": "google/gemma-3-1b-it"
-        }
-      ],
-      "license": "Gemma Terms of Use",
-      "params": "1B",
-      "hf": "google/gemma-3-1b-it",
-      "vram_tier": "16GB",
-      "vram_min": "8GB",
-      "system_ram_min": "8GB",
-      "backends": [
-        "CPU",
-        "Metal"
-      ],
-      "last_seen": "2026-04-16",
-      "weight_gb": "769MB Q4_K_M",
-      "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)",
-      "supported_engines": [
-        "llama.cpp"
-      ],
-      "why": "Gemma 3 1B Instruct — see source posts.",
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 0,
-        "seen_posts": [],
-        "posts_7d": 0,
-        "buzz_7d": 0,
-        "score_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      }
-    },
-    {
       "name": "Gemma 3 27B",
       "full_name": "Gemma-3-27B-IT",
       "type": "LLM",
@@ -10600,6 +10559,47 @@
         "trend_score": 0.0
       },
       "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge, experts streamed from flash"
+    },
+    {
+      "id": "gemma-3-1b",
+      "name": "Gemma 3 1B",
+      "full_name": "Gemma 3 1B Instruct",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "LLM",
+          "hf": "google/gemma-3-1b-it"
+        }
+      ],
+      "license": "Gemma Terms of Use",
+      "params": "1B",
+      "hf": "google/gemma-3-1b-it",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "system_ram_min": "8GB",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "last_seen": "2026-04-16",
+      "weight_gb": "769MB Q4_K_M",
+      "engine_min_version": "llama.cpp b8816, CPU-only (ARMv8.0)",
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "why": "Gemma 3 1B Instruct — see source posts.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
     },
     {
       "id": "gpt-oss-120b",

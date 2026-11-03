@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **179** · archived: **9**
+Active changes: **180** · archived: **9**
 
 ## Active changes
 
@@ -109,6 +109,7 @@ Active changes: **179** · archived: **9**
 | `measurement-store-normalized` | active | #697 — `#689 slice 2: switch readers onto normalized measurement store, drop inline engines[]` | — | [catalog-measurements](openspec/changes/measurement-store-normalized/specs/catalog-measurements/spec.md) | 12/12 | [proposal.md](openspec/changes/measurement-store-normalized/proposal.md) |
 | `measurement-store-split` | active | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/measurement-store-split/proposal.md) |
 | `model-id-matches-the-contract` | active | #464 (measured on PR #461) | — | [model-id](openspec/changes/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/model-id-matches-the-contract/proposal.md) |
+| `models-order-matches-readme` | active | — | — | [models-order-matches-readme](openspec/changes/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/models-order-matches-readme/proposal.md) |
 | `no-clarify-detach` | active | — | — | [unattended-leg](openspec/changes/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/no-clarify-detach/proposal.md) |
 | `no-dead-step-env` | active | — | — | [bot-alarm-configuration](openspec/changes/no-dead-step-env/specs/bot-alarm-configuration/spec.md) | 6/6 | [proposal.md](openspec/changes/no-dead-step-env/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |

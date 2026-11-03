@@ -543,6 +543,43 @@ def test_tps_embedded_text_permutations():
         check(f"tps-embed: ACCEPT {v!r}", run(v) is True, str(V.FAILURES))
 
 
+def test_models_order_matches_readme():
+    """Guard (issue #708): the store models[] order must equal the README 'Most
+    loved' table order — mirroring the llgenie readme_order contract that broke
+    at 24 positions after #695. Runs the REAL check function: the committed
+    README against the real store passes (0 divergences); a copy with two 'Most
+    loved' rows swapped must be caught (the exact class the llgenie contract
+    rejects)."""
+    # pass: committed README + real store (the reordered-on-master store)
+    reset()
+    real_store = json.loads((ROOT / "data" / "models.json").read_text())
+    V.check_models_order_matches_readme(real_store)
+    check("order: committed README vs real store passes (0 divergences)",
+          len(V.FAILURES) == 0, str(V.FAILURES))
+    # fail: a copy of the README with the first two 'Most loved' rows swapped
+    saved_readme = V.README
+    with tempfile.TemporaryDirectory() as td:
+        text = (ROOT / "README.md").read_text()
+        hdr = "## ❤️ Most loved open-weight models on X"
+        section = text.split(hdr, 1)[1].split("\n## ", 1)[0]
+        rows = [l for l in section.splitlines() if l.startswith("| [**")]
+        assert len(rows) > 1, "no 'Most loved' rows in README"
+        # swap the first two rows inside the full readme
+        swapped = text.replace(rows[0], "\u0000ROWA\u0000").replace(rows[1], rows[0]).replace("\u0000ROWA\u0000", rows[1])
+        assert swapped != text, "swap had no effect"
+        bad = Path(td) / "README.md"
+        bad.write_text(swapped)
+        V.README = bad
+        try:
+            reset()
+            V.check_models_order_matches_readme(real_store)
+            check("order: catches a swapped 'Most loved' row",
+                  len(V.FAILURES) == 1 and "order != README 'Most loved' order" in V.FAILURES[0],
+                  str(V.FAILURES))
+        finally:
+            V.README = saved_readme
+
+
 def main() -> int:
     print("validator: direct unit tests")
     test_no_duplicates()
@@ -558,6 +595,7 @@ def main() -> int:
     test_no_removal()
     test_no_value_loss()
     test_every_check_is_wired_to_a_stage_and_a_makefile_target()
+    test_models_order_matches_readme()
     test_newline_terminators()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
