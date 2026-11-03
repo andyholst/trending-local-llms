@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **184** · archived: **11**
+Active changes: **183** · archived: **12**
 
 ## Active changes
 
@@ -127,7 +127,6 @@ Active changes: **184** · archived: **11**
 | `openspec-archive-lifecycle` | active | #183 | — | [openspec-lifecycle](openspec/changes/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-archive-lifecycle/proposal.md) |
 | `order-guard-exact-heading` | active | — | — | [order-guard-exact-heading](openspec/changes/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | active | — | — | [order-guard-fixture-tolerant](openspec/changes/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/order-guard-fixture-tolerant/proposal.md) |
-| `os-agnostic-make-guard-batch-seam` | active | — | — | [os-agnostic-make-guard-batch-seam](openspec/changes/os-agnostic-make-guard-batch-seam/specs/os-agnostic-make-guard-batch-seam/spec.md) | 5/5 | [proposal.md](openspec/changes/os-agnostic-make-guard-batch-seam/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `pin-flash-1017-snapshot` | active | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/pin-flash-1017-snapshot/proposal.md) |
@@ -207,6 +206,7 @@ Active changes: **184** · archived: **11**
 | `2026-10-25-agent-leg-skills` | archived | #549 | #550 | [agent-leg-skills](openspec/changes/archive/2026-10-25-agent-leg-skills/specs/agent-leg-skills/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/2026-10-25-agent-leg-skills/proposal.md) |
 | `2026-10-25-issue-bot-salvage` | archived | #554 | — | [issue-bot-salvage](openspec/changes/archive/2026-10-25-issue-bot-salvage/specs/issue-bot-salvage/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-10-25-issue-bot-salvage/proposal.md) |
 | `2026-10-25-refresh-full-history` | archived | #552 | — | [refresh-full-history](openspec/changes/archive/2026-10-25-refresh-full-history/specs/refresh-full-history/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-10-25-refresh-full-history/proposal.md) |
+| `2026-11-03-os-agnostic-make-guard-batch-seam` | archived | — | — | [os-agnostic-make-guard-batch-seam](openspec/changes/archive/2026-11-03-os-agnostic-make-guard-batch-seam/specs/os-agnostic-make-guard-batch-seam/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-03-os-agnostic-make-guard-batch-seam/proposal.md) |
 | `2026-11-03-os-agnostic-make-python-env-seam` | archived | — | — | [os-agnostic-make-python-env-seam](openspec/changes/archive/2026-11-03-os-agnostic-make-python-env-seam/specs/os-agnostic-make-python-env-seam/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-03-os-agnostic-make-python-env-seam/proposal.md) |
 | `2026-11-03-test-container-dies-with-client` | archived | #720 | #721 | [test-container](openspec/changes/archive/2026-11-03-test-container-dies-with-client/specs/test-container/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/2026-11-03-test-container-dies-with-client/proposal.md) |
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
