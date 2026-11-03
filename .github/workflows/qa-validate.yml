@@ -2,6 +2,11 @@ name: qa-validate
 
 # PR CI — VALIDATION + AUTO-MERGE. Never refreshes data, never commits.
 #
+#   guard           action-pin-check (below): every third-party `uses:` ref and
+#                   tool-image tag in this repo is pinned to an immutable 40-hex
+#                   SHA; a mutable ref fails the gate. To bump an action, see
+#                   "Bumping a pinned GitHub Action" in README.md.
+#
 #   validate        deterministic: data store, README, contracts, mapping, unit
 #                   tests (incl. Makefile recipe, workflow wiring and fix-loop
 #                   control-flow tests). This is what fix-bot can repair.

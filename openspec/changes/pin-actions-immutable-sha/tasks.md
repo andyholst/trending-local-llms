@@ -18,3 +18,11 @@
 - [x] `make action-pin-check` GREEN on master-as-is after the migration (final tag-ref count 0)
 - [x] Add a test asserting the pinned workflows contain no tag-based third-party refs, and that the workflow allowlist is empty (`tests/test_action_pin.py`)
 - [x] Keep `pin-actions-immutable-sha` the single tracked change dir for #714 (extended, not duplicated); openspec-check green, index current
+
+## #739 (#714 Slice 3) — README/comment how-to for bumping a pinned action
+
+- [x] Add the "Bumping a pinned GitHub Action" section to the README's How-to-contribute (template `scripts/update_trending.py`, regenerated via `make render-readme`, issue #195 path — no data diff): guard fails closed on non-40-hex third-party uses: refs; SHA resolution + verification (`gh api …/git/ref/tags/v<tag>`, annotated-tag deref, release page) and replace in the matching workflow; keep `ALLOWED_WORKFLOW_REFS` empty; do not bump MAJOR versions casually; cross-ref guard + qa-validate-after-image-ensure
+- [x] Add a concise header comment to `.github/workflows/qa-validate.yml` pointing at the README section
+- [x] No logic/allowlist/workflow-SHA change — diff is README (renderer template) + workflow comment lines only; `scripts/action_pin_check.py` untouched; `make action-pin-check` stays GREEN
+- [x] Test the doc content: `tests/test_readme_render.py::test_readme_contains_pinned_action_howto` (real render, four points) + `tests/test_workflows.py::test_qa_validate_header_points_at_pinned_action_howto` (real qa-validate.yml header pointer)
+- [x] Keep `pin-actions-immutable-sha` the single tracked change dir; openspec-check green, index current (183 active / 13 archived)
