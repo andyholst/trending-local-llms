@@ -91,7 +91,10 @@ TEST_REQUIREMENTS := requirements-test.txt
 # in-container suite sees exactly the tracked-file set the host does. Empty (no
 # extra mount) when the directory is not a git checkout at all.
 GIT_COMMON_DIR := $(shell cd "$$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd)
-TEST_RUN := docker run --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
+# `docker run --rm` removes the container only after the container exits. A killed
+# client (a tool timeout) leaves it running (issue #720). The wrapper names the
+# run and removes it when that client dies.
+TEST_RUN := bash scripts/docker_test_run.sh --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
 
 
