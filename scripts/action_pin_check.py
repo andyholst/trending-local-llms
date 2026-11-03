@@ -21,9 +21,11 @@ refused — the guard is real on master-as-is because it catches the next mutabl
 ref, while the current ones are tracked, not silently tolerated.
 
 As of #737 (#714 Slice 2) the workflow allowlist is EMPTY — all 37 third-party
-workflow `uses:` refs are pinned to immutable 40-hex SHAs, so only the gitleaks
-image ref remains on the image allowlist (allow-till #715). A NEW mutable
-third-party workflow ref or tool-image tag is refused.
+workflow `uses:` refs are pinned to immutable 40-hex SHAs. As of #741 (#715
+Slice 1) the image allowlist is ALSO EMPTY: gitleaks, trivy, hadolint
+(containerfile), grype and syft image refs are all pinned to immutable
+`@sha256:` index digests, so the #715 allow-till deadline is satisfied. A NEW
+mutable third-party workflow ref or tool-image tag is refused.
 
 Run:  python3 scripts/action_pin_check.py [--root DIR]
 Exit: 0 = every third-party workflow ref is a 40-hex SHA or allowlisted, and
@@ -53,13 +55,16 @@ _DIGEST = re.compile(r"@sha256:[0-9a-f]{64}$")
 _SHA12_TAG = re.compile(r":([A-Za-z0-9._-]+)-[0-9a-f]{12}$")
 #: A third-party container image ref: `<registry-host>/<owner>/<repo>:<tag>` where
 #: the first segment is a registry host (contains a dot, e.g. `ghcr.io`, `docker.io`,
-#: `quay.io`). Requiring the host excludes file paths (`path/to/file.py:1412`), URLs
+#: `quay.io`), optionally carrying a pinned `@sha256:<digest>` suffix (a pinned
+#: script image must be seen as pinned, so the seam captures the digest too).
+#: Requiring the host excludes file paths (`path/to/file.py:1412`), URLs
 #: and bare `owner/repo` strings — the tool-image seam is about registry refs.
 #: Fleet-owned images are `trending-local-llms*` (local consumer names) and
 #: `ghcr.io/andyholst/trending-local-llms*` (published) — those are the fleet's
 #: OWN images, exempt from the third-party pin rule.
 _IMAGE = re.compile(
-    r"([A-Za-z0-9._-]+\.[a-z]{2,}/[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)"
+    r"([A-Za-z0-9._-]+\.[a-z]{2,}/[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?"
+    r"(?:@sha256:[0-9a-f]{64})?)"
 )
 _FLEET_OWNED = ("trending-local-llms", "ghcr.io/andyholst/trending-local-llms")
 
@@ -77,9 +82,12 @@ ALLOWED_WORKFLOW_REFS: dict[str, str] = {}
 
 #: The explicit allowlist for third-party tool-image refs — the CURRENT mutable
 #: tag, with the slice that will pin it through ensure_image.py's sha12 scheme.
-ALLOWED_IMAGE_REFS: dict[str, str] = {
-    "ghcr.io/gitleaks/gitleaks:v8.30.1": "allow-till #715 (sha12 pin)",
-}
+#:
+#: As of #741 (#715 Slice 1) this list is EMPTY: gitleaks, trivy, hadolint
+#: (containerfile), grype and syft are all pinned to immutable `@sha256:` index
+#: digests, so the #715 allow-till deadline is satisfied. A NEW mutable
+#: third-party tool-image tag is refused (fails closed).
+ALLOWED_IMAGE_REFS: dict[str, str] = {}
 
 
 def _is_fleet_owned(image: str) -> bool:
