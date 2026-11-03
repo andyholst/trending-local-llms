@@ -1461,7 +1461,7 @@ def check_readme_has_all_models(store: dict) -> None:
     print(f"  OK: all {len(store['models'])} models present in README.md")
 
 
-_MOST_LOVED_HDR = "## ❤️ Most loved open-weight models on X"
+_MOST_LOVED_HDR = "## ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)"
 
 
 def check_models_order_matches_readme(store: dict) -> None:
