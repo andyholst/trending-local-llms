@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **183** · archived: **9**
+Active changes: **182** · archived: **10**
 
 ## Active changes
 
@@ -179,7 +179,6 @@ Active changes: **183** · archived: **9**
 | `sweep-outcome-comment` | active | — | — | [bot-coordination](openspec/changes/sweep-outcome-comment/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/sweep-outcome-comment/proposal.md) |
 | `sweep-reverifies-against-the-base` | active | #494 (the owner's ruling: *"the sweep bot analyzes each issue again against the latest | — | [bot-coordination](openspec/changes/sweep-reverifies-against-the-base/specs/bot-coordination/spec.md) | 11/11 | [proposal.md](openspec/changes/sweep-reverifies-against-the-base/proposal.md) |
 | `syntaxwarning-escape` | active | #190 | — | [syntax-lint](openspec/changes/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/syntaxwarning-escape/proposal.md) |
-| `test-container-dies-with-client` | active | #720 | #721 | [test-container](openspec/changes/test-container-dies-with-client/specs/test-container/spec.md) | 4/4 | [proposal.md](openspec/changes/test-container-dies-with-client/proposal.md) |
 | `the-artifact-is-the-alarm` | active | — | — | [bot-alarms](openspec/changes/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/the-artifact-is-the-alarm/proposal.md) |
 | `the-index-keeper-regenerates-both` | active | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | active | — | — | [pr-body](openspec/changes/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/the-other-two-pr-bodies/proposal.md) |
@@ -206,6 +205,7 @@ Active changes: **183** · archived: **9**
 | `2026-10-25-agent-leg-skills` | archived | #549 | #550 | [agent-leg-skills](openspec/changes/archive/2026-10-25-agent-leg-skills/specs/agent-leg-skills/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/2026-10-25-agent-leg-skills/proposal.md) |
 | `2026-10-25-issue-bot-salvage` | archived | #554 | — | [issue-bot-salvage](openspec/changes/archive/2026-10-25-issue-bot-salvage/specs/issue-bot-salvage/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-10-25-issue-bot-salvage/proposal.md) |
 | `2026-10-25-refresh-full-history` | archived | #552 | — | [refresh-full-history](openspec/changes/archive/2026-10-25-refresh-full-history/specs/refresh-full-history/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-10-25-refresh-full-history/proposal.md) |
+| `2026-11-03-test-container-dies-with-client` | archived | #720 | #721 | [test-container](openspec/changes/archive/2026-11-03-test-container-dies-with-client/specs/test-container/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/2026-11-03-test-container-dies-with-client/proposal.md) |
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
 | `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
 | `fix-bot-repairs-with-the-base` | archived | #383 | #384 | [fix-bot-repair-loop](openspec/changes/archive/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/fix-bot-repairs-with-the-base/proposal.md) |
