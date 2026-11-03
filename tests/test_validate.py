@@ -555,7 +555,7 @@ def test_models_order_matches_readme():
     for name in ["A0 Alpha", "B1 Beta", "C2 Gamma", "D3 Delta"]:
         models.append({"id": name.lower().replace(" ", "-"), "name": name})
     store = {"models": models}
-    hdr = "## ❤️ Most loved open-weight models on X"
+    hdr = "## ❤️ Most loved open-weight models on X (ranked by trend: 7-day buzz + speed)"
     rows = "".join(f"| [**{m['name']}**](hw) | rank | 1.0 |\n" for m in models)
     readme = f"# Trending Local LLMs\n\n{hdr}\n\n| Model | Rank | Score |\n|-------|------|-------|\n{rows}\n## 🕑 Recent\n"
     saved_readme = V.README
