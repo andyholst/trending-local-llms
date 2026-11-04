@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **184** · archived: **13**
+Active changes: **185** · archived: **13**
 
 ## Active changes
 
@@ -57,6 +57,7 @@ Active changes: **184** · archived: **13**
 | `code-review-refusal-names-its-cost` | active | — | — | [code-review-scan](openspec/changes/code-review-refusal-names-its-cost/specs/code-review-scan/spec.md) | 7/7 | [proposal.md](openspec/changes/code-review-refusal-names-its-cost/proposal.md) |
 | `code-review-secrets-contract` | active | — | — | [code-review-scan](openspec/changes/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/code-review-secrets-contract/proposal.md) |
 | `commit-authorship-guard` | active | #317 | — | [commit-authorship](openspec/changes/commit-authorship-guard/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/commit-authorship-guard/proposal.md) |
+| `commit-engine-meta-fixture` | active | #505 | — | [engine-meta-fixture-committed](openspec/changes/commit-engine-meta-fixture/specs/engine-meta-fixture-committed/spec.md) | 7/7 | [proposal.md](openspec/changes/commit-engine-meta-fixture/proposal.md) |
 | `conflict-merge-says-why` | active | — | — | [bot-conflict-repair](openspec/changes/conflict-merge-says-why/specs/bot-conflict-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/conflict-merge-says-why/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | active | #382 | — | [raw-snapshot-quarantine](openspec/changes/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/correct-raw-diagnoses-a-missing-hf/proposal.md) |
 | `cross-model-attribution` | active | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/cross-model-attribution/proposal.md) |
