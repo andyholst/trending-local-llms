@@ -1,0 +1,40 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "ROCm",
+        "CUDA",
+        "Metal",
+        "CPU"
+      ],
+      "last_seen": "2026-11-01",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "60",
+          "hardware": "dual AMD R9700",
+          "quant": "3-bit (all experts in VRAM)",
+          "date": "2026-11-01",
+          "source_post": "https://lightbrd.com/crazyMLguy/status/2117000497551024467",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 286,
+          "views": 0,
+          "interactions": 286
+        }
+      ],
+      "why": "Community report: Strata on dual AMD R9700 reached ~60 tok/s for Qwen3.8-27B (3-bit, all experts in VRAM), faster than llama.cpp but with lower HumanEval+ accuracy and needing ~2x the tokens (crazyMLguy post)."
+    }
+  ],
+  "generated_utc": "2026-11-04T13:53:25Z"
+}

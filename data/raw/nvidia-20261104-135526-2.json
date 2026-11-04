@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b-dflash2-teksedge3090",
+      "name": "Qwen3.8-27B DFlash2 RTX 3090",
+      "full_name": "Qwen3.8-27B (DFlash2, RTX 3090)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "DFlash2",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "DFlash2 + context lookup, optimized lookup verification; baseline 82 -> 381 tok/s; ~250W",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109830882404057588",
+          "likes": 442,
+          "comments": 14,
+          "reshares": 33,
+          "views": 32986,
+          "interactions": 33475
+        }
+      ],
+      "last_seen": "2026-10-13"
+    }
+  ],
+  "generated_utc": "2026-11-04T13:55:26Z"
+}

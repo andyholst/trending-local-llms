@@ -1,0 +1,40 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next-125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "21",
+          "hardware": "RTX 4090 24GB + 110GB system RAM",
+          "quant": "111.4GB UD-Q4_K_XL GGUF (4 shards), hybrid CPU-MoE offload, no MTP/DFlash/KV-quant; ~21 decode / ~364 prefill at 250K ctx (llama.cpp experimental PR #27742)",
+          "weight_gb": "111.4GB",
+          "context_tokens": "262144",
+          "system_ram_min": "110GB",
+          "engine_min_version": "llama.cpp experimental PR #27742, -b 4096 -ub 4096",
+          "date": "2026-10-27",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114915498265579648",
+          "likes": 35,
+          "comments": 6,
+          "reshares": 4,
+          "views": 7339,
+          "interactions": 7384
+        }
+      ],
+      "last_seen": "2026-10-27"
+    }
+  ],
+  "generated_utc": "2026-11-04T13:55:54Z"
+}

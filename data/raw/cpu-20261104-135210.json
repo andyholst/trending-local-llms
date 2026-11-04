@@ -1,0 +1,100 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-11-04T14:15:00Z",
+  "models": [
+    {
+      "id": "lfm3-1.7b",
+      "name": "LFM3-1.7B",
+      "full_name": "LiquidAI LFM3-1.7B",
+      "type": "LLM",
+      "license": "LFM Open License",
+      "params": "1.7B",
+      "hf": "LiquidAI/LFM3-1.7B",
+      "vram_tier": "CPU-only",
+      "vram_min": "0GB (no GPU required)",
+      "backends": [
+        "CPU",
+        "Metal"
+      ],
+      "context_tokens": "262144",
+      "last_seen": "2026-11-03",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "24.17",
+          "hardware": "2012 Xeon (CPU only, no GPU)",
+          "quant": "GGUF, CPU only",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/CCIE4K/status/2116306819727725043",
+          "likes": 88,
+          "comments": 3,
+          "reshares": 1,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "3.66",
+          "hardware": "Raspberry Pi 4B, 8GB RAM",
+          "quant": "4-bit QAD, 1.05GB download",
+          "date": "2026-10-28",
+          "source_post": "https://lightbrd.com/sarthakcore/status/2115259623540502933",
+          "likes": 161,
+          "comments": 2,
+          "reshares": 2,
+          "views": 0,
+          "system_ram_min": "8GB",
+          "weight_gb": "1.05GB (4-bit QAD)"
+        }
+      ],
+      "why": "LFM3-1.7B ran CPU-only on a 2012 Xeon (no GPU) at 24.17 tok/s via GGUF in llama.cpp, and on a Raspberry Pi 4B with 8GB RAM at 3.66 tok/s generation (4-bit QAD, 1.05GB) in llama.cpp — the small-model CPU/edge case.",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 1,
+        "reshares": 0,
+        "interactions": 0
+      }
+    },
+    {
+      "id": "bonsai-2-2b",
+      "name": "Bonsai 2 2B",
+      "full_name": "Ternary-Bonsai-2-2B (Qwen3.5 based)",
+      "type": "LLM (ternary)",
+      "license": "Apache 2.0",
+      "params": "2B",
+      "hf": "prism-ml/Ternary-Bonsai-2-2B-gguf",
+      "vram_tier": "6GB",
+      "vram_min": "4GB",
+      "backends": [
+        "Metal",
+        "CUDA",
+        "CPU"
+      ],
+      "last_seen": "2026-10-30",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "4.53",
+          "hardware": "2012 Xeon (CPU only, no GPU)",
+          "quant": "ternary GGUF, 0.55GB file",
+          "date": "2026-10-30",
+          "source_post": "https://lightbrd.com/CCIE4K/status/2116306819727725043",
+          "likes": 88,
+          "comments": 3,
+          "reshares": 1,
+          "views": 0
+        }
+      ],
+      "why": "Bonsai 2 2B ran CPU-only on a 2012 Xeon (no GPU) at 4.53 tok/s — the slowest of seven GGUF files the poster ran — in llama.cpp (ternary, 0.55GB).",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "reshares": 0,
+        "interactions": 0
+      }
+    }
+  ]
+}

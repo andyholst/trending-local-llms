@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "ornith-1.5-9b",
+      "name": "Ornith 1.5 9B",
+      "full_name": "Ornith-1.5-9B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "ornith-ai/Ornith-1.5-9B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "15",
+          "hardware": "RTX 4060 8GB",
+          "quant": "q8 KV cache + MTP (speculative); ~15 tok/s gen with MTP (doubles without MTP), 0.95 draft acceptance, 200 prompt-processing",
+          "date": "2026-10-13",
+          "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+          "likes": 242,
+          "comments": 34,
+          "reshares": 33,
+          "views": 0,
+          "interactions": 309
+        }
+      ],
+      "last_seen": "2026-10-13"
+    }
+  ],
+  "generated_utc": "2026-11-04T13:55:26Z"
+}
