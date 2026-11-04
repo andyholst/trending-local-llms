@@ -649,6 +649,22 @@
       "full_name": "z-lab/dflash",
       "description": "DFlash: Block Diffusion for Flash Speculative Decoding",
       "topics": []
+    },
+    "invergent-ai/surogate": {
+      "full_name": "invergent-ai/surogate",
+      "description": "Train and serve LLMs at extreme speed and massive throughput.",
+      "topics": [
+        "cuda",
+        "deep-learning",
+        "fine-tuning",
+        "generative-ai",
+        "llama",
+        "llm",
+        "llms",
+        "nvidia-gpu",
+        "qwen",
+        "sft"
+      ]
     }
   }
 }

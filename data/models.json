@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-04T14:06:29Z",
+  "generated_utc": "2026-11-04T15:29:04Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -250,6 +250,12 @@
       "backend": "Metal",
       "url": "https://github.com/incoai/splash",
       "note": "Auto-registered from https://lightbrd.com/Oluwaphilemon1/status/2115965052956143959 — A local inference engine for Apple silicon, built around the model.",
+      "auto": true
+    },
+    "Surogate": {
+      "backend": "CUDA",
+      "url": "https://github.com/invergent-ai/surogate",
+      "note": "Auto-registered from https://lightbrd.com/OwnYourCompute/status/2116885470403801334 — Train and serve LLMs at extreme speed and massive throughput.",
       "auto": true
     }
   },
