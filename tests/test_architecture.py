@@ -348,6 +348,38 @@ def test_doc_states_what_the_guard_does_not_prove():
     check("boundary: the guard's own docstring states it", "cannot read prose" in module_doc, "")
 
 
+def test_section6_role_text_is_reviewed_not_verified():
+    """#508: §6's role text is review prose, and the boundary says so plainly.
+
+    `described_scripts()` proves only that a §6 row EXISTS whose first cell names
+    the script; it cannot and does not verify the role text beside it. The issue
+    closes on the doc-statement branch of its "Done when" (the mechanical claim
+    would contradict the documented `#182` boundary that the guard cannot read
+    prose). This locks the plain statements in the document AND the guard's own
+    words, so the false implication — "the check verifies role prose" — cannot
+    return silently.
+    """
+
+    # Given the document's §6 lead-in, the top boundary and the guard's docstring
+    doc = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    mod = _module()
+    s6 = mod.section(doc, mod.SCRIPT_SECTION, mod.SCRIPT_NEXT_SECTION)
+    module_doc = mod.__doc__ or ""
+
+    # When  the role-column boundary is read
+    # Then  the §6 lead-in and the docstring both say the role is review text,
+    #       read by FIRST cell only — never a machine-verified claim
+    check("§6 lead-in: the Role column is review text, not a verified claim",
+          "review text, not a verified claim" in s6, "")
+    check("§6 lead-in: the guard reads only the first cell",
+          "first cell" in s6, "")
+    check("docstring: described_scripts says the role is review prose",
+          "review prose" in mod.described_scripts.__doc__ and "FIRST cell" in mod.described_scripts.__doc__,
+          mod.described_scripts.__doc__[:200])
+    check("top boundary: the §6 role text is named review prose",
+          "review prose, never a verified claim" in doc, "")
+
+
 def _rulebook_body() -> str:
     """`AGENTS.md` §6b, read with the checker's OWN section markers."""
     mod = _module()
@@ -482,6 +514,7 @@ def main() -> int:
     test_the_rulebook_points_at_the_canonical_pipeline_description()
     test_rule_6h_names_the_rulebook_obligation()
     test_doc_states_what_the_guard_does_not_prove()
+    test_section6_role_text_is_reviewed_not_verified()
     test_real_repo_description_is_current()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
