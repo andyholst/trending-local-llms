@@ -105,6 +105,7 @@ Firecrawl → lightbrd.com mirror  ───────────────
 
 ---
 
+<!-- arch:targets -->
 ## 3. Every `make` target
 
 Every public target is a **docker wrapper**; the `_`-prefixed recipes it calls
@@ -345,6 +346,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 
 ---
 
+<!-- arch:pipelines -->
 ## 4. The pipelines
 
 Twelve workflows in `.github/workflows/`. Eight have a cron, each ONCE a week on
@@ -551,6 +553,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 
 ---
 
+<!-- arch:scripts -->
 ## 6. The scripts
 
 **The Role column is review text, not a verified claim.** The guard
@@ -626,6 +629,7 @@ for a reviewer to hold true.
 
 ---
 
+<!-- arch:guards -->
 ## 7. Guards
 
 `AGENTS.md` §8 is the authoritative table (which test catches which failure and
