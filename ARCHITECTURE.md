@@ -105,6 +105,7 @@ Firecrawl → lightbrd.com mirror  ───────────────
 
 ---
 
+<!-- arch:targets -->
 ## 3. Every `make` target
 
 Every public target is a **docker wrapper**; the `_`-prefixed recipes it calls
@@ -346,6 +347,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 
 ---
 
+<!-- arch:pipelines -->
 ## 4. The pipelines
 
 Twelve workflows in `.github/workflows/`. Eight have a cron, each ONCE a week on
@@ -552,6 +554,7 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 
 ---
 
+<!-- arch:scripts -->
 ## 6. The scripts
 
 **The Role column is review text, not a verified claim.** The guard
@@ -582,7 +585,7 @@ for a reviewer to hold true.
 | `scripts/bot_markers.py` | The ONE definition of every bot start/end marker — its name, its shape, its parser and its writer (issue #197, AGENTS.md rule 6j). Every reader (`scripts/issue_queue.py`) goes through it, so a renamed or reworded marker can never silently read as "no bot has started"; the registry also records which markers are already written and which land with #198/#199. `tests/test_bot_markers.py` holds its table in step with AGENTS.md rule 6j |
 | `scripts/issue_review.py` | The reviewer's deterministic core (issue #179): `--pick` (one issue, `body`/`window`/`none`), `--mark`/`--finish` (the `review-in-progress` label + the run-stamped marker), `--guard` (the TOCTOU re-check before a write), `--body-hash` (the proof the window path edited nothing) and `--check-markers` (a rewrite may not drop an invisible dedup marker). It imports `issue_queue` — the queue rule has one implementation |
 | `scripts/ensure_image.py` | The single pull-vs-build decision for all three images, and the agent image's publish path: `tags`/`ref` print the refs, `ensure*` pull-or-build, `push-check` proves the credential can write the package before a build, `publish [--force]` builds and pushes both refs only when the hash tag is absent (#206); `decide` returns the rebuild rule as data (#208) |
-| `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is), every `--only` stage list matches the validator's stage map, and every job §4 claims is a real one (issues #178, #182). Its §6b half: every workflow in `.github/workflows/` is NAMED in `AGENTS.md` §6b, the rulebook's pipeline list, and §6b names no `.yml` that is not a workflow (both directions; a missing `AGENTS.md` is a finding, never a skip) — §4 stays canonical for a pipeline's shape, §6b is where the rule it enforces lives (rule 6h; the `rulebook-names-every-pipeline` change) |
+| `scripts/architecture_check.py` | This document's guard: every public target, workflow and script is described here (and nothing stale is), every `--only` stage list matches the validator's stage map, and every job §4 claims is a real one (issues #178, #182). Its §6b half: every workflow in `.github/workflows/` is NAMED in `AGENTS.md` §6b, the rulebook's pipeline list, and §6b names no `.yml` that is not a workflow (both directions; a missing `AGENTS.md` is a finding, never a skip) — §4 stays canonical for a pipeline's shape, §6b is where the rule it enforces lives (rule 6h; the `rulebook-names-every-pipeline` change). Each region it reads is bounded by a STABLE anchor (the `arch:targets`, `arch:pipelines`, `arch:scripts`, `arch:guards`, `agents:rulebook` and `agents:style` comment markers), never a heading number, and a missing or stranded anchor is itself a finding — a renumbered heading used to silently repoint a check (issue #509) |
 | `scripts/issue_bot_working_files.txt` | The ONE list of the files a bot run writes at the repository root and that must never be staged, committed or pushed (issue #543) |
 | `scripts/reset_working_files.py` | Unstages the bot's working files from the list `scripts/issue_bot_working_files.txt` (`make reset-working-files`), and asserts every name on it is gitignored (`--check`, `make check-working-files`, in `make lint`) |
 | `scripts/check_conflict_markers.py` | Refuses a merge-conflict block in a tracked file (`make check-conflict-markers`), called by both bots before `git add -A`; `git ls-files` is the file set, binary and ignored files are never findings |
@@ -628,6 +631,7 @@ for a reviewer to hold true.
 
 ---
 
+<!-- arch:guards -->
 ## 7. Guards
 
 `AGENTS.md` §8 is the authoritative table (which test catches which failure and
