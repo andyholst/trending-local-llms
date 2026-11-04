@@ -396,6 +396,16 @@ def test_flash_attention_is_not_a_storage_medium():
     check("storage_offload: 'NVMe flash drive' is still a medium",
           unstructured("MoE expert offload to an NVMe flash drive") == ["m"],
           str(unstructured("MoE expert offload to an NVMe flash drive")))
+    # …and a "stream" used as the decode / serving mode is not storage-streaming —
+    # "single-stream decode" is a concurrency word, so the SSD it shares a sentence
+    # with must not become a storage requirement (#456's class, measured on the store
+    # reading `4-bit, oMLX (SSD caching), single-stream decode` back as one).
+    check("storage_offload: 'single-stream decode' beside an SSD is not a requirement",
+          unstructured("4-bit, oMLX (SSD caching), single-stream decode") == [],
+          "flagged")
+    check("storage_offload: 'aggregate across N concurrent streams' is not one either",
+          unstructured("Qwen3.8-Flash, 353 tok/s aggregate across 8 concurrent streams vs oMLX") == [],
+          "flagged")
 
 
 def test_a_vram_capacity_is_not_a_weights_figure_even_beside_gguf():

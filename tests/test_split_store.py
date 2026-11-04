@@ -146,6 +146,27 @@ def test_shipped_split_matches_flat_store():
     check("shipped posts.json == split_store(flat view)", shipped_p == posts)
 
 
+def test_refresh_bot_commits_the_split_files():
+    """The split store is THREE committed files (models.json + measurements.json +
+    posts.json). refresh-bot's change-detect AND its `git add` must name both split
+    files, or a refresh PR ships a new catalog + flat snapshot alongside STALE split
+    files — a fresh checkout then flattens the stale rows and check_no_value_loss reds
+    against the newest snapshot (the first post-switchover refresh, 2026-11-04)."""
+    wf = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text()
+    step = wf[wf.find("name: Commit + open PR if changed"):]
+    diff_line = next((l for l in step.splitlines() if l.strip().startswith("if git diff --quiet --")), "")
+    add_line = next((l for l in step.splitlines() if l.strip().startswith("git add ")), "")
+    check("refresh-bot: change-detect names data/measurements.json",
+          "data/measurements.json" in diff_line, diff_line)
+    check("refresh-bot: change-detect names data/posts.json",
+          "data/posts.json" in diff_line, diff_line)
+    check("refresh-bot: git add names data/measurements.json",
+          "data/measurements.json" in add_line, add_line)
+    check("refresh-bot: git add names data/posts.json",
+          "data/posts.json" in add_line, add_line)
+
+
+
 def main() -> int:
     test_split_pulls_counters_off_rows()
     test_flatten_reconstructs_identity()
@@ -154,6 +175,7 @@ def main() -> int:
     test_new_contracts_validate_the_real_files()
     test_validate_split_flatten_is_green()
     test_shipped_split_matches_flat_store()
+    test_refresh_bot_commits_the_split_files()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

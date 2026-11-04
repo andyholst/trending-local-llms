@@ -1,0 +1,52 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "nemotron-3.5-bolt-e4b",
+      "name": "Nemotron 3.5 Bolt E4B",
+      "full_name": "Nemotron 3.5 Bolt E4B",
+      "type": "LLM (MoE)",
+      "license": "NVIDIA Open Model License",
+      "params": "74B (E4B active)",
+      "hf": "nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "84",
+          "hardware": "RTX Spark (24GB)",
+          "quant": "GGUF + speculative decoder, 74B fits in 24GB, 9B active (E4B)",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/mark_k/status/2111070606359724397",
+          "likes": 57,
+          "comments": 15,
+          "reshares": 4,
+          "views": 3680,
+          "interactions": 3756
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "24",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "2-bit GGUF (NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf), -ngl 99 --n-cpu-moe 66 -c 262144 -fa on, Q8_0 KV, 262K ctx, MoE CPU offload",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama.cpp -ngl 99 --n-cpu-moe 66 -c 262144",
+          "date": "2026-10-16",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110910826940965140",
+          "likes": 51,
+          "comments": 2,
+          "reshares": 7,
+          "views": 6298,
+          "interactions": 6358
+        }
+      ],
+      "last_seen": "2026-10-16"
+    }
+  ],
+  "generated_utc": "2026-11-04T13:55:54Z"
+}

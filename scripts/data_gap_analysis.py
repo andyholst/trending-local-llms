@@ -91,11 +91,16 @@ _CTX_TEXT = re.compile(
 
 # `flash` alone is not a storage medium — `Flash Attention` is an attention KERNEL,
 # and reading it as an SSD reported `"GPU offload, Flash Attention, 262,144-token
-# context"` as a storage requirement (#456).
+# context"` as a storage requirement (#456). Likewise `stream` alone is the decode /
+# serving mode as often as it is storage-streaming: "single-stream decode", "aggregate
+# across 8 concurrent streams", "multi-stream" are concurrency words, never an expert
+# paged to disk — so a hyphenated compound (`single-stream`, `multi-stream`,
+# `stream-decode`) is refused as evidence (#456's class again, measured on a refresh
+# reading `oMLX (SSD caching), single-stream decode` back as a storage requirement).
 _STORAGE_MEDIUM = r"(?:ssd|nvme|flash[- ]?(?:storage|memory|drive)|disk|hdd|storage)"
 _STORAGE_TEXT = re.compile(
-    rf"\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b[^.\n]{{0,32}}\b{_STORAGE_MEDIUM}\b"
-    rf"|\b{_STORAGE_MEDIUM}\b[^.\n]{{0,32}}\b(?:offload\w*|stream\w*|expert\w*|mmap\w*)\b",
+    rf"\b(?:offload\w*|(?<!-)stream\w*|expert\w*|mmap\w*)\b[^.\n]{{0,32}}\b{_STORAGE_MEDIUM}\b"
+    rf"|\b{_STORAGE_MEDIUM}\b[^.\n]{{0,32}}\b(?:offload\w*|(?<!-)stream\w*|expert\w*|mmap\w*)\b",
     re.I)
 
 #: Engines that stream experts from storage, so a model measured on one HAS a storage story.

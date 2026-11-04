@@ -1,0 +1,95 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "42.6",
+          "hardware": "RTX 3090 24GB",
+          "quant": "Q4_K_M + Flash Attention + Q8_0 KV cache + MTP (stock 27.6; optimised 42.6), ~16.9GB VRAM",
+          "date": "2026-11-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2117447726715511216",
+          "weight_gb": "~16.9GB",
+          "likes": 0,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 0
+        },
+        {
+          "engine": "vLLM",
+          "tps": "127",
+          "hardware": "RTX 3090 24GB",
+          "quant": "HyperQwen, single-session decode; 1,035 tok/s aggregate across 64 concurrent sessions, 250W power limit, up to 150K ctx",
+          "date": "2026-11-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2117434041754329596",
+          "likes": 634,
+          "comments": 2,
+          "reshares": 5,
+          "views": 0,
+          "interactions": 641
+        },
+        {
+          "engine": "vLLM",
+          "tps": "300",
+          "hardware": "2x RTX 4090 24GB",
+          "quant": "Qwen3.8-27B-INT8-W8A16-MTP, 128K context, aggregate decode across 8 concurrent sessions",
+          "date": "2026-11-02",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2117061184062980335",
+          "likes": 30,
+          "comments": 3,
+          "reshares": 6,
+          "views": 10885,
+          "interactions": 10924
+        }
+      ],
+      "last_seen": "2026-11-03"
+    },
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (A3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB + 16GB system RAM",
+          "quant": "Q4_K_M + Flash Attention + Q8 KV cache, 26 MoE layers offloaded to CPU, 262K context configured",
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "date": "2026-11-03",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2117430118222361060",
+          "likes": 7,
+          "comments": 2,
+          "reshares": 2,
+          "views": 761,
+          "interactions": 772
+        }
+      ],
+      "last_seen": "2026-11-03"
+    }
+  ],
+  "generated_utc": "2026-11-04T13:52:50Z"
+}
