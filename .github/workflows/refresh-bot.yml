@@ -486,7 +486,13 @@ jobs:
           # baseline was discarded every run — so the next refresh compared
           # against a stale baseline and filed the SAME gap issue again (and a
           # baseline-only change printed "No data changes" over a dirty tree).
-          if git diff --quiet -- README.md data/models.json data/snapshots data/raw data/gap_baseline.json; then
+          # tests/fixtures/github_meta.json is in BOTH lists for the same reason:
+          # `make engine-meta-capture` above records what a refresh that
+          # registered an engine read from GitHub, and leaving it out meant the
+          # PR never carried the fixture — so `make test` on the PR reds the
+          # engine `make validate` just admitted (the issue #334 failure), and a
+          # meta-only change printed "No data changes" over a dirty tree.
+          if git diff --quiet -- README.md data/models.json data/snapshots data/raw data/gap_baseline.json tests/fixtures/github_meta.json; then
             echo "No data changes — no PR opened."
             echo "pr_opened=false" >> "$GITHUB_OUTPUT"
           else
@@ -525,7 +531,7 @@ jobs:
             make qa-report
             sudo chown -R "$(id -u):$(id -g)" .
             git checkout -b "$BRANCH"
-            git add README.md data/models.json data/snapshots data/raw data/gap_baseline.json
+            git add README.md data/models.json data/snapshots data/raw data/gap_baseline.json tests/fixtures/github_meta.json
             # The re-derivation can legitimately produce nothing (the base already
             # carries this data). Then there is no PR to open — say so, don't fail.
             if git diff --cached --quiet; then

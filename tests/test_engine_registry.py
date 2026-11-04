@@ -725,6 +725,22 @@ def test_capture_meta_keeps_the_fixture_covering_the_registry():
           "make engine-meta-capture" in wf
           and wf.index("make engine-meta-capture") > wf.index("make merge-fetch"), "")
 
+    # The capture is only worth anything if the PR carries the fixture it wrote:
+    # qa-validate's `make test` classifies a newly registered engine against
+    # tests/fixtures/github_meta.json, so a refresh that captures the metadata and
+    # then throws it away is green locally and red on the PR (the issue #334
+    # failure, this time in the commit step instead of the pipeline). So the
+    # commit step's change check AND its `git add` must both name that path — the
+    # same shape as the data/gap_baseline.json guard (#152).
+    commit = wf.split("- name: Commit + open PR if changed", 1)[1]
+    commit_head = commit.split("\n      - name:", 1)[0]
+    diff_line = [l for l in commit_head.splitlines() if "git diff --quiet" in l]
+    add_line = [l for l in commit_head.splitlines() if l.strip().startswith("git add ")]
+    check("refresh PR: the change test includes the engine-metadata fixture",
+          bool(diff_line) and "tests/fixtures/github_meta.json" in diff_line[0], str(diff_line))
+    check("refresh PR: the fixture is staged",
+          bool(add_line) and "tests/fixtures/github_meta.json" in add_line[0], str(add_line))
+
 
 def main() -> int:
     print("engine registration at ingest + engine-kind QA (issue #73)")
