@@ -132,7 +132,14 @@ def section(text: str, start_marker: str, end_marker: str) -> str:
 
 
 def described_scripts(doc: Path) -> set[str]:
-    """The script paths §6's table claims a role for (its FIRST cell only)."""
+    """The script paths §6's table claims a role for (its FIRST cell only).
+
+    This is a PRESENCE check, never a role-verification: a row's role TEXT is
+    human review prose the guard cannot and does not read (issue #508) — the
+    same deliberate boundary as `#182`. A row whose role has rotted next to an
+    unchanged path passes here; keeping the role true is a reviewer's (or the
+    change's) job. `ARCHITECTURE.md` §6 states the same boundary.
+    """
     if not doc.is_file():
         return set()
     body = section(doc.read_text(encoding="utf-8"), SCRIPT_SECTION, SCRIPT_NEXT_SECTION)

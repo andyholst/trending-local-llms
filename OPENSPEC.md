@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **185** · archived: **13**
+Active changes: **186** · archived: **13**
 
 ## Active changes
 
@@ -171,6 +171,7 @@ Active changes: **185** · archived: **13**
 | `search-tool-pinned` | active | — | — | [bot-agent-run-safety](openspec/changes/search-tool-pinned/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/search-tool-pinned/proposal.md) |
 | `secret-guard-derived-names` | active | #223 — `the no-secret-VALUE guard's key set is a hand-maintained allowlist — a new key added to a workflow is invisible until added to SECRET_VARS` | — | [secret-output-guard](openspec/changes/secret-guard-derived-names/specs/secret-output-guard/spec.md) | 9/9 | [proposal.md](openspec/changes/secret-guard-derived-names/proposal.md) |
 | `secret-guard-file-set` | active | #224 — `tech-debt: the no-secret-VALUE guard only scans a fixed suffix set` | — | [secret-output-guard](openspec/changes/secret-guard-file-set/specs/secret-output-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/secret-guard-file-set/proposal.md) |
+| `section6-role-text-reviewed` | active | — | — | [architecture-role-boundary](openspec/changes/section6-role-text-reviewed/specs/architecture-role-boundary/spec.md) | 6/6 | [proposal.md](openspec/changes/section6-role-text-reviewed/proposal.md) |
 | `setup-output-visible` | active | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/setup-output-visible/proposal.md) |
 | `silent-recipe-when-redirected` | active | — | — | [issue-bot-artifacts](openspec/changes/silent-recipe-when-redirected/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/silent-recipe-when-redirected/proposal.md) |
 | `skip-note-every-hold` | active | #204 — `tech-debt: The skip note covers ONE held issue per run` | — | [issue-queue](openspec/changes/skip-note-every-hold/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/skip-note-every-hold/proposal.md) |

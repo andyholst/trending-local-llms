@@ -18,7 +18,9 @@ exists.
 **names and two structure claims**, never prose:
 
 * every public `make` target, every workflow file and every script is named here
-  (and §6 gives each script a role), and nothing named here is gone;
+  (and §6 gives each script a role — a row whose first cell names the script;
+  the role TEXT beside it is review prose, never a verified claim), and nothing
+  named here is gone;
 * every stage a Makefile target passes to `scripts/validate.py --only` is a stage
   the validator registers, and every registered stage is selected by one such list
   (both sides read from `scripts/validate.py` itself, by AST);
@@ -550,6 +552,15 @@ at run time (the name the consumer actually resolves), never as `ENV`, never in
 ---
 
 ## 6. The scripts
+
+**The Role column is review text, not a verified claim.** The guard
+(`scripts/architecture_check.py`) proves only that a row EXISTS whose first cell
+names the script; it never checks that the role text beside it still describes
+the code. A role that stops matching the code is a defect a human fixes in the
+change that touches the script (rule 6h), and an agent that renames a script
+updates this row in the same change — but CI does not and cannot read the role
+column. Do not read a §6 cell as a machine-kept truth; read it as a stated role
+for a reviewer to hold true.
 
 | Script | Role |
 |---|---|
