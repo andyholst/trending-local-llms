@@ -553,6 +553,22 @@ jobs:
           echo "pr_url=$URL" >> "$GITHUB_OUTPUT"
           echo "Opened $URL"
 
+      # The completing PR's number is RECORDED on the change it completes (issue #518),
+      # and it could not be before now — the change was committed and pushed (above) with
+      # no PR line because the PR number is only KNOWN once `gh pr create` returns. This
+      # step writes `PR: #<m>` into every ACTIVE change whose proposal references this
+      # issue and regenerates OPENSPEC.md, so a merged change is never forgotten with a
+      # vacuous "none names a PR" again (the guard was blind to PR-less changes). The
+      # recorded line is committed and pushed by the green push step below like any fix.
+      - name: Record the PR on the change (make openspec-record-pr)
+        if: steps.pr.outputs.pr_url != ''
+        env:
+          ISSUE: ${{ steps.iss.outputs.issue }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+        run: |
+          PR_NUM=$(basename "${PR_URL}")
+          make openspec-record-pr ISSUE="$ISSUE" PR="$PR_NUM"
+
       # The bot owns ITS OWN PR's pipeline: run the same loop fix-bot runs
       # (check -> report -> make fix, at most FIX_ROUNDS) and push only when green.
       - name: Fix loop against the PR branch
