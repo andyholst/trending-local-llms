@@ -122,6 +122,40 @@ def test_archived_change_row_is_marked_archived():
     check("archived: the row state is archived", "| `old-thing` | archived |" in text, text)
 
 
+def test_bolded_refs_are_parsed():
+    """`_refs` reads the bolded `**Issue:** [#N](url)` / `**PR:** [#N](url) form too."""
+
+    # Given a proposal using the bolded link-header spelling many later changes use
+    with tempfile.TemporaryDirectory() as td:
+        mod = _module()
+        td = Path(td)
+        prop = td / "proposal.md"
+        prop.write_text(
+            "# Proposal: thing\n\n"
+            "**Issue:** [#498](https://github.com/andyholst/trending-local-llms/issues/498)\n"
+            "**Capability:** `cap`\n\n## Why\n",
+            encoding="utf-8",
+        )
+        refs = mod._refs(prop)
+        num = re.search(r"#(\d+)", refs.get("Issue", ""))
+        check("bolded ref: the Issue is parsed", num is not None and num.group(1) == "498",
+              str(refs))
+
+    # And a bolded PR ref parses the same way
+    with tempfile.TemporaryDirectory() as td:
+        mod = _module()
+        prop = Path(td) / "proposal.md"
+        prop.write_text(
+            "# Proposal: thing\n\n"
+            "**Issue:** [#500](https://github.com/andyholst/trending-local-llms/issues/500)\n"
+            "**PR:** [#501](https://github.com/andyholst/trending-local-llms/pull/501)\n\n## Why\n",
+            encoding="utf-8",
+        )
+        refs = mod._refs(prop)
+        p = re.search(r"#(\d+)", refs.get("PR", ""))
+        check("bolded ref: the PR is parsed", p is not None and p.group(1) == "501", str(refs))
+
+
 def test_write_then_check_is_green():
     """`--write` produces exactly what `--check` accepts (generate == verify)."""
 
@@ -264,6 +298,7 @@ def main() -> int:
     test_row_carries_issue_specs_and_task_progress()
     test_archived_change_row_is_marked_archived()
     test_write_then_check_is_green()
+    test_bolded_refs_are_parsed()
     test_real_repo_index_is_current_and_lists_every_change()
     test_a_stale_count_line_is_named_and_not_blamed_on_the_rows()
     test_a_row_whose_data_moved_is_named()

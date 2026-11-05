@@ -1920,24 +1920,161 @@
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955"
     }
   ],
-  "lfm3-1.7b": [
+  "qwen3.8-27b-dflash2-teksedge3090": [
+    {
+      "engine": "DFlash2",
+      "tps": "133",
+      "hardware": "single RTX 3090 24GB",
+      "quant": "DFlash2 speculative decoding + context lookup + prefix caching, quantized KV cache; ordinary conversation decode (381 tok/s only on text copied from the prompt)",
+      "date": "2026-10-29",
+      "engine_min_version": "DFlash2 with context lookup",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115954253005017548"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "114",
+      "date": "2026-10-27",
+      "hardware": "single RTX 3090 24GB",
+      "quant": "optimized MTP, the step before DFlash2 was added",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115031766473879832"
+    },
+    {
+      "engine": "DFlash2",
+      "tps": "382",
+      "hardware": "RTX 3090 24GB",
+      "quant": "DFlash2 speculative decoding + context lookup + optimized lookup verification; reported progression 82 -> 114 (MTP) -> 138 (DFlash2 + lookup) -> 381 tok/s",
+      "date": "2026-10-25",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114176652250898709",
+      "context_tokens": "25000"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "381",
+      "hardware": "NVIDIA RTX 3090 24GB",
+      "quant": "DFlash2 + context lookup + prefix caching, quantized KV cache",
+      "date": "2026-10-23",
+      "engine_min_version": "DFlash2 + 16-token verification blocks + context lookup",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113435074834165972"
+    },
     {
       "engine": "llama.cpp",
-      "tps": "25",
+      "tps": "80.76",
+      "hardware": "RTX 4090 24GB",
+      "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp build with PR #27342, 90K context",
+      "date": "2026-10-22",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+      "weight_gb": "UD-Q4_K_XL",
+      "context_tokens": "90K",
+      "engine_min_version": "development llama.cpp build containing PR #27342, --spec-draft-n-max 3"
+    },
+    {
+      "engine": "DFlash2",
+      "tps": "80.76",
+      "hardware": "RTX 4090 24GB (single GPU)",
+      "quant": "Unsloth Q4_K_XL weights, Q8_0 KV cache, 90K context, --spec-draft-n-max 3, dev llama.cpp build with PR #27342 (native MTP at 100K context: 70.83 tok/s)",
+      "date": "2026-10-22",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
+      "weight_gb": "Unsloth Q4_K_XL",
+      "context_tokens": "90000",
+      "engine_min_version": "llama.cpp dev build with PR #27342, --spec-draft-n-max 3"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "133",
+      "date": "2026-10-21",
+      "hardware": "single RTX 3090 24GB",
+      "quant": "optimized vLLM stack (MTP + DFlash2 + context lookup + prefix caching); ordinary conversation, not document reproduction",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112703209978359906"
+    },
+    {
+      "engine": "DFlash2",
+      "tps": "180",
+      "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
+      "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
+      "date": "2026-10-20",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582"
+    },
+    {
+      "engine": "DFlash2",
+      "tps": "89.6",
+      "hardware": "RTX 5060 Ti 16GB",
+      "quant": "MiaAI_lab one-click kit with DFlash2 (same kit on MTP: 65 tok/s code, 40 text); code workload, normal text 44 tok/s; drafter fits next to the model, 90k tokens of context (a 3-hour soak of 4,940 requests, 0 errors)",
+      "date": "2026-10-11",
+      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2109290423500058862",
+      "context_tokens": "90000"
+    },
+    {
+      "engine": "DFlash2",
+      "tps": "200",
+      "hardware": "RTX 5090 32GB (Windows validation box)",
+      "quant": "Ternary-Bonsai-2-27B PQ2_0 target with the DFlash2 drafter (the drafter gained about 40-50% tok/s over target-only), full 262K context",
+      "date": "2026-09-20",
+      "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2101685231761694894",
+      "weight_gb": "PQ2_0 ternary",
+      "context_tokens": "262144"
+    }
+  ],
+  "bonsai-2-2b": [
+    {
+      "engine": "llama.cpp",
+      "tps": "4.53",
       "hardware": "2012 Xeon (CPU only, no GPU)",
-      "quant": "GGUF, CPU only",
+      "quant": "ternary GGUF, 0.55GB file",
       "date": "2026-10-30",
       "source_post": "https://lightbrd.com/CCIE4K/status/2116306819727725043"
     },
     {
       "engine": "llama.cpp",
-      "tps": "3.66",
-      "hardware": "Raspberry Pi 4B, 8GB RAM",
-      "quant": "4-bit QAD, 1.05GB download",
-      "date": "2026-10-28",
-      "source_post": "https://lightbrd.com/sarthakcore/status/2115259623540502933",
-      "system_ram_min": "8GB",
-      "weight_gb": "1.05GB (4-bit QAD)"
+      "tps": "30",
+      "date": "2026-10-26",
+      "hardware": "OnePlus 13 phone, CPU only",
+      "quant": "ternary weights, running entirely on the phone's CPU",
+      "weight_gb": "0.43GB",
+      "source_post": "https://lightbrd.com/GlennSonna/status/2114726243698421767"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "38.5",
+      "hardware": "Samsung Galaxy S25 CPU (arm64 phone)",
+      "quant": "Ternary Bonsai 2 2B ternary weights",
+      "date": "2026-10-25",
+      "source_post": "https://lightbrd.com/SpawnLauv/status/2114363853031260610"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "35",
+      "hardware": "RTX 3060 12GB on the native Dawn WebGPU backend",
+      "quant": "Q2_0 ternary, WebGPU backend with PR #30914 (GET_ROWS + F32 activations); reported pp512 prompt processing 35 t/s -> 1900+ t/s, tg128 generation ~6-7x faster, baseline generation figure itself not stated",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/ai_hakase_/status/2113529362133762535",
+      "engine_min_version": "llama.cpp PR #30914 (Q2_0 on the WebGPU backend)"
+    },
+    {
+      "engine": "MLX",
+      "tps": "500",
+      "hardware": "iPhone 18 Pro Max",
+      "quant": "ternary weights, 0.43GB; PrismML vendor figure",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+      "weight_gb": "0.43GB ternary"
+    },
+    {
+      "engine": "MLX",
+      "tps": "500",
+      "hardware": "M4 Max (browser demo)",
+      "quant": "0.43GB ternary (Qwen3.5 base, -1/0/+1 weights); MLX in a browser demo; PrismML vendor figure",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
+      "weight_gb": "0.43GB ternary"
+    },
+    {
+      "engine": "MLX",
+      "tps": "120",
+      "hardware": "iPhone 18 Pro Max",
+      "quant": "Ternary (up to 120 tokens per second on iPhone 18 Pro Max)",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
+      "weight_gb": "0.43GB (ternary)"
     }
   ],
   "bonsai-2-27b": [
@@ -2286,163 +2423,6 @@
       "source_post": "https://lightbrd.com/alimamakx/status/2077482728262402109"
     }
   ],
-  "qwen3.8-27b-dflash2-teksedge3090": [
-    {
-      "engine": "DFlash2",
-      "tps": "133",
-      "hardware": "single RTX 3090 24GB",
-      "quant": "DFlash2 speculative decoding + context lookup + prefix caching, quantized KV cache; ordinary conversation decode (381 tok/s only on text copied from the prompt)",
-      "date": "2026-10-29",
-      "engine_min_version": "DFlash2 with context lookup",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115954253005017548"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "114",
-      "date": "2026-10-27",
-      "hardware": "single RTX 3090 24GB",
-      "quant": "optimized MTP, the step before DFlash2 was added",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115031766473879832"
-    },
-    {
-      "engine": "DFlash2",
-      "tps": "382",
-      "hardware": "RTX 3090 24GB",
-      "quant": "DFlash2 speculative decoding + context lookup + optimized lookup verification; reported progression 82 -> 114 (MTP) -> 138 (DFlash2 + lookup) -> 381 tok/s",
-      "date": "2026-10-25",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114176652250898709",
-      "context_tokens": "25000"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "381",
-      "hardware": "NVIDIA RTX 3090 24GB",
-      "quant": "DFlash2 + context lookup + prefix caching, quantized KV cache",
-      "date": "2026-10-23",
-      "engine_min_version": "DFlash2 + 16-token verification blocks + context lookup",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113435074834165972"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "80.76",
-      "hardware": "RTX 4090 24GB",
-      "quant": "Unsloth UD-Q4_K_XL + DFlash2 drafter, Q8_0 KV cache, --spec-draft-n-max 3, development llama.cpp build with PR #27342, 90K context",
-      "date": "2026-10-22",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
-      "weight_gb": "UD-Q4_K_XL",
-      "context_tokens": "90K",
-      "engine_min_version": "development llama.cpp build containing PR #27342, --spec-draft-n-max 3"
-    },
-    {
-      "engine": "DFlash2",
-      "tps": "80.76",
-      "hardware": "RTX 4090 24GB (single GPU)",
-      "quant": "Unsloth Q4_K_XL weights, Q8_0 KV cache, 90K context, --spec-draft-n-max 3, dev llama.cpp build with PR #27342 (native MTP at 100K context: 70.83 tok/s)",
-      "date": "2026-10-22",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648",
-      "weight_gb": "Unsloth Q4_K_XL",
-      "context_tokens": "90000",
-      "engine_min_version": "llama.cpp dev build with PR #27342, --spec-draft-n-max 3"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "133",
-      "date": "2026-10-21",
-      "hardware": "single RTX 3090 24GB",
-      "quant": "optimized vLLM stack (MTP + DFlash2 + context lookup + prefix caching); ordinary conversation, not document reproduction",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112703209978359906"
-    },
-    {
-      "engine": "DFlash2",
-      "tps": "180",
-      "hardware": "RTX 3090 24GB (hardware as reported for the DFlash2 figure; post states throughput varies with GPU and stack)",
-      "quant": "DFlash2 speculative decoding (MTP); Coder390 fine-tune, GPQA 178/198, MMLU 450/500, LiveCodeBench 90/100",
-      "date": "2026-10-20",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112492942539571582"
-    },
-    {
-      "engine": "DFlash2",
-      "tps": "89.6",
-      "hardware": "RTX 5060 Ti 16GB",
-      "quant": "MiaAI_lab one-click kit with DFlash2 (same kit on MTP: 65 tok/s code, 40 text); code workload, normal text 44 tok/s; drafter fits next to the model, 90k tokens of context (a 3-hour soak of 4,940 requests, 0 errors)",
-      "date": "2026-10-11",
-      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2109290423500058862",
-      "context_tokens": "90000"
-    },
-    {
-      "engine": "DFlash2",
-      "tps": "200",
-      "hardware": "RTX 5090 32GB (Windows validation box)",
-      "quant": "Ternary-Bonsai-2-27B PQ2_0 target with the DFlash2 drafter (the drafter gained about 40-50% tok/s over target-only), full 262K context",
-      "date": "2026-09-20",
-      "source_post": "https://lightbrd.com/BennyDaBall_OG/status/2101685231761694894",
-      "weight_gb": "PQ2_0 ternary",
-      "context_tokens": "262144"
-    }
-  ],
-  "bonsai-2-2b": [
-    {
-      "engine": "llama.cpp",
-      "tps": "4.53",
-      "hardware": "2012 Xeon (CPU only, no GPU)",
-      "quant": "ternary GGUF, 0.55GB file",
-      "date": "2026-10-30",
-      "source_post": "https://lightbrd.com/CCIE4K/status/2116306819727725043"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "30",
-      "date": "2026-10-26",
-      "hardware": "OnePlus 13 phone, CPU only",
-      "quant": "ternary weights, running entirely on the phone's CPU",
-      "weight_gb": "0.43GB",
-      "source_post": "https://lightbrd.com/GlennSonna/status/2114726243698421767"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "38.5",
-      "hardware": "Samsung Galaxy S25 CPU (arm64 phone)",
-      "quant": "Ternary Bonsai 2 2B ternary weights",
-      "date": "2026-10-25",
-      "source_post": "https://lightbrd.com/SpawnLauv/status/2114363853031260610"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "35",
-      "hardware": "RTX 3060 12GB on the native Dawn WebGPU backend",
-      "quant": "Q2_0 ternary, WebGPU backend with PR #30914 (GET_ROWS + F32 activations); reported pp512 prompt processing 35 t/s -> 1900+ t/s, tg128 generation ~6-7x faster, baseline generation figure itself not stated",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/ai_hakase_/status/2113529362133762535",
-      "engine_min_version": "llama.cpp PR #30914 (Q2_0 on the WebGPU backend)"
-    },
-    {
-      "engine": "MLX",
-      "tps": "500",
-      "hardware": "iPhone 18 Pro Max",
-      "quant": "ternary weights, 0.43GB; PrismML vendor figure",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
-      "weight_gb": "0.43GB ternary"
-    },
-    {
-      "engine": "MLX",
-      "tps": "500",
-      "hardware": "M4 Max (browser demo)",
-      "quant": "0.43GB ternary (Qwen3.5 base, -1/0/+1 weights); MLX in a browser demo; PrismML vendor figure",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/AGTPinsights/status/2110846518374924793",
-      "weight_gb": "0.43GB ternary"
-    },
-    {
-      "engine": "MLX",
-      "tps": "120",
-      "hardware": "iPhone 18 Pro Max",
-      "quant": "Ternary (up to 120 tokens per second on iPhone 18 Pro Max)",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
-      "weight_gb": "0.43GB (ternary)"
-    }
-  ],
   "nemotron-3.5-bolt-e4b": [
     {
       "engine": "Ollama",
@@ -2470,6 +2450,45 @@
       "engine_min_version": "llama.cpp -ngl 99 --n-cpu-moe 66 -c 262144",
       "date": "2026-10-16",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110910826940965140"
+    }
+  ],
+  "ornith-1.5-9b": [
+    {
+      "engine": "Magnitude",
+      "tps": "112",
+      "hardware": "laptop RTX A5000 16GB",
+      "quant": "Q4_K_M, Magnitude + DFlash speculative decoding, reasoning on; ~46 tok/s without DFlash, ~44 Ollama",
+      "date": "2026-10-29",
+      "source_post": "https://lightbrd.com/ImexAutopa89371/status/2115767672323334206"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "15",
+      "hardware": "RTX 4060 8GB",
+      "quant": "MTP on with q8 KV caches (~200 tok/s prompt processing, 0.95 draft acceptance); turning MTP off doubles both figures",
+      "date": "2026-10-13",
+      "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
+      "engine_min_version": "MTP speculative decoding enabled, q8_0 KV caches"
+    }
+  ],
+  "lfm3-1.7b": [
+    {
+      "engine": "llama.cpp",
+      "tps": "25",
+      "hardware": "2012 Xeon (CPU only, no GPU)",
+      "quant": "GGUF, CPU only",
+      "date": "2026-10-30",
+      "source_post": "https://lightbrd.com/CCIE4K/status/2116306819727725043"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "3.66",
+      "hardware": "Raspberry Pi 4B, 8GB RAM",
+      "quant": "4-bit QAD, 1.05GB download",
+      "date": "2026-10-28",
+      "source_post": "https://lightbrd.com/sarthakcore/status/2115259623540502933",
+      "system_ram_min": "8GB",
+      "weight_gb": "1.05GB (4-bit QAD)"
     }
   ],
   "qwen3.5-9b": [
@@ -2651,25 +2670,6 @@
       "quant": "jackrong Qwen3.5-9B DSV4 Flash distill, ~36 tok/s, full-day coding session against a ~30-file codebase",
       "date": "2026-06-24",
       "source_post": "https://lightbrd.com/GuideboardLabs/status/2069828515156148597"
-    }
-  ],
-  "ornith-1.5-9b": [
-    {
-      "engine": "Magnitude",
-      "tps": "112",
-      "hardware": "laptop RTX A5000 16GB",
-      "quant": "Q4_K_M, Magnitude + DFlash speculative decoding, reasoning on; ~46 tok/s without DFlash, ~44 Ollama",
-      "date": "2026-10-29",
-      "source_post": "https://lightbrd.com/ImexAutopa89371/status/2115767672323334206"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "15",
-      "hardware": "RTX 4060 8GB",
-      "quant": "MTP on with q8 KV caches (~200 tok/s prompt processing, 0.95 draft acceptance); turning MTP off doubles both figures",
-      "date": "2026-10-13",
-      "source_post": "https://lightbrd.com/EugeneSmarts/status/2109984797191803318",
-      "engine_min_version": "MTP speculative decoding enabled, q8_0 KV caches"
     }
   ],
   "deepseek-v4.1-flash": [
