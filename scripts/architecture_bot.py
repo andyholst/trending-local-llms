@@ -124,6 +124,31 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
+#: A make target line: `name:` at column 0. `.PHONY`, comments, `:=`/`?=`/`+=`
+#: assignments, `%`-patterns and the Makefile control words are not targets; a
+#: `_`-prefixed or uppercase name is an INTERNAL target, part of the full set but
+#: never of the public projection. This regex is the ONE definition of "a make
+#: target" (rule 6d, issue #512): both the full set (`make_targets`) and the public
+#: projection (`public_targets`) are views of it, and `architecture_check` imports
+#: the same parser instead of keeping a second copy.
+_TARGET_LINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):(?!=)")
+_TARGET_SKIP = ("\t", "#", ".PHONY", "include", "export", "SHELL", "if", "else", "endif")
+#: The PUBLIC name shape: a lowercase start, then only lowercase/digit/hyphen.
+_PUBLIC_NAME = re.compile(r"^[a-z][a-z0-9-]*$")
+
+
+def _scan_target_names(makefile_text: str) -> set[str]:
+    """Every `name:` target line — the ONE scan the two views project from."""
+    names: set[str] = set()
+    for line in makefile_text.splitlines():
+        if line.startswith(_TARGET_SKIP):
+            continue
+        m = _TARGET_LINE.match(line)
+        if m:
+            names.add(m.group(1))
+    return names
+
+
 def make_descriptions(root: Path) -> dict[str, str]:
     """Every make target that carries a `## description`, from the Makefile."""
     out: dict[str, str] = {}
@@ -133,13 +158,25 @@ def make_descriptions(root: Path) -> dict[str, str]:
 
 
 def make_targets(root: Path) -> set[str]:
-    """Every public and internal make target the Makefile defines."""
-    names = set(make_descriptions(root))
-    for line in _read(root / "Makefile").splitlines():
-        m = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):(?!=)", line)
-        if m:
-            names.add(m.group(1))
-    return names
+    """Every make target the Makefile defines — the FULL view of the one scan.
+
+    Public and internal (`_`-prefixed / uppercase) targets both; the union with the
+    `## description` set keeps a target whose line carries one, exactly as before
+    (the description set cannot name a line the scan misses — a `name: ## …` line
+    is a `name:` line).
+    """
+    return _scan_target_names(_read(root / "Makefile")) | set(make_descriptions(root))
+
+
+def public_targets(root: Path) -> set[str]:
+    """The PUBLIC make targets — the `[a-z][a-z0-9-]*` projection of `make_targets`.
+
+    A derived view, never a second parser: adding an internal target grows the full
+    set alone, and the two cannot drift (that is what made them disagree, issue
+    #512: `architecture_check` counted 126 by its own regex while the generator
+    rendered 178).
+    """
+    return {n for n in make_targets(root) if _PUBLIC_NAME.match(n)}
 
 
 def _on_block(text: str) -> list[str]:
