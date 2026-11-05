@@ -294,7 +294,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-check file-findings findings-check action-pin-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-record-pr openspec-check file-findings findings-check action-pin-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -333,8 +333,18 @@ openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a c
 # `gh` (PR state is a GitHub fact); run on the host, where the token lives —
 # inside the agent container `gh` is absent, so it is NOT part of `openspec-check`
 # (which the fix loop runs in the container) but its own step in qa-validate.
-openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR (rule 6f; host-side: needs gh)
+openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR, or references a CLOSED issue with no recorded PR (rules 6f/#518; host-side: needs gh)
 	python3 scripts/openspec_archive_check.py
+
+# Recording half of the change lifecycle (issue #518): once the PR that will
+# complete a change EXISTS, ITS PR number is written into the change's proposal
+# and the index is regenerated — so no change can be merged-and-forgotten with a
+# vacuous "none names a PR" again. Host-side (writes only the tree), called by
+# issue-bot after `gh pr create`. REFUSES (exit 2) when no active change names
+# the given issue, so a recording that matched nothing is loud, never silent.
+openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:` is `#<ISSUE>`, then regenerate the index
+	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
+	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
 openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI gate: every active change validates, every task ticked or blocked, the index current
 	docker run $(OS_OPTS) openspec validate --changes
