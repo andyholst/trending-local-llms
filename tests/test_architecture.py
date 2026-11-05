@@ -497,6 +497,50 @@ def test_rule_6h_names_the_rulebook_obligation():
           "same change" in rule.lower() and "architecture-check" in rule, rule[:600])
 
 
+def test_public_targets_are_a_projection_of_the_full_set():
+    """#512: "what is a make target" has ONE parser — the check's public set is a view of the generator's full set.
+
+    Measured before this change: `architecture_check.public_targets` (its own
+    `^([a-z][a-z0-9-]*):` regex) counted 126 while `architecture_bot.make_targets`
+    (its own `^([A-Za-z_][A-Za-z0-9_-]*):` regex plus the `## set`) counted 178 — the
+    guard and the generator disagreed by 52 internal names with neither turning red.
+    Now `public_targets` lives next to `make_targets` in `architecture_bot` and this
+    guard locks the two views together: public is exactly the full set filtered to
+    the lowercase `[a-z][a-z0-9-]*` shape, so a change to what counts as a target is
+    one edit, not two (rule 6d).
+    """
+
+    # Given the one source of truth and the check that should consume it
+    mod = _module()
+    bot = importlib.util.module_from_spec(
+        importlib.util.spec_from_file_location(
+            "architecture_bot", ROOT / "scripts" / "architecture_bot.py"))
+    bot.__spec__.loader.exec_module(bot)
+
+    # When  the two views are read over the real repository
+    full = bot.make_targets(ROOT)
+    public = mod.public_targets(ROOT)
+
+    # Then  public is a subset of full, and exactly the public-shaped projection of it
+    check("views: the public set is a subset of the full set",
+          public <= full, f"public-full={sorted(public - full)}")
+    shape = {n for n in full if re.fullmatch(r"[a-z][a-z0-9-]*", n)}
+    check("views: public is EXACTLY the full set filtered to the public shape",
+          public == shape, f"public-only={sorted(public - shape)} full-only={sorted(shape - public)}")
+    # And   adding an internal target grows only the full set (the two cannot re-drift)
+    check("views: the full set is strictly larger, by the internal targets",
+          len(full) == len(public) + len(full - public) and bool(full - public),
+          f"full={len(full)} public={len(public)} internal={len(full - public)}")
+
+    # And   the check no longer defines its own target parser — it imports the bot's
+    check("views: architecture_check has no target-line regex of its own",
+          "_TARGET_LINE" not in (ROOT / "scripts" / "architecture_check.py").read_text(),
+          "")
+    check("views: architecture_check imports public_targets from architecture_bot",
+          "from architecture_bot import public_targets" in
+          (ROOT / "scripts" / "architecture_check.py").read_text(), "")
+
+
 def main() -> int:
     print("architecture description + its guard (ARCHITECTURE.md, rule 6h)")
     test_missing_doc_is_a_failure()
@@ -516,6 +560,7 @@ def main() -> int:
     test_doc_states_what_the_guard_does_not_prove()
     test_section6_role_text_is_reviewed_not_verified()
     test_real_repo_description_is_current()
+    test_public_targets_are_a_projection_of_the_full_set()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

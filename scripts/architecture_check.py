@@ -46,9 +46,12 @@ import sys
 from pathlib import Path
 
 #: The workflow's real `jobs:` keys have ONE parser — the one the generated
-#: inventory already uses (rule 6d: never a second copy of the same rule).
+#: inventory already uses (rule 6d: never a second copy of the same rule). So does
+#: "what is a make target": `public_targets` (the projection this guard checks) and
+#: `make_targets` (the full set the generator renders) are BOTH views of the one
+#: scan in `architecture_bot`, imported here — issue #512's two parsers became one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture_bot import workflow_jobs  # noqa: E402
+from architecture_bot import public_targets, workflow_jobs  # noqa: E402
 
 DOC_NAME = "ARCHITECTURE.md"
 VALIDATOR = "scripts/validate.py"
@@ -68,10 +71,6 @@ RULEBOOK_NEXT_SECTION = "## 7."
 SCRIPT_SECTION = "## 6."
 SCRIPT_NEXT_SECTION = "## 7."
 
-# A public target: `name:` at column 0. `.PHONY`, comments, `:=` assignments,
-# `%`-patterns and `_`-prefixed internals are not public targets.
-_TARGET_LINE = re.compile(r"^([a-z][a-z0-9-]*):(?!=)", re.MULTILINE)
-_SKIP_PREFIX = ("\t", "#", ".PHONY", "include", "export", "SHELL", "if", "else", "endif")
 # A markdown table row, and the backticked tokens in its FIRST cell.
 _TABLE_ROW = re.compile(r"^\|\s*([^|]*)\|", re.MULTILINE)
 _TICKED = re.compile(r"`([^`]+)`")
@@ -88,20 +87,6 @@ _ONLY_CALL = re.compile(r"scripts/validate\.py\s+--only\s+([\w,-]+)")
 _WF_HEADING = re.compile(r"^###\s+.*\.github/workflows/([A-Za-z0-9_.-]+\.yml)")
 _JOB_BULLET = re.compile(r"^\s*[-*]\s+\*\*`([A-Za-z0-9_-]+)`\*\*")
 
-
-
-def public_targets(makefile: Path) -> list[str]:
-    """Every public make target in the Makefile, sorted."""
-    if not makefile.is_file():
-        return []
-    names = set()
-    for line in makefile.read_text(encoding="utf-8").splitlines():
-        if line.startswith(_SKIP_PREFIX):
-            continue
-        m = _TARGET_LINE.match(line)
-        if m:
-            names.add(m.group(1))
-    return sorted(names)
 
 
 def described_targets(doc: Path) -> list[str]:
@@ -275,7 +260,7 @@ def findings(root: Path) -> list[str]:
         return [f"{DOC_NAME} is missing — it is part of the change (rule 6h)"]
     text = described_text(doc)
 
-    make_targets = set(public_targets(root / "Makefile"))
+    make_targets = public_targets(root)
     doc_targets = set(described_targets(doc))
 
     out = [f"make target `{t}` is not described in {DOC_NAME}'s target tables"
@@ -363,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
               "`make architecture-check`", file=sys.stderr)
         return 1
     print(f"[architecture] OK {DOC_NAME} describes every make target "
-          f"({len(public_targets(root / 'Makefile'))}), workflow and script — and its "
+          f"({len(public_targets(root))}), workflow and script — and its "
           f"`--only` stage lists and §4 job names match the tree")
     return 0
 

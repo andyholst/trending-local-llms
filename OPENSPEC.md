@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **187** · archived: **13**
+Active changes: **188** · archived: **13**
 
 ## Active changes
 
@@ -116,6 +116,7 @@ Active changes: **187** · archived: **13**
 | `no-dead-step-env` | active | — | — | [bot-alarm-configuration](openspec/changes/no-dead-step-env/specs/bot-alarm-configuration/spec.md) | 6/6 | [proposal.md](openspec/changes/no-dead-step-env/proposal.md) |
 | `no-fabricated-engine-at-ingest` | active | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/no-fabricated-engine-at-ingest/proposal.md) |
 | `no-marker-reaches-the-tree` | active | — | — | [bot-commit-safety](openspec/changes/no-marker-reaches-the-tree/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/no-marker-reaches-the-tree/proposal.md) |
+| `one-make-target-definition` | active | #512 — `tech-debt: "What is a make target" has two parsers` | — | [make-target-parser](openspec/changes/one-make-target-definition/specs/make-target-parser/spec.md) | 8/8 | [proposal.md](openspec/changes/one-make-target-definition/proposal.md) |
 | `one-path-through-the-makefile` | active | — | — | [one-path](openspec/changes/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/one-path-through-the-makefile/proposal.md) |
 | `one-person-one-identity` | active | #445 (filed first, with the measurement) | — | [commit-authorship](openspec/changes/one-person-one-identity/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/one-person-one-identity/proposal.md) |
 | `one-post-one-row` | active | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/one-post-one-row/proposal.md) |
