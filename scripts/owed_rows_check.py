@@ -61,10 +61,12 @@ def thread(issue_json: dict, comments_json: list[dict]) -> str:
 
 def read_thread(repo: str, number: int) -> str:
     issue = json.loads(_gh(["api", f"/repos/{repo}/issues/{number}"]))
-    # --paginate: a long thread's comments span pages; a first-page-only reader re-lands the
-    # exact defect filed as #662.
-    comments = json.loads(_gh(["api", f"/repos/{repo}/issues/{number}/comments",
-                               "--paginate"]) or "[]")
+    # --paginate --jq ".[]" emits ONE JSON object per line (the tested repo pattern,
+    # scripts/issue_thread.py:106-108); a whole-output json.loads would break the moment a
+    # thread spans a page — the #662-class defect this reader must not repeat.
+    raw = _gh(["api", f"/repos/{repo}/issues/{number}/comments",
+               "--paginate", "--jq", ".[]"])
+    comments = [json.loads(line) for line in raw.splitlines() if line.strip()]
     return thread(issue, comments)
 
 

@@ -65,7 +65,12 @@ def _stub_gh(tmp_path: Path, fixtures: dict) -> Path:
         "    value = fx.get(f'{key}:{num}')\n"
         "    if value is None:\n"
         "        sys.stderr.write(f'no fixture for {path}\\n'); sys.exit(1)\n"
-        "    print(json.dumps(value))\n"
+        "    if key == 'comments':\n"
+        "        # mimic `gh api --paginate --jq .[]`: one JSON object per line\n"
+        "        for c in value:\n"
+        "            print(json.dumps(c))\n"
+        "    else:\n"
+        "        print(json.dumps(value))\n"
         "else:\n"
         "    sys.stderr.write('unexpected gh call: ' + ' '.join(args)); sys.exit(2)\n",
         encoding="utf-8",
