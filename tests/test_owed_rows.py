@@ -11,9 +11,8 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
-
-import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "owed_rows_check.py"
@@ -114,7 +113,9 @@ def test_the_owed_row_marker_is_registered_and_parses():
                               {"section": "6b", "needle": "make refresh-sync"}]
 
 
-def test_a_landed_owed_row_is_reported_with_evidence(tmp_path):
+def test_a_landed_owed_row_is_reported_with_evidence(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     marker = bot_markers.owed_row_marker("8", "tests/test_refresh_base.py")
     proc = _run(tmp_path, _fixtures(marker))
     assert proc.returncode == 0, proc.stderr
@@ -122,7 +123,9 @@ def test_a_landed_owed_row_is_reported_with_evidence(tmp_path):
     assert "landed=1 outstanding=0" in proc.stdout
 
 
-def test_an_outstanding_owed_row_is_reported(tmp_path):
+def test_an_outstanding_owed_row_is_reported(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     marker = bot_markers.owed_row_marker("6b", "make refresh-sync")
     proc = _run(tmp_path, _fixtures(marker))
     assert proc.returncode == 0, proc.stderr
@@ -130,7 +133,9 @@ def test_an_outstanding_owed_row_is_reported(tmp_path):
     assert "landed=0 outstanding=1" in proc.stdout
 
 
-def test_a_needle_landed_in_the_wrong_section_is_not_landed(tmp_path):
+def test_a_needle_landed_in_the_wrong_section_is_not_landed(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     # #509's class: a reader must not claim a row landed by matching text ANYWHERE; the
     # declared section is part of the contract, and the misplaced hit is named.
     marker = bot_markers.owed_row_marker("6b", "make make-tea")
@@ -140,7 +145,9 @@ def test_a_needle_landed_in_the_wrong_section_is_not_landed(tmp_path):
     assert "outside section 6b" in proc.stdout
 
 
-def test_a_marker_on_a_comment_counts_like_one_on_the_body(tmp_path):
+def test_a_marker_on_a_comment_counts_like_one_on_the_body(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     fix = _fixtures("(the body carries no marker)")
     fix["comments:7"] = [{"created_at": "2026-10-23T00:00:00Z",
                           "body": "Ledger row: " + bot_markers.owed_row_marker(
@@ -150,7 +157,9 @@ def test_a_marker_on_a_comment_counts_like_one_on_the_body(tmp_path):
     assert "LANDED AGENTS.md:14" in proc.stdout
 
 
-def test_a_malformed_owed_row_marker_is_loud(tmp_path):
+def test_a_malformed_owed_row_marker_is_loud(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     proc = _run(tmp_path, _fixtures("<!-- owed-row: section=8 -->"))
     assert proc.returncode == 2
     assert "MALFORMED" in proc.stdout or "MALFORMED" in proc.stderr
@@ -158,21 +167,27 @@ def test_a_malformed_owed_row_marker_is_loud(tmp_path):
     assert "FAILED" in proc.stderr
 
 
-def test_an_unknown_section_is_loud(tmp_path):
+def test_an_unknown_section_is_loud(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     marker = bot_markers.owed_row_marker("17", "tests/test_anything.py")
     proc = _run(tmp_path, _fixtures(marker))
     assert proc.returncode == 2
     assert "NO SUCH SECTION" in proc.stdout
 
 
-def test_a_queue_issue_without_a_marker_is_reported_as_unmarked(tmp_path):
+def test_a_queue_issue_without_a_marker_is_reported_as_unmarked(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     proc = _run(tmp_path, _fixtures("(nothing declared here)"))
     assert proc.returncode == 0, proc.stderr
     assert "NO MARKER" in proc.stdout
     assert "no-marker=1" in proc.stdout
 
 
-def test_an_unreadable_issue_is_a_problem(tmp_path):
+def test_an_unreadable_issue_is_a_problem(tmp_path=None):
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
     fix = _fixtures("<!-- owed-row: section=8 needle=x -->")
     del fix["comments:7"]  # the stub will fail this read (no fixture)
     proc = _run(tmp_path, fix)
@@ -198,5 +213,31 @@ def test_the_ledger_script_is_the_only_reacher_for_the_marker():
     assert offenders == [], f"marker shape re-spelled outside bot_markers.py: {offenders}"
 
 
+def main() -> int:
+    tests = [
+        test_the_owed_row_marker_is_registered_and_parses,
+        test_a_landed_owed_row_is_reported_with_evidence,
+        test_an_outstanding_owed_row_is_reported,
+        test_a_needle_landed_in_the_wrong_section_is_not_landed,
+        test_a_marker_on_a_comment_counts_like_one_on_the_body,
+        test_a_malformed_owed_row_marker_is_loud,
+        test_an_unknown_section_is_loud,
+        test_a_queue_issue_without_a_marker_is_reported_as_unmarked,
+        test_an_unreadable_issue_is_a_problem,
+        test_the_pipeline_calls_the_ledger_target,
+        test_the_ledger_script_is_the_only_reacher_for_the_marker,
+    ]
+    failed = 0
+    for t in tests:
+        try:
+            t()
+            print(f"PASS {t.__name__}")
+        except AssertionError as exc:
+            failed += 1
+            print(f"FAIL {t.__name__}: {exc}")
+    print(f"\nPASSED {len(tests) - failed} | FAILED {failed}")
+    return 1 if failed else 0
+
+
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__, "-v"]))
+    sys.exit(main())
