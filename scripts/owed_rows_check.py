@@ -46,8 +46,8 @@ def _gh(args: list[str]) -> str:
 def open_issues(repo: str, limit: int) -> list[dict]:
     """The repo's open issues with their labels (oldest first)."""
     out = json.loads(_gh(["issue", "list", "--repo", repo, "--state", "open",
-                          "--limit", str(limit), "--json", "number,title,labels,createdAt",
-                          "--order", "asc"]) or "[]")
+                          "--limit", str(limit),
+                          "--json", "number,title,labels,createdAt"]) or "[]")
     return sorted(out, key=lambda i: i.get("createdAt") or "")
 
 
