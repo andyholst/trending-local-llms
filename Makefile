@@ -1327,6 +1327,22 @@ _bot-health:
 bot-health: ## Fail when a cron pipeline's own scheduled runs are all red (issue #488)
 	@$(MAKE) --no-print-directory _bot-health
 
+# The owed-row ledger (issue #523): open issues carry `owed-row` markers naming the AGENTS.md
+# §/row they are owed; this reads the ledger and reports each row as LANDED (with its
+# AGENTS.md line) or OUTSTANDING, so a covered issue is closed on evidence, not on re-reading a
+# thread. Host-side like the other gh-bound verifiers (it reads live issue state with the
+# runner's gh); the DECISION lives in scripts/owed_rows_check.py (rule 6d). Exit 0 = a report
+# was produced (a landed or outstanding row is news, not a failure); exit 2 = the ledger could
+# not be read or a marker is malformed. Called by queued-alarm's alarm job, never a PR gate.
+.PHONY: _owed-rows-check
+_owed-rows-check:
+	python3 scripts/owed_rows_check.py --repo "$(REPO)" $(if $(LIMIT),--limit $(LIMIT),)
+
+.PHONY: owed-rows-check
+owed-rows-check: ## Report the owed-row ledger: open issues' owed AGENTS.md rows vs the rulebook (REPO=<owner/name>, LIMIT=300; issue #523)
+	@test -n "$(REPO)" || { echo "Usage: make owed-rows-check REPO=<owner/repo> [LIMIT=300]"; exit 1; }
+	@$(MAKE) --no-print-directory _owed-rows-check
+
 .PHONY: queued-alarm
 sweep-alarm: ## Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
 	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=3]"; exit 1; }

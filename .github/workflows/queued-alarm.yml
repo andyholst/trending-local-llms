@@ -95,3 +95,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make freshness-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=14
+      # The owed-row ledger (issue #523): open issues declare the AGENTS.md §/row they are owed
+      # via `owed-row` markers; this reports each declared row as LANDED (with its AGENTS.md
+      # evidence line) or OUTSTANDING, so a covered issue is closable on evidence and the ledger
+      # cannot rot open. A landed/outstanding row is news (exit 0); only an unreadable ledger or
+      # a malformed marker is red (exit 2). It never edits a body, label or issue state (rule 6j).
+      - name: Report the owed-row ledger against AGENTS.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make owed-rows-check REPO="${{ github.repository }}"
