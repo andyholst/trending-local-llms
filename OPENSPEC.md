@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **188** · archived: **13**
+Active changes: **189** · archived: **13**
 
 ## Active changes
 
@@ -131,6 +131,7 @@ Active changes: **188** · archived: **13**
 | `order-guard-fixture-tolerant` | active | — | — | [order-guard-fixture-tolerant](openspec/changes/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/order-guard-fixture-tolerant/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
+| `owed-rows-landed-ledger` | active | — | — | [owed-row-ledger](openspec/changes/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/owed-rows-landed-ledger/proposal.md) |
 | `pin-actions-immutable-sha` | active | — | — | [pin-actions-immutable-sha](openspec/changes/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | active | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/pin-flash-1017-snapshot/proposal.md) |
 | `pr-body-closure-guard` | active | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/pr-body-closure-guard/proposal.md) |
