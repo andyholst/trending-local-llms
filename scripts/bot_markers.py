@@ -106,6 +106,52 @@ DECLARED_BY: dict[tuple[str, str], int] = {
 #: An ISO8601Z timestamp as every marker writes it.
 TS = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z"
 
+# ---------------------------------------------------------------------------
+# The owed-row ledger marker (issue #523).
+#
+# Not a bot window and not a dedup key: it is a DECLARATION an issue carries, naming the AGENTS.md
+# section a owed row belongs to and the exact needle that row must contain, so `make
+# owed-rows-check` can report the row as landed or outstanding without re-reading a thread. Its
+# name and shape live here like every other marker (rule 6j); a reader must not re-spell them.
+#
+# Shape: `<!-- owed-row: section=<id> needle=<token|"quoted phrase"> -->`
+#   section  the AGENTS.md heading id (`8`, `6b`, …) the row is owed to
+#   needle   the exact text the landed row must carry; quoted when it contains a space
+# ---------------------------------------------------------------------------
+OWED_ROW = "owed-row"
+
+#: One regex for every owed-row declaration; a body that fails the grammar is MALFORMED, never
+#: silently skipped — a reader that guesses at half-parsed markers is the drift this prevents.
+OWED_ROW_RE = re.compile(r"<!-- owed-row:(?P<body>[^>]*)-->")
+_OA_SECTION = re.compile(r"section=([A-Za-z0-9]+)")
+_OA_NEEDLE = re.compile(r'needle=(?:"([^"]*)"|(\S+))')
+
+
+def owed_row_marker(section: str, needle: str) -> str:
+    """Write an owed-row declaration: the ONE writer-side shape (rule 6d)."""
+    quoted = f'"{needle}"' if " " in needle else needle
+    return f"<!-- {OWED_ROW}: section={section} needle={quoted} -->"
+
+
+def parse_owed_rows(text: str) -> dict[str, list]:
+    """Every owed-row declaration in `text`.
+
+    -> {"rows": [{section, needle}], "malformed": [raw-marker-string]}
+    A declaration missing `section=` or `needle=` lands in `malformed`; the caller must make it
+    loud (rule 6d: a marker that fails to parse raises nothing unless a check says so).
+    """
+    rows: list[dict] = []
+    malformed: list[str] = []
+    for m in OWED_ROW_RE.finditer(text or ""):
+        body = m.group("body")
+        sec = _OA_SECTION.search(body)
+        need = _OA_NEEDLE.search(body)
+        if not sec or not need:
+            malformed.append(m.group(0))
+            continue
+        rows.append({"section": sec.group(1), "needle": need.group(1) or need.group(2)})
+    return {"rows": rows, "malformed": malformed}
+
 
 def marker_name(bot: str, kind: str) -> str:
     """The literal marker name for (bot, kind) — the ONE definition a writer and a reader share."""
