@@ -66,7 +66,8 @@ def _stub(directory: Path, name: str, body: str) -> Path:
 
 def run_seam(*, hermes: str | None = None, curl_stub: str | None = None,
              uv_stub: str | None = None, install_url: str | None = None,
-             package: str | None = None):
+             package: str | None = None, version: str | None = None,
+             version_file: str | None = None):
     """Run the seam for real in a temp HOME with only the stubs on PATH."""
     td = Path(tempfile.mkdtemp())
     bindir = td / "bin"
@@ -85,6 +86,8 @@ def run_seam(*, hermes: str | None = None, curl_stub: str | None = None,
         "HOME": str(td),                 # empty: no ~/.local/bin/hermes
         "HERMES_INSTALL_URL": install_url or "",
         "HERMES_PACKAGE": package or "hermes-agent",
+        "HERMES_VERSION": version if version is not None else "",
+        "HERMES_VERSION_FILE": version_file or str(td / "hermes-version.txt"),
     }
     proc = subprocess.run(["bash", str(SEAM)], capture_output=True, text=True,
                           env=env, timeout=60)
@@ -409,6 +412,87 @@ def test_no_wrapper_discards_the_seams_diagnosis():
               and "_setup >/dev/null" not in recipe, recipe)
 
 
+def test_the_version_pin_has_one_definition_across_the_two_files():
+    """Issue #218: `HERMES_VERSION` is part of the install pin — one default,
+    Makefile `?=` and Dockerfile `ARG`, like the URL and package pins."""
+
+    # Given both files
+    docker = DOCKERFILE.read_text()
+    make = MAKEFILE.read_text()
+
+    # When  their version defaults are compared
+    d_ver = re.search(r'^ARG HERMES_VERSION="(\S+)"$', docker, re.M)
+    m_ver = re.search(r"^HERMES_VERSION\s+\?= (\S+)$", make, re.M)
+
+    # Then  they are the same pin, and the image carries it into the seam
+    check("pin: the HERMES_VERSION default matches in both files (issue #218)",
+          d_ver and m_ver and d_ver.group(1) == m_ver.group(1),
+          f"{d_ver and d_ver.group(1)} vs {m_ver and m_ver.group(1)}")
+    check("pin: the Dockerfile forwards HERMES_VERSION into the seam env (issue #218)",
+          "ENV HERMES_INSTALL_URL=${HERMES_INSTALL_URL} HERMES_PACKAGE=${HERMES_PACKAGE} HERMES_VERSION=${HERMES_VERSION}" in docker,
+          "")
+
+
+def test_an_agent_that_is_not_the_pinned_version_fails_the_build():
+    """Issue #218: the same content-hash tag must not build a different agent.
+    An already-present CLI that answers a DIFFERENT version than the pin is a
+    build failure naming both versions."""
+
+    # Given the seam, a pin of 0.23.1, and a hermes answering 9.9.9
+    proc, _calls, td = run_seam(
+        hermes="Hermes Agent v9.9.9 (2026.9.24) · stable",
+        version="0.23.1",
+    )
+
+    # Then  the seam refuses the mismatch and names pin and actual
+    check("version pin: a CLI that is not the pinned version exits non-zero (issue #218)",
+          proc.returncode != 0, f"rc={proc.returncode} out={proc.stdout[-300:]}")
+    check("version pin: the failure names the pinned version",
+          "0.23.1" in proc.stdout, proc.stdout[-400:])
+    check("version pin: the failure names the installed version",
+          "9.9.9" in proc.stdout, proc.stdout[-400:])
+    check("version pin: a refused build bakes nothing (issue #218)",
+          not (td / "hermes-version.txt").exists(), "")
+
+
+def test_the_pinned_version_is_asserted_and_baked():
+    """When the installed CLI IS the pin, the seam says so and writes the
+    version into the image — the version the content-hash tag can vouch for."""
+
+    # Given the seam, the Makefile's pin, and a hermes answering that version
+    proc, _calls, td = run_seam(
+        hermes="Hermes Agent v0.23.1 (2026.9.24) · stable",
+        version="0.23.1",
+    )
+
+    # Then  it passes, and the version file carries the pinned version
+    check("version pin: the pinned CLI exits 0 (issue #218)",
+          proc.returncode == 0, f"rc={proc.returncode} out={proc.stdout[-300:]}")
+    vf = td / "hermes-version.txt"
+    check("version pin: the verified version is baked to the version file (issue #218)",
+          vf.exists() and vf.read_text().strip() == "0.23.1",
+          vf.read_text() if vf.exists() else "<no version file>")
+
+
+def test_an_empty_pin_records_the_version_without_asserting():
+    """An explicit no-pin (a mirror build) still STATES the version it installed;
+    it just does not fail on it."""
+
+    # Given the seam with HERMES_VERSION="" and any hermes
+    proc, _calls, td = run_seam(
+        hermes="Hermes Agent v7.7.7 (2026.9.24) · main",
+        version="",
+    )
+
+    # Then  it succeeds and the version file records what was installed
+    check("version pin: an empty pin does not assert (issue #218)",
+          proc.returncode == 0, f"rc={proc.returncode} out={proc.stdout[-300:]}")
+    vf = td / "hermes-version.txt"
+    check("version pin: an empty pin still records the installed version (issue #218)",
+          vf.exists() and "7.7.7" in vf.read_text(),
+          vf.read_text() if vf.exists() else "<no version file>")
+
+
 def main() -> int:
     print("install_hermes_ci.sh: one seam, one pin, a build that proves the alias")
     test_a_present_cli_is_used_and_nothing_is_downloaded()
@@ -421,6 +505,10 @@ def main() -> int:
     test_the_dockerfile_asserts_the_alias_at_build_time()
     test_no_credential_value_is_baked_into_the_image()
     test_the_install_pin_has_one_definition_across_the_two_files()
+    test_the_version_pin_has_one_definition_across_the_two_files()
+    test_an_agent_that_is_not_the_pinned_version_fails_the_build()
+    test_the_pinned_version_is_asserted_and_baked()
+    test_an_empty_pin_records_the_version_without_asserting()
     test_the_alias_has_one_name_for_the_writer_and_the_reader()
     test_the_alias_check_passes_on_the_pin_and_fails_on_a_different_one()
     test_the_seam_and_the_check_are_wired_where_ci_looks()
