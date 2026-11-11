@@ -17,7 +17,7 @@ shape, and it fails on a message-only guard.
 
 NO-SKIP POLICY: a missing prerequisite is a LOUD FAILURE, never a skip.
 
-Wired into `make test` (rule 6d). Runs as a plain script and under pytest.
+Wired into `make test` (rule 6d). Runs as a plain script — the runner is scripts/run_tests.sh (issue #176).
 """
 from __future__ import annotations
 

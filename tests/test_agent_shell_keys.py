@@ -19,7 +19,7 @@ ONE Makefile list; this suite proves it at three levels, with SENTINEL values on
 NO-SKIP POLICY: a missing Hermes is a LOUD FAILURE, never a skip — `make test` runs this in the test
 image, which carries the same Hermes the bots run.
 
-Wired into `make test` (rule 6d). Runs as a plain script and under pytest.
+Wired into `make test` (rule 6d). Runs as a plain script — the runner is scripts/run_tests.sh (issue #176).
 """
 from __future__ import annotations
 

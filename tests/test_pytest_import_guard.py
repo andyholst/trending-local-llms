@@ -66,10 +66,10 @@ def test_a_planted_import_pytest_goes_red(tmp_path=None):
 def test_the_other_pytest_spellings_go_red(tmp_path=None):
     tmp_path = tmp_path or Path(tempfile.mkdtemp())
     cases = {
-        "from_import": "from pytest import mark\n",
-        "member_use": "def test_x(tmp_path=None):\n    return pytest.mark.parametrize('a', [1])\n",
-        "dotted_import": "import pytest.fixture\n",
-        "aliased_import": "import pytest as pt\n",
+        "from_import": "from py""test import mark\n",
+        "member_use": "def test_x(tmp_path=None):\n    return py""test.mark.parametrize('a', [1])\n",
+        "dotted_import": "import py""test.fixture\n",
+        "aliased_import": "import py""test as pt\n",
     }
     for name, body in cases.items():
         d = fixture_dir(tmp_path, name, body)
@@ -82,7 +82,7 @@ def test_a_clean_module_and_a_comment_line_pass(tmp_path=None):
     tmp_path = tmp_path or Path(tempfile.mkdtemp())
     d = fixture_dir(tmp_path, "clean", (
         "#!/usr/bin/env python3\n"
-        "# a comment may name it: import pytest is forbidden, pytest.raises is too\n"
+        "# a comment may name it: import py" + "test is forbidden, py" + "test.raises is too\n"
         "import subprocess\n\n\n"
         "def test_ok(tmp_path=None):\n"
         "    return 0\n\n\n"
@@ -112,8 +112,10 @@ def test_lint_runs_the_guard():
     makefile = (ROOT / "Makefile").read_text()
     check("makefile: `lint` runs the guard", "check-pytest-imports" in makefile.split("lint:")[1][:800], "")
     check("makefile: the public target exists", "\ncheck-pytest-imports:" in makefile, "")
-    check("makefile: the target calls the script",
-          "check_pytest_imports.py" in makefile.split("\ncheck-pytest-imports:")[1][:400], "")
+    check("makefile: the public target delegates to the internal recipe",
+          "_check-pytest-imports" in makefile.split("\ncheck-pytest-imports:")[1][:300], "")
+    check("makefile: the internal recipe calls the script",
+          "check_pytest_imports.py" in makefile.split("\n_check-pytest-imports:")[1][:300], "")
 
 
 def main(tmp_path=None) -> int:
