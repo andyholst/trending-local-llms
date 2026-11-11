@@ -1128,6 +1128,19 @@ def test_auto_merge():
           "--match-head-commit" in run and "pull_request.head.sha" in str(st.get("env", {})), run)
     check("auto-merge: never --admin (bypasses checks)", "--admin" not in run, run)
     check("auto-merge: one merge attempt per PR at a time", bool(am.get("concurrency")), am.get("concurrency"))
+    # Issue #787: a bare `--squash` composes the landed commit from the PR TITLE
+    # ONLY, so master's `make commit-message-check` (pr-closure.yml push gate)
+    # refused EVERY bot merge (measured run 43050329961: squash d3d4116 was the
+    # title line alone, #779's `Closes` lost in transit, master permanently red).
+    # The merge step must READ the merged PR's own title+body and pass BOTH to
+    # `gh pr merge` (--subject / --body-file), so the squash commit carries the
+    # five sections and the bound closing keyword the pattern (#771) requires.
+    check("auto-merge: the merge step reads the merged PR's title and body first",
+          "--json title" in run and "--json body" in run, run[:200])
+    check("auto-merge: the squash commit carries the PR title (--subject)",
+          "--subject" in run, run[:200])
+    check("auto-merge: the squash commit carries the PR body (--body-file, never interpolated)",
+          "--body-file" in run, run[:200])
     # Issue #722: a do-not-merge-labeled PR must NEVER auto-merge, however green.
     hold = step(am, "do-not-merge")
     names = [s.get("name", "") for s in steps(am)]
