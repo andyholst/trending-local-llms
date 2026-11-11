@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **201**
+Active changes: **15** · archived: **202**
 
 ## Active changes
 
@@ -25,7 +25,6 @@ Active changes: **16** · archived: **201**
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
-| `reviewer-label-from-queue` | active | #661 (measured: `scripts/issue_review.py:100`, `scripts/issue_queue.py:91`, | #793 | [issue-queue](openspec/changes/reviewer-label-from-queue/specs/issue-queue/spec.md) | 4/4 | [proposal.md](openspec/changes/reviewer-label-from-queue/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
@@ -50,6 +49,7 @@ Active changes: **16** · archived: **201**
 | `2026-11-11-openspec-record-pr-idempotent` | archived | #754 (tech-debt, "openspec-record-pr is not idempotent: a re-run on an | — | [change-lifecycle](openspec/changes/archive/2026-11-11-openspec-record-pr-idempotent/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-11-openspec-record-pr-idempotent/proposal.md) |
 | `2026-11-11-ranked-gaps-ask-every-dimension` | archived | — | — | [search-queries](openspec/changes/archive/2026-11-11-ranked-gaps-ask-every-dimension/specs/search-queries/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-11-ranked-gaps-ask-every-dimension/proposal.md) |
 | `2026-11-11-record-the-pr-on-a-change` | archived | #518 — `tech-debt: Most active OpenSpec changes carry no PR reference, so the lifecycle guard cannot see them` | — | [change-lifecycle](openspec/changes/archive/2026-11-11-record-the-pr-on-a-change/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-11-record-the-pr-on-a-change/proposal.md) |
+| `2026-11-11-reviewer-label-from-queue` | archived | #661 (measured: `scripts/issue_review.py:100`, `scripts/issue_queue.py:91`, | #793 | [issue-queue](openspec/changes/archive/2026-11-11-reviewer-label-from-queue/specs/issue-queue/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/2026-11-11-reviewer-label-from-queue/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |
