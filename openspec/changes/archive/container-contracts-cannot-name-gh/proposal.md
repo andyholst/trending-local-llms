@@ -1,7 +1,7 @@
 # Proposal — container-contracts-cannot-name-gh
 
 Issue: #194
-PR: (opened by this change — set at PR open)
+PR: #799
 
 ## Why
 
