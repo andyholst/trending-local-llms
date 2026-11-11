@@ -1,6 +1,7 @@
 # Proposal: archive-check-gates-the-closing-pr
 
 Issue: #779 (measured: qa-validate runs 43014075519 after PR #777 merged,
+PR: #785
 43028760218 and 43030796045 after PRs #778/#781 merged — all three master pushes
 red on `[archive-check] FAIL — no active OpenSpec change may name a merged PR`)
 
