@@ -109,6 +109,35 @@ def test_a_comparison_cue_is_kept():
     check("attribution: a comparison sentence is kept", not refused and kept, refused)
 
 
+def test_a_joint_comparison_figure_is_refused():
+    """issue #651: ONE t/s figure for a comparison of two models is not attributable."""
+    m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Qwen 3.6 27B vs Qwen 3.5 35B: 140 t/s", post="https://lightbrd.com/u/status/61"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(m, {"models": [m]})
+    check("attribution: a joint single figure on a comparison is REFUSED",
+          len(refused) == 1 and not kept, (kept, refused))
+    check("attribution: the joint-figure reason names both identities",
+          refused and "JOINT" in refused[0][1] and "qwen 3.5 35b" in refused[0][1]
+          and "qwen 3.6 27b" in refused[0][1], refused)
+    m2 = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Qwen 3.6 27B vs Qwen 3.5 35B: 60-91 t/s", post="https://lightbrd.com/u/status/62"),
+    ])
+    kept2, refused2 = UT.refuse_misattributed_measurements(m2, {"models": [m2]})
+    check("attribution: a joint RANGE figure is refused too",
+          len(refused2) == 1 and not kept2, (kept2, refused2))
+
+
+def test_one_figure_per_model_is_kept():
+    """A bake-off with its own figure per model stays legitimate (unchanged)."""
+    m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Qwen 3.6 27B 90 t/s vs Qwen 3.5 35B 40 t/s",
+             post="https://lightbrd.com/u/status/63"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(m, {"models": [m]})
+    check("attribution: one figure per model (two figures) is kept", not refused and kept, refused)
+
+
 def test_a_cross_family_mention_is_kept():
     """Cross-family mentions are comparison/context, not a same-row mix-up."""
     m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
@@ -230,6 +259,8 @@ def main() -> int:
     test_a_measurement_naming_its_own_row_is_kept()
     test_a_multi_model_post_naming_the_row_is_kept()
     test_a_comparison_cue_is_kept()
+    test_a_joint_comparison_figure_is_refused()
+    test_one_figure_per_model_is_kept()
     test_a_cross_family_mention_is_kept()
     test_an_unknown_identity_fails_open()
     test_an_explicit_alias_mapping_documents_an_exception()
