@@ -504,6 +504,18 @@ _check-conflict-markers:
 check-conflict-markers: ## Fail when a tracked file carries a merge-conflict block (issue #588)
 	@$(MAKE) --no-print-directory _check-conflict-markers
 
+# Every tests/test_*.py is a SCRIPT (issue #768): scripts/run_tests.sh runs each module in its own
+# process and the TEST image deliberately has NO pytest, so an `import pytest` is host-green and
+# dies only in the TEST image — measured as a ~15-minute red validate job (run 42800200326). The
+# guard refuses the import and the `pytest.` API use at the gate that runs first everywhere.
+.PHONY: _check-pytest-imports
+_check-pytest-imports:
+	python3 scripts/check_pytest_imports.py
+
+.PHONY: check-pytest-imports
+check-pytest-imports: ## Fail when a test module imports or calls pytest — the TEST image has none (issue #768)
+	@$(MAKE) --no-print-directory _check-pytest-imports
+
 # The bot's working files, in ONE list (issue #543). They are gitignored, but both bots unstage
 # them explicitly before `git add -A` because a name written before the ignore entry lands — or
 # created in another checkout — can be staged anyway, and a committed `issue.md` publishes
@@ -535,6 +547,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-agent-skills
 	$(MAKE) --no-print-directory check-working-files
 	$(MAKE) --no-print-directory check-conflict-markers
+	$(MAKE) --no-print-directory check-pytest-imports
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
 	python3 scripts/lint_linefeeds.py --fix
