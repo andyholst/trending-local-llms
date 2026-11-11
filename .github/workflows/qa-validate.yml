@@ -359,7 +359,20 @@ jobs:
             echo "PR #$PR_NUM is $STATE — nothing to merge."
             exit 0
           fi
-          gh pr merge "$PR_NUM" --repo "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          # A bare `--squash` composes the squash commit from the PR TITLE ONLY:
+          # no sections, no bound `Closes`, and master's own push gate
+          # `make commit-message-check` (pr-closure.yml) REFUSES that message, so
+          # every bot merge left master red (measured: run 43050329961 landed
+          # squash d3d4116 as the title line alone, #779's closing lost in
+          # transit). The landed commit must carry the merged PR's OWN title and
+          # body: read them back from the PR and pass them explicitly. The body
+          # goes through a file, never a shell interpolation — it is arbitrary
+          # markdown, possibly with backticks and `$` (issue #787).
+          gh pr view "$PR_NUM" --repo "$REPO" --json title --jq .title > squash-subject.txt
+          gh pr view "$PR_NUM" --repo "$REPO" --json body --jq '.body // ""' > squash-body.txt
+          test -s squash-subject.txt || { echo "PR #$PR_NUM has no title to merge"; exit 1; }
+          gh pr merge "$PR_NUM" --repo "$REPO" --squash --delete-branch --match-head-commit "$HEAD_SHA" \
+            --subject "$(cat squash-subject.txt)" --body-file squash-body.txt
           # Then PROVE what the merge closed (issue #288): `make pr-closure` predicts it, this
           # reads the merged PR's own closing references a moment later. A body whose keyword
           # did not bind (the measured `Closes #271 and #276`) leaves a red run instead of a
