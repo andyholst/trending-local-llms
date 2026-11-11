@@ -1,6 +1,7 @@
 # A sweep still in flight is PENDING, not a false red
 
-**Issues:** [#801](https://github.com/andyholst/trending-local-llms/issues/801)
+Issue: #801 (sweep-alarm grades a delivery that is still running as a failed sweep)
+PR: #806
 **Capability:** `alarms`
 
 ## Why
