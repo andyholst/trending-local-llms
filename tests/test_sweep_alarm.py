@@ -77,6 +77,24 @@ def _stub(td: str, runs: list[tuple[str, str]], *, fail: bool = False) -> dict:
     return {**os.environ, "PATH": f"{td}:{os.environ['PATH']}"}
 
 
+def _stub_status(td: str, runs: list[tuple[str, str]], *, fail: bool = False) -> dict:
+    """A `gh` answering with UNFINISHED runs: GitHub reports a run still in flight with
+    `status: in_progress|queued` and conclusion null — the exact shape that read as a failed
+    sweep (issue #801). Only the network is stubbed; the CLI under test is real."""
+    gh = Path(td) / "gh"
+    payload = Path(td) / "runs.json"
+    payload.write_text(json.dumps([
+        {"databaseId": i, "createdAt": ts, "conclusion": None, "status": st,
+         "url": f"https://x/run/{i}"} for i, (ts, st) in enumerate(runs)]))
+    gh.write_text(
+        "#!/usr/bin/env bash\n"
+        "set -euo pipefail\n"
+        + ("echo 'HTTP 403: Resource not accessible' >&2\nexit 1\n" if fail else
+           f'cat "{payload}"\n'))
+    gh.chmod(0o755)
+    return {**os.environ, "PATH": f"{td}:{os.environ['PATH']}"}
+
+
 def test_a_missed_weekly_slot_is_stale_and_a_fresh_delivery_is_not():
     """The decision, on the real recorded sequence set weekly: a missed Wednesday is a FAIL."""
     # 8 days after the newest delivery (its only successor should have been a Wednesday ago).
@@ -129,6 +147,70 @@ def test_a_red_last_delivery_is_loud_even_when_it_is_FRESH():
     cancelled = S.stale(_rows([("2026-10-21T06:00:00Z", "cancelled")]), now, 168.0)
     check("fresh-red: a cancelled sweep is not health either",
           cancelled is not None and "cancelled" in cancelled["reason"], cancelled)
+
+
+def test_an_in_flight_delivery_is_pending_not_a_false_red():
+    """Issue #801: a delivery with NO conclusion yet has delivered nothing — it is not a
+    failed sweep. `queued-alarm` #88 (run 43049550731) graded the sweep started at 15:19Z,
+    `in_progress` at 15:33Z, as a failed delivery; that sweep SUCCEEDED at 19:03Z. The same
+    false red at #87. Freshness never excuses a red conclusion (#498) — and it never condemns
+    a conclusion that has not been delivered yet."""
+    now = dt.datetime(2026, 11, 11, 15, 33, tzinfo=U)
+    rows = _rows([("2026-11-11T15:19:00Z", "in_progress")])  # 14 min into the sweep
+    verdict = S.stale(rows, now, 168.0, 3.0)
+    check("in-flight: a mid-flight delivery is a verdict of its own", verdict is not None, verdict)
+    check("in-flight: the verdict is PENDING, not a failure",
+          verdict is not None and verdict.get("pending") is True and not verdict.get("fresh"),
+          verdict)
+    check("in-flight: the reason says it has delivered no verdict",
+          verdict is not None and "no verdict" in verdict["reason"], verdict)
+    text = S.render_pending(verdict)
+    check("in-flight: the print says PENDING and never FAIL",
+          "PENDING" in text and "FAIL" not in text, text[:400])
+    check("in-flight: it names the run in flight", "run/0" in text, text[:400])
+
+    queued = S.stale(_rows([("2026-11-11T14:33:00Z", "queued")]), now, 168.0, 3.0)
+    check("in-flight: a queued delivery is pending too",
+          queued is not None and queued.get("pending") is True, queued)
+
+    # Through the real CLI with only `gh` stubbed, in the exact measured shape: the run list
+    # reports the unfinished run with status `in_progress` and conclusion null.
+    with tempfile.TemporaryDirectory() as td:
+        env = _stub_status(td, [("2026-11-11T15:19:00Z", "in_progress")])
+        inflight = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
+                                   "--max-age-hours", "3", "--now", "2026-11-11T15:33:00Z"],
+                                  capture_output=True, text=True, env=env)
+    check("cli: a sweep graded mid-flight exits 0 and says PENDING",
+          inflight.returncode == 0 and "PENDING" in inflight.stdout
+          and "FAIL" not in inflight.stdout,
+          (inflight.returncode, inflight.stdout[-300:]))
+
+
+def test_an_in_flight_delivery_past_the_cap_is_hung_and_loud():
+    """In flight is not forever: a delivery still `in_progress` 4 h after it started (cap 3 h)
+    is a sweep that never concludes — the same queue-starving silence as a dropped cron, so
+    the alarm goes red naming it as HUNG."""
+    now = dt.datetime(2026, 11, 11, 19, 19, tzinfo=U)
+    rows = _rows([("2026-11-11T15:19:00Z", "in_progress")])  # 4.0 h in flight, cap 3 h
+    verdict = S.stale(rows, now, 168.0, 3.0)
+    check("hung: past the cap it is a failure, not pending",
+          verdict is not None and verdict.get("hung") is True and not verdict.get("pending"),
+          verdict)
+    check("hung: the reason names the in-flight state and the cap",
+          verdict is not None and "in_progress" in verdict["reason"] and "cap" in verdict["reason"],
+          verdict)
+    text = S.render(verdict, rows, 168.0)
+    check("hung: the render says HUNG", "HUNG" in text, text[:400])
+
+    with tempfile.TemporaryDirectory() as td:
+        env = _stub_status(td, [("2026-11-11T15:19:00Z", "in_progress")])
+        hung = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
+                               "--max-age-hours", "12", "--inflight-cap-hours", "3",
+                               "--now", "2026-11-11T19:19:00Z"],
+                              capture_output=True, text=True, env=env)
+    check("cli: a hung delivery exits 1 and says HUNG",
+          hung.returncode == 1 and "HUNG" in hung.stdout,
+          (hung.returncode, hung.stdout[-300:]))
 
 
 def test_the_cli_exit_codes_are_loud_in_every_direction():
@@ -184,6 +266,8 @@ def main() -> int:
     test_a_missed_weekly_slot_is_stale_and_a_fresh_delivery_is_not()
     test_no_delivery_at_all_is_a_verdict_and_never_a_pass()
     test_a_red_last_delivery_is_loud_even_when_it_is_FRESH()
+    test_an_in_flight_delivery_is_pending_not_a_false_red()
+    test_an_in_flight_delivery_past_the_cap_is_hung_and_loud()
     test_the_cli_exit_codes_are_loud_in_every_direction()
     test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")

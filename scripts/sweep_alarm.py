@@ -16,8 +16,14 @@ reads the ARTIFACT instead — the newest `schedule` run of the sweep:
   * the last run's conclusion, so a sweep that is red on every delivery is visible too.
 
 Exit codes: 0 = the newest delivery is fresh, 1 = it is stale (or none was ever delivered), so
-the twice-hourly alarm job goes RED instead of staying quiet, 2 = the GitHub read failed (a
+the alarm job goes RED instead of staying quiet, 2 = the GitHub read failed (a
 tool that cannot read must not report a pass).
+
+A delivery the run list has not CONCLUDED yet (`in_progress` / `queued`) proves nothing about
+the queue (issue #801): graded mid-flight it looked like a failed sweep — measured on
+`queued-alarm` #87/#88, which went red 14 minutes into the very sweep that succeeded at 19:03Z.
+Such a delivery is PENDING (exit 0) until `--inflight-cap-hours` (default 3); past the cap it is
+HUNG, which is loud. A CONCLUDED failure keeps the fresh-red verdict of issue #498 unchanged.
 
 Read-only: this tool never comments, never dispatches and never touches a run.
 """
@@ -35,6 +41,9 @@ WORKFLOW = "issue-bot.yml"
 SLOT_MINUTE = 19
 #: Python `date.weekday()`: 0=Mon … 2=Wed. Matches the cron `* * 3`.
 SLOT_WEEKDAY = 2
+#: Conclusions the run list uses for a run that has not finished (issue #801). A delivery with
+#: one of these has delivered NO verdict yet — it is in flight, not failed.
+INFLIGHT_CONCLUSIONS = ("in_progress", "queued", "in_queue")
 
 
 def _gh(args: list[str]) -> str:
@@ -87,8 +96,9 @@ def missed_slots(newest: dt.datetime, now: dt.datetime) -> int:
     return count
 
 
-def stale(rows: list[dict], now: dt.datetime, max_age_hours: float) -> dict | None:
-    """The verdict as data — None when the newest delivery is fresh.
+def stale(rows: list[dict], now: dt.datetime, max_age_hours: float,
+          inflight_cap_hours: float = 3.0) -> dict | None:
+    """The verdict as data — None when the newest delivery is fresh and green.
 
     Pure (rule 6d): the decision is testable without a network, and "no run at all" is a verdict
     of its own rather than a crash.
@@ -101,22 +111,54 @@ def stale(rows: list[dict], now: dt.datetime, max_age_hours: float) -> dict | No
     gaps = [round((a["at"] - b["at"]).total_seconds() / 3600.0, 2)
             for a, b in zip(rows, rows[1:])]
     if age <= max_age_hours:
+        conclusion = newest.get("conclusion")
         # A delivery that RAN and did not succeed is not a delivery (issue #498). The
         # alarm proved the cron, not the work: a sweep that dies inside `implement`, or
         # is cancelled by `concurrency: issue-bot-issue-<n>`, is FRESH to an age test and
         # read as healthy — measured on runs 40190558547 and 40194644167, where `pick`
         # failed at 11:50 and 12:46 and this alarm reported OK both times.
-        if newest.get("conclusion") == "success":
+        if conclusion == "success":
             return None
+        # But a delivery the run list has NOT CONCLUDED yet is not a failure either
+        # (issue #801): `queued-alarm` #87/#88 went red mid-sweep — 14 minutes into the
+        # very delivery (15:19Z, run 43049550731) that succeeded at 19:03Z. In flight is
+        # PENDING until the cap; past the cap a run that never concludes is HUNG.
+        if conclusion in INFLIGHT_CONCLUSIONS:
+            if age <= inflight_cap_hours:
+                return {"pending": True,
+                        "reason": (f"the newest delivery started {age:.1f} h ago and is still "
+                                   f"'{conclusion}' — in flight, so it has delivered no verdict "
+                                   f"(the next alarm delivery re-grades it)"),
+                        "age_hours": round(age, 2), "newest": newest["at"],
+                        "conclusion": conclusion, "missed": 0, "gaps": gaps[:6],
+                        "url": newest.get("url")}
+            return {"reason": (f"the newest delivery started {age:.1f} h ago and is STILL "
+                               f"'{conclusion}' past the {inflight_cap_hours} h in-flight cap — "
+                               f"a sweep that never concludes delivered nothing"),
+                    "hung": True, "age_hours": round(age, 2), "newest": newest["at"],
+                    "conclusion": conclusion, "missed": 0, "gaps": gaps[:6],
+                    "url": newest.get("url")}
         return {"reason": (f"the newest delivery is only {age:.1f} h old but concluded "
-                           f"'{newest.get('conclusion')}' — a sweep that ran and did not "
+                           f"'{conclusion}' — a sweep that ran and did not "
                            f"succeed delivered nothing"),
                 "age_hours": round(age, 2), "newest": newest["at"],
-                "conclusion": newest.get("conclusion"), "missed": 0, "gaps": gaps[:6],
+                "conclusion": conclusion, "missed": 0, "gaps": gaps[:6],
                 "url": newest.get("url"), "fresh": True}
     return {"reason": f"the newest delivery is {age:.1f} h old (max {max_age_hours} h)",
             "age_hours": round(age, 2), "newest": newest["at"], "conclusion": newest["conclusion"],
             "missed": missed_slots(newest["at"], now), "gaps": gaps[:6], "url": newest["url"]}
+
+
+def render_pending(verdict: dict) -> str:
+    """The mid-flight verdict, printed as PENDING so it is never read as health or as a drop."""
+    lines = [f"[sweep-alarm] PENDING: {verdict['reason']}",
+             f"  newest schedule run: {verdict['newest'].strftime('%Y-%m-%dT%H:%M:%SZ')} "
+             f"({verdict['conclusion']}) — in flight (issue #801), re-graded by the next "
+             f"alarm delivery",
+             f"  it is NOT a failure: no conclusion has been delivered yet"]
+    if verdict.get("url"):
+        lines.append(f"  run in flight: {verdict['url']}")
+    return "\n".join(lines)
 
 
 def render(verdict: dict, rows: list[dict], max_age_hours: float) -> str:
@@ -134,7 +176,10 @@ def render(verdict: dict, rows: list[dict], max_age_hours: float) -> str:
     if verdict.get("gaps"):
         lines.append("  gaps between the deliveries it can see: "
                      + ", ".join(f"{g} h" for g in verdict["gaps"]))
-    if verdict["conclusion"] not in ("success", None):
+    if verdict.get("hung"):
+        lines.append("  the delivery is HUNG: still running past the in-flight cap — a sweep "
+                     "that never concludes drains no queue (issue #801)")
+    elif verdict["conclusion"] not in ("success", None):
         lines.append(f"  the LAST delivery was {verdict['conclusion']} — a sweep that is red on "
                      f"every run looks the same as a missing one from here")
     if verdict.get("fresh"):
@@ -156,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", required=True, help="owner/name")
     ap.add_argument("--max-age-hours", type=float, default=168.0,
                     help="how stale the newest delivery may be (default 3)")
+    ap.add_argument("--inflight-cap-hours", type=float, default=3.0,
+                    help="how long a delivery may be in flight before it is HUNG (issue #801)")
     ap.add_argument("--now", default=None, help="Iso8601 instant to measure from (tests)")
     ap.add_argument("--limit", type=int, default=20, help="how many deliveries to read")
     args = ap.parse_args(argv)
@@ -167,12 +214,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[sweep-alarm] FAIL: {exc}", file=sys.stderr)
         return 2
 
-    verdict = stale(rows, now, args.max_age_hours)
+    verdict = stale(rows, now, args.max_age_hours, args.inflight_cap_hours)
     if verdict is None:
         newest = rows[0]
         print(f"[sweep-alarm] OK: newest schedule delivery "
               f"{newest['at'].strftime('%Y-%m-%dT%H:%M:%SZ')} ({newest['conclusion']}), "
               f"within {args.max_age_hours} h")
+        return 0
+    if verdict.get("pending"):
+        print(render_pending(verdict))
         return 0
     print(render(verdict, rows, args.max_age_hours))
     return 1
