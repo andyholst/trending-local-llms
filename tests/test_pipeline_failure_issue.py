@@ -39,7 +39,8 @@ REPO = "octo/repo"
 NOW = "2026-11-11T22:00:00Z"
 #: A FAKE credential planted in the stub log; NOUS_API_KEY is one of scrub_log's SECRET_VARS, so
 #: the filer's redactor must mask it in every spelling before any of it reaches an issue body.
-FAKE_SECRET = "gho_FAKE0123456789fakefake"
+FAKE_SECRET = "fake-secret-value-1"  # NOT a credential SHAPE (nerve_key_check, rule 3e):
+# scrub_log redacts it by NAME from the environment, which is exactly what the test verifies.
 
 #: The canned qa-validate.yml runs: one push-to-master failure (in window), one success, one
 #: manual dispatch (a collaborator's act, never tracked), one failure OUT of the window, and one
@@ -82,7 +83,7 @@ LOG_TEXT = """2026-11-11T20:04:00Z ##[group]Run make validate
 2026-11-11T20:06:00Z make: *** [validate] Error 1
 2026-11-11T20:06:01Z Traceback (most recent call last):
 2026-11-11T20:06:01Z ValueError: model bonsai-2-27b lost a measurement
-2026-11-11T20:06:02Z the auth header was Bearer gho_FAKE0123456789fakefake and it printed here
+2026-11-11T20:06:02Z the auth header was Bearer fake-secret-value-1 and it printed here
 2026-11-11T20:06:03Z ##[error]Process completed with exit code 2.
 """
 
