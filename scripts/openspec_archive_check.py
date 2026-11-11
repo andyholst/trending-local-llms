@@ -43,6 +43,7 @@ The repository comes from `--repo`, else `GITHUB_REPOSITORY`, else `gh`'s own
 resolution. Usage:
     python3 scripts/openspec_archive_check.py
     python3 scripts/openspec_archive_check.py --repo andyholst/trending-local-llms
+    python3 scripts/openspec_archive_check.py --pr 781   # validate a pull request (issue #779)
 """
 
 from __future__ import annotations
@@ -57,6 +58,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from openspec_index import discover, _refs  # noqa: E402  (one parser, one layout — rule 6d)
+from pr_closure import closing_bindings, visible_text  # noqa: E402  (one closing-keyword parser — rule 6d)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _PR_NUMBER = re.compile(r"#(\d+)")
@@ -121,6 +123,44 @@ def issue_closed_lookup(repo: str):
     return closed
 
 
+def closing_pr_issues(repo: str, pr: int) -> set[int]:
+    """The issues THIS pull request closes, from its title+body as GitHub links them.
+
+    The closing-keyword parser is `scripts/pr_closure.py`'s own (one
+    implementation, rule 6d): inline code spans do not close, and a keyword
+    binds the single reference that follows it. A PR whose state cannot be read
+    raises — the caller reports exit 2, never a clean scan it could not run.
+    """
+    title = _gh(["api", f"repos/{repo}/pulls/{pr}", "--jq", ".title"])
+    body = _gh(["api", f"repos/{repo}/pulls/{pr}", "--jq", ".body"])
+    if body == "null":  # a PR with no body
+        body = ""
+    text = visible_text(f"{title}\n{body}")
+    return {issue for issue, _refs_seen in closing_bindings(text)}
+
+
+def closing_pr_violations(
+    active: list[tuple[str, Path]], closing: set[int], this_pr: int
+) -> list[tuple[str, int]]:
+    """Active changes with no `PR:` line whose `Issue:` this very PR closes.
+
+    The AFTER-THE-FACT prongs can only see a stranded change once master is
+    already red (issue #779: PRs #777/#781 merged unarchived because their
+    runs used a pipeline copy predating the record step). This prong runs on
+    the PR itself: the head that merges must already record/archive the change
+    it completes.
+    """
+    bad: list[tuple[str, int]] = []
+    for name, path in active:
+        refs = _refs(path / "proposal.md")
+        if pr_number(refs.get("PR")) is not None:
+            continue
+        n_issue = pr_number(refs.get("Issue"))
+        if n_issue is not None and n_issue in closing:
+            bad.append((name, n_issue))
+    return bad
+
+
 def violations(active: list[tuple[str, Path]], merged, issue_closed) -> tuple[list[tuple[str, int]], list[tuple[str, int]]]:
     """(merged-PR, closed-issue) violations among the active changes, in tree order.
 
@@ -151,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--repo", default=None, help="owner/name (default: $GITHUB_REPOSITORY, else gh's own resolution)")
     ap.add_argument("--root", default=str(REPO_ROOT), help="repository root (default: this checkout)")
+    ap.add_argument("--pr", type=int, default=None, help="validate THIS pull request: an active change whose Issue it closes must name it (issue #779)")
     a = ap.parse_args(argv)
 
     root = Path(a.root)
@@ -177,20 +218,31 @@ def main(argv: list[str] | None = None) -> int:
     try:
         repo = resolve_repo(a.repo)
         bad_merged, bad_closed = violations(active, merged_lookup(repo), issue_closed_lookup(repo))
+        closing: set[int] = set()
+        bad_closing: list[tuple[str, int]] = []
+        if a.pr is not None:
+            closing = closing_pr_issues(repo, a.pr)
+            bad_closing = closing_pr_violations(active, closing, a.pr)
     except RuntimeError as exc:
         print(f"[archive-check] FAIL cannot read PR/issue state: {exc}", file=sys.stderr)
         return 2
 
-    if not bad_merged and not bad_closed:
+    if not bad_merged and not bad_closed and not bad_closing:
+        pr_part = (
+            f", --pr {a.pr} closes {', '.join(f'#{n}' for n in sorted(closing)) or 'nothing'} "
+            f"(no active change left unarchived)"
+            if a.pr is not None
+            else ""
+        )
         print(
             f"[archive-check] OK: {len(active)} active change(s), {len(with_pr)} naming a PR "
             f"(none merged), {len(with_issue)} naming only an issue (none closed), "
-            f"({len(archived)} archived)"
+            f"({len(archived)} archived){pr_part}"
         )
         return 0
 
     print(
-        f"[archive-check] FAIL {len(bad_merged) + len(bad_closed)} active change(s) sit in "
+        f"[archive-check] FAIL {len(bad_merged) + len(bad_closed) + len(bad_closing)} active change(s) sit in "
         f"openspec/changes/ whose work is already done (rules 6f/#513):",
         file=sys.stderr,
     )
@@ -206,6 +258,14 @@ def main(argv: list[str] | None = None) -> int:
             f"[archive-check]   {name} — issue #{n} is closed but no `PR:` line was ever "
             f"recorded (its completing PR merged without one): run "
             f"`make openspec-archive NAME={name}` and `make openspec-index`",
+            file=sys.stderr,
+        )
+    for name, n in bad_closing:
+        print(
+            f"[archive-check]   {name} — THIS PR #{a.pr} closes issue #{n} but the change is "
+            f"still active with no `PR:` line: its merge would strand the change (issue #779). "
+            f"Run `make openspec-record-pr ISSUE={n} PR={a.pr}` (it archives too) or "
+            f"`make openspec-archive NAME={name}` + `make openspec-index` on this branch before merge",
             file=sys.stderr,
         )
     return 1
