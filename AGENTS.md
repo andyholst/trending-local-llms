@@ -173,6 +173,20 @@ retains 30 days of history.
    the run id, carrying the registered `issue-bot-outcome` marker), and a refusal
    exits 2 loudly instead of reporting a pass.
 
+**The MESSAGE PATTERN (issue #771) — every issue, PR body and commit message.** Every
+artifact this repo composes must follow ONE parseable message pattern: the five sections
+`## Why` / `## What` / `## How` / `## Benefits` / `## Technical Solution` in order, each
+with content, and the PR body / squash commit ends with the single `closes <issue>` claim
+(rule 6e). The implementation PR body is COMPOSED with these sections by
+`scripts/pr_body.py::render`, and the pipeline VALIDATES it: `make pr-message-check`
+(`scripts/pr_body.py::section_problems` + `pr_closure.check`, one implementation) runs in
+`pr-closure.yml` on the webhook payload on `opened`/`edited`/`synchronize`, so a PR that
+skips, empties or misorders a section is refused before auto-merge. A refresh or
+architecture body implements no issue and is not a five-section artifact; the check skips
+the sections for it, exactly as the closure check discriminates by branch. The squash
+commit message follows by construction — its title comes from `pr_body.title()` and its
+body is the validated PR body — and bot-filed issues use the same sections.
+
 6f. **Every change is a TRACKED OpenSpec change, and the root `OPENSPEC.md`
    index is how you find them (MANDATORY).** Work MUST start by creating the
    change (`make openspec-new NAME=<kebab-name>`) — before any code — and the

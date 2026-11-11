@@ -80,3 +80,11 @@ jobs:
       # carry the NEW body, so the verdict always describes the text on screen now.
       - name: The PR closes the issue its branch implements (rule 6e)
         run: make pr-closure
+
+      # Issue #771: the same artifact — and the same body-on-screen model — gates the MESSAGE
+      # PATTERN: an implementation PR body must carry ## Why / ## What / ## How / ## Benefits
+      # / ## Technical Solution in order and end with its one closing claim. A refresh or
+      # architecture body implements no issue, so the composer's check skips the sections for
+      # it (pr_message_problems), exactly as the closure check already discriminates by branch.
+      - name: The PR follows the message pattern (issue #771)
+        run: make pr-message-check

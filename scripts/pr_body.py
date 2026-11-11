@@ -29,6 +29,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -48,6 +50,72 @@ def closing_line(issue: int) -> str:
     reference (`Closes #1 and #2`, which GitHub binds only to #1) cannot be introduced silently.
     """
     return f"Closes #{issue}"
+
+
+#: The MESSAGE PATTERN (issue #771): every implementation PR body carries these five
+#: `##`-headed sections in this exact order, each with at least one content line, then ends
+#: with the single `Closes #<n>` claim (rule 6e). `section_problems()` is the ONE parser, and
+#: `make pr-message-check` (the CI gate) and every test read the composer through it.
+MESSAGE_SECTIONS = ("Why", "What", "How", "Benefits", "Technical Solution")
+
+
+def section_problems(text: str) -> list[str]:
+    """Every message-pattern violation in `text`: a missing / repeated / out-of-order /
+    empty section. An empty list means the text follows the message pattern."""
+
+    problems: list[str] = []
+    lines = text.splitlines()
+    position: dict[str, int] = {}
+    order: list[str] = []
+    # A section ends at the NEXT markdown heading (`# … `), never at a line that merely
+    # starts with `#` followed by a digit or word without a space — e.g. a body that reads
+    # "#771 is a real gap…" is CONTENT, not a new heading.
+    heading = re.compile(r"^#{1,6}[ \t]")
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        for section in MESSAGE_SECTIONS:
+            if stripped == f"## {section}":
+                if section in position:
+                    problems.append(f"the '## {section}' section appears more than once")
+                else:
+                    position[section] = i
+                    order.append(section)
+                break
+
+    missing = [s for s in MESSAGE_SECTIONS if s not in position]
+    if missing:
+        problems.append("missing required section(s): "
+                        + ", ".join(f"## {s}" for s in missing))
+
+    present = [s for s in MESSAGE_SECTIONS if s in position]
+    if order != present:
+        problems.append("sections are out of order; expected "
+                        + " ".join(f"## {s}" for s in present) + " but saw "
+                        + " ".join(f"## {s}" for s in order))
+
+    for section in MESSAGE_SECTIONS:
+        if section not in position:
+            continue
+        start = position[section]
+        end = next((j for j in range(start + 1, len(lines))
+                    if heading.match(lines[j].strip())), len(lines))
+        if not any(lines[k].strip() for k in range(start + 1, end)):
+            problems.append(f"the '## {section}' section is empty (no content line)")
+    return problems
+
+
+def pr_message_problems(body: str, branch: str | None = None,
+                        issue: int | None = None) -> list[str]:
+    """Every message-pattern + closure problem for an implementation PR.
+
+    The message pattern applies to the PRs that IMPLEMENT an issue — a refresh or architecture
+    body is not a five-section artifact and must not be blocked by this gate. So the section
+    check runs only when the branch (or an explicit `--issue`) names an issue the PR
+    implements; `pr_closure.check` always runs, exactly as `make pr-closure` runs it today.
+    """
+    implemented = pr_closure.implemented_issue(branch)
+    sections = section_problems(body) if (issue is not None or implemented is not None) else []
+    return sections + pr_closure.check(body, branch, issue)
 
 
 #: The Conventional-Commit type each label earns. A `tech-debt` issue is a fix; a
@@ -94,27 +162,45 @@ def render(issue: int, branch: str | None = None) -> str:
                 f"— on merge the wrong issue is the one that moves"
             )
     opened_from = f" (`{branch}`)" if branch else ""
-    return f"""\
-Implements #{issue}{opened_from}.
-
-Spec-tracked: the change lives in `openspec/changes/` (proposal +
-capability spec in Given/When/Then + a tasks checklist with every box
-ticked), is listed in the root `OPENSPEC.md` index, and passes
-`make openspec-check`.
-
-Additive only: no existing key is removed or narrowed and no value is
-shrunk; a new key is OPTIONAL. Any value that could not be traced to a
-real source is left unset and called out in this body.
-
-Analysis ships issues: whatever the implementation noticed but did not
-fix is filed as its own `tech-debt` issue (linked to this PR) instead
-of being folded into this change.
-
-Auto-merged (squash, branch deleted) by qa-validate once `validate` and
-`live-smoke` are green on the head commit.
-
-{closing_line(issue)}
-"""
+    # The implementation body carries the MESSAGE PATTERN (issue #771): the five `##`
+    # sections in order, then the single closing claim. `section_problems()` /
+    # `pr_message_problems()` parse this exact shape, and `make pr-message-check` in
+    # `pr-closure.yml` gates it, so the composer and the CI gate cannot drift.
+    return (
+        f"Implements #{issue}{opened_from}.\n\n"
+        "## Why\n\n"
+        f"#{issue} is a real gap the analysis filed and no change has implemented yet; "
+        "this PR is the tracked change that delivers it.\n\n"
+        "## What\n\n"
+        f"#{issue} is implemented additively: the OpenSpec-tracked implementation\n"
+        "(proposal + capability spec in Given/When/Then + a tasks checklist with\n"
+        "every box ticked), the code, and the updated tests in the SAME commit\n"
+        "(rule 6b). No existing key is removed or narrowed and no value is shrunk; a\n"
+        "new key is OPTIONAL. Any value that could not be traced to a real source is\n"
+        "left unset and called out below.\n\n"
+        "## How\n\n"
+        "The change follows the repo's mandated path (rule 6f): it was created in\n"
+        "`openspec/changes/` before any code, is listed in the root `OPENSPEC.md`\n"
+        "index, and passes `make openspec-check`. Tests are updated in the same\n"
+        "change so `make test` stays green; `ARCHITECTURE.md` and `AGENTS.md` are kept\n"
+        "true when the change moves a target or a rule.\n\n"
+        "## Benefits\n\n"
+        f"A reviewer reads why/what/how/benefits/technical-solution in one place, the\n"
+        f"issue closes on merge (`{closing_line(issue)}`), and the squash commit message\n"
+        f"carries the same structure. The change is additive only and spec-tracked, so\n"
+        f"nothing existing is lost. Whatever the implementation noticed but did not fix\n"
+        f"is filed as its own `tech-debt` issue (linked to this PR) instead of being\n"
+        f"folded into this change (analysis ships issues, rule 6g).\n\n"
+        "## Technical Solution\n\n"
+        "Files this change touches: `openspec/changes/<this-change>/"
+        "{proposal,specs,tasks}.md`, the implementation module(s), and the tests\n"
+        "updated in the same commit; the root `OPENSPEC.md` index and `ARCHITECTURE.md`\n"
+        "are regenerated when the change moved them. Auto-merged (squash, branch\n"
+        "deleted) by qa-validate once `validate` and `live-smoke` are green on the head\n"
+        "commit. This body and the squash message are themselves validated by\n"
+        "`make pr-message-check` in `pr-closure.yml` (issue #771).\n\n"
+        f"{closing_line(issue)}\n"
+    )
 
 
 # The refresh body's contract sentence, kept HERE so the workflow redirects a target instead of
@@ -168,6 +254,100 @@ def architecture_body(run_url: str) -> str:
     return body
 
 
+def _commit_issue(text: str) -> int | None:
+    """The issue a squash COMMIT message implements, from the first `#<n>` in it.
+
+    The repo's squash title names the issue (`fix(tech-debt): implement #518 …`) and the
+    body ends with `Closes #<n>`, so the first reference IS the implemented issue — read
+    from the artifact itself, never from a branch name, because a push-to-master squash
+    lands on `refs/heads/master` which encodes nothing. The commit-message gate needs it to
+    run the closure half of the check on the right issue.
+    """
+    m = re.search(r"#(\d+)", text)
+    return int(m.group(1)) if m else None
+
+
+def _read_issue_event(path: str) -> tuple[str, int | None]:
+    """(issue body, issue number) from an `issues` webhook payload ($GITHUB_EVENT_PATH)."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    issue = data.get("issue") or {}
+    return issue.get("body") or "", issue.get("number")
+
+
+def _problems_for(artifact: str, text: str, branch: str | None = None,
+                  issue: int | None = None) -> list[str]:
+    """The MESSAGE-PATTERN + closure problems for one artifact (issue #771).
+
+    artifact "issue" is the five `##` sections ONLY — an issue links its origin but
+    closes nothing (rule 6e). artifact "pr" and "commit" are sections + closure
+    (`pr_message_problems`): a PR closes the issue it implements, and the squash commit a
+    merge lands closes it too. The closing-keyword semantics are always `pr_closure`'s.
+    """
+    if artifact == "issue":
+        return section_problems(text)
+    return pr_message_problems(text, branch, issue)
+
+
+def _check_message(args) -> int:
+    """CLI seal for the message-pattern gates (issue #771): validate a PR body, an issue
+    body, or a commit message against the message pattern (+ closure for PR/commit). When
+    a webhook `--event` / `--issue-event` is passed, the artifact is read from the payload
+    exactly as `pr-closure` does, so the gate reads the artifact on screen now (#290)."""
+    if args.check_body_file or args.check_event:
+        artifact, label = "pr", "pr-message-check"
+    elif args.check_issue_file or args.issue_event:
+        artifact, label = "issue", "issue-message-check"
+    elif args.check_commit_file:
+        artifact, label = "commit", "commit-message-check"
+    else:
+        print("Usage: pr_body.py --check-body-file <f> [--branch <b>] | --event <payload> "
+              "| --check-issue-file <f> | --issue-event <payload> | --check-commit-file <f> "
+              "[--issue <n>]", file=sys.stderr)
+        return 2
+
+    text = branch = issue = None
+    if artifact == "pr":
+        if args.check_event:
+            text, head = pr_closure.read_event(args.check_event)
+            branch = args.branch or head
+            if not text:
+                print(f"[{label}] no pull_request body in this event — nothing to check.",
+                      file=sys.stderr)
+                return 0
+        elif args.check_body_file:
+            text = Path(args.check_body_file).read_text(encoding="utf-8")
+            branch = args.branch
+        issue = args.issue
+    elif artifact == "issue":
+        if args.issue_event:
+            text, n = _read_issue_event(args.issue_event)
+            issue = args.issue if args.issue is not None else n
+            if not text:
+                print(f"[{label}] no issue body in this event — nothing to check.",
+                      file=sys.stderr)
+                return 0
+        elif args.check_issue_file:
+            text = Path(args.check_issue_file).read_text(encoding="utf-8")
+            issue = args.issue
+    elif artifact == "commit":
+        text = Path(args.check_commit_file).read_text(encoding="utf-8")
+        branch = args.branch
+        # A squash commit lands on refs/heads/master which encodes no issue — read the
+        # implemented issue from the message itself (its title names the `#<n>`).
+        issue = args.issue if args.issue is not None else _commit_issue(text)
+
+    problems = _problems_for(artifact, text or "", branch, issue)
+    if problems:
+        print(f"[{label}] REFUSED: {branch or '(no branch)'} — {len(problems)} problem(s):",
+              file=sys.stderr)
+        for p in problems:
+            print(f"  - {p}", file=sys.stderr)
+        return 1
+    print(f"[{label}] OK: follows the message pattern "
+          f"({'#' + str(issue) if issue else '(no issue named)'}).")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Compose the implementation PR body (issue #287).")
     ap.add_argument("--issue", type=int, help="the issue this PR implements (body/title modes)")
@@ -180,6 +360,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--run-url", default="", help="the architecture run URL")
     ap.add_argument("--title", action="store_true",
                     help="print the PR TITLE for --kind instead of the body (issue #541)")
+    ap.add_argument("--check-body-file", dest="check_body_file",
+                    help="validate a PR body FILE against the message pattern + closure")
+    ap.add_argument("--check-issue-file", dest="check_issue_file",
+                    help="validate an ISSUE body FILE against the message pattern (five sections)")
+    ap.add_argument("--check-commit-file", dest="check_commit_file",
+                    help="validate a COMMIT message FILE against the message pattern + closure")
+    ap.add_argument("--event", dest="check_event",
+                    help="webhook payload ($GITHUB_EVENT_PATH) to validate (like pr-closure)")
+    ap.add_argument("--issue-event", dest="issue_event",
+                    help="an `issues` webhook payload ($GITHUB_EVENT_PATH) to validate")
     # `--kind` is deliberately NOT `choices=`: the value comes from the issue's labels at run time,
     # and an unrecognised one must never stop a PR from opening — that would turn a mislabelled
     # issue into a bot that cannot land its own work (measured on PR #609, where a gh read that did
@@ -189,6 +379,13 @@ def main(argv: list[str] | None = None) -> int:
                     help=f"the kind of issue this PR implements: {', '.join(sorted(KIND_TYPES))} "
                          f"(default: data-gap; anything else falls back with a warning)")
     args = ap.parse_args(argv)
+
+    # The message-pattern/closure gate (issue #771): validate a PR body, an issue body or a
+    # commit message instead of composing. Reached only through the `make *-message-check`
+    # targets (rules 6d/6m).
+    if (args.check_body_file or args.event or args.check_issue_file
+            or args.issue_event or args.check_commit_file):
+        return _check_message(args)
 
     # The two NON-implementation bodies (issue #542) — they close no issue, so they never
     # reach the `render()` path that binds a closing keyword.
