@@ -2137,6 +2137,65 @@ def refuse_fabricated_engines(
     return kept, refused
 
 
+def weight_gb_contradiction_reason(e: dict, model: dict, store: dict | None) -> str | None:
+    """Why `e`'s stated `weight_gb` cannot belong to `model` — or None when it could.
+
+    The refusal is the write-time half of the #614 reader guard: a stated value that is more
+    than `WEIGHTS_CONTRADICTION_FACTOR` away from the model's OWN footprint is not this model's
+    weights (measured: Bonsai 2 9B, a 2 GB ternary model, carried `~493GB NVFP4` on a 4x M5
+    Ultra run that the tier ladder read as proof it needs a 512 GB machine). The model's own
+    footprint is its model-level `weight_gb`; when the raw row does not state one, the store's
+    existing row for the same id supplies it (a raw row often carries only per-measurement
+    footprints while the store holds the model-level one merged from an earlier capture). A row
+    with no stated weight, or no own footprint anywhere, returns None (fail-open — unknown
+    proves nothing; never refuse what is not provable).
+    """
+    stated = _gb_value(e.get("weight_gb"))
+    if stated is None:
+        return None
+    model_level = _gb_value(model.get("weight_gb"))
+    if model_level is None and store is not None and model.get("id"):
+        for m in store.get("models", []):
+            if m.get("id") == model["id"]:
+                model_level = _gb_value(m.get("weight_gb"))
+                break
+    if model_level is None or model_level <= 0:
+        return None
+    ratio = max(stated, model_level) / min(stated, model_level)
+    if ratio <= WEIGHTS_CONTRADICTION_FACTOR:
+        return None
+    return (
+        f"stated weight_gb {e.get('weight_gb')!r} is {ratio:.1f}x the model's own footprint "
+        f"{model.get('weight_gb') or f'{model_level:g} GB'} — a figure that cannot belong to "
+        f"this model"
+    )
+
+
+def refuse_weight_gb_contradictions(
+    model: dict, store: dict | None = None
+) -> tuple[list[dict], list[tuple[str, str, str]]]:
+    """Split a model's measurements into (kept, [(engine, why, source_post)] refused).
+
+    Applied at INGEST, before a raw row merges into the store, so a measurement whose stated
+    `weight_gb` contradicts the model's own footprint by more than `WEIGHTS_CONTRADICTION_FACTOR`
+    never lands (the same seam as `refuse_fabricated_engines` #458, `refuse_misattributed_measurements`
+    #468 and `refuse_cross_model_duplicate_measurements` #702), loudly naming the source post so
+    a human can open the evidence. A measurement with no stated weight, or whose model has no
+    own footprint anywhere, is kept (fail-open).
+    """
+    kept: list[dict] = []
+    refused: list[tuple[str, str, str]] = []
+    for e in model.get("engines") or []:
+        why = weight_gb_contradiction_reason(e, model, store)
+        if why:
+            refused.append((str(e.get("engine")), why,
+                            str(e.get("source_post") or model.get("source_post") or "unknown")))
+        else:
+            kept.append(e)
+    return kept, refused
+
+
+
 #: An EXPLICIT alias mapping for measurement attribution: a row's id -> the ids of
 #: models whose names a measurement on that row may legitimately mention (a variant
 #: row naming its base model, a bake-off row naming the model it compares against).
@@ -2489,6 +2548,22 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"[ingest] REFUSED cross-model duplicate measurement {name!r} on "
                         f"{m.get('id')}: {why}; post {post} — a t/s tuple already stored "
                         f"on another model is a copy, not a measurement of this model"
+                    )
+        # A measurement whose stated weight_gb CONTRADICTS the model's own footprint is not
+        # this model's weights either (the write-time half of #614): measured — Bonsai 2 9B, a
+        # 2 GB ternary model, carried `~493GB NVFP4` on a 4x M5 Ultra run, which the tier ladder
+        # happily read as proof it needs a 512 GB machine. The reader already refuses the
+        # contradiction when asked, but the stored row still carries it for every other consumer;
+        # refuse it HERE, loudly and by source post, so the value never enters the store.
+        for m in data.get("models", []):
+            kept, refused = refuse_weight_gb_contradictions(m, store)
+            if refused:
+                m["engines"] = kept
+                for name, why, post in refused:
+                    print(
+                        f"[ingest] REFUSED weight-gb contradiction {name!r} on {m.get('id')}: "
+                        f"{why}; post {post} — a stated weight that cannot belong to this model "
+                        f"is not evidence about it"
                     )
         for m in data.get("models", []):
             mid = m.get("id")
