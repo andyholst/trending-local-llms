@@ -1,5 +1,7 @@
 # Proposal: install-pin-carries-version
 
+**Issue:** [#218](https://github.com/andyholst/trending-local-llms/issues/218)
+
 ## Why
 
 Issue #218 (tech-debt, filed while implementing #207): the install "pin" is a URL, not a version. `ARG HERMES_INSTALL_URL=…/install.sh` + `ARG HERMES_PACKAGE="hermes-agent"` mean the SAME Dockerfile content-hash tag (rule 6k, issue #135) can build images containing DIFFERENT agent versions — the installer's `stable` channel serves whatever the latest published release is the day the build runs. A content-hash tag only promises reproducibility if what it installs is pinned and checkable.
