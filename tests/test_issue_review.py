@@ -634,6 +634,69 @@ def _module():
     return mod
 
 
+def _load(name: str):
+    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / f"{name}.py")
+    assert spec and spec.loader, name
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_the_queue_label_has_one_definition_and_no_reader_copy():
+    """Issue #661 (rules 6j/6d): the reviewer's pick passed the bare literal
+    "data-gap-analysis" to the queue builder, and the gap filer kept its own
+    `LABEL = "data-gap-analysis"` — three copies of one shared label. Renaming
+    `QUEUE_LABELS` would then leave the sweep and the reviewer reading TWO
+    different queues with no error anywhere, the exact silent drift the marker
+    registry rule exists to prevent. The literal may exist in exactly ONE file:
+    the definition itself."""
+
+    # Given every tracked script
+    scripts = sorted((ROOT / "scripts").glob("*.py"))
+
+    # Then  only the queue definition carries the label as a literal
+    carriers = [p.name for p in scripts
+                if '"data-gap-analysis"' in p.read_text()
+                or "'data-gap-analysis'" in p.read_text()]
+    check("labels: exactly one script carries the queue label as a literal (issue #661)",
+          carriers == ["issue_queue.py"], str(carriers))
+
+    # And  the gap filer's label is DERIVED from the queue's own first label
+    iq = _module()
+    gap = _load("data_gap_analysis")
+    check("labels: data_gap_analysis.LABEL == QUEUE_LABELS[0] (issue #661)",
+          gap.LABEL == iq.QUEUE_LABELS[0], str((gap.LABEL, iq.QUEUE_LABELS)))
+
+
+def test_the_reviewer_asks_the_queue_for_its_own_label_end_to_end():
+    """The reviewer's REAL `--pick` runs the REAL queue reader (stub `gh` is the
+    only replaced system) and the label it queries is exactly the queue's first
+    label — asserted from the recorded argv, not from the reviewer's source
+    (issue #661)."""
+
+    iq = _module()
+
+    # Given four candidates and the gh stub: the reviewer defers the three the next
+    # sweeps will implement and reviews the 4th (issue #179's window rule)
+    with tempfile.TemporaryDirectory() as td:
+        env = env_for(Path(td), issues=four_issues())
+
+        # When  the reviewer picks
+        proc = run(REVIEW, "--pick", "--repo", "o/r", "--now", NOW, env=env)
+        calls = [json.loads(line) for line in (Path(td) / "calls.log").read_text().splitlines()
+                 if line.strip()]
+
+    asked = [c[c.index("--label") + 1] for c in calls
+             if "--label" in c and len(c) > c.index("--label") + 1]
+
+    # Then  the pick answers, and every label it asked for is the queue's own
+    check("reviewer pick: it takes the reviewable issue",
+          proc.returncode == 0 and "issue=176" in proc.stdout,
+          str((proc.returncode, proc.stdout[-200:])))
+    check("reviewer pick: it queries the queue's first label, never a re-spelled literal (issue #661)",
+          asked == [iq.QUEUE_LABELS[0]], str(asked))
+
+
 def test_a_run_never_blocks_its_own_guard_but_another_run_does():
     """The marker carries the run id: the mark cannot block the run that wrote it."""
 
@@ -1198,6 +1261,8 @@ def main() -> int:
     test_mark_sets_the_label_and_never_writes_a_body_marker_for_the_window_path()
     test_body_hash_and_finish_are_the_write_proof_and_the_cleanup()
     test_the_reviewer_reads_the_one_queue_the_implementer_reads()
+    test_the_queue_label_has_one_definition_and_no_reader_copy()
+    test_the_reviewer_asks_the_queue_for_its_own_label_end_to_end()
     test_the_clock_is_injected_never_read_from_the_wall_clock()
     test_a_reviewer_that_keeps_re_dating_a_verdict_cannot_hold_for_ever()
     test_the_verdict_chain_breaks_across_a_stale_gap()
