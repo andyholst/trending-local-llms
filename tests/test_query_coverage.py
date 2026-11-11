@@ -139,7 +139,7 @@ def test_a_footprint_query_names_each_ranked_model():
     check("footprint: one query per trending model", len(foot) == 2, foot)
     check("footprint: the query names the ranked model",
           UT.query_names_model(one, store["models"][0]), one)
-    for term in ("vram", "ram", "context", "weights"):
+    for term in ("vram", "ram", "context", "weights", "offload", "engine version"):
         check(f"footprint: the query asks for {term}", term in one, one)
     check("footprint: it names only its own model, never a sibling",
           not UT.query_names_model(one, {"id": "qwen3.8-27b"}), one)
@@ -172,6 +172,38 @@ def test_a_sibling_model_query_does_not_cover():
                   for qs in UT.SEARCH_GROUPS.values() for q2 in qs))
 
 
+def test_every_ranked_gap_dimension_is_asked():
+    """A dimension the analysis RANKS but no query ASKS can never be closed by a
+    search (issue #460: `storage_offload` was missing on 59 models and
+    `engine_min_version` on 35 while every ranked model had a throughput query AND a
+    footprint query — the suffix asked for four dimensions, the analysis ranked five).
+    The suffix is pinned to the ONE dimension list, not to a hand-kept second list.
+    """
+    import data_gap_analysis as gaps
+
+    # Given the ranked dimensions themselves
+    dims = [str(d["key"]) for d in gaps.DIMENSIONS]
+    check("dimensions: the analysis ranks five", len(dims) >= 5, dims)
+
+    # When  the ONE implementation compares them against the footprint suffix
+    not_asked = UT.dimensions_not_asked()
+
+    # Then  no ranked dimension is unasked — and the ask is proven on a REAL query
+    check("dimensions: no ranked dimension is asked by nothing", not_asked == [], not_asked)
+    one = UT.footprint_query({"id": "qwen3.8-27b"})
+    for key in dims:
+        token = UT.DIMENSION_ASK_TOKENS.get(key, key)
+        check(f"dimensions: {key} is asked by the word {token!r}", token in one, one)
+
+    # And  the guard itself says so through the real CLI over the real store
+    proc = subprocess.run([sys.executable, str(SCRIPT), "--top", str(UT.QUERY_TOP_N), "--json"],
+                          capture_output=True, text=True, cwd=str(ROOT))
+    payload = json.loads(proc.stdout)
+    check("guard: the real coverage run reports zero unasked dimensions",
+          proc.returncode == 0 and payload["dimensions_missing"] == [],
+          payload.get("dimensions_missing"))
+
+
 def test_the_prompts_and_the_guard_are_wired():
     # Given the Makefile that drives the searches
     mk = (ROOT / "Makefile").read_text()
@@ -198,7 +230,8 @@ def test_the_prompts_and_the_guard_are_wired():
     # that tells the agent what they ask for — a bare list would read as more throughput
     # queries and the footprint figure would stay unrecorded.
     check("wiring: the expanded prompt carries a footprint query",
-          "qwen3.8-flash-next-125b vram ram context weights" in out, out[:200])
+          "qwen3.8-flash-next-125b vram ram context weights offload engine version" in out,
+          out[:200])
     # The wording that tells the agent what the footprint queries ASK for lives in the leg's
     # PRELOADED skill, not in the prompt (issue #638: a prompt is a pointer plus this run's
     # parameters, so a rule duplicated there would drift from the one reviewed file).
@@ -263,7 +296,8 @@ def test_the_rule_is_documented():
     # each ranked model gets TWO queries, so the footprint half is never read as more throughput.
     leg = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
     check("docs: the leg's skill says each ranked model gets a footprint query",
-          "**two** queries" in leg and "**footprint** (`<id> vram ram context weights`)" in leg,
+          "**two** queries" in leg
+          and "**footprint** (`<id> vram ram context weights offload engine version`)" in leg,
           leg[:400])
 
 
@@ -274,6 +308,7 @@ def main() -> int:
     test_the_curated_queries_are_kept()
     test_a_sibling_model_query_does_not_cover()
     test_a_footprint_query_names_each_ranked_model()
+    test_every_ranked_gap_dimension_is_asked()
     test_the_prompts_and_the_guard_are_wired()
     test_the_rule_is_documented()
     test_the_real_store_is_covered()

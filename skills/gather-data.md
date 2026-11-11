@@ -138,7 +138,7 @@ verified against the lightbrd.com mirror.
 > search leg ALSO runs the **trending-model queries** — TWO per model in the top
 > `QUERY_TOP_N` (10) of `data/models.json`: one for its throughput, naming the
 > model by its own id (`<id> tokens per second`), and one for its footprint
-> (`<id> vram ram context weights`). The second exists because a post that
+> (`<id> vram ram context weights offload engine version`). The second exists because a post that
 > answers a throughput query can legitimately state no VRAM, weight size, context
 > window or engine build — which is exactly why those dimension gaps stayed open
 > while every ranked model already had captured rows. They are derived from the
