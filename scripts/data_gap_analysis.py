@@ -50,6 +50,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import refresh_run_block  # noqa: E402
+# The label this filer writes is the QUEUE's own first label (issue #661, rule 6j):
+# `issue_queue.QUEUE_LABELS` is the ONE list the sweep, the reviewer and this filer
+# all read — a second literal copy here would drift silently if the queue renamed.
+import issue_queue  # noqa: E402
 # The ONE raw-row -> store-model resolver (rule 6d): the classification below maps
 # each captured row to the store id ingest would give it, so it can never disagree
 # with the merge about which model a post belongs to.
@@ -60,7 +64,7 @@ CONTRACT = DATA / "model_contract.json"
 SEARCH_CONTRACT = DATA / "search_contract.json"
 RAW_DIR = DATA / "raw"
 DEFAULT_BASELINE = DATA / "gap_baseline.json"
-LABEL = "data-gap-analysis"
+LABEL = issue_queue.QUEUE_LABELS[0]
 LABEL_COLOR = "5319e7"
 LABEL_DESCRIPTION = "Post-refresh data-gap analysis (missing requirement dimensions in the store)"
 
