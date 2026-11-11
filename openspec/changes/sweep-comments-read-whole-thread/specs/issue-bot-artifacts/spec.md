@@ -29,4 +29,4 @@ the same run id. `_comments()` MUST use `gh api … --paginate --jq .[]` (the sh
 - **When** the tool decides whether to comment
 - **Then** it fails loudly (non-zero, naming the read it could not make) rather than deciding
   from an empty thread
-- **Test:** tests/test_sweep_outcome.py::test_a_failed_comment_read_fails_loudly
+- **Test:** tests/test_sweep_outcome.py::test_a_missing_or_unreadable_issue_is_loud

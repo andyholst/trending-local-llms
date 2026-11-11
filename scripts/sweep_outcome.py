@@ -118,12 +118,22 @@ def already_said(comments: list[dict], run_id: str) -> str | None:
 
 
 def _comments(repo: str, issue: str) -> list[dict]:
-    out = _gh(["api", f"repos/{repo}/issues/{issue}/comments?per_page=100",
-               "--jq", "[.[] | {createdAt, body}]"])
+    # --paginate + `.[]` yields one JSON object per line across EVERY page (issue #662):
+    # GitHub returns comments oldest-first, and the marker this dedup hunts for is the
+    # NEWEST one — a first-page-only read would miss it and double-post. Same shape as
+    # scripts/issue_thread.py's thread reader.
+    out = _gh(["api", f"repos/{repo}/issues/{issue}/comments", "--paginate",
+               "--jq", ".[]"])
+    comments: list[dict] = []
     try:
-        return json.loads(out or "[]")
+        for line in out.splitlines():
+            if line.strip():
+                comment = json.loads(line)
+                comments.append({"createdAt": comment.get("createdAt"),
+                                 "body": comment.get("body")})
     except json.JSONDecodeError as exc:
         raise GhError(f"could not read #{issue}'s comments: {exc}") from None
+    return comments
 
 
 def _stages(values: list[str]) -> dict[str, str]:

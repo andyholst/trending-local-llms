@@ -52,7 +52,14 @@ if args[:2] == ["issue", "comment"]:
     print("https://github.com/x/y/issues/1#issuecomment-1")
     sys.exit(0)
 if args[:1] == ["api"] and "/comments" in args[1]:
-    print((D / "comments.json").read_text())
+    data = json.loads((D / "comments.json").read_text())
+    if "--paginate" in args:
+        # --paginate + `.[]` answers one JSON object PER LINE across every page.
+        for c in data:
+            print(json.dumps(c))
+    else:
+        # NO --paginate: GitHub answers the FIRST page only (oldest-first, 100 max).
+        print(json.dumps(data[:100]))
     sys.exit(0)
 sys.exit(2)
 '''
@@ -247,10 +254,40 @@ def test_the_wiring_has_one_entry_point() -> None:
           "the body belongs in the script")
 
 
+def test_a_long_thread_is_read_whole_for_the_dedupe() -> None:
+    """Issue #662: the marker this dedup hunts for is the NEWEST comment; a reader that
+    stops at the first 100 comments posts a second outcome comment on a busy issue."""
+    print("sweep outcome: the dedup reads the WHOLE thread (#662)")
+    with tempfile.TemporaryDirectory() as raw:
+        td = Path(raw)
+        env = env_for(td)
+        args = ["--repo", "o/r", "--issue", "662", "--run-id", RUN, "--run-url", RUN_URL,
+                "--branch", "b", "--stages", "resolve=success implement=failure verdict=skipped",
+                "--now", "2026-10-28T12:00:00Z"]
+        first = run(args + ["--post"], env)
+        check("the first post lands", first.returncode == 0 and len(posted(td)) == 1,
+              first.stderr or posted(td))
+        body = posted(td)[0]["body"]
+        # A thread of 150 comments: 149 replies, then THIS run's outcome marker LAST.
+        busy = [{"createdAt": f"2026-10-28T09:{i // 60:02d}:{i % 60:02d}Z",
+                 "body": f"busy reply {i}"} for i in range(1, 150)]
+        busy.append({"createdAt": "2026-10-28T12:00:05Z", "body": body})
+        again = run(args + ["--post"], env_for(td, comments=busy))
+        check("a 150-comment thread whose LAST comment is this run's marker posts NOTHING",
+              again.returncode == 0 and len(posted(td)) == 1, again.stdout + again.stderr)
+        calls = [json.loads(line) for line in (td / "calls.log").read_text().splitlines() if line]
+        reads = [c for c in calls if c[:1] == ["api"] and "/comments" in c[1]]
+        check("the comment read carries `--paginate`",
+              bool(reads) and all("--paginate" in c for c in reads), reads)
+        check("…and no `per_page=100` first-page truncation",
+              all("per_page=100" not in c[1] for c in reads), reads)
+
+
 def main() -> int:
     test_the_decision_names_every_refusal()
     test_the_body_carries_the_registered_marker()
     test_a_second_post_for_the_same_run_writes_nothing()
+    test_a_long_thread_is_read_whole_for_the_dedupe()
     test_a_missing_or_unreadable_issue_is_loud()
     test_the_wiring_has_one_entry_point()
     print(f"\nPASSED {passed} | FAILED {failed}")
