@@ -1,0 +1,59 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "141.3",
+          "hardware": "NVIDIA RTX 5070 12GB",
+          "quant": "IQ3_XXS, expert caching, CPU/RAM offload, MTP; 141.3 aggregate decode across nine prompts (118.7 median generation for short chats)",
+          "date": "2026-11-08",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2119271363995201817",
+          "context_tokens": "192K",
+          "system_ram_min": "64GB",
+          "engine_min_version": "Strata 0.2.10",
+          "likes": 6,
+          "comments": 0,
+          "reshares": 2,
+          "views": 769,
+          "interactions": 778
+        },
+        {
+          "engine": "llama.cpp (LlamAmpere fork)",
+          "tps": "121",
+          "hardware": "RTX 3090 24GB + 64GB system RAM",
+          "quant": "~80GB quant (51B n-gram table resident in system RAM)",
+          "date": "2026-11-08",
+          "source_post": "https://lightbrd.com/MartinSzerment/status/2119407682117382235",
+          "weight_gb": "~80GB",
+          "context_tokens": "100K",
+          "system_ram_min": "64GB",
+          "engine_min_version": "llamAmpere 0.6.3",
+          "likes": 408,
+          "comments": 0,
+          "reshares": 1,
+          "views": 0,
+          "interactions": 410
+        }
+      ],
+      "last_seen": "2026-11-08"
+    }
+  ],
+  "generated_utc": "2026-11-11T13:47:27Z"
+}

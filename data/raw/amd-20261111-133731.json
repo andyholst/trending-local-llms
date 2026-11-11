@@ -1,0 +1,43 @@
+{
+  "backend": "amd",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b-strix-halo-strata",
+      "name": "Qwen3.8-Flash-Next 125B on Strix Halo (Strata)",
+      "full_name": "Qwen3.8-Flash-Next 125B via Strata on a Strix Halo laptop (Unsloth Q4 / GSQ-RCO weights)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "125B",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "formats": [
+        {
+          "name": "Qwen3.8-Flash-Next 125B on Strix Halo (Strata)",
+          "hf": "Qwen/Qwen3.8-Flash-Next"
+        }
+      ],
+      "vram_tier": "96GB",
+      "vram_min": "16GB",
+      "backends": [
+        "ROCm",
+        "Metal"
+      ],
+      "last_seen": "2026-11-09",
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "49.1",
+          "hardware": "AMD Strix Halo (Radeon 8060S / Ryzen AI Max, integrated Radeon)",
+          "quant": "UD-Q4_K_XL; ROCm; Strata v0.2.13; decode 46.6-49.1 t/s (upper recorded)",
+          "date": "2026-11-09",
+          "engine_min_version": "Strata v0.2.13",
+          "source_post": "https://lightbrd.com/uctive/status/2119777745848689029",
+          "likes": 2,
+          "comments": 0,
+          "reshares": 27,
+          "views": 5465
+        }
+      ]
+    }
+  ],
+  "generated_utc": "2026-11-11T13:37:31Z"
+}
