@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **18** · archived: **190**
+Active changes: **17** · archived: **191**
 
 ## Active changes
 
@@ -22,7 +22,6 @@ Active changes: **18** · archived: **190**
 | `index-failure-names-its-cause` | active | none — found while unblocking the dispatch-bot verification pass. | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
-| `message-pattern-in-pr-bodies` | active | #771 | — | [message-pattern-enforcement](openspec/changes/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/message-pattern-in-pr-bodies/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `openspec-record-pr-idempotent` | active | #754 (tech-debt, "openspec-record-pr is not idempotent: a re-run on an | — | [change-lifecycle](openspec/changes/openspec-record-pr-idempotent/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-record-pr-idempotent/proposal.md) |
@@ -140,6 +139,7 @@ Active changes: **18** · archived: **190**
 | `measurement-engine-min-version` | archived | #371 | #374 | [measurement-source-dimensions](openspec/changes/archive/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/measurement-engine-min-version/proposal.md) |
 | `measurement-store-normalized` | archived | #697 — `#689 slice 2: switch readers onto normalized measurement store, drop inline engines[]` | — | [catalog-measurements](openspec/changes/archive/measurement-store-normalized/specs/catalog-measurements/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-normalized/proposal.md) |
 | `measurement-store-split` | archived | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/archive/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-split/proposal.md) |
+| `message-pattern-in-pr-bodies` | archived | #771 | #772 | [message-pattern-enforcement](openspec/changes/archive/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/message-pattern-in-pr-bodies/proposal.md) |
 | `model-id-matches-the-contract` | archived | #464 (measured on PR #461) | — | [model-id](openspec/changes/archive/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/model-id-matches-the-contract/proposal.md) |
 | `models-order-matches-readme` | archived | #708 | — | [models-order-matches-readme](openspec/changes/archive/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/models-order-matches-readme/proposal.md) |
 | `no-clarify-detach` | archived | #679 — the recurring refresh-leg failure (measured on the amd leg, run | — | [unattended-leg](openspec/changes/archive/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/no-clarify-detach/proposal.md) |

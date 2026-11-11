@@ -1,6 +1,7 @@
 # An implementation PR / issue / commit that follows the message pattern
 
 **Issue:** [#771](https://github.com/andyholst/trending-local-llms/issues/771)
+PR: #772
 **Capability:** `message-pattern-enforcement`
 
 ## Why
