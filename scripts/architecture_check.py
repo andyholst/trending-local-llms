@@ -55,21 +55,71 @@ from architecture_bot import public_targets, workflow_jobs  # noqa: E402
 
 DOC_NAME = "ARCHITECTURE.md"
 VALIDATOR = "scripts/validate.py"
-TARGET_SECTION = "## 3."
-NEXT_SECTION = "## 4."
+#: Section boundaries are STABLE HTML-comment ANCHORS, never prose headings
+#: (this issue): a heading like `## 6.` is re-numberable prose — #479 added §10
+#: and pushed every heading that followed — and a plain-text match against the
+#: heading silently repoints a check when the numbers move. Each boundary is a
+#: comment placed in the document beside its section, so a renumber moves the
+#: anchor nowhere and the guard keeps reading the section it means. The anchor's
+#: presence is itself a structural claim (rule 6h), so `findings()` fails LOUDLY
+#: naming the missing anchor instead of reading an empty or shifted section for
+#: the wrong reason.
+TARGET_SECTION = "<!-- arch:targets -->"
+NEXT_SECTION = "<!-- arch:pipelines -->"
 #: The RULEBOOK's own pipeline list — the section a contributor reads first, and
 #: the fourth place a workflow has to be named (issue `agents-md-6b-enumerates…`).
 #: `ARCHITECTURE.md` §4 is canonical for a pipeline's SHAPE (its §4 section and job
 #: list are checked below); §6b is where the rule that governs it lives.
 AGENTS_DOC = "AGENTS.md"
-RULEBOOK_SECTION = "## 6b."
-RULEBOOK_NEXT_SECTION = "## 7."
+RULEBOOK_SECTION = "<!-- agents:rulebook -->"
+RULEBOOK_NEXT_SECTION = "<!-- agents:style -->"
 #: The human-readable SCRIPT inventory. §10's generated block names every script
 #: too, so "the name appears somewhere" (the old rule) was satisfied by the block
 #: while §6 — the table a reader actually uses to learn what a script does — lost
 #: 9 of 46 entries (issue #506).
-SCRIPT_SECTION = "## 6."
-SCRIPT_NEXT_SECTION = "## 7."
+SCRIPT_SECTION = "<!-- arch:scripts -->"
+SCRIPT_NEXT_SECTION = "<!-- arch:guards -->"
+
+#: Every boundary anchor this guard reads, per document. A section's REGION is a
+#: structural claim, so a missing anchor is a finding that NAMES the anchor — never
+#: the wrong-reason cascade (a silent empty read reporting "every script has no
+#: row") of a heading the check stopped matching.
+_REQUIRED_ANCHORS: tuple[tuple[str, str, str], ...] = (
+    (DOC_NAME, "make-target tables", TARGET_SECTION),
+    (DOC_NAME, "pipelines", NEXT_SECTION),
+    (DOC_NAME, "script inventory", SCRIPT_SECTION),
+    (DOC_NAME, "guards", SCRIPT_NEXT_SECTION),
+    (AGENTS_DOC, "rulebook pipeline list", RULEBOOK_SECTION),
+    (AGENTS_DOC, "style", RULEBOOK_NEXT_SECTION),
+)
+
+
+def anchor_findings(docs: dict[str, str]) -> list[str]:
+    """Every boundary anchor a present document lost, or stranded from its section.
+
+    Two failures, one rule: the anchor IS the boundary the guard reads, so a
+    document that dropped one silently repoints a check (the wrong-reason cascade),
+    and an anchor that slid away from the section it bounds bounds the wrong one —
+    both are reported, never read as an empty section.
+    """
+    out: list[str] = []
+    for doc_name, role, anchor in _REQUIRED_ANCHORS:
+        text = docs.get(doc_name, "")
+        if not text:
+            continue
+        if anchor not in text:
+            out.append(f"{doc_name} is missing the section-boundary anchor `{anchor}` "
+                       f"that marks its {role} — restore it with the section, or a "
+                       f"renumbered heading silently repoints this check (rule 6h)")
+            continue
+        # The anchor sits beside the heading it bounds: the next non-blank line
+        # after it is that heading. An anchor inside a table is a stranded one.
+        following = text[text.index(anchor) + len(anchor):].lstrip("\n")
+        if not following.startswith("#"):
+            out.append(f"{doc_name} has `{anchor}` with no section heading beside it "
+                       f"— an anchor stranded from its {role} bounds the wrong section "
+                       f"(rule 6h)")
+    return out
 
 # A markdown table row, and the backticked tokens in its FIRST cell.
 _TABLE_ROW = re.compile(r"^\|\s*([^|]*)\|", re.MULTILINE)
@@ -259,12 +309,22 @@ def findings(root: Path) -> list[str]:
     if not doc.is_file():
         return [f"{DOC_NAME} is missing — it is part of the change (rule 6h)"]
     text = described_text(doc)
+    agents = root / AGENTS_DOC
+    agents_text = described_text(agents)
 
-    make_targets = public_targets(root)
-    doc_targets = set(described_targets(doc))
+    # The boundary anchors are the FIRST claim: a document that lost one is
+    # broken structurally, and reading a section the anchor no longer bounds
+    # would report the wrong thing (the "#479 every script has no row" cascade).
+    out = anchor_findings({DOC_NAME: text, AGENTS_DOC: agents_text})
+    targets_readable = TARGET_SECTION in text and NEXT_SECTION in text
+    scripts_readable = SCRIPT_SECTION in text and SCRIPT_NEXT_SECTION in text
+    rulebook_readable = RULEBOOK_SECTION in agents_text and RULEBOOK_NEXT_SECTION in agents_text
 
-    out = [f"make target `{t}` is not described in {DOC_NAME}'s target tables"
-           for t in sorted(make_targets - doc_targets)]
+    make_targets = set(public_targets(root))
+    doc_targets = set(described_targets(doc)) if targets_readable else set()
+
+    out += [f"make target `{t}` is not described in {DOC_NAME}'s target tables"
+            for t in sorted(make_targets - doc_targets)]
     out += [f"{DOC_NAME} describes `{t}`, which is no longer a make target"
             for t in sorted(doc_targets - make_targets)]
 
@@ -276,11 +336,10 @@ def findings(root: Path) -> list[str]:
     # The rulebook's OWN pipeline list, both directions — the one place a
     # contributor asks "which pipelines does this repo run?" and the one that was
     # never reconciled when the alarms were added (`AGENTS.md` §6b named 6 of 12).
-    agents = root / AGENTS_DOC
     if not agents.is_file():
         out.append(f"{AGENTS_DOC} is missing — its §6b pipeline list is the rulebook's "
                    f"statement of which pipelines exist (rule 6h)")
-    else:
+    elif rulebook_readable:
         named = rulebook_pipelines(agents)
         out += [f"workflow `{w}` is not named in {AGENTS_DOC} §6b — every pipeline in the "
                 f"tree belongs in the rulebook's list (its shape is described in "
@@ -296,10 +355,11 @@ def findings(root: Path) -> list[str]:
     # §6 is the inventory a READER uses; naming a script in the generated §10
     # block does not give it a role (issue #506 — 9 of 46 scripts were in the
     # block and absent here, and the old check was satisfied by the block).
-    roles = described_scripts(doc)
-    out += [f"script `scripts/{s}` has no row in {DOC_NAME} §6 (the generated block "
-            f"names it, but a reader has no role for it)" for s in scripts
-            if f"scripts/{s}" not in roles]
+    if scripts_readable:
+        roles = described_scripts(doc)
+        out += [f"script `scripts/{s}` has no row in {DOC_NAME} §6 (the generated block "
+                f"names it, but a reader has no role for it)" for s in scripts
+                if f"scripts/{s}" not in roles]
 
     # The `--only` stage lists are a CLAIM about the validator's stage map, and a
     # closed one: an unknown stage, or a stage no list selects, is a description

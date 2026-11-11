@@ -22,6 +22,13 @@ from wiring import wired  # noqa: E402  (issues #176/#192)
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "architecture_check.py"
+#: (issue #509) The section-boundary anchors the guard reads, spelled here so the
+#: fixture can build them and a test can prove the guard, the fixture and the real
+#: documents all name the SAME anchors. A heading (`## 6.`) is renumberable prose;
+#: these comments are the stable boundaries.
+ARCH_ANCHORS = ("<!-- arch:targets -->", "<!-- arch:pipelines -->",
+                "<!-- arch:scripts -->", "<!-- arch:guards -->")
+AGENTS_ANCHORS = ("<!-- agents:rulebook -->", "<!-- agents:style -->")
 
 _PASS = 0
 _FAIL = 0
@@ -71,10 +78,10 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
     # The RULEBOOK's pipeline list (§6b, rule 6h): one line per pipeline, each
     # naming the rule it enforces — the shape the section itself requires.
     listed = tuple(workflows) if agents_workflows is None else tuple(agents_workflows)
-    agents_body = ["# AGENTS.md — fixture", "", "## 6b. The pipelines",
+    agents_body = ["# AGENTS.md — fixture", "", AGENTS_ANCHORS[0], "## 6b. The pipelines",
                    "", "`ARCHITECTURE.md` §4 is canonical for a pipeline's shape.", ""]
     agents_body += [f"- **`{w}`** — a pipeline (rule 6c)." for w in listed]
-    agents_body += ["", "## 7. Style", "", "- Terse.", ""]
+    agents_body += ["", AGENTS_ANCHORS[1], "## 7. Style", "", "- Terse.", ""]
     (td / "AGENTS.md").write_text("\n".join(agents_body), encoding="utf-8")
 
     for w in workflows:
@@ -89,8 +96,8 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
             "def main():\n    checks = []\n\n    def add(label, name, fn):\n"
             "        checks.append((label, fn))\n" + adds, encoding="utf-8")
     rows = "\n".join(f"| `{t}` | does the thing |" for t in doc_targets)
-    body = [f"# ARCHITECTURE", "", "## 3. Every `make` target", "", "| Target | What |", "|---|---|", rows, ""]
-    body += ["## 4. Pipelines", ""]
+    body = [f"# ARCHITECTURE", "", ARCH_ANCHORS[0], "## 3. Every `make` target", "", "| Target | What |", "|---|---|", rows, ""]
+    body += ["", ARCH_ANCHORS[1], "## 4. Pipelines", ""]
     if doci_wf:
         body += [f"- `.github/workflows/{w}` — a pipeline" for w in workflows]
     if doc_script:
@@ -100,10 +107,10 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
         for w in workflows:
             body += ["", f"### `.github/workflows/{w}` — a pipeline", "", "| Job | Does |", "|---|---|"]
             body += [f"| `{j}` | does it |" for j in claimed]
-    body += ["", "## 6. The scripts", "", "| Script | Role |", "|---|---|"]
+    body += ["", ARCH_ANCHORS[2], "## 6. The scripts", "", "| Script | Role |", "|---|---|"]
     if doc_script if doc_roles is None else doc_roles:
         body += [f"| `scripts/{s}` | what it does |" for s in scripts]
-    body += ["", "## 7. Guards", ""]
+    body += ["", ARCH_ANCHORS[3], "## 7. Guards", ""]
     (td / "ARCHITECTURE.md").write_text("\n".join(body) + "\n", encoding="utf-8")
     return td
 
@@ -497,6 +504,129 @@ def test_rule_6h_names_the_rulebook_obligation():
           "same change" in rule.lower() and "architecture-check" in rule, rule[:600])
 
 
+def test_a_lost_boundary_anchor_is_reported():
+    """#509: the guard's section boundary is an anchor, and losing it is a finding."""
+
+    # Given a consistent fixture whose scripts anchor has been removed
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        doc = root / "ARCHITECTURE.md"
+        doc.write_text(doc.read_text(encoding="utf-8").replace(ARCH_ANCHORS[2] + "\n", ""),
+                       encoding="utf-8")
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the lost anchor is named, not silently read as "no scripts section"
+    check("anchors: a missing anchor is reported",
+          any("missing the section-boundary anchor" in p and ARCH_ANCHORS[2] in p
+              for p in problems),
+          problems)
+
+
+def test_restoring_the_anchor_turns_the_finding_green():
+    """#509: the anchor is the only change needed, and the section is still read."""
+
+    # Given the fixture with its anchors intact
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        problems = _module().findings(root)
+    check("anchors: a complete fixture raises no anchor finding",
+          not any("section-boundary anchor" in p for p in problems), problems)
+
+    # And   a script missing its §6 role is STILL found: the section is read from
+    # the anchor, not from a heading number
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), doc_roles=False)
+        problems = _module().findings(root)
+    check("anchors: the scripts section is still read from its anchor",
+          any("scripts/thing.py" in p and "has no row" in p for p in problems), problems)
+
+
+def test_an_anchor_with_no_section_is_reported():
+    """#509: an anchor drifted away from its heading is the drift this guard exists for."""
+
+    # Given a fixture whose guards anchor has slid into the middle of the §6 table
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        doc = root / "ARCHITECTURE.md"
+        text = doc.read_text(encoding="utf-8").replace("\n" + ARCH_ANCHORS[3] + "\n", "\n")
+        text = text.replace("| Script | Role |", f"| Script | Role |\n{ARCH_ANCHORS[3]}")
+        doc.write_text(text, encoding="utf-8")
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  the stranded anchor is named
+    check("anchors: an anchor with no heading beside it is reported",
+          any("no section heading beside it" in p and ARCH_ANCHORS[3] in p for p in problems),
+          problems)
+
+
+def test_a_renumbered_section_still_reads_the_right_tables():
+    """#509: renumbering a section — the edit that used to repoint a check silently."""
+
+    # Given a consistent fixture whose sections are renumbered, anchors staying put
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        doc = root / "ARCHITECTURE.md"
+        text = (doc.read_text(encoding="utf-8")
+                .replace("## 3. Every `make` target", "## 5. Every `make` target")
+                .replace("## 4. Pipelines", "## 6. Pipelines")
+                .replace("## 6. The scripts", "## 9. The scripts"))
+        doc.write_text(text, encoding="utf-8")
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+    # Then  it is still clean: the target tables and the script roles are both read
+    check("anchors: a renumber cannot repoint the guard", not problems, problems)
+
+
+def test_the_real_documents_carry_every_anchor():
+    """#509: the anchors the guard reads must exist in the documents it reads."""
+
+    # Given the real ARCHITECTURE.md and AGENTS.md
+    arch = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+    # When  the guard runs on the real tree
+    problems = _module().findings(ROOT)
+
+    # Then  every anchor is present and none is reported
+    check("anchors: ARCHITECTURE.md carries every arch anchor",
+          all(a in arch for a in ARCH_ANCHORS), [a for a in ARCH_ANCHORS if a not in arch])
+    check("anchors: AGENTS.md carries every agents anchor",
+          all(a in agents for a in AGENTS_ANCHORS), [a for a in AGENTS_ANCHORS if a not in agents])
+    check("anchors: the real tree raises no anchor finding",
+          not any("section-boundary anchor" in p or "no section heading beside it" in p
+                  for p in problems), problems)
+
+
+def test_the_fixture_uses_the_anchors_the_guard_reads():
+    """#509 (rule 6d): the anchor shape lives in ONE place — guard, fixture, documents agree."""
+
+    # Given the guard's own anchor registry
+    mod = _module()
+    guard = {anchor for _, _, anchor in mod._REQUIRED_ANCHORS}
+
+    # When  the fixture's documents are read
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td))
+        fixture = (root / "ARCHITECTURE.md").read_text(encoding="utf-8")
+        fixture += (root / "AGENTS.md").read_text(encoding="utf-8")
+
+    # Then  the test, the guard and the fixture name the same anchors
+    check("anchors: the test constant and the guard agree",
+          guard == set(ARCH_ANCHORS) | set(AGENTS_ANCHORS), f"guard={sorted(guard)}")
+    check("anchors: the fixture writes them all beside their sections",
+          all(a in fixture for a in guard), fixture[:200])
+    check("anchors: the real documents use the same spelling",
+          all(a in (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+              or a in (ROOT / "AGENTS.md").read_text(encoding="utf-8") for a in guard),
+          sorted(guard))
+
+
 def test_public_targets_are_a_projection_of_the_full_set():
     """#512: "what is a make target" has ONE parser — the check's public set is a view of the generator's full set.
 
@@ -557,6 +687,12 @@ def main() -> int:
     test_a_missing_agents_doc_is_a_finding_not_a_skip()
     test_the_rulebook_points_at_the_canonical_pipeline_description()
     test_rule_6h_names_the_rulebook_obligation()
+    test_a_lost_boundary_anchor_is_reported()
+    test_restoring_the_anchor_turns_the_finding_green()
+    test_an_anchor_with_no_section_is_reported()
+    test_a_renumbered_section_still_reads_the_right_tables()
+    test_the_real_documents_carry_every_anchor()
+    test_the_fixture_uses_the_anchors_the_guard_reads()
     test_doc_states_what_the_guard_does_not_prove()
     test_section6_role_text_is_reviewed_not_verified()
     test_real_repo_description_is_current()
