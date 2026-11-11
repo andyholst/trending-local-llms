@@ -105,6 +105,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      issues: read
     # 20 -> 30: when the revision's Dockerfile is not published yet this job
     # builds the base from source before the suite (issue #135).
     timeout-minutes: 30
