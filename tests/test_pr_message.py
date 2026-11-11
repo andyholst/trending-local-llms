@@ -128,6 +128,57 @@ def test_the_pr_message_cli_refuses_a_non_conforming_body_by_name() -> None:
           "REFUSED" in bad.stderr and "## What" in bad.stderr, bad.stderr[-400:])
 
 
+def test_commit_cli_refuses_a_non_conforming_message() -> None:
+    def run(msg: str) -> subprocess.CompletedProcess:
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "msg.txt"
+            f.write_text(msg)
+            return subprocess.run(
+                [sys.executable, str(SCRIPT), "--check-commit-file", str(f)],
+                capture_output=True, text=True)
+
+    # Given  a conforming squash message (the five sections + its own Closes claim)
+    good = run(conforming_body())
+    check("commit: a conforming squash message passes",
+          good.returncode == 0 and "OK" in good.stdout, (good.returncode, good.stdout[-200:]))
+
+    # Then   a message that skips a section is REFUSED and names it on stderr
+    bad = run(conforming_body().replace("\n## What\n", "\n## WhatFiller\n", 1))
+    check("commit: a message missing a section fails non-zero",
+          bad.returncode == 1, (bad.returncode, bad.stderr[-300:]))
+    check("commit: the refusal names the missing section",
+          "REFUSED" in bad.stderr and "## What" in bad.stderr, bad.stderr[-400:])
+
+
+def test_declared_issue_is_validated_and_legacy_passes() -> None:
+    def run(body: str) -> subprocess.CompletedProcess:
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "issue.md"
+            f.write_text(body)
+            return subprocess.run(
+                [sys.executable, str(SCRIPT), "--check-issue-file", str(f)],
+                capture_output=True, text=True)
+
+    # Given  a legacy structured data-gap issue with NO marker (own schema)
+    legacy = "## Goal\nClose the gaps.\n## Ranked gaps\n- none\n"
+    # Then   it is NOT forced through the five-section shape and passes
+    ok_legacy = run(legacy)
+    check("issue: a legacy structured issue passes (no marker)",
+          ok_legacy.returncode == 0, (ok_legacy.returncode, ok_legacy.stderr[-200:]))
+
+    # And    a declared (marker) issue that follows the pattern passes
+    declared_ok = run(pr_body.ISSUE_PATTERN_MARKER + "\n" + conforming_body())
+    check("issue: a declared pattern issue that conforms passes",
+          declared_ok.returncode == 0, (declared_ok.returncode, declared_ok.stderr[-300:]))
+
+    # And    a declared issue that skips a section is REFUSED by name
+    declared_bad = run(pr_body.ISSUE_PATTERN_MARKER + "\n"
+                       + conforming_body().replace("\n## How\n", "\n## HowFiller\n", 1))
+    check("issue: a declared issue missing a section is refused",
+          declared_bad.returncode == 1 and "## How" in declared_bad.stderr,
+          (declared_bad.returncode, declared_bad.stderr[-400:]))
+
+
 def test_a_non_implementation_pr_is_not_forced_to_carry_the_sections() -> None:
     # Given  a refresh branch (it encodes a timestamp, not an issue) and a window+contract body
     refresh_branch = "ci/trending-refresh-20261111-000000"
@@ -157,6 +208,8 @@ def main() -> int:
     test_the_composed_body_follows_the_message_pattern()
     test_a_body_that_skips_a_section_is_refused()
     test_the_pr_message_cli_refuses_a_non_conforming_body_by_name()
+    test_commit_cli_refuses_a_non_conforming_message()
+    test_declared_issue_is_validated_and_legacy_passes()
     test_a_non_implementation_pr_is_not_forced_to_carry_the_sections()
     test_the_squash_title_is_a_conventional_commit()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

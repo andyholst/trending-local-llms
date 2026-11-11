@@ -185,7 +185,14 @@ skips, empties or misorders a section is refused before auto-merge. A refresh or
 architecture body implements no issue and is not a five-section artifact; the check skips
 the sections for it, exactly as the closure check discriminates by branch. The squash
 commit message follows by construction — its title comes from `pr_body.title()` and its
-body is the validated PR body — and bot-filed issues use the same sections.
+body is the validated PR body — and bot-filed issues use the same sections. The SAME gate
+also lands the other two artifacts: a `push` to `master` runs `make commit-message-check`
+on the squash message (the issue is read from the message's own `#<n>`, since
+`refs/heads/master` encodes none), and an `issues:opened/edited/reopened` event runs
+`make issue-message-check` on an issue body that DECLARES the pattern by carrying the
+invisible `<!-- issues-message-pattern -->` marker — a structured data-gap/tech-debt issue
+(own schema, no marker) is never forced through the five-section shape, while a declared
+issue that skips a section is refused.
 
 6f. **Every change is a TRACKED OpenSpec change, and the root `OPENSPEC.md`
    index is how you find them (MANDATORY).** Work MUST start by creating the

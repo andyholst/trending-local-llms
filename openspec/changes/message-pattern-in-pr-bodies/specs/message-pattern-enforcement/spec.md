@@ -58,3 +58,35 @@ the issue.
 - **Then** each result matches `<type>(<scope>): implement #<n> …` with
   `type(scope)` from the issue's kind, and names `#<n>`
 - **Test:** `tests/test_pr_message.py::test_the_squash_title_is_a_conventional_commit`
+
+### Requirement: CI validates the squash commit message on push
+
+A push to `master` is a SQUASH MERGE, so `pr-closure.yml` MUST run
+`make commit-message-check` on the event's `head_commit.message` (the squash body). The
+implemented issue is read from the message's own `#<n>` — `refs/heads/master` encodes no
+issue — so a commit that the composer's own parser refuses MUST fail the check.
+
+#### Scenario: a commit message that skips a section is refused on push
+
+- **Given** a push-to-master event whose head commit message lacks one of the five `##` sections
+- **When** `commit-message-check` runs on `.head_commit.message`
+- **Then** it exits non-zero and names the missing section
+- **And** the workflow step fails, so the merge is not treated as conforming
+- **Test:** `tests/test_pr_message.py::test_commit_cli_refuses_a_non_conforming_message`
+
+### Requirement: a declared message-pattern issue body is validated
+
+An issue that carries the invisible `<!-- issues-message-pattern -->` marker MUST have the
+five `##` sections in order and with content. `pr-closure.yml` MUST run
+`make issue-message-check` on `issues:opened/edited/reopened`, so a DECLARED message-pattern
+issue that skips, empties or misorders a section is refused. A structured data-gap/tech-debt
+issue (own schema, no marker) is NOT forced through the shape and stays green.
+
+#### Scenario: a declared issue that skips a section is refused
+
+- **Given** an issue event whose body carries the pattern marker but lacks one `##` section
+- **When** `issue-message-check` reads the issue body from the payload
+- **Then** it exits non-zero and names the missing section
+- **And** a legacy data-gap issue with no marker passes
+- **Also** an issue that carries the marker and follows the pattern passes
+- **Test:** `tests/test_pr_message.py::test_declared_issue_is_validated_and_legacy_passes`

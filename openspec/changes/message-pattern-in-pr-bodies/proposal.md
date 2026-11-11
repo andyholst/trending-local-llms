@@ -31,13 +31,17 @@ reviewable appear nowhere by default.
     #<n>` last) are preserved;
   - `main()` gains `--check-body-file <f>`, which runs `section_problems` +
     `pr_closure.check` on a body file and exits 1 listing every problem.
-- **`Makefile`** — a host `pr-message-check` target (mirrors `pr-closure`):
-  `@python3 scripts/pr_body.py --check-body-file "$(PR_EVENT)"`, guarded by
-  `-n "$(PR_EVENT)" || usage`.
+- **`Makefile`** — host `pr-message-check`, `issue-message-check` and
+  `commit-message-check` targets (mirror `pr-closure`):
+  `@python3 scripts/pr_body.py --check-body-file / --check-issue-file /
+  --check-commit-file "$(…)"`, guarded by `-n "$(…)" || usage`.
 - **`.github/workflows/pr-closure.yml`** — the existing `closure` job runs
-  `make pr-message-check` after `make pr-closure`, so every PR body is gated on
-  `opened`/`edited`/`synchronize` (the same artifact-reads-the-artifact model as
-  the closure check, issue #290).
+  `make pr-message-check` after `make pr-closure` on every PR, so every PR body is gated on
+  `opened`/`edited`/`synchronize`. The same body-on-screen model now also covers the OTHER two
+  artifacts the repo composes: a `push` to `master` runs `commit-message-check` on
+  `.head_commit.message`, and `issues:opened/edited/reopened` runs `issue-message-check` on an
+  issue body that DECLARES the pattern (the `<!-- issues-message-pattern -->` marker), so a
+  structured data-gap issue's own schema is never forced through the shape.
 - **AGENTS.md** — the message pattern is documented as repo behavior (rule 6e
   region): what the five sections are, that `closes <issue>` binds one reference,
   and that the pipeline validates the PR body and, by construction, the squash
@@ -65,9 +69,10 @@ no change to the repo's data validators.
 
 - **Rewriting every historical issue body.** Only artifacts the repo composes are
   changed; existing bot-filed issues keep their `## Finding`/`## Origin` shape.
-- **A new pipeline that scans arbitrary third-party issues at creation.** An issue
-  is a GitHub DB row, not a PR; issues are checked at compose-time by the filers
-  that follow the same pattern (via this change's `section_problems` + the
-  `issue-pr-planner` skill), not by a new always-on workflow.
+- **Scanning UNMARKED issue bodies.** A data-gap / tech-debt issue has its own structured
+  schema (`## Goal` / `## Ranked gaps` / the attribution marker) that does not fit the
+  five-section shape and MUST NOT be forced through it. Only an issue that carries the
+  invisible `<!-- issues-message-pattern -->` marker is validated — so pattern issues are
+  enforced at the moment they are filed while legacy structured issues stay green.
 - No change to the closing-keyword semantics already owned by `pr_closure.py`
   (rule 6e).
