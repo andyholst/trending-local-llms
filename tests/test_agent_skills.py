@@ -149,11 +149,40 @@ def test_the_gate_fails_each_defect():
             SEAM + "search:\n" + leg,
             {CAS.UNATTENDED_SKILL: good.format(name=CAS.UNATTENDED_SKILL),
              "data-search": good.format(name="data-search")}),
+        # Issue #194: the base image has no `gh`, so a container-bound contract that INSTRUCTS a
+        # `gh` subcommand is unreachable code the agent can only fail on or skip silently.
+        "a recipe that instructs the agent to run gh": (
+            SEAM + "search:\n" + leg.replace(
+                '"pointer"', '"pointer gh issue edit --add-label needs-refinement"'), base_skills),
+        "a skill that instructs the agent to run gh": (
+            SEAM + "search:\n" + leg,
+            {CAS.UNATTENDED_SKILL: good.format(name=CAS.UNATTENDED_SKILL),
+             "data-search": DATA_SEARCH_SKILL
+             + "- gh pr comment $PR --body done\n"}),
     }
     for name, (mk, skills) in cases.items():
         with tempfile.TemporaryDirectory() as td:
             root = _tree(Path(td), mk, skills)
             check(f"gate: fails on {name}", CAS.check(root) != [], "the gate stayed green")
+
+
+def test_the_gh_guard_refuses_instructions_and_keeps_forbiddances():
+    """Issue #194: `gh <subcommand>` in a container-bound contract is a finding; a sentence
+    stating gh is ABSENT is the contract itself and must not be one."""
+    hits = CAS.gh_findings("fixture", "run gh issue edit --add-label x\n")
+    check("gh-guard: an instruction to run gh is a finding", len(hits) == 1, hits)
+    hits = CAS.gh_findings("fixture", "**You have no `gh` and no network write.** "
+                                     "Do not comment, close, label, or edit anything;\n")
+    check("gh-guard: a forbiddance stating gh is absent is not a finding", hits == [], hits)
+    hits = CAS.gh_findings("fixture", "the container has no gh; forbid gh entirely\n")
+    check("gh-guard: 'forbid gh' wording is not a finding", hits == [], hits)
+    hits = CAS.gh_findings("fixture", "gh runs and gh api are both instructions\n")
+    check("gh-guard: subcommand spellings are caught", len(hits) == 1, hits)
+    check("gh-guard: the REAL tree instructs no gh anywhere a leg can read it",
+          [h for t, r in CAS.legs((ROOT / "Makefile").read_text()).items()
+           for h in CAS.gh_findings(t, r)] == []
+          and all(CAS.gh_findings(str(p), p.read_text(encoding="utf-8")) == []
+                  for p in sorted((ROOT / ".hermes" / "skills").glob("*/SKILL.md"))))
 
 
 def test_setup_registers_the_directory_and_reads_it_back():
