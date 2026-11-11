@@ -1450,6 +1450,170 @@ def check_duplicate_runs(store: dict) -> None:
         print(f"    ... and {len(dups) - 10} more")
 
 
+#: The footprint dimensions a measurement carries with its figure (per measurement, not per
+#: model — issue #337). These are the "dimension values" the source-post readback re-derives
+#: from the captured post text, in the same order the contracts declare them.
+_SOURCE_POST_FOOTPRINT = ("weight_gb", "context_tokens", "system_ram_min",
+                          "storage_offload", "engine_min_version")
+
+#: A free-text source is not evidence for every field: a card's VRAM (`RTX 5090 32GB`) is a
+#: machine's memory, never a weight footprint, so `hardware` must not "confirm" a stored
+#: `weight_gb` — the same rule data_gap_analysis applies when it classifies weight figures
+#: (issue #213). Every other footprint field may be confirmed by the run's hardware wording.
+_SOURCE_POST_HARDWARE_SKIP = {"weight_gb"}
+
+
+def _readback_norm(s: str) -> str:
+    """Spacing/commas-insensitive lowercase form for reading a figure out of captured text.
+
+    `5.95GB` and `5.95 GB` and `262,144` and `262144` must all be the same token, because a
+    stored value and a captured post phrase them differently while being the same figure.
+    """
+    return re.sub(r"[\s,]+", "", str(s).lower())
+
+
+_READBACK_FIGURE = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*(gb|mb|tb|kb|k)?\b", re.I)
+
+
+def _readback_figure_tokens(s: str) -> set[str]:
+    """The distinctive figure tokens of a value or a captured text.
+
+    A capacity (`5.95gb`, `110k`) is one token; a bare number only counts when it is long
+    enough to be a context window (`262144`, `131072`) rather than a random count in prose.
+    Two values share a figure when their token sets intersect — the test that decides whether a
+    stored value was actually stated by the captured post.
+    """
+    out: set[str] = set()
+    for num, unit in _READBACK_FIGURE.findall(str(s)):
+        n = re.sub(r"[, ]", "", num)
+        u = (unit or "").strip().lower()
+        if u:
+            out.add(f"{n}{u}")
+        elif len(n) >= 4:
+            out.add(n)
+    return out
+
+
+def source_post_capture_index(raw_dir: Path = RAW_DIR) -> dict[str, dict]:
+    """PER source_post URL, what `data/raw/*.json` holds for that post.
+
+    The recorded free text of the run (the captured measurement's `quant`/`hardware` — the
+    post's own words, NOT the row's `why`, which is the search agent's ranking summary of the
+    model; the same discipline data_gap_analysis applies) plus the structured footprint
+    fields the agent captured on the row and on the measurement (a NEW capture states figures
+    as structured fields, which is exactly how the #530 defect was noticed).
+
+    Returns `{source_post: {"text": [free strings], "values": {field: [structured]}}}`.
+    """
+    index: dict[str, dict] = {}
+    if not raw_dir.exists():
+        return index
+    for path in sorted(raw_dir.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except Exception:  # noqa: BLE001  (an unreadable snapshot is reported, never fatal)
+            continue
+        for row in data.get("models", []) or []:
+            row_values = {f: row.get(f) for f in _SOURCE_POST_FOOTPRINT}
+            for e in row.get("engines", []) or []:
+                sp = str(e.get("source_post") or "")
+                if not sp:
+                    continue
+                bucket = index.setdefault(sp, {"text": [], "values": {}})
+                for src_field, t in (("quant", e.get("quant")), ("hardware", e.get("hardware"))):
+                    if isinstance(t, str) and t.strip():
+                        bucket["text"].append((src_field, t))
+                for f in _SOURCE_POST_FOOTPRINT:
+                    for src in (row_values, e):
+                        v = src.get(f)
+                        if isinstance(v, str) and v.strip():
+                            bucket["values"].setdefault(f, []).append(v)
+    return index
+
+
+def source_post_figure_flags(store: dict, raw_dir: Path = RAW_DIR) -> list[tuple[str, str, str, str, str, str]]:
+    """Report-only: stored footprint values their captured post nowhere states.
+
+    The core of issue #531. For every measurement whose `source_post` appears in `data/raw/*`,
+    each stored footprint value is checked against the capture: it is SUPPORTED when it appears
+    in the captured post text (whole-value, spacing-normalised, or as a shared figure token)
+    OR in the capture's own structured value for that field. A stored value that appears in
+    NEITHER is a contradiction — the store publishes a figure the post it cites did not state.
+
+    Returns (model id, engine, tps, field, stored value, source_post) flags. Report-only on
+    purpose: prose footprint fields (`engine_min_version`) are often a parser's distillation
+    the capture does not restate verbatim, so reding every PR on a parser miss is exactly what
+    #458/#459 refused; a later change turns this into a gate once its precision is measured.
+    """
+    index = source_post_capture_index(raw_dir)
+    flags: list[tuple[str, str, str, str, str, str]] = []
+    for m in store.get("models", []):
+        for e in m.get("engines", []):
+            sp = str(e.get("source_post") or "")
+            if "lightbrd.com" not in sp or "/status/" not in sp:
+                continue                # a placeholder/profile page names no post to re-read
+            bucket = index.get(sp)
+            if bucket is None:
+                continue                # no captured text for this post — cannot re-derive
+            for f in _SOURCE_POST_FOOTPRINT:
+                v = e.get(f)
+                if v in (None, "", [], {}):
+                    continue
+                if _readback_supported(str(v), f, bucket):
+                    continue
+                flags.append((str(m.get("id") or "?"), str(e.get("engine") or "?"),
+                              str(e.get("tps") or "?"), f, str(v), sp))
+    return flags
+
+
+def _readback_supported(value: str, field: str, bucket: dict) -> bool:
+    """Is `value` stated by the capture of its source post (free text AND its own fields)?
+
+    Free text: the captured measurement's `quant`/`hardware` (hardware skipped for a weight
+    footprint — a card's VRAM is not a weights figure). The capture's OWN structured value for
+    the same field. Either confirming the stored value (whole form or a shared figure token)
+    makes it supported.
+    """
+    norm = _readback_norm(value)
+    tokens = _readback_figure_tokens(value)
+    text = bucket.get("text") or []
+    for src_field, t in text:
+        if field in _SOURCE_POST_HARDWARE_SKIP and src_field == "hardware":
+            continue                    # a card's VRAM is never a weight footprint (issue #213)
+        if norm in _readback_norm(t) or (tokens and tokens & _readback_figure_tokens(t)):
+            return True
+    for s in (bucket.get("values") or {}).get(field, []):
+        if norm in _readback_norm(s) or (tokens and tokens & _readback_figure_tokens(s)):
+            return True
+    return False
+
+
+def check_source_post_readback(store: dict) -> None:
+    """REPORT ONLY (never fails): a stored figure its captured source post nowhere states.
+
+    Issue #531: nothing re-reads a measurement's `source_post`, so `data/models.json` can
+    carry a dimension value (`weight_gb` drives the card-fit rows) that contradicts the post
+    it cites while every gate stays green — measured: `bonsai-2-27b` carried `5.93GB` for a
+    post that states `5.95GB`. This scan re-derives the stored footprint values from each
+    captured post's text and flags one that appears in neither the capture's fields nor the
+    post text. It is report-only FIRST (like `check_duplicate_runs`, #459) so a parser miss or
+    a partial capture cannot red a refresh; the flag list on the store as it stands is the
+    precision a later change can turn into a gate.
+    """
+    flags = source_post_figure_flags(store, RAW_DIR)
+    if not flags:
+        print("  OK: source-post readback: every stored footprint value is stated by the "
+              "captured post it cites")
+        return
+    print(f"  WARN: source-post readback: {len(flags)} stored footprint value(s) appear in "
+          f"NEITHER the capture's fields NOR the post text — a figure that drifted from its "
+          f"citation (report only, issue #531)")
+    for mid, engine, tps, field, value, post in flags[:15]:
+        print(f"    - {mid} ({engine} {tps} t/s): {field}={value!r} — {post}")
+    if len(flags) > 15:
+        print(f"    ... and {len(flags) - 15} more")
+
+
 def check_readme_has_all_models(store: dict) -> None:
     if not README.exists():
         fail("README.md missing")
@@ -2026,6 +2190,7 @@ def main() -> int:
     # history predates the ingest refusal and cannot be repaired by reding every PR.
     add("duplicate-run scan (report only)", "data", lambda: check_duplicate_runs(store))
     add("same-post cross-model scan (report only)", "data", lambda: check_cross_model_attribution(store))
+    add("source-post readback (report only)", "data", lambda: check_source_post_readback(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))
     add("README engine links", "readme", lambda: check_readme_engine_links(store))
     add("README regenerated by make merge", "readme", lambda: check_readme_generated(store))
