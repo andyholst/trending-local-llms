@@ -315,10 +315,24 @@ def test_the_shipped_readme_and_store():
         check(f"real: the {t} GB tier is exactly the tier-local derivation",
               listed == [r[1]["name"] for r in rows], (listed[:3], [r[1]["name"] for r in rows][:3]))
     q = next((m for m in models if m["id"] == "qwen3.8-27b"), None)
+    # The "not the 28,340 aggregate" invariant is enforced by the REAL recompute
+    # (update_trending.recompute_7d_engagement): it picks best_in_scope() — which
+    # excludes the datacenter aggregate — for the speed term, and earns 0 when the
+    # model has no posts in the 7-day window. Compare the shipped stored bonus to
+    # that recompute as of the store's OWN generated_utc (issue #88: never the
+    # wall clock), so a model that legitimately aged out of the window reads 0 and
+    # the check stays green across refreshes instead of asserting a model is
+    # always trending.
+    if q is not None:
+        ref = datetime.strptime(store["generated_utc"],
+                                "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        probe = copy.deepcopy(q)
+        UT.recompute_7d_engagement(probe, ref)
+        qok = q["engagement"].get("speed_bonus") == probe["engagement"].get("speed_bonus")
+    else:
+        qok = True
     check("real: Qwen3.8-27B's speed bonus is not the 28,340 t/s datacenter aggregate",
-          q is None or q["engagement"]["speed_bonus"] == UT.speed_bonus(
-              UT._tps_core(UT.best_in_scope(q)["tps"])),
-          q and q["engagement"])
+          qok, q and q["engagement"])
     check("real: no best CUDA cell in the most-loved table carries a datacenter figure",
           not any("datacenter" in ln.lower() and "| **" in ln
                   for ln in text.split("## ❤️ Most loved", 1)[-1].split("## ")[0].split("\n")

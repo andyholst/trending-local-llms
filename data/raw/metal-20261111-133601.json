@@ -1,0 +1,92 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "alpie-seed-9b",
+      "name": "Alpie Seed 9B",
+      "full_name": "169Pi/Alpie_seed — 9B open-weight SI model (Qwen3.5-9B based)",
+      "type": "LLM",
+      "formats": [
+        {
+          "name": "Alpie Seed 9B",
+          "hf": "169Pi/Alpie_seed"
+        },
+        {
+          "name": "Alpie Seed GGUF",
+          "hf": "169Pi/Alpie_Seed_GGUF"
+        }
+      ],
+      "license": "Apache 2.0",
+      "params": "9B",
+      "hf": "169Pi/Alpie_seed",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "system_ram_min": "16GB",
+      "weight_gb": "5.24GB (4-bit)",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "14.1",
+          "hardware": "Mac M2 16GB (Apple Silicon, unified memory)",
+          "quant": "4-bit",
+          "date": "2026-11-10",
+          "source_post": "https://lightbrd.com/The_Donsie/status/2120154511906074738",
+          "likes": 87,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 89,
+          "weight_gb": "5.24GB (4-bit)",
+          "system_ram_min": "16GB"
+        }
+      ],
+      "why": "Open-source on-device SI model from 169Pi built on Qwen3.5-9B; Apache 2.0; runs fully offline on laptops and phones via Ollama, llama.cpp, MLX and PocketPal. On a Mac M2 16GB at 4-bit it decodes about 14.1 tokens per second (5.9 on a 12GB Android phone, 2.7 on a no-GPU Windows PC).",
+      "last_seen": "2026-11-10"
+    },
+    {
+      "id": "gemma-4-26b",
+      "name": "Gemma 4 26B",
+      "full_name": "google/gemma-4-26B-A4B-it (26B MoE, 4B active)",
+      "type": "LLM (MoE)",
+      "formats": [
+        {
+          "name": "Gemma 4 26B",
+          "hf": "google/gemma-4-26B-A4B-it"
+        }
+      ],
+      "license": "Gemma",
+      "params": "26B",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "vram_tier": "48GB",
+      "vram_min": "16GB",
+      "system_ram_min": "48GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "68-72",
+          "hardware": "M4 Pro 48GB (Apple Silicon, unified memory)",
+          "quant": "MLX runner",
+          "date": "2026-11-09",
+          "source_post": "https://lightbrd.com/StevenMatison/status/2119864717523005591",
+          "likes": 232,
+          "comments": 0,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 234,
+          "weight_gb": "18GB",
+          "system_ram_min": "48GB",
+          "context_tokens": "131072"
+        }
+      ],
+      "why": "Gemma 4 26B runs locally under Claude Code on an M4 Pro 48GB Mac via Ollama 0.40.14; the gemma4:26b-mlx MLX runner (18GB) decodes 68-72 tok/s (100% GPU, 64K context, 0 swap); a llama.cpp GGUF variant is 15GB.",
+      "last_seen": "2026-11-09"
+    }
+  ],
+  "generated_utc": "2026-11-11T13:40:00Z"
+}

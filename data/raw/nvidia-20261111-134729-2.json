@@ -1,0 +1,43 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "type": "LLM (MoE)",
+      "license": "MIT",
+      "params": "MoE",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "CPU",
+      "vram_min": "16GB",
+      "backends": [
+        "CPU",
+        "CUDA",
+        "Metal",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "2",
+          "hardware": "NVIDIA RTX 3060 12GB + 30GB system RAM",
+          "quant": "IQ2_XXS, experts streamed from SSD page cache, 9GB LRU cache in VRAM, greedy decode; decode 2-3.6 tok/s (fluctuates with page-cache behaviour), 249GB model",
+          "date": "2026-11-09",
+          "source_post": "https://lightbrd.com/FatimaYappin/status/2119841304037487030",
+          "storage_offload": "SSD page cache",
+          "weight_gb": "~249GB",
+          "context_tokens": "4096",
+          "engine_min_version": "Strata (RustingStrata)",
+          "likes": 238,
+          "comments": 0,
+          "reshares": 8,
+          "views": 0,
+          "interactions": 254
+        }
+      ],
+      "last_seen": "2026-11-09"
+    }
+  ],
+  "generated_utc": "2026-11-11T13:47:29Z"
+}
