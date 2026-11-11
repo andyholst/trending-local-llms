@@ -315,10 +315,25 @@ def test_the_shipped_readme_and_store():
         check(f"real: the {t} GB tier is exactly the tier-local derivation",
               listed == [r[1]["name"] for r in rows], (listed[:3], [r[1]["name"] for r in rows][:3]))
     q = next((m for m in models if m["id"] == "qwen3.8-27b"), None)
+    # The stored speed_bonus is the REAL recompute's output, and the recompute
+    # gates the bonus on the model having a post in the 7-day window
+    # (`recompute_7d_engagement`: `best_in_scope(...) if recent else None`,
+    # speed 0.0 with no recent post). Asserting the unconditional
+    # `speed_bonus(best_in_scope)` only held while the model was trending;
+    # asserting against the real recompute (as of the store's own generated_utc)
+    # covers both — and the 28,340 t/s aggregate is out of scope, so it can
+    # never be the recompute's best_in_scope and never sets the bonus.
+    expected = None
+    if q is not None:
+        gen = store.get("generated_utc", "")
+        today = datetime.strptime(gen[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc) \
+            if gen else datetime.now(timezone.utc)
+        qq = copy.deepcopy(q)
+        UT.recompute_7d_engagement(qq, today)
+        expected = qq["engagement"]["speed_bonus"]
     check("real: Qwen3.8-27B's speed bonus is not the 28,340 t/s datacenter aggregate",
-          q is None or q["engagement"]["speed_bonus"] == UT.speed_bonus(
-              UT._tps_core(UT.best_in_scope(q)["tps"])),
-          q and q["engagement"])
+          expected is None or (q is not None and q["engagement"]["speed_bonus"] == expected),
+          q is not None and (q["engagement"], expected))
     check("real: no best CUDA cell in the most-loved table carries a datacenter figure",
           not any("datacenter" in ln.lower() and "| **" in ln
                   for ln in text.split("## ❤️ Most loved", 1)[-1].split("## ")[0].split("\n")

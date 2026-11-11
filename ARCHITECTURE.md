@@ -723,7 +723,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 180 make targets, 61 files in `scripts/`)
+### Bots in the tree (12 pipelines, 181 make targets, 61 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -869,7 +869,7 @@ One line each, taken from the script's own docstring.
 - `scripts/nerve_key_check.py` — The nerve-plugin credential guard (issue #120).
 - `scripts/openspec_archive_check.py` — An ACTIVE OpenSpec change must not sit completed-and-forgotten (issues #183/#513).
 - `scripts/openspec_index.py` — Generate / verify the root OpenSpec index (`OPENSPEC.md`).
-- `scripts/openspec_record_pr.py` — Record the PR that completed a change, in proposal.md + the regenerated index (issue #518).
+- `scripts/openspec_record_pr.py` — Record the PR that completed a change AND archive it, in the completing PR (issue #518).
 - `scripts/owed_rows_check.py` — Report the owed-row ledger: what open issues say AGENTS.md still owes (issue #523).
 - `scripts/pr_body.py` — The implementation PR body is COMPOSED by a target, never spelled in a workflow heredoc
 - `scripts/pr_closure.py` — Does this PR close the issue it implements? (issue #284, AGENTS.md rule 6e)
