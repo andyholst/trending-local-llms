@@ -2197,6 +2197,12 @@ _COMPARISON_CUE = re.compile(
     r"\b(?:vs\.?|versus|compar\w*|baseline|than|beats?|against|not the|instead of|while)\b", re.I
 )
 
+_TPS_FIGURE_RE = re.compile(
+    r"\b\d+(?:\.\d+)?(?:\s*(?:-|–|to)\s*\d+(?:\.\d+)?)?\s*"
+    r"(?:t/s|tok(?:s)?/s|tps|tokens?/s|tokens? per sec\w*)\b",
+    re.I,
+)
+
 
 def _norm_model_name(text: object) -> str:
     """Case-folded, separator-normalised form of a model name for identity comparison.
@@ -2247,8 +2253,12 @@ def misattributed_measurement_reason(
     mentions are comparison context; a comparison cue rescues a bake-off sentence; a
     text that names the row's own model too is a multi-model post about this row; and
     `MEASUREMENT_MODEL_ALIASES` documents the remaining real exceptions. A row whose
-    own params cannot be parsed fails open. There is exactly ONE implementation (rule
-    6d): the ingest refusal and the validator's report both call this.
+    own params cannot be parsed fails open. A comparison cue no longer rescues
+    everything (issue #651): a same-family, different-params mention with EXACTLY
+    ONE t/s figure in the text is a JOINT figure — not attributable to one row —
+    and is refused; two or more figures is a per-model bake-off and is kept. There
+    is exactly ONE implementation (rule 6d): the ingest refusal and the validator's
+    report both call this.
     """
     own = measurement_model_identity(
         model.get("name") or model.get("full_name") or model.get("id") or model.get("hf")
@@ -2258,15 +2268,16 @@ def misattributed_measurement_reason(
     text = " ".join(
         p for p in (str(measurement.get(k) or "") for k in ("quant", "why")) if p
     ) or str(model.get("why") or "")
-    if not text.strip() or _COMPARISON_CUE.search(text):
+    if not text.strip():
         return None
+    cue = bool(_COMPARISON_CUE.search(text))
+    figures = len(_TPS_FIGURE_RE.findall(text))
     norm = _norm_model_name(text)
     own_phrases = {
         _norm_model_name(str(model.get(k) or "").split("/")[-1])
         for k in ("name", "full_name", "id", "hf") if model.get(k)
     }
-    if any(p and p in norm for p in own_phrases):
-        return None  # the post measures this row's model too: not a misattribution
+    own_named = any(p and p in norm for p in own_phrases)
     alias_ids = MEASUREMENT_MODEL_ALIASES.get(str(model.get("id") or "").lower(), set())
     allowed: set[tuple[str, str, str]] = set()
     for mid in alias_ids:
@@ -2275,14 +2286,24 @@ def misattributed_measurement_reason(
             ident = measurement_model_identity(other.get("name") or other.get("id"))
             if ident:
                 allowed.add(ident)
-    for family, ver, params in named_models_in_text(text):
-        if family != own[0] or params == own[2]:
-            continue
-        if (family, ver, params) in allowed:
-            continue
-        return (f"its text names {family} {ver or ''} {params}, but the row is "
-                f"{own[0]} {own[1] or ''} {own[2]}").replace("  ", " ")
-    return None
+    others = [(family, ver, params) for family, ver, params in named_models_in_text(text)
+              if family == own[0] and params != own[2] and (family, ver, params) not in allowed]
+    if not others:
+        return None
+    family, ver, params = others[0]
+    if cue and figures == 1:
+        # issue #651: one figure for a comparison of two models is a JOINT figure —
+        # it cannot be attributed to one row, so the measurement is refused.
+        return (f"its text reports a JOINT figure: one t/s value comparing "
+                f"{family} {ver or ''} {params} with {own[0]} {own[1] or ''} {own[2]} "
+                f"(a joint figure is not attributable to one row; record a documented "
+                f"exception in MEASUREMENT_MODEL_ALIASES)").replace("  ", " ")
+    if cue:
+        return None  # a comparison sentence with no single figure stays kept
+    if own_named:
+        return None  # the post measures this row's model too: not a misattribution
+    return (f"its text names {family} {ver or ''} {params}, but the row is "
+            f"{own[0]} {own[1] or ''} {own[2]}").replace("  ", " ")
 
 
 def refuse_misattributed_measurements(
