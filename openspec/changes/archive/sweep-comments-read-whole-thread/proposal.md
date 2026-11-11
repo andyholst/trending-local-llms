@@ -1,6 +1,7 @@
 # Proposal: sweep-comments-read-whole-thread
 
 **Issue:** [#662](https://github.com/andyholst/trending-local-llms/issues/662)
+PR: #798
 **Capability:** `issue-bot-artifacts`
 
 ## Why
