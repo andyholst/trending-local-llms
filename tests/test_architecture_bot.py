@@ -297,6 +297,9 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
                       # (issue #542), so the fixture needs the real composer and the closure parser
                       # it imports — never a stub: the body's rule-6e shape is what this proves.
                       ("scripts/pr_body.py", ROOT / "scripts" / "pr_body.py"),
+                      # pr_body imports bot_markers (declaration markers incl. ISSUE_PATTERN_MARKER,
+                      # rule 6j — #771), so the fixture copies it too, like pr_closure.
+                      ("scripts/bot_markers.py", ROOT / "scripts" / "bot_markers.py"),
                       ("scripts/pr_closure.py", ROOT / "scripts" / "pr_closure.py")):
         (repo / name).write_bytes(src.read_bytes())
     _git(repo, "init", "-q", "-b", "master")

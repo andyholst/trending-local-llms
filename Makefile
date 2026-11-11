@@ -424,6 +424,18 @@ pr-closure: ## Fail when this PR does not close the issue its branch implements 
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
 	python3 scripts/pr_closure.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--branch "$(BRANCH)" $(if $(BODY_FILE),--body-file "$(BODY_FILE)",))
 
+pr-message-check: ## Fail when this PR does not follow the message pattern / close what it implements (issue #771)
+	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-message-check [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
+	@python3 scripts/pr_body.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--check-body-file "$(BODY_FILE)" $(if $(BRANCH),--branch "$(BRANCH)",))
+
+issue-message-check: ## Fail when an ISSUE body does not follow the message pattern (five ## sections, issue #771)
+	@test -n "$(ISSUE_EVENT)" -o -n "$(BODY_FILE)" || { echo "Usage: make issue-message-check [ISSUE_EVENT=<event json>] | [BODY_FILE=<issue body>]"; exit 1; }
+	@python3 scripts/pr_body.py $(if $(ISSUE_EVENT),--issue-event "$(ISSUE_EVENT)",--check-issue-file "$(BODY_FILE)" $(if $(ISSUE),--issue "$(ISSUE)",))
+
+commit-message-check: ## Fail when a COMMIT message does not follow the message pattern / close what it implements (issue #771)
+	@test -n "$(BODY_FILE)" || { echo "Usage: make commit-message-check BODY_FILE=<commit message> [BRANCH=<head ref>] [ISSUE=<n>]"; exit 1; }
+	@python3 scripts/pr_body.py --check-commit-file "$(BODY_FILE)" $(if $(BRANCH),--branch "$(BRANCH)",) $(if $(ISSUE),--issue "$(ISSUE)",)
+
 # ---- where work starts: a worktree off the freshly fetched base (rule 6n) ----
 # ONE implementation (scripts/worktree_base.py) of the fetch, the assertion and the
 # refusal, shared by CI (`make base-check` before a branch is cut, `IN_PLACE=1` when the

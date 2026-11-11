@@ -270,6 +270,9 @@ keep it honest (issue #207):
 | `architecture-pr-body` (`RUN_URL=`) | Compose the ARCHITECTURE PR body for a description that was stale (issue #542). It must carry NO closing keyword — this PR implements no issue — and the composer refuses its own output if it ever does (`scripts/pr_body.py --for architecture`) |
 | `pr-body` (`ISSUE=<n>` `BRANCH=<head branch>`) | Print the IMPLEMENTATION PR body the issue-bot opens (issue #287): the whole text GitHub parses for the closure, composed by `scripts/pr_body.py` instead of a workflow heredoc. The single `Closes #<n>` claim comes from the same module and is read back by `scripts/pr_closure.py`; a branch that encodes a different issue is REFUSED (exit 2, empty stdout). The recipe is `@`-silenced, so the workflow can redirect it straight into `pr-body.md`. Runs on the runner's own `python3`, like `refresh-run-block` |
 | `pr-closure` (`PR_EVENT=<event json>` · or `BRANCH=<head> BODY_FILE=<pr body>`) | Fail when the PR does not close the issue its branch implements (`scripts/pr_closure.py`, issue #284): a closing keyword whose clause chains a second reference is refused (`Closes #1 and #2` would close only #1), a branch issue with no keyword bound to it is refused, and a PR whose branch implements no issue must not close one (the refresh PR references its tracking issue). In CI the default reads `$GITHUB_EVENT_PATH` by PATH — nothing is interpolated into a `run:` block. A non-PR event is a green no-op. Runs in `qa-validate`'s `validate` job |
+| `pr-message-check` (`PR_EVENT=<event json>` · or `BRANCH=<head> BODY_FILE=<pr body>`) | Fail when an implementation PR body does not follow the MESSAGE PATTERN (`scripts/pr_body.py::pr_message_problems`, issue #771): the five `## Why / ## What / ## How / ## Benefits / ## Technical Solution` sections must appear in order with content, and it must still close what it implements (the `pr_closure.check` half). The section check runs only for a branch that encodes an issue; a refresh/architecture body implements none and is not forced to carry the sections. In CI the default reads `$GITHUB_EVENT_PATH` by PATH, in `pr-closure.yml` alongside `make pr-closure` (the same body-on-screen model, issue #290). A non-PR event is a green no-op |
+| `issue-message-check` (`ISSUE_EVENT=<event json>` · or `BODY_FILE=<issue body>`) | Fail when an ISSUE body does not follow the MESSAGE PATTERN (`scripts/pr_body.py::section_problems`, issue #771): the five `## Why / ## What / ## How / ## Benefits / ## Technical Solution` sections must appear in order with content. An issue links its origin but closes nothing, so only the five sections are checked (rule 6e). In CI the default reads an `issues` webhook payload by PATH, same body-on-screen model as `pr-closure` (issue #290) |
+| `commit-message-check` (`BODY_FILE=<commit message>` · `BRANCH=<head>` · `ISSUE=<n>`) | Fail when a COMMIT message does not follow the MESSAGE PATTERN (`scripts/pr_body.py::pr_message_problems` + the issue read from the message's own `#<n>`, issue #771): the five sections in order with content, plus it must close the issue it implements. A squash commit lands on `refs/heads/master` which encodes no issue, so the implemented issue is read from the message itself (its Conventional-Commit title names the `#<n>`), never from the branch name. `ISSUE=` may override when the message names none |
 | `verify-closure` (`PR=<n>` `REPO=<owner/name>`) | After a merge, PROVE the issue the body claimed to close actually closed (`scripts/verify_closure.py`, issue #288): `pr-closure` PREDICTS the closure from GitHub's parser semantics, and PR #272 shows the difference (`Closes #271 and #276` closed #271, left #276 open, every job green). Reads the merged PR's own `closingIssuesReferences` (fetching an issue's state when the reference omits it), retries briefly because GitHub's close trails the merge call, exits 1 naming the issue and its state, and is LOUD when `gh` itself fails. A PR that closes nothing is not a failure. Read-only; runs as the last step of `auto-merge` |
 
 ### Lint
@@ -723,7 +726,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 181 make targets, 61 files in `scripts/`)
+### Bots in the tree (12 pipelines, 184 make targets, 61 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -765,9 +768,9 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 #### `.github/workflows/pr-closure.yml` — pr-closure
 
-- **when:** `pull_request`
+- **when:** `pull_request`, `issues`, `push`
 - **jobs:** `guard`, `closure` (needs `guard`)
-- **calls:** `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e)
+- **calls:** `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make pr-message-check` — Fail when this PR does not follow the message pattern / close what it implements (issue #771); `make commit-message-check` — Fail when a COMMIT message does not follow the message pattern / close what it implements (issue #771); `make issue-message-check` — Fail when an ISSUE body does not follow the message pattern (five ## sections, issue #771)
 
 #### `.github/workflows/pr-health.yml` — pr-health
 
