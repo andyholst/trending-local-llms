@@ -833,7 +833,7 @@ BOT_GUARDS = (
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
 #: them for the repository itself (there is no caller to admit).
-REPO_EVENTS = ("pull_request", "push")
+REPO_EVENTS = ("pull_request", "push", "issues")
 
 #: The caller classes every bot guard must decide the same way (issue #238). The
 #: bot itself is a bot-to-bot dispatch with the default token; it MUST be allowed.

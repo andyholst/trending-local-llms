@@ -27,6 +27,15 @@ on:
     paths:
       - "**"
       - "!LICENSE"
+  # Issue #771 — the MESSAGE PATTERN, the same artifact-reads-the-artifact model, now also
+  # gates the OTHER two artifacts this repo composes: an `issues` event validates a body
+  # that DECLARES the pattern (a structured data-gap issue leaves it unset), and a push to
+  # master validates the SQUASH COMMIT message (refs/heads/master encodes no issue, so the
+  # commit's own `#<n>` carries it). Both legs are seconds long, like the closure check.
+  issues:
+    types: [opened, edited, reopened]
+  push:
+    branches: [master]
 
 permissions:
   contents: read
@@ -49,7 +58,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           case "$EVENT" in
-            pull_request|push)
+            pull_request|push|issues)
               echo "$EVENT is a repository event, not a dispatch - allowed."
               exit 0 ;;
           esac
@@ -88,3 +97,23 @@ jobs:
       # it (pr_message_problems), exactly as the closure check already discriminates by branch.
       - name: The PR follows the message pattern (issue #771)
         run: make pr-message-check
+
+      # Issue #771, COMMIT leg: a push to master is a SQUASH MERGE, whose message must
+      # follow the pattern too. `head_commit.message` is the pushed (squash) message, read
+      # by PATH from the payload — nothing interpolated — and `commit-message-check` reads
+      # the implemented issue from the message's own `#<n>` (refs/heads/master encodes none).
+      - name: The squash commit message follows the message pattern (issue #771)
+        if: github.event_name == 'push'
+        run: |
+          jq -r '.head_commit.message // empty' "$GITHUB_EVENT_PATH" > commit-msg.txt
+          test -s commit-msg.txt || { echo "no head_commit message in this event"; exit 0; }
+          make commit-message-check BODY_FILE="commit-msg.txt"
+
+      # Issue #771, ISSUES leg: an issue body that DECLARES conformance (the invisible
+      # `issues-message-pattern` marker) is validated against the five `##` sections. A
+      # structured data-gap / tech-debt issue carries its own schema and no marker, so it is
+      # not forced through the shape; a declared message-pattern issue that skips, empties
+      # or misorders a section is REFUSED. The marker check lives in `pr_message_problems`.
+      - name: A declared message-pattern issue body follows the pattern (issue #771)
+        if: github.event_name == 'issues'
+        run: make issue-message-check ISSUE_EVENT="$GITHUB_EVENT_PATH"

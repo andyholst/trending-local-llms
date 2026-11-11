@@ -58,6 +58,13 @@ def closing_line(issue: int) -> str:
 #: `make pr-message-check` (the CI gate) and every test read the composer through it.
 MESSAGE_SECTIONS = ("Why", "What", "How", "Benefits", "Technical Solution")
 
+#: An issue AUTHOR that declares its body follows the MESSAGE PATTERN carries this marker.
+#: The `issues` CI leg validates only DECLARED conformance: a data-gap/tech-debt issue has
+#: its own structured schema (## Goal / ## Ranked gaps / the attribution marker) and must
+#: not be forced through the five-section shape, while an issue that opts in is REFUSED the
+#: moment it skips, empties or misorders a `##` section (issue #771).
+ISSUE_PATTERN_MARKER = "<!-- issue-message-pattern -->"
+
 
 def section_problems(text: str) -> list[str]:
     """Every message-pattern violation in `text`: a missing / repeated / out-of-order /
@@ -284,6 +291,12 @@ def _problems_for(artifact: str, text: str, branch: str | None = None,
     merge lands closes it too. The closing-keyword semantics are always `pr_closure`'s.
     """
     if artifact == "issue":
+        # An issue is validated only when it DECLARES conformance (the marker). A structured
+        # data-gap / tech-debt issue carries its own schema (## Goal / ## Ranked gaps / the
+        # attribution marker) and must not be forced through the five-section shape; an issue
+        # that opts in is REFUSED when it skips, empties or misorders a `##` section.
+        if ISSUE_PATTERN_MARKER not in text:
+            return []
         return section_problems(text)
     return pr_message_problems(text, branch, issue)
 
