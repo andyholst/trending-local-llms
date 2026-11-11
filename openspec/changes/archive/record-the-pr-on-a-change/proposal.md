@@ -1,6 +1,7 @@
 # Proposal: record-the-pr-on-a-change
 
 Issue: #518 — `tech-debt: Most active OpenSpec changes carry no PR reference, so the lifecycle guard cannot see them`
+PR: #753
 
 ## Why
 

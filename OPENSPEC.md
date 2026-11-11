@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **188**
+Active changes: **16** · archived: **189**
 
 ## Active changes
 
@@ -23,9 +23,9 @@ Active changes: **16** · archived: **188**
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
+| `openspec-record-pr-idempotent` | active | #754 (tech-debt, "openspec-record-pr is not idempotent: a re-run on an | — | [change-lifecycle](openspec/changes/openspec-record-pr-idempotent/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-record-pr-idempotent/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
-| `record-the-pr-on-a-change` | active | #518 — `tech-debt: Most active OpenSpec changes carry no PR reference, so the lifecycle guard cannot see them` | — | [change-lifecycle](openspec/changes/record-the-pr-on-a-change/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/record-the-pr-on-a-change/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
@@ -173,6 +173,7 @@ Active changes: **16** · archived: **188**
 | `real-pick-prints-one-line` | archived | #578 | — | [issue-queue](openspec/changes/archive/real-pick-prints-one-line/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/real-pick-prints-one-line/proposal.md) |
 | `rebuild-decision` | archived | #208 | — | [rebuild-decision](openspec/changes/archive/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/rebuild-decision/proposal.md) |
 | `recheck-before-the-agent` | archived | #522 | — | [issue-implementer](openspec/changes/archive/recheck-before-the-agent/specs/issue-implementer/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/recheck-before-the-agent/proposal.md) |
+| `record-the-pr-on-a-change` | archived | #518 — `tech-debt: Most active OpenSpec changes carry no PR reference, so the lifecycle guard cannot see them` | #753 | [change-lifecycle](openspec/changes/archive/record-the-pr-on-a-change/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/record-the-pr-on-a-change/proposal.md) |
 | `red-run-and-repair-path` | archived | #558 | — | [red-run-and-repair-path](openspec/changes/archive/red-run-and-repair-path/specs/red-run-and-repair-path/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/red-run-and-repair-path/proposal.md) |
 | `refine-restatement-whole` | archived | #450 | — | [issue-bot-verdict](openspec/changes/archive/refine-restatement-whole/specs/issue-bot-verdict/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/refine-restatement-whole/proposal.md) |
 | `refresh-aggregate-advances-its-base` | archived | #448 (filed first, with the measurement) | — | [worktree-base](openspec/changes/archive/refresh-aggregate-advances-its-base/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/refresh-aggregate-advances-its-base/proposal.md) |
