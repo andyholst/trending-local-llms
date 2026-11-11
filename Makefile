@@ -112,6 +112,11 @@ HERMES_ALIAS := nous-deepseek
 # ARG defaults, so the image and the host path install from the same place.
 HERMES_INSTALL_URL ?= https://hermes-agent.nousresearch.com/install.sh
 HERMES_PACKAGE     ?= hermes-agent
+# The pinned Hermes agent VERSION (issue #218): the seam asserts `hermes
+# --version` equals it and bakes the verified version into the image. Raise it
+# TOGETHER with the Dockerfile's ARG HERMES_VERSION default; an upgrade is then
+# an explicit, reviewable change instead of whatever the channel serves.
+HERMES_VERSION     ?= 0.23.1
 # Raise the per-reply output cap. The deepseek model was truncating its reply
 # mid-search (hit the default max_tokens), dropping the incomplete action and
 # failing `make refresh`. At 8000 the heavier Metal search still

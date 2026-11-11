@@ -41,6 +41,46 @@ dump_version() {
 	command -v hermes >/dev/null 2>&1 || return 1
 	say "hermes at $(command -v hermes)"
 	hermes --version 2>&1 | head -2 || true
+	pin_installed_version
+}
+
+# --- issue #218: the pin carries the VERSION, and the build proves it ---------
+# The same content-hash tag (rule 6k, issue #135) must always install the SAME
+# agent. `ARG HERMES_VERSION` / `HERMES_VERSION ?=` name one version, and this
+# seam refuses a build whose CLI reports any other — a URL pin installs whatever
+# the channel happens to serve on build day, which is the gap #218 names.
+# An empty HERMES_VERSION records the version without asserting (mirror builds).
+pin_installed_version() {
+	local found baked
+	found="$(hermes --version 2>&1 \
+		| grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' \
+		| grep -vE '^[0-9]{4}\.' | head -1)"
+	found="${found#v}"
+	# Assert FIRST: a refused build bakes nothing — the version file states only
+	# a version the build actually verified.
+	if [ -n "${HERMES_VERSION:-}" ]; then
+		if [ "$found" != "$HERMES_VERSION" ]; then
+			say "the installed agent is NOT the pinned version: pinned $HERMES_VERSION, installed ${found:-<unparseable>}"
+			say "the content-hash tag would vouch for $HERMES_VERSION; refuse to build a different agent (issue #218)"
+			say "raise the pin in the Makefile and the Dockerfile ARG together, or point HERMES_INSTALL_URL at the release that serves it"
+			exit 1
+		fi
+		say "installed agent is the pinned version: $HERMES_VERSION"
+	fi
+	if [ -z "$found" ]; then
+		say "installed CLI reports no parseable version"
+		return 0
+	fi
+	baked="${HERMES_VERSION_FILE:-/opt/hermes-version.txt}"
+	if printf '%s\n' "$found" > "$baked" 2>/dev/null; then
+		say "version baked to $baked: $found"
+	elif printf '%s\n' "$found" > "$HOME/hermes-version.txt" 2>/dev/null; then
+		# Outside a container (e.g. `make setup` on a host) the baked path is
+		# not writable; record it where we can, loudly, instead of failing.
+		say "WARN: cannot bake $baked; version recorded at $HOME/hermes-version.txt: $found"
+	else
+		say "WARN: could not bake the installed version anywhere"
+	fi
 }
 
 # 1. already installed.
