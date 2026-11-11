@@ -2,6 +2,7 @@
 
 Issue: #661 (measured: `scripts/issue_review.py:100`, `scripts/issue_queue.py:91`,
 `scripts/data_gap_analysis.py:63`)
+PR: [#793](https://github.com/andyholst/trending-local-llms/pull/793)
 
 ## Why
 
