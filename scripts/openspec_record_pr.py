@@ -21,9 +21,12 @@ to `archive/`, then regenerate the index — host-side, deterministic, no model.
 
 It finds the change by its `Issue:` ref through the SHARED parser
 (`scripts/openspec_index.py::_refs`, rule 6d — one reader), so it can never
-target a change that references a different issue, and it refuses (exit 2)
-loudly when NO active change references that issue: a step that silently matched
-nothing would leave the change unrecorded and the guard vacuous again.
+target a change that references a different issue. An ARCHIVED change for the
+same issue is the state an earlier run already recorded (issue #754), so a re-run
+is a benign no-op (exit 0) that names the change as already archived; it refuses
+(exit 2) loudly only when NO change — active or archived — references that issue:
+a step that silently matched nothing would leave the change unrecorded and the
+guard vacuous again.
 
 Usage:
     make openspec-record-pr ISSUE=518 PR=523
@@ -49,7 +52,12 @@ _EXISTING_PR = re.compile(r"^\**\s*PR:\**\s*[^\n]*$", re.MULTILINE)
 
 
 class NoSuchChange(Exception):
-    """No active change references the given issue — the recording matched nothing."""
+    """No change — active OR archived — references the given issue: nothing recorded."""
+
+
+class AlreadyThere(Exception):
+    """Every change for the issue was already archived with a recorded PR (a benign re-run)."""
+
 
 
 def _insert_pr(text: str, pr: int) -> str:
@@ -74,16 +82,25 @@ def _active_changes(root: Path) -> list[tuple[str, Path]]:
     return [c for c in openspec_index.discover(changes)[0]]
 
 
+def _archived_changes(root: Path) -> list[tuple[str, Path]]:
+    changes = root / "openspec" / "changes"
+    return [c for c in openspec_index.discover(changes)[1]]
+
+
 def record(issue: int, pr: int, root: Path = ROOT) -> list[str]:
     """Write `PR: #<pr>` into every ACTIVE change referencing issue #<issue> and
     move it to `archive/`.
 
-    Returns the names of the changes it archived; raises `NoSuchChange` when none
-    matches, `AlreadyThere` when every match is already archived with this PR.
+    Returns the names of the changes it archived; raises `NoSuchChange` when no
+    change (active OR archived) references the issue, and `AlreadyThere` when
+    every matching change is already archived (a re-run of the same recording —
+    a benign no-op that must not look like a failure).
+
     Additive only: an existing `PR:` line is replaced in place, never duplicated,
     and no other file is rewritten.
     """
     targeted: list[str] = []
+    already: list[str] = []
     for name, path in _active_changes(root):
         refs = openspec_index._refs(path / "proposal.md")
         iss_ref = refs.get("Issue")
@@ -100,9 +117,23 @@ def record(issue: int, pr: int, root: Path = ROOT) -> list[str]:
             shutil.rmtree(dest)
         shutil.move(str(path), str(dest))
         targeted.append(name)
-    if not targeted:
-        raise NoSuchChange(f"no ACTIVE change references Issue: #{issue} — nothing recorded")
-    return targeted
+    if targeted:
+        return targeted
+    # No ACTIVE change matched — the recording may already have happened. An
+    # ARCHIVED change for this issue is that state (its completing PR was recorded
+    # and it was moved in an earlier run), so a re-run is a benign no-op, never a
+    # failure. Only when no archived change references the issue either is the
+    # recording genuinely unmatched, and that is refused loudly.
+    for name, path in _archived_changes(root):
+        refs = openspec_index._refs(path / "proposal.md")
+        iss_ref = refs.get("Issue")
+        m = re.search(r"#(\d+)", iss_ref or "")
+        if m is not None and int(m.group(1)) == issue:
+            already.append(name)
+    if already:
+        raise AlreadyThere(already)
+    raise NoSuchChange(f"no change — active or archived — references Issue: #{issue} — nothing recorded")
+
 
 
 def _regen_index(root: Path) -> None:
@@ -128,6 +159,10 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(a.root)
     try:
         names = record(a.issue, a.pr, root)
+    except AlreadyThere as exc:
+        print(f"[openspec-record-pr] already recorded: {', '.join(exc.args[0])} "
+              f"for issue #{a.issue} is already archived — nothing to do")
+        return 0
     except NoSuchChange as exc:
         print(f"[openspec-record-pr] REFUSED: {exc}", file=sys.stderr)
         return 2

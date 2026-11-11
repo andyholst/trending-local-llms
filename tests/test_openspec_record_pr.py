@@ -122,6 +122,28 @@ def test_record_replaces_an_existing_pr_line():
         check("record-pr: it is the NEW number", "PR: #523" in text, text)
 
 
+def test_rerun_on_an_already_archived_change_is_a_noop():
+    """A second `openspec-record-pr` for the same issue/PR exits 0, edits nothing, names it already-recorded."""
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _tree(root, "my-change", "#518")
+
+        first = _run(root, "--issue", "518", "--pr", "523")
+        proposal = root / "openspec" / "changes" / "archive" / "my-change" / "proposal.md"
+        snapshot = proposal.read_text(encoding="utf-8") if proposal.exists() else None
+        check("record-pr: first run archives it", first.returncode == 0 and proposal.exists(), first.stderr)
+
+        second = _run(root, "--issue", "518", "--pr", "523")
+
+        check("record-pr: re-run exits 0 (a no-op, never a red re-run)",
+              second.returncode == 0, str(second.returncode))
+        check("record-pr: no active change is re-created",
+              not (root / "openspec" / "changes" / "my-change").exists(), "")
+        check("record-pr: the archive is not edited", proposal.read_text(encoding="utf-8") == snapshot, "")
+        check("record-pr: it names the change as already recorded",
+              "my-change" in second.stdout and "already" in second.stdout, second.stdout)
+
+
 def test_the_issue_bot_step_records_the_pr_after_opening_it():
     """The shipped issue-bot workflow runs `make openspec-record-pr` after the PR opens."""
     wf = yaml.safe_load(ISSUE_BOT.read_text(encoding="utf-8"))
@@ -142,6 +164,7 @@ def main() -> int:
         test_the_recording_writes_the_pr_line_archives_and_regenerates_the_index,
         test_record_refuses_when_no_change_names_the_issue,
         test_record_replaces_an_existing_pr_line,
+        test_rerun_on_an_already_archived_change_is_a_noop,
         test_the_issue_bot_step_records_the_pr_after_opening_it,
         test_the_guard_target_is_wired,
     ):
