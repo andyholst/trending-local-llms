@@ -10,8 +10,7 @@ below are deliberate, non-live test values, which is exactly what the marker in 
 
 NO-SKIP POLICY: a missing prerequisite is a LOUD FAILURE, never a skip.
 
-Wired into `make test` (rule 6d). Runs as a plain script (the test image's pytest path is dead,
-issue #176) and under pytest.
+Wired into `make test` (rule 6d). Runs as a plain script — the runner is scripts/run_tests.sh, the test image carries no test runner at all (issue #176).
 """
 from __future__ import annotations
 
