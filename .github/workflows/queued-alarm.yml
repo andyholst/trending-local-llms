@@ -95,6 +95,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make freshness-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=14
+      # A deterministic gate that goes red on a `push` to master has no repairer (issue #527): the
+      # validate job of qa-validate runs on master push as well as on PRs, and dispatch-fixbot /
+      # fix-bot / pr-health all need a PR (a push has none) while architecture-bot repairs only
+      # ARCHITECTURE.md + OPENSPEC.md. So a red master stays red until a human notices. This alarm
+      # reads the NEWEST push-to-master qa-validate run and goes RED when it concluded failure —
+      # the same "a red or silent state must produce a signal" model as the alarms around it.
+      - name: Fail loudly when the newest push-to-master qa-validate run is red (issue #527)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make master-alarm REPO="${{ github.repository }}"
       # The owed-row ledger (issue #523): open issues declare the AGENTS.md §/row they are owed
       # via `owed-row` markers; this reports each declared row as LANDED (with its AGENTS.md
       # evidence line) or OUTSTANDING, so a covered issue is closable on evidence and the ledger
