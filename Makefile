@@ -1374,6 +1374,22 @@ queued-alarm: ## Report jobs stuck in `queued` far too long, and optionally comm
 	@test -n "$(REPO)" || { echo "Usage: make queued-alarm REPO=<owner/repo> [MINUTES=30] [COMMENT=1]"; exit 1; }
 	python3 scripts/queued_run_alarm.py --repo "$(REPO)" --minutes "$(if $(MINUTES),$(MINUTES),30)" $(if $(COMMENT),--comment,)
 
+# The master-alarm (issue #527): a deterministic gate in qa-validate's `validate` job goes red on
+# a push to master AFTER `auto-merge`, and every repair path in this repo needs a PR — so a red
+# master has no repairer and stays red until a human notices (measured: run 39625708799). This
+# alarm reads the NEWEST push-to-master qa-validate run and exits 1 when it is red, so the
+# scheduled alarm job goes RED in the Actions tab instead of staying quiet. The DECISION lives in
+# scripts/master_alarm.py (rule 6d); the KEEPER/ALARM table for every validate gate lives beside
+# it. Host-side (needs gh + Makefile), called by queued-alarm's alarm job, never a PR gate.
+.PHONY: _master-alarm
+_master-alarm:
+	python3 scripts/master_alarm.py --repo "$(REPO)" $(if $(LIMIT),--limit $(LIMIT),)
+
+.PHONY: master-alarm
+master-alarm: ## Fail when the newest push-to-master qa-validate run is red, so a broken master has a signal (REPO=<owner/name>, LIMIT=10; issue #527)
+	@test -n "$(REPO)" || { echo "Usage: make master-alarm REPO=<owner/repo> [LIMIT=10]"; exit 1; }
+	@$(MAKE) --no-print-directory _master-alarm
+
 # The code-review bot (issue #253): it reads the TREE and the PIPELINES and files what is
 # actually wrong. Every check in scripts/code_review.py is DETERMINISTIC (no model), so a scan
 # is free and cannot invent a finding; `file` writes ONE issue per NEW finding, marker-deduped

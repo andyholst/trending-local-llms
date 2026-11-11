@@ -655,6 +655,19 @@ issue that skips a section is refused.
    into a recipe silently (issue #549, tightened by #638). A rule is corrected in
    the skill, never in four prompts.
 
+6q. **A gate that goes red on a `push` to master is an ALARM, because it has no repairer
+   (MANDATORY).** `qa-validate`'s `validate` job runs on a push to master as well as on PRs, and
+   every repair path needs a PR (`dispatch-fixbot` only touches refresh/data-gap PRs, `fix-bot`
+   refuses a non-PR, `pr-health` sweeps open PRs, `architecture-bot` repairs only ARCHITECTURE.md
+   and OPENSPEC.md) — so a deterministic gate that goes red AFTER `auto-merge` stays red until a
+   human opens a run page (measured: run 39625708799, red at the OpenSpec gate, tests never
+   reached). `make master-alarm` (`scripts/master_alarm.py`, run by `queued-alarm.yml`) reads the
+   NEWEST push-to-master qa-validate run and exits 1 naming the run URL and the failing jobs — the
+   scheduled sweep goes RED instead of staying quiet (the `queued-alarm` model). It never writes
+   anything; the KEEPER half (architecture-bot's two generated files) is named in its registry —
+   every deterministic gate of the `validate` job sits on the keeper list or the alarm list, and
+   `tests/test_master_alarm.py` fails when a new gate lands on neither.
+
 6n. **Every implementation starts in its own worktree, cut from the freshly
    fetched base — and the base is VERIFIED, never assumed (MANDATORY).** The
    working copy is not a detail: an implementation that starts from an old base
@@ -1673,6 +1686,7 @@ actually happened.
 | `make validate-fetch` (live) | the search returning 0 model hits |
 
 | `tests/test_working_file_list.py` + `make check-working-files` / `make reset-working-files` (rules 6c/6d/6m, issue #543) | the bot's working files (`issue.md`, `pr-body.md`, `findings.md`, `implement.log`, …) defined in FOUR places — one literal `git reset -q -- …` line copied into two steps of `issue-bot.yml`, a third copy in `fix-bot.yml`, and `.gitignore` — so a new working file was remembered or missed, and a missed one was committed by the push step's `git add -A` (the measured `qa-report.txt.notes` reaching PR #387, issue #390); the list is now ONE file, `make check-working-files` fails when a name on it is not gitignored, and `make lint` runs that check |
+| `tests/test_master_alarm.py` + `make master-alarm` (rules 6q/6c/6d, issue #527) | a deterministic gate going red on a `push` to master with no repair path: the validate job runs on master pushes, every fixer needs a PR, and the red sat unrepaired (measured, run 39625708799 — red at the OpenSpec gate, unit tests never reached); `scripts/master_alarm.py` exits 1 naming the newest push-to-master run URL and its failing jobs, the workflow calls the make target (never a direct script), and the keeper/alarm registry test refuses a validate-job gate that is on neither list |
 | `tests/test_bot_markers.py` — `test_every_marker_the_tree_writes_is_registered` (rule 6j, issue #474) | a marker WRITTEN outside the registry: the guard only checked registered→written, so `issue-bot-verdict` was written since #210 and unknown to `bot_markers` until #477, exactly when a reader needed its stamp (the decided hold, #449); the reverse scan derives the bot families from the registry and fails on any unregistered literal in one, while dedup keys and alarm markers are left alone |
 | `tests/test_search_key.py` — the tool pin (rule 3e/6c, issues #362/#638) | a search leg told to make its Firecrawl call from a tool whose child environment cannot see the key: `execute_code` scrubs every credential-shaped name and never unwraps `_HERMES_FORCE_`, so the request carries an empty Bearer and fails `HTTP 401` while the key is set; the tool rule stated ONCE — in the `data-search` skill the four legs preload, not in a `Makefile` variable expanded into four prompts — and a recipe that restates it; the tool pin leaving the skill |
 | `tests/test_worktree_base.py` — `test_adopt_carries_uncommitted_work_onto_an_existing_branch` + the marker check in `make lint` (rules 6c/6n, issues #580/#583) | a re-run's work lost when the branch it resumes could not be checked out with a dirty tree (#580), and a conflicted re-apply leaving `<<<<<<<` in a tracked file that `git add -A` then committed — after which `make base-rebase` died with `Makefile:588: missing separator` (measured, run 40202490846); the adopt takes THIS run's side and leaves no marker |
