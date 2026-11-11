@@ -295,7 +295,7 @@ def _check_message(args) -> int:
     exactly as `pr-closure` does, so the gate reads the artifact on screen now (#290)."""
     if args.check_body_file or args.check_event:
         artifact, label = "pr", "pr-message-check"
-    elif args.check_issue_file or args.issue_event:
+    elif args.check_issue_file or (hasattr(args, "issue_event") and args.issue_event):
         artifact, label = "issue", "issue-message-check"
     elif args.check_commit_file:
         artifact, label = "commit", "commit-message-check"
@@ -383,7 +383,7 @@ def main(argv: list[str] | None = None) -> int:
     # The message-pattern/closure gate (issue #771): validate a PR body, an issue body or a
     # commit message instead of composing. Reached only through the `make *-message-check`
     # targets (rules 6d/6m).
-    if (args.check_body_file or args.event or args.check_issue_file
+    if (args.check_body_file or args.check_event or args.check_issue_file
             or args.issue_event or args.check_commit_file):
         return _check_message(args)
 
