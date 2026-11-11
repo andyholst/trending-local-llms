@@ -190,7 +190,8 @@ also lands the other two artifacts: a `push` to `master` runs `make commit-messa
 on the squash message (the issue is read from the message's own `#<n>`, since
 `refs/heads/master` encodes none), and an `issues:opened/edited/reopened` event runs
 `make issue-message-check` on an issue body that DECLARES the pattern by carrying the
-invisible `<!-- issues-message-pattern -->` marker — a structured data-gap/tech-debt issue
+invisible `message-pattern-opt-in` marker (declared ONCE in `scripts/bot_markers.py`,
+rule 6j) — a structured data-gap/tech-debt issue
 (own schema, no marker) is never forced through the five-section shape, while a declared
 issue that skips a section is refused.
 

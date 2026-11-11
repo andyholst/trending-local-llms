@@ -40,7 +40,8 @@ reviewable appear nowhere by default.
   `opened`/`edited`/`synchronize`. The same body-on-screen model now also covers the OTHER two
   artifacts the repo composes: a `push` to `master` runs `commit-message-check` on
   `.head_commit.message`, and `issues:opened/edited/reopened` runs `issue-message-check` on an
-  issue body that DECLARES the pattern (the `<!-- issues-message-pattern -->` marker), so a
+  issue body that DECLARES the pattern (the `message-pattern-opt-in` marker declared once in
+  `scripts/bot_markers.py`), so a
   structured data-gap issue's own schema is never forced through the shape.
 - **AGENTS.md** — the message pattern is documented as repo behavior (rule 6e
   region): what the five sections are, that `closes <issue>` binds one reference,
@@ -72,7 +73,7 @@ no change to the repo's data validators.
 - **Scanning UNMARKED issue bodies.** A data-gap / tech-debt issue has its own structured
   schema (`## Goal` / `## Ranked gaps` / the attribution marker) that does not fit the
   five-section shape and MUST NOT be forced through it. Only an issue that carries the
-  invisible `<!-- issues-message-pattern -->` marker is validated — so pattern issues are
+  invisible `message-pattern-opt-in` marker is validated — so pattern issues are
   enforced at the moment they are filed while legacy structured issues stay green.
 - No change to the closing-keyword semantics already owned by `pr_closure.py`
   (rule 6e).

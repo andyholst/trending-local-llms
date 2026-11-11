@@ -80,6 +80,15 @@ jobs:
             echo "Scheduled run - allowed."
             exit 0
           fi
+          # Issue #771: an `issues: opened` run is started by GitHub for the repository
+          # itself — any user may file an issue, and the sweep's OWN reads are API
+          # calls on the issue it is passed, not secrets — so the guard admits it
+          # without demanding a caller (the same repository-event rule as pull_request
+          # on qa-validate and the issue pattern on pr-closure, issue #279/#290).
+          if [ "$EVENT" = "issues" ]; then
+            echo "issues event - a repository event, not a dispatch - allowed."
+            exit 0
+          fi
           # Owner, the bot itself (github-actions[bot], a bot-to-bot dispatch), or
           # a collaborator with write/maintain/admin, for BOTH the actor and the
           # triggering actor (covers re-runs). Anything else - including an API

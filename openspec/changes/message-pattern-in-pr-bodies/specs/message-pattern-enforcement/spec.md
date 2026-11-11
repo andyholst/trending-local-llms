@@ -76,7 +76,8 @@ issue — so a commit that the composer's own parser refuses MUST fail the check
 
 ### Requirement: a declared message-pattern issue body is validated
 
-An issue that carries the invisible `<!-- issues-message-pattern -->` marker MUST have the
+An issue that carries the invisible `message-pattern-opt-in` marker (declared ONCE in
+`scripts/bot_markers.py`, rule 6j) MUST have the
 five `##` sections in order and with content. `pr-closure.yml` MUST run
 `make issue-message-check` on `issues:opened/edited/reopened`, so a DECLARED message-pattern
 issue that skips, empties or misorders a section is refused. A structured data-gap/tech-debt

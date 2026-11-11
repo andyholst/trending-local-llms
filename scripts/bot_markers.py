@@ -77,6 +77,17 @@ UNREGISTERED_OWED: dict[str, int] = {
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
 DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature")
 
+#: An issue AUTHOR declares its body follows the MESSAGE PATTERN by carrying this marker (issue
+#: #771). Not a bot window and not a dedup key: it is a DECLARATION, like the owed-row marker
+#: above — an issue that opts in to the five-section `## Why / What / How / Benefits / Technical
+#: Solution` check is REFUSED by `make issue-message-check` the moment it skips, empties or
+#: misorders a `##` section, while a structured data-gap/tech-debt issue carries its own schema
+#: (## Goal / ## Ranked gaps / the attribution marker) and is never forced through that shape.
+#: Its name deliberately starts with no bot-family prefix (`issue-`, `fix-`, …), so the reverse
+#: marker guard never reads it as an unregistered window; `scripts/pr_body.py` imports it, so the
+#: reader and the writer share ONE spelling (rule 6j).
+ISSUE_PATTERN_MARKER = "message-pattern-opt-in"
+
 #: Markers a writer in the tree emits TODAY. Every one of these must be findable in the repo —
 #: a registered marker nobody writes is a promise with no producer, and the test fails on it.
 WRITTEN: frozenset = frozenset({

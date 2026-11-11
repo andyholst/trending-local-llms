@@ -36,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import bot_markers  # noqa: E402  (declaration markers, incl. ISSUE_PATTERN_MARKER, live here — rule 6j)
 import pr_closure  # noqa: E402  (ONE derivation of "which issue does this branch implement")
 
 
@@ -58,12 +59,13 @@ def closing_line(issue: int) -> str:
 #: `make pr-message-check` (the CI gate) and every test read the composer through it.
 MESSAGE_SECTIONS = ("Why", "What", "How", "Benefits", "Technical Solution")
 
-#: An issue AUTHOR that declares its body follows the MESSAGE PATTERN carries this marker.
-#: The `issues` CI leg validates only DECLARED conformance: a data-gap/tech-debt issue has
-#: its own structured schema (## Goal / ## Ranked gaps / the attribution marker) and must
-#: not be forced through the five-section shape, while an issue that opts in is REFUSED the
-#: moment it skips, empties or misorders a `##` section (issue #771).
-ISSUE_PATTERN_MARKER = "<!-- issue-message-pattern -->"
+#: An issue AUTHOR that declares its body follows the MESSAGE PATTERN carries this marker. The
+#: `issues` CI leg validates only DECLARED conformance: a data-gap/tech-debt issue has its own
+#: structured schema (## Goal / ## Ranked gaps / the attribution marker) and must not be forced
+#: through the five-section shape, while an issue that opts in is REFUSED the moment it skips,
+#: empties or misorders a `##` section (issue #771). The NAME and SHAPE live in `bot_markers.py`
+#: (rule 6j); this is the import, never a second spelling.
+ISSUE_PATTERN_MARKER = f"<!-- {bot_markers.ISSUE_PATTERN_MARKER} -->"
 
 
 def section_problems(text: str) -> list[str]:
