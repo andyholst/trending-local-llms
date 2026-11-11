@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **189**
+Active changes: **18** · archived: **190**
 
 ## Active changes
 
@@ -22,6 +22,7 @@ Active changes: **16** · archived: **189**
 | `index-failure-names-its-cause` | active | none — found while unblocking the dispatch-bot verification pass. | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
+| `message-pattern-in-pr-bodies` | active | #771 | — | [message-pattern-enforcement](openspec/changes/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/message-pattern-in-pr-bodies/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `openspec-record-pr-idempotent` | active | #754 (tech-debt, "openspec-record-pr is not idempotent: a re-run on an | — | [change-lifecycle](openspec/changes/openspec-record-pr-idempotent/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-record-pr-idempotent/proposal.md) |
