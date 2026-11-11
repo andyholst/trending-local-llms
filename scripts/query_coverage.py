@@ -14,8 +14,15 @@ This is the CLI over the rule, whose ONE implementation lives in
                   `_search-<backend>` prompts append, so the searches ask for the
                   ranked models and not only the hardware keywords. Two per model:
                   the throughput query (`<id> tokens per second`) and the FOOTPRINT
-                  query (`<id> vram ram context weights`), because a post can answer
-                  the first without stating any dimension the store ranks as a gap;
+                  query (`<id> vram ram context weights offload engine version`),
+                  because a post can answer the first without stating any dimension
+                  the store ranks as a gap;
+  * the default   the coverage report ALSO names every gap dimension the data-gap
+                  analysis ranks (`data_gap_analysis.DIMENSIONS`) that NO query asks
+                  for — issue #460 measured `storage_offload` (59 models) and
+                  `engine_min_version` (35) asked by nothing while every ranked model
+                  had a throughput query; such a dimension is a query-set gap and
+                  exits 1, never a silent line in the report.
   * the default   the coverage report: which of the top-N trending models the
                   hand-curated queries alone reach, and which of them the full
                   set (curated + derived) names. Exit 1 when the full set misses
@@ -71,10 +78,16 @@ def report(store: dict, top_n: int) -> str:
         f"  the hand-curated queries alone name {len(reachable_by_curated)}/{len(models)} of "
         f"the top {len(models)}",
         f"  the full set names {len(models) - len(missing)}/{len(models)}",
-        "  the footprint queries ask the same models for the dimensions the data-gap",
-        "  analysis ranks (vram / ram / context / weights): a throughput answer can state",
-        "  none of them, which is why those gaps were acquisition gaps",
+        "  the footprint queries ask the same models for EVERY dimension the data-gap",
+        "  analysis ranks (weights / context / ram / offload / engine version): a",
+        "  throughput answer can state none of them, which is why those gaps were",
+        "  acquisition gaps (issue #460: offload and engine version outran the suffix)",
     ]
+    not_asked = UT.dimensions_not_asked()
+    if not_asked:
+        lines += ["", "  DIMENSION GAP — no query asks for: " + ", ".join(not_asked),
+                  "  a ranked gap no search asks for can never be closed by a search "
+                  "(issue #460)."]
     if missing:
         lines += ["", "  MISSED — no query names: " + ", ".join(m.get("id", "?") for m in missing),
                   "  a model the searches never ask for can never surface a higher figure "
@@ -110,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     missing = UT.uncovered_models(store, args.top)
+    not_asked = UT.dimensions_not_asked()
     if args.json:
         print(json.dumps({
             "top": args.top,
@@ -117,13 +131,19 @@ def main(argv: list[str] | None = None) -> int:
             "derived": UT.derived_queries(store, args.top),
             "footprint": UT.footprint_queries(store, args.top),
             "missing": [m.get("id") for m in missing],
+            "dimensions_missing": not_asked,
         }, indent=2))
     else:
         print(report(store, args.top), flush=True)
         if missing:
             print(f"[query-coverage] FAIL: {len(missing)} trending model(s) no query names: "
                   + ", ".join(m.get("id", "?") for m in missing), file=sys.stderr, flush=True)
-    return 1 if missing else 0
+        if not_asked:
+            print("[query-coverage] FAIL: the data-gap analysis ranks dimensions that NO "
+                  "query asks for: " + ", ".join(not_asked)
+                  + " — add the word to MODEL_FOOTPRINT_SUFFIX or ask the gap on the issue "
+                  "(issue #460).", file=sys.stderr, flush=True)
+    return 1 if (missing or not_asked) else 0
 
 
 if __name__ == "__main__":
