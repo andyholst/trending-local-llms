@@ -97,7 +97,7 @@ def row_for(rows: list[dict], number: int) -> dict | None:
 
 def decide(repo: str, gap_hours: int, now: dt.datetime,
            run: str | None = None) -> tuple[dict, list[dict]]:
-    rows = iq.build(repo, "data-gap-analysis", gap_hours, now, run or iq.current_run())
+    rows = iq.build(repo, iq.QUEUE_LABELS[0], gap_hours, now, run or iq.current_run())
     return pick(rows), rows
 
 

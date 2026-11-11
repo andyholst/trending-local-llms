@@ -1,4 +1,6 @@
-## ADDED Requirement: The queue label is defined once and no reader re-spells it
+## ADDED Requirements
+
+### Requirement: The issue-queue label has ONE definition and no reader may re-spell it
 
 The reviewer label and the gap filer label are the queue's first label, read from
 `scripts/issue_queue.py::QUEUE_LABELS` — never a second or third literal copy of the
