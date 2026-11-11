@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **199**
+Active changes: **15** · archived: **200**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `auto-merge-carries-pr-message` | active | — | — | [qa-pipeline](openspec/changes/auto-merge-carries-pr-message/specs/qa-pipeline/spec.md) | 4/4 | [proposal.md](openspec/changes/auto-merge-carries-pr-message/proposal.md) |
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
@@ -79,6 +78,7 @@ Active changes: **15** · archived: **199**
 | `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
 | `architecture-inventory` | archived | #479 — architecture-bot: a daily, deterministic refresh of ARCHITECTURE.md's living inventory | — | [architecture-inventory](openspec/changes/archive/architecture-inventory/specs/architecture-inventory/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/architecture-inventory/proposal.md) |
 | `archive-check-gates-the-closing-pr` | archived | #779 (measured: qa-validate runs 43014075519 after PR #777 merged, | #785 | [openspec-archive-lifecycle](openspec/changes/archive/archive-check-gates-the-closing-pr/specs/openspec-archive-lifecycle/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/archive-check-gates-the-closing-pr/proposal.md) |
+| `auto-merge-carries-pr-message` | archived | #787 (measured: master run 43050329961, landed squash `d3d4116`, job 130625403397) | #790 | [qa-pipeline](openspec/changes/archive/auto-merge-carries-pr-message/specs/qa-pipeline/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/auto-merge-carries-pr-message/proposal.md) |
 | `ban-pytest-imports-in-tests` | archived | #768 (measured: qa-validate run 42800200326, PR #764 head 0db0462) | #778 | [test-runner](openspec/changes/archive/ban-pytest-imports-in-tests/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/ban-pytest-imports-in-tests/proposal.md) |
 | `base-rebase-conflict-succeeds` | archived | #586 | — | [worktree-base](openspec/changes/archive/base-rebase-conflict-succeeds/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/base-rebase-conflict-succeeds/proposal.md) |
 | `baseline-age-visible` | archived | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/archive/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/baseline-age-visible/proposal.md) |

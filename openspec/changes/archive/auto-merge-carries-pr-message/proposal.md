@@ -1,3 +1,6 @@
+Issue: #787 (measured: master run 43050329961, landed squash `d3d4116`, job 130625403397)
+PR: #790
+
 ## Why
 
 qa-validate's `auto-merge` calls `gh pr merge --squash` with no `--subject`/`--body`, so GitHub composes the landed squash commit from the PR **title alone**. This repository's own push gate on master (`make commit-message-check`, wired by the message-pattern change #771 in `pr-closure.yml`) refuses a title-only commit — so **every bot merge leaves master red**. Measured: run 43050329961 landed squash `d3d4116` as the single line "fix(tech-debt): implement #779 archive-check gates the closing PR (#785)" — four of the five required sections missing, no bound `Closes`, and every later agent is misled into blaming its own PR for the master failure.
