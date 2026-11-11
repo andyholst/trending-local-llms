@@ -1,6 +1,7 @@
 # Proposal: ban-pytest-imports-in-tests
 
 Issue: #768 (measured: qa-validate run 42800200326, PR #764 head 0db0462)
+PR: #778
 
 ## Why
 

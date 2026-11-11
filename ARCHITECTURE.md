@@ -214,7 +214,7 @@ keep it honest (issue #207):
 | `openspec-tasks-check` (`NAME=`) | Fail while an ACTIVE change has an unticked `- [ ]`; a `- [~] … — blocked: <who/why>` box is accepted and reported as review-required (never as done), and an unannotated `- [~]` fails (`scripts/check_openspec_tasks.py`, issue #409) |
 | `openspec-index` | Regenerate the root `OPENSPEC.md` (`scripts/openspec_index.py --write`) |
 | `openspec-index-check` | Fail when `OPENSPEC.md` is stale or a change has no row |
-| `openspec-archive-check` | Fail when an ACTIVE change's `PR:` line names a MERGED PR, OR when it carries no `PR:` yet its `Issue:` references a CLOSED issue — either way the change should already be archived (issue #183 + #518) (`scripts/openspec_archive_check.py`; host-side, needs `gh`) |
+| `openspec-archive-check` | Fail when an ACTIVE change's `PR:` line names a MERGED PR, OR when it carries no `PR:` yet its `Issue:` references a CLOSED issue — or when the validated PR (`PR=<n>`) closes that Issue while the change names no PR: either way the change should already be archived (`scripts/openspec_archive_check.py`; host-side, needs `gh`) (issue #183 + #518 + #779) |
 | `openspec-record-pr` (`ISSUE=` `PR=`) | Write `PR: #<PR>` into every ACTIVE change whose proposal references `Issue: #<ISSUE>` and regenerate `OPENSPEC.md` — the recording half of the lifecycle, run by issue-bot once its PR number exists (issue #518; `scripts/openspec_record_pr.py`; REFUSES an unmatched issue, exit 2) |
 | `openspec-check` | The gate: `openspec validate --changes` + the task check + the index check |
 
@@ -413,7 +413,7 @@ competing PRs over the same generated files).
 | Job | Does |
 |---|---|
 | `guard` | FIRST job (issue #279): owner / write+ collaborator / `github-actions[bot]` for BOTH actor and triggering actor; a `pull_request`/`push` run is admitted outright (GitHub starts it for the repository itself, and a PR must be validated whatever its author). The 30-minute network-bound DISPATCH is what this guards |
-| `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make openspec-archive-check` (the lifecycle guard: an active change may not name a merged PR, rule 6f — its own step because `gh` lives on the host, not in the agent container), `make architecture-check`, `make test` |
+| `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make openspec-archive-check` (the lifecycle guard: an active change may not name a merged PR, rule 6f, and a validated PR must not close a change's Issue while the change is still unarchived — issue #779; its own step because `gh` lives on the host, not in the agent container), `make architecture-check`, `make test` |
 | `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `agent-shell-keys-check` (the real secrets are visible in the agent's shell, issue #359), `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
 | `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
 | `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides, and then runs `make verify-closure` so a body whose keyword did not bind leaves a RED run (issue #288) |
@@ -683,12 +683,18 @@ A change's life ENDS in the PR that completes it: once its `PR: #<n>` line is
 known, that PR runs `make openspec-archive NAME=<change>` (moving the directory
 to `openspec/changes/archive/<name>`) and `make openspec-index`, so the archive
 and the regenerated index land in one commit — the merge is still `auto-merge`'s.
-`make openspec-archive-check` enforces it with TWO prongs (issue #518): every
+`make openspec-archive-check` enforces it with THREE prongs (issue #518 + #779): every
 ACTIVE change's `PR:` line is read, and a PR GitHub reports as merged fails the
-check; and an ACTIVE change with NO `PR:` whose `Issue:` names a CLOSED issue is
+check; an ACTIVE change with NO `PR:` whose `Issue:` names a CLOSED issue is
 a failure too — the change was merged and forgotten, the exact shape the first
-guard could not see (qa-validate's `validate` job runs it with `pull-requests:
-read` + `issues: read`). A change with no reference to assert is skipped; an
+guard could not see; and `PR=<n>` (qa-validate passes the event's pull request
+number) reads THIS PR's closing issues through `pr_closure.py`'s parser and
+refuses the merge before the fact: an ACTIVE change whose `Issue:` this very PR
+closes must already name it (issue #779 — PRs #777/#781 reached `master`
+unarchived because their implementer runs predated the recording step, and the
+AFTER-THE-FACT prongs were green on the PR and red only on the master push).
+qa-validate's `validate` job runs it with `pull-requests:
+read` + `issues: read`. A change with no reference to assert is skipped; an
 archived change is the expected state. Recording is part of the workflow that
 opens the PR: the implementer bot runs `make openspec-record-pr ISSUE=<n> PR=<m>`
 the moment `gh pr create` returns a number, so a change never reaches a merge
@@ -792,7 +798,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `pull_request`, `push`, `workflow_dispatch`
 - **jobs:** `guard`, `validate` (needs `guard`), `live-smoke` (needs `guard`), `dispatch-fixbot` (needs `validate`), `auto-merge` (needs `validate`, `live-smoke`)
-- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make action-pin-check` — Fail when a third-party workflow uses: ref or tool-image tag is mutable and not allowlisted (issue #735); `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked or blocked, the index current; `make openspec-archive-check` — Fail when an ACTIVE change names a MERGED PR, or references a CLOSED issue with no recorded PR (rules 6f/#518; host-side: needs gh); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
+- **calls:** `make lint` — Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make action-pin-check` — Fail when a third-party workflow uses: ref or tool-image tag is mutable and not allowlisted (issue #735); `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked or blocked, the index current; `make openspec-archive-check` — Fail when an ACTIVE change names a MERGED PR, references a CLOSED issue with no recorded PR, or would be stranded by the PR being validated (PR=<n>) (rules 6f/#518/#779; host-side: needs gh); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make verify-closure`
 
 #### `.github/workflows/queued-alarm.yml` — queued-alarm
 

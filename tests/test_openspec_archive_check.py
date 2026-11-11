@@ -60,8 +60,29 @@ if [ "${1:-}" = "api" ]; then
   case "$url" in
     */pulls/*)
       n="${url##*/pulls/}"
-      var="FAKE_PR_${n}"
-      echo "${!var-false}"
+      failvar="FAKE_PR_FAIL_${n}"
+      if [ -n "${!failvar:-}" ]; then
+        echo "gh: HTTP 404 reading pull/$n (stubbed refusal)" >&2
+        exit 1
+      fi
+      case "${4:-.merged}" in
+        .merged)
+          var="FAKE_PR_${n}"
+          echo "${!var-false}"
+          ;;
+        .title)
+          var="FAKE_TITLE_${n}"
+          echo "${!var-Test PR}"
+          ;;
+        .body)
+          var="FAKE_BODY_${n}"
+          echo "${!var-}"
+          ;;
+        *)
+          echo "gh: unsupported jq for pull: $4" >&2
+          exit 1
+          ;;
+      esac
       ;;
     */issues/*)
       n="${url##*/issues/}"
@@ -120,7 +141,7 @@ def _stub_gh(td: Path) -> Path:
     return bindir
 
 
-def _run(root: Path, bindir: Path | None, extra: dict | None = None):
+def _run(root: Path, bindir: Path | None, extra: dict | None = None, args: list[str] | None = None):
     """Run the REAL script against `root` with the stub `gh` first on PATH."""
     env = {**os.environ}
     if bindir is not None:
@@ -128,7 +149,7 @@ def _run(root: Path, bindir: Path | None, extra: dict | None = None):
     env.pop("GITHUB_REPOSITORY", None)
     env.update(extra or {})
     r = subprocess.run(
-        [sys.executable, str(SCRIPT), "--root", str(root), "--repo", "andyholst/trending-local-llms"],
+        [sys.executable, str(SCRIPT), *(args or []), "--root", str(root), "--repo", "andyholst/trending-local-llms"],
         capture_output=True, text=True, env=env,
     )
     return r.returncode, r.stdout + r.stderr
@@ -344,6 +365,80 @@ def test_the_guard_is_wired_to_a_target_a_workflow_and_the_gate():
           "test_openspec_archive_check.py" in stubbed.stdout, stubbed.stdout[-300:])
 
 
+# ---------------------------------------------------------------------------
+# Closing-PR prong (issue #779). The two original prongs read GitHub state
+# AFTER the fact — on a PR they read green because the issue is still open and
+# no PR line is expected yet. PR #777 and PR #781 both merged leaving their
+# changes active (their implementer runs used a copy of issue-bot.yml predating
+# the #776 record step), and openspec-archive-check only went red on the master
+# push, blocking every other PR. The third prong reads THIS PR's closing
+# issues (pr_closure's own parser) and refuses the merge-before-the-fact.
+# ---------------------------------------------------------------------------
+
+
+def test_the_closing_pr_prong_fails_an_active_change_it_would_strand():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "ban-pytest-imports-in-tests", issue="#768")
+        rc, out = _run(
+            root, _stub_gh(root),
+            {"FAKE_BODY_781": "fix(tests): ban imports\n\nCloses #768"},
+            args=["--pr", "781"],
+        )
+        check("exit 1: the PR closes the change's issue while the change is active", rc == 1, out)
+        check("names the change", "ban-pytest-imports-in-tests" in out, out)
+        check("names the issue and this PR", "#768" in out and "#781" in out, out)
+        check("names the remedy", "openspec-record-pr ISSUE=768 PR=781" in out, out)
+
+
+def test_the_closing_pr_prong_passes_when_the_change_names_that_pr():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "recorded-change", issue="#768", pr="#781")
+        rc, out = _run(
+            root, _stub_gh(root),
+            {"FAKE_BODY_781": "fix(x): y\n\nCloses #768"},
+            args=["--pr", "781"],
+        )
+        check("exit 0: the validating head already records this PR", rc == 0, out)
+        check("the OK line reports the closing set", "--pr 781 closes #768" in out, out)
+
+
+def test_the_closing_pr_prong_ignores_changes_the_pr_does_not_close():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "other-change", issue="#768")
+        rc, out = _run(
+            root, _stub_gh(root),
+            {"FAKE_BODY_781": "Refs #768; work continues elsewhere"},
+            args=["--pr", "781"],
+        )
+        check("exit 0: 'Refs' is not a closing keyword, the issue stays open", rc == 0, out)
+
+
+def test_an_unreadable_closing_pr_is_loud():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "some-change", issue="#768")
+        rc, out = _run(
+            root, _stub_gh(root),
+            {"FAKE_PR_FAIL_781": "1"},
+            args=["--pr", "781"],
+        )
+        check("exit 2: a PR that cannot be read never reports clean", rc == 2, out)
+        check("names what could not be read", "cannot read PR/issue state" in out and "pull/781" in out, out)
+
+
+def test_the_workflow_passes_the_pull_request_number():
+    """qa-validate forwards the event's PR number; the Makefile forwards it as --pr."""
+    mk = MAKEFILE.read_text(encoding="utf-8")
+    wf = QA_VALIDATE.read_text(encoding="utf-8")
+    check("makefile: PR=<n> reaches the script as --pr", "--pr $(PR)" in mk, "")
+    check("workflow: the lifecycle step passes the event's PR number",
+          'make openspec-archive-check PR="${PR_NUMBER:-}"' in wf
+          and 'PR_NUMBER: ${{ github.event.pull_request.number }}' in wf, "")
+
+
 def main() -> int:
     for fn in (
         test_a_merged_pr_left_an_active_change_behind,
@@ -353,6 +448,11 @@ def main() -> int:
         test_a_change_with_a_pr_is_judged_on_the_pr_not_the_issue,
         test_an_archived_change_is_left_alone,
         test_a_change_with_neither_pr_nor_issue_is_skipped,
+        test_the_closing_pr_prong_fails_an_active_change_it_would_strand,
+        test_the_closing_pr_prong_passes_when_the_change_names_that_pr,
+        test_the_closing_pr_prong_ignores_changes_the_pr_does_not_close,
+        test_an_unreadable_closing_pr_is_loud,
+        test_the_workflow_passes_the_pull_request_number,
         test_a_gh_failure_is_loud,
         test_a_missing_gh_is_loud,
         test_the_repository_itself_has_no_merged_change_left_active,

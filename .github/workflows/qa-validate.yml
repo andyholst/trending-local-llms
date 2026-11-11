@@ -217,10 +217,11 @@ jobs:
       # merged PR is a defect. PR state is a GitHub fact, read on the HOST with the
       # workflow token — `gh` is absent from the agent container, which is why this
       # is its own step rather than part of `make openspec-check`.
-      - name: OpenSpec lifecycle (no active change names a merged PR)
+      - name: OpenSpec lifecycle (no active change names a merged PR; a closing PR must not strand its change)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: make openspec-archive-check
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: make openspec-archive-check PR="${PR_NUMBER:-}"
 
       # The description is part of the change (rule 6h): every public make
       # target, workflow and script must be in ARCHITECTURE.md, and nothing it

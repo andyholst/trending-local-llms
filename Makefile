@@ -333,8 +333,8 @@ openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a c
 # `gh` (PR state is a GitHub fact); run on the host, where the token lives —
 # inside the agent container `gh` is absent, so it is NOT part of `openspec-check`
 # (which the fix loop runs in the container) but its own step in qa-validate.
-openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR, or references a CLOSED issue with no recorded PR (rules 6f/#518; host-side: needs gh)
-	python3 scripts/openspec_archive_check.py
+openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR, references a CLOSED issue with no recorded PR, or would be stranded by the PR being validated (PR=<n>) (rules 6f/#518/#779; host-side: needs gh)
+	python3 scripts/openspec_archive_check.py $(if $(PR),--pr $(PR),)
 
 # Recording half of the change lifecycle (issue #518): once the PR that will
 # complete a change EXISTS, ITS PR number is written into the change's proposal
