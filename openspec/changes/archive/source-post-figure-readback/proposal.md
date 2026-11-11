@@ -1,6 +1,7 @@
 # Proposal: source-post-figure-readback
 
 Issue: #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green".
+PR: #786
 
 ## Why
 

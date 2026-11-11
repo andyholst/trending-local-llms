@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **198**
+Active changes: **15** · archived: **199**
 
 ## Active changes
 
@@ -27,7 +27,6 @@ Active changes: **16** · archived: **198**
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
-| `source-post-figure-readback` | active | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | — | [validate-source-post-readback](openspec/changes/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/source-post-figure-readback/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
@@ -214,6 +213,7 @@ Active changes: **16** · archived: **198**
 | `silent-recipe-when-redirected` | archived | #539 | — | [issue-bot-artifacts](openspec/changes/archive/silent-recipe-when-redirected/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/silent-recipe-when-redirected/proposal.md) |
 | `skip-note-every-hold` | archived | #204 — `tech-debt: The skip note covers ONE held issue per run` | — | [issue-queue](openspec/changes/archive/skip-note-every-hold/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/skip-note-every-hold/proposal.md) |
 | `skip-note-every-sweep` | archived | #202 | — | [issue-review-queue](openspec/changes/archive/skip-note-every-sweep/specs/issue-review-queue/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/skip-note-every-sweep/proposal.md) |
+| `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
 | `sweep-delivery-alarm` | archived | #497 (measured: the hourly sweep asks GitHub for 24 slots a day and gets ~5) | — | [bot-coordination](openspec/changes/archive/sweep-delivery-alarm/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/sweep-delivery-alarm/proposal.md) |
 | `sweep-outcome-comment` | archived | the sweep's own outcome comment — the half `a-fresh-red-sweep-is-loud` (#498) recorded as "Tracked separately" | — | [bot-coordination](openspec/changes/archive/sweep-outcome-comment/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/sweep-outcome-comment/proposal.md) |
