@@ -1,6 +1,7 @@
 # Proposal: install-pin-carries-version
 
 **Issue:** [#218](https://github.com/andyholst/trending-local-llms/issues/218)
+**PR:** [#794](https://github.com/andyholst/trending-local-llms/pull/794)
 
 ## Why
 
