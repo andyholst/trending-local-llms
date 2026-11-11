@@ -89,8 +89,11 @@ def validate_gates_from_trees(wf_text: str) -> list[str]:
 
     Used by tests to compare the tree against the registry: a `make X` the validate job
     runs that `GATES` does not name is caught as "a gate in validate on neither list".
+    Both shapes count (issue #527): the inline `run: make X` step AND the bare
+    `make X` continuation line of a multi-line `run:` block — the first version matched
+    only the continuation lines and read the three gates of ONE block as the whole job.
     """
-    return re.findall(r"^\s*make\s+([a-z0-9_-]+)", wf_text, re.M)
+    return re.findall(r"make\s+([a-z0-9_-]+)(?=[\"'\s]|$)", wf_text, re.M)
 
 
 def unchecked_gates(wf_text: str) -> list[str]:
