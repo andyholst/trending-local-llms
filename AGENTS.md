@@ -297,6 +297,7 @@ issue that skips a section is refused.
    | `fix-bot` | the PR it repairs | `fix-bot-start`, `fix-bot-end` |
    | `refresh-bot` | the PR (and the gap issue) it opens | `refresh-bot-run` |
    | `qa-validate` | the PR, immediately before it merges | `bot-merge` |
+   | `queued-alarm` (the failure filer, issue #802) | the issue it diagnoses from a failing run's log | `pipeline-run-failure` |
 
    `tests/test_bot_markers.py` fails when this table and that registry disagree,
    when a registered marker has no writer in the tree, and when a marker whose
@@ -682,6 +683,49 @@ issue that skips a section is refused.
    anything; the KEEPER half (architecture-bot's two generated files) is named in its registry —
    every deterministic gate of the `validate` job sits on the keeper list or the alarm list, and
    `tests/test_master_alarm.py` fails when a new gate lands on neither.
+
+6r. **A red main pipeline is DIAGNOSED and FILED as an issue, and the diagnosis lives in an
+   append-only LEDGER that qa-validate guards (MANDATORY).** A red run of a main pipeline
+   (`qa-validate`, `refresh-bot`, `issue-bot`, `issue-review-bot`, `architecture-bot`,
+   `queued-alarm`) on a **push to master or a scheduled delivery** must become a tracked issue
+   carrying the failure's OWN error text — never a bare "CI is red" artifact and never a silent
+   disappearance. The chain (issue #802):
+   - **`make pipeline-failure-issue`** (`scripts/pipeline_failure_issue.py`, run by
+     `queued-alarm.yml` after the master/sweep/freshness alarms): for every concluded-bad main-pipeline
+     run in its window (`--window-hours`, default 192 — a full weekly cadence plus grace, since the
+     filer rides the Wednesday sweep) it fetches each failing job's log
+     (`gh api repos/…/jobs/<id>/logs`), extracts the bounded error block (`##[error]`,
+     `make: *** [target]`, `FAILED`, `Traceback`… capped, de-duplicated) and the `make` targets the
+     log names, **scrubs it through `scripts/scrub_log.py`'s redactor before ANY of it is written**
+     (the §3d log-redaction rule — an error block is log text and may carry a secret in any
+     spelling), and files ONE issue per failing job: label `tech-debt`, body in the message pattern
+     (issue #771),
+     carrying the invisible marker `<!-- pipeline-run-failure: <ISO8601Z> run=<run-id> -->`
+     (registered in `scripts/bot_markers.py`, rule 6j), the scrubbed error block, and the exact
+     `make <target>` reproduction command. A log that cannot be read after one retry is filed
+     UNDIAGNOSED, loudly — never skipped silently. A failed READ of the pipeline state exits 2.
+   - **Dedup is run-id keyed, across TWO memories**: the ledger `data/pipeline_failures.json`
+     (append-only, rule 3b — a run id appears once) and a `--state all` marker scan (OPEN *and*
+     CLOSED issues — a quickly-fixed closed issue must not be re-filed next sweep). The ledger
+     append is worthless if it dies with the runner, so the sweep LANDS it: when the filer changed
+     the ledger, `queued-alarm.yml` pushes the append to a branch and opens a ledger PR (the
+     architecture-bot pattern, owner PAT, body composed by `make pipeline-failure-ledger-pr-body`
+     with NO closing keyword — it records issues, never closes them).
+   - **`make pipeline-failure-guard-check`** (`scripts/pipeline_failure_guard_check.py`, a gate of
+     qa-validate's `validate` job, on the master_alarm GATES list) refuses: a ledger entry whose
+     issue is CLOSED while the entry names NO fix PR and NO guard test; an entry naming a fix PR
+     whose `guard` test file does not exist in `tests/`; and a CLOSED marker issue that the ledger
+     never recorded (the append was never landed). An in-flight fix (open issue, no PR yet) is
+     reported, never red. Exit 2 when the ledger itself is unreadable — never a silent clean.
+   - **The fix itself is a separate reviewed change (rule 6g)**: the filer never fixes anything;
+     the fix PR raises its ledger row (append-only) with `fix_pr` + `guard` naming the regression
+     test that fails if the error class returns. A fix PR with no guard test for the failure it
+     closes is the defect this rule exists to prevent.
+   `tests/test_pipeline_failure_issue.py` drives the real filer against a stubbed `gh` (external
+   system only — rule 6m) and proves: filing, the five-section body, the marker, the scrubbed
+   secret, ledger dedup, UNDIAGNOSED, exit-2 reads, and the ledger PR body carrying no closing
+   keyword. `tests/test_pipeline_failure_guard.py` runs the real gate against planted ledgers and
+   proves every refusal shape.
 
 6n. **Every implementation starts in its own worktree, cut from the freshly
    fetched base — and the base is VERIFIED, never assumed (MANDATORY).** The
@@ -1705,6 +1749,8 @@ actually happened.
 
 | `tests/test_working_file_list.py` + `make check-working-files` / `make reset-working-files` (rules 6c/6d/6m, issue #543) | the bot's working files (`issue.md`, `pr-body.md`, `findings.md`, `implement.log`, …) defined in FOUR places — one literal `git reset -q -- …` line copied into two steps of `issue-bot.yml`, a third copy in `fix-bot.yml`, and `.gitignore` — so a new working file was remembered or missed, and a missed one was committed by the push step's `git add -A` (the measured `qa-report.txt.notes` reaching PR #387, issue #390); the list is now ONE file, `make check-working-files` fails when a name on it is not gitignored, and `make lint` runs that check |
 | `tests/test_master_alarm.py` + `make master-alarm` (rules 6q/6c/6d, issue #527) | a deterministic gate going red on a `push` to master with no repair path: the validate job runs on master pushes, every fixer needs a PR, and the red sat unrepaired (measured, run 39625708799 — red at the OpenSpec gate, unit tests never reached); `scripts/master_alarm.py` exits 1 naming the newest push-to-master run URL and its failing jobs, the workflow calls the make target (never a direct script), and the keeper/alarm registry test refuses a validate-job gate that is on neither list |
+| `tests/test_pipeline_failure_issue.py` + `make pipeline-failure-issue` (rules 6r/6c/6d/3d, issue #802) | a red main pipeline that nobody diagnoses: the filer drives the real `scripts/pipeline_failure_issue.py` against a stub `gh` (external system only, rule 6m) and proves every failure (push-to-master or schedule, concluded-bad, in-window) files ONE issue per failing job with the message-pattern body, the `pipeline-run-failure` marker (registered, rule 6j), the bounded error block and the `make <target>` reproduction from the log — while a planted secret in the log NEVER reaches the body (scrubbed through the real `scrub_log.redact`, §3d); dedup across BOTH memories (ledger run-id + `--state all` marker scan, so a closed fix is never re-filed); an unreadable log files UNDIAGNOSED loudly; an unreadable pipeline state exits 2; the ledger PR body carries NO closing keyword (rule 6e); and `queued-alarm.yml` runs the target after its alarms and lands the ledger append as a PR |
+| `tests/test_pipeline_failure_guard.py` + `make pipeline-failure-guard-check` (rules 6r/6c/6d, issue #802) | a diagnosed pipeline failure closed away without a regression guard: the gate runs against planted ledgers and refuses a CLOSED issue whose entry names no fix PR and no guard test, a fix PR whose `guard` test file is not on disk under `tests/`, and a CLOSED marker issue the ledger never recorded; an in-flight fix (open issue) is reported, never red; a missing or corrupt ledger exits 2, never a silent clean; the gate is a named GATE in `master_alarm.GATES` and a step of qa-validate's `validate` job |
 | `tests/test_pytest_import_guard.py` + `make check-pytest-imports` (rules 6c/6d, issue #768) | a test module importing the runner the TEST image does not have: `tests/test_owed_rows.py` carried a top-level `pytest` import and every HOST gate stayed green, while the suite died in the TEST image with `ModuleNotFoundError: No module named 'pytest'` after a full ~15-minute red `validate` job (measured, qa-validate run 42800200326 on PR #764 head 0db0462); `scripts/check_pytest_imports.py` refuses `import pytest` / `from pytest import` / a `pytest.` use naming file+line (a whole-line comment is prose, not code), and the test runs the real script against planted fixtures — which MUST go red — plus the real `tests/` green; bundled into `make lint`, already the FIRST step of `qa-validate`'s `validate` job and the fix loop |
 | `tests/test_bot_markers.py` — `test_every_marker_the_tree_writes_is_registered` (rule 6j, issue #474) | a marker WRITTEN outside the registry: the guard only checked registered→written, so `issue-bot-verdict` was written since #210 and unknown to `bot_markers` until #477, exactly when a reader needed its stamp (the decided hold, #449); the reverse scan derives the bot families from the registry and fails on any unregistered literal in one, while dedup keys and alarm markers are left alone |
 | `tests/test_search_key.py` — the tool pin (rule 3e/6c, issues #362/#638) | a search leg told to make its Firecrawl call from a tool whose child environment cannot see the key: `execute_code` scrubs every credential-shaped name and never unwraps `_HERMES_FORCE_`, so the request carries an empty Bearer and fails `HTTP 401` while the key is set; the tool rule stated ONCE — in the `data-search` skill the four legs preload, not in a `Makefile` variable expanded into four prompts — and a recipe that restates it; the tool pin leaving the skill |

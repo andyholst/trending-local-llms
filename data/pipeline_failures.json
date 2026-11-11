@@ -1,0 +1,28 @@
+{
+  "updated_utc": "2026-11-11T23:30:00Z",
+  "failures": [
+    {
+      "run_id": 43088760321,
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/43088760321",
+      "workflow": "qa-validate.yml",
+      "event": "push",
+      "ref": "refs/heads/master",
+      "head_sha": "8f15519d11b679715423f816418f8df21219ff94",
+      "created_utc": "2026-11-11T19:36:21Z",
+      "conclusion": "failure",
+      "failing_jobs": [
+        "validate"
+      ],
+      "targets": [
+        "openspec-archive-check"
+      ],
+      "error_excerpt": "ARCHIVE ORPHAN: openspec/changes/reviewer-label-from-queue names merged PR #793 and is not archived",
+      "issue_number": 800,
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/800",
+      "filed_utc": "2026-11-11T21:05:03Z",
+      "fix_pr": 808,
+      "guard": "tests/test_openspec_archive_check.py",
+      "note": "seeded by human analysis before the filer existed (issue #800 carries run 43088760321 in its body; fix PR #808 archived the orphaned change). The guard named here is the regression lock of the gate that caught it."
+    }
+  ]
+}

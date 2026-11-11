@@ -45,6 +45,10 @@ REGISTRY: dict[str, dict[str, str]] = {
     "fix-bot":          {"start": "fix-bot-start", "end": "fix-bot-end"},
     "refresh-bot":      {"run": "refresh-bot-run"},
     "qa-validate":      {"merge": "bot-merge"},
+    # The failure filer (issue #802): `queued-alarm.yml` announces EACH main-pipeline failure it
+    # diagnoses from a failed run's logs by filing an issue that carries this marker — the stamp
+    # dates the filing, `run=<id>` dedups it (one run files once, ledger + marker agree).
+    "queued-alarm":     {"failure": "pipeline-run-failure"},
 }
 
 #: Which artifact each bot announces on, before it mutates it (#197's table, for the guard).
@@ -54,6 +58,7 @@ ARTIFACTS: dict[str, str] = {
     "fix-bot": "the PR (before `scripts/fix_loop.sh` reads the branch)",
     "refresh-bot": "the PR it opens (and the gap issue it files)",
     "qa-validate": "the PR (immediately before the merge)",
+    "queued-alarm": "the issue it files for a diagnosed main-pipeline failure (issue #802)",
 }
 
 #: The markers whose shape carries a WORD before the stamp (`issue-bot-verdict: refine <TS>`).
@@ -106,6 +111,9 @@ WRITTEN: frozenset = frozenset({
     ("fix-bot", "start"),
     ("fix-bot", "end"),
     ("refresh-bot", "run"),
+    # Written by `scripts/pipeline_failure_issue.py` (via `make pipeline-failure-issue`,
+    # issue #802) on the body of every issue it files for a failed main-pipeline run.
+    ("queued-alarm", "failure"),
 })
 
 #: Registered but not yet written, with the issue that lands its writer. Declared here so a reader

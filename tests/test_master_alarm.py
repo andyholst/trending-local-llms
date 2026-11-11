@@ -170,8 +170,14 @@ def test_the_workflow_guards_first_and_calls_the_make_target():
     check("wf: it never runs a repo script directly",
           not re.search(r"^\s*python3 scripts/", text, re.M))
     check("wf: it has its own concurrency group", "group: queued-alarm" in text)
-    check("wf: master-alarm uses github.token, not the owner PAT",
-          "secrets.FIXBOT_DISPATCH_TOKEN" not in text)
+    check("wf: master-alarm itself uses github.token, not the owner PAT",
+          # (issue #802 widened this from whole-file to step-scoped: the ledger-landing step
+          # legitimately carries the owner PAT to push + open the ledger PR, the architecture-bot
+          # pattern; what must NEVER carry it is the read-only master-alarm step itself)
+          all("secrets.FIXBOT_DISPATCH_TOKEN" not in step
+              for step in re.findall(r"- name: Fail loudly when the newest push-to-master.*?(?=\n      - name:|\n  [a-z]+:\n)", text, re.S))
+          and "GH_TOKEN: ${{ github.token }}" in text,
+          "the master-alarm step must not reach the owner PAT")
 
 
 def test_the_make_target_passes_its_variables_through():

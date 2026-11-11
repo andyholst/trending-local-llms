@@ -1403,6 +1403,45 @@ master-alarm: ## Fail when the newest push-to-master qa-validate run is red, so 
 	@test -n "$(REPO)" || { echo "Usage: make master-alarm REPO=<owner/repo> [LIMIT=10]"; exit 1; }
 	@$(MAKE) --no-print-directory _master-alarm
 
+# After a failure, KEEP TRACKING the main pipelines (issue #802). The alarms above SAY a run is
+# red; this filer READS it: for every concluded-bad main-pipeline run inside the window that is
+# not yet in the ledger `data/pipeline_failures.json`, it fetches the failed job's log (one
+# retry), extracts a bounded error block, scrubs it through the shared redactor (rule 3f) and
+# files ONE `tech-debt` issue carrying the run, the scrubbed block and the exact `make`
+# reproduction command — deduped by the ledger run id and the registered `pipeline-run-failure`
+# marker. The DECISION lives in scripts/pipeline_failure_issue.py (rule 6d); the fix lands as its
+# OWN reviewed change (rule 6g) — this filer never fixes anything. Host-side, called by
+# queued-alarm's alarm job after the alarms.
+.PHONY: _pipeline-failure-issue
+_pipeline-failure-issue:
+	python3 scripts/pipeline_failure_issue.py --repo "$(REPO)" --window-hours "$(if $(WINDOW_HOURS),$(WINDOW_HOURS),192)" $(if $(DRY),--dry,) $(if $(LEDGER),--ledger "$(LEDGER)",)
+
+.PHONY: pipeline-failure-issue
+pipeline-failure-issue: ## Diagnose each unfiled main-pipeline failure from its logs and file it as a tech-debt issue (REPO=<owner/name>, WINDOW_HOURS=192, DRY=1 previews; issue #802)
+	@test -n "$(REPO)" || { echo "Usage: make pipeline-failure-issue REPO=<owner/repo> [WINDOW_HOURS=192] [DRY=1]"; exit 1; }
+	@$(MAKE) --no-print-directory _pipeline-failure-issue
+
+# The QA half of the same rule (issue #802): every ledger entry whose fix PR has landed must name
+# a guard test under tests/ that `make test` collects, and an issue CLOSED with no fix PR and no
+# guard is RED — closed-without-a-guard is reintroducible, which is the defect this gate exists to
+# refuse. Open entries are reported, never red. Runs in qa-validate's validate job on every PR.
+.PHONY: _pipeline-failure-guard-check
+_pipeline-failure-guard-check:
+	python3 scripts/pipeline_failure_guard_check.py $(if $(REPO),--repo "$(REPO)",) $(if $(LEDGER),--ledger "$(LEDGER)",)
+
+.PHONY: pipeline-failure-guard-check
+pipeline-failure-guard-check: ## Refuse a closed pipeline-failure issue with no fix PR + guard test (REPO=<owner/name> optional; issue #802)
+	@$(MAKE) --no-print-directory _pipeline-failure-guard-check
+
+# The ledger itself must LAND on master (the sweep runs on a checkout it never pushes to, and
+# direct pushes to master are refused — rule 1). Same pattern as the architecture-bot PR: the
+# filer appends to `data/pipeline_failures.json`, and this body composes the PR that commits the
+# append. It implements no issue, so it carries NO closing keyword (rule 6e) — the issues it
+# records are referenced, never closed by the ledger PR.
+.PHONY: pipeline-failure-ledger-pr-body
+pipeline-failure-ledger-pr-body: ## Print the ledger-update PR body from data/pipeline_failures.json (no closing keyword; issue #802)
+	@python3 scripts/pipeline_failure_issue.py --print-pr-body $(if $(LEDGER),--ledger "$(LEDGER)",)
+
 # The code-review bot (issue #253): it reads the TREE and the PIPELINES and files what is
 # actually wrong. Every check in scripts/code_review.py is DETERMINISTIC (no model), so a scan
 # is free and cannot invent a finding; `file` writes ONE issue per NEW finding, marker-deduped

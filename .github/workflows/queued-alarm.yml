@@ -68,7 +68,13 @@ jobs:
   alarm:
     needs: guard
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # The filer half (issue #802) appends to `data/pipeline_failures.json` and lands that append
+    # as a PR (the architecture-bot pattern): the ledger must reach master through a reviewed PR,
+    # never a direct push (rule 1). The guard job and every other step keep the top-level reads.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Report jobs queued far too long, and comment once per affected run
@@ -105,6 +111,44 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make master-alarm REPO="${{ github.repository }}"
+      # A red main pipeline must become a TRACKED ISSUE, not just a red run page (issue #802).
+      # After the alarms, this filer reads every concluded-bad main-pipeline run inside the
+      # window that is not yet in `data/pipeline_failures.json`, fetches the failed job's log,
+      # extracts and SCRUBS the error block (rule 3f's redactor before anything is written), and
+      # files one `tech-debt` issue carrying the run, the error block and the exact `make`
+      # reproduction command — deduped by the ledger and the `pipeline-run-failure` marker.
+      # Default token (rule 6e: the owner PAT cannot open issues); it never fixes anything — the
+      # fix lands as its own reviewed change (rule 6g), and its closing PR must carry the guard
+      # test that `make pipeline-failure-guard-check` refuses without.
+      - name: Diagnose and file every unfiled main-pipeline failure from its logs (issue #802)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make pipeline-failure-issue REPO="${{ github.repository }}"
+      # The ledger append is worthless if it dies with the runner (rule 6m: a target CI runs must
+      # also LAND). Same pattern as architecture-bot's generated-file PR: branch, one commit, PR
+      # opened with the owner PAT (it can push and open PRs; it cannot comment — the filer above
+      # used the default token for exactly that reason). The body carries NO closing keyword: this
+      # PR implements no issue; it records the issues the fix PRs will close.
+      - name: Land the ledger append as a reviewed PR (issue #802)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/pipeline_failures.json; then
+            echo "The filer appended nothing new — no ledger PR (the healthy weekly case)."
+            exit 0
+          fi
+          branch="ci/pipeline-failure-ledger-$(date -u +%Y%m%dT%H%M%SZ)"
+          make git-identity
+          git switch -c "$branch"
+          git add data/pipeline_failures.json
+          git commit -m "chore(pipeline-failures): record the main-pipeline failures diagnosed by the weekly sweep (refs #802)"
+          git push origin "HEAD:refs/heads/$branch"
+          make pipeline-failure-ledger-pr-body RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
+            --title "chore(pipeline-failures): record the diagnosed main-pipeline failures" \
+            --body-file -
       # The owed-row ledger (issue #523): open issues declare the AGENTS.md §/row they are owed
       # via `owed-row` markers; this reports each declared row as LANDED (with its AGENTS.md
       # evidence line) or OUTSTANDING, so a covered issue is closable on evidence and the ledger

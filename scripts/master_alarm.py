@@ -67,6 +67,9 @@ GATES: dict[str, tuple[str, str]] = {
     "validate-search": ("alarm", "master-alarm"),
     "validate-mapped": ("alarm", "master-alarm"),
     "openspec-archive-check": ("alarm", "master-alarm"),
+    # The reintroduction gate (issue #802): a red on master here means a diagnosed pipeline
+    # failure was closed without its fix PR + guard test; master-alarm makes it loud.
+    "pipeline-failure-guard-check": ("alarm", "master-alarm"),
     "test": ("alarm", "master-alarm"),
 }
 
