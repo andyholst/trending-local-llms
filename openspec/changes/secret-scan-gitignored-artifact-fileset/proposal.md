@@ -1,6 +1,7 @@
 # The secret-scan gate scans the files git could commit — not every byte on disk
 
 **Issue:** [#836](https://github.com/andyholst/trending-local-llms/issues/836)
+**PR:** [#838](https://github.com/andyholst/trending-local-llms/pull/838)
 **Capability:** `secret-scan`
 
 ## Why
