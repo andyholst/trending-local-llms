@@ -53,8 +53,13 @@ snapshot, and every other snapshot, still merges:
 
 Re-writes the file in place only when changes were made. Exit 0 = every snapshot
 was processed and now conforms (quarantined rows are reported, never hidden);
-non-zero = the CAPTURE is unusable, i.e. not one snapshot could be read, which
-is the state that genuinely needs a re-search.
+non-zero = the CAPTURE is unusable and needs a re-search, which has three faces:
+(1) not one snapshot could be read [`SELF-CORRECT INCOMPLETE`], or (2) the
+capture read at least one snapshot but ZERO model rows survived the correction —
+every row quarantined, or every snapshot captured nothing [`CAPTURE UNUSABLE`;
+the inside-out of issue #381: one bad row is never fatal, but a capture where
+nothing usable remains must be an alarm, not a green no-op (measure: `models
+left: []` with rc 0)]. A capture that kept even one row exits 0 either way.
 
 Run:  python3 scripts/self_correct_raw.py
 """
@@ -436,6 +441,13 @@ def main() -> int:
     processed = 0
     unreadable = 0
     quarantined = False
+    # The rows that SURVIVE correction are the capture's usable contribution. The
+    # exit code was gated on "how many snapshots could be read" alone — so a
+    # capture whose rows were ALL quarantined read as a green no-op (rc 0,
+    # `models left: []`, "the rest of the capture still merges"), the inside-out
+    # of issue #381 (the same empty-refresh defect that issue turned inside out,
+    # #624). Now the aggregate's hard `correct-raw` step fails on the empty one.
+    survivors = 0
     for path in sorted(RAW_DIR.glob("*.json")):
         try:
             notes = correct_snapshot(path, store)
@@ -451,11 +463,25 @@ def main() -> int:
                 print(f"  {n}")
             if any(n.startswith("QUARANTINED:") for n in notes):
                 quarantined = True
+        # Read back the corrected snapshot exactly as ingest will: the rows its
+        # `models` still holds are what this leg actually contributed. A snapshot
+        # whose rows were all quarantined (or that captured nothing) contributes 0.
+        survivors += len(json.loads(path.read_text()).get("models", []))
     if processed == 0:
         # Distinct from a quarantine: NOTHING could be read, which is the state
         # that genuinely needs a re-search (the aggregate may fail this step).
         print(f"SELF-CORRECT INCOMPLETE: no raw snapshot could be read ({unreadable} unreadable) "
               "— this capture needs a re-search.")
+        return 1
+    if processed and survivors == 0:
+        # The capture read something but NOTHING usable remains: either every row
+        # was quarantined, or every snapshot was captured empty. Either way the
+        # refresh has no new data to merge — an alarm, not the green no-op the old
+        # `SELF-CORRECT OK … the rest of the capture still merges` printed (issue
+        # #624). The aggregate's `correct-raw` step is hard, so this reds the run.
+        print(f"CAPTURE UNUSABLE: every raw snapshot lost all its model rows "
+              f"(quarantined={quarantined}, {unreadable} unreadable) — nothing survived "
+              "the correction, so this capture needs a re-search.")
         return 1
     if quarantined:
         print("SELF-CORRECT OK: all raw snapshots conform; the un-derivable model(s) listed above "

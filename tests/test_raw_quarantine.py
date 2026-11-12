@@ -19,8 +19,10 @@ states are now DISTINCT:
      dropped, so a known model's new measurements are never lost.
   3. A measurement with no `source_post` is dropped loudly; a model left with no
      attributed measurement is quarantined too.
-  4. Only a capture where NOTHING could be read fails the step (a re-search is
-     genuinely needed); one unreadable file beside readable ones is loud, not fatal.
+  4. A capture where NOTHING could be read fails the step (a re-search is
+     genuinely needed); one unreadable file beside readable ones is loud, not
+     fatal. So does a capture that READ something but ended with ZERO surviving
+     rows — that is item 7.
   5. Ingest refuses a NEW model whose `hf` is empty (loudly, naming the snapshot)
      and keeps the rest of the merge, even when the merge runs before
      `correct-raw` — while an EXISTING model still merges and keeps its `hf`.
@@ -30,6 +32,12 @@ states are now DISTINCT:
      row of the same snapshot, or none anywhere — bounded, never invented — so
      the artifact alone separates "the post states no repo" from "the agent
      forgot to copy one it had".
+  7. A capture that READ at least one snapshot but ended with ZERO surviving model
+     rows — every row quarantined, or every leg captured nothing — is the UNUSABLE
+     state too (issue #624): the real command FAILS with the distinct `CAPTURE
+     UNUSABLE` line, the exact inside-out of item 1 (one bad row is never fatal,
+     but a refresh with nothing usable to merge is an alarm, not a green no-op).
+     A capture that kept even one row still exits 0.
 
 Run:  python3 tests/test_raw_quarantine.py   or   make test
 """
@@ -305,6 +313,48 @@ def test_a_capture_where_no_snapshot_can_be_read_is_the_unusable_state():
               proc.stdout[-400:])
 
 
+def test_a_capture_where_every_row_is_quarantined_is_unusable():
+    """The inside-out of issue #381 (reported by #624): a capture whose rows were
+    ALL quarantined used to exit 0 with '… the rest of the capture still merges'
+    and `models left: []` — an empty refresh read as a green no-op. It is now the
+    UNUSABLE state: non-zero, with a distinct grep-able line, while a capture that
+    kept even one row still exits 0."""
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "raw").mkdir()
+        (d / "models.json").write_text(json.dumps(base_store()))
+        snap = d / "raw" / "nvidia-20261020-120000.json"
+        snap.write_text(json.dumps(snapshot([
+            raw_model("bad-a", hf=None, post=POST_A),
+            raw_model("bad-b", hf=None, post=POST_B),
+            raw_model("bad-c", hf=None, post=POST_A),
+        ])))
+        proc = run_correct_raw(d)
+        after = json.loads(snap.read_text())
+        check("all-quarantined: the step FAILS (non-zero) — not a green no-op",
+              proc.returncode != 0,
+              f"rc={proc.returncode} {proc.stdout[-600:]}{proc.stderr[-200:]}")
+        check("all-quarantined: a distinct CAPTURE UNUSABLE line names why",
+              "CAPTURE UNUSABLE" in proc.stdout, proc.stdout[-400:])
+        check("all-quarantined: every row is still reported QUARANTINED",
+              proc.stdout.count("QUARANTINED:") == 3, proc.stdout[-600:])
+        check("all-quarantined: no model survives the correction",
+              after["models"] == [], after["models"])
+
+    # Same verdict when the legs captured nothing at all (no quarantine, no rows):
+    # an empty refresh is the same alarm, not the inside-out's healthy face.
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "raw").mkdir()
+        (d / "models.json").write_text(json.dumps(base_store()))
+        (d / "raw" / "cpu-20261020-120000.json").write_text(
+            json.dumps(snapshot([], backend="cpu")))
+        proc = run_correct_raw(d)
+        check("all-empty: a capture with zero captured rows is also UNUSABLE",
+              proc.returncode != 0 and "CAPTURE UNUSABLE" in proc.stdout,
+              f"rc={proc.returncode} {proc.stdout[-400:]}")
+
+
 # ---------------------------------------------------------------- the ingest --
 
 def test_ingest_refuses_a_new_model_without_an_hf():
@@ -562,6 +612,7 @@ def main() -> int:
     test_a_known_model_is_repaired_from_the_store()
     test_a_measurement_without_a_post_is_dropped()
     test_a_capture_where_no_snapshot_can_be_read_is_the_unusable_state()
+    test_a_capture_where_every_row_is_quarantined_is_unusable()
     test_ingest_refuses_a_new_model_without_an_hf()
     test_an_id_spelled_differently_folds_into_the_stored_model()
     test_the_module_is_wired_into_the_suite()
