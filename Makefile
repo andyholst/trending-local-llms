@@ -299,7 +299,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-index openspec-index-check openspec-archive-check openspec-record-pr openspec-check file-findings findings-check action-pin-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-index openspec-index-check openspec-archive-check openspec-record-pr openspec-check file-findings findings-check action-pin-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -327,6 +327,9 @@ openspec-shell: openspec-image ## Interactive shell into the repo with the opens
 openspec-tasks-check: python-env-image ## Fail when an ACTIVE change still has an unticked `- [ ]` task; `- [~] … — blocked: <who/why>` is reported as review-required (NAME=<change> for one)
 	$(PYTHON_RUN) python3 scripts/check_openspec_tasks.py $(NAME)
 
+openspec-spec-tests-check: python-env-image ## Fail when an ACTIVE change's spec cites a `- **Test:** <path>::<test>` that does not resolve: `<path>` must exist and, for a Python module, the `<test>` must be defined top-level in it (NAME=<change> for one) (issue #621)
+	$(PYTHON_RUN) python3 scripts/check_openspec_test_lines.py $(NAME)
+
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
 
@@ -351,9 +354,9 @@ openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:`
 	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
 	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
-openspec-check: openspec-image openspec-tasks-check openspec-index-check ## CI gate: every active change validates, every task ticked or blocked, the index current
+openspec-check: openspec-image openspec-tasks-check openspec-index-check openspec-spec-tests-check ## CI gate: every active change validates, no task unticked or blocked, every `- **Test:**` reference resolves, the index current
 	docker run $(OS_OPTS) openspec validate --changes
-	@echo "[openspec-check] OK: active changes validate, no task is unticked, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
+	@echo "[openspec-check] OK: active changes validate, no task is unticked, every \`- **Test:**\` reference resolves, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 
 file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh + the repo)
 	python3 scripts/file_findings.py --file $(if $(PR),--pr $(PR)) $(if $(ISSUE),--issue $(ISSUE))
