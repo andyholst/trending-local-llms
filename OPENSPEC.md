@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **17** · archived: **229**
+Active changes: **16** · archived: **230**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
-| `engagement-counter-mapping` | active | #873 | — | [post-signal](openspec/changes/engagement-counter-mapping/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/engagement-counter-mapping/proposal.md) |
 | `engine-min-version-phrasings` | active | #214 | #876 | [data-gap-analysis](openspec/changes/engine-min-version-phrasings/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/engine-min-version-phrasings/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
@@ -126,6 +125,7 @@ Active changes: **17** · archived: **229**
 | `dimension-applicability` | archived | #469 | — | [data-gap-analysis](openspec/changes/archive/dimension-applicability/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/dimension-applicability/proposal.md) |
 | `disable-fix-bot-pipeline` | archived | #814 | #815 | [pipeline-repair](openspec/changes/archive/disable-fix-bot-pipeline/specs/pipeline-repair/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/disable-fix-bot-pipeline/proposal.md) |
 | `duplicate-change-for-one-edit` | archived | #622 | #819 | [openspec-duplication](openspec/changes/archive/duplicate-change-for-one-edit/specs/openspec-duplication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/duplicate-change-for-one-edit/proposal.md) |
+| `engagement-counter-mapping` | archived | #873 | #879 | [post-signal](openspec/changes/archive/engagement-counter-mapping/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-mapping/proposal.md) |
 | `engagement-tasks-claim` | archived | #699 (follow-up) — correct the residual false "typed README byte-identical" claim in the | — | [engagement-tasks-claim](openspec/changes/archive/engagement-tasks-claim/specs/engagement-tasks-claim/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engagement-tasks-claim/proposal.md) |
 | `engagement-value-fidelity` | archived | #699 — `ENH: #698 reader switch silently re-resolves engagement` | — | [engagement-value-fidelity](openspec/changes/archive/engagement-value-fidelity/specs/engagement-value-fidelity/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/engagement-value-fidelity/proposal.md) |
 | `engine-meta-capture-at-ingest` | archived | #334 | — | [engine-meta-capture](openspec/changes/archive/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/engine-meta-capture-at-ingest/proposal.md) |
