@@ -171,7 +171,11 @@ HERMES_NONINTERACTIVE := --yolo --accept-hooks
 # workflow uploads as its artifact.
 HERMES_LOG      := hermes-run.log
 HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
-HERMES_LOG_TAIL ?= 60
+# There is deliberately NO `HERMES_LOG_TAIL` knob (issue #630): the seam is LIVE `--stream`,
+# which prints every redacted line as it arrives, so a "how many lines get printed" knob would
+# change nothing — the only bound is `scripts/scrub_log.py`'s own `--tail` default in `--in`
+# (post-mortem) mode. `make check-makefile-knobs` refuses a declared-but-unread knob, so a
+# dead one cannot come back silently.
 # `$(call scrubbed_run,<command>)`: run it, STREAMING through the redactor, and keep the
 # command's own exit status (a red run must stay red). `scripts/scrub_log.py` reads the secret
 # values BY NAME from this environment — the runner passes them with `env:`, the docker call
@@ -527,6 +531,18 @@ _check-pytest-imports:
 check-pytest-imports: ## Fail when a test module imports or calls pytest — the TEST image has none (issue #768)
 	@$(MAKE) --no-print-directory _check-pytest-imports
 
+# A `NAME ?=` knob is what an operator sets. When nothing in the runner's tree reads it, the
+# operator's act changes nothing silently — measured with HERMES_LOG_TAIL, dead ever since the
+# seam went live (--stream, issue #591) yet still declared (issue #630). The guard names the
+# file:line and refuses the knob; the same rule as rule 6d's no-dead-code, on the Makefile.
+.PHONY: _check-makefile-knobs
+_check-makefile-knobs:
+	python3 scripts/check_makefile_knobs.py
+
+.PHONY: check-makefile-knobs
+check-makefile-knobs: ## Fail when the Makefile declares a `?=` knob no recipe or script reads (issue #630)
+	@$(MAKE) --no-print-directory _check-makefile-knobs
+
 # §6j tree-wide identity-guard scan (issue #816): every .github/workflows/*.yml is
 # scanned and its REAL guard script is executed for every caller class, the cron
 # bypass and repository-event admissions are proved, and an `environment:` approval
@@ -572,6 +588,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-working-files
 	$(MAKE) --no-print-directory check-conflict-markers
 	$(MAKE) --no-print-directory check-pytest-imports
+	$(MAKE) --no-print-directory check-makefile-knobs
 	$(MAKE) --no-print-directory check-workflow-guards
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
