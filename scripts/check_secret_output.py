@@ -146,9 +146,11 @@ AGENT_STREAM_MAKE = re.compile(
 #: The seam a public agent target calls instead of repeating the redaction (issue #355).
 SCRUB_SEAM = "scrubbed_run"
 #: The public targets whose stream is NOT captured by a workflow step, so the target itself must
-#: scrub it (issue #355). `implement-issue` / `review-issue*` are captured + redacted by their own
-#: steps; each target therefore has exactly ONE owner of its stream.
-AGENT_TARGETS_TO_SCRUB = ("search-nvidia", "search-metal", "search-cpu", "search-amd", "search", "fix")
+#: scrub it (issue #355). Since issue #629 the implementer/reviewer legs run UNCAPTURED in their
+#: steps — every agent target therefore redacts its OWN stream through the seam, and each target
+#: has exactly ONE owner of its stream.
+AGENT_TARGETS_TO_SCRUB = ("search-nvidia", "search-metal", "search-cpu", "search-amd", "search",
+                          "fix", "implement-issue", "review-issue", "review-issue-window")
 #: A public target's recipe, for the rule that reads it.
 _TARGET_RECIPE = re.compile(r"^(?P<name>[A-Za-z][\w.%/-]*):[^\n]*\n(?P<body>(?:\t.*\n|\r?\n(?=\t))*)",
                             re.MULTILINE)

@@ -671,8 +671,7 @@ def test_the_matrix_search_step_is_covered_when_every_leg_scrubs():
     """`make search-${{ matrix.backend }}` names all four legs at once: it is safe exactly when
     every leg redacts its own stream (the measured escape of issue #355)."""
     each = "".join(f"{t}:\n\t$(call scrubbed_run,$(DOCKER_RUN) make x)\n"
-                   for t in ("search-nvidia", "search-metal", "search-cpu", "search-amd",
-                             "search", "fix"))
+                   for t in cso.AGENT_TARGETS_TO_SCRUB)  # the guard's OWN list, never a copy
     mk = ("define scrubbed_run\n\t@python3 scripts/scrub_log.py --stream --out x.scrubbed.log\nendef\n" + each)
     body = ("jobs:\n  j:\n    steps:\n      - name: x\n        run: make search-${{ matrix.backend }}\n")
     with tempfile.TemporaryDirectory() as td:

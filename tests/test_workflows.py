@@ -1035,24 +1035,26 @@ def test_auto_merge_holds_a_do_not_merge_labeled_pr():
 
 
 def test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log():
-    """#351: the implement step's agent stream IS the step's console log, so it is captured to a
-    gitignored file and only `make scrub-log`'s bounded, REDACTED tail is printed; the run artifact
-    is the REDACTED log. A capture without the redactor is a leak surface (the guard refuses it),
-    and the refusal contract — a non-zero rc from `make implement-issue` fails the run — is
-    unchanged."""
+    """#351 → #629: the implement step's agent stream IS the step's console log, and it is
+    redacted LIVE by the target itself (`implement-issue` pipes the whole stream through
+    `scripts/scrub_log.py --stream` via `scrubbed_run`), so every line reaches the job log masked
+    AS IT IS PRODUCED. The old shape captured `> implement.log` and scrubbed only after the agent
+    ended — a post-mortem that printed nothing while the agent ran and left the raw log in the
+    workspace the whole time. The refusal contract — a non-zero rc from `make implement-issue`
+    fails the run — is unchanged, and the artifact is still the REDACTED log."""
     wf = load("issue-bot.yml")
     impl_steps = steps(wf["jobs"]["implement"])
     step = next((s for s in impl_steps if s.get("id") == "impl"), None)
     check("issue-bot: the implement step exists", step is not None,
           [s.get("name") for s in impl_steps])
     run = str((step or {}).get("run", ""))
-    check("issue-bot: the agent stream is CAPTURED, not printed",
-          "make implement-issue > implement.log 2>&1" in run, run[:200])
-    check("issue-bot: the capture is redacted in the SAME step",
-          "make scrub-log FILE=implement.log" in run, run[:200])
-    check("issue-bot: the raw capture is never printed by the step",
-          "cat implement.log" not in run and "tail -" not in run, run[:200])
-    check("issue-bot: the reported tail is bounded", "TAIL=" in run, run[:200])
+    check("issue-bot: the step runs `make implement-issue` UNCAPTURED — no post-mortem redirect",
+          "make implement-issue" in run and "> implement.log" not in run, run[:200])
+    check("issue-bot: the step performs no after-the-fact scrub (the target scrubs live)",
+          "make scrub-log" not in run, run[:200])
+    check("issue-bot: the TARGET owns the redaction (`implement-issue` calls the live seam)",
+          '$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _implement-issue")'
+          in (ROOT / "Makefile").read_text(), "")
     check("issue-bot: the refusal contract is unchanged (rc captured, false → red)",
           'echo "rc=$rc" >> "$GITHUB_OUTPUT"' in run and "implemented=false" in run, run[:400])
 

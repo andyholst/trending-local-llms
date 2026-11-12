@@ -175,17 +175,15 @@ def _impl_step_snippet() -> str:
 
 def _stub_make(bindir: Path, out: Path, rc: int) -> str:
     """A `make` on PATH that stands in for the EXTERNAL command (rule 6m): it prints an agent
-    stream carrying the value in three spellings, and delegates `scrub-log` to the REAL script."""
+    stream carrying the value in three spellings THROUGH THE SHIPPED SEAM SHAPE — the real
+    `scrub_log.py --stream` with the same raw/scrubbed captures the target writes (issue #629) —
+    and delegates `scrub-log` to the REAL script."""
     bindir.mkdir(parents=True, exist_ok=True)
     stub = bindir / "make"
     stub.write_text(f"""#!/bin/sh
 if [ "$1" = "implement-issue" ]; then
-  echo "agent: reading the post"
-  echo "agent: sending header Authorization: Bearer $NOUS_API_KEY"
-  echo "agent: the key is $NOUS_API_KEY"
-  echo "agent: a token shape {FAKE_TOKEN}"
-  echo "agent: done"
-  exit {rc}
+  bash -o pipefail -c '{{ echo "agent: reading the post"; echo "agent: sending header Authorization: Bearer $NOUS_API_KEY"; echo "agent: the key is $NOUS_API_KEY"; echo "agent: a token shape {FAKE_TOKEN}"; exit {rc}; }} 2>&1 | python3 {SCRIPT} --stream --raw implement.log --out implement.scrubbed.log'
+  exit $?
 fi
 if [ "$1" = "scrub-log" ]; then
   shift
@@ -208,15 +206,15 @@ exit 1
 
 
 def test_the_shipped_implement_step_prints_no_value_in_any_spelling():
-    """The end-to-end proof for issue #351: run the workflow's OWN implement step against a stub
-    `make` whose agent stream carries the value raw, in a Bearer header and as a token shape, and
-    require that NONE of it reaches the step's console output — while the rc contract and the
-    redacted artifact still work."""
+    """The end-to-end proof for issues #351/#629: run the workflow's OWN implement step against a
+    stub `make` whose TARGET redacts its agent stream live (the shipped seam shape) while the stream
+    carries the value raw in a Bearer header and as a token shape, and require that NONE of it
+    reaches the step's console output — while the rc contract and the redacted artifact still work."""
     snippet = _impl_step_snippet()
-    check("step: the shipped implement step captures the agent stream",
-          "make implement-issue > implement.log" in snippet, snippet[:200])
-    check("step: and prints only the redactor's output",
-          "make scrub-log FILE=implement.log" in snippet, snippet[:200])
+    check("step: the shipped implement step runs the target UNCAPTURED (no post-mortem redirect)",
+          "make implement-issue" in snippet and "> implement.log" not in snippet, snippet[:200])
+    check("step: the step adds no after-the-fact redaction (the target owns it live)",
+          "make scrub-log" not in snippet, snippet[:200])
     td = Path(tempfile.mkdtemp())
     out = td / "github_output"
     bindir = _stub_make(td / "bin", out, rc=0)
@@ -430,8 +428,8 @@ def test_the_target_is_wired_into_the_repo():
     check("make: it is in .PHONY", ".PHONY: scrub-log" in mk, "")
     check("make: it runs the shipped script", "scripts/scrub_log.py" in mk, "")
     wf = (ROOT / ".github" / "workflows" / "issue-bot.yml").read_text()
-    check("workflow: the implement step prints only the redactor's output",
-          "make scrub-log FILE=implement.log" in wf, "")
+    check("workflow: the implement step streams the agent through the target's live redactor (issue #629)",
+          "make implement-issue" in wf and "> implement.log" not in wf, "")
     check("workflow: the raw capture is never uploaded (only the redacted one)",
           "implement.scrubbed.log" in wf and "implement.log\n" not in wf.split("upload-artifact")[-1].split("if-no-files-found")[0], "")
 
