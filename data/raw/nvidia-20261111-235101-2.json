@@ -1,0 +1,42 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-flash-next-125b",
+      "name": "Qwen3.8-Flash-Next 125B",
+      "full_name": "Qwen3.8-Flash-Next-125B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "125B (MoE)",
+      "hf": "Qwen/Qwen3.8-Flash-Next",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "supported_engines": [],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "50",
+          "hardware": "12GB VRAM consumer GPU",
+          "quant": "Unsloth Iq2_XS (dynamic quant)",
+          "date": "2026-11-08",
+          "source_post": "https://lightbrd.com/ai_hakase_/status/2119294599713771638",
+          "context_tokens": "131K",
+          "system_ram_min": "32GB",
+          "engine_min_version": "Strata",
+          "likes": 358,
+          "comments": 0,
+          "reshares": 20,
+          "views": 23169
+        }
+      ],
+      "last_seen": "2026-11-11"
+    }
+  ],
+  "generated_utc": "2026-11-11T23:53:51Z"
+}

@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "FreeToken"
+      ],
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "39.3",
+          "hardware": "RTX 4060 laptop (8GB)",
+          "quant": "official checkpoints (no extreme quantisation)",
+          "date": "2026-11-08",
+          "source_post": "https://lightbrd.com/chenYijl/status/2119359897925988839",
+          "likes": 225,
+          "comments": 0,
+          "reshares": 4,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-11-11"
+    }
+  ],
+  "generated_utc": "2026-11-11T23:53:51Z"
+}
