@@ -37,8 +37,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 #   --build-arg HERMES_INSTALL_URL=... --build-arg HERMES_PACKAGE=...
 ARG HERMES_INSTALL_URL="https://hermes-agent.nousresearch.com/install.sh"
 ARG HERMES_PACKAGE="hermes-agent"
+# The pinned Hermes agent VERSION (issue #218). A URL/package pin still installs
+# whatever the channel serves on build day; this names the version and
+# scripts/install_hermes_ci.sh FAILS the build unless `hermes --version` equals
+# it, then bakes the verified version to /opt/hermes-version.txt — the version
+# this content-hash tag (issue #135) can vouch for. Must equal the Makefile's
+# HERMES_VERSION ?= (tests/test_install_hermes_ci.py).
+ARG HERMES_VERSION="0.23.1"
 COPY scripts/install_hermes_ci.sh /usr/local/bin/install_hermes_ci.sh
-ENV HERMES_INSTALL_URL=${HERMES_INSTALL_URL} HERMES_PACKAGE=${HERMES_PACKAGE}
+ENV HERMES_INSTALL_URL=${HERMES_INSTALL_URL} HERMES_PACKAGE=${HERMES_PACKAGE} HERMES_VERSION=${HERMES_VERSION}
 RUN chmod +x /usr/local/bin/install_hermes_ci.sh \
     && /usr/local/bin/install_hermes_ci.sh
 
