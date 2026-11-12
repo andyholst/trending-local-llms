@@ -195,8 +195,16 @@ HERMES_LOG_SCRUBBED := hermes-run.scrubbed.log
 # mode "w" — so the last round truncated the transcripts of all the earlier ones, including the
 # detached-round message the artifact exists to keep (issue #566). `--append` opens both files
 # in append mode behind a timestamped delimiter, so the one artifact file holds EVERY round.
+#
+# The command is passed to `bash -c` as a POSITIONAL argument (`$1`), never spliced into the
+# script text (issue #632). The old seam interpolated `$(1)` inside a single-quoted script, so a
+# caller whose command contained a single quote — which AGENTS.md §4 TELLS prompts to use ("prose
+# inside a prompt uses single quotes") — closed the `-c` string early: bash parsed the rest of the
+# prose as a command and the leg died with a syntax error far from its cause. `$(subst ','\'',…)`
+# shell-escapes every quote in the value, `'$1'` hands it to bash untouched, and `eval "$$1"` runs
+# it with the same parsing (and the same exit status under pipefail) the splice had.
 define scrubbed_run
-	@bash -o pipefail -c '$(1) 2>&1 | python3 scripts/scrub_log.py --stream --append --raw $(HERMES_LOG) --out $(HERMES_LOG_SCRUBBED)'
+	@bash -o pipefail -c 'eval "$$1" 2>&1 | python3 scripts/scrub_log.py --stream --append --raw "$$2" --out "$$3"' _ '$(subst ','\'',$(1))' '$(subst ','\'',$(HERMES_LOG))' '$(subst ','\'',$(HERMES_LOG_SCRUBBED))'
 endef
 
 
