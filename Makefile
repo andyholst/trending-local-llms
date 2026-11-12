@@ -516,6 +516,19 @@ _check-pytest-imports:
 check-pytest-imports: ## Fail when a test module imports or calls pytest — the TEST image has none (issue #768)
 	@$(MAKE) --no-print-directory _check-pytest-imports
 
+# §6j tree-wide identity-guard scan (issue #816): every .github/workflows/*.yml is
+# scanned and its REAL guard script is executed for every caller class, the cron
+# bypass and repository-event admissions are proved, and an `environment:` approval
+# gate is refused — no pipeline may wait on a human to start. Bundled into lint,
+# which is the FIRST gate of qa-validate's validate job and of scripts/fix_loop.sh.
+.PHONY: _check-workflow-guards
+_check-workflow-guards:
+	python3 scripts/check_workflow_guards.py
+
+.PHONY: check-workflow-guards
+check-workflow-guards: ## Fail when a workflow .yml lacks its guard, gates a start on a human, or its guard misdecides a caller class (issue #816)
+	@$(MAKE) --no-print-directory _check-workflow-guards
+
 # The bot's working files, in ONE list (issue #543). They are gitignored, but both bots unstage
 # them explicitly before `git add -A` because a name written before the ignore entry lands — or
 # created in another checkout — can be staged anyway, and a committed `issue.md` publishes
@@ -548,6 +561,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-working-files
 	$(MAKE) --no-print-directory check-conflict-markers
 	$(MAKE) --no-print-directory check-pytest-imports
+	$(MAKE) --no-print-directory check-workflow-guards
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
 	python3 scripts/lint_linefeeds.py --fix

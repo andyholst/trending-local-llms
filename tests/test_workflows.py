@@ -38,6 +38,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import agent_identity as _AI  # the identity's ONE definition (issue #325)
 from update_trending import SEARCH_LEGS  # noqa: E402  ('nvidia', 'metal', 'cpu', 'amd')
 import pr_closure  # noqa: E402  the pipeline's OWN closure parser (issue #289)
+import check_workflow_guards as scan_guards  # noqa: E402  §6j tree-wide guard scan — the ONE implementation (issue #816)
 
 from wiring import wired  # noqa: E402  (issues #176/#192)
 
@@ -664,8 +665,8 @@ def _deps(jobs: dict, name: str) -> set:
 
 
 def _guard_ok(run: str) -> bool:
-    return ("$OWNER" in run and "$TRIGGER" in run and "$ACTOR" in run
-            and "collaborators/$u/permission" in run and "admin|maintain|write)" in run)
+    # Issue #816: the shape decision lives in the scanner, not in a second copy here.
+    return scan_guards.guard_ok(run)
 
 
 def _guard_step(wf_name: str, job: str) -> dict:
@@ -675,25 +676,11 @@ def _guard_step(wf_name: str, job: str) -> dict:
 
 def _run_guard(step: dict, event: str, actor: str, trigger: str, perms: dict) -> tuple[int, str]:
     """Execute the REAL guard script from the workflow YAML with a stub `gh`
-    that answers the collaborator-permission API from `perms` (404 -> exit 1)."""
-    import os
-    import subprocess
-    import tempfile
-    td = Path(tempfile.mkdtemp())
-    table = "\n".join(f"{u}={p}" for u, p in perms.items())
-    (td / "perms").write_text(table + "\n")
-    gh = td / "gh"
-    gh.write_text(f"""#!/usr/bin/env bash
-u=$(echo "$2" | sed -E 's#.*/collaborators/([^/]+)/permission#\\1#')
-p=$(grep -E "^$u=" "{td}/perms" | cut -d= -f2)
-[ -z "$p" ] && {{ echo '{{"message":"Not Found"}}' >&2; exit 1; }}
-echo "$p"
-""")
-    gh.chmod(0o755)
-    env = dict(os.environ, PATH=f"{td}:{os.environ['PATH']}", EVENT=event, ACTOR=actor, TRIGGER=trigger,
-               OWNER="andyholst", REPO="andyholst/trending-local-llms", GH_TOKEN="x")
-    p = subprocess.run(["bash", "-e", "-c", step["run"]], env=env, capture_output=True, text=True, timeout=30)
-    return p.returncode, p.stdout
+    that answers the collaborator-permission API from `perms` (404 -> exit 1).
+
+    Issue #816: the harness lives in scripts/check_workflow_guards.py — the CI
+    stage and these tests drive the SAME code, so they can never disagree."""
+    return scan_guards.run_guard_script(step["run"], event, actor, trigger, perms)
 
 
 AGENT_NAME = _AI.AGENT_NAME
@@ -833,23 +820,11 @@ BOT_GUARDS = (
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
 #: them for the repository itself (there is no caller to admit).
-REPO_EVENTS = ("pull_request", "push", "issues")
-
-#: The caller classes every bot guard must decide the same way (issue #238). The
-#: bot itself is a bot-to-bot dispatch with the default token; it MUST be allowed.
-GUARD_CALLERS = (
-    ("workflow_dispatch", "andyholst", "andyholst", 0, "owner dispatch"),
-    ("workflow_dispatch", "alice", "alice", 0, "write collaborator"),
-    ("workflow_dispatch", "bob", "bob", 0, "maintain collaborator"),
-    ("workflow_dispatch", "carol", "andyholst", 0, "admin collaborator re-run of owner run"),
-    ("workflow_dispatch", "github-actions[bot]", "github-actions[bot]", 0, "the bot itself"),
-    ("workflow_dispatch", "eve", "eve", 1, "read-only collaborator"),
-    ("workflow_dispatch", "mallory", "mallory", 1, "triage collaborator"),
-    ("workflow_dispatch", "stranger", "stranger", 1, "non-collaborator (API 404)"),
-    ("workflow_dispatch", "andyholst", "stranger", 1, "stranger re-running an owner run"),
-)
-
-GUARD_PERMS = {"alice": "write", "bob": "maintain", "carol": "admin", "eve": "read", "mallory": "triage"}
+#: Issue #816 (rule 6d): the caller table, its permission stubs and the repository
+#: events are ONE table — the CI stage's own — imported, never copied here.
+REPO_EVENTS = scan_guards.REPO_EVENTS
+GUARD_CALLERS = scan_guards.GUARD_CALLERS
+GUARD_PERMS = scan_guards.GUARD_PERMS
 
 
 def _guard_step_index(wf_name: str) -> tuple[str, int] | None:

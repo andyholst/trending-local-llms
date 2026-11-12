@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **204**
+Active changes: **15** · archived: **205**
 
 ## Active changes
 
@@ -238,6 +238,7 @@ Active changes: **15** · archived: **204**
 | `vram-min-prose` | archived | #431 — `tech-debt: a prose vram_min is published as its first number (32GB GPU + system RAM -> 32GB)` | — | [card-fit](openspec/changes/archive/vram-min-prose/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/vram-min-prose/proposal.md) |
 | `vram-need-cpu-marker` | archived | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/archive/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/vram-need-cpu-marker/proposal.md) |
 | `vram-tier-vocabulary` | archived | #341 — `tech-debt: \`vram_tier\` holds values the contract does not describe, and nothing notices` | — | [vram-tier](openspec/changes/archive/vram-tier-vocabulary/specs/vram-tier/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/vram-tier-vocabulary/proposal.md) |
+| `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
 
 ## How this file stays honest
