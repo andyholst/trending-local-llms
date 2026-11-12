@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **17** · archived: **222**
+Active changes: **16** · archived: **223**
 
 ## Active changes
 
@@ -27,7 +27,6 @@ Active changes: **17** · archived: **222**
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
-| `starved-leg-gap-files` | active | #856 | #857 | [data-gap-analysis](openspec/changes/starved-leg-gap-files/specs/data-gap-analysis/spec.md) | 10/10 | [proposal.md](openspec/changes/starved-leg-gap-files/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
@@ -56,6 +55,7 @@ Active changes: **17** · archived: **222**
 | `2026-11-12-log-tail-honored` | archived | #630 | #845 (measured: `Makefile:174` declared `HERMES_LOG_TAIL ?= 60` while the scrub seam | [makefile-knobs](openspec/changes/archive/2026-11-12-log-tail-honored/specs/makefile-knobs/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-12-log-tail-honored/proposal.md) |
 | `2026-11-12-per-round-log-capture` | archived | #631 | #846 | [agent-log-capture](openspec/changes/archive/2026-11-12-per-round-log-capture/specs/agent-log-capture/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-12-per-round-log-capture/proposal.md) |
 | `2026-11-12-secret-scan-gitignored-artifact-fileset` | archived | #836 | #838 | [secret-scan](openspec/changes/archive/2026-11-12-secret-scan-gitignored-artifact-fileset/specs/secret-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-12-secret-scan-gitignored-artifact-fileset/proposal.md) |
+| `2026-11-12-starved-leg-gap-files` | archived | #856 | #857 | [data-gap-analysis](openspec/changes/archive/2026-11-12-starved-leg-gap-files/specs/data-gap-analysis/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/2026-11-12-starved-leg-gap-files/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |
