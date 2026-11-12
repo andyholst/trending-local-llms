@@ -1,6 +1,7 @@
 # Keeper branches are references, not implementations
 
 **Issue:** [#872](https://github.com/andyholst/trending-local-llms/issues/872)
+PR: #875
 **Capability:** `pr-lifecycle`
 
 ## Why
