@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **229**
+Active changes: **17** · archived: **229**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
+| `engagement-counter-mapping` | active | #873 | — | [post-signal](openspec/changes/engagement-counter-mapping/specs/post-signal/spec.md) | 0/5 | [proposal.md](openspec/changes/engagement-counter-mapping/proposal.md) |
 | `engine-min-version-phrasings` | active | #214 | #876 | [data-gap-analysis](openspec/changes/engine-min-version-phrasings/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/engine-min-version-phrasings/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
