@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **222**
+Active changes: **17** · archived: **222**
 
 ## Active changes
 
@@ -23,7 +23,7 @@ Active changes: **16** · archived: **222**
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
-| `openspec-index-repair` | active | #304 | — | [openspec-index](openspec/changes/openspec-index-repair/specs/openspec-index/spec.md) | 11/11 | [proposal.md](openspec/changes/openspec-index-repair/proposal.md) |
+| `openspec-index-repair` | active | #304 | #859 | [openspec-index](openspec/changes/openspec-index-repair/specs/openspec-index/spec.md) | 11/11 | [proposal.md](openspec/changes/openspec-index-repair/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
