@@ -1916,6 +1916,74 @@ def test_a_captured_measurement_footprint_is_never_lost_from_the_store():
           any(f"{mid}/{engine}/{key}" in c for c in caught), str(caught[:3]))
 
 
+def test_engine_min_version_detector_sees_the_build_phrases_posts_use():
+    """The acquisition/ingest split must SEE the build phrasings posts use (issue #214).
+
+    The `engine_min_version` detector matched only `flag` / `n-gpu-layers` / `--x`, and the
+    phrasings captures actually carry match none of them: `BigMoeOnEdge on stock llama.cpp
+    (untouched upstream, submodule)` (`data/raw/cpu-20261014-114227.json`), `MLX 4-bit Swift
+    1.5 adapter` (`data/raw/metal-20261014-210311.json`) and `Q4_0 KV cache, native MTP
+    draft`. Those sentences state WHICH engine build the run needs, yet the analysis filed
+    `unstructured:engine_min_version` empty and reported the models as "no captured post
+    states it" — which is what made issue #163's headline gap look unactionable (#214).
+    The widened detector stays precise (#213's class): a quant name beside a capacity or a
+    speed is NOT a build claim, so `Q4_K_M (~14.6GB) on an RTX 4090 24GB, 150 tok/s` must
+    remain an ACQUISITION gap.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        built = model("built-model", engines=[{
+            "engine": "llama.cpp", "tps": "14", "hardware": "Radeon R9700 32GB",
+            "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
+            "date": "2026-10-14", "source_post": "https://lightbrd.com/u/status/2141"}])
+        swift = model("swift-model", engines=[{
+            "engine": "MLX", "tps": "12", "hardware": "M4 Max 128GB",
+            "quant": "MLX 4-bit Swift 1.5 adapter (token-count cut, not a decode speedup)",
+            "date": "2026-10-14", "source_post": "https://lightbrd.com/u/status/2142"}])
+        kv = model("kv-model", engines=[{
+            "engine": "llama.cpp", "tps": "150", "hardware": "RTX 4090 24GB",
+            "quant": "Unsloth IQ4_XS (~14.6GB); Q4_0 KV cache, native MTP draft, 64K context; ~150 tok/s prefill",
+            "date": "2026-10-14", "source_post": "https://lightbrd.com/u/status/2143"}])
+        quiet = model("quiet-model")  # the fixture default: `Q4_K_M`, a quant NAME only
+        rows = [(m, m["engines"][0]) for m in (built, swift, kv, quiet)]
+        (raw / "cpu-20261112-000000.json").write_text(json.dumps({
+            "backend": "cpu", "generated_utc": "2026-11-12T00:00:00Z",
+            "models": [{"id": m["id"], "name": m["name"],
+                        "engines": [{"engine": e["engine"], "tps": e["tps"],
+                                     "hardware": e["hardware"], "quant": e["quant"],
+                                     "source_post": e["source_post"]}]}
+                       for m, e in rows]}))
+        contract = contract_from(td, "engine_min_version")
+
+        # When  the store is analysed against those captures
+        report = G.analyse(store_with([built, swift, kv, quiet]), contract, raw_dir=raw)
+
+        # Then  every build phrase states a build: prose-stated ingest work, not "no post states it" …
+        un = set(report["unstructured"]["engine_min_version"])
+        nc = set(report["not_captured"]["engine_min_version"])
+        check("engine build phrases: 'stock llama.cpp (untouched upstream, submodule)' is an ingest job",
+              "built-model" in un and "built-model" not in nc,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        check("engine build phrases: an adapter version ('Swift 1.5 adapter') is an ingest job",
+              "swift-model" in un and "swift-model" not in nc,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        check("engine build phrases: a cache-type quant and a native draft are ingest jobs",
+              "kv-model" in un and "kv-model" not in nc,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        # … while a quant name beside a capacity stays the ACQUISITION gap (#213's class).
+        check("engine build phrases: a quant name beside a capacity is not a build claim",
+              "quiet-model" in nc and "quiet-model" not in un,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        # The classes still partition the missing set.
+        lists = [report[k]["engine_min_version"] for k in
+                 ("not_captured", "unstructured", "captured_prose", "untraceable")]
+        flat = [x for part in lists for x in part]
+        check("engine build phrases: the classes still partition the missing set",
+              sorted(flat) == sorted(report["missing"]["engine_min_version"])
+              and len(flat) == len(set(flat)), str(flat))
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -1935,6 +2003,7 @@ def main() -> int:
     test_the_real_store_splits_every_missing_dimension()
     test_the_report_and_issue_body_name_an_acquisition_gap()
     test_a_stated_figure_no_post_supports_is_its_own_class()
+    test_engine_min_version_detector_sees_the_build_phrases_posts_use()
     test_a_whole_starved_leg_changes_the_signature()
     test_a_single_empty_snapshot_stays_informational()
     test_signature_tracks_the_store_not_the_noise()
