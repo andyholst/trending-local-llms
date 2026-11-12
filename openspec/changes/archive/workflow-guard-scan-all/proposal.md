@@ -1,6 +1,7 @@
 # Scan every workflow .yml for the identity guard
 
 **Issue:** [#816](https://github.com/andyholst/trending-local-llms/issues/816)
+PR: #817
 **Capability:** `agents-guard-registry`
 
 ## Why

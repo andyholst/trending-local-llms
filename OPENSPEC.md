@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **204**
+Active changes: **15** · archived: **205**
 
 ## Active changes
 
@@ -30,7 +30,6 @@ Active changes: **16** · archived: **204**
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
-| `workflow-guard-scan-all` | active | #816 | — | [agents-guard-registry](openspec/changes/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/workflow-guard-scan-all/proposal.md) |
 
 ## Archived changes
 
@@ -239,6 +238,7 @@ Active changes: **16** · archived: **204**
 | `vram-min-prose` | archived | #431 — `tech-debt: a prose vram_min is published as its first number (32GB GPU + system RAM -> 32GB)` | — | [card-fit](openspec/changes/archive/vram-min-prose/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/vram-min-prose/proposal.md) |
 | `vram-need-cpu-marker` | archived | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/archive/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/vram-need-cpu-marker/proposal.md) |
 | `vram-tier-vocabulary` | archived | #341 — `tech-debt: \`vram_tier\` holds values the contract does not describe, and nothing notices` | — | [vram-tier](openspec/changes/archive/vram-tier-vocabulary/specs/vram-tier/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/vram-tier-vocabulary/proposal.md) |
+| `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
 
 ## How this file stays honest
