@@ -69,15 +69,18 @@ _M_POST = "https://lightbrd.com/Chahatusharma/status/2111173528838103533"
 
 
 def test_the_shipped_bonsai_row_is_corrected():
-    # The ~493GB NVFP4 measurement (a Muse Spark figure) is gone from the 2 GB Bonsai row.
+    # Rule 3b (restore commit 9a51fcc): a STORED value is never removed by automation.
+    # The ~493GB NVFP4 figure (a Muse Spark post) stays in the store as HISTORY — the
+    # #615 refusal is at INGEST only (test_the_shipped_bonsai_row_is_refused) and the
+    # store scan reports it (test_the_store_scan_is_clean_and_a_regression_is_reported).
     store = _store()
     rows = _engines(store, _MID)
-    check("bonsai-2-9b no longer carries the ~493GB NVFP4 measurement",
-          not any(_M_POST == str(e.get("source_post", "")) for e in rows), rows)
+    check("bonsai-2-9b keeps the shipped ~493GB measurement as history (rule 3b — never removed)",
+          any(_M_POST == str(e.get("source_post", "")) for e in rows), rows)
     check("bonsai-2-9b keeps real ternary measurements",
           len(rows) >= 10, len(rows))
-    check("bonsai-2-9b chaturpost not in seen_posts",
-          all(_M_POST != p.get("url") for p in (_by_id(store).get(_MID) or {}).get("engagement", {}).get("seen_posts", [])),
+    check("bonsai-2-9b chaturpost stays in seen_posts (history is never wiped)",
+          any(_M_POST == p.get("url") for p in (_by_id(store).get(_MID) or {}).get("engagement", {}).get("seen_posts", [])),
           (_by_id(store).get(_MID) or {}).get("engagement", {}).get("seen_posts", [])[:2])
 
 
@@ -164,20 +167,33 @@ def test_the_ingest_wiring():
 
 def test_ingest_refuses_a_re_capture_before_it_merges():
     # E2E through the REAL ingest pipeline (`ingest_raw_snapshots`, no mock): a temp
-    # data dir carries the corrected store, and a crafted raw snapshot RE-CAPTURES the
-    # #615 bonsai copy (MLX 36 ~493GB NVFP4, Chahatusharma post). It must be refused at
-    # ingest and never land — while a legitimate fresh measurement on that same raw row
-    # still merges (the rest of the snapshot survives).
+    # data dir carries a store WITHOUT the contradiction (the copy removed from the
+    # fixture copy only — the real store keeps its history, rule 3b), and a crafted
+    # raw snapshot RE-CAPTURES the #615 bonsai copy (MLX 36 ~493GB NVFP4,
+    # Chahatusharma post). It must be refused at ingest and never land — while a
+    # legitimate fresh measurement on that same raw row still merges.
     import subprocess
     import textwrap
     script = textwrap.dedent("""
         import json, os, shutil, sys
         from pathlib import Path
         ROOT = Path(sys.argv[1]); tmp = Path(sys.argv[2])
+        post = "https://lightbrd.com/Chahatusharma/status/2111173528838103533"
         for name in ("models.json", "measurements.json", "posts.json"):
             shutil.copy(ROOT / "data" / name, tmp / name)
+        models = json.loads((tmp / "models.json").read_text())
+        for m in models["models"]:
+            if m.get("id") == "bonsai-2-9b":
+                m["engines"] = [e for e in m.get("engines", [])
+                                if str(e.get("source_post", "")) != post]
+        (tmp / "models.json").write_text(json.dumps(models))
+        meas = json.loads((tmp / "measurements.json").read_text())
+        if isinstance(meas, dict) and isinstance(meas.get("bonsai-2-9b"), list):
+            meas["bonsai-2-9b"] = [
+                e for e in meas["bonsai-2-9b"]
+                if str(e.get("source_post", "")) != post]
+            (tmp / "measurements.json").write_text(json.dumps(meas))
         (tmp / "raw").mkdir(parents=True, exist_ok=True)
-        post = "https://lightbrd.com/Chahatusharma/status/2111173528838103533"
         (tmp / "raw" / "re-capture.json").write_text(json.dumps({
             "generated_utc": "2026-11-11T23:59:59Z",
             "models": [{
@@ -242,10 +258,14 @@ def test_ingest_refuses_a_re_capture_before_it_merges():
 
 
 def test_the_store_scan_is_clean_and_a_regression_is_reported():
+    # Rule 3b keeps the shipped contradiction in the store as history, so the scan is
+    # report-only and DOES name that historical row; a NEW re-injected copy must be
+    # reported the same way, and the validator must never fail.
     store = _store()
-    check("the store's weight-gb scan is clean (no contradiction)",
-          V.weight_gb_contradiction_hits(store) == [],
-          V.weight_gb_contradiction_hits(store)[:2])
+    hits = V.weight_gb_contradiction_hits(store)
+    check("the shipped historical contradiction is named by the report-only scan",
+          any(_M_POST in str(h[5]) for h in hits), hits[:2])
+    len_before = len(hits)
     # Re-inject the copy into a synthetic store: the scan must NAME it and the
     # validator must NOT fail (report-only).
     store = json.loads(json.dumps(store))
@@ -258,8 +278,9 @@ def test_the_store_scan_is_clean_and_a_regression_is_reported():
                 "source_post": _M_POST, "weight_gb": "~493GB NVFP4", "context_tokens": "8192",
             })
     hits = V.weight_gb_contradiction_hits(store)
-    check("a re-injected contradiction is reported",
-          any("2111173528838103533" in str(h[5]) for h in hits), hits)
+    check("a re-injected contradiction adds a named hit on top of the historical one",
+          len(hits) == len_before + 1
+          and any("2111173528838103533" in str(h[5]) for h in hits), hits)
     buf = io.StringIO()
     with redirect_stdout(buf):
         V.check_weight_gb_contradictions(store)
