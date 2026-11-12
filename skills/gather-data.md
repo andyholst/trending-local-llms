@@ -246,10 +246,11 @@ Known gotchas:
 | **LiteRT** | CUDA / Metal | Google's local runtime (Gemma 4 + Antigravity) |
 
 
-## 3. Link repair (fix-bot) — search for a correct link, never invent one
+## 3. Link repair (the `make fix` repair loop) — search for a correct link, never invent one
 
 When CI validation (`scripts/validate.py check_links_resolve`) reports a dead or
-wrong link, the fix-bot (Hermes) must SEARCH for the correct link and verify it
+wrong link, the repair agent (Hermes, via `make fix` inside `scripts/fix_loop.sh`)
+must SEARCH for the correct link and verify it
 resolves before writing it. CI itself never calls the LLM — it only reports.
 
 - **Model / format Hugging Face link** (`model-hf`, `format-hf`, `raw-hf`): find

@@ -139,8 +139,8 @@ def test_detector_catches_every_forbidden_shape():
     check("workflow: the secret exported under a DIFFERENT name is a finding",
           NK.check_workflows({n: wf(OTHER_KEY="OPENROUTER_API_KEY") for n in NK.CONTAINER_WORKFLOWS}) != [])
     check("workflow: echoing the credential is a finding",
-          NK.check_workflows({**ALL_WF, "fix-bot.yml":
-                              ALL_WF["fix-bot.yml"] + "      - run: echo $OPENROUTER_API_KEY\n"}) != [])
+          NK.check_workflows({**ALL_WF, "issue-bot.yml":
+                              ALL_WF["issue-bot.yml"] + "      - run: echo $OPENROUTER_API_KEY\n"}) != [])
     check("workflow: the real shape passes", NK.check_workflows(ALL_WF) == [], NK.check_workflows(ALL_WF))
 
     # Given a credential literal anywhere in a tracked file

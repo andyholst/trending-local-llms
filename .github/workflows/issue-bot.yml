@@ -14,8 +14,8 @@ name: issue-bot
 #   -> resolve the issue (must be OPEN) into issue.md + branch slug
 #   -> implement it with Hermes ON A FEATURE BRANCH, via `make implement-issue`
 #   -> commit + push, open the PR (`closes #<n>`, owner PAT so CI really runs)
-#   -> run the SAME fix loop as fix-bot against that PR until its pipeline is
-#      green (scripts/fix_loop.sh: check -> report -> `make fix`, FIX_ROUNDS)
+#   -> run the repo's ONLY agent fix loop (scripts/fix_loop.sh: check -> report
+#      -> `make fix`, FIX_ROUNDS) against that PR until its pipeline is green
 #   -> push the fixes (PAT) so qa-validate re-runs and its auto-merge job
 #      squash-merges the PR with a proper commit message.
 #
@@ -578,7 +578,7 @@ jobs:
           PR_NUM=$(basename "${PR_URL}")
           make openspec-record-pr ISSUE="$ISSUE" PR="$PR_NUM"
 
-      # The bot owns ITS OWN PR's pipeline: run the same loop fix-bot runs
+      # The bot owns ITS OWN PR's pipeline: run the repo's only agent repair loop
       # (check -> report -> make fix, at most FIX_ROUNDS) and push only when green.
       - name: Fix loop against the PR branch
         id: loop

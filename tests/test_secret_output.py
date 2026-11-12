@@ -376,7 +376,7 @@ def test_the_report_lists_the_files_that_name_a_secret():
     rows = cso.report(ROOT)
     files = {r["file"] for r in rows}
     # the bot workflows and the image's install scripts are the ones that carry keys
-    for name in (".github/workflows/issue-bot.yml", ".github/workflows/fix-bot.yml",
+    for name in (".github/workflows/issue-bot.yml", ".github/workflows/issue-review-bot.yml",
                  ".github/workflows/qa-validate.yml", ".github/workflows/refresh-bot.yml",
                  "scripts/nerve_key_check.py", "Makefile"):
         check(f"report: {name} names a secret variable", name in files, "")

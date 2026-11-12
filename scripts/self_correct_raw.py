@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Self-correct raw search snapshots so they conform to data/search_contract.json.
 
-Used by the fix-bot (and locally via `make correct-raw`) as part of the fix
+Used by the repair loop (`make fix`, run by `scripts/fix_loop.sh` since issue #814
+retired the fix-bot pipeline) and locally via `make correct-raw` as part of the fix
 job: when a raw snapshot fails the search_contract — e.g. a search dropped a
 required field like vram_min, license, or backends — this fills in the missing
 value FROM THE DATA IT HAS / known defaults, so the snapshot is repaired

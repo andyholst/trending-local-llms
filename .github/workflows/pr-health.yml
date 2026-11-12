@@ -72,19 +72,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      # REPAIR, not just alarm (issue #475): a silent PR on a `ci/…` branch is dispatched to
-      # fix-bot, whose loop merges the base and lets a Hermes round resolve the conflicts.
-      # This sweep is the ONLY trigger that fires for a conflicting PR — GitHub builds no
-      # merge commit, so `qa-validate` never runs and has no failure to react to. The owner
-      # PAT is required because dispatching a workflow is an Actions write.
-      - name: Dispatch the repair for a bot PR that cannot merge
-        env:
-          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
-          REPO: ${{ github.repository }}
-          # No `MAX_FIXBOT_COMMITS:` here: the command line below carries the setting, and an
-          # `env:` entry the command line overrides is DEAD configuration that reads as
-          # authoritative (issue #489). `tests/test_workflows.py` now refuses the shape.
-        run: make pr-health REPO="$REPO" REPAIR=1 MAX_FIXBOT_COMMITS=2
+      # REPORT-ONLY since issue #814 (the fix-bot repair pipeline was retired): a silent PR is
+      # flagged with its remedy on the PR itself. The repair of a bot-owned PR is the AGENTS.md
+      # §6r sweep: `make worktree-resume`, `make base-rebase`, push to the PR's HEAD branch.
 
       # The comment uses the DEFAULT token (rule 6b): the owner PAT has no Issues/PR-comment
       # scope here, and a refused comment would leave the sweep green over a silent PR.

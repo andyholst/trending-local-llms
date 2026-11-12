@@ -14,7 +14,6 @@ Registry (AGENTS.md §6j carries the same table for humans):
   issue-bot           the issue (implementer)         issue-bot-start  (+ issue-bot-skip note,
                                                        + issue-bot-outcome on a DEAD run)
   issue-review-bot    the issue                       issue-review / issue-review: window
-  fix-bot             the PR it repairs               fix-bot-start / fix-bot-end
   refresh-bot         the PR (and gap issue) it opens refresh-bot-run
   qa-validate         the PR it merges                bot-merge
 
@@ -42,7 +41,6 @@ REGISTRY: dict[str, dict[str, str]] = {
                          # implementer "in flight" for ever.
                          "outcome": "issue-bot-outcome"},
     "issue-review-bot": {"start": "issue-review", "window": "issue-review: window"},
-    "fix-bot":          {"start": "fix-bot-start", "end": "fix-bot-end"},
     "refresh-bot":      {"run": "refresh-bot-run"},
     "qa-validate":      {"merge": "bot-merge"},
     # The failure filer (issue #802): `queued-alarm.yml` announces EACH main-pipeline failure it
@@ -55,7 +53,6 @@ REGISTRY: dict[str, dict[str, str]] = {
 ARTIFACTS: dict[str, str] = {
     "issue-bot": "the issue (before `make implement-issue`)",
     "issue-review-bot": "the issue (before its first write)",
-    "fix-bot": "the PR (before `scripts/fix_loop.sh` reads the branch)",
     "refresh-bot": "the PR it opens (and the gap issue it files)",
     "qa-validate": "the PR (immediately before the merge)",
     "queued-alarm": "the issue it files for a diagnosed main-pipeline failure (issue #802)",
@@ -108,8 +105,6 @@ WRITTEN: frozenset = frozenset({
     ("issue-bot", "outcome"),
     ("issue-review-bot", "start"),
     ("issue-review-bot", "window"),
-    ("fix-bot", "start"),
-    ("fix-bot", "end"),
     ("refresh-bot", "run"),
     # Written by `scripts/pipeline_failure_issue.py` (via `make pipeline-failure-issue`,
     # issue #802) on the body of every issue it files for a failed main-pipeline run.

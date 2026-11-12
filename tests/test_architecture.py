@@ -225,7 +225,7 @@ def test_real_repo_description_is_current():
     check("real repo: architecture-check exits 0", proc.returncode == 0, proc.stdout + proc.stderr)
     doc = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
     for needle in (".github/workflows/refresh-bot.yml", "issue-bot.yml", "qa-validate.yml",
-                   "fix-bot.yml", "`refresh`", "`openspec-check`", "`data-gap-issue`"):
+                   "pr-health.yml", "`refresh`", "`openspec-check`", "`data-gap-issue`"):
         check(f"real repo: {needle} is documented", needle in doc, "")
 
 

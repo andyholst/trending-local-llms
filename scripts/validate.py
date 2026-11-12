@@ -137,7 +137,7 @@ def _hermes_prompt_ok(line: str) -> tuple[bool, str]:
 
 def check_hermes_prompts() -> None:
     """Validate every `hermes -z "..."` prompt in the Makefile (the 4 search +
-    fix-bot prompts). A prompt whose -z body has an unescaped quote breaks the
+    repair prompts). A prompt whose -z body has an unescaped quote breaks the
     shell command (hermes errors: '... is not a hermes command') and silently
     kills every search. Dry-run the prompt strings before they reach the LLM."""
     import re as _re
@@ -1793,7 +1793,7 @@ def check_readme_tables_wellformed(store: dict) -> None:
 
 
 # Known-good engine repo URLs. When a link check finds a wrong/dead engine URL,
-# the fix-bot (or this validator's auto-fix) can correct it to the canonical repo.
+# the repair loop (or this validator's auto-fix) can correct it to the canonical repo.
 KNOWN_ENGINE_URLS = {
     "llama.cpp": "https://github.com/ggml-org/llama.cpp",
     "Ollama": "https://github.com/ollama/ollama",
@@ -1814,7 +1814,7 @@ KNOWN_ENGINE_URLS = {
 
 # Known-good Hugging Face repo ids. When a model's HF link 404s and we know the
 # canonical repo, the validator auto-corrects the store's hf field (so the
-# fix-bot has a concrete repair). Unknown models are reported for manual review.
+# repair round has a concrete repair). Unknown models are reported for manual review.
 KNOWN_HF_IDS = {
     "bonsai-2-27b": "prism-ml/Ternary-Bonsai-2-27B-gguf",
     "qwen3.8-27b": "Qwen/Qwen3.8-27B",
@@ -2054,7 +2054,7 @@ def check_links_present(store: dict) -> None:
 def check_links_resolve(store: dict) -> None:
     """Verify every link in models.json, README.md, and data/raw/*.json resolves
     (HTTP 2xx/3xx). A dead or wrong link fails CI. Known-good engine repo URLs
-    and HF repo ids are auto-corrected in the store (so the fix-bot has a
+    and HF repo ids are auto-corrected in the store (so the repair round has a
     concrete repair); unknown dead links are reported for manual review."""
     links = _extract_links(store)
     if not links:

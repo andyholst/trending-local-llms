@@ -3,7 +3,7 @@
 #
 #   * the check RAN and has findings  -> report them, keep going, exit 0.
 #     A data-quality finding must not stop the merged data from landing as a PR
-#     for review (qa-validate flags it, fix-bot repairs it on the branch).
+#     for review (qa-validate flags it, the repair loop fixes it on the branch).
 #   * the check COULD NOT RUN         -> fail the job, exit 1.
 #     `docker run` exits 125 when the image is missing / the daemon refused it,
 #     and 127 is "command not found": neither says anything about the DATA, so a

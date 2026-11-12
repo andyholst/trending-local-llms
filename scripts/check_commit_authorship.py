@@ -18,7 +18,7 @@ all landed silently — and it already has:
 The only identities on this repo are **Andy Holst** and **Asimov Agent**. The
 repo's own automation identities are also allowed, because refusing them would
 redden every bot PR: `github-actions[bot]` (the `git config` in refresh-bot,
-fix-bot and issue-bot) and `GitHub <noreply@github.com>` (the committer GitHub
+issue-bot and the implementer's repair steps) and `GitHub <noreply@github.com>` (the committer GitHub
 uses for a squash). Everything else is refused; `Hermes Agent` is named in the
 failure.
 

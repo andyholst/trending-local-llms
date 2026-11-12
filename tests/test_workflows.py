@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Workflow wiring tests: refresh-bot -> qa-validate -> fix-bot.
+"""Workflow wiring tests: refresh-bot -> qa-validate -> auto-merge.
+
+(The fix-bot repair pipeline was retired by issue #814; its lessons below are
+kept as history — `test_fix_pipeline_retired` is the guard that keeps it gone.)
 
 Every one of these encodes a failure that actually happened in CI and that no
 data test could see:
 
   - refresh PR authored by github-actions[bot] -> qa-validate held for a manual
     approval click (needs the owner PAT on checkout + `gh pr create`)
-  - fix-bot dispatched at PR-open, before validation existed, without the
-    failure report (must be dispatched by qa-validate, after `validate` fails)
-  - fix-bot `workflow_run` trigger silently suppressed / double-firing
-  - fix-bot looping under `bash -e`, never running `make validate`, committing
-    with no git identity, pushing with GITHUB_TOKEN (CI never re-runs)
+  - (retired, #814) a fix-bot repair pipeline dispatched before validation
+    existed, without the failure report — the dispatch, the trigger suppression
+    and the `bash -e` loop were all removed with the pipeline; the only agent
+    repair loop left is the implementer's own (issue-bot.yml runs it)
   - nothing live-tested the search / Hermes path on a PR
 
 Parses the REAL .github/workflows/*.yml with PyYAML.
@@ -110,7 +112,7 @@ def test_refresh_bot():
     pr = step(agg, "open PR")
     check("refresh: PR is created with the owner PAT (no approval gate)",
           PAT in str(pr.get("env", {}).get("GH_TOKEN", "")), pr.get("env"))
-    check("refresh: does NOT dispatch fix-bot itself (qa-validate does, after validating)",
+    check("refresh: does NOT dispatch any repair pipeline (qa-validate dispatches none either, #814)",
           "gh workflow run" not in run_text(agg), "")
     check("refresh: aggregate runs even if a search leg failed", "always()" in str(agg.get("if", "")), agg.get("if"))
     crons = [c.get("cron", "") for c in (wf["on"].get("schedule") or [])]
@@ -251,18 +253,17 @@ def test_qa_validate():
     check("qa: live hermes routing smoke", "make hermes-smoke" in live, "")
     check("qa: live model-caps check", "make model-caps" in live, "")
     check("qa: live --require-hits search", "make validate-fetch" in live, "")
-    d = jobs.get("dispatch-fixbot", {})
-    cond = str(d.get("if", ""))
-    check("qa: dispatch-fixbot needs the deterministic validate job",
-          d.get("needs") in ("validate", ["validate"]), d.get("needs"))
-    check("qa: dispatch-fixbot only on failure", "failure()" in cond, cond)
-    check("qa: dispatch-fixbot only for refresh PR branches", "ci/trending-refresh-" in cond, cond)
-    check("qa: dispatch-fixbot only for same-repo PRs", "head.repo.full_name" in cond, cond)
-    ds = (steps(d) or [{}])[0]
-    check("qa: dispatch uses the owner PAT (GITHUB_TOKEN gets HTTP 403)",
-          PAT in str(ds.get("env", {}).get("GH_TOKEN", "")), ds.get("env"))
-    check("qa: dispatch passes pr_number + branch", "pr_number=" in ds.get("run", "") and "branch=" in ds.get("run", ""), "")
-    check("qa: dispatch capped by prior fix-bot commits", "MAX_FIXBOT_COMMITS" in ds.get("run", ""), "")
+    # Issue #814: the fix-bot repair pipeline was RETIRED. qa-validate dispatches
+    # no repairer: a red validate stays red, and its qa-report artifact is the handoff.
+    # (Its OWN `on: workflow_dispatch:` trigger — a human re-running validation — is
+    # not a dispatch to anything; only dispatch CALLS inside job steps count.)
+    calls = [f"{n}: {str(s.get('run', ''))[:80]}"
+             for n, j in jobs.items() for s in (steps(j) or [])
+             if "gh workflow run" in str(s.get("run", ""))
+             or "actions/workflows/" in str(s.get("run", ""))]
+    check("qa: qa-validate dispatches no pipeline (issue #814)", not calls, calls)
+    check("qa: qa-validate names no fix-bot job or pipeline (the PAT secret name survives)",
+          "fix-bot" not in str(wf), "a retired pipeline is still named")
 
 
 def test_qa_validate_header_points_at_pinned_action_howto():
@@ -274,110 +275,6 @@ def test_qa_validate_header_points_at_pinned_action_howto():
           "pinned to an immutable 40-hex" in text, "")
     check("qa: header points at the README bump section",
           '"Bumping a pinned GitHub Action" in README.md' in text, "")
-
-
-def test_fix_bot():
-    wf = load("fix-bot.yml")
-    on = wf["on"]
-    check("fix: no workflow_run trigger (double-fire / suppressed for bot PRs)",
-          "workflow_run" not in on, list(on))
-    check("fix: dispatchable with pr_number + branch",
-          {"pr_number", "branch"} <= set((on.get("workflow_dispatch") or {}).get("inputs", {})), "")
-    check("fix: one run per PR at a time", "concurrency" in wf, "")
-    job = wf["jobs"]["fix"]
-    resolve = step(job, "resolve")
-    check("fix: refuses master/main", "master|main" in resolve.get("run", ""), "")
-    co = step(job, "checkout")
-    check("fix: checkout with owner PAT (push re-triggers qa-validate)",
-          PAT in str(co.get("with", {}).get("token", "")), co.get("with"))
-    rt = run_text(job)
-    check("fix: hermes routing smoke before the loop", "make hermes-smoke" in rt, "")
-    loop = step(job, "fix loop")
-    check("fix: runs scripts/fix_loop.sh", "scripts/fix_loop.sh" in loop.get("run", ""), "")
-    check("fix: loop step tolerates a red loop (set +e) and reports green/red",
-          "set +e" in loop.get("run", "") and "green=" in loop.get("run", ""), "")
-    push = step(job, "commit + push")
-    check("fix: push gated on a green loop", "green == 'true'" in str(push.get("if", "")), push.get("if"))
-    # The identity comes through ONE seam (issue #325): `make git-identity` sets it from
-    # scripts/agent_identity.py, so the step never spells out the name or the address.
-    check("fix: the git identity is set before the commit",
-          "make git-identity" in push.get("run", ""), push.get("run", "")[:200])
-    check("fix: it commits as the repo's own agent, not github-actions[bot]",
-          "github-actions" not in push.get("run", "")
-          and f'user.email "{AGENT_EMAIL}"' not in push.get("run", ""), push.get("run", "")[:200])
-    check("fix: commit message prefix matches qa-validate's cap counter",
-          'git commit -m "fix-bot:' in push.get("run", ""), "")
-    check("fix: push step has an id (the report reads its outcome)", push.get("id") == "push", push.get("id"))
-    rep = step(job, "report result")
-    check("fix: result always reported on the PR",
-          "always()" in str(rep.get("if", "")) and "gh pr comment" in rep.get("run", ""), "")
-    check("fix: report reads the push outcome (never claims 'pushed' after a failed push)",
-          "steps.push.outcome" in str(rep.get("env", {})) and "PUSH_OUTCOME" in rep.get("run", ""), rep.get("env"))
-    check("fix: qa-report.txt uploaded as an artifact",
-          any("upload-artifact" in str(s.get("uses", "")) and "qa-report" in str(s.get("with", {}))
-              for s in steps(job)), "")
-
-
-def _run_push_step(changed: bool) -> tuple[int, str, list[str]]:
-    """Execute the REAL fix-bot commit+push script in a temp clone whose
-    .gitignore is the repo's, with qa-report.txt + qa-report.txt.notes +
-    comment.md present (the loop leaves them behind). Returns (rc, output,
-    files in the pushed commit)."""
-    import os
-    import shutil
-    import subprocess
-    import tempfile
-    push = step(load("fix-bot.yml")["jobs"]["fix"], "commit + push")
-    td = Path(tempfile.mkdtemp())
-    try:
-        g = lambda *a, cwd=None: subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True)  # noqa: E731
-        g("init", "-q", "--bare", str(td / "remote.git"))
-        g("clone", "-q", str(td / "remote.git"), str(td / "wc"))
-        wc = td / "wc"
-        shutil.copy(ROOT / ".gitignore", wc / ".gitignore")
-        # `make reset-working-files` reads the ONE list (issue #543); a clone without it
-        # cannot run the real commit step.
-        (wc / "scripts").mkdir(exist_ok=True)
-        shutil.copy(ROOT / "scripts" / "issue_bot_working_files.txt",
-                    wc / "scripts" / "issue_bot_working_files.txt")
-        (wc / "data.json").write_text("{}\n")
-        g("add", "-A", cwd=wc)
-        g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base", cwd=wc)
-        g("push", "-q", "origin", "HEAD:refs/heads/ci/x", cwd=wc)
-        before = g("rev-parse", "HEAD", cwd=wc).stdout.strip()
-        (wc / "qa-report.txt").write_text("=== make validate ===\n")
-        # The loop's between-round notes used to be written as `$REPORT.notes`
-        # (issue #390) — a 0-byte `qa-report.txt.notes` reached PR #387 that way.
-        (wc / "qa-report.txt.notes").write_text("=== make fix: TIMED OUT after 1800s ===\n")
-        (wc / "comment.md").write_text("c\n")
-        if changed:
-            (wc / "data.json").write_text('{"fixed": true}\n')
-        bin_ = td / "bin"
-        bin_.mkdir()
-        (bin_ / "sudo").write_text('#!/bin/sh\nexec "$@"\n')
-        (bin_ / "sudo").chmod(0o755)
-        # The identity seam (issue #325): this clone carries no Makefile (it is a minimal
-        # repo on purpose — the PUSH step is what is under test), so the one target the step
-        # calls is mapped to the real definition rather than stubbed by hand.
-        (bin_ / "make").write_text(
-            "#!/bin/sh\n"
-            'case "$1" in\n'
-            f'  git-identity) exec python3 "{ROOT / "scripts" / "agent_identity.py"}" --git-config ;;\n'
-            f'  check-conflict-markers) exec python3 "{ROOT / "scripts" / "check_conflict_markers.py"}" ;;\n'
-            f'  reset-working-files) exec python3 "{ROOT / "scripts" / "reset_working_files.py"}" ;;\n'
-            '  *) echo "unexpected target: $1" >&2; exit 2 ;;\n'
-            "esac\n")
-        (bin_ / "make").chmod(0o755)
-        env = dict(os.environ, PATH=f"{bin_}:{os.environ['PATH']}", BRANCH="ci/x",
-                   GITHUB_OUTPUT=str(td / "out"), HOME=str(td))
-        p = subprocess.run(["bash", "-e", "-c", push["run"]], cwd=wc, env=env, capture_output=True, text=True)
-        after = g("rev-parse", "refs/heads/ci/x", cwd=td / "remote.git").stdout.strip()
-        files = (g("show", "--name-only", "--format=", after, cwd=td / "remote.git").stdout.split()
-                 if after != before else [])
-        gh_out = (td / "out").read_text() if (td / "out").exists() else ""
-        return p.returncode, p.stdout + p.stderr + gh_out, files
-    finally:
-        shutil.rmtree(td, ignore_errors=True)
 
 
 def _run_issue_pr_step(issue: str = "376") -> tuple[int, str, str, str]:
@@ -426,6 +323,40 @@ def _run_issue_pr_step(issue: str = "376") -> tuple[int, str, str, str]:
         shutil.rmtree(td, ignore_errors=True)
 
 
+def test_fix_pipeline_retired():
+    """Issue #814: the fix-bot repair pipeline is RETIRED, and it stays retired.
+
+    The owner's directive: the .yml is deleted, no pipeline dispatches it, no make
+    target runs it, and no secret wiring to it survives. The repo's ONLY agent
+    repair loop is the implementer's own (issue-bot.yml runs scripts/fix_loop.sh).
+    A re-introduced fix-bot.yml, a dispatch to it, a dispatch-capped step or a
+    second pipeline running the loop all turn this red.
+    """
+    print("\nretired repair pipeline (issue #814)")
+    check("retired: fix-bot.yml is gone from the tree",
+          not (WF / "fix-bot.yml").exists(), sorted(p.name for p in WF.glob("*.yml")))
+
+    named = [p.name for p in sorted(WF.glob("*.yml"))
+             if "fix-bot.yml" in p.read_text() or "dispatch-fixbot" in p.read_text()]
+    check("retired: no workflow names or dispatches the retired pipeline", not named, named)
+
+    capped = [p.name for p in sorted(WF.glob("*.yml")) if "MAX_FIXBOT_COMMITS" in p.read_text()]
+    check("retired: no workflow carries the repair dispatch cap", not capped, capped)
+
+    mk = (ROOT / "Makefile").read_text()
+    recipe_lines = [ln for ln in mk.splitlines()
+                    if not ln.lstrip().startswith("#") and "fix-bot" in ln]
+    check("retired: no make recipe reaches the retired pipeline", not recipe_lines, recipe_lines)
+
+    loop_runners = [p.name for p in sorted(WF.glob("*.yml"))
+                    if any("scripts/fix_loop.sh" in str(s.get("run", ""))
+                           for j in (yaml.safe_load(p.read_text()) or {}).get("jobs", {}).values()
+                           if isinstance(j, dict)
+                           for s in (j.get("steps") or []))]
+    check("retired: exactly one pipeline runs the agent fix loop — the implementer's",
+          loop_runners == ["issue-bot.yml"], loop_runners)
+
+
 def test_issue_bot_pr_body_actually_closes_the_issue():
     """Issue #289: the assertion was `"closes #" in pr_run` — the marker word, not
     the claim. #272's body said `Closes #271 and #276`, closed #271 and left #276
@@ -453,69 +384,6 @@ def test_issue_bot_pr_body_actually_closes_the_issue():
                      ("closes #999", "the wrong issue")):
         check(f"issue-bot: the check would refuse {why}",
               pr_closure.check(bad, "ci/data-gap-376-slug") != [], bad)
-
-
-def test_fix_bot_announces_its_window():
-    """fix-bot announces its repair window on the PR BEFORE it reads the branch (issue #198)."""
-
-    # Given the fix pipeline and its steps, in order
-    wf = load("fix-bot.yml")
-    job = wf["jobs"]["fix"]
-    names = [s.get("name", "") for s in steps(job)]
-    announce = step(job, "announce the window")
-    announce_at = next((i for i, n in enumerate(names) if "announce the window" in n.lower()), None)
-    # The first step that READS the branch is the checkout.
-    checkout_at = next((i for i, n in enumerate(names) if n.lower().startswith("checkout")), None)
-
-    # Then  it exists, is posted BEFORE the branch is read, and carries the marker
-    check("fix: a start comment announces the repair window", bool(announce), names)
-    check("fix: the window opens BEFORE the branch is read",
-          announce_at is not None and checkout_at is not None and announce_at < checkout_at,
-          f"announce={announce_at} checkout={checkout_at}")
-    body = announce.get("run", "")
-    check("fix: the marker is the one the shared registry defines",
-          "<!-- fix-bot-start:" in body, body[:200])
-    check("fix: the start comment names the branch and the run",
-          "BRANCH" in body and "GITHUB_RUN_ID" in body, body[:200])
-    # The DEFAULT token: the owner PAT is scoped to Actions/Contents/Pull-requests and
-    # cannot comment (measured: `Resource not accessible by personal access token
-    # (addComment)` on #124).
-    check("fix: the announcement uses the default token, not the PAT",
-          announce.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", announce.get("env"))
-    check("fix: the default token is granted the Issues scope it needs",
-          (wf.get("permissions") or {}).get("issues") == "write", wf.get("permissions"))
-    # The body arrives on stdin, so no scratch file exists that the push step's
-    # `git add -A` could commit.
-    check("fix: the announcement writes no file a push could commit",
-          "--body-file -" in body and ".md" not in body, body[:300])
-
-    # And the window CLOSES on every path: the outcome comment is `always()` and
-    # carries the end marker, so a loop that died mid-way still ends with a stamp.
-    rep = step(job, "report result")
-    check("fix: the window is closed in the always() outcome comment",
-          "always()" in str(rep.get("if", "")) and "<!-- fix-bot-end:" in rep.get("run", ""),
-          rep.get("if"))
-    check("fix: the end marker carries the run id too",
-          "GITHUB_RUN_ID" in rep.get("run", ""), rep.get("run", "")[:200])
-
-
-def test_fix_bot_push_behaviour():
-    """PR #80: the loop went green, then `git add -A -- . ':!qa-report.txt'`
-    exited 1 ('paths are ignored by one of your .gitignore files') under
-    bash -e, so the fix was never pushed — and the comment still said green."""
-    rc, out, files = _run_push_step(changed=True)
-    check("fix-push: a green fix is committed and pushed (exit 0)", rc == 0, out[-300:])
-    check("fix-push: the pushed commit carries the fix", files == ["data.json"], files)
-    check("fix-push: qa-report.txt / comment.md never committed",
-          "qa-report.txt" not in files and "comment.md" not in files, files)
-    # Issue #390: a SIBLING of the report was committed by the same `git add -A`
-    # (an empty qa-report.txt.notes landed in PR #387), so the rule is the whole
-    # qa-report.txt.* class, not two exact names.
-    check("fix-push: the loop's scratch notes (qa-report.txt.notes) never committed",
-          "qa-report.txt.notes" not in files, files)
-    check("fix-push: reports pushed=yes", "pushed=yes" in out, out[-200:])
-    rc, out, files = _run_push_step(changed=False)
-    check("fix-push: green with no changes -> exit 0, nothing pushed", rc == 0 and files == [], (rc, files, out[-200:]))
 
 
 # The remote-side rejection mirroring GitHub's own rule: a token without
@@ -757,7 +625,7 @@ def test_owner_guards():
     """#67: every refresh-bot job is gated by a guard that allows ONLY the
     owner or a collaborator with write/maintain/admin (for the actor AND the
     triggering actor, so re-runs are covered); aggregate can't run on a
-    refused guard; fix-bot checks before any step that touches a secret."""
+    refused guard; every guard in the tree (fix-bot's left with it, #814) is checked by the BOT_GUARDS tests."""
     wf = load("refresh-bot.yml")
     jobs = wf["jobs"]
     g = jobs.get("guard", {})
@@ -781,23 +649,8 @@ def test_owner_guards():
     check("concurrency: refresh-bot runs queue (group set, no cancel)",
           bool(conc.get("group")) and conc.get("cancel-in-progress") is False, conc)
 
-    fb = load("fix-bot.yml")["jobs"]
-    g = fb.get("guard", {})
-    gstep = (steps(g) or [{}])[0]
-    genv = gstep.get("env", {})
-    check("access: fix-bot's guard is its OWN first job (issue #259)", bool(g), list(fb))
-    check("access: fix-bot's guard checks actor AND triggering_actor: owner or write+ collaborator",
-          "github.triggering_actor" in str(genv.get("TRIGGER")) and _guard_ok(gstep.get("run", "")))
-    check("access: fix-bot's guard declares no secret at job level (rule 6j)",
-          "secrets." not in str(g.get("env", {})), g.get("env"))
-    check("access: fix-bot's guard step touches no secret",
-          not [st for st in steps(g) if "secrets." in str(st)], steps(g))
-    for name in fb:
-        if name != "guard":
-            check(f"access: fix-bot job '{name}' needs the guard", "guard" in _deps(fb, name), _deps(fb, name))
-    check("access: fix-bot's secret-carrying job declares its secrets at job level",
-          "secrets." in str(fb["fix"].get("env", {})), fb["fix"].get("env"))
-
+    # (issue #814: fix-bot's guard assertions left with the pipeline; every guard
+    # still in the tree is exercised through BOT_GUARDS and the registry tests.)
 
 #: Every bot pipeline's guard, and the job whose guard step it is (issue #238).
 #: `qa-validate` is here too (issue #279): its guard admits `pull_request`/`push`
@@ -805,7 +658,6 @@ def test_owner_guards():
 #: 30-minute, network-bound dispatch.
 BOT_GUARDS = (
     ("refresh-bot.yml", "guard"),
-    ("fix-bot.yml", "guard"),
     ("issue-bot.yml", "guard"),
     ("issue-review-bot.yml", "guard"),
     ("publish-agent-image.yml", "guard"),
@@ -1534,7 +1386,7 @@ def test_images_follow_their_inputs():
           "image-ensure:\n\tpython3 scripts/ensure_image.py ensure" in mk, "")
     check("make: `image-ensure-base` exists for image-only jobs",
           "image-ensure-base:\n\tpython3 scripts/ensure_image.py ensure-base" in mk, "")
-    for name in ("qa-validate.yml", "fix-bot.yml", "issue-bot.yml"):
+    for name in ("qa-validate.yml", "issue-bot.yml"):
         text = (WF / name).read_text()
         check(f"{name}: prepares the images through `make image-ensure`",
               text.count("make image-ensure") >= 1 and "docker build -f Dockerfile.test" not in text,
@@ -1546,7 +1398,7 @@ def test_images_follow_their_inputs():
           rb.count("run: make image-ensure-base") == 1, rb.count("run: make image-ensure-base"))
     check("no workflow pulls or tags the image inline any more",
           not any("docker pull ghcr.io" in (WF / n).read_text() or "docker tag" in (WF / n).read_text()
-                  for n in ("qa-validate.yml", "fix-bot.yml", "issue-bot.yml", "refresh-bot.yml")), "")
+                  for n in ("qa-validate.yml", "issue-bot.yml", "refresh-bot.yml")), "")
     check("dockerfile.test: its FROM is a build arg",
           "FROM ${BASE_IMAGE}" in (ROOT / "Dockerfile.test").read_text(), "")
 
@@ -2370,11 +2222,8 @@ def test_gh_before_the_checkout_names_the_repo():
     check("gh before a checkout: no job calls gh implicitly without GH_REPO",
           not offenders, offenders)
 
-    # The measured regression, named on its own so this guard fails on the OLD
-    # file even if the scan above goes vacuous.
-    fix_env = load("fix-bot.yml")["jobs"]["fix"].get("env") or {}
-    check("gh before a checkout: fix-bot's PR writes name the repo (PR #330)",
-          "GH_REPO" in fix_env, sorted(fix_env))
+    # (The measured case was fix-bot's `fix` job, PR #330; it left the tree with
+    # the pipeline (issue #814). The scan above still covers every remaining job.)
 
 
 
@@ -2400,7 +2249,6 @@ def test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result():
 #: checked in both directions so it cannot lie or go stale.
 DISPATCH_ONLY_COVERAGE = {
     "code-review-bot.yml": "tests/test_workflows.py",     # guard, issue writes, step order
-    "fix-bot.yml": "tests/test_fix_loop.py",              # the loop it runs, push gating
     "issue-bot.yml": "tests/test_issue_review.py",        # the queue, the windows, the pick
     "issue-review-bot.yml": "tests/test_issue_review.py",
     "bot-health.yml": "tests/test_bot_health.py",          # the decision it makes (issue #488)
@@ -2582,7 +2430,7 @@ def test_issue_bot_salvages_a_detached_runs_work() -> None:
             subprocess.run(["git", "clean", "-qfd"], cwd=repo, check=True)
 
 
-def test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot() -> None:
+def test_a_red_fix_loop_reds_the_run() -> None:
     """issue #558: a red implementation must not report success, and must be repairable.
 
     Measured on run 40174402542 / PR #557: the loop printed `[fix-loop] still RED after N round(s)`
@@ -2591,7 +2439,7 @@ def test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot() -> None:
     only for `ci/trending-refresh-*`, so an implementer's PR (`ci/data-gap-<n>-…`) had no repairer at
     all — the PR sat red and unmergeable until a human looked.
     """
-    print("\nissue #558 — a red loop reds the run, and fix-bot can reach an implementer's PR")
+    print("\nissue #558 — a red loop reds the run (issue #814: its repairer is the loop's own job now)")
     impl = load("issue-bot.yml")["jobs"]["implement"]
     names = [s.get("name") for s in steps(impl)]
     loop_at = next((i for i, n in enumerate(names) if n and "Fix loop" in n), None)
@@ -2604,15 +2452,11 @@ def test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot() -> None:
           loop_at is not None and (red.get("name") in names)
           and names.index(red.get("name")) > loop_at, (loop_at, red.get("name")))
 
-    qa = load("qa-validate.yml")["jobs"]["dispatch-fixbot"]
-    cond = qa.get("if") or ""
-    check("qa-validate: fix-bot is dispatched for a refresh PR",
-          "startsWith(github.head_ref, 'ci/trending-refresh-')" in cond, cond)
-    check("qa-validate: and for an implementer's PR (ci/data-gap-…)",
-          "startsWith(github.head_ref, 'ci/data-gap-')" in cond, cond)
-    check("qa-validate: still only a same-repo head",
-          "head.repo.full_name == github.repository" in cond, cond)
-    check("qa-validate: still only on a failed validate", "failure()" in cond and "pull_request" in cond, cond)
+    qa = load("qa-validate.yml")["jobs"]
+    check("qa-validate: a red validate dispatches no repairer (issue #814 retired fix-bot)",
+          "dispatch-fixbot" not in qa, list(qa))
+    check("qa-validate: the loop's own job is where the repair lives",
+          bool(red), "the red-run step is the repair boundary")
 
 
 def test_a_detached_fix_round_leaves_its_transcript_behind() -> None:
@@ -2624,15 +2468,15 @@ def test_a_detached_fix_round_leaves_its_transcript_behind() -> None:
     with the report; the RAW capture must never be the uploaded one (rule 3d).
     """
     print("\nissue #566 — a detached fix round leaves its (redacted) transcript behind")
-    job = load("fix-bot.yml")["jobs"]["fix"]
+    job = load("issue-bot.yml")["jobs"]["implement"]
     uploads = [s for s in steps(job)
                if "upload-artifact" in str(s.get("uses", ""))
                and "qa-report" in str(s.get("with", {}))]
-    check("fix-bot: the QA artifact exists", bool(uploads), [s.get("name") for s in steps(job)])
+    check("implementer: the QA artifact exists", bool(uploads), [s.get("name") for s in steps(job)])
     paths = " ".join(str(u.get("with", {}).get("path", "")) for u in uploads)
-    check("fix-bot: it carries the scrubbed agent log", "hermes-run.scrubbed.log" in paths, paths)
-    check("fix-bot: it never uploads the RAW capture", "hermes-run.log" not in paths.replace(
-        "hermes-run.scrubbed.log", ""), paths)
+    check("implementer: it carries the scrubbed agent log", "implement.scrubbed.log" in paths, paths)
+    check("implementer: it never uploads the RAW capture", "implement.log" not in paths.replace(
+        "implement.scrubbed.log", ""), paths)
 
 
 def test_the_issue_is_re_read_right_before_the_agent_starts():
@@ -2770,12 +2614,12 @@ def test_a_step_setting_lives_in_env_or_on_the_command_line_never_both():
     check("step settings: no step declares the same setting twice (issue #489)",
           not problems, problems)
 
-    # And  the measured case stays fixed: pr-health's repair step carries it on the command line
-    pr = (ROOT / ".github" / "workflows" / "pr-health.yml").read_text()
-    check("step settings: pr-health passes MAX_FIXBOT_COMMITS on the command line",
-          "MAX_FIXBOT_COMMITS=2" in pr, "")
-    check("step settings: and no longer in a dead env: entry",
-          'MAX_FIXBOT_COMMITS: "2"' not in pr, "")
+    # And  the measured case: the dispatch cap left the tree with the repairer
+    # (issue #814). A pipeline re-introducing MAX_FIXBOT_COMMITS re-introduces this red.
+    caps = [p.name for p in (ROOT / ".github" / "workflows").glob("*.yml")
+            if "MAX_FIXBOT_COMMITS" in p.read_text()]
+    check("step settings: no pipeline caps a repair dispatch any more (issue #814)",
+          not caps, caps)
 
 
 def test_a_captured_recipe_is_silent():
@@ -2885,7 +2729,7 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
 
 
 def main() -> int:
-    print("workflow wiring: refresh-bot -> qa-validate -> fix-bot")
+    print("workflow wiring: refresh-bot -> qa-validate -> auto-merge (fix-bot retired, #814)")
     test_every_pipeline_is_exercised_on_a_pr_or_names_its_coverage()
     test_refresh_bot()
     test_the_refresh_search_job_forwards_every_credential_its_leg_uses()
@@ -2894,9 +2738,7 @@ def main() -> int:
     test_the_closure_check_reruns_when_the_pr_body_is_edited()
     test_qa_validate()
     test_qa_validate_header_points_at_pinned_action_howto()
-    test_fix_bot()
-    test_fix_bot_announces_its_window()
-    test_fix_bot_push_behaviour()
+    test_fix_pipeline_retired()
     test_issue_bot_pr_body_actually_closes_the_issue()
     test_every_committing_bot_job_commits_as_the_agent()
     test_the_agent_identity_has_one_definition()
@@ -2937,7 +2779,7 @@ def main() -> int:
     test_unit_tests_really_run()
     test_a_job_that_runs_the_suite_checks_out_the_whole_history()
     test_issue_bot_salvages_a_detached_runs_work()
-    test_a_red_fix_loop_reds_the_run_and_reaches_fix_bot()
+    test_a_red_fix_loop_reds_the_run()
     test_a_detached_fix_round_leaves_its_transcript_behind()
     test_a_recipe_redirected_into_a_file_never_echoes_its_own_command()
     test_a_step_setting_lives_in_env_or_on_the_command_line_never_both()

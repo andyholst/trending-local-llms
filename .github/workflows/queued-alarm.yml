@@ -103,8 +103,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: make freshness-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=14
       # A deterministic gate that goes red on a `push` to master has no repairer (issue #527): the
-      # validate job of qa-validate runs on master push as well as on PRs, and dispatch-fixbot /
-      # fix-bot / pr-health all need a PR (a push has none) while architecture-bot repairs only
+      # validate job of qa-validate runs on master push as well as on PRs, and the implementer's
+      # fix loop and pr-health all act on PRs only (a push has none; the fix-bot pipeline was
+      # retired by issue #814) while architecture-bot repairs only
       # ARCHITECTURE.md + OPENSPEC.md. So a red master stays red until a human notices. This alarm
       # reads the NEWEST push-to-master qa-validate run and goes RED when it concluded failure —
       # the same "a red or silent state must produce a signal" model as the alarms around it.
