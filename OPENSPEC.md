@@ -262,6 +262,7 @@ Active changes: **15** · archived: **227**
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
+| `write-raw-verifies-links` | archived | #644 | #850 | [write-raw-link-verification](openspec/changes/archive/write-raw-verifies-links/specs/write-raw-link-verification/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/write-raw-verifies-links/proposal.md) |
 
 ## How this file stays honest
 
