@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **207**
+Active changes: **16** · archived: **207**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `all-quarantined-capture-is-an-alarm` | active | tech-debt — "A capture where EVERY row is quarantined still exits 0 and reports | — | [raw-capture-alarm](openspec/changes/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
