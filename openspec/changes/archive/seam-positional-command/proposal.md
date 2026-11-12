@@ -1,7 +1,7 @@
 # Proposal: seam-positional-command
 
 Issue: #632
-PR: TBD
+PR: #848
 
 ## Why
 
