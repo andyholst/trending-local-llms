@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **204**
+Active changes: **16** · archived: **204**
 
 ## Active changes
 
@@ -30,6 +30,7 @@ Active changes: **15** · archived: **204**
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
+| `workflow-guard-scan-all` | active | #816 | — | [agents-guard-registry](openspec/changes/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/workflow-guard-scan-all/proposal.md) |
 
 ## Archived changes
 
