@@ -1,6 +1,7 @@
 # Retire the fix-bot repair pipeline completely
 
 **Issue:** [#814](https://github.com/andyholst/trending-local-llms/issues/814)
+PR: #815
 **Capability:** `pipeline-repair`
 
 ## Why
