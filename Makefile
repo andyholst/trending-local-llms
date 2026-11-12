@@ -317,7 +317,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-archive-check openspec-record-pr openspec-check file-findings findings-check action-pin-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-check file-findings findings-check action-pin-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -356,6 +356,18 @@ openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from o
 
 openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a change on disk has no row
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --check
+
+# The event-driven keeper for a red master index gate (issue #304, rule 6q). A
+# merged PR archives its change, so `master`'s tree no longer matches the
+# committed OPENSPEC.md and the push-to-master `validate` goes red — with no PR
+# repair path. qa-validate's `index-repair` job runs exactly this target against
+# the post-merge tree that just went red; the DRIFT= verdict (rule 6d) decides
+# whether the workflow may land a keeper PR, and the workflow re-decides nothing.
+openspec-index-repair: python-env-image ## Classify a stale OPENSPEC.md against THIS tree and regenerate it when the drift is index-only (DRIFT=none|index-only; issue #304)
+	$(PYTHON_RUN) python3 scripts/openspec_index_repair.py --classify-and-write
+
+openspec-index-repair-pr-body: ## Print the index-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #304)
+	@python3 scripts/openspec_index_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
 
 # The lifecycle's END (rule 6f, issue #183): a change whose PR merged must be
 # archived in that PR, so an ACTIVE change naming a merged PR is a defect. Needs

@@ -737,6 +737,16 @@ issue that skips a section is refused.
    anything; the KEEPER half (architecture-bot's two generated files) is named in its registry —
    every deterministic gate of the `validate` job sits on the keeper list or the alarm list, and
    `tests/test_master_alarm.py` fails when a new gate lands on neither.
+   **A keeper may be EVENT-DRIVEN, and the index gate's is (issue #304).** A merged PR archives
+   its OpenSpec change, so the push-to-master `validate` goes red at `openspec-check` the moment
+   it lands (measured 2026-11-12: pushes `28f2cd3` and `ce57e9b`, auto-merge blocked repo-wide
+   while the Wednesday-only architecture-bot keeper sat idle). qa-validate's `index-repair` job
+   runs `make openspec-index-repair` against the exact post-merge tree that just went red;
+   `scripts/openspec_index_repair.py` owns the `DRIFT=none|index-only` verdict (rule 6d), and
+   only an index-only verdict may land a keeper PR (`ci/openspec-index-repair-<UTC>`, body by
+   `make openspec-index-repair-pr-body`, no closing keyword). architecture-bot remains the
+   weekly backstop; the registry names both (`openspec-check` → `qa-validate index-repair +
+   architecture-bot`), so a Wednesday-only keeper can never again be the only repair.
 
 6r. **A red main pipeline is DIAGNOSED and FILED as an issue, and the diagnosis lives in an
    append-only LEDGER that qa-validate guards (MANDATORY).** A red run of a main pipeline
@@ -1321,8 +1331,8 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   `auto-merge` does, once the PR is green.
 - **`qa-validate.yml`** — the **PR CI** pipeline. Runs on every PR (including
   workflow-only PRs — the wiring is under test), push to master, or dispatch.
-  Three jobs (issue #814 removed the `dispatch-fixbot` job — the pipeline no
-  longer dispatches a repairer):
+  Three jobs plus the index keeper (issue #814 removed the `dispatch-fixbot` job
+  — the pipeline no longer dispatches a repairer; issue #304 added `index-repair`):
   - `validate` — deterministic: `make validate`, `validate-search`,
     `validate-mapped`, `test`. A red `validate` arms nothing and dispatches
     nothing: the PR stays red for the §6s sweep or a human.
@@ -1335,6 +1345,15 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
     --squash --delete-branch --match-head-commit <validated sha>` with the
     owner PAT (a `GITHUB_TOKEN` merge would start no master CI). A push after
     the run started makes the SHA mismatch → no merge; the newer run decides.
+  - `index-repair` — `needs: [guard, validate]`, `if: failure() && push to
+    master` only (issue #304, rule 6q): the event-driven KEEPER for the index
+    gate. It runs `make openspec-index-repair` against the exact post-merge
+    tree that just went red; the script's `DRIFT=none|index-only` verdict
+    (rule 6d — the workflow re-decides nothing) decides whether a regenerated
+    `OPENSPEC.md` lands as a keeper PR on `ci/openspec-index-repair-<UTC>`
+    (timestamped, no issue number — rule 6e/#852), with the body composed by
+    `make openspec-index-repair-pr-body` and NO closing keyword. A non-index
+    drift is refused here; a keeper PR never merges itself.
 - **fix pipeline — RETIRED completely (issue #814, owner directive).** The
   fix-bot repairer pipeline was disabled: its workflow file no longer exists,
   no pipeline dispatches it, and its guard/PAT paths are gone. The agent repair

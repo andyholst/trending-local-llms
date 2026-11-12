@@ -49,10 +49,17 @@ BAD = frozenset({"failure", "timed_out", "cancelled", "startup_failure", "action
 # the validate job is on NEITHER list. Additive only, never a deletion.
 # ---------------------------------------------------------------------------
 GATES: dict[str, tuple[str, str]] = {
-    # -- KEEP — architecture-bot regenerates the artifact the gate checks, so a
-    #    merge that leaves the file stale is repaired (hourly on the fleet day).
+    # -- KEEP — a bot in this repo regenerates the artifact the gate checks, so a
+    #    merge that leaves the file stale is repaired on the pipeline that just saw it.
     "architecture-check": ("keeper", "architecture-bot"),   # regenerates ARCHITECTURE.md (#479)
-    "openspec-check": ("keeper", "architecture-bot"),       # regenerates OPENSPEC.md index (#526)
+    # OPENSPEC.md has TWO keepers (issue #304): qa-validate's `index-repair` job
+    # runs on the very push-to-master run whose `validate` went red, classifies
+    # the drift through scripts/openspec_index_repair.py, and lands the
+    # regenerated index as a keeper PR when the drift is index-only — event
+    # driven, minutes after the merge. architecture-bot's weekly regeneration is
+    # the backstop. A Wednesday-only keeper left auto-merge red for days (measured
+    # 2026-11-12, pushes 28f2cd3 and ce57e9b).
+    "openspec-check": ("keeper", "qa-validate index-repair + architecture-bot"),
     # -- ALARM — the master-alarm makes a red push-to-master run visible.
     "lint": ("alarm", "master-alarm"),
     "check-commit-authorship": ("alarm", "master-alarm"),

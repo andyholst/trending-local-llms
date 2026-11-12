@@ -138,11 +138,22 @@ def test_every_validate_gate_is_on_a_list():
     unchecked = a.unchecked_gates(wf_text)
     check("gates: every validate-job `make` gate is on the keeper OR alarm list",
           not unchecked, f"uncovered={unchecked}")
-    # keepers must actually name the bot that repairs the artifact (issue #479/#526).
+    # keepers must actually name the bot that repairs the artifact (issue #479/#526),
+    # and the mapping is pinned per gate: a NEW keeper gate that names some other
+    # pathway reds this suite until the pathway is added deliberately (fail closed).
+    # issue #304: the OPENSPEC.md keeper is EVENT-DRIVEN — qa-validate's own
+    # `index-repair` job runs on the push-to-master run whose validate went red
+    # (scripts/openspec_index_repair.py classifies, a keeper PR lands minutes after
+    # the merge when the drift is index-only); architecture-bot's weekly sweep is
+    # the backstop. A Wednesday-only keeper left auto-merge red for days.
+    expected_keepers = {
+        "architecture-check": "architecture-bot",
+        "openspec-check": "qa-validate index-repair + architecture-bot",
+    }
     for gate in a.KEEPERS:
         keeper = a.GATES[gate][1]
         check(f"gates: keeper {gate!r} names a real repair pathway",
-              keeper == "architecture-bot", f"{gate}->{keeper}")
+              keeper == expected_keepers.get(gate), f"{gate}->{keeper}")
     # the two lists are jointly exhaustive and disjoint over the registry.
     check("gates: keeper and alarm lists partition the registry",
           a.KEEPERS | a.ALARMED == set(a.GATES) and a.KEEPERS & a.ALARMED == set(),
