@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-11T15:02:56Z",
+  "generated_utc": "2026-11-12T04:55:05Z",
   "note": "Canonical data store for trending-local-llms. One row per model. Generated README tables are produced from this file by scripts/update_trending.py. Never hand-edit generated tables; update this store (or the template) and regenerate. Engagement + t/s must trace to a real X post (lightbrd mirror) or be marked (est).",
   "engines": {
     "llama.cpp": {
@@ -291,7 +291,7 @@
         "likes": 0,
         "comments": 0,
         "views": 0,
-        "last_7d_likes": 3,
+        "last_7d_likes": 2,
         "seen_posts": [
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117",
@@ -349,42 +349,6 @@
             "hardware": "M5 Max 128GB",
             "quant": "mlx-serve, Qwen3.8-Flash-Next",
             "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/dedene/status/2109556571189694745",
-            "date": "2026-10-12",
-            "engine": "TensorFold",
-            "tps": "67",
-            "hardware": "DGX Spark",
-            "quant": "4-bit MLX, MTP draft, thinking off (agent workload; fastest decode of the three models tested)",
-            "likes": 858,
-            "comments": 10,
-            "reshares": 9,
-            "views": 1007
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2109443345835491366",
-            "date": "2026-10-12",
-            "engine": "Strata",
-            "tps": "60",
-            "hardware": "M4 Mac mini 16GB unified + RTX 3090 24GB (USB-C, tinygrad)",
-            "quant": "2-bit, 200K KV cache, Mac memory usage ~12GB, 256GB built-in storage; Strata manages the parts the 3090 does not hold",
-            "likes": 23,
-            "comments": 2,
-            "reshares": 4,
-            "views": 5252
-          },
-          {
-            "url": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
-            "date": "2026-10-12",
-            "engine": "strixite",
-            "tps": "50",
-            "hardware": "Strix Halo 128GB",
-            "quant": "HIP (gfx1151), Qwen3.8-Flash-Next strixw-tuned; ~50 t/s out to ~492k context",
-            "likes": 51,
             "comments": 0,
             "reshares": 0,
             "views": 0
@@ -520,18 +484,6 @@
             "comments": 0,
             "reshares": 0,
             "views": 0
-          },
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2109636228937093580",
-            "date": "2026-10-12",
-            "engine": "Strata",
-            "tps": "60",
-            "hardware": "RTX 3060 12GB + Ryzen 5 5600X, 64GB RAM",
-            "quant": "GSQ-RCO / IQ2_XS, Strata 0.1.42 on Windows; post gives a 50-60 tok/s range",
-            "likes": 30,
-            "comments": 5,
-            "reshares": 30,
-            "views": 11701
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2111308200163885268",
@@ -918,11 +870,11 @@
             "views": 0
           }
         ],
-        "posts_7d": 3,
-        "score_7d": 13.9,
-        "buzz_7d": 13.9,
+        "posts_7d": 2,
+        "score_7d": 8.9,
+        "buzz_7d": 8.9,
         "speed_bonus": 6.6,
-        "trend_score": 20.5
+        "trend_score": 15.5
       },
       "system_ram_min": "32GB",
       "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
@@ -1510,18 +1462,6 @@
         "last_7d_likes": 1,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
-            "date": "2026-10-12",
-            "engine": "llama.cpp",
-            "tps": "50",
-            "hardware": "RTX 3060 12GB + 16GB system RAM",
-            "quant": "Q4_K_M; 262K context configured; ~550 tok/s prompt processing (prefill, never the decode figure)",
-            "likes": 278,
-            "comments": 26,
-            "reshares": 278,
-            "views": 28122
-          },
-          {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2110911597937885683",
             "date": "2026-10-16",
             "engine": "llama.cpp",
@@ -1556,18 +1496,6 @@
             "comments": 1,
             "reshares": 0,
             "views": 110
-          },
-          {
-            "url": "https://lightbrd.com/DogukanUrker/status/2100346050473074805",
-            "date": "2026-10-12",
-            "engine": "llama.cpp",
-            "tps": "50",
-            "hardware": "RX 9070 XT 16GB",
-            "quant": "Q4_K_M, llama.cpp with Flash Attention and Q8 KV cache; --n-cpu-moe 26 -c 262144; ~550 tok/s prompt processing which is prefill, never the decode figure; 16GB system RAM",
-            "likes": 26,
-            "comments": 26,
-            "reshares": 278,
-            "views": 28021
           },
           {
             "url": "https://lightbrd.com/Oluwaphilemon1/status/2110561774541959348",
@@ -2120,18 +2048,6 @@
             "comments": 2,
             "reshares": 1,
             "views": 871
-          },
-          {
-            "url": "https://lightbrd.com/dextune/status/2109763687310164022",
-            "date": "2026-10-12",
-            "engine": "llama.cpp",
-            "tps": "64.4",
-            "hardware": "Radeon 8060S / Strix Halo 128GB",
-            "quant": "LemonSeed Studio/Engine (github.com/Geramy/LemonSeed-Studio); Qwen3.8 27B Q4 at 131k context with a Q8 DFlash2 draft, reported macOS comparison figure; same setup reports Strix Halo at 64.4 t/s and an iPad Pro eGPU at 158.5 t/s",
-            "likes": 162,
-            "comments": 1,
-            "reshares": 0,
-            "views": 0
           },
           {
             "url": "https://lightbrd.com/laky_fx/status/2111486092433707011",
@@ -3630,18 +3546,6 @@
             "views": 0
           },
           {
-            "url": "https://lightbrd.com/localai_lab/status/2109533645279199248",
-            "date": "2026-10-12",
-            "engine": "llama.cpp (PrismML fork)",
-            "tps": "56",
-            "hardware": "RTX 4070 12GB",
-            "quant": "PTQ1_0 ternary, ~16x faster than Qwen3.8-27B Q4_K_M (3.55 t/s)",
-            "likes": 0,
-            "comments": 0,
-            "reshares": 0,
-            "views": 14
-          },
-          {
             "url": "https://lightbrd.com/pratikg/status/2103905760115884172",
             "date": "2026-10-19",
             "engine": "MLX-fast (Bonsai 2)",
@@ -4624,18 +4528,6 @@
         "last_7d_likes": 0,
         "seen_posts": [
           {
-            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
-            "date": "2026-10-12",
-            "engine": "Janas",
-            "tps": "27",
-            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
-            "quant": "Janas vs llama.cpp 18 tok/s; Q4_K_M",
-            "likes": 0,
-            "comments": 1,
-            "reshares": 5,
-            "views": 409
-          },
-          {
             "url": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167",
             "date": "2026-10-15",
             "engine": "vLLM",
@@ -4851,59 +4743,6 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       }
-    },
-    {
-      "id": "qwopus3.6-35b-a3b-coder-mtp",
-      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
-      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
-      "type": "LLM (MoE)",
-      "license": "Apache 2.0",
-      "params": "35B (MoE, 3B active)",
-      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
-      "vram_tier": "24GB",
-      "vram_min": "24GB",
-      "backends": [
-        "CUDA",
-        "ROCm"
-      ],
-      "last_seen": "2026-10-12",
-      "supported_engines": [
-        "llama.cpp",
-        "llama.cpp"
-      ],
-      "why": "Qwopus3.6-35B-A3B-Coder-MTP — see source posts.",
-      "formats": [
-        {
-          "name": "Qwopus3.6-35B-A3B-Coder-MTP",
-          "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501",
-            "date": "2026-10-12",
-            "engine": "strixite",
-            "tps": "50",
-            "hardware": "Radeon 8060S / Strix Halo 128GB",
-            "quant": "strixite inference engine written from scratch in HIP for AMD Strix Halo (gfx1151); holds ~fifty tokens per second out to nearly five hundred thousand context tokens",
-            "likes": 51,
-            "comments": 0,
-            "reshares": 0,
-            "views": 0
-          }
-        ],
-        "posts_7d": 0,
-        "buzz_7d": 0,
-        "score_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      },
-      "engine_min_version": "llama.cpp b9292 (Vulkan), MTP speculative decode N=5"
     },
     {
       "name": "LFM2.5 24B A2B",
@@ -5726,18 +5565,6 @@
             "views": 1079
           },
           {
-            "url": "https://lightbrd.com/loudchirper/status/2109588037214642210",
-            "date": "2026-10-12",
-            "engine": "Project Maya",
-            "tps": "30",
-            "hardware": "RTX 5090 32GB",
-            "quant": "dedicated quants kept at 97.7-99.2% of FP8 zero-shot accuracy up to 1M context; three-tier GPU VRAM / system RAM / NVMe expert placement",
-            "likes": 35,
-            "comments": 33,
-            "reshares": 1,
-            "views": 270
-          },
-          {
             "url": "https://lightbrd.com/yume_arasaki/status/2110193379342786881",
             "date": "2026-10-14",
             "engine": "llama.cpp",
@@ -5760,18 +5587,6 @@
             "comments": 0,
             "reshares": 0,
             "views": 4038
-          },
-          {
-            "url": "https://lightbrd.com/grantoverton/status/2109440321482563787",
-            "date": "2026-10-12",
-            "engine": "TensorFold",
-            "tps": "71",
-            "hardware": "Apple Silicon (Mac, hardware not named in the post)",
-            "quant": "RED-SNOW-5.3-FLASH-MLX-4bit, oQ4e + DWQ + retrained MTP head; 48 tok/s at 23k agentic context with max thinking, up to 71 tok/s on TensorFold's bench with thinking off",
-            "likes": 2,
-            "comments": 0,
-            "reshares": 1,
-            "views": 3566
           }
         ],
         "posts_7d": 0,
@@ -5868,18 +5683,6 @@
         "views": 0,
         "last_7d_likes": 0,
         "seen_posts": [
-          {
-            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
-            "date": "2026-10-12",
-            "engine": "Janas",
-            "tps": "32",
-            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
-            "quant": "Janas vs llama.cpp 15 tok/s; Q4_K_M",
-            "likes": 0,
-            "comments": 1,
-            "reshares": 5,
-            "views": 409
-          },
           {
             "url": "https://lightbrd.com/pratikg/status/2112217547366088851",
             "date": "2026-10-19",
@@ -6286,58 +6089,6 @@
         "trend_score": 0.0
       },
       "engine_min_version": "MLX, Apple Silicon only, macOS 14+"
-    },
-    {
-      "id": "qwen3.8-27b-dgx-spark-sglang-nvfp4",
-      "name": "Qwen3.8-27B NVFP4 on DGX Spark",
-      "full_name": "Qwen3.8-27B (NVFP4 weights served by SGLang with DFlash2 drafting)",
-      "type": "LLM",
-      "license": "Apache 2.0",
-      "params": "27B",
-      "hf": "Qwen/Qwen3.8-27B",
-      "vram_tier": "128GB",
-      "vram_min": "128GB",
-      "context_tokens": "262144",
-      "backends": [
-        "Metal",
-        "CUDA"
-      ],
-      "last_seen": "2026-10-12",
-      "why": "A single DGX Spark serving NVFP4 weights through SGLang with a DFlash2 4-bit drafter holds 74 t/s at 8K context and still generates 38 t/s with 260K tokens in context (median of four runs, thinking off).",
-      "supported_engines": [
-        "SGLang"
-      ],
-      "formats": [
-        {
-          "name": "Qwen3.8-27B NVFP4 on DGX Spark",
-          "hf": "Qwen/Qwen3.8-27B"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
-            "date": "2026-10-12",
-            "engine": "SGLang",
-            "tps": "74",
-            "hardware": "NVIDIA DGX Spark (128GB unified memory)",
-            "quant": "NVFP4 weights, DFlash2 speculative decoding with a 4-bit drafter (16 tokens per pass), BF16 KV cache, thinking disabled",
-            "likes": 12,
-            "comments": 5,
-            "reshares": 2,
-            "views": 2132
-          }
-        ],
-        "posts_7d": 0,
-        "buzz_7d": 0,
-        "score_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      }
     },
     {
       "id": "qwen3.8-27b-dgx-spark-nvfp4-dflash2",
@@ -7162,57 +6913,6 @@
       }
     },
     {
-      "id": "youtu-parsing-omni",
-      "name": "Youtu-Parsing-Omni",
-      "full_name": "Tencent Youtu-Parsing-Omni (documents, charts, audio, video -> structured JSON)",
-      "type": "LLM",
-      "license": "Tencent Youtu license",
-      "params": "5.3B",
-      "hf": "tencent/Youtu-Parsing-Omni",
-      "vram_tier": "16GB",
-      "vram_min": "8GB",
-      "weight_gb": "5.7GB (8-bit MLX)",
-      "backends": [
-        "Metal"
-      ],
-      "last_seen": "2026-10-12",
-      "supported_engines": [
-        "MLX"
-      ],
-      "why": "Tencent Youtu-Parsing-Omni (documents, charts, audio, video -> structured JSON) — see source posts.",
-      "formats": [
-        {
-          "name": "Youtu-Parsing-Omni",
-          "hf": "tencent/Youtu-Parsing-Omni"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/cguldogan/status/2109444643498983745",
-            "date": "2026-10-12",
-            "engine": "MLX",
-            "tps": "40",
-            "hardware": "M4 Pro (Apple Silicon)",
-            "quant": "8-bit MLX port (5.7GB)",
-            "likes": 2,
-            "comments": 0,
-            "reshares": 6,
-            "views": 250
-          }
-        ],
-        "posts_7d": 0,
-        "buzz_7d": 0,
-        "score_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      }
-    },
-    {
       "id": "gemma-4-e2b",
       "name": "Gemma 4 E2B",
       "full_name": "gemma-4-E2B",
@@ -7510,61 +7210,6 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       }
-    },
-    {
-      "id": "qwen3-next-80b-a3b",
-      "name": "Qwen3-Next-80B-A3B",
-      "full_name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-      "type": "LLM (MoE)",
-      "license": "Apache-2.0",
-      "params": "80B (MoE, 3B active)",
-      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-      "vram_tier": "48GB",
-      "vram_min": "48GB",
-      "backends": [
-        "CPU",
-        "ROCm"
-      ],
-      "why": "Runs a 48GB 80B-A3B MoE model on a 32GB laptop by streaming experts from NVMe SSD (Janas engine); 24 tok/s gen (37 with draft block), 62 tok/s prompt read.",
-      "last_seen": "2026-10-12",
-      "supported_engines": [
-        "Janas"
-      ],
-      "formats": [
-        {
-          "name": "Qwen3-Next-80B-A3B",
-          "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct"
-        }
-      ],
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "last_7d_likes": 0,
-        "seen_posts": [
-          {
-            "url": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
-            "date": "2026-10-12",
-            "engine": "Janas",
-            "tps": "24",
-            "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
-            "quant": "Janas draft: 37 tok/s; llama.cpp baseline 2.8 tok/s (cpu-moe, Q4_K_M)",
-            "likes": 0,
-            "comments": 1,
-            "reshares": 5,
-            "views": 409
-          }
-        ],
-        "posts_7d": 0,
-        "buzz_7d": 0,
-        "score_7d": 0,
-        "speed_bonus": 0.0,
-        "trend_score": 0.0
-      },
-      "weight_gb": "48GB (80B-A3B file)",
-      "system_ram_min": "32GB",
-      "storage_offload": "experts streamed from NVMe SSD",
-      "engine_min_version": "Janas draft block; llama.cpp cpu-moe Q4_K_M baseline"
     },
     {
       "id": "nemotron-3.5-bolt-74b-a9b",
@@ -8459,6 +8104,46 @@
       "vram_min": "24GB"
     },
     {
+      "id": "qwopus3.6-35b-a3b-coder-mtp",
+      "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "full_name": "Qwopus3.6-35B-A3B-Coder-MTP",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "ROCm"
+      ],
+      "last_seen": "2026-10-12",
+      "supported_engines": [
+        "llama.cpp",
+        "llama.cpp"
+      ],
+      "why": "Qwopus3.6-35B-A3B-Coder-MTP — see source posts.",
+      "formats": [
+        {
+          "name": "Qwopus3.6-35B-A3B-Coder-MTP",
+          "hf": "Jackrong/Qwopus3.6-35B-A3B-Coder-MTP-GGUF"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      },
+      "engine_min_version": "llama.cpp b9292 (Vulkan), MTP speculative decode N=5"
+    },
+    {
       "id": "qwen3.8-27b-mlx-serve-26.10.1",
       "name": "Qwen3.8-27B (MLX-Serve 26.10.1, drafter on)",
       "full_name": "Qwen3.8-27B 4-bit on MLX-Serve 26.10.1 with its drafter (M4 Max)",
@@ -8792,6 +8477,45 @@
       "why": "Italianclownz: no container and no WSL — vLLM 0.28 on native Windows with ROCm 7.15 hits 80 tok/s single-stream decode with the DFlash2 drafter at depth 4; the 27B weights are 14.68 GiB after repacking the lm_head into the same INT4 group-128 format",
       "supported_engines": [
         "vLLM"
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
+      "id": "qwen3.8-27b-dgx-spark-sglang-nvfp4",
+      "name": "Qwen3.8-27B NVFP4 on DGX Spark",
+      "full_name": "Qwen3.8-27B (NVFP4 weights served by SGLang with DFlash2 drafting)",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "128GB",
+      "vram_min": "128GB",
+      "context_tokens": "262144",
+      "backends": [
+        "Metal",
+        "CUDA"
+      ],
+      "last_seen": "2026-10-12",
+      "why": "A single DGX Spark serving NVFP4 weights through SGLang with a DFlash2 4-bit drafter holds 74 t/s at 8K context and still generates 38 t/s with 260K tokens in context (median of four runs, thinking off).",
+      "supported_engines": [
+        "SGLang"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3.8-27B NVFP4 on DGX Spark",
+          "hf": "Qwen/Qwen3.8-27B"
+        }
       ],
       "engagement": {
         "likes": 0,
@@ -9156,6 +8880,44 @@
       }
     },
     {
+      "id": "youtu-parsing-omni",
+      "name": "Youtu-Parsing-Omni",
+      "full_name": "Tencent Youtu-Parsing-Omni (documents, charts, audio, video -> structured JSON)",
+      "type": "LLM",
+      "license": "Tencent Youtu license",
+      "params": "5.3B",
+      "hf": "tencent/Youtu-Parsing-Omni",
+      "vram_tier": "16GB",
+      "vram_min": "8GB",
+      "weight_gb": "5.7GB (8-bit MLX)",
+      "backends": [
+        "Metal"
+      ],
+      "last_seen": "2026-10-12",
+      "supported_engines": [
+        "MLX"
+      ],
+      "why": "Tencent Youtu-Parsing-Omni (documents, charts, audio, video -> structured JSON) — see source posts.",
+      "formats": [
+        {
+          "name": "Youtu-Parsing-Omni",
+          "hf": "tencent/Youtu-Parsing-Omni"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      }
+    },
+    {
       "id": "qwen3.8-flash-next-125b-amd-32gb",
       "name": "Qwen3.8-Flash-Next 125B on a 32GB Radeon (EXL3)",
       "full_name": "Qwen3.8-Flash-Next 125B · EXL3 5.05 bpw on a 32GB Radeon with 90GB RAM and NVMe expert streaming",
@@ -9234,6 +8996,48 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       }
+    },
+    {
+      "id": "qwen3-next-80b-a3b",
+      "name": "Qwen3-Next-80B-A3B",
+      "full_name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "type": "LLM (MoE)",
+      "license": "Apache-2.0",
+      "params": "80B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "vram_tier": "48GB",
+      "vram_min": "48GB",
+      "backends": [
+        "CPU",
+        "ROCm"
+      ],
+      "why": "Runs a 48GB 80B-A3B MoE model on a 32GB laptop by streaming experts from NVMe SSD (Janas engine); 24 tok/s gen (37 with draft block), 62 tok/s prompt read.",
+      "last_seen": "2026-10-12",
+      "supported_engines": [
+        "Janas"
+      ],
+      "formats": [
+        {
+          "name": "Qwen3-Next-80B-A3B",
+          "hf": "Qwen/Qwen3-Next-80B-A3B-Instruct"
+        }
+      ],
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "views": 0,
+        "last_7d_likes": 0,
+        "seen_posts": [],
+        "posts_7d": 0,
+        "buzz_7d": 0,
+        "score_7d": 0,
+        "speed_bonus": 0.0,
+        "trend_score": 0.0
+      },
+      "weight_gb": "48GB (80B-A3B file)",
+      "system_ram_min": "32GB",
+      "storage_offload": "experts streamed from NVMe SSD",
+      "engine_min_version": "Janas draft block; llama.cpp cpu-moe Q4_K_M baseline"
     },
     {
       "name": "Meta Llama 3.1 70B (Q4, MLX)",

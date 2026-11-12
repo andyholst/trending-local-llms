@@ -2679,14 +2679,6 @@
     "views": 383,
     "interactions": 7
   },
-  "https://lightbrd.com/cguldogan/status/2109444643498983745": {
-    "date": "2026-10-12",
-    "likes": 2,
-    "comments": 0,
-    "reshares": 6,
-    "views": 250,
-    "interactions": 8
-  },
   "https://lightbrd.com/mikedoise/status/2110198747657568407": {
     "date": "2026-10-14",
     "likes": 12,
@@ -2726,22 +2718,6 @@
     "reshares": 0,
     "views": 0,
     "interactions": 0
-  },
-  "https://lightbrd.com/laurent_zw/status/2092765822494110061": {
-    "date": "2026-08-27",
-    "likes": 12,
-    "comments": 2,
-    "reshares": 1,
-    "views": 711,
-    "interactions": 712
-  },
-  "https://lightbrd.com/laurent_zw/status/2081836235475272003": {
-    "date": "2026-08-27",
-    "likes": 12,
-    "comments": 1,
-    "reshares": 2,
-    "views": 711,
-    "interactions": 20
   },
   "https://lightbrd.com/Oluwaphilemon1/status/2112705410389901480": {
     "date": "2026-10-21",
@@ -2910,6 +2886,30 @@
     "reshares": 0,
     "views": 288,
     "interactions": 294
+  },
+  "https://lightbrd.com/cguldogan/status/2109444643498983745": {
+    "date": "2026-10-12",
+    "likes": 2,
+    "comments": 0,
+    "reshares": 6,
+    "views": 250,
+    "interactions": 8
+  },
+  "https://lightbrd.com/laurent_zw/status/2092765822494110061": {
+    "date": "2026-08-27",
+    "likes": 12,
+    "comments": 2,
+    "reshares": 1,
+    "views": 711,
+    "interactions": 712
+  },
+  "https://lightbrd.com/laurent_zw/status/2081836235475272003": {
+    "date": "2026-08-27",
+    "likes": 12,
+    "comments": 1,
+    "reshares": 2,
+    "views": 711,
+    "interactions": 20
   },
   "https://lightbrd.com/0xGrimmer_/status/2089773960753815764": {
     "date": "2026-08-18",
