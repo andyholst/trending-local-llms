@@ -56,12 +56,14 @@ def repo_relative(file_value: str, mount: str) -> str:
     """Map a report path to a repo-relative one.
 
     `dir` mode reports the CONTAINER path (under `--mount`, e.g.
-    /repo/tests/__pycache__/x.pyc). Anything that is not under the mount is
-    kept verbatim: a path git cannot even look up stays classified as
-    committable (fail-safe — unknown never means ignored)."""
+    /repo/tests/__pycache__/x.pyc). A path NOT under the mount that is still
+    absolute (a scan reached something outside the repo) is kept ABSOLUTE:
+    `git check-ignore` refuses absolute paths, and an out-of-repo file is not
+    git's to excuse — it stays in the committable-class side (fail-safe:
+    unknown never means ignored)."""
     if file_value.startswith(mount):
         return file_value[len(mount):]
-    return file_value.lstrip("/") if file_value.startswith("/") else file_value
+    return file_value
 
 
 def ignored_by_git(repo: Path, paths: list[str]) -> set[str]:
@@ -117,11 +119,13 @@ def main() -> int:
         rule = str(finding.get("RuleID") or finding.get("Rule") or "?")
         rows.append((repo_relative(file_value or "<unknown>", mount), line, rule))
 
-    unique = sorted({path for path, _, _ in rows})
+    unique = sorted({path for path, _, _ in rows if not path.startswith("/")})
     ignored = ignored_by_git(repo, unique)
 
-    blocking = [r for r in rows if r[0] not in ignored]
-    artifacts = [r for r in rows if r[0] in ignored]
+    # An absolute (out-of-repo) path is never git's to excuse: check-ignore
+    # cannot answer for it, and unknown never means ignored.
+    blocking = [r for r in rows if r[0].startswith("/") or r[0] not in ignored]
+    artifacts = [r for r in rows if not r[0].startswith("/") and r[0] in ignored]
 
     print(f"[secret-scan] {len(rows)} finding(s): "
           f"{len(blocking)} committable, {len(artifacts)} gitignored artifact(s)")

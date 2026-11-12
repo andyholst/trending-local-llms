@@ -86,7 +86,15 @@ def test_targets_exist_and_are_pinned():
           "--exit-code 0" in scan_recipe, scan_recipe)
     check("make: the JSON report is created and deleted inside the same recipe "
           "(the scan artifact can never reach a commit)",
-          scan_recipe.count(".secret-scan-report.json") >= 3, scan_recipe)
+          ".secret-scan-report" in scan_recipe and "rm -f $$REPORT" in scan_recipe,
+          scan_recipe)
+    check("make: the report path is UNIQUE PER RUN — recreating a path the host just "
+          "deleted hits a stale virtiofs dentry and FTLs the scan (measured #836)",
+          "time_ns" in scan_recipe and "--report-path /repo/$$REPORT" in scan_recipe
+          and "rm -f .secret-scan-report*.json" in scan_recipe, scan_recipe)
+    check("make: the flaky-gate reason is documented at the target (stale virtiofs "
+          "dentry on a just-deleted fixed path, #836)",
+          "Report path is not writable" in MAKEFILE and "virtiofs" in MAKEFILE)
     check("make: the history scan still fails directly on any finding",
           "--exit-code 1" in recipe("_secret-scan-history"))
     check("make: the failure message forbids allowlisting a real value",
@@ -243,6 +251,12 @@ def test_probe_file_is_not_itself_a_leak():
           "did not block the gate" in PROBE)
     check("probe: the artifact verdict runs the REAL filter against a REAL git repo",
           "secret_scan_report.py" in PROBE and '"git", "init"' in PROBE)
+    check("probe: the throwaway tree is repo-local — macOS /var/folders TMPDIR is not "
+          "mountable into a colima container, where gitleaks scans 0 bytes and writes "
+          "no report (issue #836)",
+          '".secret-self-test-tmp"' in PROBE and "dir=scratch" in PROBE)
+    check("probe: a missing report prints the scanner's own output instead of guessing",
+          "wrote no report" in PROBE and "proc.stdout" in PROBE)
 
 
 def test_config_allowlists_are_justified_by_the_repo():

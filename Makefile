@@ -1191,13 +1191,21 @@ security-scan-self-test: ## Prove the scanners are not a false green: a planted 
 # JSON report; `scripts/secret_scan_report.py` is the ONE verdict — findings on
 # paths git itself ignores (git check-ignore) are reported as gitignored
 # artifacts, findings in committable files fail the gate.
+# The report path is UNIQUE PER RUN (measured while fixing #836): a host-side
+# `rm -f` immediately followed by the container creating the SAME path hits a
+# stale virtiofs dentry — gitleaks FTLs "Report path is not writable: … no such
+# file or directory" and the gate falsely reads BROKEN; a pause "fixes" it,
+# which means the fixed name is a flaky gate. The container therefore only ever
+# creates a path that never existed in the mount session; a glob sweep at the
+# start clears a report left by a killed run.
 .PHONY: _secret-scan
 _secret-scan:
-	@rm -f .secret-scan-report.json; \
+	@rm -f .secret-scan-report*.json; \
+	REPORT=$$(python3 -c 'import time,os;print(".secret-scan-report-%d-%d.json" % (time.time_ns(), os.getpid()))'); \
 	$(GITLEAKS_RUN) dir /repo --config /repo/.gitleaks.toml --redact --no-banner \
-		--report-format json --report-path /repo/.secret-scan-report.json --exit-code 0; \
-	python3 scripts/secret_scan_report.py --report .secret-scan-report.json; \
-	STATUS=$$?; rm -f .secret-scan-report.json; exit $$STATUS
+		--report-format json --report-path /repo/$$REPORT --exit-code 0; \
+	python3 scripts/secret_scan_report.py --report $$REPORT; \
+	STATUS=$$?; rm -f $$REPORT; exit $$STATUS
 
 .PHONY: secret-scan
 secret-scan:

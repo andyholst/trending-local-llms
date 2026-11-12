@@ -43,21 +43,29 @@ FAKE = ("# throwaway probe file - fake credential shapes, never a real key\n"
 CLEAN = "generated_utc = \"2026-10-14T06:00:00Z\"\nnote = nothing to see here\n"
 
 
-def scan(path: Path) -> list[dict]:
-    """Run gitleaks over `path` and return its findings (empty = clean)."""
-    # the report has to land somewhere the host can read: mount its directory too
-    report = path.parent / f"{path.name}-report.json"
+def scan(path: Path, out: Path) -> list[dict]:
+    """Run gitleaks over `path` and return its findings (empty = clean).
+
+    The report has to land somewhere the host can read AND that docker can
+    mount: everything lives under `out`, a repo-local scratch dir (macOS's
+    /var/folders TMPDIR is NOT mountable into a colima container — gitleaks
+    then scans 0 bytes and writes no report). A missing report prints the
+    scanner's own output instead of guessing."""
+    report = out / f"{path.name}-report.json"
     cmd = ["docker", "run", "--rm",
-           "-v", f"{path}:/scan", "-v", f"{report.parent}:/out",
+           "-v", f"{path}:/scan", "-v", f"{out}:/out",
            "-v", f"{CONFIG}:/cfg/.gitleaks.toml:ro",
            IMAGE, "dir", "/scan",
            "--config", "/cfg/.gitleaks.toml",
            "--report-format", "json", "--report-path", f"/out/{report.name}",
            "--redact", "--no-banner", "--exit-code", "0"]
-    subprocess.run(cmd, check=False, capture_output=True, text=True)
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if not report.exists():
-        raise SystemExit(f"[secret-self-test] gitleaks wrote no report ({report})")
-    return json.loads(report.read_text() or "[]")
+        print(f"[secret-self-test] FAIL: gitleaks wrote no report for {path} "
+              f"(docker mount failed?) — scanner output:\n{proc.stdout}\n{proc.stderr}")
+        raise SystemExit(1)
+    findings = json.loads(report.read_text() or "[]")
+    return findings
 
 
 def main() -> int:
@@ -68,7 +76,11 @@ def main() -> int:
         print(f"[secret-self-test] {CONFIG} missing")
         return 1
 
-    with tempfile.TemporaryDirectory() as td:
+    # Repo-local scratch (gitignored): the ONLY mount every docker backend here
+    # can guarantee — the same mount `make secret-scan` itself uses.
+    scratch = ROOT / ".secret-self-test-tmp"
+    scratch.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=scratch) as td:
         root = Path(td)
         dirty, clean = root / "dirty", root / "clean"
         dirty.mkdir()
@@ -76,7 +88,7 @@ def main() -> int:
         (dirty / "creds.env").write_text(FAKE)
         (clean / "store.json").write_text(CLEAN)
 
-        found = scan(dirty)
+        found = scan(dirty, root)
         rules = sorted({f.get("RuleID", "?") for f in found})
         if not found:
             print("[secret-self-test] FAIL: the planted credential shapes were NOT detected — "
@@ -86,7 +98,7 @@ def main() -> int:
         if any("ghp_" in json.dumps(f.get("Secret", "")) for f in found):
             print("[secret-self-test] WARNING: the report carried an unredacted secret (--redact is off?)")
 
-        leaks = scan(clean)
+        leaks = scan(clean, root)
         if leaks:
             print(f"[secret-self-test] FAIL: the clean fixture reported {len(leaks)} finding(s)")
             return 1
@@ -96,12 +108,12 @@ def main() -> int:
         # commit. A fake compiled into a gitignored cache must NOT red the gate;
         # the same fake in a tracked file must. Real git, real filter script.
         gitrepo = root / "gitrepo"
-        (gitrepo / "__pycache__").mkdir()
+        (gitrepo / "__pycache__").mkdir(parents=True)
         (gitrepo / ".gitignore").write_text("__pycache__/\n")
         (gitrepo / "tracked_leak.py").write_text(FAKE)
         (gitrepo / "__pycache__" / "compiled_probe.py").write_text(FAKE)
         subprocess.run(["git", "init", "-q", str(gitrepo)], check=True)
-        scan(gitrepo)
+        scan(gitrepo, root)
         verdict = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
              "--report", str(root / "gitrepo-report.json"),
@@ -115,7 +127,7 @@ def main() -> int:
             print("[secret-self-test] FAIL: the gitignored fake was not reported as an artifact")
             return 1
         (gitrepo / "tracked_leak.py").unlink()
-        scan(gitrepo)
+        scan(gitrepo, root)
         verdict = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
              "--report", str(root / "gitrepo-report.json"),
