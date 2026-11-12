@@ -526,10 +526,27 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
                  for m in models for e in (m.get("engines") or [])
                  if "est" in str(e.get("tps", "")).lower()]
     empty_legs = []
+    # Per backend and newest 8-digit run date: files seen and models captured.
+    # (issue #856) A leg whose EVERY snapshot of its newest run captured nothing
+    # is a collection failure, not a quiet query — see the STARVED LEG rule below.
+    leg_runs: dict[str, dict[str, list[int]]] = {}
     for f in sorted(raw_dir.glob("*.json")) if raw_dir.exists() else []:
         d = load(f, {}) or {}
-        if not (d.get("models") or []):
+        n_models = len(d.get("models") or [])
+        if not n_models:
             empty_legs.append(f.name)
+        parts = f.name[:-len(".json")].split("-")
+        if len(parts) >= 3 and parts[1].isdigit() and len(parts[1]) == 8:
+            agg = leg_runs.setdefault(parts[0], {}).setdefault(parts[1], [0, 0])
+            agg[0] += 1
+            agg[1] += n_models
+    starved_legs = []
+    for backend in sorted(leg_runs):
+        leg_dates = leg_runs[backend]
+        latest = max(leg_dates)
+        n_files, n_captured = leg_dates[latest]
+        if n_files and n_captured == 0:
+            starved_legs.append(f"{backend}@{latest}:{n_files}")
 
     for key, ids in missing.items():
         if ids:
@@ -556,13 +573,20 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         gaps.append(f"{len(thin)} measurement(s) carry no hardware or no quant: {', '.join(thin[:5])}")
     if estimated:
         gaps.append(f"{len(estimated)} measurement(s) are estimates: {', '.join(estimated[:5])}")
-    # Empty raw legs are INFORMATIONAL: a per-query write legitimately captures
-    # nothing (the query had no hits), so they are reported but never filed as a
-    # gap — only a whole refresh with no models at all would be a defect.
+    # Empty raw legs are INFORMATIONAL one by one: a per-query write legitimately
+    # captures nothing (the query had no hits). WHOLE-LEG starvation is the defect
+    # (issue #856): when EVERY snapshot of a backend's newest run captured 0 models,
+    # the leg's queries hit nothing at all — that is a collection failure, it enters
+    # the signature, and it files like any other gap.
     informational = []
     if empty_legs:
         informational.append(f"{len(empty_legs)} raw leg(s) captured 0 models "
                              f"(a query with no hits — informational)")
+    for s in starved_legs:
+        backend, stamp, files = s.split("@")[0], s.split("@")[1].split(":")[0], s.split(":")[-1]
+        gaps.append(f"STARVED LEG {backend}: all {files} snapshot(s) of its newest run "
+                    f"({stamp}) captured 0 models — every query in that leg hit nothing "
+                    f"while other legs captured on the same refresh (issue #856)")
 
     # signature = what the STORE cannot hold STRUCTURALLY — one entry per DIMENSION, never
     # one per model (issue #472). It used to be per model (`missing:storage_offload:<id>`),
@@ -580,6 +604,10 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         # EMPTY list once every model states it, and naming it would keep filing it for ever.
         + [f"missing:{k}" for k in missing if missing[k]]
         + [f"unstructured:{k}" for k in unstructured]
+        # A starved leg (issue #856) names the BACKEND only — never the run date — so a
+        # starvation that continues is one stable entry that files once (the #472 lesson),
+        # and `already_filed()` holds it to one open issue until the leg captures again.
+        + [f"starved_leg:{s.split('@')[0]}" for s in starved_legs]
     )
     return {
         "as_of": gen,
@@ -596,7 +624,8 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         "not_applicable": not_applicable,
         "unstructured": unstructured,
         "maintenance": {"stale": stale, "thin_measurements": thin,
-                        "estimated": estimated, "empty_raw_legs": empty_legs},
+                        "estimated": estimated, "empty_raw_legs": empty_legs,
+                        "starved_legs": starved_legs},
         "findings": gaps,
         "informational": informational,
         "signature": signature,

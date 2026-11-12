@@ -821,6 +821,64 @@ def test_a_stated_figure_no_post_supports_is_its_own_class():
           "UNTRACEABLE" in flat and "do NOT write it into `why`" in flat, flat[:200])
 
 
+def test_a_whole_starved_leg_changes_the_signature():
+    """Issue #856: EVERY snapshot of a leg's newest run captured nothing.
+
+    One empty query is normal noise. But a refresh where one backend captures models
+    while another backend's WHOLE newest run — every snapshot of it — captured 0 models
+    is a starving leg: its queries hit nothing. That must enter the issue-triggering
+    signature (with a BACKEND-only entry, so a continuing starvation is one stable gap
+    that files once, the #472 lesson) and a loud finding must name the snapshot count
+    and the run date. An older run that captured models does not excuse the starved
+    newest one.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "cpu-20261111-100000.json").write_text(json.dumps({"models": []}))
+        (raw / "cpu-20261111-100001.json").write_text(json.dumps({"models": []}))
+        (raw / "cpu-20261110-090000.json").write_text(json.dumps({"models": [{"name": "old"}]}))
+        (raw / "nvidia-20261111-100200.json").write_text(json.dumps({"models": [{"name": "x"}]}))
+        contract = contract_from(td, "id")
+        report = G.analyse(store_with([model("m1")]), contract, raw_dir=raw)
+        starved = report["maintenance"]["starved_legs"]
+        sig = report["signature"]
+        check("the starved leg is in the maintenance report",
+              starved == ["cpu@20261111:2"], starved)
+        check("the signature carries starved_leg:cpu (backend only)",
+              "starved_leg:cpu" in sig, sig)
+        check("a capturing leg is not starved",
+              not any("starved_leg:nvidia" in s for s in sig), sig)
+        check("a loud finding names the snapshot count and the run date",
+              any("STARVED LEG cpu" in f and "20261111" in f
+                  for f in report["findings"]), report["findings"])
+
+
+def test_a_single_empty_snapshot_stays_informational():
+    """Issue #856 boundary: an empty query inside a capturing leg is not a gap.
+
+    A per-query write legitimately captures nothing when the query had no hits, and a
+    leg whose NEWEST run did capture models is healthy no matter how many single
+    empties it holds. Only whole-leg starvation of the newest run files.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "nvidia-20261111-100000.json").write_text(json.dumps({"models": []}))
+        (raw / "nvidia-20261111-100100.json").write_text(json.dumps({"models": [{"name": "x"}]}))
+        (raw / "metal-20261111-100200.json").write_text(json.dumps({"models": [{"name": "y"}]}))
+        contract = contract_from(td, "id")
+        report = G.analyse(store_with([model("m1")]), contract, raw_dir=raw)
+        check("no starved leg when the newest run captured",
+              report["maintenance"]["starved_legs"] == [],
+              report["maintenance"]["starved_legs"])
+        check("the empty query is still reported as informational",
+              bool(report["informational"]), report["informational"])
+        check("no starved_leg entry enters the signature",
+              not any("starved_leg" in s for s in report["signature"]),
+              report["signature"])
+
+
 def test_signature_tracks_the_store_not_the_noise():
     """The issue-triggering signature covers what the STORE lacks; volatile items
     (empty raw legs, estimates) stay in the report and out of the signature."""
@@ -1877,6 +1935,8 @@ def main() -> int:
     test_the_real_store_splits_every_missing_dimension()
     test_the_report_and_issue_body_name_an_acquisition_gap()
     test_a_stated_figure_no_post_supports_is_its_own_class()
+    test_a_whole_starved_leg_changes_the_signature()
+    test_a_single_empty_snapshot_stays_informational()
     test_signature_tracks_the_store_not_the_noise()
     with tempfile.TemporaryDirectory() as td:
         test_one_issue_per_changed_gap_set(Path(td))
