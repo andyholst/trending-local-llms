@@ -51,7 +51,14 @@ BAD = frozenset({"failure", "timed_out", "cancelled", "startup_failure", "action
 GATES: dict[str, tuple[str, str]] = {
     # -- KEEP — a bot in this repo regenerates the artifact the gate checks, so a
     #    merge that leaves the file stale is repaired on the pipeline that just saw it.
-    "architecture-check": ("keeper", "architecture-bot"),   # regenerates ARCHITECTURE.md (#479)
+    # ARCHITECTURE.md has TWO keepers, mirroring OPENSPEC.md (issue #861, the #304
+    # sibling): qa-validate's `architecture-repair` job runs on the very
+    # push-to-master run whose `validate` went red, classifies the drift through
+    # scripts/architecture_block_repair.py, and lands the regenerated block as a
+    # keeper PR when the drift is block-only — event driven, minutes after the
+    # merge. A Wednesday-only keeper left auto-merge red for days (measured after
+    # merge `91eb093`: '201 make targets, 71 files' vs on disk '199…70…').
+    "architecture-check": ("keeper", "qa-validate architecture-repair + architecture-bot"),
     # OPENSPEC.md has TWO keepers (issue #304): qa-validate's `index-repair` job
     # runs on the very push-to-master run whose `validate` went red, classifies
     # the drift through scripts/openspec_index_repair.py, and lands the

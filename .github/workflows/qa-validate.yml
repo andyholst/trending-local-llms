@@ -435,3 +435,74 @@ jobs:
           make openspec-index-repair-pr-body MASTER_SHA="$MASTER_SHA" RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
             --title "chore(openspec): repair the generated index left stale by a master merge" \
             --body-file -
+
+  # The sibling keeper for the OTHER generated half of the pair (issue #861, rule 6q):
+  # `architecture-check` is a gate of the same `validate` job and goes red on the same
+  # event — a merged PR that moved a target/script/job without `architecture-refresh`
+  # (measured after merge `91eb093`: '201 make targets, 71 files' vs on disk '199…70…').
+  # Before this job the only named keeper was the Wednesday-only `architecture-bot`, so
+  # the merge queue sat red for days. The DECISION (DRIFT=none|block-only, exit 2 on a
+  # malformed tree) lives in scripts/architecture_block_repair.py; this job re-decides
+  # nothing (rule 6d) and lands a PR only when ARCHITECTURE.md is the only changed file.
+  architecture-repair:
+    name: architecture-repair (keeper PR for a stale generated inventory block)
+    needs: [guard, validate]
+    if: >-
+      failure() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: architecture-repair
+      cancel-in-progress: false
+    steps:
+      - name: Checkout the exact master commit that went red
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+
+      - name: Classify the architecture block gate against this tree; regenerate when the drift is block-only
+        run: |
+          set -euo pipefail
+          if ! make architecture-block-repair; then
+            echo "architecture-repair could not classify the inventory block (the script exits 2 on a missing document, missing markers or a tree the generator refuses) — refusing to land anything."
+            exit 2
+          fi
+
+      - name: Land the regenerated block as a keeper PR (owner PAT; records, never closes)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          MASTER_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- ARCHITECTURE.md; then
+            echo "ARCHITECTURE.md's block already matched the merged tree (DRIFT=none) — the red was not block staleness; no keeper PR."
+            exit 0
+          fi
+          CHANGED=$(git status --porcelain)
+          if [ "$CHANGED" != " M ARCHITECTURE.md" ]; then
+            echo "The regeneration changed more than the generated block — refusing to land:"
+            echo "$CHANGED"
+            exit 1
+          fi
+          OPEN=$(gh pr list --repo "$REPO" --state open --json headRefName \
+            --jq '[.[] | select(.headRefName | startswith("ci/architecture-block-repair-"))] | length')
+          if [ "$OPEN" -gt 0 ]; then
+            echo "An architecture-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
+            exit 0
+          fi
+          branch="ci/architecture-block-repair-$(date -u +%Y%m%dT%H%M%SZ)"
+          make git-identity
+          git switch -c "$branch"
+          git add ARCHITECTURE.md
+          git commit -m "docs(architecture): regenerate the inventory block after a master merge left it stale (refs #861)"
+          git push origin "HEAD:refs/heads/$branch"
+          make architecture-block-repair-pr-body MASTER_SHA="$MASTER_SHA" RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
+            --title "docs(architecture): repair the generated inventory block left stale by a master merge" \
+            --body-file -

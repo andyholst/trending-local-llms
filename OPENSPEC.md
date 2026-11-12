@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **226**
+Active changes: **15** · archived: **227**
 
 ## Active changes
 
@@ -85,6 +85,7 @@ Active changes: **15** · archived: **226**
 | `an-unchecked-scan-is-not-clean` | archived | #309 | — | [code-review-scan](openspec/changes/archive/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/an-unchecked-scan-is-not-clean/proposal.md) |
 | `announce-the-decided-hold` | archived | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/archive/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/announce-the-decided-hold/proposal.md) |
 | `arch-calls-from-a-script` | archived | #482 | — | [architecture-inventory](openspec/changes/archive/arch-calls-from-a-script/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/arch-calls-from-a-script/proposal.md) |
+| `architecture-block-repair-keeper` | archived | #861 | #868 | [architecture-inventory](openspec/changes/archive/architecture-block-repair-keeper/specs/architecture-inventory/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/architecture-block-repair-keeper/proposal.md) |
 | `architecture-bot-write-path` | archived | #485 — arch-bot: the drift→commit→PR path has no behavioural test | — | [architecture-bot-write-path](openspec/changes/archive/architecture-bot-write-path/specs/architecture-bot-write-path/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/architecture-bot-write-path/proposal.md) |
 | `architecture-check-presence-boundary` | archived | #182 (`tech-debt: Presence, not description: architecture-check cannot see a wrong description`) | — | [architecture-description](openspec/changes/archive/architecture-check-presence-boundary/specs/architecture-description/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/architecture-check-presence-boundary/proposal.md) |
 | `architecture-doc-and-guard` | archived | #178 | #180 | [architecture-doc](openspec/changes/archive/architecture-doc-and-guard/specs/architecture-doc/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/architecture-doc-and-guard/proposal.md) |
