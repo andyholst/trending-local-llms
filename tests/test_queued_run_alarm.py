@@ -143,10 +143,14 @@ def test_the_workflow_guards_first_and_calls_the_make_target():
     check("wf: it never runs a repo script directly",
           not re.search(r"^\s*python3 scripts/", text, re.M))
     check("wf: it has its own concurrency group", "group: queued-alarm" in text)
-    # And its one comment uses the DEFAULT token, never the owner PAT
+    # And its comment steps use the DEFAULT token, never the owner PAT (rule 6e: the owner PAT
+    # cannot comment). The ledger-landing step (issue #802) uses the bot pushable token — the
+    # SAME one fix-bot and architecture-bot push with — because it only pushes and opens a PR;
+    # the ban is on a COMMENT using anything but the default token, not on the file having a
+    # pushable token at all.
     check("wf: the comment uses github.token, not the owner PAT",
           "GH_TOKEN: ${{ github.token }}" in text
-          and "secrets.FIXBOT_DISPATCH_TOKEN" not in text)
+          and not re.search(r"secrets\.FIXBOT_DISPATCH_TOKEN[\s\S]{0,400}?gh issue comment", text))
 
 
 def test_the_make_target_passes_its_variables_through():

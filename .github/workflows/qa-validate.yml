@@ -223,6 +223,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: make openspec-archive-check PR="${PR_NUMBER:-}"
 
+      # The reintroduction gate (issue #802): `data/pipeline_failures.json` records every
+      # main-pipeline failure the filer diagnosed. A ledger entry whose fix landed must name a
+      # guard test under tests/ that `make test` collects; an issue CLOSED with no fix PR and no
+      # guard is RED — a closed pipeline failure without a guard is reintroducible, and this is
+      # the pipeline that refuses it. Open entries are reported, never red.
+      - name: Pipeline-failure ledger (every closed failure carries its guard; issue #802)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make pipeline-failure-guard-check
+
       # The description is part of the change (rule 6h): every public make
       # target, workflow and script must be in ARCHITECTURE.md, and nothing it
       # names may be gone from the repository.
