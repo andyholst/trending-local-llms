@@ -139,15 +139,22 @@ def test_six_equals_is_not_a_marker():
 
 
 def test_the_bots_and_lint_run_the_guard():
-    """Rule 6d/6m: the guard must be wired where it bites, or it proves nothing."""
+    """Rule 6d/6m: the guard must be wired where it bites, or it proves nothing.
+
+    issue-bot is the ONLY agent bot that commits: the fix-bot repair pipeline was
+    retired by issue #814 (issue #815 deleted the pipeline completely), so this
+    test no longer reads a retired workflow file — and it pins that the retirement
+    holds, because a re-introduced committing bot MUST carry the guard from day one.
+    """
     ib = (ROOT / ".github/workflows/issue-bot.yml").read_text()
-    fb = (ROOT / ".github/workflows/fix-bot.yml").read_text()
-    for name, text in (("issue-bot", ib), ("fix-bot", fb)):
-        idx = text.find("make check-conflict-markers")
-        add = text.find("git add -A", idx)
-        check(f"{name}: the commit step runs the guard", idx != -1, "")
-        check(f"{name}: it runs BEFORE `git add -A` (a marker must stop the commit)",
-              idx != -1 and add > idx, (idx, add))
+    idx = ib.find("make check-conflict-markers")
+    add = ib.find("git add -A", idx)
+    check("issue-bot: the commit step runs the guard", idx != -1, "")
+    check("issue-bot: it runs BEFORE `git add -A` (a marker must stop the commit)",
+          idx != -1 and add > idx, (idx, add))
+    check("retired (#814): fix-bot.yml is gone, and no workflow commits outside it",
+          not (ROOT / ".github/workflows/fix-bot.yml").exists(),
+          "the retired pipeline came back without the guard wiring above")
     # The adopt switches the tree to the BRANCH (a stale branch drops files master added), so
     # the guard must run on THIS RUN's tree, before the adopt — measured on run 40210081952.
     check("issue-bot: the guard runs BEFORE the branch is adopted",

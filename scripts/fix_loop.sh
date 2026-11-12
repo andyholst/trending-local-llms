@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# fix_loop.sh — the fix-bot's repair loop (runs on the CI runner / host).
+# fix_loop.sh — the implementer's repair loop (runs on the CI runner / host; since issue
+# #814 it is the ONLY agent repair loop in this repo — the fix-bot pipeline was retired).
 #
 #   check -> (green? stop) -> hermes fix with the exact failure report -> re-check
 #
@@ -71,8 +72,8 @@ BASE_CONFLICT_PENDING=0
 CHECKS=(lint validate-search validate-mapped openspec-check architecture-check)
 # An IMPLEMENTATION run must also have recorded what it found (AGENTS.md,
 # "analysis ships issues, not code"): issue-bot sets REQUIRE_FINDINGS=1, so a
-# missing findings.md is a red check Hermes has to fix. fix-bot repairs a data
-# PR nobody implemented by hand, so it does not demand the file.
+# missing findings.md is a red check Hermes has to fix. The data-PR repair path
+# repairs a data PR nobody implemented by hand, so it does not demand the file.
 [ "${REQUIRE_FINDINGS:-0}" = "1" ] && CHECKS+=(findings-check)
 CHECKS+=(validate)
 BUDGET_SIG='reasoning consumed the entire budget|No visible answer was produced'

@@ -83,7 +83,7 @@ DEFAULT_PROVIDER = "typesafe"
 ANY_KEY_RE = "(?:" + "|".join(re.escape(v) for v in sorted(PROVIDER_KEY_ENV.values())) + ")"
 
 # Workflows that run a container target (and therefore need the `-e` to resolve).
-CONTAINER_WORKFLOWS = ("refresh-bot.yml", "fix-bot.yml", "qa-validate.yml", "issue-bot.yml")
+CONTAINER_WORKFLOWS = ("refresh-bot.yml", "qa-validate.yml", "issue-bot.yml")
 
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 

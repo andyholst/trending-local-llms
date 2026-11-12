@@ -2,9 +2,9 @@
 """The red-master alarm (issue #527): a deterministic gate on a `push` to master has no repairer.
 
 `qa-validate`'s `validate` job runs on a `push` to master as well as on PRs, and every repair
-path in this repo needs a PR: `dispatch-fixbot` only touches `ci/trending-refresh-*` /
-`ci/data-gap-*` PRs, `fix-bot` resolves a PR and refuses anything else, `pr-health` sweeps open
-PRs, and `architecture-bot` repairs exactly two generated files (`ARCHITECTURE.md`, `OPENSPEC.md`
+path in this repo needs a PR: the implementer's own monitored fix loop (`issue-bot.yml` +
+`scripts/fix_loop.sh`) repairs the PRs it opens, `pr-health` sweeps open PRs and REPORTS them
+(the fix-bot pipeline was retired by issue #814), and `architecture-bot` repairs exactly two generated files (`ARCHITECTURE.md`, `OPENSPEC.md`
 via #526). So when a deterministic gate goes red AFTER `auto-merge` — a stale generated file, a
 data invariant broken, a table malformed (measured: run 39625708799, red at the `OpenSpec gate`
 with the unit tests never reached) — nothing in the repo opens an edit: master stays red until a

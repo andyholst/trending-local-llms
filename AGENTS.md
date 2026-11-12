@@ -294,7 +294,6 @@ issue that skips a section is refused.
    |---|---|---|
    | `issue-bot` | the issue, BEFORE `make implement-issue` reads it | `issue-bot-start`, `issue-bot-skip`, `issue-bot-verdict`, `issue-bot-already-fixed`, `issue-bot-outcome` |
    | `issue-review-bot` | the issue, before its first write | `issue-review`, `issue-review: window` |
-   | `fix-bot` | the PR it repairs | `fix-bot-start`, `fix-bot-end` |
    | `refresh-bot` | the PR (and the gap issue) it opens | `refresh-bot-run` |
    | `qa-validate` | the PR, immediately before it merges | `bot-merge` |
    | `queued-alarm` (the failure filer, issue #802) | the issue it diagnoses from a failing run's log | `pipeline-run-failure` |
@@ -691,8 +690,8 @@ issue that skips a section is refused.
 
 6q. **A gate that goes red on a `push` to master is an ALARM, because it has no repairer
    (MANDATORY).** `qa-validate`'s `validate` job runs on a push to master as well as on PRs, and
-   every repair path needs a PR (`dispatch-fixbot` only touches refresh/data-gap PRs, `fix-bot`
-   refuses a non-PR, `pr-health` sweeps open PRs, `architecture-bot` repairs only ARCHITECTURE.md
+   every repair path needs a PR (`pr-health` flags a silent PR but dispatches no repairer since
+   issue #814, the §6s sweep rebases bot branches, `architecture-bot` repairs only ARCHITECTURE.md
    and OPENSPEC.md) — so a deterministic gate that goes red AFTER `auto-merge` stays red until a
    human opens a run page (measured: run 39625708799, red at the OpenSpec gate, tests never
    reached). `make master-alarm` (`scripts/master_alarm.py`, run by `queued-alarm.yml`) reads the
@@ -744,6 +743,29 @@ issue that skips a section is refused.
    secret, ledger dedup, UNDIAGNOSED, exit-2 reads, and the ledger PR body carrying no closing
    keyword. `tests/test_pipeline_failure_guard.py` runs the real gate against planted ledgers and
    proves every refusal shape.
+
+6s. **Open PRs are ACTIVELY swept for conflicts and rebased onto the freshly
+   fetched base — never left silent (MANDATORY, owner directive, issue #814).**
+   A PR whose base moved goes `CONFLICTING`: GitHub builds no merge commit, runs
+   no workflow, and `gh pr checks` answers "no checks reported" — the quietest
+   failure in the repo, invisible to every alarm that watches runs. So:
+   - **Every working session CHECKS the open-PR queue before and while it works**:
+     list open PRs with their `mergeStateStatus` (`make pr-health` is the sweep),
+     and a PR that is CONFLICTING or behind its base is RESOLVED — not noted.
+   - **The repair is a REBASE onto the fetched base**: `make worktree-resume` (it
+     fetches the branch), `make base-rebase` (rule 6n: the fetched-tip assertion),
+     resolve or hand the conflict to the fix loop, regenerate the generated
+     artifacts (`OPENSPEC.md`, the architecture inventory block), and push to the
+     PR's own HEAD branch — which re-triggers its CI. `scripts/fix_loop.sh` still
+     merges the FETCHED base before its first round, and an unmerged index stays
+     RED by definition (issue #476).
+   - **A bot PR is repaired by the sweep; a human's branch is only reported**
+     (comment, never pushed to) — the same partition `pr_health` has always kept.
+   - The sweep runs at the START of an implementation run AND again before
+     arming a PR for auto-merge: "green when I pushed" is not a state, it is a
+     moment; a PR is only armable while it is green AND mergeable at that moment.
+   `make pr-health` (report-only since #814) is the mechanical half; §6n remains
+   the base rule it rebases under.
 
 6n. **Every implementation starts in its own worktree, cut from the freshly
    fetched base — and the base is VERIFIED, never assumed (MANDATORY).** The
@@ -909,8 +931,8 @@ The README is **generated**, not hand-maintained:
   spends reasoning tokens (a Metal search burned the whole cap: "No visible
   answer was produced … reasoning consumed the entire budget"), while
   `--reasoning none` sends `enabled: false` → 0 reasoning tokens. So the
-  searches run `HERMES_REASONING := none` (they are mechanical) and fix-bot
-  `HERMES_FIX_REASONING := low`. `low` still burnt the whole cap in 2 of 3
+  searches run `HERMES_REASONING := none` (they are mechanical) and the repair
+  loop runs `HERMES_FIX_REASONING := low`. `low` still burnt the whole cap in 2 of 3
   fix rounds on PR #80, so `scripts/fix_loop.sh` retries the SAME round once
   with `HERMES_FIX_REASONING=none` when Hermes reports that signature (the
   docker `fix` wrapper forwards the variable into the container). The search prompts write each query's models
@@ -941,7 +963,7 @@ The README is **generated**, not hand-maintained:
   It then layers the TEST image on that base **explicitly**
   (`make docker-test-build BASE_IMAGE=trending-local-llms:latest` —
   `Dockerfile.test` takes its `FROM` as a build arg, so a cached GHCR pull can
-  never stand in for the revision's own base). `fix-bot.yml` still pulls.
+  never stand in for the revision's own base (issue #814 removed that puller).
   The GHCR image is public, so no login is needed to pull it.
 - **The OpenSpec CLI image is published the same way** (rule 6f, #172).
   `refresh-bot.yml`'s `openspec-image` job builds `openspec/Dockerfile` and pushes
@@ -973,7 +995,7 @@ The README is **generated**, not hand-maintained:
   `make validate` stages so a malformed table or a dead/wrong link in any new
   raw snapshot, the store, or the README fails CI. This is a **validation**
   action, not a data-gathering bot.
-- **New engines are registered at ingest, not by fix-bot.** An engine is an
+- **New engines are registered at ingest, not by a repair round.** An engine is an
   inference runtime or server that loads the weights (llama.cpp, MLX, vLLM,
   Ollama, …). Harnesses, agent frameworks, plugins, chat apps/UIs and
   benchmarks are NOT engines and must never be in the registry. The search
@@ -993,7 +1015,7 @@ The README is **generated**, not hand-maintained:
   and conflicting `engine_repo` values for one engine): backend from its measurements, `auto: true`, note
   "Auto-registered from <source_post> — <description>". not-engine, unknown,
   unreachable and missing repos are never registered — validation keeps
-  failing for a human / fix-bot. `engine_repo` is stripped before the store.
+  failing for a human. `engine_repo` is stripped before the store.
   `make engine-check` reports every unregistered engine in the raw snapshots
   and the decision ingest will make; it runs right after each refresh search
   and in the aggregate, so a new engine shows in the refresh run, not first at
@@ -1203,7 +1225,7 @@ unescaped pipes only.
 ## 6. Refresh workflow — GitHub Actions invoking the Hermes CLI
 
 The refresh is driven by the **GitHub Actions pipelines** (`refresh-bot.yml`,
-`fix-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4-flash-0731 via
+`issue-bot.yml`), which invoke the **Hermes CLI** (deepseek-v4-flash-0731 via
 the Nous portal, using the repo's `NOUS_PORTAL_API_TOKEN` secret). The agent loads
 this `AGENTS.md` and the `gather-data` skill, then:
 
@@ -1251,68 +1273,39 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   earlier run. A run with no new data opens no PR and therefore stamps no block;
   a `gh` read we cannot make is LOUD (it raises) rather than printing a window with
   no numbers. The PR is authored by the owner PAT so qa-validate
-  starts without an approval click. It does NOT dispatch fix-bot — that is
-  qa-validate's job, after it has validated. It never merges; qa-validate's
+  starts without an approval click. It dispatches no repairer — a red refresh PR
+  is repaired by the §6s sweep (rebase + the PR's own fix loop) or by a human
+  (issue #814 retired the fix pipeline). It never merges; qa-validate's
   `auto-merge` does, once the PR is green.
 - **`qa-validate.yml`** — the **PR CI** pipeline. Runs on every PR (including
   workflow-only PRs — the wiring is under test), push to master, or dispatch.
-  Four jobs:
+  Three jobs (issue #814 removed the `dispatch-fixbot` job — the pipeline no
+  longer dispatches a repairer):
   - `validate` — deterministic: `make validate`, `validate-search`,
-    `validate-mapped`, `test`. This is the only job fix-bot is asked to repair.
+    `validate-mapped`, `test`. A red `validate` arms nothing and dispatches
+    nothing: the PR stays red for the §6s sweep or a human.
   - `live-smoke` — real network, bounded: `make search-smoke BACKEND=<b>` for
     nvidia, metal, cpu, amd (3 s cap per query), `make hermes-smoke`, and
     `make validate-fetch` (real search, `--require-hits`). An outage here is
-    infra, not data, so it never dispatches fix-bot.
-  - `dispatch-fixbot` — only when `validate` failed on a same-repo
-    `ci/trending-refresh-*` PR: dispatches fix-bot with `pr_number` + `branch`
-    using the owner PAT, unless the PR already has 2 `fix-bot:` commits (a fix
-    that didn't stick → manual review, no loop).
+    infra, not data.
   - `auto-merge` — `needs: [validate, live-smoke]`, `if: success()` on a
     same-repo, non-draft `pull_request` (never `master`/`main`): `gh pr merge
     --squash --delete-branch --match-head-commit <validated sha>` with the
     owner PAT (a `GITHUB_TOKEN` merge would start no master CI). A push after
     the run started makes the SHA mismatch → no merge; the newer run decides.
-- **`fix-bot.yml`** — the **fix** pipeline. `workflow_dispatch` ONLY (no
-  `workflow_run`: it double-fired with the dispatch and was suppressed for bot
-  PRs). One run per PR (`concurrency`). Resolves the PR (refuses
-  `master`/`main`), then **announces its window ON THE PR**
-  (`<!-- fix-bot-start: <ISO8601Z> run=<id> -->`, with the branch and the run
-  URL, posted with the default `github.token` — the owner PAT cannot comment,
-  #124) **BEFORE it checks out the branch**: the loop reads the branch and then
-  pushes to it, so anyone reading the PR in between — a human, the reviewer, the
-  next qa-validate run — must see the repair in flight as a timestamp instead of
-  only through the Actions API. The body arrives on stdin
-  (`gh pr comment … --body-file -`), so no scratch file exists that the push
-  step's `git add -A` could ever commit, and the window CLOSES on EVERY path:
-  the existing `always()` outcome comment begins with
-  `<!-- fix-bot-end: <ISO8601Z> run=<id> -->`, so a run that died mid-way still
-  ends with a stamp rather than showing a repair as permanently in flight
-  (issue #198). Then it checks out the branch with the PAT, runs `make
-  hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks →
-  green? stop → else write `qa-report.txt` (ONLY the failing check's output +
-  the list of checks that passed) and `make fix` (the `_fix` prompt reads that
-  report first) → re-check, at most `FIX_ROUNDS` (3) Hermes attempts. It
-  commits (`fix-bot: …`, committed as `Asimov Agent <support@docondee.com>` (`make git-identity`)) and pushes with the PAT **only when
-  the loop ends green** — the PAT push re-triggers qa-validate. The commit
-  step stages with a plain `git add -A`: `qa-report.txt` / `comment.md` are
-  gitignored, and naming an ignored path in the pathspec (`':!qa-report.txt'`)
-  makes git exit 1 — every green fix was lost that way until PR #80. Still red
-  → nothing is pushed and the failing lines are commented on the PR; the PR
-  comment reads the push step's outcome, so a failed push is never reported
-  as 'pushed'. `qa-report.txt` is uploaded as a run artifact. A pushed fix
-  re-runs qa-validate, which auto-merges if green; still red → a human.
-  **A bot PR that cannot merge because its base moved is a REPAIR, not a dead
-  end (issue #476, shipped in #478):** the silent-PR sweep (`pr-health`)
-  dispatches `fix-bot` for a `ci/…` branch **capped at 2 `fix-bot:` commits** and
-  `scripts/fix_loop.sh` merges the FETCHED base before its first round, so a
-  failure the base already fixed costs zero LLM rounds. A CONFLICTED merge is
-  KEPT — its conflicted paths and hunks go into the same report the round reads,
-  and generated artifacts (`OPENSPEC.md`, the architecture inventory block) are
-  REGENERATED, never hand-merged; an unmerged index is RED by definition so a
-  lenient check can never call a half-merged branch green. The merge is
-  COMPLETED once the index comes back clean, and `--abort`ed only after the last
-  round, so nothing half-merged is ever pushed. A HUMAN's branch is reported
-  (comment only), never dispatched to — the sweep repairs only `ci/…` branches.
+- **fix pipeline — RETIRED completely (issue #814, owner directive).** The
+  fix-bot repairer pipeline was disabled: its workflow file no longer exists,
+  no pipeline dispatches it, and its guard/PAT paths are gone. The agent repair
+  loop (`scripts/fix_loop.sh`: deterministic checks → `qa-report.txt` → `make
+  fix`, at most `FIX_ROUNDS` Hermes rounds, push only when green) lives on and
+  is run by ONE caller: the implementer's own `fix the pipeline it created` job
+  in the implementer pipeline, against the PR it opened. A red PR from any other
+  pipeline is repaired by the §6s sweep (rebase onto the fetched base) or by a
+  human. The loop's base-merge contract (issue #476) is unchanged and now
+  belongs to that job: the FETCHED base is merged before the first round, a
+  CONFLICTED merge is KEPT with its paths in the report, generated artifacts are
+  REGENERATED never hand-merged, an unmerged index is RED by definition, and a
+  conflicted re-apply takes THIS run's side and leaves no markers (issue #583).
 
 - **`issue-bot.yml`** — the **implementer** pipeline (rule 6e, issues #113 / #127).
   Trigger surface is `issues: [opened]` carrying the `data-gap-analysis` label
@@ -1350,7 +1343,7 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   it on a re-run — never a force-push), commits, brings the commit onto the base
   as it is NOW (`make base-rebase`, rule 6n: a moved base is rebased, never
   refused), opens the PR against `master` with
-  `closes #<n>`, then runs the SAME fix loop as fix-bot against that PR (the job
+  `closes #<n>`, then runs the repo's ONLY fix loop against that PR (the job
   sets `REQUIRE_FINDINGS=1`, so a run that skipped the analysis is RED) and pushes
   only when green. Once the loop is green it files the findings as their OWN
   issues (`make findings-check` + `make file-findings`, label `tech-debt`, deduped
@@ -1447,8 +1440,10 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   `gh pr checks` answers "no checks reported" and nothing distinguishes it from a
   quiet queue; the `sweep` job runs `make pr-health REPO=… COMMENT=1`, comments
   with the DEFAULT token, and exits 1 when a PR is silent — a scheduled red, not a
-  log line. It dispatches `fix-bot` for a bot-owned `ci/…` branch (capped at 2
-  `fix-bot:` commits) and only COMMENTS on a human's branch.
+  log line. REPORT-ONLY since issue #814: it dispatches no repairer (the fix
+  pipeline was retired) — it comments the remedy on every silent PR and the §6r
+  sweep performs it (`worktree-resume` + `base-rebase` + push) on a bot branch,
+  while a human's branch is COMMENT-ONLY.
 
 - **`bot-health.yml`** — the **red-cron alarm** (rules 3d/6c, issue #488): four times
   week (`23 * * * 3`) + owner dispatch. `make bot-health REPO=… LIMIT=…` derives the
@@ -1483,8 +1478,6 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
     still tolerates a failed search leg — never a bare `if: always()` there:
     it ran with secrets on a refused guard). `concurrency: refresh-bot,
     cancel-in-progress: false` queues overlapping runs.
-  - fix-bot: the same guard is its FIRST step, before any secret is read.
-    qa-validate dispatches it with the owner PAT, so the auto-fix loop runs.
   - issue-bot / issue-review-bot: the same `guard` job (owner, or a
     write/maintain/admin collaborator — actor AND triggering actor), before any
     secret is read. The reviewer's `review` job needs it and holds `issues:
@@ -1538,22 +1531,24 @@ declares `permissions: issues: write`; the PAT has no Issues scope, so its write
 are refused or silently dropped (measured: `addComment` refused on #124, and the
 data-gap filing landing unlabelled on #277, which starved both bot queues).
 `tests/test_workflows.py::test_issue_writes_use_the_default_token` fails on any
-step in any workflow that writes an issue without it. It is used for (1) the
-refresh PR push + creation, (2) qa-validate's fix-bot dispatch, (3) fix-bot's
-checkout, push and PR comment. The **reviewer** (`issue-review-bot.yml`) uses the default token for everything
+step in any workflow that writes an issue without it. Since issue #814 it is
+used for PR-creation/push paths only (refresh, implementer, the architecture
+keeper, code-review) — the fix pipeline's dispatch/checkout/push paths no
+longer exist (the secret keeps its historical name and is still the owner PAT
+those pushes use). The
+**reviewer** (`issue-review-bot.yml`) uses the default token for everything
 it does — it comments on and edits issues and files findings, which is exactly
-what `github.token` with `permissions: issues: write` can do;
-`FIXBOT_DISPATCH_TOKEN` is never present in that workflow. The default
+what `github.token` with `permissions: issues: write` can do. The default
 `GITHUB_TOKEN` cannot do any of these usefully: a PR it creates is authored by `github-actions[bot]` and every
 `pull_request` run on it waits for approval; a push it makes starts no
 workflows; and it gets `HTTP 403 Resource not accessible by integration` when
 dispatching another workflow (no run is created, so there is nothing to
 approve).
 
-**Link-repair behavior for fix-bot (when CI reports a dead/wrong link).** The
+**Link-repair behavior for the repair loop (`make fix`, issue #814: the only caller is the implementer's fix job).** The
 CI link validator (`scripts/validate.py` `check_links_present` +
 `check_links_resolve`) only **reports** which link failed — it never calls the
-LLM. The fix-bot is the one that repairs. For each failing link it MUST search
+LLM. The repair agent `make fix` runs is the one that repairs. For each failing link it MUST search
 for the correct one and verify it resolves before writing:
 
 - **Model / format Hugging Face link** (`model-hf`, `format-hf`, `raw-hf`):
@@ -1565,7 +1560,7 @@ for the correct one and verify it resolves before writing:
   regular Firecrawl web search (`FIRECRAWL_API_KEY`) for the engine's canonical
   repo URL and confirm it resolves. Known-good engine repos are in
   `KNOWN_ENGINE_URLS` in `scripts/validate.py`.
-- Only write a link the fix-bot has actually verified resolves. If it cannot
+- Only write a link the repair agent has actually verified resolves. If it cannot
   find a verified replacement, it leaves the link and reports it in the PR body
   for manual review — it never invents a URL.
 - It updates `data/models.json` (and the raw snapshot if the wrong link came
@@ -1573,10 +1568,10 @@ for the correct one and verify it resolves before writing:
   `scripts/update_trending.py`. See `skills/gather-data.md` §3 for the exact
   search technique.
 
-Contract evolution for fix-bot: when validation fails because the search
+Contract evolution for the repair loop: when validation fails because the search
 agent now emits a **new key/value that the data genuinely needs** (a new
 engine, backend, format, engagement field, or top-level metadata that is
-real and would be lost by pruning), fix-bot SHOULD update the contract
+real and would be lost by pruning), the repair agent SHOULD update the contract
 (`data/search_contract.json` and/or `data/model_contract.json`) to declare it,
 **and update the corresponding tests in the same change** (rule 6b — the
 contract shape lives in the per-file helpers, so a format change is a
@@ -1621,15 +1616,15 @@ makes a new optional key survive ingest, and `check_no_value_loss` (validate,
 snapshot can never disappear from the store again, whatever the contract says.
 
 Flow: bot refreshes + opens PR (PAT) → qa-validate (`validate` + `live-smoke`)
-→ if `validate` is red, qa-validate dispatches fix-bot → fix-bot loops until
-green (≤3 Hermes rounds) and pushes (PAT) → qa-validate re-runs → green →
-`auto-merge` squash-merges + deletes the branch. Red after the loop → PR comment, manual review. Max 2 fix-bot pushes
-per PR.
+→ green → `auto-merge` squash-merges + deletes the branch. Red → the PR arms
+nothing and dispatches nothing (issue #814): it is repaired by the §6s sweep —
+rebase onto the fetched base, the implementer's own fix loop where a bot opened
+the PR — or by a human, and qa-validate re-runs on the pushed repair.
 
 **Fix the class, not the PR.** If the same validation failure shows up on
 consecutive refresh PRs (same field, same kind of wrong link, same missing
 engine), it is a defect in the search prompt, the contract, or the ingest
-code. Fix it there, with a test, instead of letting fix-bot patch every PR.
+code. Fix it there, with a test, instead of patching every PR one round at a time.
 
 Rules for the refresh run:
 - **Only lightbrd.com** is used for X signal — no other X source.
@@ -1687,10 +1682,9 @@ actually happened.
 | `check_engine_kind` (validate, data stage) | a registry entry that is a known non-engine, or an `auto` entry without a cited source |
 | `tests/test_fix_loop.py` | fix loop aborting on the first red check, never stopping when green, ignoring the round cap, losing the failure report; running the slow unit suite before the validate checks are green; negative-test fixture lines ('FAIL: m1 …') polluting the failure summary; a Hermes round with no time bound, so a hung round is killed by the job's `timeout-minutes` instead of by the loop (measured: 1 h 58 m inside round 1 of 3, run 39124432576); a red PR repaired in isolation without merging the base first, so a failure the BASE already fixed costs LLM rounds (measured: run 39183131652 on PR #377); a round that changes nothing still buying the next round; the loop's `$REPORT.notes` scratch file (`: >"$NOTES"` created it in the checkout root whatever happened) reaching the tree — `.gitignore` ignored only the exact name `qa-report.txt`, so a bot's `git add -A` committed a 0-byte `qa-report.txt.notes` into PR #387, and a non-empty one would publish a hung round's notes inside the repository (`test_scratch_notes_stay_out_of_the_tree`, issue #390) |
 | `tests/test_workflows.py::test_the_guard_registry_is_derived_from_the_tree` (rule 6j, issue #313) | the guarded-pipeline registry drifting from the tree: a workflow carrying a guard step that `BOT_GUARDS` does not name, a registered pipeline that lost its guard, the registry and the workflow disagreeing about WHICH job holds it, a `workflow_dispatch` workflow with no guard at all |
-| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); fix-bot dispatched before validation or with `GITHUB_TOKEN`; a `workflow_run` trigger on fix-bot; push not gated on green; **a job that commits as anything other than `Asimov Agent <support@docondee.com>`** — checked in EVERY job whose `run:` reaches `git commit`, in every workflow, on the identity itself rather than on the existence of a `git config` line (issue #324: the old assertion read `fix-bot.yml` alone); pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; **a pipeline OPENING a draft PR** (`--draft`) — valid, green and permanently unmergeable, since `auto-merge` requires `draft == false` (rule 6e, issue #276); refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
+| `tests/test_workflows.py` | refresh PR authored by `github-actions[bot]` (approval gate); NO pipeline dispatches a repairer — the retired fix pipeline reappearing as a job, a dispatch, or a `workflow_run` trigger is a finding (issue #814); push not gated on green; **a job that commits as anything other than `Asimov Agent <support@docondee.com>`** — checked in EVERY job whose `run:` reaches `git commit`, in every workflow, on the identity itself rather than on the existence of a `git config` line (issue #324: the old assertion read `fix-bot.yml` alone); pushes with a token that doesn't re-trigger CI; missing live smoke per backend; any workflow pushing master or merging outside qa-validate's `auto-merge` job; `auto-merge` running on red / draft / fork PRs, without `live-smoke`, with `GITHUB_TOKEN`, `--admin`, without `--delete-branch` or without `--match-head-commit`; **a pipeline OPENING a draft PR** (`--draft`) — valid, green and permanently unmergeable, since `auto-merge` requires `draft == false` (rule 6e, issue #276); refresh-bot with a single on-the-hour cron (GitHub delayed it ~6 h / dropped it) |
 | `tests/test_workflows.py` — `test_auto_merge`'s full-message guard (rule 6d, issue #787) | auto-merge landing a squash commit composed from the PR TITLE alone: a bare `gh pr merge --squash` gives master a title-only commit, so `make commit-message-check` on the push to master REFUSES every bot merge (measured run 43050329961: squash `d3d4116` was the single line `fix(tech-debt): implement #779 archive-check gates the closing PR (#785)` — none of the five #771 sections, no bound `Closes`, master permanently red after each merge, every later agent misled into blaming its own PR); a merge step that does not read the merged PR's own title and body (`gh pr view --json title` / `--json body`) or does not pass BOTH to the merge (`--subject`, `--body-file`) |
 | `tests/test_workflows.py` — `test_fix_bot_push_behaviour` (runs the REAL commit step in a temp clone with the repo `.gitignore`) | the PR #80 loss: green loop, then `git add -A -- . ':!qa-report.txt'` exits 1 on an ignored path and nothing is pushed; qa-report.txt/comment.md committed; a scratch SIBLING of the report (`qa-report.txt.notes`, issue #390) swept in by `git add -A`; the PR comment claiming 'pushed' after a failed push; no qa-report artifact |
-| `tests/test_workflows.py` — `test_fix_bot_announces_its_window` (issue #198) | a repair that reads (and then pushes to) a PR branch with nothing on the PR saying a repair is in flight: the window announcement missing, posted AFTER the checkout (so a reader of the branch never saw it), carrying a marker that is not the registered `<!-- fix-bot-start:` one, or posted with the owner PAT (which cannot comment — `Resource not accessible by personal access token (addComment)`, measured #124); an announcement that writes a scratch file the push step's `git add -A` could commit (the body must arrive on stdin); a window that never closes — the closing `<!-- fix-bot-end:` marker missing from the `always()` outcome comment, so a run that died mid-way leaves the PR showing a repair as permanently in flight |
 | `tests/test_fix_loop.py` — budget + report | `--reasoning low` burning the whole output cap and wasting the round (no same-round retry with `none`); an ordinary fix failure retried with reasoning off; passing checks' fixture noise in qa-report.txt / the summary |
 | `tests/test_engine_registry.py` — `test_app_bundled_inference_server`, `test_search_prompts_look_up_missing_repos` | a real inference server that ships a GUI (mlx-serve, oMLX) refused as an app; a chat UI that merely supports an engine accepted; search prompts not asking for one verified repo lookup when the post links none |
 | `make nerve-check` + `tests/test_nerve_key_wiring.py` (rule 3e) | a plugin credential wired under a NAME the plugin's pinned source does not read (e.g. `JEV_KEY` for `keeltrace/hermes-nerve`) or under a PROVIDER the setup does not run (the plugin's own default `openrouter` instead of production's `typesafe`) — the mapping is `jev_provider` → `OPENROUTER_API_KEY` / `TYPESAFE_API_KEY` / `OPENCODE_API_KEY`, so a mismatch forwards a variable nothing reads and the plugin keeps failing on its real name; the plugin not pinned by commit; a key baked into the image (`ENV`/`ARG`), copied in a `config.yaml`/`.env`, or passed as a literal to `hermes config set`; a run without the key degrading instead of failing loudly; the check not wired into a make target CI runs (rule 6d) |
@@ -1731,7 +1725,7 @@ actually happened.
 | `tests/test_openspec_archive_check.py` — the closing-PR prong (rule 6f, issue #779) | a PR merging while an ACTIVE change's `Issue:` is one of the PR's closing issues and the change names no `PR:` — the guard reads the PR's title+body through `scripts/pr_closure.py`'s own closing parser (one implementation, rule 6d) and refuses the merge BEFORE the fact (measured: #777 left `master-alarm-push-signal` and #781 left `ban-pytest-imports-in-tests` active, each reding the master push and blocking every open PR's `validate` behind an unrelated archive PR); a change that names the validating PR passing green; a `Refs`-style mention never treated as closing; a PR whose state cannot be read exiting 2 instead of reporting a clean scan; qa-validate forwarding the event's PR number and the Makefile forwarding `PR=` as `--pr` |
 | `tests/test_file_findings.py` (rule 6g, issue #172) | an implementation run that wrote no `findings.md` passing silently; a vague finding (no Evidence/Why/Done-when) accepted; `- none` treated as an error instead of a valid "found nothing"; a finding filed twice (the signature dedup); a filing that loses its `tech-debt` label or its origin link; the `gh` create writing an EMPTY body (`--body-file -` needs stdin); `file-findings`/`findings-check` unwired, or the loop/bot not demanding the analysis |
 | `tests/test_workflows.py` — `test_qa_validate_runs_the_openspec_gate`, `test_implement_prompt_requires_openspec_and_findings`, `test_issue_bot_files_findings_only_when_green` (rules 6f/6g, issue #172) | a PR pipeline that stopped running `make openspec-check`; an implementer prompt that dropped the OpenSpec-first/tasks/index/findings requirements (or broke the single `-z` command + `-m nous-deepseek` line); a bot that files findings on a RED loop, without the issue/PR context, with the wrong token, or that hides a filing failure (`continue-on-error` / `|| true`); a run that does not demand the analysis (`REQUIRE_FINDINGS`); the OpenSpec image not published on the same hash-tag rule as the base/test images |
-| `tests/test_workflows.py` — `test_owner_guards`, `test_guard_behaviour`, `test_every_bot_guard_with_a_cron_has_the_schedule_bypass` | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; fix-bot reading a secret before its guard; no refresh `concurrency`; a pipeline missing from `BOT_GUARDS` (a guard nothing proves — a new workflow can ship unguarded); the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule; `qa-validate`'s guard refusing a `pull_request`/`push` run, so an outside PR could never be validated, or ceasing to refuse a stranger's dispatch |
+| `tests/test_workflows.py` — `test_owner_guards`, `test_guard_behaviour`, `test_every_bot_guard_with_a_cron_has_the_schedule_bypass` | a refresh-bot job not gated by `guard`; `aggregate` able to run on a refused guard; a guard that ignores `triggering_actor` or inlines `${{ }}`; no refresh `concurrency`; a pipeline missing from `BOT_GUARDS` (a guard nothing proves — a new workflow can ship unguarded); the real guard scripts allowing a read/triage collaborator, a non-collaborator or a stranger's re-run, or refusing the owner, a write+ collaborator or the schedule; `qa-validate`'s guard refusing a `pull_request`/`push` run, so an outside PR could never be validated, or ceasing to refuse a stranger's dispatch |
 | `tests/test_workflows.py` — trigger guards (cont.) | a guard step named so `_guard_step` cannot find it; a `needs: guard` missing from a job that reads a secret |
 | `tests/test_bot_markers.py` (rule 6j, issue #197) | the bot marker registry rotting: a marker a reader parses no longer round-tripping writer → parser; `issue-review` and `issue-review: window` confused for each other (the old reader matched `<!-- issue-review:` as a SUBSTRING, which is a PREFIX of the window marker, so "any reviewer activity" worked only by accident); a marker whose stamp is a placeholder (`x`) accepted as real — a reader then finds a "timestamp" that is not a time; a marker registered as written that NO file in the tree writes (a promise with no producer); AGENTS.md rule 6j's table and `scripts/bot_markers.py` drifting apart (the human table and the machine registry must name the same markers); the registry or its test unwired (rule 6d) |
 | `tests/test_makefile_only.py` (rule 6m, issue #262) | a test that replaces the system under test: a `patch`/`setattr` targeting a `scripts.<module>.<symbol>` path, or a product symbol rebound to a `MagicMock`/`Mock` — it passes because the stand-in returned the wanted answer and the real function could be deleted with the suite still green; a workflow `run:` that reaches into `scripts/`/`tests/` or calls a bare `pytest` instead of a `make` target (CI then executes a command you cannot reproduce locally, bypassing the target that owns the repo's decisions); a `make <target>` a workflow calls that the Makefile does not define (a rename lands red only when that job happens to run); a CI gate target (`test`, `validate`, `lint`, `openspec-check`, `architecture-check`) that NO workflow calls — a target green by never executing; the guard or its `main()` runner unwired (rule 6d) |
@@ -1780,7 +1774,7 @@ actually happened.
 | `tests/test_architecture_bot.py` — `test_a_make_written_inside_prose_is_not_a_call` (rules 6c/6d, issue #544) | the inventory claiming a target the pipeline never runs: a `make openspec-check` written into a HEREDOC BODY or a QUOTED string reported as a call, so `ARCHITECTURE.md` §10 described behaviour the workflow does not have; and the opposite failure — a real `make pr-body ISSUE="$ISSUE"` losing its target because its argument is quoted |
 | `tests/test_fix_loop.py` — `test_a_failed_merge_with_no_unmerged_path_says_what_git_said` (rules 6c/6d, issue #563) | the fix loop describing a failed base merge as `CONFLICTED in: <unreadable>` when git left NO unmerged path — handing a round a repair with nothing to resolve, after which every round detached (measured, run 40177729642 on PR #557) — and the working tree left staged by the failed merge |
 | `tests/test_workflows.py` — the search job forwards every credential its leg uses (rules 3e/6d, issue #363) | a refresh search leg given no `HF_TOKEN`, so an authenticated Hugging Face lookup in the leg is impossible while every gate stays green; the job forwards the secret and `_search-preflight` proves both names in the agent's shell |
-| `tests/test_fix_loop.py` — `test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless` + `tests/test_pr_health.py` — `test_only_a_bot_branch_is_repaired_and_the_cap_holds` (rules 6b/6c, issue #476, shipped in #478) | a bot PR that cannot merge because its base moved treated as a dead end: the conflicted base merge ABORTED instead of kept and handed to a round (so nothing is ever repaired); a round leaving `<<<<<<<` conflict markers in the tree; a branch pushed HALF-MERGED (unmerged paths still in the index) or an unresolved conflict reported as green; generated artifacts hand-merged instead of regenerated; the sweep dispatching a repair onto a HUMAN's branch, or dispatching past the 2 `fix-bot:`-commit cap |
+| `tests/test_fix_loop.py` — `test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless` + `tests/test_pr_health.py` — `test_nothing_is_dispatched_anymore_and_a_silent_pr_is_reported` (rules 6b/6c/6r, issues #476, #814) | a bot PR that cannot merge because its base moved treated as a dead end: the conflicted base merge ABORTED instead of kept and handed to a round (so nothing is ever repaired); a round leaving `<<<<<<<` conflict markers in the tree; a branch pushed HALF-MERGED (unmerged paths still in the index) or an unresolved conflict reported as green; generated artifacts hand-merged instead of regenerated; the sweep dispatching ANY repairer — the dispatch was retired by #814, a sweep that re-dispatches is a defect — or leaving a silent PR unreported |
 
 | `tests/test_sweep_outcome.py` + `tests/test_workflows.py` — `test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict` (rules 6b/6e/6j, the #498 half) | a sweep that STARTS and dies before its verdict leaving NOTHING on the issue it picked — the start marker standing as "an implementer has started" for ever while the red run lives only in the Actions tab (the measured #120/#281/#346 class), which drains a day of the 48-issue queue with no artifact on the queue item; the `always()` step missing, not `always()`, or gated so it DOUBLE-posts beside the verdict step; a second post for the same run (dedup broken on the run id, or an EARLIER run's marker suppressing a re-run's); a refusal reported as a pass instead of exit 2; the comment composing itself in the workflow instead of `make issue-outcome` (rule 6d), posted with the owner PAT (it cannot comment, #124), or an `issue-bot-outcome` marker not registered in `scripts/bot_markers.py` |
 

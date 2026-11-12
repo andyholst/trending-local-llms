@@ -17,7 +17,7 @@ measurement, and at ingest:
     a reachable github.com repo classified "engine" (backend inferred from its
     measurements, note cites the source post, auto=true). "not-engine" and
     "unknown" are NEVER registered: validation keeps failing and a human /
-    fix-bot decides.
+    the implementer's repair loop decides.
   - engine_repo is stripped from measurements (the store contract never sees it).
 
 CLI (report only, never fails):
@@ -317,7 +317,7 @@ def main() -> int:
               + (f" ({d['repo']})" if d["repo"] else ""))
     bad = [d for d in decisions if d["decision"] != "registered"]
     if bad:
-        print(f"[engine-check] {len(bad)} engine(s) will FAIL validation unless registered by a human or fix-bot "
+        print(f"[engine-check] {len(bad)} engine(s) will FAIL validation unless registered by a human or the implementer's repair loop "
               f"(harnesses/apps/benchmarks must not be registered).")
     return 0
 

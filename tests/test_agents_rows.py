@@ -122,24 +122,36 @@ def section6b() -> str:
 def test_the_conflict_repair_path_is_named_in_6b():
     """#476: §6b must name what happens to a bot PR whose base moved.
 
-    The repair shipped in #478 (`scripts/fix_loop.sh` keeps a CONFLICTED base merge and
-    hands its hunks to a round; `pr-health` dispatches for a `ci/…` branch only). The
-    rulebook said nothing, so a reader could not tell a conflicting bot PR is repaired by
-    automation, nor which guard catches a regression in it.
+    The repair shipped in #478 as a dispatched `fix-bot` repairer; issue #814 (owner
+    directive) RETIRED that pipeline. §6b now names the retirement and points at the
+    §6s sweep, and §6s names the repair itself (test_the_repair_contract_is_named_in_6s).
+    Rule 6b: when a requirement changes, the owed-row test moves with it — this pins the
+    RETIRED contract, so a reader can still tell a conflicting bot PR is resolved by
+    automation and which rule owns the repair.
     """
     sec = section6b()
     for phrase, why in (
-        ("dispatches `fix-bot` for a `ci/…` branch", "the sweep's dispatch is not named"),
-        ("capped at 2 `fix-bot:` commits", "the commit cap is not stated"),
-        ("merges the FETCHED base before its first round", "the base merge is not stated"),
-        ("CONFLICTED merge is\n  KEPT", "the kept conflict is not stated"),
-        ("REGENERATED, never hand-merged", "the regenerate rule is not stated"),
-        ("COMPLETED once the index comes back clean", "the completion rule is not stated"),
-        ("`--abort`ed only after the last", "the abort rule is not stated"),
-        ("nothing half-merged is ever pushed", "the half-merged push is not forbidden"),
-        ("A HUMAN's branch is reported", "the human's-branch carve-out is not stated"),
+        ("dispatches no repairer", "the retirement is named — no pipeline dispatches a repairer"),
+        ("the §6s sweep", "the sweep that repairs is named"),
     ):
         check(f"6b: {why}", phrase in sec, phrase)
+
+
+def test_the_repair_contract_is_named_in_6s():
+    """#814: §6s is the rule that repairs a bot PR whose base moved — it must state
+    the shape of the repair, the base rule it runs under, and the human carve-out
+    (the same obligations #478 pinned in the dispatched-repairer wording)."""
+    s6s = rule_section("6s")
+    for phrase, why in (
+        ("The repair is a REBASE onto the fetched base", "the repair shape is not stated"),
+        ("make base-rebase", "the rebase seam is not named"),
+        ("merges the FETCHED base before its first round", "the base merge is not stated"),
+        ("an unmerged index stays", "the unmerged-index red rule is not stated"),
+        ("A bot PR is repaired by the sweep; a human's branch is only reported",
+         "the bot/human partition is not stated"),
+        ("report-only since #814", "pr-health's report-only half is not stated"),
+    ):
+        check(f"6s: {why}", phrase in s6s, phrase)
 
 
 def test_the_owed_rows_are_present():
@@ -261,6 +273,7 @@ def main() -> int:
     test_the_owed_rows_are_present()
     test_the_rows_for_the_two_label_queue_and_the_sweep_alarm_are_written()
     test_the_conflict_repair_path_is_named_in_6b()
+    test_the_repair_contract_is_named_in_6s()
     test_the_rows_this_session_owed_are_written()
     test_the_storage_offload_row_is_written()
     test_the_rows_name_modules_that_exist()

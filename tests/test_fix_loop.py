@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Control-flow tests for scripts/fix_loop.sh (the fix-bot repair loop).
+"""Control-flow tests for scripts/fix_loop.sh (the repo's ONLY agent repair loop —
+the implementer's, since issue #814 retired the fix-bot pipeline).
 
 The fix-bot never fixed a PR before: its loop ran under `bash -e` (died on the
 first red check), never ran `make validate`, never stopped when green, and
@@ -169,7 +170,7 @@ def test_findings_check_only_for_implementation_runs():
     rc, calls, _, _ = run(red=0)
 
     # Then  the data-repair loop never demands the analysis file
-    check("findings: fix-bot's loop does not run findings-check", "findings-check" not in calls, calls)
+    check("findings: a repair round without REQUIRE_FINDINGS does not run findings-check", "findings-check" not in calls, calls)
 
     # Given an implementation run (issue-bot sets REQUIRE_FINDINGS=1)
     rc, calls, _, _ = run(red=0, require_findings=1)

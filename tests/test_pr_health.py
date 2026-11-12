@@ -175,34 +175,39 @@ def test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard():
     # the owner PAT has no comment scope), while DISPATCHING a workflow is an Actions write
     # and needs the PAT. Each step must carry its own.
     comment_step = wf[wf.index("Flag every silent open PR"):]
-    repair_step = wf[wf.index("Dispatch the repair"):wf.index("Flag every silent open PR")]
     check("silent: the comment step uses the default token",
           "GH_TOKEN: ${{ github.token }}" in comment_step, comment_step[:300])
-    check("silent: the repair step uses the owner PAT (dispatching is an Actions write)",
-          "FIXBOT_DISPATCH_TOKEN" in repair_step, repair_step[:300])
-    check("silent: the repair step asks the target for a repair",
-          "REPAIR=1" in repair_step, repair_step[:300])
+    # Issue #814: the sweep REPORTS only — the dispatch-to-fix-bot step was deleted
+    # with the repair pipeline, and re-adding it re-adds this red.
+    check("silent: the sweep dispatches no repairer (report-only since #814)",
+          "Dispatch the repair" not in wf and "workflow_dispatch" not in wf[wf.index("jobs:"):],
+          wf[wf.index("jobs:"):wf.index("jobs:")+400])
     # The #231 coverage map must name it: no PR runs a cron-only pipeline.
     tw = (ROOT / "tests" / "test_workflows.py").read_text()
     check("silent: it is classified in DISPATCH_ONLY_COVERAGE",
           '"pr-health.yml"' in tw, "")
 
 
-def test_only_a_bot_branch_is_repaired_and_the_cap_holds():
-    """Issue #475: the sweep REPAIRS a `ci/…` PR itself (a conflicting PR runs no workflows,
-    so this is the only trigger that fires) and never touches a human's branch, where the
-    bot would be pushing someone else's work."""
-    silent = [
-        {"number": 1, "head": "ci/trending-refresh-20261020-1136", "reasons": ["x"]},
-        {"number": 2, "head": "ci/data-gap-449-x", "reasons": ["x"]},
-        {"number": 3, "head": "fix/hardware-is-not-an-engine", "reasons": ["x"]},
-        {"number": 4, "head": "", "reasons": ["x"]},
-    ]
-    picked = [f["number"] for f in PH.repair_targets(silent)]
-    check("repair: both ci/ branches are dispatched", picked == [1, 2], picked)
-    check("repair: a human's branch is left alone", 3 not in picked, picked)
-    check("repair: an empty head is never dispatched", 4 not in picked, picked)
-    check("repair: every silent PR is still reported", len(silent) == 4, "")
+def test_a_silent_pr_is_reported_and_nothing_is_dispatched():
+    """Issue #814: the sweep REPORTS every silent PR and dispatches no repairer.
+
+    (The old shape — #475 — had it dispatch fix-bot for `ci/…` PRs. The repair
+    pipeline was retired, so a dispatched PR would sit `queued` for a job that no
+    longer exists; the sweep's only output is the flagged PR plus its remedy.)"""
+    src = SCRIPT.read_text(encoding="utf-8")
+    check("retired: the sweep script carries no dispatch/repair path",
+          "workflow_dispatch" not in src and "repair_targets" not in src and "--repair" not in src,
+          "")
+    wf = (ROOT / ".github" / "workflows" / "pr-health.yml").read_text()
+    check("retired: the workflow has no Dispatch step and no dispatch trigger in its jobs",
+          "Dispatch the repair" not in wf and "workflow_dispatch" not in wf[wf.index("jobs:"):],
+          wf[wf.index("jobs:"):][:300])
+    silent = [{"number": n, "head": h, "mergeStateStatus": "DIRTY", "isDraft": False,
+               "headRepo": {"full_name": "o/r"}, "updatedAt": "2026-11-11T00:00:00Z"}
+              for n, h in ((1, "ci/trending-refresh-x"), (2, "fix/human-branch"))]
+    flagged = PH.findings(silent, {1: 1, 2: 0})
+    check("retired: findings() still classifies every silent PR, ci/ branches included",
+          all("reasons" in f for f in flagged), flagged)
 
 
 def test_an_empty_setting_means_missing():
@@ -232,14 +237,14 @@ def test_an_empty_setting_means_missing():
     os.environ.pop("PH_TEST_FLOAT", None)
 
 
-def test_the_real_target_survives_an_empty_max():
-    """The EXACT production call: `make pr-health REPO=… COMMENT=1` with no MAX.
+def test_the_real_target_runs_report_only():
+    """The EXACT production call: `make pr-health REPO=… COMMENT=1`, report-only.
 
-    Measured on run 39530945300: the public target forwarded
-    `MAX_FIXBOT_COMMITS=""`, `int("")` raised, and the sweep — the alarm for a
-    silent PR — was itself silently refused. This runs the real Makefile, the real
-    script, and only stands in for the network (a stub `gh` on PATH).
-    """
+    Measured on run 39530945300 (issue #487): the public target forwarded
+    `MAX_FIXBOT_COMMITS=""`, `int("")` raised, and the sweep was itself silently
+    refused. Issue #814 retired the variable with the repair pipeline; the sweep
+    now runs with no settings at all. This runs the real Makefile, the real
+    script, and only stands in for the network (a stub `gh` on PATH)."""
     with tempfile.TemporaryDirectory() as d:
         td = Path(d)
         stub_dir = td / "bin"
@@ -256,19 +261,15 @@ def test_the_real_target_survives_an_empty_max():
         env.pop("GH_TOKEN", None)
         r = subprocess.run(["make", "pr-health", "REPO=x/y", "COMMENT=1"], cwd=str(ROOT),
                            capture_output=True, text=True, env=env)
-        check("make pr-health: an UNSET max does not crash the sweep", r.returncode == 0,
+        check("make pr-health: the report-only sweep runs clean", r.returncode == 0,
               (r.stdout + r.stderr)[-400:])
         check("make pr-health: it actually ran and reported", "[pr-health]" in r.stdout,
               r.stdout[-200:])
         check("make pr-health: no traceback anywhere", "Traceback" not in (r.stdout + r.stderr))
-        r = subprocess.run(["make", "pr-health", "REPO=x/y", "COMMENT=1", "MAX_FIXBOT_COMMITS="],
-                           cwd=str(ROOT), capture_output=True, text=True, env=env)
-        check("make pr-health: an EXPLICITLY empty max is the same no-crash", r.returncode == 0,
-              (r.stdout + r.stderr)[-400:])
-        r = subprocess.run(["make", "pr-health", "REPO=x/y", "MAX_FIXBOT_COMMITS=abc"],
-                           cwd=str(ROOT), capture_output=True, text=True, env=env)
-        check("make pr-health: a non-numeric max stays LOUD", r.returncode != 0
-              and "MAX_FIXBOT_COMMITS" in (r.stdout + r.stderr), (r.stdout + r.stderr)[-300:])
+        mk = (ROOT / "Makefile").read_text(encoding="utf-8")
+        check("wiring: the retired MAX_FIXBOT_COMMITS lives in no pr-health recipe",
+              "MAX_FIXBOT_COMMITS" not in mk.split("pr-health:", 1)[-1][:400],
+              mk.split("pr-health:", 1)[-1][:200])
 
 
 def test_no_script_reads_a_number_straight_from_the_environment():
@@ -285,13 +286,6 @@ def test_no_script_reads_a_number_straight_from_the_environment():
           not bare, bare)
 
 
-def test_sweep_never_exports_an_empty_setting():
-    mk = (ROOT / "Makefile").read_text(encoding="utf-8")
-    check("wiring: the public target forwards MAX_FIXBOT_COMMITS only when SET",
-          'MAX_FIXBOT_COMMITS="$(MAX_FIXBOT_COMMITS)"\n' not in mk.split("pr-health:", 1)[-1],
-          mk.split("pr-health:", 1)[-1][:300])
-
-
 def main() -> int:
     print("silent PR alarm (issue #442)")
     test_a_conflicting_pr_is_silent_and_named()
@@ -302,11 +296,10 @@ def main() -> int:
     test_the_decision_is_pure_and_the_reasons_are_separate()
     test_a_gh_failure_is_loud()
     test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard()
-    test_only_a_bot_branch_is_repaired_and_the_cap_holds()
+    test_a_silent_pr_is_reported_and_nothing_is_dispatched()
     test_an_empty_setting_means_missing()
-    test_the_real_target_survives_an_empty_max()
+    test_the_real_target_runs_report_only()
     test_no_script_reads_a_number_straight_from_the_environment()
-    test_sweep_never_exports_an_empty_setting()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

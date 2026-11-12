@@ -6,8 +6,8 @@ name: refresh-bot
 # the prebuilt image (each writes its own data/raw/<backend>-<UTC>.json), then
 # a final job aggregates them (merge -> validate -> test) and opens a PR only
 # when there is new data. Never merges itself; the PR is validated by
-# qa-validate.yml; if its deterministic `validate` job is red, qa-validate
-# dispatches fix-bot.yml, which repairs the branch and re-triggers CI. Green
+# qa-validate.yml; if its deterministic `validate` job is red the PR stays red
+# for a human (the fix-bot dispatch was retired by issue #814). Green
 # -> qa-validate's auto-merge job squash-merges it and deletes the branch.
 #
 # The PR is created with the owner-scoped PAT (FIXBOT_DISPATCH_TOKEN), NOT the
@@ -440,7 +440,8 @@ jobs:
           make correct-raw
           # Validation is SOFT for FINDINGS (like _refresh): a data-quality
           # finding is reported but does NOT abort — the merged data still lands
-          # as a PR, qa-validate flags it, and fix-bot repairs it on the PR branch.
+          # as PR, qa-validate flags it for review (issue #814 retired the
+          # fix-bot repair dispatch).
           # A target that could not run at all (no image, no command: docker
           # 125/127) is NOT a finding and fails the job — the previous
           # `|| echo` guards reported that state as a green run (issue #147).

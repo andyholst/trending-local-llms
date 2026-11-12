@@ -135,7 +135,7 @@ HERMES_CONTEXT_WINDOW := 1048576
 # ('No visible answer was produced ... reasoning consumed the entire budget').
 # 'none' sends reasoning.enabled=false -> 0 reasoning tokens (measured). The
 # searches are mechanical (scrape -> extract -> write JSON), so thinking OFF;
-# the fix-bot diagnoses a failure report, so it keeps a little (low).
+# the repair agent diagnoses a failure report, so it keeps a little (low).
 HERMES_REASONING     := none
 HERMES_FIX_REASONING := low
 # Bound ONE Hermes fix round (issue #383). Without a bound the round that never
@@ -410,15 +410,12 @@ verify-closure:
 # target is how the sweep and a human reach it.
 .PHONY: _pr-health pr-health
 _pr-health:
-	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,) \
-		$(if $(REPAIR),--repair --max-fixbot-commits "$(if $(MAX_FIXBOT_COMMITS),$(MAX_FIXBOT_COMMITS),2)",)
+	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,)
 
-# The public target forwards MAX_FIXBOT_COMMITS only when it is SET: an empty value in the
-# recipe's environment is how the sweep died on every run (`int("")`, issue #487), and rule
-# 3d already says an empty value counts as missing.
+# REPORT-ONLY since issue #814: the fix-bot repair pipeline was retired, so the sweep
+# flags silent PRs and comments the remedy; it dispatches nothing.
 pr-health:
-	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)" REPAIR="$(REPAIR)" \
-		$(if $(MAX_FIXBOT_COMMITS),MAX_FIXBOT_COMMITS="$(MAX_FIXBOT_COMMITS)",)
+	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)"
 
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
@@ -915,7 +912,7 @@ _generate-requirements:
 # Soft-validation refresh: gather + merge are HARD (a broken merge must abort),
 # but validation/testing failures are recorded and reported, NOT fatal. This
 # lets the CI "Commit + open PR" step always land the merged data as a PR so
-# qa-validate can flag issues and fix-bot can repair them on the PR branch.
+# qa-validate can flag issues and the repair loop can repair them on the PR branch.
 # If validation were fatal here, a data-quality problem would abort refresh
 # before any PR is opened and nobody could ever review or fix it.
 .PHONY: _refresh

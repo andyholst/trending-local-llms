@@ -60,7 +60,7 @@ concurrency:
 jobs:
   # Before anything touches a secret: only the owner or a collaborator with
   # write/maintain/admin may publish the image the bots trust. Same guard shape as
-  # refresh-bot / issue-bot / fix-bot.
+  # refresh-bot / issue-bot.
   guard:
     runs-on: ubuntu-latest
     timeout-minutes: 10
