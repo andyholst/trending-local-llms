@@ -110,6 +110,33 @@ _STORAGE_TEXT = re.compile(
 #: Engines that stream experts from storage, so a model measured on one HAS a storage story.
 _STREAMING_ENGINES = ("strata",)
 
+# What a post uses to spell an engine BUILD (issue #214). The old detector matched only
+# `flag` / `n-gpu-layers` / `--x`, and the phrasings captures actually carry match none of
+# them: `BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)`, `MLX 4-bit Swift
+# 1.5 adapter`, `Q4_0 KV cache, native MTP draft` — sentences that state WHICH build the
+# run needs, yet `unstructured:engine_min_version` stayed empty and the models read as "no
+# captured post states it", which made issue #163's headline gap look unactionable (#214).
+# Precision is the constraint, not coverage (#213's class): the version must sit beside an
+# ENGINE or BUILD word, never beside a capacity or a speed, so `Q4_K_M (~14.6GB) … 150
+# tok/s` and a bare card name stay NOT build claims. Matching stays per field (#456).
+_ENGINE_BUILD_NAMES = (r"llama\.cpp|llama-cpp|llamacpp|ollama|vllm|sglang|exllam\w*|"
+                       r"koboldcpp|lmdeploy|mlx|tgi|ctranslate2|llama\.rb|cuda")
+_ENGINE_MIN_TEXT = re.compile(
+    r"\bflag\b|\bn[-_]gpu[-_]layers\b|\b--\w"  # the old claims, kept
+    rf"|\b(?:{_ENGINE_BUILD_NAMES})\b[^.\n]{{0,24}}?\b\d+\.\d+(?:\.\d+)?\b"
+    rf"|\b\d+\.\d+(?:\.\d+)?\b[^.\n]{{0,24}}?\b(?:{_ENGINE_BUILD_NAMES})\b"
+    r"|\b(?:llama\.cpp|llama-cpp|llamacpp)\b[^.\n]{0,12}?\bb\d{3,6}\b"
+    r"|\bb\d{3,6}\b[^.\n]{0,12}?\b(?:llama\.cpp|llama-cpp|llamacpp)\b"
+    r"|\b(?:untouched upstream|stock llama\.cpp|from source|built from source|source build"
+    r"|nightly build|main branch|master branch|bleeding edge|submodule)\b"
+    r"|\bcommit [0-9a-f]{7,12}\b"
+    r"|\b(?:adapter|fork)\b[^.\n]{0,24}?\b\d+\.\d+(?:\.\d+)?\b"
+    r"|\b\d+\.\d+(?:\.\d+)?\b[^.\n]{0,24}?\b(?:adapter|fork)\b"
+    r"|\bq[45][0-9_]*\b[^.\n]{0,16}\b(?:kv[- ]?cache|cache[- ]?type)\b"
+    r"|\b(?:kv[- ]?cache|cache[- ]?type)\b[^.\n]{0,16}\bq[45][0-9_]*\b"
+    r"|\bnative\b[^.\n]{0,16}\bdraft\b|\bdraft\b[^.\n]{0,16}\bnative\b",
+    re.I)
+
 
 def _params_b(model: dict) -> float | None:
     """The parameter count in billions, read from the model's own `params` string."""
@@ -194,7 +221,7 @@ DIMENSIONS = (
     {
         "key": "engine_min_version",
         "label": "engine minimum version / required flags",
-        "text": re.compile(r"\bflag\b|\bn[-_]gpu[-_]layers\b|\b--\w", re.I),
+        "text": _ENGINE_MIN_TEXT,  # flags AND the build phrasings posts use (#214)
         "why": "many figures only reproduce on a specific engine build or with explicit flags",
     },
 )
