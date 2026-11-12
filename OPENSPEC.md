@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **208**
+Active changes: **15** · archived: **211**
 
 ## Active changes
 
@@ -27,7 +27,6 @@ Active changes: **16** · archived: **208**
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
-| `sweep-alarm-weekly-window` | active | #804 | — | [alarms](openspec/changes/sweep-alarm-weekly-window/specs/alarms/spec.md) | 5/6 | [proposal.md](openspec/changes/sweep-alarm-weekly-window/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
@@ -224,6 +223,7 @@ Active changes: **16** · archived: **208**
 | `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
 | `sweep-alarm-inflight-pending` | archived | #801 (sweep-alarm grades a delivery that is still running as a failed sweep) | #806 | [alarms](openspec/changes/archive/sweep-alarm-inflight-pending/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/sweep-alarm-inflight-pending/proposal.md) |
+| `sweep-alarm-weekly-window` | archived | #804 | #842 | [alarms](openspec/changes/archive/sweep-alarm-weekly-window/specs/alarms/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/sweep-alarm-weekly-window/proposal.md) |
 | `sweep-comments-read-whole-thread` | archived | #662 | #798 | [issue-bot-artifacts](openspec/changes/archive/sweep-comments-read-whole-thread/specs/issue-bot-artifacts/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/sweep-comments-read-whole-thread/proposal.md) |
 | `sweep-delivery-alarm` | archived | #497 (measured: the hourly sweep asks GitHub for 24 slots a day and gets ~5) | — | [bot-coordination](openspec/changes/archive/sweep-delivery-alarm/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/sweep-delivery-alarm/proposal.md) |
 | `sweep-outcome-comment` | archived | the sweep's own outcome comment — the half `a-fresh-red-sweep-is-loud` (#498) recorded as "Tracked separately" | — | [bot-coordination](openspec/changes/archive/sweep-outcome-comment/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/sweep-outcome-comment/proposal.md) |
