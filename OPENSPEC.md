@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **223**
+Active changes: **16** · archived: **224**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `archive-stranded-openspec-index-repair` | active | #864 | — | [archived-change-lifecycle](openspec/changes/archive-stranded-openspec-index-repair/specs/archived-change-lifecycle/spec.md) | 6/6 | [proposal.md](openspec/changes/archive-stranded-openspec-index-repair/proposal.md) |
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
@@ -23,7 +24,6 @@ Active changes: **16** · archived: **223**
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
-| `openspec-index-repair` | active | #304 | #859 | [openspec-index](openspec/changes/openspec-index-repair/specs/openspec-index/spec.md) | 11/11 | [proposal.md](openspec/changes/openspec-index-repair/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
@@ -53,6 +53,7 @@ Active changes: **16** · archived: **223**
 | `2026-11-11-reviewer-label-from-queue` | archived | #661 (measured: `scripts/issue_review.py:100`, `scripts/issue_queue.py:91`, | #793 | [issue-queue](openspec/changes/archive/2026-11-11-reviewer-label-from-queue/specs/issue-queue/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/2026-11-11-reviewer-label-from-queue/proposal.md) |
 | `2026-11-12-archive-stranded-completed-changes` | archived | — | — | [archived-change-lifecycle](openspec/changes/archive/2026-11-12-archive-stranded-completed-changes/specs/archived-change-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-12-archive-stranded-completed-changes/proposal.md) |
 | `2026-11-12-log-tail-honored` | archived | #630 | #845 (measured: `Makefile:174` declared `HERMES_LOG_TAIL ?= 60` while the scrub seam | [makefile-knobs](openspec/changes/archive/2026-11-12-log-tail-honored/specs/makefile-knobs/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-12-log-tail-honored/proposal.md) |
+| `2026-11-12-openspec-index-repair` | archived | #304 | #859 | [openspec-index](openspec/changes/archive/2026-11-12-openspec-index-repair/specs/openspec-index/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/2026-11-12-openspec-index-repair/proposal.md) |
 | `2026-11-12-per-round-log-capture` | archived | #631 | #846 | [agent-log-capture](openspec/changes/archive/2026-11-12-per-round-log-capture/specs/agent-log-capture/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-12-per-round-log-capture/proposal.md) |
 | `2026-11-12-secret-scan-gitignored-artifact-fileset` | archived | #836 | #838 | [secret-scan](openspec/changes/archive/2026-11-12-secret-scan-gitignored-artifact-fileset/specs/secret-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-12-secret-scan-gitignored-artifact-fileset/proposal.md) |
 | `2026-11-12-starved-leg-gap-files` | archived | #856 | #857 | [data-gap-analysis](openspec/changes/archive/2026-11-12-starved-leg-gap-files/specs/data-gap-analysis/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/2026-11-12-starved-leg-gap-files/proposal.md) |
