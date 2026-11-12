@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **225**
+Active changes: **16** · archived: **225**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `architecture-bot-cadence-wording` | active | #860 | #862 | [architecture-bot-cadence](openspec/changes/architecture-bot-cadence-wording/specs/architecture-bot-cadence/spec.md) | 6/6 | [proposal.md](openspec/changes/architecture-bot-cadence-wording/proposal.md) |
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
