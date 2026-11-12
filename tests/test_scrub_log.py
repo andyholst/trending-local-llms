@@ -274,7 +274,7 @@ def test_the_seam_prints_only_the_redacted_tail_and_keeps_the_status():
     for f in ("scrub_log.py", "check_secret_output.py"):
         shutil.copy(ROOT / "scripts" / f, td / "scripts" / f)
     (td / "Makefile").write_text(
-        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\nHERMES_LOG_TAIL ?= 60\n\n" + seam +
+        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\n\n" + seam +
         "\nleaky:\n\t$(call scrubbed_run,echo \"the key is $$NOUS_API_KEY\")\n"
         "failing:\n\t$(call scrubbed_run,exit 3)\n")
     env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
@@ -388,8 +388,7 @@ def test_the_seam_shows_a_round_while_it_runs():
     for f in ("scrub_log.py", "check_secret_output.py"):
         shutil.copy(ROOT / "scripts" / f, td / "scripts" / f)
     (td / "Makefile").write_text(
-        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\n"
-        "HERMES_LOG_TAIL ?= 60\n\n" + seam +
+        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\n\n" + seam +
         "\nslow:\n\t$(call scrubbed_run,sh -c \"echo round-started; sleep 3; echo round-finished\")\n"
         "failing:\n\t$(call scrubbed_run,sh -c \"echo about-to-fail; exit 3\")\n")
     env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
