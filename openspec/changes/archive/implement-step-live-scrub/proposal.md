@@ -1,7 +1,7 @@
 # Proposal: implement-step-live-scrub
 
 Issue: #629 — `tech-debt: The implement step redacts its agent stream only AFTER the run — a post-mortem, not a live log`
-PR: #843
+PR: #844
 
 ## Why
 
