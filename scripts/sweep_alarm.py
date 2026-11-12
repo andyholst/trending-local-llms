@@ -197,10 +197,11 @@ def render(verdict: dict, rows: list[dict], max_age_hours: float) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Fail loudly when the hourly sweep has not been DELIVERED (issue #497)")
+        description="Fail loudly when the weekly sweep has not been DELIVERED (issue #497)")
     ap.add_argument("--repo", required=True, help="owner/name")
     ap.add_argument("--max-age-hours", type=float, default=168.0,
-                    help="how stale the newest delivery may be (default 3)")
+                    help="how stale the newest delivery may be (default 168 — one weekly "
+                         "sweep slot plus grace; issue #804)")
     ap.add_argument("--inflight-cap-hours", type=float, default=3.0,
                     help="how long a delivery may be in flight before it is HUNG (issue #801)")
     ap.add_argument("--now", default=None, help="Iso8601 instant to measure from (tests)")

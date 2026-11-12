@@ -1414,9 +1414,9 @@ owed-rows-check: ## Report the owed-row ledger: open issues' owed AGENTS.md rows
 	@$(MAKE) --no-print-directory _owed-rows-check
 
 .PHONY: queued-alarm
-sweep-alarm: ## Fail loudly when the hourly issue sweep has not been DELIVERED (REPO=<owner/name>, MAX_AGE_HOURS=3)
-	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=3]"; exit 1; }
-	python3 scripts/sweep_alarm.py --repo "$(REPO)" --max-age-hours "$(if $(MAX_AGE_HOURS),$(MAX_AGE_HOURS),3)"
+sweep-alarm: ## Fail loudly when the WEEKLY issue sweep has not been DELIVERED (REPO=<owner/name>; the window is the script's weekly default unless MAX_AGE_HOURS is supplied — issue #804)
+	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=<hours>]"; exit 1; }
+	python3 scripts/sweep_alarm.py --repo "$(REPO)" $(if $(MAX_AGE_HOURS),--max-age-hours "$(MAX_AGE_HOURS)",)
 
 queued-alarm: ## Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1)
 	@test -n "$(REPO)" || { echo "Usage: make queued-alarm REPO=<owner/repo> [MINUTES=30] [COMMENT=1]"; exit 1; }
