@@ -1262,6 +1262,52 @@ def check_measurement_attribution(store: dict) -> None:
         print(f"    ... and {len(mis) - 10} more")
 
 
+def weight_gb_contradiction_hits(store: dict) -> list[tuple]:
+    """(model_id, engine, tps, weight_gb, model_footprint, source_post) of every measurement
+    whose stated `weight_gb` contradicts its model's OWN footprint by more than
+    `WEIGHTS_CONTRADICTION_FACTOR`. Report-only; the ingest refusal (#615) prevents new ones, so
+    a hit here is a regression the store already carries — loud, never silent (issue #615)."""
+    import update_trending as _ut  # one implementation of _gb_value / the factor (rule 6d)
+    hits: list[tuple] = []
+    for m in store.get("models", []):
+        model_level = _ut._gb_value(m.get("weight_gb"))
+        if not model_level or model_level <= 0:
+            continue
+        mid = m.get("id") or m.get("name") or "?"
+        for e in m.get("engines", []):
+            stated = _ut._gb_value(e.get("weight_gb"))
+            if not stated or stated <= 0:
+                continue
+            ratio = max(stated, model_level) / min(stated, model_level)
+            if ratio > _ut.WEIGHTS_CONTRADICTION_FACTOR:
+                hits.append((mid, e.get("engine"), e.get("tps"), e.get("weight_gb"),
+                             m.get("weight_gb"), e.get("source_post") or "unknown"))
+    return hits
+
+
+def check_weight_gb_contradictions(store: dict) -> None:
+    """REPORT ONLY (never fails): a measurement whose stated weight cannot belong to its model.
+
+    The write-time refusal (#615) drops a contradictory measurement at ingest, so any row that
+    carries one is a shipped regression this scan names — the same report-only shape as the
+    #459 duplicate-run and #531 source-post-readback scans: history is not reded for what it
+    cannot repair, but a regression is never silent.
+    """
+    import update_trending as _ut  # noqa: F401  (kept for the one-implementation comment)
+    hits = weight_gb_contradiction_hits(store)
+    if not hits:
+        print("  OK: weight-gb scan: no measurement contradicts its model's own footprint")
+        return
+    print(f"  WARN: weight-gb scan: {len(hits)} measurement(s) carry a weight that contradicts "
+          f"their model's OWN footprint — ingest now refuses these; a hit here is shipped data "
+          f"that cannot belong (issue #615)")
+    for mid, engine, tps, wg, mf, post in hits[:10]:
+        print(f"    - {mid}: {engine} {tps} t/s — stated {wg!r} vs model footprint {mf!r}; post {post}")
+    if len(hits) > 10:
+        print(f"    ... and {len(hits) - 10} more")
+
+
+
 def check_untraceable_figures(store: dict) -> None:
     """A stated figure with no post behind it: FAIL the unattributable, REPORT the history.
 
@@ -2184,6 +2230,7 @@ def main() -> int:
     # report only, because the shipped store holds one row written before the ingest
     # refusal and reding every PR for history it cannot repair is what #458/#459 refused.
     add("measurement attribution (report only)", "data", lambda: check_measurement_attribution(store))
+    add("weight-gb contradiction (report only)", "data", lambda: check_weight_gb_contradictions(store))
     add("untraceable stated figures (fail unattributable, report the class)", "data",
         lambda: check_untraceable_figures(store))
     # One physical run under two engine names (issue #459): report only, because the
