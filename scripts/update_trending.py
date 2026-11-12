@@ -1915,6 +1915,7 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
     # prefixing it) — collapse a full URL / doubled prefix BEFORE it lands in
     # data/raw, so a pasted URL can never 404 the raw-hf link check again.
     kept_models: list = []
+    _link_cache: dict = {}
     for _m in payload.get("models") or []:
         if not isinstance(_m, dict):
             kept_models.append(_m)
@@ -1960,6 +1961,33 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
             formats.append(_f)
         if "formats" in _m:
             _m["formats"] = formats
+        # The same payload carries two more links, and today their dead values
+        # are first seen by `check_links_resolve` on the open refresh PR — the
+        # two-pipelines-later shape issue #417 removed for `hf` (issue #644).
+        # A figure must trace to a real post, so a DEFINITIVELY dead
+        # `source_post` refuses the measurement; a dead `engine_repo` only drops
+        # the key (the engine stays unregistered for a human, rule 6).
+        # Indeterminate answers (403/429/5xx/transport) keep every value.
+        if verify_hf and isinstance(_m.get("engines"), list):
+            kept_engines: list = []
+            for _e in _m["engines"]:
+                if not isinstance(_e, dict):
+                    kept_engines.append(_e)
+                    continue
+                if _e.get("source_post") and url_resolves(_e["source_post"], _link_cache) is False:
+                    print(f"[write-raw] WARN: {safe} refused measurement on model "
+                          f"{_id!r}: source_post {_e['source_post']!r} does not "
+                          f"resolve — the figure must trace to a real post; look "
+                          f"the post up and re-run")
+                    continue
+                if _e.get("engine_repo") and url_resolves(_e["engine_repo"], _link_cache) is False:
+                    print(f"[write-raw] WARN: {safe} refused engine_repo "
+                          f"{_e['engine_repo']!r} on model {_id!r}: it does not "
+                          f"resolve — the key is dropped and the engine stays "
+                          f"unregistered for a human (rule 6)")
+                    _e = {k: v for k, v in _e.items() if k != "engine_repo"}
+                kept_engines.append(_e)
+            _m["engines"] = kept_engines
         kept_models.append(_m)
     if "models" in payload:
         payload["models"] = kept_models
@@ -2020,6 +2048,33 @@ def raw_snapshot_stamp(path: Path, data: dict | None = None) -> datetime | None:
         return None
 
 HF_MODEL_API = "https://huggingface.co/api/models"
+
+
+def url_resolves(url, cache: dict | None = None) -> bool | None:
+    """True for a URL that answers, False ONLY when the answer is DEFINITIVE
+    (404/410 — the same dead codes `check_links_resolve` fails CI on), None when
+    the check could not tell (403/429/5xx, a transport error, a non-URL).
+
+    The write-time twin of `hf_repo_resolves` for the two other links a raw
+    payload carries (`source_post`, `engine_repo`): a rate-limited or briefly
+    down target must never look like a fabricated link. `cache` (one dict per
+    write) keeps a repeated URL at one request (issue #644)."""
+    if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+        return None
+    if cache is not None and url in cache:
+        return cache[url]
+    req = urllib.request.Request(url, method="HEAD",
+                                 headers={"User-Agent": "trending-local-llms"})
+    try:
+        with urllib.request.urlopen(req, timeout=10):
+            answer = True
+    except urllib.error.HTTPError as e:
+        answer = False if e.code in (404, 410) else None
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+        answer = None
+    if cache is not None:
+        cache[url] = answer
+    return answer
 
 
 def hf_repo_resolves(repo_id) -> bool | None:
