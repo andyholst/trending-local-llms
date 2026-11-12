@@ -1,6 +1,8 @@
 # architecture-bot wiring text states the cadence it actually runs
 
 **Issue:** #860
+**Issue:** #860
+**PR:** [#862]
 **Capability:** `architecture-bot-cadence` (the schedule wiring of
 `architecture-bot.yml`, its explanatory comment, and the test label that
 explains the slot).
