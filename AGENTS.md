@@ -187,8 +187,13 @@ the sections for it, exactly as the closure check discriminates by branch. The s
 commit message follows by construction — its title comes from `pr_body.title()` and its
 body is the validated PR body — and bot-filed issues use the same sections. The SAME gate
 also lands the other two artifacts: a `push` to `master` runs `make commit-message-check`
-on the squash message (the issue is read from the message's own `#<n>`, since
-`refs/heads/master` encodes none), and an `issues:opened/edited/reopened` event runs
+on the squash message (the issue is read from the message's own implementation CLAIM —
+`pr_closure.implemented_issue_from_message`: an `implement #<n>` verb in the title or a
+closing binding — never from the first `#<n>` the message names, since
+`refs/heads/master` encodes none and an archive commit `chore(openspec): archive …
+#845/#846 … (#851)` references merged PRs it does not implement; reading a bare reference
+made every rule-6f-mandated archive red on push, issue #852), and an
+`issues:opened/edited/reopened` event runs
 `make issue-message-check` on an issue body that DECLARES the pattern by carrying the
 invisible `message-pattern-opt-in` marker (declared ONCE in `scripts/bot_markers.py`,
 rule 6j) — a structured data-gap/tech-debt issue

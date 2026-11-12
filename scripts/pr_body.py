@@ -264,16 +264,19 @@ def architecture_body(run_url: str) -> str:
 
 
 def _commit_issue(text: str) -> int | None:
-    """The issue a squash COMMIT message implements, from the first `#<n>` in it.
+    """The issue a squash COMMIT message implements — read from the message's CLAIM, never
+    from the first `#<n>` it happens to name (issue #852).
 
-    The repo's squash title names the issue (`fix(tech-debt): implement #518 …`) and the
-    body ends with `Closes #<n>`, so the first reference IS the implemented issue — read
-    from the artifact itself, never from a branch name, because a push-to-master squash
-    lands on `refs/heads/master` which encodes nothing. The commit-message gate needs it to
-    run the closure half of the check on the right issue.
+    Delegates to `pr_closure.implemented_issue_from_message` — the ONE commit-side
+    discriminator (rule 6d): a title carrying an `implement #<n>` verb
+    (`fix(tech-debt): implement #518 …`) or a closing binding claims an implementation;
+    a bare reference does not. An archive commit `chore(openspec): archive the merged …
+    changes #845/#846 left active (#851)` names PRs it does not implement, and reading the
+    first number made every rule-6f-mandated archive go red on push (run 43216532672 on
+    `8965a45`). A push-to-master squash lands on `refs/heads/master`, which encodes no
+    branch issue — the claim in the message is the only valid source.
     """
-    m = re.search(r"#(\d+)", text)
-    return int(m.group(1)) if m else None
+    return pr_closure.implemented_issue_from_message(text)
 
 
 def _read_issue_event(path: str) -> tuple[str, int | None]:
@@ -348,7 +351,8 @@ def _check_message(args) -> int:
         text = Path(args.check_commit_file).read_text(encoding="utf-8")
         branch = args.branch
         # A squash commit lands on refs/heads/master which encodes no issue — read the
-        # implemented issue from the message itself (its title names the `#<n>`).
+        # implemented issue from the message's CLAIM (pr_closure.implemented_issue_from_message;
+        # a bare `#<n>` reference — an archive naming what it archives — claims nothing).
         issue = args.issue if args.issue is not None else _commit_issue(text)
 
     problems = _problems_for(artifact, text or "", branch, issue)

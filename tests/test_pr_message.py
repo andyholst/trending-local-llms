@@ -150,6 +150,80 @@ def test_commit_cli_refuses_a_non_conforming_message() -> None:
           "REFUSED" in bad.stderr and "## What" in bad.stderr, bad.stderr[-400:])
 
 
+def test_the_commit_gate_discriminates_an_archive_squash() -> None:
+    """The push gate reads the CLAIM, not the first `#<n>` (issue #852).
+
+    Rule 6f makes an archive commit mandatory for every merged change. The gate refused
+    `8965a45` ("archive the merged log-tail-honored and per-round-log-capture changes
+    #845/#846 left active (#851)") for missing the five sections AND "implements #845" —
+    an archive that implements nothing. Discrimination must not go the other way either:
+    a commit that CLAIMS an implementation is still held to sections + its own closes.
+    """
+    def run(msg: str) -> subprocess.CompletedProcess:
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "msg.txt"
+            f.write_text(msg)
+            return subprocess.run(
+                [sys.executable, str(SCRIPT), "--check-commit-file", str(f)],
+                capture_output=True, text=True)
+
+    # Given  the exact archive commit message that went red (run 43216532672 on 8965a45)
+    archive = ("chore(openspec): archive the merged log-tail-honored and per-round-log-"
+               "capture changes #845/#846 left active (#851)\n\n"
+               "Refs: openspec/changes/log-tail-honored-in-fix-loop-rounds\n"
+               "Refs: openspec/changes/per-round-log-tail-capture\n")
+    # Then   it passes: an archive names references and claims no implementation
+    ok = run(archive)
+    check("commit #852: an archive commit naming merged PRs is not forced to be an implementation",
+          ok.returncode == 0, (ok.returncode, ok.stdout[-200:], ok.stderr[-300:]))
+
+    # And    the old first-`#<n>` reading still refuses the same claim shape a real
+    #        implementation carries — discrimination must not gut the gate
+    claim_no_sections = ("fix(tech-debt): implement #635 from the tech-debt the analysis opened\n\n"
+                         "some prose without the five sections\n")
+    bad = run(claim_no_sections)
+    check("commit #852: an 'implement #635' title without the sections stays refused",
+          bad.returncode == 1 and "## Why" in bad.stderr, (bad.returncode, bad.stderr[-300:]))
+
+    # And    a claim whose closing keyword binds ANOTHER number is still refused
+    misbound = conforming_body().replace("Closes #771", "Closes #999", 1)
+    misbound = ("fix(tech-debt): implement #771 from the tech-debt the analysis opened\n\n"
+                + misbound)
+    wrong = run(misbound)
+    check("commit #852: an implement #771 claim closed by 'Closes #999' is refused",
+          wrong.returncode == 1 and "#771" in wrong.stderr, (wrong.returncode, wrong.stderr[-300:]))
+
+    # And    the composer's own squash message (title claim + sections + own closes) passes
+    full = run(pr_body.title(771, "tech-debt") + "\n\n" + conforming_body())
+    check("commit #852: the composed squash message passes",
+          full.returncode == 0, (full.returncode, full.stderr[-200:]))
+
+    # And    the unit discrimination itself: title verb or closing binding, never a bare number
+    check("claim: archive title claims nothing",
+          pr_closure.implemented_issue_from_message(archive) is None)
+    check("claim: an 'implement #635' title claims 635",
+          pr_closure.implemented_issue_from_message("fix(tech-debt): implement #635 from …") == 635)
+    check("claim: a closing binding in the body claims its issue",
+          pr_closure.implemented_issue_from_message("chore(ci): retire the old seam\n\nCloses #814") == 814)
+    check("claim: a verb inside a code quote is prose, not a claim",
+          pr_closure.implemented_issue_from_message("chore(openspec): archive\n\n"
+                                                    "The doc says `implement #635` verbatim.") is None)
+
+
+def test_the_commit_claim_parser_lives_in_pr_closure() -> None:
+    # Given  the rule that the claim parser has ONE home (rule 6d)
+    # Then   the IMPLEMENT_CLAIM pattern exists in pr_closure.py and nowhere else in scripts/,
+    #        and pr_body._commit_issue delegates to it rather than keeping its own regex.
+    scripts = (ROOT / "scripts")
+    carriers = [p.name for p in sorted(scripts.glob("*.py"))
+                if "IMPLEMENT_CLAIM" in p.read_text(encoding="utf-8")]
+    check("one home: only scripts/pr_closure.py carries the commit-claim pattern",
+          carriers == ["pr_closure.py"], carriers)
+    body_src = (scripts / "pr_body.py").read_text(encoding="utf-8")
+    check("one home: _commit_issue delegates to pr_closure.implemented_issue_from_message",
+          "pr_closure.implemented_issue_from_message(text)" in body_src)
+
+
 def test_declared_issue_is_validated_and_legacy_passes() -> None:
     def run(body: str) -> subprocess.CompletedProcess:
         with tempfile.TemporaryDirectory() as td:
@@ -209,6 +283,8 @@ def main() -> int:
     test_a_body_that_skips_a_section_is_refused()
     test_the_pr_message_cli_refuses_a_non_conforming_body_by_name()
     test_commit_cli_refuses_a_non_conforming_message()
+    test_the_commit_gate_discriminates_an_archive_squash()
+    test_the_commit_claim_parser_lives_in_pr_closure()
     test_declared_issue_is_validated_and_legacy_passes()
     test_a_non_implementation_pr_is_not_forced_to_carry_the_sections()
     test_the_squash_title_is_a_conventional_commit()

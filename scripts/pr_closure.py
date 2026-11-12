@@ -105,6 +105,35 @@ def implemented_issue(branch: str | None) -> int | None:
     return None
 
 
+# The COMMIT-side discriminator (issue #852). A squash commit implements an issue only
+# when its message CLAIMS one: an implementing verb written directly on a reference in the
+# TITLE (`implement #635`, `implements #635` — the shape `pr_body.title()` composes), or a
+# closing keyword binding anywhere in the message. A number that merely APPEARS — the
+# archive title `chore(openspec): archive the merged … changes #845/#846 left active
+# (#851)`, a `Refs` line, prose naming another issue — names a reference without claiming
+# an implementation. Reading the first `#<n>` instead reds every archive commit rule 6f
+# makes mandatory (measured: run 43216532672 refused `8965a45` with "missing the five
+# sections" + "implements #845 with no closing keyword", while the identical-shaped archive
+# `f44c156` was green only because its title happened to name no number first).
+IMPLEMENT_CLAIM = re.compile(r"\bimplements?\s+#(\d+)", re.IGNORECASE)
+
+
+def implemented_issue_from_message(message: str) -> int | None:
+    """The issue a squash COMMIT implements — read from the message's CLAIM, never from
+    the first number the message happens to name (`refs/heads/master` encodes no issue).
+
+    The title carries the implementation claim (`fix(tech-debt): implement #635 …`);
+    the body carries a claim only as a closing binding, the same parser `check` uses.
+    `visible_text` first: a verb or keyword inside a code quote is prose, not a claim.
+    """
+    text = visible_text(message)
+    title = text.splitlines()[0] if text.strip() else ""
+    if m := IMPLEMENT_CLAIM.search(title):
+        return int(m.group(1))
+    binds = closing_bindings(text)
+    return binds[0][0] if binds else None
+
+
 def closing_bindings(body: str) -> list[tuple[int, list[int]]]:
     """Every closing keyword in the body, as (the reference that binds, all references seen).
 
