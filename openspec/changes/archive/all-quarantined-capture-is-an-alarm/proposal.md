@@ -1,6 +1,7 @@
 # Proposal: all-quarantined-capture-is-an-alarm
 
-Issue: tech-debt — "A capture where EVERY row is quarantined still exits 0 and reports
+Issue: #624 — tech-debt "A capture where EVERY row is quarantined still exits 0 and reports
+PR: #837
 'the rest of the capture still merges'" (filed while implementing #381; surfaced by PR #623).
 
 ## Why

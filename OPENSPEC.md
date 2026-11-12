@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **207**
+Active changes: **15** · archived: **208**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `all-quarantined-capture-is-an-alarm` | active | tech-debt — "A capture where EVERY row is quarantined still exits 0 and reports | — | [raw-capture-alarm](openspec/changes/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
@@ -74,6 +73,7 @@ Active changes: **16** · archived: **207**
 | `agents-row-storage-offload` | archived | #369 | — | [agents-guard-registry](openspec/changes/archive/agents-row-storage-offload/specs/agents-guard-registry/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/agents-row-storage-offload/proposal.md) |
 | `agents-rows-two-label-sweep` | archived | #494 | — | [rulebook](openspec/changes/archive/agents-rows-two-label-sweep/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agents-rows-two-label-sweep/proposal.md) |
 | `alias-one-definition` | archived | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/archive/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/alias-one-definition/proposal.md) |
+| `all-quarantined-capture-is-an-alarm` | archived | #624 — tech-debt "A capture where EVERY row is quarantined still exits 0 and reports | #837 | [raw-capture-alarm](openspec/changes/archive/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | archived | #309 | — | [code-review-scan](openspec/changes/archive/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/an-unchecked-scan-is-not-clean/proposal.md) |
 | `announce-the-decided-hold` | archived | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/archive/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/announce-the-decided-hold/proposal.md) |
 | `arch-calls-from-a-script` | archived | #482 | — | [architecture-inventory](openspec/changes/archive/arch-calls-from-a-script/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/arch-calls-from-a-script/proposal.md) |
