@@ -131,8 +131,9 @@ def test_one_list_one_target():
     wf = "\n".join(p.read_text() for p in sorted((ROOT / ".github" / "workflows").glob("*.yml")))
     check("wiring: no workflow carries the literal reset line any more",
           "git reset -q -- qa-report.txt" not in wf, "")
-    check("wiring: three call sites (issue-bot x2, fix-bot x1) use the target",
-          wf.count("make reset-working-files") == 3, wf.count("make reset-working-files"))
+    check("wiring: two call sites (issue-bot x2) use the target — fix-bot's was its "
+          "own, and the repair pipeline was retired by issue #814 (issue #815)",
+          wf.count("make reset-working-files") == 2, wf.count("make reset-working-files"))
     makefile = (ROOT / "Makefile").read_text()
     check("wiring: the Makefile defines the target", "\nreset-working-files:" in makefile, "")
     check("wiring: `lint` runs the check",
