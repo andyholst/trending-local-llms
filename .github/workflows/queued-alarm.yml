@@ -89,12 +89,14 @@ jobs:
           make queued-alarm REPO="${{ github.repository }}" \
             MINUTES="${{ inputs.minutes || '30' }}" COMMENT=1
       # A dropped cron has no run to look at, so the queue alarm above cannot see it: this reads
-      # the ARTIFACT (the newest `schedule` delivery of the sweep) and goes RED when the hourly
-      # sweep has not been delivered for MAX_AGE_HOURS (issue #497).
-      - name: Fail loudly when the hourly sweep has not been delivered
+      # the ARTIFACT (the newest `schedule` delivery of the sweep) and goes RED when the weekly
+      # sweep has not been delivered (issue #497). NO window literal here (issue #804): the
+      # sweep asks for ONE delivery per Wednesday, so the window is sweep_alarm.py's own
+      # weekly default — one implementation, rule 6d.
+      - name: Fail loudly when the weekly sweep has not been delivered
         env:
           GH_TOKEN: ${{ github.token }}
-        run: make sweep-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=3
+        run: make sweep-alarm REPO="${{ github.repository }}"
       # An alarm over the ARTIFACT, not the run (issue #452): a refresh slot GitHub DROPPED leaves no
       # run row for any other alarm to read, so the only honest signal is the age of the newest
       # committed snapshot. Twice-daily crons leave a ~11.7 h gap; 14 h is one missed slot.

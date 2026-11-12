@@ -16,6 +16,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -261,6 +262,36 @@ def test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired():
           alarm.index("actions/checkout") < alarm.index("make sweep-alarm"), "")
 
 
+def test_the_window_default_is_the_weekly_sweep():
+    """The window is decided ONCE, by the script (issue #804): after the sweep moved to one
+    delivery per Wednesday, its staleness default is a week — not the hourly-era 3."""
+    src = SCRIPT.read_text()
+    check("script: --max-age-hours defaults to 168 (a weekly slot plus grace)",
+          bool(re.search(r'--max-age-hours", type=float, default=168\.0', src)), "")
+    off = src.index('ap.add_argument("--max-age-hours"')
+    block = src[off:src.index("ap.add_argument", off + 20)]
+    check("script: the help text names the 168 default, not a stale one",
+          "default 168" in block and "(default 3)" not in block, block)
+
+
+def test_no_wiring_hardcodes_an_hourly_era_window():
+    """A Makefile literal or a pipeline literal of 3 h reds the alarm on the NORMAL weekly
+    schedule (measured: a 4.2 h gap between Wednesday deliveries read as FAIL). The wiring may
+    forward MAX_AGE_HOURS only when the caller supplies it (issue #804, rule 6d)."""
+    makefile = MAKEFILE.read_text()
+    recipe = makefile[makefile.index("sweep-alarm:"):]
+    recipe = recipe[:recipe.index("\n\n")] if "\n\n" in recipe else recipe[:400]
+    check("makefile: the sweep-alarm recipe injects no window literal",
+          bool('MAX_AGE_HOURS=3' not in recipe
+               and re.search(r'\$\(if \$\(MAX_AGE_HOURS\),--max-age-hours', recipe)), recipe[:400])
+    alarm = ALARM_WF.read_text()
+    sweep_calls = [line for line in alarm.splitlines() if "make sweep-alarm" in line]
+    check("workflow: the sweep-alarm step carries no MAX_AGE_HOURS literal",
+          bool(sweep_calls) and all("MAX_AGE_HOURS" not in line for line in sweep_calls), sweep_calls)
+    check("workflow: the freshness-alarm window (a different alarm) is untouched",
+          "make freshness-alarm" in alarm and 'MAX_AGE_HOURS=14' in alarm, "")
+
+
 def main() -> int:
     print("sweep alarm: a dropped cron has no run to look at (issue #497)")
     test_a_missed_weekly_slot_is_stale_and_a_fresh_delivery_is_not()
@@ -270,6 +301,8 @@ def main() -> int:
     test_an_in_flight_delivery_past_the_cap_is_hung_and_loud()
     test_the_cli_exit_codes_are_loud_in_every_direction()
     test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired()
+    test_the_window_default_is_the_weekly_sweep()
+    test_no_wiring_hardcodes_an_hourly_era_window()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
