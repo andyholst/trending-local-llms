@@ -65,4 +65,12 @@ deliverable.
   here. `make findings-check` must pass.
 - **Gates only on `TRIAGE: implement`:** `make validate`, `make validate-mapped`, `make test`,
   `make openspec-check`, `make architecture-check` — fix what they report, never weaken a test.
+- **Branch naming states what the PR does.** An implementation branch binds its issue —
+  `ci/<slug>-<issue>` or `ci/data-gap-<issue>-<slug>` — and the PR body carries ONE
+  `Closes #<issue>` bound to it (rule 6e). A PR that only records or unblocks drift observed
+  during a run (an archive move, an index or architecture regeneration, a ledger append) is a
+  KEEPER: its branch takes the declared keeper shape `ci/keeper-<slug>` or
+  `ci/keeper-<slug>-<issue>`, and its body carries `refs #N` and **no** closing keyword —
+  `scripts/pr_closure.py` reads a keeper's trailing number as a reference and refuses a keeper
+  that writes `Closes #N` as a false claim (issue #872, measured on PR #867).
 - **Do not push, do not merge, do not touch `master`.** The job does that.
