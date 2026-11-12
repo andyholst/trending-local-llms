@@ -372,11 +372,11 @@ jobs:
           # (issue #629): the seam (#591) pipes the whole stream through
           # `scripts/scrub_log.py --stream`, so EVERY line reaches this step's
           # console masked as it is produced — the job log answers "what is the
-          # implementer doing?" while it runs, not only in a post-mortem. It used
-          # to be `make implement-issue > implement.log 2>&1` + `make scrub-log`
-          # afterwards: the step printed NOTHING for the whole ~20-minute leg and
-          # the RAW log sat in the runner's workspace the entire time, redacted
-          # only at the end. The seam writes the raw capture (gitignored) and the
+          # implementer doing?" while it runs, not only in a post-mortem. The old
+          # shape redirected the whole stream into a capture file and redacted it
+          # only after the agent ended: the step printed NOTHING for the whole
+          # ~20-minute leg and the raw capture sat in the runner's workspace the
+          # entire time. The seam writes the raw capture (gitignored) and the
           # redacted copy (the run artifact) itself, and `bash -o pipefail` keeps
           # the agent's own rc. `make check-secret-output` requires the target to
           # scrub its own recipe, so this uncaptured shape is guarded, not a gap.

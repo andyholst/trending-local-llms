@@ -182,7 +182,7 @@ def _stub_make(bindir: Path, out: Path, rc: int) -> str:
     stub = bindir / "make"
     stub.write_text(f"""#!/bin/sh
 if [ "$1" = "implement-issue" ]; then
-  bash -o pipefail -c '{{ echo "agent: reading the post"; echo "agent: sending header Authorization: Bearer $NOUS_API_KEY"; echo "agent: the key is $NOUS_API_KEY"; echo "agent: a token shape {FAKE_TOKEN}"; echo "agent: done"; }} 2>&1 | python3 {SCRIPT} --stream --raw implement.log --out implement.scrubbed.log'
+  bash -o pipefail -c '{{ echo "agent: reading the post"; echo "agent: sending header Authorization: Bearer $NOUS_API_KEY"; echo "agent: the key is $NOUS_API_KEY"; echo "agent: a token shape {FAKE_TOKEN}"; exit {rc}; }} 2>&1 | python3 {SCRIPT} --stream --raw implement.log --out implement.scrubbed.log'
   exit $?
 fi
 if [ "$1" = "scrub-log" ]; then
