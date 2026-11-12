@@ -312,6 +312,56 @@ def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate
           perms)
 
 
+def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate():
+    """#861 (rule 6q/6h): a merged PR that moved a target, script or job without
+    `make architecture-refresh` staleness-reds the push-to-master `validate` at
+    `architecture-check` with NO PR-side repairer, and auto-merge stays blocked
+    repo-wide while the Wednesday-only keeper sits idle (measured after merge
+    91eb093). qa-validate grows `architecture-repair`, the exact sibling of
+    `index-repair`: it asks the script for the verdict (rule 6d — the workflow
+    re-decides nothing), and lands a keeper PR only when the verdict is
+    block-only and only when nothing but ARCHITECTURE.md changed."""
+    wf = load("qa-validate.yml")
+    job = wf["jobs"].get("architecture-repair")
+    check("qa: architecture-repair job exists", job is not None, sorted(wf["jobs"]))
+    if not job:
+        return
+    needs = job["needs"] if isinstance(job["needs"], list) else [job["needs"]]
+    check("qa: architecture-repair needs the guard AND validate (guard first, rule 6j)",
+          needs == ["guard", "validate"], needs)
+    text = run_text(job)
+    check("qa: architecture-repair classifies through the make target (rule 6m)",
+          "make architecture-block-repair" in text, "")
+    check("qa: a refuse-to-classify exits 2 loudly",
+          "exit 2" in text and "could not classify" in text, text[:400])
+    gate = str(job.get("if", ""))
+    check("qa: a keeper PR lands only on a FAILED push to master (event-driven, rule 6q)",
+          "failure()" in gate and "github.event_name == 'push'" in gate
+          and "refs/heads/master" in gate, gate)
+    check("qa: a keeper PR never lands on a PR event (no recursive repair of its own PR)",
+          "pull_request" not in str(job), str(job)[:600])
+    check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
+          "make architecture-block-repair-pr-body MASTER_SHA=" in text, "")
+    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert)",
+          "ci/architecture-block-repair-$(date -u +%Y%m%dT%H%M%SZ)" in text, "")
+    check("qa: it commits as the repo agent (rule 3f)",
+          "make git-identity" in text, "")
+    check("qa: only the generated block may land (a wider drift is refused here)",
+          "refusing to land" in text and "git diff --quiet -- ARCHITECTURE.md" in text
+          and '" M ARCHITECTURE.md"' in text, "")
+    check("qa: its dedupe read shares the keeper step's loud-failure shell (set -euo pipefail, "
+          "same shape as #304) and keys on the exact branch prefix",
+          "set -euo pipefail" in text
+          and 'startswith("ci/architecture-block-repair-")' in text, "")
+    check("qa: architecture-repair never merges and never pushes master (rules 1/6e)",
+          "gh pr merge" not in text and "push origin master" not in text
+          and "--admin" not in text, "")
+    perms = job.get("permissions", {})
+    check("qa: architecture-repair holds only what it writes",
+          perms.get("contents") == "write" and perms.get("pull-requests") == "write",
+          perms)
+
+
 def test_qa_validate_header_points_at_pinned_action_howto():
     """#739 (#714 Slice 3): the qa-validate header comment points operators at
     the README 'Bumping a pinned GitHub Action' section (the guard runs in this
@@ -2786,6 +2836,7 @@ def main() -> int:
     test_the_closure_check_reruns_when_the_pr_body_is_edited()
     test_qa_validate()
     test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate()
+    test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate()
     test_qa_validate_header_points_at_pinned_action_howto()
     test_fix_pipeline_retired()
     test_issue_bot_pr_body_actually_closes_the_issue()

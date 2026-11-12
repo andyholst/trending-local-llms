@@ -146,8 +146,12 @@ def test_every_validate_gate_is_on_a_list():
     # (scripts/openspec_index_repair.py classifies, a keeper PR lands minutes after
     # the merge when the drift is index-only); architecture-bot's weekly sweep is
     # the backstop. A Wednesday-only keeper left auto-merge red for days.
+    # issue #861: the same event-driven keeper now exists for `architecture-check`
+    # — qa-validate's `architecture-repair` job runs `make architecture-block-repair`
+    # on the exact post-merge tree (measured after merge 91eb093: a stale §10 block
+    # reded every open PR's auto-merge with only the weekly keeper named).
     expected_keepers = {
-        "architecture-check": "architecture-bot",
+        "architecture-check": "qa-validate architecture-repair + architecture-bot",
         "openspec-check": "qa-validate index-repair + architecture-bot",
     }
     for gate in a.KEEPERS:
@@ -158,6 +162,21 @@ def test_every_validate_gate_is_on_a_list():
     check("gates: keeper and alarm lists partition the registry",
           a.KEEPERS | a.ALARMED == set(a.GATES) and a.KEEPERS & a.ALARMED == set(),
           f"keep={a.KEEPERS} alarm={a.ALARMED}")
+
+
+def test_the_architecture_gate_names_the_event_driven_keeper():
+    """Issue #861's 'Done when': the registry names qa-validate's `architecture-repair`
+    AND the pipeline really carries that job — a registry claim with no job behind it
+    is the #187/#304 class of half-done keeper wiring."""
+    check("registry: architecture-check names the event-driven keeper first",
+          a.GATES["architecture-check"][1] == "qa-validate architecture-repair + architecture-bot",
+          a.GATES["architecture-check"][1])
+    wf_text = (WF / "qa-validate.yml").read_text()
+    check("qa-validate: the architecture-repair job exists",
+          "\n  architecture-repair:\n" in wf_text, "")
+    check("qa-validate: it classifies only through make architecture-block-repair (rule 6m)",
+          "make architecture-block-repair" in wf_text
+          and "python3 scripts/architecture_block_repair.py" not in wf_text, "")
 
 
 def test_every_validate_step_target_is_a_gate_of_the_validate_job():
@@ -217,6 +236,7 @@ def main() -> int:
     test_a_red_run_is_reported()
     test_a_green_or_pending_or_absent_run_is_not_an_alarm()
     test_every_validate_gate_is_on_a_list()
+    test_the_architecture_gate_names_the_event_driven_keeper()
     test_every_validate_step_target_is_a_gate_of_the_validate_job()
     test_the_workflow_guards_first_and_calls_the_make_target()
     test_the_make_target_passes_its_variables_through()

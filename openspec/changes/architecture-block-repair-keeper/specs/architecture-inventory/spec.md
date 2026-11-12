@@ -71,7 +71,7 @@ never a silent clean, never a write.
   carries no `environment:` gate, and `GATES["architecture-check"]` names
   `qa-validate architecture-repair` alongside the weekly `architecture-bot`
 
-- **Test:** `tests/test_workflows.py::test_architecture_repair_is_the_sibling_of_index_repair`
+- **Test:** `tests/test_workflows.py::test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate`
 - **Test:** `tests/test_master_alarm.py::test_the_architecture_gate_names_the_event_driven_keeper`
 
 #### Scenario: the keeper PR body records drift and closes nothing

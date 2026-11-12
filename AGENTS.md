@@ -737,7 +737,7 @@ issue that skips a section is refused.
    anything; the KEEPER half (architecture-bot's two generated files) is named in its registry —
    every deterministic gate of the `validate` job sits on the keeper list or the alarm list, and
    `tests/test_master_alarm.py` fails when a new gate lands on neither.
-   **A keeper may be EVENT-DRIVEN, and the index gate's is (issue #304).** A merged PR archives
+   **A keeper may be EVENT-DRIVEN, and BOTH generated-artifact gates are (issues #304, #861).** A merged PR archives
    its OpenSpec change, so the push-to-master `validate` goes red at `openspec-check` the moment
    it lands (measured 2026-11-12: pushes `28f2cd3` and `ce57e9b`, auto-merge blocked repo-wide
    while the Wednesday-only architecture-bot keeper sat idle). qa-validate's `index-repair` job
@@ -747,6 +747,17 @@ issue that skips a section is refused.
    `make openspec-index-repair-pr-body`, no closing keyword). architecture-bot remains the
    weekly backstop; the registry names both (`openspec-check` → `qa-validate index-repair +
    architecture-bot`), so a Wednesday-only keeper can never again be the only repair.
+   The SAME event reds the sibling gate — a merge that moves a target/script/job without
+   `architecture-refresh` staleness-reds `architecture-check` on the push (measured 2026-11-12
+   after merge `91eb093`: tree `201 make targets, 71 files in scripts/` vs on disk
+   `199…70…`, auto-merge of every open PR waiting behind it while only the Wednesday-only
+   `architecture-bot` was named as keeper) — so qa-validate's `architecture-repair` job runs
+   `make architecture-block-repair` against that exact tree; `scripts/architecture_block_repair.py`
+   owns the `DRIFT=none|block-only` verdict (a malformed or markerless document exits 2, loud, and
+   is never laundered by a rewrite), only a block-only verdict may land a keeper PR
+   (`ci/architecture-block-repair-<UTC>`, body by `make architecture-block-repair-pr-body`, no
+   closing keyword, only `ARCHITECTURE.md` may change), and the registry names both
+   (`architecture-check` → `qa-validate architecture-repair + architecture-bot`).
 
 6r. **A red main pipeline is DIAGNOSED and FILED as an issue, and the diagnosis lives in an
    append-only LEDGER that qa-validate guards (MANDATORY).** A red run of a main pipeline
@@ -1331,8 +1342,9 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   `auto-merge` does, once the PR is green.
 - **`qa-validate.yml`** — the **PR CI** pipeline. Runs on every PR (including
   workflow-only PRs — the wiring is under test), push to master, or dispatch.
-  Three jobs plus the index keeper (issue #814 removed the `dispatch-fixbot` job
-  — the pipeline no longer dispatches a repairer; issue #304 added `index-repair`):
+  Three jobs plus the two generated-artifact keepers (issue #814 removed the `dispatch-fixbot` job
+  — the pipeline no longer dispatches a repairer; issue #304 added `index-repair`, issue #861 its
+  sibling `architecture-repair`):
   - `validate` — deterministic: `make validate`, `validate-search`,
     `validate-mapped`, `test`. A red `validate` arms nothing and dispatches
     nothing: the PR stays red for the §6s sweep or a human.
@@ -1354,6 +1366,17 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
     (timestamped, no issue number — rule 6e/#852), with the body composed by
     `make openspec-index-repair-pr-body` and NO closing keyword. A non-index
     drift is refused here; a keeper PR never merges itself.
+  - `architecture-repair` — `needs: [guard, validate]`, `if: failure() && push to
+    master` only (issue #861, rule 6q): the sibling KEEPER for the
+    `architecture-check` gate. It runs `make architecture-block-repair` against
+    the same post-merge tree; `scripts/architecture_block_repair.py` owns the
+    `DRIFT=none|block-only` verdict (a missing document, missing markers or a
+    tree the generator refuses exits 2, loud, and is never rewritten), only a
+    block-only verdict may land a keeper PR on
+    `ci/architecture-block-repair-<UTC>` (timestamped, no issue number — rule
+    6e/#852) when `ARCHITECTURE.md` is the ONLY changed file, body by
+    `make architecture-block-repair-pr-body`, NO closing keyword; it never
+    merges itself.
 - **fix pipeline — RETIRED completely (issue #814, owner directive).** The
   fix-bot repairer pipeline was disabled: its workflow file no longer exists,
   no pipeline dispatches it, and its guard/PAT paths are gone. The agent repair
@@ -1825,6 +1848,7 @@ actually happened.
 
 | `tests/test_working_file_list.py` + `make check-working-files` / `make reset-working-files` (rules 6c/6d/6m, issue #543) | the bot's working files (`issue.md`, `pr-body.md`, `findings.md`, `implement.log`, …) defined in FOUR places — one literal `git reset -q -- …` line copied into two steps of `issue-bot.yml`, a third copy in `fix-bot.yml`, and `.gitignore` — so a new working file was remembered or missed, and a missed one was committed by the push step's `git add -A` (the measured `qa-report.txt.notes` reaching PR #387, issue #390); the list is now ONE file, `make check-working-files` fails when a name on it is not gitignored, and `make lint` runs that check |
 | `tests/test_master_alarm.py` + `make master-alarm` (rules 6q/6c/6d, issue #527) | a deterministic gate going red on a `push` to master with no repair path: the validate job runs on master pushes, every fixer needs a PR, and the red sat unrepaired (measured, run 39625708799 — red at the OpenSpec gate, unit tests never reached); `scripts/master_alarm.py` exits 1 naming the newest push-to-master run URL and its failing jobs, the workflow calls the make target (never a direct script), and the keeper/alarm registry test refuses a validate-job gate that is on neither list |
+| `tests/test_architecture_block_repair.py` + `make architecture-block-repair` (rules 6q/6h/6c/6d/6m, issue #861) | a stale §10 inventory block reding the `architecture-check` gate on the push-to-master `validate` with only the Wednesday-only `architecture-bot` named as keeper (measured after merge `91eb093`: tree `201 targets, 71 scripts` vs on-disk block `199…70…`, auto-merge of every open PR blocked): the suite drives the REAL repair script against fixture trees and pins the verdicts — a block-only drift regenerates ONLY between the markers (prose byte-identical, re-verified against the fresh render, idempotent on the second pass), a current block prints `DRIFT=none` and leaves the file byte-untouched, a tree the generator refuses (an `arch-calls` claim with no target behind it) is exit 2 `DRIFT=tree` with the document untouched — never laundered into a keeper PR — a missing document or marker pair is exit 2 naming the refusal, the keeper body `refs` #861 and closes NOTHING through the REAL `pr_closure` parser on the REAL timestamped branch shape, and the wiring refuses a qa-validate step that runs the script without `make` (rule 6m) |
 | `tests/test_pipeline_failure_issue.py` + `make pipeline-failure-issue` (rules 6r/6c/6d/3d, issue #802) | a red main pipeline that nobody diagnoses: the filer drives the real `scripts/pipeline_failure_issue.py` against a stub `gh` (external system only, rule 6m) and proves every failure (push-to-master or schedule, concluded-bad, in-window) files ONE issue per failing job with the message-pattern body, the `pipeline-run-failure` marker (registered, rule 6j), the bounded error block and the `make <target>` reproduction from the log — while a planted secret in the log NEVER reaches the body (scrubbed through the real `scrub_log.redact`, §3d); dedup across BOTH memories (ledger run-id + `--state all` marker scan, so a closed fix is never re-filed); an unreadable log files UNDIAGNOSED loudly; an unreadable pipeline state exits 2; the ledger PR body carries NO closing keyword (rule 6e); and `queued-alarm.yml` runs the target after its alarms and lands the ledger append as a PR |
 | `tests/test_pipeline_failure_guard.py` + `make pipeline-failure-guard-check` (rules 6r/6c/6d, issue #802) | a diagnosed pipeline failure closed away without a regression guard: the gate runs against planted ledgers and refuses a CLOSED issue whose entry names no fix PR and no guard test, a fix PR whose `guard` test file is not on disk under `tests/`, and a CLOSED marker issue the ledger never recorded; an in-flight fix (open issue) is reported, never red; a missing or corrupt ledger exits 2, never a silent clean; the gate is a named GATE in `master_alarm.GATES` and a step of qa-validate's `validate` job |
 | `tests/test_pytest_import_guard.py` + `make check-pytest-imports` (rules 6c/6d, issue #768) | a test module importing the runner the TEST image does not have: `tests/test_owed_rows.py` carried a top-level `pytest` import and every HOST gate stayed green, while the suite died in the TEST image with `ModuleNotFoundError: No module named 'pytest'` after a full ~15-minute red `validate` job (measured, qa-validate run 42800200326 on PR #764 head 0db0462); `scripts/check_pytest_imports.py` refuses `import pytest` / `from pytest import` / a `pytest.` use naming file+line (a whole-line comment is prose, not code), and the test runs the real script against planted fixtures — which MUST go red — plus the real `tests/` green; bundled into `make lint`, already the FIRST step of `qa-validate`'s `validate` job and the fix loop |

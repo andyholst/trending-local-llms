@@ -419,6 +419,21 @@ architecture-check: python-env-image ## Fail when ARCHITECTURE.md misses a make 
 architecture-refresh: ## Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479)
 	python3 scripts/architecture_bot.py --write
 
+# The event-driven keeper for a red master ARCHITECTURE block gate (issue #861, rule 6q) —
+# the sibling of `openspec-index-repair` (#304) for the OTHER half of the generated pair.
+# A merged PR that moved a target/script/job without `architecture-refresh` reds the
+# push-to-master `validate` with no PR repair path; the Wednesday-only `architecture-bot`
+# leaves the merge queue red for days (measured after merge `91eb093`). qa-validate's
+# `architecture-repair` job runs exactly this target against the post-merge tree that just
+# went red; the DRIFT= verdict (rule 6d) decides whether the workflow may land a keeper PR,
+# and the workflow re-decides nothing.
+.PHONY: architecture-block-repair architecture-block-repair-pr-body
+architecture-block-repair: python-env-image ## Classify a stale ARCHITECTURE.md inventory block against THIS tree and regenerate it when the drift is block-only (DRIFT=none|block-only; issue #861)
+	$(PYTHON_RUN) python3 scripts/architecture_block_repair.py --classify-and-write
+
+architecture-block-repair-pr-body: ## Print the architecture-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #861)
+	@python3 scripts/architecture_block_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
+
 # ---- the PR closes the issue it implements (rule 6e, issue #284) -------------
 # The PR body is the only artifact in the pipeline whose whole purpose is "this merge
 # closes that issue", and the only one with no guard on its content. GitHub binds a
