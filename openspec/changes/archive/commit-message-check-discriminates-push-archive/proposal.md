@@ -1,6 +1,7 @@
 # The commit gate reads what a squash commit IMPLEMENTS, not the first number it names
 
 **Issue:** [#852](https://github.com/andyholst/trending-local-llms/issues/852)
+PR: #853
 **Capability:** `message-pattern-enforcement`
 
 ## Why

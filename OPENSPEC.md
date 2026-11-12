@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **221**
+Active changes: **15** · archived: **222**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
-| `commit-message-check-discriminates-push-archive` | active | #852 | — | [message-pattern-enforcement](openspec/changes/commit-message-check-discriminates-push-archive/specs/message-pattern-enforcement/spec.md) | 7/7 | [proposal.md](openspec/changes/commit-message-check-discriminates-push-archive/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `index-failure-names-its-cause` | active | none — found while unblocking the dispatch-bot verification pass. | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
@@ -105,6 +104,7 @@ Active changes: **16** · archived: **221**
 | `code-review-secrets-contract` | archived | #278 | — | [code-review-scan](openspec/changes/archive/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/code-review-secrets-contract/proposal.md) |
 | `commit-authorship-guard` | archived | #317 | — | [commit-authorship](openspec/changes/archive/commit-authorship-guard/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/commit-authorship-guard/proposal.md) |
 | `commit-engine-meta-fixture` | archived | #505 | — | [engine-meta-fixture-committed](openspec/changes/archive/commit-engine-meta-fixture/specs/engine-meta-fixture-committed/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-engine-meta-fixture/proposal.md) |
+| `commit-message-check-discriminates-push-archive` | archived | #852 | #853 | [message-pattern-enforcement](openspec/changes/archive/commit-message-check-discriminates-push-archive/specs/message-pattern-enforcement/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-message-check-discriminates-push-archive/proposal.md) |
 | `conflict-merge-says-why` | archived | #563 | — | [bot-conflict-repair](openspec/changes/archive/conflict-merge-says-why/specs/bot-conflict-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/conflict-merge-says-why/proposal.md) |
 | `container-contracts-cannot-name-gh` | archived | #194 | #799 | [agent-leg-skills](openspec/changes/archive/container-contracts-cannot-name-gh/specs/agent-leg-skills/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/container-contracts-cannot-name-gh/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | archived | #382 | — | [raw-snapshot-quarantine](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/proposal.md) |
