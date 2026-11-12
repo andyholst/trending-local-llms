@@ -748,7 +748,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 195 make targets, 66 files in `scripts/`)
+### Bots in the tree (11 pipelines, 195 make targets, 66 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -769,12 +769,6 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 - **when:** cron `7 6 * * 3`, `workflow_dispatch`
 - **jobs:** `guard`, `review` (needs `guard`)
 - **calls:** `make code-review-scan` — The code-review bot's checks: tree + pipelines -> findings (REPO=<owner/name>, STATIC=1 skips the checks that read the GitHub API, JSON=1 machine output; writes nothing); `make code-review-file` — File ONE issue per NEW code-review finding, capped per run (REPO=<owner/name>, CAP= issues per run, DRY=1 previews) — never edits code, never merges
-
-#### `.github/workflows/fix-bot.yml` — fix-bot
-
-- **when:** `workflow_dispatch`
-- **jobs:** `guard`, `fix` (needs `guard`)
-- **calls:** `make image-ensure`; `make hermes-smoke`; `make git-identity`; `make check-conflict-markers` — Fail when a tracked file carries a merge-conflict block (issue #588); `make reset-working-files` — Unstage the bot's working files (one list: $(WORKING_FILES); issue #543); `make lint` — Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked or blocked, the index current; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make fix`; `make findings-check` — Fail when findings.md is missing or a finding lacks evidence / why / done-when
 
 #### `.github/workflows/issue-bot.yml` — issue-bot
 
@@ -809,7 +803,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 #### `.github/workflows/qa-validate.yml` — qa-validate
 
 - **when:** `pull_request`, `push`, `workflow_dispatch`
-- **jobs:** `guard`, `validate` (needs `guard`), `live-smoke` (needs `guard`), `dispatch-fixbot` (needs `validate`), `auto-merge` (needs `validate`, `live-smoke`)
+- **jobs:** `guard`, `validate` (needs `guard`), `live-smoke` (needs `guard`), `auto-merge` (needs `validate`, `live-smoke`)
 - **calls:** `make lint` — Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make pr-closure` — Fail when this PR does not close the issue its branch implements (rule 6e); `make image-ensure`; `make secret-scan`; `make secret-scan-self-test`; `make check-secret-output` — CI: fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal; `make action-pin-check` — Fail when a third-party workflow uses: ref or tool-image tag is mutable and not allowlisted (issue #735); `make nerve-check`; `make validate`; `make validate-search`; `make validate-mapped`; `make openspec-check` — CI gate: every active change validates, every task ticked or blocked, the index current; `make openspec-archive-check` — Fail when an ACTIVE change names a MERGED PR, references a CLOSED issue with no recorded PR, or would be stranded by the PR being validated (PR=<n>) (rules 6f/#518/#779; host-side: needs gh); `make pipeline-failure-guard-check` — Refuse a closed pipeline-failure issue with no fix PR + guard test (REPO=<owner/name> optional; issue #802); `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make test`; `make search-smoke`; `make model-caps`; `make hermes-smoke`; `make agent-shell-keys-check` — Prove every container credential is visible in the AGENT's shell (Hermes strips them; issue #359); `make validate-fetch`; `make commit-message-check` — Fail when a COMMIT message does not follow the message pattern / close what it implements (issue #771); `make verify-closure`
 
 #### `.github/workflows/queued-alarm.yml` — queued-alarm
@@ -878,7 +872,7 @@ One line each, taken from the script's own docstring.
 - `scripts/ensure_image.py` — Prepare the runner images for THIS revision — one code path, CI and local.
 - `scripts/env_int.py` — Read an integer setting from the environment — EMPTY means MISSING (issue #487).
 - `scripts/file_findings.py` — File ONE GitHub issue per finding an implementation run recorded.
-- `scripts/fix_loop.sh` — fix_loop.sh — the fix-bot's repair loop (runs on the CI runner / host).
+- `scripts/fix_loop.sh` — fix_loop.sh — the implementer's repair loop (runs on the CI runner / host; since issue
 - `scripts/freshness_alarm.py` — An alarm over the ARTIFACT, not over the run (issue #452).
 - `scripts/hermes_skills_register.py` — Register the checkout's `.hermes/skills` with Hermes, so `hermes -s <name>` resolves (issue #549).
 - `scripts/hermes_smoke.sh` — hermes_smoke.sh — prove the search alias is ROUTED and ANSWERS, in seconds.
