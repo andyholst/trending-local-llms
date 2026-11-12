@@ -30,7 +30,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import update_trending as UT  # noqa: E402
 
 SCRIPT = ROOT / "scripts" / "query_coverage.py"
-REAL_STORE = json.loads((ROOT / "data" / "models.json").read_text())
+# The FLATTENED store (inline engines[]), exactly what the CLI reads via
+# `update_trending.load_store()` — the aged derivation keys on each model's
+# measurement dates, which the bare catalog file does not carry.
+REAL_STORE = UT.load_store()
 _PASS = 0
 _FAIL = 0
 
@@ -53,6 +56,22 @@ def _store_with(ids: list[str]) -> dict:
          "engines": [{"engine": "llama.cpp", "tps": "10", "hardware": "CPU",
                       "date": "2026-01-01"}]}
         for i in ids]}
+
+
+def _aged_store() -> dict:
+    """A store with ONE trending model and ONE aged (non-trending, old last_seen)
+    model whose only measurement is older still — the exact case rule 6o's
+    top-N derivation left unqueried."""
+    return {"models": [
+        {"id": "new-model", "name": "new-model", "last_seen": "2999-01-01",
+         "engagement": {"trend_score": 5.0, "posts_7d": 3},
+         "engines": [{"engine": "llama.cpp", "tps": "10", "hardware": "CPU",
+                      "date": "2999-01-01"}]},
+        {"id": "old-model", "name": "old-model", "last_seen": "2020-01-01",
+         "engagement": {"trend_score": 0.0, "posts_7d": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "9", "hardware": "CPU",
+                      "date": "2020-06-01"}]},
+    ]}
 
 
 def _run_cli(store: dict, *args: str) -> subprocess.CompletedProcess:
@@ -104,6 +123,90 @@ def test_the_empty_id_is_the_only_uncovered_shape():
           not UT.query_names_model("qwen3.8-27b tokens per second", {"id": ""}))
     check("rule: an empty id is not a substring match either",
           not UT.query_names_model("anything at all", {"id": ""}))
+
+
+def test_an_aged_model_gets_a_query_naming_it():
+    """The AGED half of the query set (this change): a model that left the
+    trending window is named again, so its stale figure can be refreshed and its
+    ranked-dimension gaps can close."""
+    store = _aged_store()
+
+    # When  the aged derivations are built
+    aged = UT.aged_models(store)
+    aged_throughput = UT.aged_derived_queries(store)
+    aged_footprint = UT.aged_footprint_queries(store)
+
+    # Then  the non-trending model is sampled, and gets throughput + footprint
+    check("aged: the non-trending model is selected, the trending one is not",
+          [m.get("id") for m in aged] == ["old-model"], [m.get("id") for m in aged])
+    check("aged: a throughput query names it",
+          UT.model_query(store["models"][1]) in aged_throughput, aged_throughput)
+    check("aged: a footprint query names it and asks the ranked dimensions",
+          UT.footprint_query(store["models"][1]) in aged_footprint, aged_footprint)
+    foot = UT.footprint_query(store["models"][1])
+    for term in ("vram", "ram", "context", "weights", "offload", "engine version"):
+        check(f"aged footprint: it asks for {term}", term in foot, foot)
+
+    # And  the pair reaches EVERY leg, never only one
+    full = UT.all_search_queries(store)
+    for leg in full:
+        check(f"aged: the {leg} leg carries the aged throughput query",
+              UT.model_query(store["models"][1]) in full[leg], sorted(full))
+        check(f"aged: the {leg} leg carries the aged footprint query",
+              UT.footprint_query(store["models"][1]) in full[leg], sorted(full))
+
+    # And  the coverage guard is green over the pair (both derivations)
+    check("aged: the derived set covers the aged model",
+          UT.uncovered_models(store) == [], UT.uncovered_models(store))
+
+
+def test_the_aged_sample_is_the_oldest_measurements():
+    """The aged sample is BOUNDED and picks the models whose newest measurement
+    is the OLDEST — the rows that most need a fresh search."""
+    # Given three non-trending models aged differently (and one trending)
+    store = {"models": [
+        {"id": "mid", "name": "mid", "last_seen": "2021-01-01",
+         "engagement": {"trend_score": 0.0, "posts_7d": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "1", "hardware": "CPU", "date": "2021-06-01"}]},
+        {"id": "oldest", "name": "oldest", "last_seen": "2019-01-01",
+         "engagement": {"trend_score": 0.0, "posts_7d": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "1", "hardware": "CPU", "date": "2019-06-01"}]},
+        {"id": "newest-of-aged", "name": "newest-of-aged", "last_seen": "2023-01-01",
+         "engagement": {"trend_score": 0.0, "posts_7d": 0},
+         "engines": [{"engine": "llama.cpp", "tps": "1", "hardware": "CPU", "date": "2023-06-01"}]},
+        {"id": "trending", "name": "trending", "last_seen": "2999-01-01",
+         "engagement": {"trend_score": 5.0, "posts_7d": 1},
+         "engines": [{"engine": "llama.cpp", "tps": "5", "hardware": "CPU", "date": "2999-01-01"}]},
+    ]}
+
+    # When  the aged sample is bounded to two
+    aged = UT.aged_models(store, 2)
+
+    # Then  it is the two OLDEST-newest-date models, oldest first, never the trending one
+    check("aged: bounds the sample to N most-aged",
+          [m.get("id") for m in aged] == ["oldest", "mid"], [m.get("id") for m in aged])
+
+    # A model with NO measurement date at all outranks every dated row (most aged)
+    bare = {"models": [dict(m) for m in store["models"]]
+            + [{"id": "no-measurement", "name": "no-measurement", "last_seen": "2018-01-01",
+                "engagement": {"trend_score": 0.0, "posts_7d": 0}, "engines": []}]}
+    aged_bare = UT.aged_models(bare, 2)
+    check("aged: a model with no measurement is the most aged (sorts first)",
+          [m.get("id") for m in aged_bare] == ["no-measurement", "oldest"],
+          [m.get("id") for m in aged_bare])
+
+
+def test_an_unsearchable_aged_model_is_not_sampled():
+    """An aged model with no usable id is not searchable — naming it would emit
+    a query that matches nothing (the vacuous-match guard), so it is excluded
+    from the sample exactly as an empty-id trending model is flagged."""
+    store = dict(_aged_store())
+    store["models"].append({"id": "", "name": "nameless", "last_seen": "2018-01-01",
+                            "engagement": {"trend_score": 0.0, "posts_7d": 0},
+                            "engines": []})
+    aged = UT.aged_models(store)
+    check("aged: a searchable model is sampled, the empty-id one is not",
+          [m.get("id") for m in aged] == ["old-model"], [m.get("id") for m in aged])
 
 
 def test_the_curated_queries_are_kept():
@@ -237,6 +340,12 @@ def test_the_prompts_and_the_guard_are_wired():
     # parameters, so a rule duplicated there would drift from the one reviewed file).
     check("wiring: the leg is pointed at its preloaded skill",
           "-s data-search" in out, out[:200])
+    # ... and the expanded prompt ALSO carries an aged model's query — a row that left the
+    # trending window must be re-queried on the same legs (this change).
+    aged = UT.aged_derived_queries(REAL_STORE)
+    if aged:
+        check("wiring: the expanded prompt names at least one aged model",
+              aged[0] in out, (aged[0], out[:200]))
 
 
 def test_the_real_store_is_covered():
@@ -244,6 +353,9 @@ def test_the_real_store_is_covered():
     # When  the coverage is evaluated over it
     derived = UT.derived_queries(REAL_STORE)
     missing = UT.uncovered_models(REAL_STORE)
+    aged = UT.aged_models(REAL_STORE)
+    aged_derived = UT.aged_derived_queries(REAL_STORE)
+    aged_foot = UT.aged_footprint_queries(REAL_STORE)
     r = _run_cli(REAL_STORE)
 
     # Then  every top-N trending model is named, and the CLI agrees (exit 0)
@@ -258,9 +370,26 @@ def test_the_real_store_is_covered():
     ranked_ids = [m.get("id") for m in UT.trending_models(REAL_STORE)[:len(footprint)]]
     check("real: every footprint query is built from a ranked model's own id",
           footprint == [f"{mid} {UT.MODEL_FOOTPRINT_SUFFIX}" for mid in ranked_ids], footprint)
-    check("real: the coverage run exits 0", r.returncode == 0, r.stderr[-200:])
-    check("real: --queries prints exactly what the prompts append (both halves)",
-          _run_cli(REAL_STORE, "--queries").stdout.strip() == ",".join(derived + footprint),
+    # The aged half: a bounded sample of the most-aged non-trending rows is ALSO named
+    # (this change) — the trending top-N and the aged sample together must all be
+    # covered, so the real coverage run is green AND `--queries` prints an aged query.
+    check("real: the aged sample is a bounded, non-empty set of non-trending rows",
+          0 < len(aged) <= UT.QUERY_AGED_N and
+          not any(m.get("id") in {t.get("id") for t in UT.trending_models(REAL_STORE)}
+                  for m in aged), [m.get("id") for m in aged])
+    check("real: the aged sample holds the oldest newest-measurement rows",
+          aged == sorted(aged, key=lambda m: UT.newest_measurement_date(m)),
+          [UT.newest_measurement_date(m) for m in aged])
+    check("real: aged_derived is one throughput query per aged model",
+          len(aged_derived) == len(aged) == len(aged_foot), f"{len(aged_derived)}/{len(aged)}")
+    ageds = ",".join(aged_derived + aged_foot)
+    check("real: every aged model is named by the aged set",
+          all(UT.query_names_model(ageds, m) for m in aged), ageds[:200])
+    check("real: the coverage run exits 0",
+          r.returncode == 0, r.stderr[-200:])
+    check("real: --queries prints exactly what the prompts append (both halves, both sets)",
+          _run_cli(REAL_STORE, "--queries").stdout.strip()
+          == ",".join(derived + footprint + aged_derived + aged_foot),
           _run_cli(REAL_STORE, "--queries").stdout.strip()[:200])
 
 
@@ -305,6 +434,9 @@ def main() -> int:
     test_a_trending_model_gets_a_query_naming_it()
     test_an_uncovered_trending_model_fails_the_run()
     test_the_empty_id_is_the_only_uncovered_shape()
+    test_an_aged_model_gets_a_query_naming_it()
+    test_the_aged_sample_is_the_oldest_measurements()
+    test_an_unsearchable_aged_model_is_not_sampled()
     test_the_curated_queries_are_kept()
     test_a_sibling_model_query_does_not_cover()
     test_a_footprint_query_names_each_ranked_model()

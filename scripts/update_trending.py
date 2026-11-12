@@ -227,6 +227,18 @@ USER_AGENT = "trending-local-llms-bot/1.0 (research-index)"
 QUERY_TOP_N = 10
 MODEL_QUERY_SUFFIX = "tokens per second"
 
+# The AGED half of the same query set (the issue this change implements): the
+# query derivation above names only the TOP-N TRENDING models. A model that
+# drops out of the trending window is then named by no `<id>` query ever again —
+# so its ranked-dimension gaps can never close and its stale measurement ages
+# with nothing to refresh it, exactly where the README's Recent and Stale tables
+# still show it. The store's retention rule (AGENTS 2.3) keeps the row; the
+# collection logic never re-visits it. So a bounded sample of the AGING store —
+# the models with the OLDEST newest measurement date, a proxy for "most needs a
+# fresh search" — gets the SAME throughput + footprint query pair, appended to
+# every leg like the top-N ones. `QUERY_AGED_N` is the size of that sample.
+QUERY_AGED_N = 10
+
 # --- the FOOTPRINT half of the same query set (tech-debt
 # `ranked-gaps-need-new-search-data`, filed while implementing #395) ----------
 # Naming a model asked for its throughput and nothing else, so a post that
@@ -329,23 +341,73 @@ def footprint_queries(store: dict, top_n: int = QUERY_TOP_N) -> list[str]:
     return [footprint_query(m) for m in trending_models(store)[:max(0, int(top_n))]]
 
 
-def all_search_queries(store: dict, top_n: int = QUERY_TOP_N) -> dict[str, list[str]]:
+def newest_measurement_date(m: dict) -> str:
+    """The newest measurement date of a model, or '' when it has none.
+
+    A model with no measurement at all is the MOST aged — it is exactly the row
+    a reader still sees with nothing to refresh it — so '' sorts before any real
+    date in `aged_models()`."""
+    dates = [str(e.get("date", "")) for e in (m.get("engines") or [])
+             if re.match(r"^\d{4}-\d{2}-\d{2}$", str(e.get("date", "")))]
+    return max(dates) if dates else ""
+
+
+def aged_models(store: dict, n: int = QUERY_AGED_N) -> list[dict]:
+    """The aging store: the N non-trending models with the OLDEST newest
+    measurement date (a model with no measurement is the most aged).
+
+    These are exactly the models rule 6o's top-N derivation stopped covering — a
+    row that dropped out of the trending window and is then named by no query
+    again, while the README's Recent and Stale tables still show it. Only models
+    with a usable id are searchable (an empty key is named by nothing, the
+    vacuous-match guard), so those are the only candidates."""
+    today = now_utc()
+    n = max(0, int(n))
+    pool = [m for m in (store.get("models") or [])
+            if model_band(m, today) != 0 and _query_key(m.get("id"))]
+    pool.sort(key=lambda m: (bool(newest_measurement_date(m)),
+                             newest_measurement_date(m)))
+    return pool[:n]
+
+
+def aged_derived_queries(store: dict, aged_n: int = QUERY_AGED_N) -> list[str]:
+    """One throughput query naming each of the AGED models (same shape as the
+    top-N `derived_queries()`, so a recent/`stale` row can surface a fresh post)."""
+    return [model_query(m) for m in aged_models(store, aged_n)]
+
+
+def aged_footprint_queries(store: dict, aged_n: int = QUERY_AGED_N) -> list[str]:
+    """One FOOTPRINT query for each AGED model — the dimension gaps of a stale
+    row are the ones a fresh search is the only fix for (issue #414)."""
+    return [footprint_query(m) for m in aged_models(store, aged_n)]
+
+
+def all_search_queries(store: dict, top_n: int = QUERY_TOP_N,
+                       aged_n: int = QUERY_AGED_N) -> dict[str, list[str]]:
     """The curated SEARCH_GROUPS with the derived model queries appended to
     EVERY leg — a model's figure can be measured on any backend and the legs run
     in parallel, so each leg asks for the ranked models as well as its hardware
-    keywords. Both halves of the derived set are appended: the throughput query
-    and the footprint query (the dimension gaps are acquisition gaps). The
-    curated base is kept, never replaced."""
-    derived = derived_queries(store, top_n) + footprint_queries(store, top_n)
+    keywords. Both halves of the derived set are appended (the throughput query
+    and the footprint query — the dimension gaps are acquisition gaps), for the
+    TOP-N trending models AND the QUERY_AGED_N most-aged models (issue this
+    change implements: a row that left the trending window is re-queried too,
+    or its gaps can never close). The curated base is kept, never replaced."""
+    derived = (derived_queries(store, top_n) + footprint_queries(store, top_n)
+               + aged_derived_queries(store, aged_n)
+               + aged_footprint_queries(store, aged_n))
     return {backend: list(queries) + derived for backend, queries in SEARCH_GROUPS.items()}
 
 
-def uncovered_models(store: dict, top_n: int = QUERY_TOP_N) -> list[dict]:
-    """The top-N trending models that NO query in the set names — the gap the
-    coverage guard makes loud, separable from a query that ran and found
-    nothing. Empty when the derivation works; non-empty when it does not."""
-    queries = [q for queries in all_search_queries(store, top_n).values() for q in queries]
-    return [m for m in trending_models(store)[:max(0, int(top_n))]
+def uncovered_models(store: dict, top_n: int = QUERY_TOP_N,
+                     aged_n: int = QUERY_AGED_N) -> list[dict]:
+    """The ranked models (TOP-N trending + QUERY_AGED_N most-aged) that NO query
+    in the set names — the gap the coverage guard makes loud, separable from a
+    query that ran and found nothing. Empty when the derivation works; non-empty
+    when it does not."""
+    queries = [q for queries in all_search_queries(store, top_n, aged_n).values()
+               for q in queries]
+    return [m for m in (trending_models(store)[:max(0, int(top_n))]
+                        + aged_models(store, aged_n))
             if not any(query_names_model(q, m) for q in queries)]
 
 STRICT = os.environ.get("STRICT") == "1"
