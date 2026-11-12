@@ -271,6 +271,39 @@ def test_search_contract_pass_fail():
     check("search-contract: catches missing vram_min", len(fails) == 1 and "vram_min" in fails[0])
 
 
+def test_search_contract_declares_supported_engines():
+    """The search agent writes a model-level `supported_engines` list (the store
+    requires it on every model, so it is real data, not a stray). The search
+    contract must DECLARE it — additionalProperties:false otherwise reds every
+    refresh PR that carries one (measured: the agent emitted it on four nvidia
+    snapshots, 2026-11-11). Rule 6b: optional (additive, never in `required`)."""
+    # The REAL contract, driven through the REAL check (rule 6m).
+    real_schema = (ROOT / "data" / "search_contract.json").read_text()
+    item_props = json.loads(real_schema)["properties"]["models"]["items"]["properties"]
+    check("search-contract: declares the model key supported_engines",
+          "supported_engines" in item_props, str(sorted(item_props)))
+    check("search-contract: supported_engines is OPTIONAL (additive, rule 3b)",
+          "supported_engines" not in json.loads(real_schema)["properties"]["models"]["items"]
+          .get("required", []))
+    # A real capture shape carrying supported_engines must pass the REAL check.
+    raw = {
+        "backend": "nvidia", "generated_utc": "2026-11-11T23:51:01Z",
+        "models": [{
+            "id": "qwen3.8-27b", "name": "Qwen3.8-27B-Instruct",
+            "full_name": "Qwen3.8-27B-Instruct", "type": "LLM", "license": "Apache-2.0",
+            "params": "27B", "hf": "Qwen/Qwen3.8-27B", "vram_tier": "24GB",
+            "vram_min": "24GB", "backends": ["CUDA"], "supported_engines": ["llama.cpp"],
+            "engines": [{"engine": "llama.cpp", "tps": "381", "hardware": "RTX 3090 24GB",
+                         "date": "2026-11-09",
+                         "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2119614903451283899"}],
+            "last_seen": "2026-11-09",
+        }],
+    }
+    fails = _run_search_contract({"nvidia-ok.json": raw}, real_schema)
+    check("search-contract: a snapshot carrying supported_engines passes the REAL check",
+          len(fails) == 0, fails[:2])
+
+
 def test_no_removal():
     with tempfile.TemporaryDirectory() as td:
         snap_dir = Path(td)
@@ -612,6 +645,7 @@ def main() -> int:
     test_model_fields()
     test_schema_pass_fail()
     test_search_contract_pass_fail()
+    test_search_contract_declares_supported_engines()
     test_no_removal()
     test_no_value_loss()
     test_every_check_is_wired_to_a_stage_and_a_makefile_target()
