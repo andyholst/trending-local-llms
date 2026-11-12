@@ -8,14 +8,33 @@ Two halves, both required by rule 6c:
     that touches a secret, a cron without the schedule bypass, a repository event
     the guard refuses, a guard that would admit a stranger, a job that skips the
     guard, a trigger outside the decided decision surface.
+
+Plain-script harness (the test image runs these as scripts, not pytest — the same
+command CI runs must be the command you can run locally, rule 6m).
 """
+import io
 import sys
+import tempfile
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import check_workflow_guards as scan  # noqa: E402  (the ONE implementation; LSP can't see the sys.path)
+
+PASSED = FAILED = 0
+
+
+def check(name: str, ok: bool, detail: object = "") -> None:
+    global PASSED, FAILED
+    if ok:
+        PASSED += 1
+        print(f"  ok  {name}")
+    else:
+        FAILED += 1
+        print(f"FAIL {name}  {detail}")
+
 
 # The real guard script (queued-alarm's), as a fixture template — fixtures plant ONE
 # defect each into an otherwise-correct pipeline.
@@ -118,16 +137,18 @@ def _fixture_tree(tmp: Path) -> Path:
 def test_the_real_tree_scans_green_and_covers_every_workflow():
     reports, problems = scan.scan_tree(ROOT)
     names = {f.name for f in (ROOT / scan.WF_DIR).glob("*.yml")}
-    assert problems == [], problems
+    check("real tree: every workflow scans green", problems == [], problems)
     scanned = {r.split(" ", 1)[1].split(":")[0] for r in reports}
-    assert scanned == names, f"the scan missed workflows: {names - scanned}"
-    assert all("guard-job=guard" in r for r in reports), reports
+    check("real tree: no workflow escapes the scan", scanned == names, names - scanned)
+    check("real tree: every workflow names its guard job",
+          all("guard-job=guard" in r for r in reports), reports)
 
 
 def test_the_real_guard_scripts_decide_every_caller_class():
     """Not a shape match: the actual guard shell from every dispatchable workflow is
     executed against the caller table (rule 6m: run the logic, do not fake it)."""
     ran = 0
+    mistakes = []
     for f in sorted((ROOT / scan.WF_DIR).glob("*.yml")):
         wf = scan.parse_workflow(f.read_text())
         if "workflow_dispatch" not in wf["on"]:
@@ -135,9 +156,12 @@ def test_the_real_guard_scripts_decide_every_caller_class():
         _guard_job, step = scan.find_guard_step(wf)
         for ev, actor, trigger, want, label in scan.GUARD_CALLERS:
             rc, out = scan.run_guard_script(step["run"], ev, actor, trigger, scan.GUARD_PERMS)
-            assert (rc == 0) == (want == 0), f"{f.name} {label}: rc={rc} {out}"
+            if (rc == 0) != (want == 0):
+                mistakes.append(f"{f.name} {label}: rc={rc} {out}")
             ran += 1
-    assert ran >= 9 * 8, f"expected the caller classes run against every dispatchable workflow, ran {ran}"
+    check("real guard scripts: every dispatchable workflow ran the full caller table",
+          ran >= 9 * 8, f"ran {ran}")
+    check("real guard scripts: every caller class decided as decided", not mistakes, mistakes)
 
 
 def test_a_scheduled_pipeline_starts_from_no_human():
@@ -146,7 +170,7 @@ def test_a_scheduled_pipeline_starts_from_no_human():
     wf = scan.parse_workflow((ROOT / scan.WF_DIR / "refresh-bot.yml").read_text())
     _job, step = scan.find_guard_step(wf)
     rc, out = scan.run_guard_script(step["run"], "schedule", "", "", scan.GUARD_PERMS)
-    assert rc == 0, out
+    check("schedule bypass starts a pipeline with no caller at all", rc == 0, out)
 
 
 def test_repository_events_are_admitted_whatever_the_actor():
@@ -158,43 +182,55 @@ def test_repository_events_are_admitted_whatever_the_actor():
         for ev in wf["on"]:
             if ev in scan.REPO_EVENTS:
                 rc, out = scan.run_guard_script(step["run"], ev, "stranger", "stranger", scan.GUARD_PERMS)
-                assert rc == 0, f"{fname} {ev}: rc={rc} {out}"
+                check(f"{fname} admits {ev} whatever the actor", rc == 0, f"rc={rc} {out}")
 
 
-def test_planted_fixtures_go_red_for_each_escape(tmp_path):
-    tree = _fixture_tree(tmp_path)
-    _reports, problems = scan.scan_tree(tree)
-    joined = "\n".join(problems)
-    for fname, (_text, needle) in FIXTURES.items():
-        matching = [p for p in problems if p.startswith(fname)]
-        assert matching, f"{fname} passed the scan"
-        assert any(needle in p for p in matching), \
-            f"{fname} must fail with '{needle}'; its problems:\n{joined}"
+def test_planted_fixtures_go_red_for_each_escape():
+    with tempfile.TemporaryDirectory() as td:
+        tree = _fixture_tree(Path(td))
+        _reports, problems = scan.scan_tree(tree)
+        joined = "\n".join(problems)
+        for fname, (_text, needle) in FIXTURES.items():
+            matching = [p for p in problems if p.startswith(fname)]
+            check(f"fixture {fname} is refused", bool(matching), "it passed the scan")
+            check(f"fixture {fname} fails with the named reason",
+                  any(needle in p for p in matching), joined)
 
 
-def test_main_exits_loud_on_the_fixture_tree(tmp_path, capsys):
-    tree = _fixture_tree(tmp_path)
-    assert scan.main([str(tree)]) == 1, "a fixture tree must exit 1, never a silent clean"
-    out = capsys.readouterr().out
-    assert "problem(s)" in out and "RED" in out
+def test_main_exits_loud_on_the_fixture_tree():
+    with tempfile.TemporaryDirectory() as td:
+        tree = _fixture_tree(Path(td))
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = scan.main([str(tree)])
+        check("a fixture tree exits 1, never a silent clean", rc == 1, rc)
+        check("the red exit names the problem count",
+              "problem(s)" in out.getvalue() and "RED" in out.getvalue(), out.getvalue())
 
 
-def test_main_exits_2_when_the_tree_cannot_be_read(tmp_path, capsys):
-    assert scan.main([str(tmp_path / "not-a-repo")]) == 2
-    assert "cannot read the tree" in capsys.readouterr().err
+def test_main_exits_2_when_the_tree_cannot_be_read():
+    with tempfile.TemporaryDirectory() as td:
+        err = io.StringIO()
+        with redirect_stderr(err):
+            rc = scan.main([str(Path(td) / "not-a-repo")])
+        check("an unreadable tree exits 2", rc == 2, rc)
+        check("an unreadable tree says so loudly", "cannot read the tree" in err.getvalue(), err.getvalue())
 
 
 def test_the_scan_is_wired_through_the_makefile_into_lint():
     makefile = (ROOT / "Makefile").read_text()
-    assert "python3 scripts/check_workflow_guards.py" in makefile
-    assert "$(MAKE) --no-print-directory check-workflow-guards" in makefile
+    check("the scan reaches the product through make",
+          "python3 scripts/check_workflow_guards.py" in makefile)
+    check("the public target is the guarded seam",
+          "$(MAKE) --no-print-directory check-workflow-guards" in makefile)
     lint = makefile.split("lint: ##", 1)[1].split("\n\n", 1)[0]
-    assert "check-workflow-guards" in lint, "the scan must ride make lint — the gate every PR, bot round and human runs"
+    check("the scan rides make lint — the gate every PR, bot round and human runs",
+          "check-workflow-guards" in lint, lint[:200])
     # and lint is reached by the pipeline (qa-validate + fix_loop), per rule 6m
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
     loop = (ROOT / "scripts" / "fix_loop.sh").read_text()
-    assert "make lint" in qa, "qa-validate must run make lint"
-    assert "lint" in loop, "fix_loop must run lint as its first check"
+    check("qa-validate runs make lint", "make lint" in qa)
+    check("fix_loop runs lint as its first check", "lint" in loop)
 
 
 def test_parse_workflow_reads_triggers_needs_and_guard_run():
@@ -224,24 +260,49 @@ jobs:
         run: echo p
 """
     wf = scan.parse_workflow(text)
-    assert wf["on"] == ["schedule", "workflow_dispatch"]
-    assert wf["jobs"]["work"]["needs"] == ["guard", "prep"]
-    assert wf["jobs"]["prep"]["needs"] == ["guard"]
+    check("parser reads the triggers", wf["on"] == ["schedule", "workflow_dispatch"], wf["on"])
+    check("parser reads needs", wf["jobs"]["work"]["needs"] == ["guard", "prep"], wf["jobs"])
+    check("parser reads a list-form needs", wf["jobs"]["prep"]["needs"] == ["guard"], wf["jobs"])
     guard_job, step = scan.find_guard_step(wf)
-    assert guard_job == "guard"
-    assert 'echo "guard $ACTOR $TRIGGER $OWNER"' in step["run"]
+    check("the guard step is found by name", guard_job == "guard", guard_job)
+    check("the guard step carries the guard shell",
+          'echo "guard $ACTOR $TRIGGER $OWNER"' in step["run"], step["run"])
 
 
-def test_a_second_pipeline_with_an_environment_gate_fails_the_scan(tmp_path):
+def test_a_second_pipeline_with_an_environment_gate_fails_the_scan():
     """The exact scenario the owner reported: another agent's PR added a manual
     approval gate. A tree carrying it turns the scan red — rule 6c."""
-    tree = tmp_path / "repo"
-    wfs = tree / ".github" / "workflows"
-    wfs.mkdir(parents=True)
-    real = (ROOT / scan.WF_DIR / "bot-health.yml").read_text()
-    (wfs / "ok.yml").write_text(real)
-    (wfs / "gated.yml").write_text(real.replace("  health:\n", "  health:\n    environment: Production\n", 1))
-    reports, problems = scan.scan_tree(tree)
-    assert len(reports) == 2
-    assert any("gated.yml" in p and "environment:" in p for p in problems), problems
-    assert not any("ok.yml" in p for p in problems), problems
+    with tempfile.TemporaryDirectory() as td:
+        tree = Path(td) / "repo"
+        wfs = tree / ".github" / "workflows"
+        wfs.mkdir(parents=True)
+        real = (ROOT / scan.WF_DIR / "bot-health.yml").read_text()
+        (wfs / "ok.yml").write_text(real)
+        (wfs / "gated.yml").write_text(real.replace("  health:\n", "  health:\n    environment: Production\n", 1))
+        reports, problems = scan.scan_tree(tree)
+        check("a second pipeline is scanned too", len(reports) == 2, reports)
+        check("the planted environment gate turns the tree red",
+              any("gated.yml" in p and "environment:" in p for p in problems), problems)
+        check("the clean sibling is not falsely accused",
+              not any("ok.yml" in p for p in problems), problems)
+
+
+def main() -> int:
+    """Run every test in this file — a test defined but never called passes CI silently."""
+    print("workflow guards: every workflow is guard-scanned, every guard class executed")
+    test_the_real_tree_scans_green_and_covers_every_workflow()
+    test_the_real_guard_scripts_decide_every_caller_class()
+    test_a_scheduled_pipeline_starts_from_no_human()
+    test_repository_events_are_admitted_whatever_the_actor()
+    test_planted_fixtures_go_red_for_each_escape()
+    test_main_exits_loud_on_the_fixture_tree()
+    test_main_exits_2_when_the_tree_cannot_be_read()
+    test_the_scan_is_wired_through_the_makefile_into_lint()
+    test_parse_workflow_reads_triggers_needs_and_guard_run()
+    test_a_second_pipeline_with_an_environment_gate_fails_the_scan()
+    print(f"\nPASSED {PASSED} | FAILED {FAILED}")
+    return 1 if FAILED else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
