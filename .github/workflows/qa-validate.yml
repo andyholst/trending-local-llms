@@ -358,3 +358,80 @@ jobs:
           # green one over an issue that is still open.
           make verify-closure PR="$PR_NUM" REPO="$REPO"
           echo "Merged PR #$PR_NUM at $HEAD_SHA (validate + live-smoke green)"
+
+  # The event-driven keeper for a red OpenSpec index gate (issue #304, rule 6q).
+  # A merged PR archives its OpenSpec change, so master's tree no longer matches
+  # the committed, generated OPENSPEC.md and the push-to-master `validate` goes
+  # red — and a red master validate has no PR-side repairer: auto-merge of EVERY
+  # open PR waits behind it (measured 2026-11-12: pushes 28f2cd3 and ce57e9b,
+  # both red at the OpenSpec gate; auto-merge blocked repo-wide for hours).
+  # This job runs only after a FAILED validate on a push to master, against the
+  # exact post-merge tree that just went red. `make openspec-index-repair`
+  # classifies the drift (rule 6d: the verdict DRIFT=none|index-only comes from
+  # scripts/openspec_index_repair.py, the workflow re-decides nothing); only an
+  # index-only drift whose rewrite passes the generator's own check may land, as
+  # a keeper PR — like the ledger PR (#802) it records drift and carries NO
+  # closing keyword (rule 6e). `DRIFT=none` means the red had another cause: the
+  # job says so and lands nothing. Any other red validate stays red for §6r.
+  index-repair:
+    name: index-repair (keeper PR for a stale generated index)
+    needs: [guard, validate]
+    if: >-
+      failure() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: index-repair
+      cancel-in-progress: false
+    steps:
+      - name: Checkout the exact master commit that went red
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+
+      - name: Classify the index gate against this tree; regenerate when the drift is index-only
+        run: |
+          set -euo pipefail
+          if ! make openspec-index-repair; then
+            echo "index-repair could not classify the generated index (the script exits 2 on an unreadable one) — refusing to land anything."
+            exit 2
+          fi
+
+      - name: Land the regenerated index as a keeper PR (owner PAT; records, never closes)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          MASTER_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- OPENSPEC.md; then
+            echo "OPENSPEC.md already matched the merged tree (DRIFT=none) — the red was not index staleness; no keeper PR."
+            exit 0
+          fi
+          CHANGED=$(git status --porcelain)
+          if [ "$CHANGED" != " M OPENSPEC.md" ]; then
+            echo "The regeneration changed more than the generated index — refusing to land:"
+            echo "$CHANGED"
+            exit 1
+          fi
+          OPEN=$(gh pr list --repo "$REPO" --state open --json headRefName \
+            --jq '[.[] | select(.headRefName | startswith("ci/openspec-index-repair-"))] | length')
+          if [ "$OPEN" -gt 0 ]; then
+            echo "An index-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
+            exit 0
+          fi
+          branch="ci/openspec-index-repair-$(date -u +%Y%m%dT%H%M%SZ)"
+          make git-identity
+          git switch -c "$branch"
+          git add OPENSPEC.md
+          git commit -m "chore(openspec): regenerate the generated index after a master merge left it stale (refs #304)"
+          git push origin "HEAD:refs/heads/$branch"
+          make openspec-index-repair-pr-body MASTER_SHA="$MASTER_SHA" RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
+            --title "chore(openspec): repair the generated index left stale by a master merge" \
+            --body-file -

@@ -266,6 +266,52 @@ def test_qa_validate():
           "fix-bot" not in str(wf), "a retired pipeline is still named")
 
 
+def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate():
+    """#304 (rule 6q/6f): a merged PR archives its OpenSpec change, so the
+    push-to-master `validate` goes red at `openspec-check` with NO PR-side
+    repairer, and auto-merge stays blocked repo-wide while a Wednesday-only
+    keeper sits idle (measured 2026-11-12: pushes 28f2cd3, ce57e9b). qa-validate
+    grows an `index-repair` job that runs ONLY after a red validate on a
+    push-to-master run, asks the script for the verdict (rule 6d — the workflow
+    re-decides nothing), and lands the regenerated index as a keeper PR only when
+    the verdict is index-only and only when nothing but the index changed."""
+    wf = load("qa-validate.yml")
+    job = wf["jobs"].get("index-repair")
+    check("qa: index-repair job exists", job is not None, sorted(wf["jobs"]))
+    if not job:
+        return
+    needs = job["needs"] if isinstance(job["needs"], list) else [job["needs"]]
+    check("qa: index-repair needs the guard AND validate (guard first, rule 6j)",
+          needs == ["guard", "validate"], needs)
+    text = run_text(job)
+    check("qa: index-repair classifies through the make target (rule 6m)",
+          "make openspec-index-repair" in text, "")
+    check("qa: a refuse-to-classify exits 2 loudly",
+          "exit 2" in text and "could not classify" in text, text[:400])
+    gate = str(job.get("if", ""))
+    check("qa: a keeper PR lands only on a FAILED push to master (event-driven, rule 6q)",
+          "failure()" in gate and "github.event_name == 'push'" in gate
+          and "refs/heads/master" in gate, gate)
+    check("qa: a keeper PR never lands on a PR event (no recursive repair of its own PR)",
+          "pull_request" not in str(job), str(job)[:600])
+    check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
+          "make openspec-index-repair-pr-body MASTER_SHA=" in text, "")
+    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert)",
+          "ci/openspec-index-repair-$(date -u +%Y%m%dT%H%M%SZ)" in text, "")
+    check("qa: it commits as the repo agent (rule 3f)",
+          "make git-identity" in text, "")
+    check("qa: only the generated index may land (a wider drift is refused here)",
+          "refusing to land" in text and "git diff --quiet -- OPENSPEC.md" in text
+          and '" M OPENSPEC.md"' in text, "")
+    check("qa: index-repair never merges and never pushes master (rules 1/6e)",
+          "gh pr merge" not in text and "push origin master" not in text
+          and "--admin" not in text, "")
+    perms = job.get("permissions", {})
+    check("qa: index-repair holds only what it writes",
+          perms.get("contents") == "write" and perms.get("pull-requests") == "write",
+          perms)
+
+
 def test_qa_validate_header_points_at_pinned_action_howto():
     """#739 (#714 Slice 3): the qa-validate header comment points operators at
     the README 'Bumping a pinned GitHub Action' section (the guard runs in this
@@ -2739,6 +2785,7 @@ def main() -> int:
     test_the_validate_job_checks_out_the_pr_tree_not_the_merge_result()
     test_the_closure_check_reruns_when_the_pr_body_is_edited()
     test_qa_validate()
+    test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate()
     test_qa_validate_header_points_at_pinned_action_howto()
     test_fix_pipeline_retired()
     test_issue_bot_pr_body_actually_closes_the_issue()
