@@ -1,7 +1,8 @@
 # Proposal: weight-gb-cannot-belong
 
-Issue: tech-debt — "A measurement's weight_gb can belong to another model (Bonsai 2 9B
-carries ~493GB NVFP4)" (filed while implementing #572, the above-48-GB tier ladder).
+Issue: #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B
+PR: #809
+carries ~493GB NVFP4)"; filed while implementing the above-48-GB tier ladder.
 
 ## Why
 
