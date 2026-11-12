@@ -285,7 +285,8 @@ def main() -> int:
                test_setup_registers_the_directory_and_reads_it_back,
                test_the_workflows_name_rc_3_as_a_question,
                test_the_gate_is_wired_to_the_lint_target_and_the_suite,
-               test_the_fixer_skill_names_the_openspec_failures):
+               test_the_fixer_skill_names_the_openspec_failures,
+               test_the_gh_guard_refuses_instructions_and_keeps_forbiddances):
         print(f"-- {fn.__name__}")
         fn()
     print(f"\n{_PASS} passed, {_FAIL} failed")
