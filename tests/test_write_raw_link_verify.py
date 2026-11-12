@@ -195,7 +195,7 @@ def test_one_url_costs_one_request_per_write():
               len(posts) == 1, _SEEN)
 
 
-if __name__ == "__main__":
+def main() -> int:
     for fn in (test_dead_source_post_refuses_the_measurement,
                test_dead_engine_repo_is_stripped_and_the_figure_kept,
                test_indeterminate_answers_keep_the_values,
@@ -203,5 +203,9 @@ if __name__ == "__main__":
                test_one_url_costs_one_request_per_write):
         print(f"== {fn.__name__}")
         fn()
-    print(f"\nPASS {_PASS} | FAIL {_FAIL}")
-    sys.exit(1 if _FAIL else 0)
+    print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
+    return 1 if _FAIL else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
