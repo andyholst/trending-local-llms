@@ -1,6 +1,7 @@
 # Sweep alarm window follows the weekly sweep
 
 Issue: #804
+PR: #842
 
 ## Why
 
