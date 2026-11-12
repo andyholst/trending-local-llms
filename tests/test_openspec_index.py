@@ -287,7 +287,7 @@ def test_wired_into_make_test():
     check("make: openspec-index-check verifies it",
           "--check" in recipe("openspec-index-check"), recipe("openspec-index-check"))
     check("make: openspec-check runs the index check",
-          "openspec-check: openspec-image openspec-tasks-check openspec-index-check" in mk, "")
+          "openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check" in mk, "")
     check("make: the index tests run in the suite",
           wired(__file__), "")
 
