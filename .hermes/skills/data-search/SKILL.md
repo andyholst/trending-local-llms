@@ -24,11 +24,13 @@ The prompt carries this run's parameters. Nothing else is a rule to re-derive:
   run writes, and the only backend whose keywords are searched.
 - **`keywords`** — the backend's own query list, already written in the prompt. Search it as given;
   do not add, drop or rewrite a query.
-- **`model_queries`** — the trending-model queries derived from the store by
-  `scripts/query_coverage.py`. Run ALL of them, the same way, in the same last-3-day window: they
-  name the models we rank, so a higher figure for one can actually be found (AGENTS.md rule 6o). A
-  model no query names is a LOUD gap, so never skip one because it looks unrelated. Each ranked
-  model gets **two** queries — one for its throughput (`<id> tokens per second`) and one for its
+- **`model_queries`** — the derived model queries from `scripts/query_coverage.py`. Run ALL of
+  them, the same way, in the same last-3-day window: they name the models we rank, so a higher
+  figure for one can actually be found (AGENTS.md rule 6o). A model no query names is a LOUD gap,
+  so never skip one because it looks unrelated. Each ranked model (the top `QUERY_TOP_N` trending
+  AND the `QUERY_AGED_N` most-aged — a model that left the trending window is re-queried so its
+  stale figure can be refreshed) gets **two** queries — one for its throughput
+  (`<id> tokens per second`) and one for its
   **footprint** (`<id> vram ram context weights offload engine version`) — because a post that answers a throughput query
   can state no VRAM, weight size, context window or engine build, which is exactly why those
   dimension gaps stay open. A footprint figure a post states belongs in its field, never only in

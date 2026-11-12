@@ -135,9 +135,13 @@ verified against the lightbrd.com mirror.
 > model: of the 24 queries the ONE model-specific one names `qwen3.8-27b`, and
 > none names `Strata`, so every figure for the model at the top of the README
 > arrived incidentally and a higher one upstream could never be found. So each
-> search leg ALSO runs the **trending-model queries** — TWO per model in the top
-> `QUERY_TOP_N` (10) of `data/models.json`: one for its throughput, naming the
-> model by its own id (`<id> tokens per second`), and one for its footprint
+> search leg ALSO runs the **derived model queries** — TWO per model, for the top
+> `QUERY_TOP_N` (10) trending models of `data/models.json` AND for the
+> `QUERY_AGED_N` (10) most-aged rows (the non-trending models whose newest
+> measurement is the OLDEST — a row that left the trending window is re-queried
+> so its stale figure can be refreshed and its ranked-dimension gaps can close):
+> one for its throughput, naming the model by its own id (`<id> tokens per
+> second`), and one for its footprint
 > (`<id> vram ram context weights offload engine version`). The second exists because a post that
 > answers a throughput query can legitimately state no VRAM, weight size, context
 > window or engine build — which is exactly why those dimension gaps stayed open
@@ -145,9 +149,9 @@ verified against the lightbrd.com mirror.
 > store by `scripts/update_trending.py` (ONE implementation, rule 6d) and reach
 > the prompts as `$(MODEL_QUERIES)`; `python3 scripts/query_coverage.py --queries`
 > prints exactly what a prompt sends, and `make query-coverage` reports the
-> curated-only reach against the full set — 10 of the top 10 once the derived
-> queries are added — and **FAILS** when a model is named by no query, so when
-> you add a model, the pipeline says so instead of silently capping what we know.
+> curated-only reach against the full set (trending + aged) and **FAILS** when a
+> model is named by no query, so when you add a model, the pipeline says so
+> instead of silently capping what we know.
 
 ## 3. Extract per model
 
