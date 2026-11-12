@@ -1,6 +1,7 @@
 # A spec's `- **Test:**` line is resolved against the tree, or the gate goes red
 
 **Issue:** #621
+PR: #810
 **Capability:** `openspec-spec-tests-check` (the resolution of every spec's
 `- **Test:**` citation as a gate in `make openspec-check`).
 
