@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **218**
+Active changes: **15** · archived: **219**
 
 ## Active changes
 
@@ -70,6 +70,7 @@ Active changes: **15** · archived: **218**
 | `agent-install-seam` | archived | #207 | — | [agent-image](openspec/changes/archive/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/agent-install-seam/proposal.md) |
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
 | `agent-shell-keys` | archived | #359 | — | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-shell-keys/proposal.md) |
+| `agents-md-blocked-box-rule` | archived | #635 | #849 | [rulebook](openspec/changes/archive/agents-md-blocked-box-rule/specs/rulebook/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/agents-md-blocked-box-rule/proposal.md) |
 | `agents-md-footprint-dimensions` | archived | #375 | — | [agents-rulebook](openspec/changes/archive/agents-md-footprint-dimensions/specs/agents-rulebook/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agents-md-footprint-dimensions/proposal.md) |
 | `agents-md-rule-6h-boundary` | archived | #512 | — | [agents-rulebook](openspec/changes/archive/agents-md-rule-6h-boundary/specs/agents-rulebook/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/agents-md-rule-6h-boundary/proposal.md) |
 | `agents-mirror-sync` | archived | #696 | — | [agents-mirror-sync](openspec/changes/archive/agents-mirror-sync/specs/agents-mirror-sync/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agents-mirror-sync/proposal.md) |
