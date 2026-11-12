@@ -1,6 +1,7 @@
 # Proposal: agents-md-blocked-box-rule
 
 Issue: #635
+PR: #849
 
 ## Why
 
