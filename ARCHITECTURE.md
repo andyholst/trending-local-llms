@@ -360,7 +360,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 <!-- arch:pipelines -->
 ## 4. The pipelines
 
-Twelve workflows in `.github/workflows/`. Eight have a cron, each ONCE a week on
+Eleven workflows in `.github/workflows/`. Eight have a cron, each ONCE a week on
 Wednesday (owner cadence directive, `weekly-cadence` #670–#677): **`refresh-bot.yml`**
 (Wednesday `06:00`, same-day backup `17:43`), **`issue-bot.yml`** (Wednesday, `19` +
 backup `49`), **`issue-review-bot.yml`** (Wednesday, `41`), **`queued-alarm.yml`**
@@ -369,9 +369,12 @@ backup `49`), **`issue-review-bot.yml`** (Wednesday, `41`), **`queued-alarm.yml`
 **`bot-health.yml`** (Wednesday, `23`) and
 **`architecture-bot.yml`** (Wednesday `13`, issue #479). Off the odd minute on one
 day a week, so a dropped top-of-hour run cannot take out the whole week: :07, :13, :19,
-:23, :37, :41, :49, :53, 17:43. The other four are event- or dispatch-driven:
-`qa-validate.yml` (`pull_request`/`push`/dispatch), `fix-bot.yml` and
-`publish-agent-image.yml` (dispatch only) and `pr-closure.yml` (`pull_request`).
+:23, :37, :41, :49, :53, 17:43. The other three are event- or dispatch-driven:
+`qa-validate.yml` (`pull_request`/`push`/dispatch), `publish-agent-image.yml`
+(dispatch only) and `pr-closure.yml` (`pull_request`).
+(The twelfth, the fix-bot repairer, was retired by issue #814: its file no longer
+exists, and `tests/test_workflows.py` fails if a repairer dispatch or `workflow_run`
+trigger reappears anywhere.)
 The rulebook entry for each of them — the rule it enforces — is `AGENTS.md` §6b,
 which must name every workflow here.
 
@@ -418,16 +421,18 @@ competing PRs over the same generated files).
 |---|---|
 | `guard` | FIRST job (issue #279): owner / write+ collaborator / `github-actions[bot]` for BOTH actor and triggering actor; a `pull_request`/`push` run is admitted outright (GitHub starts it for the repository itself, and a PR must be validated whatever its author). The 30-minute network-bound DISPATCH is what this guards |
 | `validate` | `make lint`, `make check-commit-authorship` (only Andy Holst / Asimov Agent author, commit or co-author — issue #317; its checkout uses `fetch-depth: 0` because the guard reads a range), `make pr-closure` (the PR closes the issue its branch implements, rule 6e), `make image-ensure`, `make secret-scan`, `make secret-scan-self-test`, `make check-secret-output`, `make nerve-check`, `make validate` + `validate-search` + `validate-mapped`, `make openspec-check`, `make openspec-archive-check` (the lifecycle guard: an active change may not name a merged PR, rule 6f, and a validated PR must not close a change's Issue while the change is still unarchived — issue #779; its own step because `gh` lives on the host, not in the agent container), `make pipeline-failure-guard-check` (no diagnosed pipeline failure closes without its regression guard — rule 6r, issue #802), `make architecture-check`, `make test` |
-| `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `agent-shell-keys-check` (the real secrets are visible in the agent's shell, issue #359), `validate-fetch`. An outage here is infra, not data — it never dispatches fix-bot |
-| `dispatch-fixbot` | Only when `validate` failed on a same-repo `ci/trending-refresh-*` PR **and** the PR has fewer than 2 `fix-bot:` commits: dispatch `fix-bot` with `pr_number` + `branch` (owner PAT) |
+| `live-smoke` | Real network, bounded: `search-smoke` per backend, `model-caps`, `hermes-smoke`, `agent-shell-keys-check` (the real secrets are visible in the agent's shell, issue #359), `validate-fetch`. An outage here is infra, not data |
 | `auto-merge` | `needs: [validate, live-smoke]`, `if: success()`: squash-merge + delete the branch with `--match-head-commit <validated sha>`. Never on a fork PR, a draft, or `master`; a push after the run started makes the SHA mismatch and the newer run decides, and then runs `make verify-closure` so a body whose keyword did not bind leaves a RED run (issue #288). The merge step reads the merged PR's own title and body (`gh pr view --json title,body`) and passes BOTH to the merge (`--subject` / `--body-file`), so the landed squash commit carries the message pattern's five sections and the bound `Closes` instead of the title alone — a bare `--squash` left master's `commit-message-check` red on every bot merge (issue #787) |
 
-### `.github/workflows/fix-bot.yml` — the repairer (`workflow_dispatch` only)
+### The retired repairer pipeline (issue #814)
 
-| Job | Does |
-|---|---|
-| `guard` | The owner, a collaborator with `admin`/`maintain`/`write`, or `github-actions[bot]`, for **both** `github.actor` and `github.triggering_actor`. Its own FIRST job, declaring **no secret at all** — a job-level `env:` holding `secrets.*` is materialised when the JOB starts, so a guard that is only the first *step* of the secret-carrying job is not "before any secret" (rule 6j, issue #259) |
-| `fix` | `needs: [guard]`, so a refused caller means this job never starts and its four secrets are never materialised. Resolve the PR (refuses `master`/`main`), then announce the repair window ON the PR (`<!-- fix-bot-start: <ISO8601Z> run=<id> -->` + branch + run URL, default `github.token`, body on stdin — so it lands BEFORE the branch is read, and no scratch file exists for `git add -A` to commit), checkout the branch with the PAT, `make hermes-smoke`, then `scripts/fix_loop.sh`: run the deterministic checks → green? stop → else write `qa-report.txt` (only the failing check's output) and `make fix`, at most `FIX_ROUNDS` (3) rounds. It commits (`fix-bot: …`) and pushes **only when the loop ends green**; still red → nothing pushed, the failing lines are commented on the PR. `qa-report.txt` is uploaded as an artifact. It never merges |
+The `workflow_dispatch`-only repairer (`fix-bot`) was **retired by owner decision**:
+its workflow file no longer exists, and no pipeline dispatches a repairer —
+`tests/test_workflows.py` fails if a repair dispatch or a `workflow_run` trigger
+reappears anywhere. Repairing a red PR belongs to the PR's own implementer loop
+(`issue-bot.yml` running `scripts/fix_loop.sh` until the checks are green) or to a
+human; `make fix` + `scripts/fix_loop.sh` remain exactly those loop's engine, and
+`make pr-health` now only COMMENTS the remedy on a silent PR (report-only, issue #814).
 
 ### `.github/workflows/publish-agent-image.yml` — the agent image (`workflow_dispatch` only)
 
@@ -634,7 +639,7 @@ for a reviewer to hold true.
 | `scripts/architecture_bot.py` | The LIVING half of this document (issue #479, rule 6h): derives §10 from the tree — every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script, the `README.md` sections a refresh rewrites. `--write` regenerates between the markers, `--check` fails on a stale block, and a flow step the tree no longer backs is refused (never written). Reached only through `make architecture-refresh` / `architecture-check` (rules 6d/6m); the weekly `architecture-bot.yml` runs both |
 | `scripts/code_review.py` | The code-review bot's decision half (issue #253): `scan` runs DETERMINISTIC checks over the tree and the pipelines (no model, writes nothing), `file` opens ONE issue per NEW finding with a `<!-- code-review:<key> -->` dedup marker, capped per run. Analysis only — it never edits code, never merges, never comments on anyone's PR |
 | `scripts/env_int.py` | ONE reading of a numeric SETTING (issue #487): `env_int`/`env_float` treat unset **or** blank (`""`, `"   "`) as the default — the shape an unconditionally-forwarded make variable takes at run time — and a non-numeric value raises `EnvSettingError` naming the variable and what it held (a typo is never silently the default). Every `int`/`float` environment read in `scripts/` goes through it; a bare `int(os.environ…)` fails `tests/test_pr_health.py` |
-| `scripts/pr_health.py` | The silent-PR alarm (issue #442) and its repair half (issue #475): lists open non-draft PRs, flags every one that is `CONFLICTING` or has NO check runs on its head commit (a conflicting PR runs no workflows at all), names the fix, and — `--repair` — dispatches `fix-bot` for a silent `ci/…` PR, capped at `MAX_FIXBOT_COMMITS` fix-bot commits per PR. `--comment` leaves ONE deduplicated note per affected PR; read-only apart from that. Exit 1 when any PR is silent, so the scheduled sweep goes red |
+| `scripts/pr_health.py` | The silent-PR alarm (issue #442), report-only since issue #814: lists open non-draft PRs, flags every one that is `CONFLICTING` or has NO check runs on its head commit (a conflicting PR runs no workflows at all), names the fix, and `--comment` leaves ONE deduplicated note per affected PR (it dispatches nothing — the retired repairer is gone; repair belongs to the PR's own implementer loop or a human). Read-only apart from that comment. Exit 1 when any PR is silent, so the scheduled sweep goes red |
 | `scripts/bot_health.py` | The red-cron alarm (`make bot-health`, issue #488): derives the cron pipelines from `.github/workflows/*.yml`, reads each one's newest N `schedule` runs and fails when they all failed. Read-only; never comments or dispatches |
 | `scripts/freshness_alarm.py` | The stale-index alarm (`make freshness-alarm`, issue #452): measures the newest `data/snapshots/trending-*.json` by the timestamp IN ITS NAME (never mtime) and fails when it is older than `MAX_AGE_HOURS`. Read-only |
 | `scripts/queued_run_alarm.py` | The stuck-run alarm (issue #252): reads the repo's `queued`/`in_progress` runs (a run whose jobs are ALL queued reports `queued`, the state this exists for), flags every job queued past `--minutes` with its runner label and age, comments ONE `<!-- queued-run-alarm -->`-deduped note per affected run, and exits 1 so the scheduled run goes red. A runner label that matches nothing never FAILS a job, so nothing else sees it |
