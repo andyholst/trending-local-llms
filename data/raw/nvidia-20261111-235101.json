@@ -1,0 +1,74 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek-V4.1-Flash",
+      "full_name": "DeepSeek-V4.1-Flash",
+      "type": "MoE",
+      "license": "DeepSeek License",
+      "params": "MoE (sparse)",
+      "hf": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "vram_tier": "12GB",
+      "vram_min": "9GB",
+      "backends": [
+        "CUDA",
+        "ROCm",
+        "Metal",
+        "CPU"
+      ],
+      "supported_engines": [],
+      "engines": [
+        {
+          "engine": "Strata",
+          "tps": "2-3.6",
+          "hardware": "RTX 3060 (12GB)",
+          "quant": "IQ2_XXS, SSD page cache, experts streamed from disk, 9GB LRU cache in VRAM",
+          "date": "2026-11-09",
+          "source_post": "https://lightbrd.com/FatimaYappin/status/2119841304037487030",
+          "context_tokens": "4096",
+          "system_ram_min": "30GB",
+          "storage_offload": "SSD page cache (experts streamed from disk)",
+          "likes": 238,
+          "comments": 0,
+          "reshares": 8,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-11-11"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B-Instruct",
+      "full_name": "Qwen 3.8 27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "381",
+          "hardware": "RTX 3090 24GB",
+          "quant": "inference optimisations (MTP, DFlash2 spec-decode, context lookup, prefix caching, quantized KV)",
+          "date": "2026-11-09",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2119614903451283899",
+          "likes": 31,
+          "comments": 0,
+          "reshares": 5,
+          "views": 3554
+        }
+      ],
+      "last_seen": "2026-11-11"
+    }
+  ],
+  "generated_utc": "2026-11-11T23:53:51Z"
+}

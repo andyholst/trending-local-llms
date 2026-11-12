@@ -1,0 +1,82 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6-35B-A3B",
+      "full_name": "Qwen/Qwen3.6-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "Qwen/Qwen3.6-35B-A3B",
+      "formats": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "hf": "Qwen/Qwen3.6-35B-A3B"
+        }
+      ],
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "61",
+          "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
+          "quant": "q4_K_M (qwen3.6:35b-a3b-q4_K_M), 23GB on disk, 24GB loaded",
+          "date": "2026-11-09",
+          "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
+          "likes": 158,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 159,
+          "weight_gb": "23GB"
+        }
+      ],
+      "why": "Under Claude Code on a MacBook Pro M4 Pro 48GB via Ollama 0.40.14, Qwen3.6-35B-A3B (qwen3.6:35b-a3b-q4_K_M, 35B MoE / 3B active) decodes about 61 tok/s on a short prompt; prefill ~570 tok/s at ~25K context, dropping to 10.4 tok/s decode at 256K depth.",
+      "last_seen": "2026-11-09"
+    },
+    {
+      "id": "gemma-4-26b",
+      "name": "Gemma 4 26B",
+      "full_name": "google/gemma-4-26B-A4B-it",
+      "type": "LLM (MoE)",
+      "license": "Gemma",
+      "params": "26B",
+      "hf": "google/gemma-4-26B-A4B-it",
+      "formats": [
+        {
+          "name": "Gemma 4 26B",
+          "hf": "google/gemma-4-26B-A4B-it"
+        }
+      ],
+      "vram_tier": "CPU",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "Ollama",
+          "tps": "72",
+          "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
+          "quant": "QAT GGUF (gemma4:26b-a4b-it-qat), 15GB on disk, 16GB loaded",
+          "date": "2026-11-09",
+          "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
+          "likes": 158,
+          "comments": 1,
+          "reshares": 0,
+          "views": 0,
+          "interactions": 159,
+          "weight_gb": "15GB"
+        }
+      ],
+      "why": "Under Claude Code on a MacBook Pro M4 Pro 48GB via Ollama 0.40.14, Gemma 4 26B-A4B (gemma4:26b-a4b-it-qat, QAT GGUF, 26B MoE / 4B active) decodes about 72 tok/s on a short prompt; a gemma4:26b-mlx variant on the MLX runner also tested.",
+      "last_seen": "2026-11-09"
+    }
+  ],
+  "generated_utc": "2026-11-11T23:50:17Z"
+}

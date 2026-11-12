@@ -25,6 +25,17 @@
     },
     {
       "engine": "Strata",
+      "tps": "50",
+      "hardware": "12GB VRAM consumer GPU",
+      "quant": "Unsloth Iq2_XS (dynamic quant)",
+      "date": "2026-11-08",
+      "source_post": "https://lightbrd.com/ai_hakase_/status/2119294599713771638",
+      "context_tokens": "131K",
+      "system_ram_min": "32GB",
+      "engine_min_version": "Strata"
+    },
+    {
+      "engine": "Strata",
       "tps": "20",
       "hardware": "8GB GPU (unspecified NVIDIA card)",
       "quant": "Strata app, MoE; 20+ tok/s, up to 128K context",
@@ -705,7 +716,56 @@
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2089073298487615541"
     }
   ],
+  "gemma-4-26b": [
+    {
+      "engine": "turbo-fieldfare",
+      "tps": "35",
+      "hardware": "MacBook Air M2 8GB (Apple Silicon, unified memory)",
+      "quant": "Swift/Metal, experts streamed from SSD",
+      "date": "2026-11-10",
+      "source_post": "https://lightbrd.com/deeponailabs/status/2120227672164798873",
+      "system_ram_min": "8GB",
+      "storage_offload": "experts streamed from SSD"
+    },
+    {
+      "engine": "MLX",
+      "tps": "72",
+      "hardware": "M4 Pro 48GB (Apple Silicon, unified memory)",
+      "quant": "MLX runner",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/StevenMatison/status/2119864717523005591",
+      "weight_gb": "18GB",
+      "system_ram_min": "48GB",
+      "context_tokens": "131072"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "72",
+      "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
+      "quant": "QAT GGUF (gemma4:26b-a4b-it-qat), 15GB on disk, 16GB loaded",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
+      "weight_gb": "15GB"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "4.1",
+      "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+      "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
+      "date": "2026-08-13",
+      "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+    }
+  ],
   "qwen3.6-35b-a3b": [
+    {
+      "engine": "Ollama",
+      "tps": "61",
+      "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
+      "quant": "q4_K_M (qwen3.6:35b-a3b-q4_K_M), 23GB on disk, 24GB loaded",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
+      "weight_gb": "23GB"
+    },
     {
       "engine": "Kapitsa",
       "tps": "154",
@@ -1058,7 +1118,7 @@
   "deepseek-v4.1-flash": [
     {
       "engine": "Strata",
-      "tps": "2",
+      "tps": "3.6",
       "hardware": "NVIDIA RTX 3060 12GB + 30GB system RAM",
       "quant": "IQ2_XXS, experts streamed from SSD page cache, 9GB LRU cache in VRAM, greedy decode; decode 2-3.6 tok/s (fluctuates with page-cache behaviour), 249GB model",
       "date": "2026-11-09",
@@ -1066,7 +1126,8 @@
       "storage_offload": "SSD page cache",
       "weight_gb": "~249GB",
       "context_tokens": "4096",
-      "engine_min_version": "Strata (RustingStrata)"
+      "engine_min_version": "Strata (RustingStrata)",
+      "system_ram_min": "30GB"
     },
     {
       "engine": "Strata",
@@ -1144,27 +1205,6 @@
       "context_tokens": "32K",
       "engine_min_version": "-ngl 99 -c 32768 -nkvo --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 --moe-stream-direct",
       "weight_gb": "192GB engram on NVMe"
-    }
-  ],
-  "gemma-4-26b": [
-    {
-      "engine": "MLX",
-      "tps": "72",
-      "hardware": "M4 Pro 48GB (Apple Silicon, unified memory)",
-      "quant": "MLX runner",
-      "date": "2026-11-09",
-      "source_post": "https://lightbrd.com/StevenMatison/status/2119864717523005591",
-      "weight_gb": "18GB",
-      "system_ram_min": "48GB",
-      "context_tokens": "131072"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "4.1",
-      "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
-      "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
-      "date": "2026-08-13",
-      "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
     }
   ],
   "qwen3.8-flash-next-125b-strix-halo-strata": [
