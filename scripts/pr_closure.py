@@ -59,6 +59,18 @@ REFRESH_BRANCH = re.compile(r"^ci/trending-refresh-")
 DATA_GAP_BRANCH = re.compile(r"^ci/data-gap-(\d+)-")
 TRAILING_ISSUE = re.compile(r"-(\d+)$")
 
+# The declared KEEPER branch shape (issue #872): `ci/keeper-<slug>` or
+# `ci/keeper-<slug>-<issue>` — `keeper` as the FIRST slug segment. A keeper PR is by
+# definition a repair observed during issue N's run (an archive move, an index or
+# architecture regeneration), NOT an implementation of N, so its trailing number is a
+# REFERENCE and `implemented_issue` reads none for it. Measured before this shape existed:
+# PR #867 (`ci/archive-stranded-cadence-wording-866`, run 43285662684) was REFUSED in 9 s
+# for not closing an issue it must not claim, and unblocking needed a manual branch rename
+# (PR #871). A keeper branch that writes `Closes #N` is refused by the existing "implements
+# no issue" rule — the false claim is exactly what the gate exists to catch. The shape lives
+# here, next to the parser that reads it, in ONE place (rule 6d).
+KEEPER_BRANCH = re.compile(r"^ci/keeper(?:-[a-z0-9]+)*$")
+
 
 def visible_text(body: str) -> str:
     """The body as GitHub's reference parser reads it: CODE IS NOT A CLAIM.
@@ -92,12 +104,15 @@ def implemented_issue(branch: str | None) -> int | None:
     branch and its FIRST number is the issue (the slug may carry numbers of its own,
     e.g. `ci/data-gap-266-storage-offload-31-models`). Otherwise the LAST number is the
     issue (`ci/pr-closure-284`, `ci/worktree-base-271`). A refresh branch encodes a
-    timestamp and implements no issue.
+    timestamp and implements no issue; a keeper branch `ci/keeper-<slug>[-<issue>]`
+    references the issue whose run surfaced the drift and implements none (#872).
     """
     if not branch:
         return None
     if REFRESH_BRANCH.match(branch):
         return None
+    if KEEPER_BRANCH.match(branch):
+        return None  # a keeper references its issue; it does not implement it (#872)
     if m := DATA_GAP_BRANCH.match(branch):
         return int(m.group(1))
     if m := TRAILING_ISSUE.search(branch):

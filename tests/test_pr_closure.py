@@ -145,6 +145,45 @@ def test_the_branch_encodes_the_issue_the_slug_may_not_confuse() -> None:
     check("branch: no branch implements nothing", PC.implemented_issue(None) is None, "")
 
 
+def test_keeper_branch_naming_an_open_issue_passes_with_zero_closing_claims() -> None:
+    """The planted #872 collision: PR #867 (`ci/archive-stranded-cadence-wording-866`) was
+    REFUSED in 9 s because the trailing number read as an implementation. The declared
+    keeper shape makes the same reference legal without a false `Closes`."""
+    branch = "ci/keeper-archive-stranded-cadence-wording-866"
+    check("keeper: the trailing number is a REFERENCE, not an implementation",
+          PC.implemented_issue(branch) is None, "")
+    check("keeper: a body referencing the issue passes with zero closing keywords",
+          PC.check("Records the drift observed during #866's run (refs #866); it closes none.",
+                   branch) == [], "")
+    proc = run_cli("--branch", branch, "--body", "Records drift observed in #866's run (refs #866).")
+    check("keeper: the CLI exits 0 and reports that the PR closes no issue",
+          proc.returncode == 0 and "closes no issue" in proc.stdout, proc.stdout)
+
+
+def test_keeper_branch_must_not_claim_a_close() -> None:
+    """The other half: a keeper PR that writes `Closes #N` is the FALSE claim the gate
+    exists to catch — an archive move does not implement #866's Done-when."""
+    problems = PC.check("Archive move.\nCloses #866\n",
+                        "ci/keeper-archive-stranded-cadence-wording-866")
+    check("keeper: a keeper branch closing its issue is REFUSED", bool(problems), problems)
+    check("keeper: the refusal names it as closing an issue it does not implement",
+          any("implements no issue" in p and "#866" in p for p in problems), problems)
+
+
+def test_a_non_keeper_branch_still_implements_its_trailing_issue() -> None:
+    """The exemption is the DECLARED shape — nothing else changes. Measured #867 (no keeper
+    token) and the implementer `ci/data-gap-<n>-…` convention both keep demanding a binding."""
+    check("shape: the measured #867 branch still implements #866",
+          PC.implemented_issue("ci/archive-stranded-cadence-wording-866") == 866, "")
+    check("shape: and is still refused without a binding",
+          bool(PC.check("Moves an archive (refs #866).",
+                        "ci/archive-stranded-cadence-wording-866")), "")
+    check("shape: `ci/data-gap-854-x` still MUST bind `Closes #854`",
+          bool(PC.check("Implements it (refs #854).", "ci/data-gap-854-x")), "")
+    check("shape: only the declared shape exempts — a keeper token elsewhere does not",
+          PC.implemented_issue("ci/archive-block-keeper-866") == 866, "")
+
+
 def test_every_closing_keyword_is_recognised() -> None:
     for keyword in ("close", "closes", "closed", "fix", "fixes", "fixed",
                     "resolve", "resolves", "resolved", "Closes", "FIXES", "Closes:"):
@@ -237,6 +276,9 @@ def main() -> int:
         test_a_refresh_pr_must_not_close_the_meta_issue(tmp)
         test_the_branch_issue_must_be_closed_by_its_own_keyword(tmp)
         test_the_branch_encodes_the_issue_the_slug_may_not_confuse()
+        test_keeper_branch_naming_an_open_issue_passes_with_zero_closing_claims()
+        test_keeper_branch_must_not_claim_a_close()
+        test_a_non_keeper_branch_still_implements_its_trailing_issue()
         test_every_closing_keyword_is_recognised()
         test_an_explicit_issue_overrides_the_branch()
         test_code_quotes_the_rule_it_does_not_make_a_claim()

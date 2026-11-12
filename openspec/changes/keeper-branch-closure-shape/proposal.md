@@ -46,7 +46,8 @@ archive move.
 ## Impact
 
 - `scripts/pr_closure.py` (the ONE closure implementation), `tests/test_pr_closure.py`,
-  `.hermes/skills/issue-implement/SKILL.md`, `OPENSPEC.md` (regenerated).
+  `.hermes/skills/issue-implement/SKILL.md`, `AGENTS.md` §6e (one clause naming the keeper
+  shape — rule 3c: review-required, announced by comment on #872), `OPENSPEC.md` (regenerated).
 
 ## Not covered
 
