@@ -1,6 +1,7 @@
 # Event-driven keeper for a red master index gate
 
 **Issue:** #304
+**PR:** [#859](https://github.com/andyholst/trending-local-llms/pull/859)
 **Capability:** `openspec-index` (the generated `OPENSPEC.md`, its guard, and the
 pipeline keeper that repairs index drift the moment a merge causes it).
 
