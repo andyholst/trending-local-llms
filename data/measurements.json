@@ -3721,27 +3721,6 @@
       "engine_min_version": "vLLM nightly"
     }
   ],
-  "qwopus3.6-35b-a3b-coder-mtp": [
-    {
-      "engine": "strixite",
-      "tps": "50",
-      "hardware": "Radeon 8060S / Strix Halo 128GB",
-      "quant": "strixite inference engine written from scratch in HIP for AMD Strix Halo (gfx1151); holds ~fifty tokens per second out to nearly five hundred thousand context tokens",
-      "context_tokens": "491520",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "190",
-      "hardware": "RX 7900 XTX 24GB",
-      "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP speculative decode 97% draft acceptance, N=5 warmup discarded, card power capped 291W",
-      "date": "2026-07-11",
-      "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
-      "weight_gb": "Q4_K_M",
-      "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
-    }
-  ],
   "lfm2-5-24b-a2b": [
     {
       "engine": "MLX",
@@ -4505,18 +4484,6 @@
       "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976"
     }
   ],
-  "qwen3.8-27b-dgx-spark-sglang-nvfp4": [
-    {
-      "engine": "SGLang",
-      "tps": "74",
-      "hardware": "NVIDIA DGX Spark (128GB unified memory)",
-      "quant": "NVFP4 weights, DFlash2 speculative decoding with a 4-bit drafter (16 tokens per pass), BF16 KV cache, thinking disabled",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
-      "context_tokens": "8192",
-      "system_ram_min": "128GB unified memory"
-    }
-  ],
   "qwen3.8-27b-dgx-spark-nvfp4-dflash2": [
     {
       "engine": "SGLang",
@@ -4811,17 +4778,6 @@
       "system_ram_min": "32GB"
     }
   ],
-  "youtu-parsing-omni": [
-    {
-      "engine": "MLX",
-      "tps": "40",
-      "hardware": "M4 Pro (Apple Silicon)",
-      "quant": "8-bit MLX port (5.7GB)",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/cguldogan/status/2109444643498983745",
-      "weight_gb": "5.7GB (8-bit MLX)"
-    }
-  ],
   "gemma-4-e2b": [
     {
       "engine": "MLX",
@@ -4911,35 +4867,6 @@
       "date": "2026-10-16",
       "source_post": "https://lightbrd.com/eltc9584/status/2111091999638229038",
       "weight_gb": "2GB ternary"
-    }
-  ],
-  "qwen3-next-80b-a3b": [
-    {
-      "engine": "Janas",
-      "tps": "24",
-      "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
-      "quant": "Janas draft: 37 tok/s; llama.cpp baseline 2.8 tok/s (cpu-moe, Q4_K_M)",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014"
-    },
-    {
-      "engine": "llama.cpp (LaurentZuijdwijk fork)",
-      "tps": "32",
-      "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
-      "quant": "rocmfp4 requant, MTP; decode t/s; ngram on GPU memory",
-      "date": "2026-08-27",
-      "source_post": "https://lightbrd.com/laurent_zw/status/2092765822494110061",
-      "system_ram_min": "128GB unified"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "32",
-      "hardware": "Radeon 8060S / Strix Halo 128GB",
-      "quant": "rocmfp4 requant + MTP working (LaurentZuijdwijk build); ngram layout changed so it can sit in GPU memory on a Strix, lowering CPU usage without affecting performance",
-      "weight_gb": "rocmfp4 (low-quality quant, published on Hugging Face to test performance)",
-      "engine_min_version": "LaurentZuijdwijk llama.cpp fork with MTP + ngram on GPU",
-      "date": "2026-08-27",
-      "source_post": "https://lightbrd.com/laurent_zw/status/2081836235475272003"
     }
   ],
   "nemotron-3.5-bolt-74b-a9b": [
@@ -5259,6 +5186,27 @@
       "source_post": "https://lightbrd.com/MikeLongTerm/status/2086789931725197720"
     }
   ],
+  "qwopus3.6-35b-a3b-coder-mtp": [
+    {
+      "engine": "strixite",
+      "tps": "50",
+      "hardware": "Radeon 8060S / Strix Halo 128GB",
+      "quant": "strixite inference engine written from scratch in HIP for AMD Strix Halo (gfx1151); holds ~fifty tokens per second out to nearly five hundred thousand context tokens",
+      "context_tokens": "491520",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "190",
+      "hardware": "RX 7900 XTX 24GB",
+      "quant": "Q4_K_M, Vulkan (llama.cpp b9292), MTP speculative decode 97% draft acceptance, N=5 warmup discarded, card power capped 291W",
+      "date": "2026-07-11",
+      "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+      "weight_gb": "Q4_K_M",
+      "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
+    }
+  ],
   "qwen3.8-27b-mlx-serve-26.10.1": [
     {
       "engine": "mlx-serve",
@@ -5385,6 +5333,18 @@
       "date": "2026-09-10",
       "source_post": "https://lightbrd.com/Italianclownz/status/2098163624124592594",
       "weight_gb": "14.68 GiB INT4 (lm_head repacked to INT4, +16%)"
+    }
+  ],
+  "qwen3.8-27b-dgx-spark-sglang-nvfp4": [
+    {
+      "engine": "SGLang",
+      "tps": "74",
+      "hardware": "NVIDIA DGX Spark (128GB unified memory)",
+      "quant": "NVFP4 weights, DFlash2 speculative decoding with a 4-bit drafter (16 tokens per pass), BF16 KV cache, thinking disabled",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+      "context_tokens": "8192",
+      "system_ram_min": "128GB unified memory"
     }
   ],
   "qwen3-14b": [
@@ -5517,6 +5477,17 @@
       "context_tokens": "262144"
     }
   ],
+  "youtu-parsing-omni": [
+    {
+      "engine": "MLX",
+      "tps": "40",
+      "hardware": "M4 Pro (Apple Silicon)",
+      "quant": "8-bit MLX port (5.7GB)",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/cguldogan/status/2109444643498983745",
+      "weight_gb": "5.7GB (8-bit MLX)"
+    }
+  ],
   "qwen3.8-flash-next-125b-amd-32gb": [
     {
       "engine": "ExLlamaV3 (ROCm fork)",
@@ -5549,6 +5520,35 @@
       "date": "2026-09-17",
       "source_post": "https://lightbrd.com/allambition/status/2101077523027435878",
       "system_ram_min": "16GB unified memory"
+    }
+  ],
+  "qwen3-next-80b-a3b": [
+    {
+      "engine": "Janas",
+      "tps": "24",
+      "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+      "quant": "Janas draft: 37 tok/s; llama.cpp baseline 2.8 tok/s (cpu-moe, Q4_K_M)",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014"
+    },
+    {
+      "engine": "llama.cpp (LaurentZuijdwijk fork)",
+      "tps": "32",
+      "hardware": "Strix Halo (AMD Ryzen AI Max APU)",
+      "quant": "rocmfp4 requant, MTP; decode t/s; ngram on GPU memory",
+      "date": "2026-08-27",
+      "source_post": "https://lightbrd.com/laurent_zw/status/2092765822494110061",
+      "system_ram_min": "128GB unified"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "32",
+      "hardware": "Radeon 8060S / Strix Halo 128GB",
+      "quant": "rocmfp4 requant + MTP working (LaurentZuijdwijk build); ngram layout changed so it can sit in GPU memory on a Strix, lowering CPU usage without affecting performance",
+      "weight_gb": "rocmfp4 (low-quality quant, published on Hugging Face to test performance)",
+      "engine_min_version": "LaurentZuijdwijk llama.cpp fork with MTP + ngram on GPU",
+      "date": "2026-08-27",
+      "source_post": "https://lightbrd.com/laurent_zw/status/2081836235475272003"
     }
   ],
   "meta-llama-3-1-70b-q4-mlx": [
