@@ -44,6 +44,7 @@ import os
 import re
 import sys
 import urllib.parse
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
 
@@ -119,15 +120,34 @@ def redact(text: str, environ: dict[str, str] | None = None) -> tuple[str, int]:
 
 
 def stream(src: TextIO, raw_path: str | None, out_path: str | None,
-           environ: dict[str, str] | None = None) -> tuple[int, int]:
+           environ: dict[str, str] | None = None,
+           append: bool = False) -> tuple[int, int]:
     """Redact a LIVE stream line by line, printing each line the moment it arrives.
 
     The line is masked FIRST and printed second, and both files are flushed per line, so a
     reader watching the job log sees progress while the command is still running — and a killed
     run still leaves the transcript it had reached. Returns `(lines, redactions)`.
+
+    With `append=True` (issue #631) the captures are APPENDED, not truncated: each invocation
+    opens both files in append mode and writes a `===== [scrub-log] capture <UTC> pid=<pid>
+    =====` delimiter first, so a multi-round caller (`scripts/fix_loop.sh` runs up to
+    FIX_ROUNDS `make fix` rounds, the `make search` target runs four legs) keeps EVERY
+    round's transcript in the one artifact file instead of letting the last round erase the
+    rounds that detached.
     """
-    raw = open(raw_path, "w", encoding="utf-8") if raw_path else None
-    out = open(out_path, "w", encoding="utf-8") if out_path else None
+    mode = "a" if append else "w"
+    raw = open(raw_path, mode, encoding="utf-8") if raw_path else None
+    out = open(out_path, mode, encoding="utf-8") if out_path else None
+    if append and (raw is not None or out is not None):
+        header = (f"===== [scrub-log] capture "
+                  f"{datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} "
+                  f"pid={os.getpid()} =====\n")
+        if raw is not None:
+            raw.write(header)
+            raw.flush()
+        if out is not None:
+            out.write(header)
+            out.flush()
     lines = 0
     count = 0
     try:
@@ -161,6 +181,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="--stream only: write the RAW capture here (gitignored, never uploaded)")
     parser.add_argument("--out", dest="dst", default=None, help="write the REDACTED whole log here (the run artifact)")
     parser.add_argument("--tail", type=int, default=40, help="how many of the last lines to print (default 40)")
+    parser.add_argument("--append", action="store_true",
+                        help="with --stream: APPEND the captures to --raw/--out behind a "
+                             "timestamped delimiter instead of truncating them (issue #631), "
+                             "so a multi-round caller keeps every round's transcript")
     args = parser.parse_args(argv)
 
     if args.stream:
@@ -171,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
         # Write what we read BEFORE reading it: `--raw` is a file, never a terminal, and a path we
         # cannot open must be loud, not a silent drop of the transcript we promised to keep.
         try:
-            lines, count = stream(sys.stdin, args.raw, args.dst)
+            lines, count = stream(sys.stdin, args.raw, args.dst, append=args.append)
         except OSError as exc:
             print(f"[scrub-log] FATAL: cannot write the stream to disk ({exc}) — a transcript that "
                   f"cannot be kept must never look like a clean run.", file=sys.stderr)

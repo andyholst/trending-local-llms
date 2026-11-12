@@ -432,6 +432,87 @@ def test_the_target_is_wired_into_the_repo():
           "make implement-issue" in wf and "> implement.log" not in wf, "")
     check("workflow: the raw capture is never uploaded (only the redacted one)",
           "implement.scrubbed.log" in wf and "implement.log\n" not in wf.split("upload-artifact")[-1].split("if-no-files-found")[0], "")
+    qa_artifact = wf.split("issue-bot-qa-report")[1].split("if-no-files-found")[0]
+    check("workflow: the QA artifact uploads the fix loop's REDACTED capture too (issue #631)",
+          "hermes-run.scrubbed.log" in qa_artifact and "hermes-run.log\n" not in qa_artifact, qa_artifact)
+    check("workflow: the seam appends per invocation so that artifact holds every round (issue #631)",
+          "--append" in (ROOT / "Makefile").read_text(), "")
+
+
+def test_two_rounds_through_the_seam_leave_both_transcripts():
+    """issue #631: a multi-round caller must not truncate the earlier rounds' captures.
+
+    `scripts/fix_loop.sh` runs up to FIX_ROUNDS `make fix` rounds against the SAME
+    $(HERMES_LOG). When every round opened the captures with mode "w", the LAST round erased
+    what the earlier ones wrote — including the detached-round message the artifact exists to
+    preserve (issue #566). Drive the REAL seam twice (a leaking round, then a failing one)
+    and require BOTH transcripts, delimited, in the same files — with the value still masked.
+    """
+    import re
+    import shutil
+
+    mk = (ROOT / "Makefile").read_text()
+    seam = re.search(r"^define scrubbed_run\n.*?^endef\n", mk, re.M | re.S).group(0)
+    check("seam: the capture APPENDS per invocation (issue #631)", "--append" in seam, seam)
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    for f in ("scrub_log.py", "check_secret_output.py"):
+        shutil.copy(ROOT / "scripts" / f, td / "scripts" / f)
+    (td / "Makefile").write_text(
+        "HERMES_LOG      := hermes-run.log\nHERMES_LOG_SCRUBBED := hermes-run.scrubbed.log\nHERMES_LOG_TAIL ?= 60\n\n" + seam +
+        "\nround-one:\n\t$(call scrubbed_run,echo \"round-one saw $$NOUS_API_KEY\")\n"
+        "round-two:\n\t$(call scrubbed_run,bash -c \"echo round-two marker; exit 3\")\n")
+    env = dict(os.environ, NOUS_API_KEY=FAKE_VALUE)
+    r1 = subprocess.run(["make", "round-one"], cwd=str(td), env=env, capture_output=True, text=True)
+    r2 = subprocess.run(["make", "round-two"], cwd=str(td), env=env, capture_output=True, text=True)
+    check("round 1 exits 0", r1.returncode == 0, r1.returncode)
+    check("round 2 keeps its failing status", r2.returncode != 0, r2.returncode)
+    scrubbed = (td / "hermes-run.scrubbed.log").read_text()
+    raw = (td / "hermes-run.log").read_text()
+    check("both transcripts survive in the REDACTED artifact",
+          "round-one saw ***" in scrubbed and "round-two marker" in scrubbed, scrubbed)
+    check("both transcripts survive in the raw capture",
+          "round-one saw" in raw and "round-two marker" in raw, raw)
+    check("each invocation is delimited by a timestamped capture header",
+          scrubbed.count("===== [scrub-log] capture ") == 2
+          and raw.count("===== [scrub-log] capture ") == 2, scrubbed)
+    check("appending does not weaken redaction: the value appears in NO line of the artifact",
+          FAKE_VALUE not in scrubbed, scrubbed)
+    check("the raw capture still holds the value (it is never uploaded)",
+          FAKE_VALUE in raw, "")
+
+
+def test_append_mode_preserves_an_earlier_stream_and_defaults_to_truncate():
+    """`--append` opens the captures behind a delimiter; without it the seam keeps its
+    old truncate-per-invocation behaviour (a caller that wants a fresh file still gets one)."""
+    td = Path(tempfile.mkdtemp())
+    out = td / "run.scrubbed.log"
+    raw = td / "run.log"
+
+    def run(stream_text: str, *extra: str):
+        p = subprocess.run(["python3", str(SCRIPT), "--stream", "--raw", str(raw),
+                            "--out", str(out), *extra],
+                           input=stream_text, capture_output=True, text=True)
+        check(f"append run exits 0 ({extra})", p.returncode == 0, p.stdout)
+
+    run("first invocation line\n")
+    first_out = out.read_text()
+    check("without --append the artifact is one plain capture (no delimiter imposed)",
+          first_out.strip() == "first invocation line", first_out)
+    run("second invocation line\n", "--append")
+    appended = out.read_text()
+    check("with --append the earlier capture is PRESERVED, not truncated",
+          "first invocation line" in appended and "second invocation line" in appended, appended)
+    check("the appended invocation carries its capture header",
+          appended.count("===== [scrub-log] capture ") == 1 and "pid=" in appended, appended)
+    check("the raw capture grew the same way",
+          "first invocation line" in raw.read_text() and "second invocation line" in raw.read_text(),
+          raw.read_text())
+    run("third invocation line\n")
+    truncated = out.read_text()
+    check("a later plain invocation still truncates (append is opt-in per invocation)",
+          "first invocation line" not in truncated and "third invocation line" in truncated,
+          truncated)
 
 
 def main() -> int:
@@ -450,6 +531,8 @@ def main() -> int:
     test_stream_mode_needs_an_artifact_and_refuses_a_mixed_mode()
     test_the_container_stdio_is_unbuffered()
     test_the_seam_shows_a_round_while_it_runs()
+    test_two_rounds_through_the_seam_leave_both_transcripts()
+    test_append_mode_preserves_an_earlier_stream_and_defaults_to_truncate()
     test_the_target_is_wired_into_the_repo()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

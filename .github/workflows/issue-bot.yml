@@ -620,11 +620,15 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: issue-bot-qa-report
-          # The REDACTED agent log, never the raw one (issue #351): the raw stream
-          # may carry a value GitHub's mask does not cover.
+          # The REDACTED agent logs, never the raw ones (issue #351): the raw stream
+          # may carry a value GitHub's mask does not cover. The fix loop's capture
+          # (hermes-run.scrubbed.log) is uploaded too: with the seam's per-invocation append
+          # (issue #631) it holds EVERY fix round's transcript, which is the artifact
+          # the #566 detach message was filed to preserve.
           path: |
             qa-report.txt
             implement.scrubbed.log
+            hermes-run.scrubbed.log
           if-no-files-found: ignore
 
       # A scope-rejected push must not throw the agent's work away: the commit is

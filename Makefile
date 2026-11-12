@@ -185,8 +185,14 @@ HERMES_LOG_TAIL ?= 60
 # answers that question while the round runs — and the raw capture and the redacted copy are both
 # still written for the artifact. `bash -o pipefail` is what keeps the command's status: a
 # pipeline in `/bin/sh` would report the redactor's own 0 and turn a red leg green.
+#
+# The capture APPENDS per invocation (issue #631): `scripts/fix_loop.sh` runs up to FIX_ROUNDS
+# `make fix` rounds against the SAME $(HERMES_LOG), and every round opened the captures with
+# mode "w" — so the last round truncated the transcripts of all the earlier ones, including the
+# detached-round message the artifact exists to keep (issue #566). `--append` opens both files
+# in append mode behind a timestamped delimiter, so the one artifact file holds EVERY round.
 define scrubbed_run
-	@bash -o pipefail -c '$(1) 2>&1 | python3 scripts/scrub_log.py --stream --raw $(HERMES_LOG) --out $(HERMES_LOG_SCRUBBED)'
+	@bash -o pipefail -c '$(1) 2>&1 | python3 scripts/scrub_log.py --stream --append --raw $(HERMES_LOG) --out $(HERMES_LOG_SCRUBBED)'
 endef
 
 
