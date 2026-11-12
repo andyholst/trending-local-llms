@@ -1,6 +1,7 @@
 # Proposal: log-tail-honored
 
-Issue: #630 (measured: `Makefile:174` declared `HERMES_LOG_TAIL ?= 60` while the scrub seam
+Issue: #630
+PR: #845 (measured: `Makefile:174` declared `HERMES_LOG_TAIL ?= 60` while the scrub seam
 `--stream` printed every line; `grep -rn HERMES_LOG_TAIL` found only the definition, two test
 fixtures with their own copy, and archived openspec prose)
 
