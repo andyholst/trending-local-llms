@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Prove the secret scan actually detects a credential (issue #122).
+"""Prove the secret scan actually detects a credential (issue #122 / #836).
 
 A scanner that quietly does nothing is worse than no scanner: the pipeline looks
 green and a key leaks. This plants a WELL-FORMED, fake credential in a throwaway
 directory and REQUIRES gitleaks to flag it (with the repo's own
 `.gitleaks.toml`, so a rule/allowlist added to make a real finding go away also
-has to survive here), then scans a clean directory and REQUIRES no finding.
+has to survive here), then scans a clean directory and REQUIRES no finding, and
+(issue #836) proves the gate's file set is what git could commit: the same fake
+compiled into a gitignored `__pycache__/` must NOT red the gate (reported as an
+artifact) while the fake in a tracked file must.
 
-  python3 scripts/secret_scan_self_test.py        # exit 0 = both directions OK
+  python3 scripts/secret_scan_self_test.py        # exit 0 = all directions OK
 
 Runs the pinned gitleaks container, exactly like `make secret-scan` does.
 Stdlib only. Needs docker.
@@ -40,21 +43,29 @@ FAKE = ("# throwaway probe file - fake credential shapes, never a real key\n"
 CLEAN = "generated_utc = \"2026-10-14T06:00:00Z\"\nnote = nothing to see here\n"
 
 
-def scan(path: Path) -> list[dict]:
-    """Run gitleaks over `path` and return its findings (empty = clean)."""
-    # the report has to land somewhere the host can read: mount its directory too
-    report = path.parent / f"{path.name}-report.json"
+def scan(path: Path, out: Path) -> list[dict]:
+    """Run gitleaks over `path` and return its findings (empty = clean).
+
+    The report has to land somewhere the host can read AND that docker can
+    mount: everything lives under `out`, a repo-local scratch dir (macOS's
+    /var/folders TMPDIR is NOT mountable into a colima container — gitleaks
+    then scans 0 bytes and writes no report). A missing report prints the
+    scanner's own output instead of guessing."""
+    report = out / f"{path.name}-report.json"
     cmd = ["docker", "run", "--rm",
-           "-v", f"{path}:/scan", "-v", f"{report.parent}:/out",
+           "-v", f"{path}:/scan", "-v", f"{out}:/out",
            "-v", f"{CONFIG}:/cfg/.gitleaks.toml:ro",
            IMAGE, "dir", "/scan",
            "--config", "/cfg/.gitleaks.toml",
            "--report-format", "json", "--report-path", f"/out/{report.name}",
            "--redact", "--no-banner", "--exit-code", "0"]
-    subprocess.run(cmd, check=False, capture_output=True, text=True)
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if not report.exists():
-        raise SystemExit(f"[secret-self-test] gitleaks wrote no report ({report})")
-    return json.loads(report.read_text() or "[]")
+        print(f"[secret-self-test] FAIL: gitleaks wrote no report for {path} "
+              f"(docker mount failed?) — scanner output:\n{proc.stdout}\n{proc.stderr}")
+        raise SystemExit(1)
+    findings = json.loads(report.read_text() or "[]")
+    return findings
 
 
 def main() -> int:
@@ -65,7 +76,11 @@ def main() -> int:
         print(f"[secret-self-test] {CONFIG} missing")
         return 1
 
-    with tempfile.TemporaryDirectory() as td:
+    # Repo-local scratch (gitignored): the ONLY mount every docker backend here
+    # can guarantee — the same mount `make secret-scan` itself uses.
+    scratch = ROOT / ".secret-self-test-tmp"
+    scratch.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=scratch) as td:
         root = Path(td)
         dirty, clean = root / "dirty", root / "clean"
         dirty.mkdir()
@@ -73,7 +88,7 @@ def main() -> int:
         (dirty / "creds.env").write_text(FAKE)
         (clean / "store.json").write_text(CLEAN)
 
-        found = scan(dirty)
+        found = scan(dirty, root)
         rules = sorted({f.get("RuleID", "?") for f in found})
         if not found:
             print("[secret-self-test] FAIL: the planted credential shapes were NOT detected — "
@@ -83,13 +98,50 @@ def main() -> int:
         if any("ghp_" in json.dumps(f.get("Secret", "")) for f in found):
             print("[secret-self-test] WARNING: the report carried an unredacted secret (--redact is off?)")
 
-        leaks = scan(clean)
+        leaks = scan(clean, root)
         if leaks:
             print(f"[secret-self-test] FAIL: the clean fixture reported {len(leaks)} finding(s)")
             return 1
         print("[secret-self-test] clean fixture: no findings — the config does not over-match")
 
-    print("[secret-self-test] OK: a credential is caught, a clean tree is not")
+        # Third direction (issue #836): the gate's file set is what git could
+        # commit. A fake compiled into a gitignored cache must NOT red the gate;
+        # the same fake in a tracked file must. Real git, real filter script.
+        gitrepo = root / "gitrepo"
+        (gitrepo / "__pycache__").mkdir(parents=True)
+        (gitrepo / ".gitignore").write_text("__pycache__/\n")
+        (gitrepo / "tracked_leak.py").write_text(FAKE)
+        (gitrepo / "__pycache__" / "compiled_probe.py").write_text(FAKE)
+        subprocess.run(["git", "init", "-q", str(gitrepo)], check=True)
+        scan(gitrepo, root)
+        verdict = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
+             "--report", str(root / "gitrepo-report.json"),
+             "--repo", str(gitrepo), "--mount", "/scan/"],
+            capture_output=True, text=True)
+        if verdict.returncode != 1:
+            print("[secret-self-test] FAIL: a fake in a TRACKED file did not block the gate — "
+                  "the artifact filter swallowed a real finding")
+            return 1
+        if "artifact" not in verdict.stdout or "__pycache__" not in verdict.stdout:
+            print("[secret-self-test] FAIL: the gitignored fake was not reported as an artifact")
+            return 1
+        (gitrepo / "tracked_leak.py").unlink()
+        scan(gitrepo, root)
+        verdict = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
+             "--report", str(root / "gitrepo-report.json"),
+             "--repo", str(gitrepo), "--mount", "/scan/"],
+            capture_output=True, text=True)
+        if verdict.returncode != 0:
+            print("[secret-self-test] FAIL: a fake only in a gitignored cache BLOCKED the gate — "
+                  "the pre-push scan would red on bytecode no commit could carry")
+            return 1
+        print("[secret-self-test] gitignored cache: reported as an artifact, the gate stayed "
+              "green; the same fake in a tracked file blocked it")
+
+    print("[secret-self-test] OK: a credential is caught, a clean tree is not, and "
+          "gitignored artifacts never block the gate")
     return 0
 
 

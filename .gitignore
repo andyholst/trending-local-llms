@@ -33,3 +33,12 @@ review.scrubbed.log
 # redacted one is ever printed or uploaded.
 hermes-run.log
 hermes-run.scrubbed.log
+# the gitleaks JSON report `make secret-scan` writes into the mounted tree, read
+# by scripts/secret_scan_report.py and deleted in the same recipe (issue #836);
+# per-run unique names, because recreating a path the host just deleted hits a
+# stale virtiofs dentry and FTLs gitleaks — a fixed name is a flaky gate.
+.secret-scan-report*.json
+# the throwaway tree of make secret-scan-self-test, repo-local because macOS's
+# /var/folders TMPDIR cannot be mounted into a colima container — gitleaks would
+# scan 0 bytes there (issue #836).
+.secret-self-test-tmp/

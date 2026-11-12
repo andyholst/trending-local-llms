@@ -328,7 +328,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 
 | Target | What it does |
 |---|---|
-| `secret-scan` | gitleaks over the working tree incl. staged files (pinned image + `.gitleaks.toml`); non-zero blocks a push |
+| `secret-scan` | gitleaks over the working tree incl. staged files (pinned image + `.gitleaks.toml`); the verdict is `scripts/secret_scan_report.py` over the file set git could commit — gitignored build artifacts are reported, never blocking (issue #836); non-zero blocks a push |
 | `secret-scan-history` | The same over full git history (needs a real clone; refuses a worktree) |
 | `secret-scan-self-test` | Plant a fake credential and require gitleaks to catch it (`scripts/secret_scan_self_test.py`) — a scanner that silently does nothing fails |
 | `check-secret-output` | Fail when any file prints a secret's VALUE, passes it on a command line, xtraces it, dumps the environment around it, or commits a credential-shaped literal (`scripts/check_secret_output.py`) — the run-time leak shapes gitleaks cannot see |
@@ -623,6 +623,7 @@ for a reviewer to hold true.
 | `scripts/model_caps_check.py` | The live model-capability check (`make model-caps`) |
 | `scripts/nerve_key_check.py` | The nerve credential wiring guard (`make nerve-check`) |
 | `scripts/agent_shell_keys_check.py` | The agent-shell credential guard (`make agent-shell-keys-check`, issue #359): drives Hermes's real `LocalEnvironment` and reports, per key, whether the container's value is visible in the agent's shell — lengths only, never a value; a key missing from the container is a loud exit 2 |
+| `scripts/secret_scan_report.py` | The ONE verdict of `make secret-scan`: classifies each gitleaks finding with `git check-ignore` — committable findings fail, gitignored build artifacts are reported not hidden, a missing report exits 2 (issue #836) |
 | `scripts/secret_scan_self_test.py` | Proves gitleaks catches a planted credential |
 | `scripts/security_scan_self_test.py` | Proves the vulnerability scanners catch a known CVE (`make security-scan-self-test`, issue #715): a planted `flask==2.2.2`/`werkzeug==2.2.2` fixture must RED trivy+grype and an empty tree must pass |
 | `scripts/check_secret_output.py` | The no-secret-VALUE guard (`make check-secret-output` / `secret-output-report`): a printed value, a value on a command line, an xtrace, an env dump, a `${{ secrets.X }}` in a `run:` block, a committed credential-shaped literal, a captured agent stream with no redactor (`raw-agent-log-captured`), a step printing a captured log (`raw-agent-log-printed`), and a Python script that reads a key value and prints it (issue #351) |
@@ -748,7 +749,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 195 make targets, 66 files in `scripts/`)
+### Bots in the tree (11 pipelines, 195 make targets, 67 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -907,7 +908,8 @@ One line each, taken from the script's own docstring.
 - `scripts/reset_working_files.py` — Unstage the bot's working files, from ONE list (issue #543).
 - `scripts/run_tests.sh` — run_tests.sh — the ONE test runner (issues #176 and #192).
 - `scripts/scrub_log.py` — Redact a captured agent log before any of it reaches a bot job's console.
-- `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122).
+- `scripts/secret_scan_report.py` — The file set of `make secret-scan` is what git could commit (issue #836).
+- `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122 / #836).
 - `scripts/security_scan_self_test.py` — Prove the container/dependency scanners detect a known vulnerability (#715).
 - `scripts/self_correct_raw.py` — Self-correct raw search snapshots so they conform to data/search_contract.json.
 - `scripts/smoke_search.py` — Bounded reachability smoke for the four Hermes search targets.
