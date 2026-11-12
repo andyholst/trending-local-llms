@@ -21,7 +21,10 @@ This gate keeps that true, because nothing else can:
 * a rule moved out of the recipes never arriving in the skill it moved to, or restated inline in a
   recipe — the search legs' 1.7-2.3 KB prompts and the three ~4.7 KB rule variables (issue #638);
 * an `AGENTS.md` that no longer states the rule lets the seam be deleted silently;
-* a `_setup` that no longer registers the directory leaves every leg preloading nothing.
+* a `_setup` that no longer registers the directory leaves every leg preloading nothing;
+* a container-bound contract — a leg recipe or a preloaded skill — that instructs the agent to run
+  `gh <subcommand>`, when the base image carries no GitHub CLI at all (issue #194): the write is
+  unreachable from inside the container and belongs in the host workflow step that wraps the leg.
 
 Scan scope: the `Makefile`'s `hermes -z` recipes — the bot legs. `scripts/hermes_smoke.sh` also
 calls `hermes -z`, but it is a routing PROBE with no contract to carry (it asserts the alias
@@ -72,6 +75,17 @@ RETIRED_RULES = {
     "reshares and views": "data-search",
 }
 
+#: The base image carries no GitHub CLI (issue #194): `docker run trending-local-llms:latest
+#: sh -c 'command -v gh'` prints nothing, and issue #150 measured the same shape in the test
+#: image (`FileNotFoundError: 'gh'`). A container-bound contract that INSTRUCTS
+#: `gh <subcommand>` is therefore unreachable code: the agent either dies on the missing binary
+#: (red run) or skips the write silently and reports success — the first draft of `_review-issue`
+#: told the agent to run `gh issue edit --add-label` inside the container. The write belongs in
+#: the host workflow step that wraps the leg; a skill may only state the ABSENCE of gh.
+GH_COMMAND = re.compile(r"\bgh\s+(issue|pr|api|run|repo|label|search|workflow|release|actions)\b")
+#: Text that states gh is absent — a prohibition is the contract, not an instruction to run it.
+GH_ABSENCE = re.compile(r"no\s+`?gh`?|without\s+`?gh`?|forbid", re.IGNORECASE)
+
 _TARGET = re.compile(r"^([A-Za-z0-9_.-]+):")
 _SKILL_FLAG = re.compile(r"(?:^|\s)(?:-s|--skills)[\s=]+(\S+)")
 
@@ -119,6 +133,22 @@ def prompt_of(text: str) -> str:
     """The `-z "…"` payload of a leg, best effort, for the size and duplication checks."""
     m = re.search(r'hermes -z "(.*?)"\s*\\?\s*$', text, re.S | re.M)
     return m.group(1) if m else text
+
+
+def gh_findings(where: str, text: str) -> list[str]:
+    """Lines that instruct the agent to run `gh` in a container that has no gh (issue #194).
+
+    A line stating the ABSENCE of gh (`You have no gh`, `forbids gh`) is the contract itself and
+    is not a finding; an instruction to run a `gh` subcommand is unreachable code the agent can
+    only fail on or skip silently.
+    """
+    out: list[str] = []
+    for number, line in enumerate(text.splitlines(), 1):
+        if GH_COMMAND.search(line) and not GH_ABSENCE.search(line):
+            out.append(f"{where} line {number} instructs `gh`: '{line.strip()[:80]}' — the base "
+                       "image has no GitHub CLI (issue #194): the write belongs in the host "
+                       "workflow step, and the contract may only state that gh is absent")
+    return out
 
 
 def skill_meta(path: Path) -> tuple[dict[str, str], str]:
@@ -182,6 +212,12 @@ def check(root: Path = REPO_ROOT) -> list[str]:
         if size > PROMPT_BUDGET:
             findings.append(f"{target}: prompt is {size} characters (budget {PROMPT_BUDGET}) — the "
                             f"rules crept back into the recipe")
+        findings.extend(gh_findings(target, recipe))
+
+    if skills.is_dir():
+        for path in sorted(skills.glob(f"*/{SKILL_FILE}")):
+            findings.extend(gh_findings(str(path.relative_to(root)),
+                                        path.read_text(encoding="utf-8")))
 
     for needle, skill_name in sorted(RETIRED_RULES.items()):
         path = skills / skill_name / SKILL_FILE
