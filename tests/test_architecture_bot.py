@@ -369,8 +369,49 @@ def test_the_keeper_regenerates_both_generated_documents():
 
     on = doc.get("on") or doc.get(True) or {}   # YAML 1.1 parses a bare `on:` as True
     crons = [c.get("cron") for c in (on.get("schedule") or [])]
-    check("index: the slot is HOURLY, so a stale index converges in an hour (issue #526)",
+    check("index: the slot is the Wednesday weekly cadence at an odd minute (cron #526, cadence #670–#677)",
           crons == ["13 * * * 3"], str(crons))
+
+
+def _cadence_problems(schedule_block: str) -> list:
+    """What the schedule block's prose gets wrong about the cadence it pins."""
+    problems = []
+    if "hourly" in schedule_block.lower():
+        problems.append("the schedule comment claims an hourly slot")
+    if "wednesday" not in schedule_block.lower():
+        problems.append("the schedule comment never names the Wednesday cadence the cron pins")
+    if "odd minute" not in schedule_block.lower():
+        problems.append("the odd-minute rationale vanished from the comment")
+    return problems
+
+
+def test_the_schedule_comment_names_the_cadence_it_pins():
+    """Issue #860: the comment above the cron said HOURLY while the pinned cron is
+    `13 * * * 3` — Wednesday once a week.
+
+    Wiring prose that describes a different cadence from the trigger it explains is
+    debt that stays green: the comment was the ONLY rationale for the odd minute, so
+    a maintainer "restoring" the cron to match it would break the owner's
+    once-per-week directive (issues #670–#677) that test_workflows pins. The guard
+    reads the schedule block as text and refuses any prose/cron disagreement — and
+    it is proven against the exact OLD comment text (rule 6c): planted here, it must
+    go RED naming the hourly claim.
+    """
+    text = (ROOT / ".github" / "workflows" / "architecture-bot.yml").read_text()
+    block = text[text.index("schedule:"):text.index("workflow_dispatch:")]
+    check("cadence: the shipped schedule prose matches the Wednesday cron it pins",
+          _cadence_problems(block) == [], str(_cadence_problems(block)))
+    # The pre-change text (what origin/master held before this change) must fail
+    # this guard — copied from git show origin/master:.github/workflows/architecture-bot.yml.
+    old_block = ('schedule:\n'
+                 '    # HOURLY, an odd minute (issue #526): a stale OPENSPEC.md reds every '
+                 '`qa-validate` push run on\n    # master, so a daily sweep would leave master '
+                 'red for up to a day.\n    - cron: "13 * * * 3"\n\n  ')
+    problems = _cadence_problems(old_block)
+    check("cadence: the OLD 'HOURLY' comment goes RED on this guard (rule 6c)",
+          any("hourly" in p for p in problems), str(problems))
+    check("cadence: the old comment also failed for never naming the pinned cadence",
+          any("never names" in p for p in problems), str(problems))
 
 
 def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
@@ -539,6 +580,7 @@ def main() -> int:
     test_real_repository_inventory_is_current()
     test_wired_into_the_makefile_the_guard_and_the_pipeline()
     test_the_keeper_regenerates_both_generated_documents()
+    test_the_schedule_comment_names_the_cadence_it_pins()
     test_the_shipped_steps_actually_commit_push_and_open_a_pr()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
