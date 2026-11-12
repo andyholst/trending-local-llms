@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **207**
+Active changes: **15** · archived: **208**
 
 ## Active changes
 
@@ -19,7 +19,6 @@ Active changes: **15** · archived: **207**
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `index-failure-names-its-cause` | active | none — found while unblocking the dispatch-bot verification pass. | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
-| `install-pin-carries-version` | active | #218 | — | [agent-image](openspec/changes/install-pin-carries-version/specs/agent-image/spec.md) | 6/6 | [proposal.md](openspec/changes/install-pin-carries-version/proposal.md) |
 | `land-the-owed-rulebook-rows` | active | — | — | [rulebook](openspec/changes/land-the-owed-rulebook-rows/specs/rulebook/spec.md) | 12/12 | [proposal.md](openspec/changes/land-the-owed-rulebook-rows/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `one-queue-reader` | active | — | — | [issue-review-queue](openspec/changes/one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/one-queue-reader/proposal.md) |
@@ -140,6 +139,7 @@ Active changes: **15** · archived: **207**
 | `index-checked-on-the-pr-tree` | archived | #432 (measured) · #304 (the related finding) | — | [pr-ci](openspec/changes/archive/index-checked-on-the-pr-tree/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/index-checked-on-the-pr-tree/proposal.md) |
 | `ingest-names-a-dead-hf-link` | archived | #333 | — | [hf-link-verification](openspec/changes/archive/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/ingest-names-a-dead-hf-link/proposal.md) |
 | `ingest-new-snapshots-only` | archived | #175 | — | [ingest-boundary](openspec/changes/archive/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ingest-new-snapshots-only/proposal.md) |
+| `install-pin-carries-version` | archived | #218 | #794 | [agent-image](openspec/changes/archive/install-pin-carries-version/specs/agent-image/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/install-pin-carries-version/proposal.md) |
 | `issue-bot-checks-out-before-make` | archived | #281 | — | [issue-bot-checks-out-before-make](openspec/changes/archive/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/issue-bot-checks-out-before-make/proposal.md) |
 | `issue-queue-branch-hold` | archived | #647 | — | [issue-queue-hold](openspec/changes/archive/issue-queue-branch-hold/specs/issue-queue-hold/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/issue-queue-branch-hold/proposal.md) |
 | `issue-review-bot` | archived | #179 | — | [issue-review](openspec/changes/archive/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/issue-review-bot/proposal.md) |
