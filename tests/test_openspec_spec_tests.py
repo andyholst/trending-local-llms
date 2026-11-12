@@ -256,7 +256,7 @@ def test_real_repo_references_resolve_and_the_gate_is_wired():
           "openspec-spec-tests-check:" in mk
           and "python3 scripts/check_openspec_test_lines.py" in mk, "")
     check("make: openspec-check bundles the reference gate",
-          "openspec-check: openspec-image openspec-tasks-check openspec-index-check openspec-spec-tests-check" in mk, "")
+          "openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check" in mk, "")
     check("make: the reference-gate tests run in the suite", wired(__file__), "")
 
 
