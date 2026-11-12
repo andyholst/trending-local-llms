@@ -1,6 +1,7 @@
 # Proposal: pipeline-failure-diagnosis
 
 Issue: #802 (measured: qa-validate master run 43088760321 red on `openspec-archive-check` — diagnosed only because a human opened the run page; the chain ended as issue #800 → fix PR #808 → guard `tests/test_openspec_archive_check.py`)
+PR: #811
 
 ## Why
 
