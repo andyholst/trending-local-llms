@@ -1,6 +1,7 @@
 # Event-driven keeper for a red master ARCHITECTURE block gate
 
 **Issue:** #861
+PR: #868
 **Capability:** `architecture-inventory` (the generated §10 block of
 `ARCHITECTURE.md`, its guard `architecture-check`/`architecture-bot --check`,
 and the pipeline keeper that repairs block drift the moment a merge causes it).
