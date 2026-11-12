@@ -1,6 +1,7 @@
 # Proposal: duplicate-change-for-one-edit
 
 Issue: #622
+PR: #819
 
 ## Why
 
