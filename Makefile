@@ -1294,6 +1294,11 @@ _implement-issue:
 	hermes -z "Follow the preloaded skill issue-implement. Parameters: issue=#$(ISSUE); input=issue.md at the repo root; base=the freshly fetched origin/master that make base-check proved. Write triage.md first, then the change and findings.md. Do not push, do not merge, do not touch master." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s issue-implement,bot-unattended
 
+# The implementer's stream is redacted LIVE, inside the target (issue #629): the
+# workflow used to capture `make implement-issue > implement.log` and scrub it only
+# AFTER the agent ended, so the step printed nothing while the agent ran and the
+# raw log lived in the runner's workspace the whole time. `scrubbed_run` (#591)
+# masks each line before it reaches the console and writes both captures itself.
 .PHONY: implement-issue
 implement-issue:
 	# `_setup` MUST run in the SAME container as the hermes call, exactly like
@@ -1303,7 +1308,10 @@ implement-issue:
 	# auto-routes to whatever provider key is in the env — measured on the first
 	# issue-bot run (#124, run 38502619350): `HF_TOKEN` -> Hugging Face ->
 	# `HTTP 403 ... does not have sufficient permissions to call Inference Providers`.
-	$(DOCKER_RUN) sh -c "make _setup && make _implement-issue"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _implement-issue")
+# Log names the run artifact uploads; the seam writes both captures (issue #629).
+implement-issue: HERMES_LOG := implement.log
+implement-issue: HERMES_LOG_SCRUBBED := implement.scrubbed.log
 
 # ---- the implementer's queue + the issue reviewer (issue #179) ----------------
 # TWO bots share ONE queue of `data-gap-analysis` issues: `issue-bot` implements
@@ -1540,12 +1548,15 @@ _review-issue:
 	hermes -z "Follow the preloaded skill issue-review on its BODY path. Parameters: issue=#$(ISSUE); input=issue.md at the repo root (body and whole thread). Write issue-body.md, comment.md and findings.md." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s issue-review,bot-unattended
 
+# Live redaction inside the target, the same seam as `implement-issue` (issue #629).
 .PHONY: review-issue
 review-issue:
 	# `_setup` in the SAME container as the hermes call, exactly like
 	# `implement-issue` (#124: without the alias Hermes auto-routes to whatever
 	# provider key is in the env -> HF_TOKEN -> HTTP 403).
-	$(DOCKER_RUN) sh -c "make _setup && make _review-issue"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _review-issue")
+review-issue: HERMES_LOG := review.log
+review-issue: HERMES_LOG_SCRUBBED := review.scrubbed.log
 
 # The WINDOW path: an implementer has STARTED this issue. The body is off-limits
 # for REVIEW_GAP_HOURS, so the reviewer replies instead - one bounded comment
@@ -1557,9 +1568,12 @@ _review-issue-window:
 	hermes -z "Follow the preloaded skill issue-review on its WINDOW path. Parameters: issue=#$(ISSUE); input=issue.md at the repo root. Write comment.md and findings.md, never issue-body.md." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s issue-review,bot-unattended
 
+# Live redaction inside the target, the same seam (issue #629).
 .PHONY: review-issue-window
 review-issue-window:
-	$(DOCKER_RUN) sh -c "make _setup && make _review-issue-window"
+	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _review-issue-window")
+review-issue-window: HERMES_LOG := review.log
+review-issue-window: HERMES_LOG_SCRUBBED := review.scrubbed.log
 
 .PHONY: test
 test:

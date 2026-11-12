@@ -262,13 +262,13 @@ jobs:
       - name: Refine the issue (Hermes, through make)
         if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'body'
         run: |
-          # The reviewer agent's stream IS this step's console log, so it is captured
-          # and only the REDACTED, bounded tail is printed (issue #351): GitHub masks
-          # the values it registers, so a transformed one sails past the mask.
+          # Redacted LIVE inside the target (issue #629, seam #591): every line is
+          # masked before it reaches this console, and `make review-issue` writes
+          # review.log (raw, gitignored) + review.scrubbed.log (the artifact)
+          # itself. rc stays the agent's own (pipefail in the seam).
           set +e
-          make review-issue > review.log 2>&1
+          make review-issue
           rc=$?
-          make scrub-log FILE=review.log LOG_OUT=review.scrubbed.log TAIL=40
           # rc=3 is Hermes DETACHING because the agent asked for input (issue #549): the
           # unattended contract is preloaded from .hermes/skills/bot-unattended, so this
           # means the seam broke, not that the issue was unreadable.
@@ -310,12 +310,11 @@ jobs:
       - name: Review as a reply (Hermes, through make)
         if: steps.iss.outputs.review == 'true' && steps.thread.outcome == 'success' && steps.route.outputs.path == 'window'
         run: |
-          # Same shape as the body path (issue #351): capture the agent's stream,
-          # print only the redacted tail.
+          # Same live shape as the body path (issue #629): the target redacts its
+          # own stream through the seam and writes both captures.
           set +e
-          make review-issue-window > review.log 2>&1
+          make review-issue-window
           rc=$?
-          make scrub-log FILE=review.log LOG_OUT=review.scrubbed.log TAIL=40
           if [ "$rc" = "3" ]; then
             echo "::error::the reviewer asked for input (detached, rc=3) - an unattended leg must decide without a user; check that .hermes/skills resolves for \`hermes -s\` (issue #549)."
           fi
