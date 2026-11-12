@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **219**
+Active changes: **16** · archived: **221**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
+| `commit-message-check-discriminates-push-archive` | active | #852 | — | [message-pattern-enforcement](openspec/changes/commit-message-check-discriminates-push-archive/specs/message-pattern-enforcement/spec.md) | 7/7 | [proposal.md](openspec/changes/commit-message-check-discriminates-push-archive/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `index-failure-names-its-cause` | active | none — found while unblocking the dispatch-bot verification pass. | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
