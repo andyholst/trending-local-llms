@@ -213,6 +213,7 @@ keep it honest (issue #207):
 | `openspec-shell` | Interactive shell in the repo with the CLI available |
 | `openspec-tasks-check` (`NAME=`) | Fail while an ACTIVE change has an unticked `- [ ]`; a `- [~] … — blocked: <who/why>` box is accepted and reported as review-required (never as done), and an unannotated `- [~]` fails (`scripts/check_openspec_tasks.py`, issue #409) |
 | `openspec-spec-tests-check` (`NAME=`) | Fail when an ACTIVE change's spec cites a `- **Test:** <path>::<test>` that does not resolve: `<path>` must exist and, for a Python module, `<test>` must be defined top-level in it — a scenario whose lock does not exist is a defect (`scripts/check_openspec_test_lines.py`, issue #621); bundled into `make openspec-check` |
+| `openspec-duplicate-check` (`NAME=`) | Fail when two ACTIVE changes declare an ADDED/MODIFIED capability Requirement with the SAME heading of the SAME kind — two changes proposing the same rule is the defect (#622); bundled into `make openspec-check` |
 | `openspec-index` | Regenerate the root `OPENSPEC.md` (`scripts/openspec_index.py --write`) |
 | `openspec-index-check` | Fail when `OPENSPEC.md` is stale or a change has no row |
 | `openspec-archive-check` | Fail when an ACTIVE change's `PR:` line names a MERGED PR, OR when it carries no `PR:` yet its `Issue:` references a CLOSED issue — or when the validated PR (`PR=<n>`) closes that Issue while the change names no PR: either way the change should already be archived (`scripts/openspec_archive_check.py`; host-side, needs `gh`) (issue #183 + #518 + #779) |
