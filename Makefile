@@ -1184,9 +1184,20 @@ syft-sbom: ## Syft software-bill-of-materials of the working tree (DIR=<scan dir
 security-scan-self-test: ## Prove the scanners are not a false green: a planted known-CVE fixture MUST fail trivy+grype, a clean one pass (issue #715)
 	python3 scripts/security_scan_self_test.py
 
+# The gate's file set is what git could commit (issue #836): gitleaks dir mode
+# walks EVERY checked-out file and never consults .gitignore, so a local
+# `make test` compiling the fixture fakes into tests/__pycache__/*.pyc used to go
+# red on bytecode no commit could ever carry. The scan writes its findings as a
+# JSON report; `scripts/secret_scan_report.py` is the ONE verdict — findings on
+# paths git itself ignores (git check-ignore) are reported as gitignored
+# artifacts, findings in committable files fail the gate.
 .PHONY: _secret-scan
 _secret-scan:
-	$(GITLEAKS_RUN) dir /repo --config /repo/.gitleaks.toml --redact --no-banner --exit-code 1
+	@rm -f .secret-scan-report.json; \
+	$(GITLEAKS_RUN) dir /repo --config /repo/.gitleaks.toml --redact --no-banner \
+		--report-format json --report-path /repo/.secret-scan-report.json --exit-code 0; \
+	python3 scripts/secret_scan_report.py --report .secret-scan-report.json; \
+	STATUS=$$?; rm -f .secret-scan-report.json; exit $$STATUS
 
 .PHONY: secret-scan
 secret-scan:

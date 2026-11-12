@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Prove the secret scan actually detects a credential (issue #122).
+"""Prove the secret scan actually detects a credential (issue #122 / #836).
 
 A scanner that quietly does nothing is worse than no scanner: the pipeline looks
 green and a key leaks. This plants a WELL-FORMED, fake credential in a throwaway
 directory and REQUIRES gitleaks to flag it (with the repo's own
 `.gitleaks.toml`, so a rule/allowlist added to make a real finding go away also
-has to survive here), then scans a clean directory and REQUIRES no finding.
+has to survive here), then scans a clean directory and REQUIRES no finding, and
+(issue #836) proves the gate's file set is what git could commit: the same fake
+compiled into a gitignored `__pycache__/` must NOT red the gate (reported as an
+artifact) while the fake in a tracked file must.
 
-  python3 scripts/secret_scan_self_test.py        # exit 0 = both directions OK
+  python3 scripts/secret_scan_self_test.py        # exit 0 = all directions OK
 
 Runs the pinned gitleaks container, exactly like `make secret-scan` does.
 Stdlib only. Needs docker.
@@ -89,7 +92,44 @@ def main() -> int:
             return 1
         print("[secret-self-test] clean fixture: no findings — the config does not over-match")
 
-    print("[secret-self-test] OK: a credential is caught, a clean tree is not")
+        # Third direction (issue #836): the gate's file set is what git could
+        # commit. A fake compiled into a gitignored cache must NOT red the gate;
+        # the same fake in a tracked file must. Real git, real filter script.
+        gitrepo = root / "gitrepo"
+        (gitrepo / "__pycache__").mkdir()
+        (gitrepo / ".gitignore").write_text("__pycache__/\n")
+        (gitrepo / "tracked_leak.py").write_text(FAKE)
+        (gitrepo / "__pycache__" / "compiled_probe.py").write_text(FAKE)
+        subprocess.run(["git", "init", "-q", str(gitrepo)], check=True)
+        scan(gitrepo)
+        verdict = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
+             "--report", str(root / "gitrepo-report.json"),
+             "--repo", str(gitrepo), "--mount", "/scan/"],
+            capture_output=True, text=True)
+        if verdict.returncode != 1:
+            print("[secret-self-test] FAIL: a fake in a TRACKED file did not block the gate — "
+                  "the artifact filter swallowed a real finding")
+            return 1
+        if "artifact" not in verdict.stdout or "__pycache__" not in verdict.stdout:
+            print("[secret-self-test] FAIL: the gitignored fake was not reported as an artifact")
+            return 1
+        (gitrepo / "tracked_leak.py").unlink()
+        scan(gitrepo)
+        verdict = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
+             "--report", str(root / "gitrepo-report.json"),
+             "--repo", str(gitrepo), "--mount", "/scan/"],
+            capture_output=True, text=True)
+        if verdict.returncode != 0:
+            print("[secret-self-test] FAIL: a fake only in a gitignored cache BLOCKED the gate — "
+                  "the pre-push scan would red on bytecode no commit could carry")
+            return 1
+        print("[secret-self-test] gitignored cache: reported as an artifact, the gate stayed "
+              "green; the same fake in a tracked file blocked it")
+
+    print("[secret-self-test] OK: a credential is caught, a clean tree is not, and "
+          "gitignored artifacts never block the gate")
     return 0
 
 

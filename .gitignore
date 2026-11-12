@@ -33,3 +33,6 @@ review.scrubbed.log
 # redacted one is ever printed or uploaded.
 hermes-run.log
 hermes-run.scrubbed.log
+# the gitleaks JSON report `make secret-scan` writes into the mounted tree, read
+# by scripts/secret_scan_report.py and deleted in the same recipe (issue #836)
+.secret-scan-report.json

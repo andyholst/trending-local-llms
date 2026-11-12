@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
-"""The secret scan is wired, configured and honest (issue #122).
+"""The secret scan is wired, configured and honest (issue #122, #836).
 
 Hermetic: no docker inside the pipeline image, so the real scan + the planted-key
 self-test run in CI's `validate` job (`make secret-scan`, `make secret-scan-self-test`)
 — what is checked here is that they exist, that CI calls them, that the config only
 narrows known placeholders, and that the probe file cannot itself be the leak.
+Issue #836 adds the fileset rule: the gate's file set is what git could commit —
+`scripts/secret_scan_report.py` (git's own `git check-ignore`) classifies findings,
+gitignored build artifacts (a `make test` bytecode copy of the planted fake!) are
+reported but never block, committable findings always block, and a scan that wrote
+no report never reports a pass.
 
 Run:  python3 tests/test_secret_scan.py    or   make test
 """
 from __future__ import annotations
 
+import json
 import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,6 +41,25 @@ def check(name, cond, detail=""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
+def recipe(name: str) -> str:
+    """The tab-indented body of a Makefile target, for target-local assertions."""
+    lines = MAKEFILE.splitlines()
+    out: list[str] = []
+    started = False
+    for line in lines:
+        if line.rstrip() in (f"{name}:", f".PHONY: {name}"):
+            started = line.rstrip() == f"{name}:"
+            continue
+        if started:
+            if line.startswith("\t"):
+                out.append(line)
+            elif not line.strip():
+                continue
+            else:
+                break
+    return "\n".join(out)
+
+
 def test_targets_exist_and_are_pinned():
     """`make secret-scan` is the pre-push gate; the scanner image is pinned."""
 
@@ -46,8 +74,21 @@ def test_targets_exist_and_are_pinned():
           [l for l in MAKEFILE.splitlines() if "GITLEAKS_IMAGE" in l])
     check("make: the scan uses the repo config and redaction",
           "--config /repo/.gitleaks.toml" in MAKEFILE and "--redact" in MAKEFILE)
-    check("make: a finding fails the target (exit-code 1)",
-          "--exit-code 1" in MAKEFILE)
+    scan_recipe = recipe("_secret-scan")
+    check("make: the dir scan writes its findings as a JSON report",
+          "--report-format json" in scan_recipe and "--report-path" in scan_recipe,
+          scan_recipe)
+    check("make: the finding-to-verdict decision is scripts/secret_scan_report.py, "
+          "not gitleaks' exit code (issue #836)",
+          "python3 scripts/secret_scan_report.py" in scan_recipe, scan_recipe)
+    check("make: gitleaks' own exit code no longer decides the gate (--exit-code 0; "
+          "the filter answers for the committable file set)",
+          "--exit-code 0" in scan_recipe, scan_recipe)
+    check("make: the JSON report is created and deleted inside the same recipe "
+          "(the scan artifact can never reach a commit)",
+          scan_recipe.count(".secret-scan-report.json") >= 3, scan_recipe)
+    check("make: the history scan still fails directly on any finding",
+          "--exit-code 1" in recipe("_secret-scan-history"))
     check("make: the failure message forbids allowlisting a real value",
           "never add it to .gitleaks.toml" in MAKEFILE.lower()
           or "Never add it to .gitleaks.toml" in MAKEFILE)
@@ -103,6 +144,82 @@ def test_config_only_narrows_documented_placeholders():
                   "#" in window, window.replace("\n", " | ")[:120])
 
 
+def test_scan_report_filter_decides_the_fileset():
+    """`scripts/secret_scan_report.py` end-to-end (issue #836): gitignored build
+    artifacts never block the gate; committable findings always do; a scan that
+    wrote no report never reports a pass.
+
+    Real git, real script; the report is a recorded gitleaks JSON finding shape
+    read by the real filter (a fixture file, not a mock).
+    """
+
+    tmp = Path(tempfile.mkdtemp())
+    repo = tmp / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / ".gitignore").write_text("__pycache__/\n")
+
+    def report(name: str, files: list[str]) -> Path:
+        p = tmp / name
+        p.write_text(json.dumps([
+            {"RuleID": "generic-api-key", "File": f"/repo/{f}", "StartLine": 3,
+             "Description": "possible credential"} for f in files]))
+        return p
+
+    def run(report_path: Path) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "secret_scan_report.py"),
+             "--report", str(report_path), "--repo", str(repo)],
+            capture_output=True, text=True)
+
+    # Given findings in a gitignored cache AND in a committable file
+    # When  the filter decides
+    # Then  the gate fails on the committable one; the artifact is reported, not hidden
+    both = run(report("both.json",
+                      ["tests/__pycache__/fixture.cpython-312.pyc", "scripts/tracked.py"]))
+    check("filter: a finding in a committable file fails the gate",
+          both.returncode == 1, both.stdout)
+    check("filter: it names the committable file",
+          "scripts/tracked.py" in both.stdout, both.stdout)
+    check("filter: the gitignored artifact is reported, not hidden",
+          "__pycache__" in both.stdout and "ignored" in both.stdout, both.stdout)
+
+    # Given findings ONLY in gitignored artifacts (the `make test` state)
+    # When  the filter decides
+    # Then  the gate is green — bytecode no commit could carry never reds it
+    artifacts = run(report("artifacts.json",
+                           ["tests/__pycache__/fixture.cpython-312.pyc"]))
+    check("filter: gitignored findings never block the gate",
+          artifacts.returncode == 0, artifacts.stdout)
+    check("filter: they are still named as artifacts",
+          "artifact" in artifacts.stdout, artifacts.stdout)
+
+    # Given a scan that wrote no report at all
+    # When  the filter is asked for a verdict
+    # Then  it refuses loudly (exit 2) — never a silent clean
+    missing = run(tmp / "no-such-report.json")
+    check("filter: a missing report is a loud refusal, not a green",
+          missing.returncode == 2 and "BROKEN" in missing.stdout, missing.stdout)
+
+    # Given an empty findings list (a real clean scan)
+    # When  the filter decides
+    # Then  it reports clean
+    empty = run(report("empty.json", []))
+    check("filter: an empty scan reports clean",
+          empty.returncode == 0 and "clean" in empty.stdout, empty.stdout)
+
+    # Given a finding whose path git cannot resolve at all
+    # When  the filter classifies it
+    # Then  unknown is committable (fail-safe: unknown never means ignored)
+    odd = run(report("odd.json", ["/elsewhere/absolute.py"]))
+    check("filter: an unclassifiable path is treated as committable",
+          odd.returncode == 1, odd.stdout)
+
+    # Then  the classification is git's own answer, never a hand-kept path list
+    check("filter: the fileset decision is git check-ignore, one semantics",
+          "check-ignore" in (ROOT / "scripts" / "secret_scan_report.py").read_text())
+
+
 def test_probe_file_is_not_itself_a_leak():
     """The self-test plants credential shapes; the SCRIPT must not contain them as
     literals, or the repo scan would flag the probe and invite an allowlist."""
@@ -120,6 +237,12 @@ def test_probe_file_is_not_itself_a_leak():
           "clean fixture reported" in PROBE)
     check("probe: --redact is used so a finding never prints the value",
           "--redact" in PROBE)
+    check("probe: it refuses a gitignored artifact BLOCKING the gate (issue #836)",
+          "BLOCKED the gate" in PROBE)
+    check("probe: it refuses a tracked fake NOT blocking the gate",
+          "did not block the gate" in PROBE)
+    check("probe: the artifact verdict runs the REAL filter against a REAL git repo",
+          "secret_scan_report.py" in PROBE and '"git", "init"' in PROBE)
 
 
 def test_config_allowlists_are_justified_by_the_repo():
@@ -143,6 +266,7 @@ def main() -> int:
     test_history_scan_refuses_a_worktree()
     test_ci_runs_the_scan_and_its_self_test()
     test_config_only_narrows_documented_placeholders()
+    test_scan_report_filter_decides_the_fileset()
     test_probe_file_is_not_itself_a_leak()
     test_config_allowlists_are_justified_by_the_repo()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

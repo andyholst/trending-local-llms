@@ -24,3 +24,4 @@ implement.log
 implement.scrubbed.log
 review.log
 review.scrubbed.log
+.secret-scan-report.json
