@@ -28,7 +28,7 @@
 # HERMES_FIX_REASONING=none (0 reasoning tokens) instead of wasting the round.
 #
 #
-# arch-calls: lint validate-search validate-mapped openspec-check architecture-check test fix findings-check
+# arch-calls: lint validate-search validate-mapped openspec-check architecture-check test fix findings-check self-archive-snapshot self-archive-guard
 #
 # The line above is a DECLARATION for the architecture inventory (issue #482): this script runs
 # `make <target>` one level down, where the block cannot see it. Every name is verified against
@@ -248,6 +248,22 @@ summary() {
 # moved, and a failure the base already fixed must cost ZERO LLM rounds.
 merge_base
 
+# --- the self-archive guard (issue #812) --------------------------------------
+# A `make fix` round once ran `make openspec-archive` on its own change: the move
+# into openspec/changes/archive/ was staged by the commit step and the PR landed
+# green with its OpenSpec trail dismantled — and `make openspec-archive-check`
+# (issue #779) reads the ACTIVE changes, so archiving early makes the gate that
+# exists to catch stranding blind. The baseline is taken AFTER the base merge (a
+# merge may legitimately archive the base's changes — those belong to the
+# baseline, not to a dismantle) and only inside a git checkout (issue #383).
+SELF_ARCHIVE_BASELINE="${SELF_ARCHIVE_BASELINE:-$(mktemp "${TMPDIR:-/tmp}/fix-loop-self-archive.XXXXXX")}"
+export SELF_ARCHIVE_BASELINE
+if git rev-parse --git-dir >/dev/null 2>&1; then
+	SELF_ARCHIVE_REF="$(git rev-parse HEAD)"
+	export SELF_ARCHIVE_REF
+	"$MAKE" self-archive-snapshot || echo "[fix-loop] self-archive snapshot failed; rounds still run (the guard below reports what it can)"
+fi
+
 prev_sig=""
 for ((round = 1; round <= ROUNDS; round++)); do
 	echo "--- fix-bot round $round/$ROUNDS: running checks ---"
@@ -285,6 +301,25 @@ for ((round = 1; round <= ROUNDS; round++)); do
 		else
 			echo "[fix-loop] still conflicted in: $(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')"
 		fi
+	fi
+	# A round may only ADD to its OpenSpec change (AGENTS.md 3b/6f): archive dirs
+	# belong to MERGED PRs, and a branch that moved its own change into them
+	# mid-repair turns the #779 archive gate blind while every check still passes
+	# (issue #812, measured). Compare the tree with the snapshot taken after the
+	# base merge: a baseline-active change gone from the tree is RESTORED here —
+	# before any green re-check can exit 0 — and the finding is folded into the
+	# next round's repair notes. Never fatal outside a checkout (issue #383).
+	if git rev-parse --git-dir >/dev/null 2>&1; then
+		sa_out="$(mktemp "${TMPDIR:-/tmp}/fix-loop-self-archive-out.XXXXXX")"
+		SELF_ARCHIVE_RESTORE=1 "$MAKE" self-archive-guard >"$sa_out" 2>&1
+		sa_rc=$?
+		if [ "$sa_rc" = "1" ]; then
+			cat "$sa_out" >>"$NOTES"
+			echo "[fix-loop] round $round dismantled its own OpenSpec change — the guard restored it (issue #812); the finding is in the repair notes"
+		elif [ "$sa_rc" != "0" ]; then
+			echo "[fix-loop] self-archive guard could not run (exit $sa_rc): $(head -1 "$sa_out")" >>"$NOTES"
+		fi
+		rm -f "$sa_out"
 	fi
 done
 

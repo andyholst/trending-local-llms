@@ -56,6 +56,12 @@ red=$(cat "$d/red")
 case "$1" in
   fix)
     [ "${FIX_SLEEP:-0}" -gt 0 ] && sleep "${FIX_SLEEP}"
+    if [ -n "${FIX_ARCHIVE_NAME:-}" ]; then
+      # issue #812: simulate the measured round that ran `make openspec-archive`
+      # on its OWN change: the tree's active change moves into archive/.
+      mkdir -p "openspec/changes/archive"
+      mv "openspec/changes/$FIX_ARCHIVE_NAME" "openspec/changes/archive/$FIX_ARCHIVE_NAME"
+    fi
     if [ "${BUDGET_BURN:-0}" = "1" ] && [ "$2" != "HERMES_FIX_REASONING=none" ]; then
       echo "No visible answer was produced. The model hit its output-token limit on every continuation attempt - its reasoning consumed the entire budget each time."
       exit 2
@@ -75,6 +81,15 @@ case "$1" in
     echo "  FAIL: m1: duplicate model ids in models.json: ['m1']"
     if [ "${TEST_RED:-0}" = "1" ]; then echo "  FAIL readme-render: trend cell"; echo "PASSED 9 | FAILED 1"; exit 1; fi
     echo "PASSED 10 | FAILED 0"; exit 0 ;;
+  self-archive-snapshot)
+    # issue #812: with GUARD_SCRIPT set, the REAL scripts/self_archive_guard.py runs
+    # (the fixture is a real git repository the real guard reads); without it the
+    # target is a no-op, so the pre-existing fixtures never depend on python3.
+    if [ -n "${GUARD_SCRIPT:-}" ]; then python3 "$GUARD_SCRIPT" snapshot; exit $?; fi
+    exit 0 ;;
+  self-archive-guard)
+    if [ -n "${GUARD_SCRIPT:-}" ]; then python3 "$GUARD_SCRIPT" check; exit $?; fi
+    exit 0 ;;
   *) echo "PASSED 1 | FAILED 0"; exit 0 ;;
 esac
 """
@@ -496,6 +511,49 @@ def test_a_failed_merge_with_no_unmerged_path_says_what_git_said():
     shutil.rmtree(root, ignore_errors=True)
 
 
+def test_a_round_that_archives_its_own_change_is_refused_and_restored():
+    # issue #812 (measured): a Hermes round ran `make openspec-archive` on its OWN
+    # change mid-loop; the tree landed with the change moved into
+    # openspec/changes/archive/ while the PR was still open — every gate green and
+    # the #779 archive gate (which reads the ACTIVE changes) blind. The loop now
+    # snapshots its baseline (after the base merge) and, after every round, runs
+    # the guard: a baseline-active change gone from the tree is RESTORED and the
+    # finding is reported — before any green re-check can exit 0 on the dismantled
+    # state. Driven end to end: a real git repository, the real guard script.
+    root = Path(tempfile.mkdtemp())
+    repo = root / "branch"
+    foo = repo / "openspec" / "changes" / "foo"
+    foo.mkdir(parents=True)
+    (foo / "proposal.md").write_text("# Proposal: foo\n\nIssue: #999\n")
+    (foo / "tasks.md").write_text("- [ ] step\n")
+    (repo / "qa-note.txt").write_text("red\n")
+    genv = dict(os.environ,
+                GIT_AUTHOR_NAME="loop-test", GIT_AUTHOR_EMAIL="loop@test.invalid",
+                GIT_COMMITTER_NAME="loop-test", GIT_COMMITTER_EMAIL="loop@test.invalid")
+    for args in (["init", "-q", "-b", "main"], ["add", "-A"], ["commit", "-q", "-m", "base"]):
+        subprocess.run(["git", *args], cwd=str(repo), check=True, capture_output=True, env=genv)
+    guard = root / "guard.py"
+    shutil.copy(ROOT / "scripts" / "self_archive_guard.py", guard)
+
+    rc, calls, report, out = run(1, rounds=2, base_merge="0", cwd=repo,
+                                 extra_env={"GUARD_SCRIPT": str(guard), "FIX_ARCHIVE_NAME": "foo"})
+
+    check("self-archive: the loop snapshotted the baseline",
+          "self-archive-snapshot" in calls, calls)
+    check("self-archive: the guard ran after the round",
+          "self-archive-guard" in calls, calls)
+    check("self-archive: the loop names the dismantling round",
+          "dismantled its own OpenSpec change" in out, out[-600:])
+    check("self-archive: the change is restored to openspec/changes/",
+          foo.is_dir() and (foo / "proposal.md").is_file() and (foo / "tasks.md").is_file(),
+          sorted(str(p.relative_to(repo)) for p in (repo / "openspec").rglob("*")))
+    check("self-archive: the fresh archive copy is gone",
+          not (repo / "openspec" / "changes" / "archive" / "foo").exists(), "")
+    check("self-archive: the loop goes on and still lands green",
+          rc == 0, (rc, out[-300:]))
+    shutil.rmtree(root, ignore_errors=True)
+
+
 def main() -> int:
     if not shutil.which("bash"):
         print("SKIP: bash not available")
@@ -520,6 +578,7 @@ def main() -> int:
     test_a_round_that_changes_nothing_stops_the_loop()
     test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless()
     test_a_failed_merge_with_no_unmerged_path_says_what_git_said()
+    test_a_round_that_archives_its_own_change_is_refused_and_restored()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
