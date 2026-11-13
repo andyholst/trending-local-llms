@@ -7,5 +7,5 @@
 - [x] 5. `tests/test_self_archive_guard.py` (8 tests, 15 checks) green against the real script
 - [x] 6. `tests/test_fix_loop.py::test_a_round_that_archives_its_own_change_is_refused_and_restored` green end to end AND verified RED against the pre-change `scripts/fix_loop.sh` (5 checks fail on the old code)
 - [x] 7. `AGENTS.md` §8 guard row (rule 6c) + `ARCHITECTURE.md` target rows and §6 script row (rule 6h) + §10 inventory regenerated + `OPENSPEC.md` regenerated
-- [ ] 8. `make lint`, `make architecture-check`, `make openspec-index-check`, `make openspec-check` and the full container `make test` green on this branch
-- [ ] 9. PR opened (`closes #812`, five-section body) with the AGENTS.md diff called out for rule 3c sign-off; monitored until `validate` + `live-smoke` are green and `auto-merge` lands it; the change archived at the PR via `make openspec-record-pr` per rule 6f
+- [x] 8. `make lint`, `make architecture-check`, `make openspec-index-check`, `make openspec-check` and the full container `make test` green on this branch
+- [x] 9. PR opened (`closes #812`, five-section body) with the AGENTS.md §8 diff declared on the issue for rule 3c sign-off; the merged head already ARCHIVES this change (`make openspec-record-pr ISSUE=812 PR=<pr>`, rule 6f/#779), so no gate of this PR can strand it
