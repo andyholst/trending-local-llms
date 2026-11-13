@@ -665,6 +665,49 @@ def test_measurement_alias_map_gate_refuses_a_dangling_alias():
           and "dangling" in V.FAILURES[0], str(V.FAILURES))
 
 
+def test_dangling_raw_alias_counterpart_is_refused_naming_both_sides():
+    """Issue #884: the search contract may carry the exception, so the mapping gate
+    reads the raw snapshots too — a dangling counterpart fails naming the snapshot
+    file, its raw model, the dangling id AND the store it must resolve in. A
+    resolvable raw counterpart passes, and the store-only mode (raw_dir=None, the
+    #652 calls) never reads the repository's own raw files behind a fixture store."""
+    reset()
+    s = good_store()
+    with tempfile.TemporaryDirectory() as td:
+        raw = {"backend": "nvidia", "generated_utc": "2026-11-13T00:00:00Z",
+               "models": [dict(good_store()["models"][0],
+                               measurement_model_aliases=["ghost-model"])]}
+        (Path(td) / "nvidia-20261113T000000Z.json").write_text(json.dumps(raw))
+        V.check_measurement_alias_map(s, raw_dir=Path(td))
+        check("alias map: a dangling counterpart in a raw snapshot is refused",
+              len(V.FAILURES) == 1, str(V.FAILURES))
+        f = V.FAILURES[0] if V.FAILURES else ""
+        check("alias map: the refusal names BOTH sides — snapshot file, raw model, counterpart, store",
+              "nvidia-20261113T000000Z.json" in f and "ghost-model" in f
+              and "m1" in f and "data/models.json" in f, f)
+    reset()
+    s = good_store()
+    s["models"].append(dict(good_store()["models"][0], id="m1-variant", name="Model One Variant"))
+    with tempfile.TemporaryDirectory() as td:
+        raw = {"backend": "nvidia", "generated_utc": "2026-11-13T00:00:00Z",
+               "models": [dict(good_store()["models"][0],
+                               measurement_model_aliases=["m1-variant"])]}
+        (Path(td) / "nvidia-20261113T000001Z.json").write_text(json.dumps(raw))
+        V.check_measurement_alias_map(s, raw_dir=Path(td))
+        check("alias map: a resolvable counterpart in a raw snapshot passes",
+              len(V.FAILURES) == 0, str(V.FAILURES))
+    reset()
+    s = good_store()
+    with tempfile.TemporaryDirectory() as td:
+        raw = {"backend": "nvidia", "generated_utc": "2026-11-13T00:00:00Z",
+               "models": [dict(good_store()["models"][0],
+                               measurement_model_aliases=["ghost-model"])]}
+        (Path(td) / "nvidia-20261113T000002Z.json").write_text(json.dumps(raw))
+        V.check_measurement_alias_map(s)  # store-only mode: the raw dir is not read
+        check("alias map: store-only mode stays exact (never reads raw behind a fixture)",
+              len(V.FAILURES) == 0, str(V.FAILURES))
+
+
 def main() -> int:
     print("validator: direct unit tests")
     test_no_duplicates()
@@ -683,6 +726,7 @@ def main() -> int:
     test_every_check_is_wired_to_a_stage_and_a_makefile_target()
     test_measurement_alias_map_gate_accepts_resolvable_aliases()
     test_measurement_alias_map_gate_refuses_a_dangling_alias()
+    test_dangling_raw_alias_counterpart_is_refused_naming_both_sides()
     test_models_order_matches_readme()
     test_newline_terminators()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

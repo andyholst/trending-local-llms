@@ -255,6 +255,17 @@
           "last_seen": {
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "measurement_model_aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9.\\-]*$",
+              "minLength": 2
+            },
+            "uniqueItems": true,
+            "minItems": 1,
+            "description": "Optional list of STORE model ids whose names a measurement captured for this row may legitimately mention (a variant row naming its base model, a bake-off row naming the model it compares against) — the documented exception to the measurement-attribution refusal, as DATA (issue #652). The SAME key the store contract declares; a search snapshot may record the exception instead of only refusing, and every counterpart must resolve to a model id in the store (check_measurement_alias_map, mapping stage). Additive: never required (issue #884)."
           }
         },
         "additionalProperties": false

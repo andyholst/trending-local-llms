@@ -200,6 +200,27 @@ def test_attribution_exceptions_live_in_data_not_code():
           props.get("measurement_model_aliases"))
 
 
+def test_alias_key_declared_in_both_contracts():
+    """The pair (issue #652 + #884): the exception key is declared in BOTH
+    contracts — store side and search side — identically and optionally."""
+    shapes = []
+    for name in ("model_contract.json", "search_contract.json"):
+        c = json.loads((ROOT / "data" / name).read_text())
+        item = c["properties"]["models"]["items"]
+        props = item["properties"]
+        check(f"{name}: declares measurement_model_aliases as a model property",
+              "measurement_model_aliases" in props, sorted(props))
+        check(f"{name}: the alias key is optional (never required)",
+              "measurement_model_aliases" not in item.get("required", []), item.get("required"))
+        shapes.append(props.get("measurement_model_aliases"))
+    check("contracts: both declare the SAME structural shape for the exception key "
+          "(array of store-id slugs, unique items)",
+          all(s is not None and {k: v for k, v in s.items() if k in ("type", "items", "uniqueItems")}
+              == {k: v for k, v in shapes[0].items() if k in ("type", "items", "uniqueItems")}
+              for s in shapes)
+          and shapes[1].get("minItems", 1) >= 1, shapes)
+
+
 def test_ingest_calls_the_refusal():
     src = (ROOT / "scripts" / "update_trending.py").read_text()
     start = src.index("def ingest_raw_snapshots(")
@@ -268,6 +289,159 @@ def test_the_shipped_store_reports_the_known_row():
           (proc.returncode, proc.stdout[-300:]))
 
 
+# ---- issue #884: the search contract may RECORD the exception, and ingest
+# carries a captured one onto the store row additively ----
+
+#: One search-leg snapshot of a bake-off row: its measurement names a DIFFERENT
+#: stored model (Gemma 3 27B) — refused without an exception — and the snapshot
+#: now records the exception as data on the row, the same key the store contract
+#: declares (issue #652) that the search contract previously pruned.
+def _bakeoff_raw(alias_value=("gemma-3-27b",), mid="coder-bakeoff-gemma",
+                 name="Coder Bakeoff Gemma", post="https://lightbrd.com/bakeoff/status/9001"):
+    return {
+        "backend": "nvidia",
+        "generated_utc": "2026-11-13T09:00:00Z",
+        "models": [{
+            "id": mid, "name": name, "full_name": "Coder-Bakeoff-Gemma",
+            "type": "LLM", "license": "MIT", "params": "27B", "hf": "org/coder-bakeoff-gemma",
+            "vram_tier": "24GB", "vram_min": "18GB", "backends": ["CUDA"],
+            "why": "bake-off", "last_seen": "2026-11-13",
+            "engagement": {"likes": 42, "comments": 3, "views": 5000},
+            "engines": [meas("Gemma 3 27B QAT llama.cpp 41 t/s RTX 4090 24GB",
+                             post=post, tps="41", hardware="RTX 4090 24GB")],
+            "measurement_model_aliases": list(alias_value),
+        }],
+    }
+
+
+def _alias_store():
+    """A store holding the counterpart model (and, for the union test, a second one)."""
+    return {"generated_utc": "2026-11-01T00:00:00Z",
+            "engines": {"llama.cpp": {"backend": "CUDA / CPU / Metal", "note": "n",
+                                      "url": "https://github.com/ggml-org/llama.cpp"}},
+            "models": [
+                row("gemma-3-27b", "Gemma 3 27B", full_name="Gemma-3-27B",
+                    engines=[meas("QAT 4bit", post="https://lightbrd.com/base/status/8001",
+                                  tps="39", hardware="RTX 4080 16GB")]),
+                row("mistral-small-3.2", "Mistral Small 3.2", full_name="Mistral-Small-3.2",
+                    engines=[meas("instruct 24bit", post="https://lightbrd.com/mistral/status/8002",
+                                  tps="55", hardware="RTX 5080 16GB")]),
+            ]}
+
+
+def _write_raw_dir(tmp, raw, fname="nvidia-20261113T090000Z.json"):
+    raw_dir = Path(tmp) / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / fname).write_text(json.dumps(raw))
+    return raw_dir
+
+
+def test_raw_snapshot_carrying_the_exception_conforms():
+    """The search stage no longer prunes the exception key: a snapshot carrying a
+    resolvable counterpart conforms; a malformed one is REFUSED by the contract."""
+    def contract_failures(raw_dir):
+        saved = V.RAW_DIR
+        V.RAW_DIR = raw_dir
+        V.FAILURES.clear()
+        try:
+            V.check_search_contract()
+            failures = list(V.FAILURES)
+        finally:
+            V.FAILURES.clear()
+            V.RAW_DIR = saved
+        return failures
+
+    with tempfile.TemporaryDirectory() as tmp:
+        failures = contract_failures(_write_raw_dir(tmp, _bakeoff_raw()))
+        check("search contract: a snapshot carrying the exception conforms (not pruned)",
+              failures == [], failures)
+    with tempfile.TemporaryDirectory() as tmp:
+        # empty array violates minItems; a non-slug counterpart violates the id pattern
+        failures = contract_failures(_write_raw_dir(tmp, _bakeoff_raw(alias_value=())))
+        check("search contract: an empty alias array is refused", bool(failures), failures)
+    with tempfile.TemporaryDirectory() as tmp:
+        failures = contract_failures(_write_raw_dir(tmp, _bakeoff_raw(alias_value=("Bad ID",))))
+        check("search contract: a non-slug counterpart is refused", bool(failures), failures)
+
+
+def test_new_model_keeps_captured_exception():
+    """A NEW model captured WITH the exception keeps the key on its store row, and
+    its aliased measurement merges instead of being refused (the exclusion is read
+    from the row, issue #652)."""
+    store = _alias_store()
+    with tempfile.TemporaryDirectory() as tmp:
+        raw_dir = _write_raw_dir(tmp, _bakeoff_raw())
+        saved = UT.RAW_DIR
+        try:
+            UT.RAW_DIR = raw_dir
+            added, updated = UT.ingest_raw_snapshots(store, since=None)
+        finally:
+            UT.RAW_DIR = saved
+    check("ingest: the aliased new model merges (its measurement is NOT refused)",
+          added == 1 and updated == 0, (added, updated))
+    new = next(m for m in store["models"] if m["id"] == "coder-bakeoff-gemma")
+    check("ingest: the new row keeps the captured exception as data",
+          new.get("measurement_model_aliases") == ["gemma-3-27b"],
+          new.get("measurement_model_aliases"))
+    check("ingest: the aliased measurement landed on the row",
+          any(e.get("tps") == "41" for e in new["engines"]), new["engines"])
+
+
+def test_existing_row_gains_aliases_additively():
+    """An EXISTING store row gains a newly captured counterpart as a UNION: what
+    the row already documented is kept, the new one is added, nothing shrinks
+    (rule 3b), and the gain is loud."""
+    store = _alias_store()
+    store["models"].append(row(
+        "coder-bakeoff-gemma", "Coder Bakeoff Gemma", full_name="Coder-Bakeoff-Gemma",
+        measurement_model_aliases=["gemma-3-27b"],
+        engines=[meas("QAT llama.cpp", post="https://lightbrd.com/bakeoff/status/7001",
+                      tps="41", hardware="RTX 4090 24GB")]))
+    # the same row captured again, now naming the Mistral counterpart too
+    raw = _bakeoff_raw(alias_value=("gemma-3-27b", "mistral-small-3.2"),
+                       post="https://lightbrd.com/bakeoff/status/9001")
+    raw["models"][0]["engines"] = [meas(
+        "Gemma 3 27B and Mistral Small 3.2 both measured, llama.cpp 44 t/s RTX 4090 24GB",
+        post="https://lightbrd.com/bakeoff/status/9001", tps="44", hardware="RTX 4090 24GB")]
+    with tempfile.TemporaryDirectory() as tmp:
+        raw_dir = _write_raw_dir(tmp, raw)
+        saved = UT.RAW_DIR
+        buf = io.StringIO()
+        try:
+            UT.RAW_DIR = raw_dir
+            with redirect_stdout(buf):
+                _added, updated = UT.ingest_raw_snapshots(store, since=None)
+        finally:
+            UT.RAW_DIR = saved
+    existing = next(m for m in store["models"] if m["id"] == "coder-bakeoff-gemma")
+    out = buf.getvalue()
+    check("ingest: the existing row was updated (not duplicated)", updated == 1, updated)
+    check("ingest: aliases are UNIONED — old kept, new added, none removed",
+          existing.get("measurement_model_aliases") == ["gemma-3-27b", "mistral-small-3.2"],
+          existing.get("measurement_model_aliases"))
+    check("ingest: the alias gain is loud",
+          "measurement_model_aliases gained" in out and "mistral-small-3.2" in out, out[-300:])
+    # a capture WITHOUT the key never clears what the row documents
+    store2 = _alias_store()
+    store2["models"].append(row("coder-bakeoff-gemma", "Coder Bakeoff Gemma",
+                                measurement_model_aliases=["gemma-3-27b"],
+                                engines=[meas("plain", post="https://lightbrd.com/bakeoff/status/7002")]))
+    raw_noalias = _bakeoff_raw()
+    del raw_noalias["models"][0]["measurement_model_aliases"]
+    with tempfile.TemporaryDirectory() as tmp:
+        raw_dir = _write_raw_dir(tmp, raw_noalias, fname="nvidia-20261113T090001Z.json")
+        saved = UT.RAW_DIR
+        try:
+            UT.RAW_DIR = raw_dir
+            UT.ingest_raw_snapshots(store2, since=None)
+        finally:
+            UT.RAW_DIR = saved
+    kept = next(m for m in store2["models"] if m["id"] == "coder-bakeoff-gemma")
+    check("ingest: a capture without the key never narrows the row",
+          kept.get("measurement_model_aliases") == ["gemma-3-27b"],
+          kept.get("measurement_model_aliases"))
+
+
 def main() -> int:
     print("measurement attribution: a measurement naming another model (tech-debt #456/#468)")
     test_the_reported_measurement_is_refused()
@@ -280,9 +454,13 @@ def main() -> int:
     test_an_unknown_identity_fails_open()
     test_an_explicit_alias_mapping_documents_an_exception()
     test_attribution_exceptions_live_in_data_not_code()
+    test_alias_key_declared_in_both_contracts()
     test_ingest_calls_the_refusal()
     test_ingest_drops_a_new_row_whose_only_measurement_is_refused()
     test_the_shipped_store_reports_the_known_row()
+    test_raw_snapshot_carrying_the_exception_conforms()
+    test_new_model_keeps_captured_exception()
+    test_existing_row_gains_aliases_additively()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
