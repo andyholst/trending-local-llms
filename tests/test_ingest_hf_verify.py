@@ -399,6 +399,49 @@ def test_write_raw_never_mutates_the_caller_payload():
           url_model["hf"] == "good/model"
           and url_model["formats"][0]["hf"] == "good/fmt",
           str((url_model["hf"], url_model["formats"])))
+def test_write_raw_warns_on_engine_name_case_slip():
+    """Issue #645: a casing slip against a REGISTERED engine name is named in
+    the leg's own log — loudly, without renaming it; an exact registered name is
+    silent and a genuinely new engine stays silent too (auto-register path)."""
+    registry = json.loads((ROOT / "data" / "models.json").read_text())["engines"]
+    registered = next(n for n in registry if n != n.lower())
+    slip = registered.swapcase()
+    check("fixture: the slip differs from the registered name by case alone",
+          slip != registered and slip.lower() == registered.lower(), (slip, registered))
+    new_engine = "Totally-New-Engine-91x"
+
+    def run(base):
+        _HF.seen = []
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            data = write_and_read({
+                "backend": "amd",
+                "models": [
+                    {"id": "case-slip-model", "name": "Case Slip", "hf": "good/model",
+                     "engines": [{"engine": slip, "tps": "12.3",
+                                  "source_post": "https://lightbrd.com/u/status/1"}]},
+                    {"id": "exact-model", "name": "Exact", "hf": "good/model",
+                     "engines": [{"engine": registered, "tps": "9.9",
+                                  "source_post": "https://lightbrd.com/u/status/2"}]},
+                    {"id": "new-engine-model", "name": "New Engine", "hf": "good/model",
+                     "engines": [{"engine": new_engine, "tps": "4.4",
+                                  "source_post": "https://lightbrd.com/u/status/3"}]},
+                ],
+            }, backend="amd")   # verify_hf defaults to False: a pure-local check
+        return data, buf.getvalue()
+
+    data, out = _with_api(run)
+    check("write-raw: the case slip is warned naming model, slip and registered name",
+          "[write-raw] WARN" in out and slip in out and registered in out
+          and "case-slip-model" in out, out)
+    by_id = {m["id"]: m for m in data["models"]}
+    check("write-raw: the written name is NOT renamed in the snapshot",
+          by_id["case-slip-model"]["engines"][0]["engine"] == slip,
+          by_id["case-slip-model"]["engines"])
+    check("write-raw: the exact registered name prints nothing", "exact-model" not in out, out)
+    check("write-raw: a genuinely new engine is silent (stays unregistered for a human)",
+          new_engine not in out, out)
+    check("write-raw: the case check makes no request", _HF.seen == [], _HF.seen)
 
 
 def main() -> int:
@@ -415,6 +458,7 @@ def main() -> int:
     test_write_raw_cli_turns_on_verification()
     test_write_raw_normalises_hf_co_urls()
     test_write_raw_never_mutates_the_caller_payload()
+    test_write_raw_warns_on_engine_name_case_slip()
     test_the_search_skill_requires_the_hf_lookup()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

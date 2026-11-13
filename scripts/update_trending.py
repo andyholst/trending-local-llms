@@ -1954,6 +1954,30 @@ def normalize_hf_ref(value):
     return normalise_hf(v) or v
 
 
+def _engine_case_slips(engines: list, registry: dict) -> list[tuple[str, str]]:
+    """(written spelling, registered spelling) for every measurement whose engine
+    name misses a REGISTERED name by case alone (issue #645): the fourth failure
+    on refresh PR #416 was `engine 'EXLlamaV3' has no repo url` while the registry
+    carries `ExLlamaV3` — the exact-match lookup reds the PR for a typo the leg
+    can fix. A genuinely NEW engine is deliberately NOT a slip: it stays
+    unregistered and reds validation for a human (AGENTS.md rule 6), so this is
+    a read-only WARN, never a rename and never a refusal."""
+    by_lower: dict = {}
+    for _name in registry:
+        by_lower.setdefault(str(_name).lower(), str(_name))
+    out: list = []
+    for _e in engines:
+        if not isinstance(_e, dict):
+            continue
+        _written = str(_e.get("engine") or "")
+        if not _written or _written in registry:
+            continue
+        _reg = by_lower.get(_written.lower())
+        if _reg and _reg != _written:
+            out.append((_written, _reg))
+    return out
+
+
 def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> Path:
     """Write one backend's raw search findings to data/raw/<backend>-<UTC>.json.
     Each of the four Hermes search prompts (NVIDIA, Metal, CPU, AMD) writes its own
@@ -1970,6 +1994,14 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
         path = RAW_DIR / f"{safe}-{ts}-{n}.json"
         n += 1
     payload = dict(payload)
+    # The engines registry is the store's top-level `engines` map. A casing slip
+    # against a REGISTERED name must be visible in the leg's own log, not as a
+    # red PR hours later (issue #645); a store that cannot be read must never
+    # crash a search write, so the load is guarded.
+    try:
+        _registry_engines = json.loads(DATA.read_text()).get("engines") or {}
+    except (OSError, ValueError):
+        _registry_engines = {}
     # an `hf` field is a bare repo id (validate/README build the URL by
     # prefixing it) — collapse a full URL / doubled prefix BEFORE it lands in
     # data/raw, so a pasted URL can never 404 the raw-hf link check again.
@@ -1997,6 +2029,19 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
             print(f"[write-raw] id normalised {_id!r} -> {_fixed!r} (contract pattern)")
             _m["id"] = _fixed
             _id = _fixed
+        # A registered engine name is matched EXACTLY, so `EXLlamaV3` beside the
+        # registered `ExLlamaV3` (refresh PR #416) reds the PR for a typo. Name
+        # the slip loudly HERE, in the leg's own log — never rename it: a
+        # genuinely new engine stays unregistered for the auto-register path
+        # (issue #645, AGENTS.md rule 6).
+        if isinstance(_m.get("engines"), list):
+            for _written, _reg in _engine_case_slips(_m["engines"], _registry_engines):
+                print(f"[write-raw] WARN: {safe} wrote engine {_written!r} on model "
+                      f"{_id!r}; the engines registry spells it {_reg!r} — a "
+                      f"case-only slip. The written name is NOT renamed; a "
+                      f"genuinely new engine stays unregistered and reds "
+                      f"validation for a human. Re-run the search with the "
+                      f"registered spelling if this was a typo.")
         # A guessed `owner/model` is not data (AGENTS.md rule 2), and the
         # ingest-time check (#333) only sees a NEW model once this snapshot has
         # landed and the refresh PR is open — where its only repairer is a bot
