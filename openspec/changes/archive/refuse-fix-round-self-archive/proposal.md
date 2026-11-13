@@ -1,6 +1,7 @@
 # Proposal: refuse-fix-round-self-archive
 
 Issue: #812 — `tech-debt: A fix round can archive an open PR's own OpenSpec change before its PR merges`
+PR: #901
 
 ## Why
 
