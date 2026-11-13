@@ -600,12 +600,22 @@ def check_search_contract() -> None:
         print(f"  OK: all {len(raws)} search snapshots conform to search_contract.json")
 
 
-def check_measurement_alias_map(store: dict) -> None:
+def check_measurement_alias_map(store: dict, raw_dir: Path | None = None) -> None:
     """The attribution exception mapping is DATA (issue #652), so it must be CHECKED:
     every `measurement_model_aliases` counterpart on a row must be a model id IN the
     store. A dangling counterpart is a silent no-op at ingest — the exception names
     a model that does not exist, the measurement is still refused, and nothing says
-    so. That is the exact class rule 3b exists to prevent, so this gate fails."""
+    so. That is the exact class rule 3b exists to prevent, so this gate fails.
+
+    Issue #884: the search contract declares the SAME key, so a raw search snapshot
+    may RECORD an exception instead of only refusing one — and a dangling counterpart
+    must be caught where it appears. When `raw_dir` is given (the pipeline passes the
+    real `data/raw`; a test passes a fixture directory — the #877 seam shape, never a
+    stand-in for the check), every raw model item carrying the key is validated
+    against the store too, and a refusal names BOTH sides: the snapshot file and its
+    raw model, the dangling counterpart, and the store it must resolve in.
+    `raw_dir=None` is the store-only mode the #652 tests lock — it never reads the
+    repository's own raw files behind a fixture store."""
     ids = {str(m.get("id") or "").lower() for m in store.get("models", [])}
     bad = 0
     seen = 0
@@ -621,6 +631,31 @@ def check_measurement_alias_map(store: dict) -> None:
                 bad += 1
                 fail(f"{m.get('id','?')}: measurement_model_aliases counterpart "
                      f"'{mid}' is not a model id in the store (dangling exception)")
+    if raw_dir is not None and raw_dir.exists():
+        for p in sorted(raw_dir.glob("*.json")):
+            try:
+                data = json.loads(p.read_text())
+            except Exception as e:  # noqa: BLE001
+                # the search stage owns snapshot parse errors; this gate reads
+                # only the alias key and must not crash on a malformed file
+                fail(f"{p.name}: cannot parse to check measurement_model_aliases: {e}")
+                bad += 1
+                continue
+            for m in data.get("models", []):
+                aliases = m.get("measurement_model_aliases") or []
+                if not isinstance(aliases, list):
+                    bad += 1
+                    fail(f"{p.name}: model '{m.get('id', m.get('name', '?'))}': "
+                         "measurement_model_aliases is not a list")
+                    continue
+                for mid in aliases:
+                    seen += 1
+                    if str(mid or "").strip().lower() not in ids:
+                        bad += 1
+                        fail(f"{p.name}: model '{m.get('id', m.get('name', '?'))}': "
+                             f"measurement_model_aliases counterpart '{mid}' is not a "
+                             "model id in data/models.json — a captured exception must "
+                             "name a stored model on BOTH sides (issue #884)")
     if not bad:
         print(f"  OK: measurement alias map resolves ({seen} documented counterpart(s))")
 
@@ -2250,7 +2285,8 @@ def main() -> int:
     # The attribution exception mapping is data (issue #652): the mapping stage owns
     # the mapping checks, and `mapping` appears in `_validate-mapped`
     # (`--only search,mapping`) and `_validate`'s `--only data,schema,mapping,removal`.
-    add("measurement alias map counterparts resolve", "mapping", lambda: check_measurement_alias_map(store))
+    add("measurement alias map counterparts resolve", "mapping",
+        lambda: check_measurement_alias_map(store, raw_dir=RAW_DIR))
     add("newline terminators", "data", lambda: check_newline_terminators())
     add("backend sort by t/s", "readme", lambda: check_backend_sort(store))
     add("README tables well-formed", "readme", lambda: check_readme_tables_wellformed(store))

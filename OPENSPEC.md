@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **233**
+Active changes: **15** · archived: **234**
 
 ## Active changes
 
@@ -225,6 +225,7 @@ Active changes: **15** · archived: **233**
 | `scope-gate-total-vram` | archived | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/archive/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/scope-gate-total-vram/proposal.md) |
 | `scripts-inventory-guarded` | archived | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/archive/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/scripts-inventory-guarded/proposal.md) |
 | `seam-positional-command` | archived | #632 | #848 | [agent-log-capture](openspec/changes/archive/seam-positional-command/specs/agent-log-capture/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/seam-positional-command/proposal.md) |
+| `search-contract-alias-key` | archived | #884 | #887 | [measurement-ingest](openspec/changes/archive/search-contract-alias-key/specs/measurement-ingest/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/search-contract-alias-key/proposal.md) |
 | `search-engine-must-be-named` | archived | #378 | #379 | [search-engine-rule](openspec/changes/archive/search-engine-must-be-named/specs/search-engine-rule/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/search-engine-must-be-named/proposal.md) |
 | `search-hf-verify-before-write` | archived | #417 | — | [hf-link-verification](openspec/changes/archive/search-hf-verify-before-write/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/search-hf-verify-before-write/proposal.md) |
 | `search-key-instruction` | archived | #357 | — | [bot-agent-run-safety](openspec/changes/archive/search-key-instruction/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/search-key-instruction/proposal.md) |

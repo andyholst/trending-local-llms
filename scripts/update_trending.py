@@ -2825,6 +2825,14 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                 # used to drop these entirely, so a gap the contract had just
                 # gained room for could never close on an existing model.
                 merge_additive_fields(existing, m)
+                # A CAPTURED attribution exception lands here too (issue #884):
+                # the search contract declares the key, so a snapshot may record
+                # it; the store row gains the counterparts as a union.
+                new_aliases = merge_measurement_aliases(existing, m)
+                if new_aliases:
+                    print(f"[ingest] {mid}: measurement_model_aliases gained "
+                          f"{new_aliases} from {path.name} (issue #884) — union, "
+                          "never narrowed")
                 existing["last_seen"] = now_utc().strftime("%Y-%m-%d")
                 # merge post-granularity engagement, deduped by source_post URL
                 eng = existing.setdefault("engagement", {})
@@ -3221,6 +3229,35 @@ def coerce_additive(v):
     if isinstance(v, (int, float)):
         return f"{v:g}"
     return v
+
+
+def merge_measurement_aliases(existing: dict, incoming: dict) -> list[str]:
+    """A captured attribution exception joins the row it belongs to (issue #884).
+
+    The search contract now lets a raw snapshot RECORD the exception (the same
+    `measurement_model_aliases` key the store contract declares). A search capture
+    must never be the side that narrows the mapping: the row's existing counterparts
+    are kept in order, and the incoming ones are appended only if not already named
+    (case-insensitive dedup). Keys are unioned, never replaced, never shrunk
+    (AGENTS.md §2.3b). The union is stored sorted for reviewability — content, not
+    insertion order, is what a reviewer reads. Returns the counterparts newly added.
+    """
+    raw_in = incoming.get("measurement_model_aliases")
+    if not isinstance(raw_in, list) or not raw_in:
+        return []
+    current = existing.get("measurement_model_aliases")
+    current = [str(x) for x in current] if isinstance(current, list) else []
+    seen = {str(x).strip().lower() for x in current}
+    added = []
+    for mid in raw_in:
+        key = str(mid or "").strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            current.append(str(mid).strip())
+            added.append(str(mid).strip())
+    if current:
+        existing["measurement_model_aliases"] = sorted(current, key=str.lower)
+    return added
 
 
 def merge_additive_fields(existing: dict, incoming: dict) -> list[str]:
