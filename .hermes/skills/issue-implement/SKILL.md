@@ -46,7 +46,11 @@ deliverable.
   `make openspec-new NAME=<kebab-slug>` before any code; then `proposal.md` (Why / What Changes /
   Not covered), `specs/<capability>/spec.md`
   (one Requirement per behaviour, each Scenario in Given/When/Then with a `- **Test:**` line
-  naming the test that locks it) and a `tasks.md` checklist ticked as each step is verified.
+  naming the test that locks it) and a `tasks.md` checklist: a box is ticked ONLY when the
+  tree proves that step verified, and a step the change cannot itself take is written
+  `- [~] … — blocked: <who/why>` at creation (rule 6f). An opened PR never carries `- [ ]`:
+  `make openspec-tasks-check` gates the implement job before commit/push (issue #658), so an
+  unticked box means finish the step or declare it blocked — never open the PR.
   `make openspec-index` then `make openspec-check` before you finish.
 - **Additive only** in `data/models.json`, `data/raw/*.json`, `data/snapshots/*.json` and the
   contracts: never remove or rename a key, never shrink a value, and a new key is optional and

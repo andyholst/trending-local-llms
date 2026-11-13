@@ -444,6 +444,26 @@ jobs:
             echo "dirty=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Refuse to open a PR whose change leaves a task unticked
+        id: tasks
+        if: >-
+          steps.iss.outputs.implement == 'true'
+          && steps.verdict.outputs.verdict == 'implement'
+          && (steps.impl.outputs.implemented == 'true' || steps.salvage.outputs.dirty == 'true')
+        run: |
+          # (issue #658) The same gate already reds the PR AFTER it opens (qa-validate's
+          # openspec-check); running it here means a change that still carries `- [ ]` boxes
+          # never opens a PR at all. Measured on PRs #654-#657: four bot PRs red on
+          # `FAIL <change>: unchecked task checkbox(es)` whose diff was the change directory
+          # ONLY — the first CI run spent 19+ minutes, and a fix round too, on bookkeeping.
+          # A failing step skips commit/push/Open-the-PR (none is always()); the always()
+          # outcome step then reports the red ON THE ISSUE (rule 6e: ready-for-review or red
+          # on the issue, never a silent skip). No NAME here: EVERY active change on this
+          # branch is checked, and the check cannot pass vacuously — a NAME naming no ACTIVE
+          # change fails (scripts/check_openspec_tasks.py). A legitimately owed step belongs
+          # in the change as `- [~] … — blocked: <who/why>` (rule 6f: review-required, green).
+          make openspec-tasks-check
+
       - name: Commit + push the branch
         id: push
         if: >-

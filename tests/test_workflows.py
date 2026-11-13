@@ -2797,6 +2797,78 @@ def test_a_captured_recipe_is_silent():
           "issue-pick" in captured, captured)
 
 
+def test_a_new_change_with_an_unticked_box_never_opens_a_pr():
+    """Issue #658: the tasks gate runs BEFORE commit/push/open, so the PR never opens.
+
+    Measured on PRs #654-#657: four bot PRs red on `FAIL <change>: unchecked task
+    checkbox(es)`, each diff the change directory ONLY. The gate existed but only
+    inside qa-validate — after 19+ minutes of CI and a dispatch-fixbot round had
+    already been spent on bookkeeping. Here it runs in the implement job itself.
+    """
+    wf = load("issue-bot.yml")
+    job = wf["jobs"]["implement"]
+    ss = steps(job)
+    runs = [str(s.get("run", "")) for s in ss]
+    names = [str(s.get("name", "")) for s in ss]
+
+    gate = next((i for i, r in enumerate(runs) if "make openspec-tasks-check" in r), None)
+    impl = next((i for i, r in enumerate(runs) if "make implement-issue" in r), None)
+    commit = next((i for i, r in enumerate(runs) if "make branch-adopt" in r), None)
+    open_pr = next((i for i, r in enumerate(runs) if "gh pr create" in r), None)
+    outcome = next((i for i, n in enumerate(names) if "outcome on the issue" in n), None)
+
+    check("gate: the implement job runs make openspec-tasks-check", gate is not None, names)
+    check("gate: it runs AFTER the agent implements",
+          gate is not None and impl is not None and impl < gate, (impl, gate))
+    check("gate: it runs BEFORE commit + push",
+          gate is not None and commit is not None and gate < commit, (gate, commit))
+    check("gate: it runs BEFORE the PR opens",
+          gate is not None and open_pr is not None and gate < open_pr, (gate, open_pr))
+
+    gate_step = ss[gate] if gate is not None else {}
+    gate_run = runs[gate] if gate is not None else ""
+    check("gate: reached through make, never straight into the script (rule 6m)",
+          "make openspec-tasks-check" in gate_run
+          and "python3 scripts/check_openspec_tasks.py" not in gate_run, gate_run[:300])
+    check("gate: a plain failing step — never always(), so commit/push are skipped",
+          "always()" not in str(gate_step.get("if", "")), gate_step.get("if"))
+    check("gate: commit/push/open-PR steps are NOT always() either",
+          all("always()" not in str(ss[i].get("if", "")) for i in (commit, open_pr) if i is not None),
+          "")
+    check("gate: a refusal still reports on the issue (always() outcome step exists)",
+          outcome is not None and "always()" in str(ss[outcome].get("if", "")),
+          ss[outcome].get("if") if outcome is not None else None)
+
+
+def test_the_tasks_gate_runs_only_for_implement_verdicts():
+    """Issue #658: refine/close runs add no change and open no PR — they skip the gate."""
+    wf = load("issue-bot.yml")
+    ss = steps(wf["jobs"]["implement"])
+
+    def _gate():
+        for s in ss:
+            if "make openspec-tasks-check" in str(s.get("run", "")):
+                return s
+        return None
+
+    def _push():
+        for s in ss:
+            if "make branch-adopt" in str(s.get("run", "")):
+                return s
+        return None
+
+    gate, push = _gate(), _push()
+    check("verdict: the gate step exists", gate is not None, "")
+    check("verdict: the gate carries the push step's implement gating",
+          gate is not None and push is not None
+          and " ".join(str(gate.get("if", "")).split())
+          == " ".join(str(push.get("if", "")).split()),
+          gate.get("if") if gate else None)
+    check("verdict: a refine/close verdict skips the gate",
+          gate is not None and "steps.verdict.outputs.verdict == 'implement'"
+          in str(gate.get("if", "")), gate.get("if") if gate else None)
+
+
 def test_python_env_seam_routes_migrated_recipes_through_the_container():
     """Slice 1 of #712: the python-env seam. A recipe routed through PYTHON_RUN
     stays a pure `python3 scripts/…` call; the container harness lives in the
@@ -2928,6 +3000,8 @@ def main() -> int:
     test_a_captured_recipe_is_silent()
     test_the_issue_is_re_read_right_before_the_agent_starts()
     test_python_env_seam_routes_migrated_recipes_through_the_container()
+    test_a_new_change_with_an_unticked_box_never_opens_a_pr()
+    test_the_tasks_gate_runs_only_for_implement_verdicts()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
