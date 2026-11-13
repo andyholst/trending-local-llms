@@ -58,6 +58,17 @@ deliverable.
 - **Regenerate what is generated:** `python3 scripts/update_trending.py` when data changed;
   `ARCHITECTURE.md` (rule 6h) and `AGENTS.md` §8 when a target, job, image, script or guard
   changed.
+- **Owed rulebook rows never leave a bare `- [ ]` (issue #659).** `AGENTS.md` is a protected
+  agent-instruction file: a headless leg has no approver, so its write is REFUSED — that refusal
+  is rule 3c working (the sign-off is a human act), not an obstacle to route around. When your
+  change owes `AGENTS.md` a row (§6b/§6e/§8 …): (1) the `tasks.md` box for that row is written AT
+  CREATION as `- [~] <row> — blocked: rule 3c human sign-off (AGENTS.md protected in a headless
+  leg)` — a blocked box is green-but-review-required, while a bare `- [ ]` fails the pre-PR
+  `make tasks-check` gate and strands the change (measured: #654–657 died exactly that way);
+  (2) record the FULL row text verbatim as a `findings.md` finding with an
+  `- **Owed-row:** <!-- owed-row: section=<id> needle="<needle>" -->` line, so
+  `make file-findings` files a ledger issue carrying the registered owed-row marker and
+  `make owed-rows-check` reports the row LANDED once an attended run applies the diff.
 - **Edit the files themselves.** No `*.patch`, `*.rej`, report dumps or backup copies — a change
   written into a patch file is not an implementation. `findings.md` is the ONE working file.
 - **Analysis ships issues, never code:** one `## <title>` section per real gap you found, each with
