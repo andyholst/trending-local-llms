@@ -557,16 +557,11 @@ def test_a_make_written_inside_prose_is_not_a_call():
 
 
 def _makefile_targets() -> set[str]:
-    """Every target the real Makefile defines."""
-    out: set[str] = set()
-    for line in (ROOT / "Makefile").read_text().splitlines():
-        if line.startswith("\t") or line.lstrip().startswith("#"):
-            continue
-        import re as _re
-        m = _re.match(r"^([A-Za-z0-9_.-]+)\s*:(?!=)", line)
-        if m:
-            out.add(m.group(1))
-    return out
+    """Every target the real Makefile defines — through the generator's ONE
+    scan (`architecture_bot.make_targets`), not a local regex copy. The copy
+    counted the 145 `.PHONY:` lines the scan skips — the #512 drift class at
+    line level (issue #752)."""
+    return _bot().make_targets(ROOT)
 
 
 def main() -> int:

@@ -168,6 +168,23 @@ def make_targets(root: Path) -> set[str]:
     return _scan_target_names(_read(root / "Makefile")) | set(make_descriptions(root))
 
 
+def target_at_line(line: str) -> str | None:
+    """The target ONE Makefile line opens, or None — the line-level view of the
+    same scan (`_TARGET_LINE` + `_TARGET_SKIP`).
+
+    Consumers that track "which target is this line inside" (a `--only` stage
+    list, a recipe's owner) must read this, never their own regex copy: issue
+    #752 measured a byte-identical copy in `architecture_check` and two looser
+    copies in the tests that counted the real Makefile's 145 `.PHONY:` lines as
+    targets this scan skips — two views of "what is a target" drifting with no
+    error raised, exactly the #512 class at line level.
+    """
+    if line.startswith(_TARGET_SKIP):
+        return None
+    match = _TARGET_LINE.match(line)
+    return match.group(1) if match else None
+
+
 def public_targets(root: Path) -> set[str]:
     """The PUBLIC make targets — the `[a-z][a-z0-9-]*` projection of `make_targets`.
 

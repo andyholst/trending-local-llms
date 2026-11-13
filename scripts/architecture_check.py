@@ -51,7 +51,7 @@ from pathlib import Path
 #: `make_targets` (the full set the generator renders) are BOTH views of the one
 #: scan in `architecture_bot`, imported here — issue #512's two parsers became one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture_bot import public_targets, workflow_jobs  # noqa: E402
+from architecture_bot import public_targets, target_at_line, workflow_jobs  # noqa: E402
 
 DOC_NAME = "ARCHITECTURE.md"
 VALIDATOR = "scripts/validate.py"
@@ -127,9 +127,6 @@ _TICKED = re.compile(r"`([^`]+)`")
 _NAME = re.compile(r"^[a-z][a-z0-9-]*$")
 _WF_REF = re.compile(r"\.github/workflows/([A-Za-z0-9_.-]+\.yml)")
 _SCRIPT_REF = re.compile(r"scripts/([A-Za-z0-9_.-]+\.(?:py|sh))")
-#: Any make target line (internal ones included) — only used to name the target
-#: that carries a `--only` list in a failure message.
-_ANY_TARGET = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):(?!=)")
 #: A `validate.py --only <stages>` call, and the stage list it carries.
 _ONLY_CALL = re.compile(r"scripts/validate\.py\s+--only\s+([\w,-]+)")
 #: A §4 subsection that describes ONE workflow, and a job written as a bold
@@ -243,13 +240,14 @@ def stage_lists(makefile: Path) -> list[tuple[str, list[str]]]:
     out: list[tuple[str, list[str]]] = []
     target = ""
     for line in makefile.read_text(encoding="utf-8").splitlines():
-        if not line.lstrip().startswith("#"):
-            m = _ANY_TARGET.match(line)
-            if m:
-                target = m.group(1)
-            m = _ONLY_CALL.search(line)
-            if m:
-                out.append((target or "?", [s.strip() for s in m.group(1).split(",") if s.strip()]))
+        # issue #752: the current target is tracked through the generator's
+        # line view (architecture_bot.target_at_line), not a private matcher.
+        opened = target_at_line(line)
+        if opened:
+            target = opened
+        m = _ONLY_CALL.search(line)
+        if m:
+            out.append((target or "?", [s.strip() for s in m.group(1).split(",") if s.strip()]))
     return out
 
 
