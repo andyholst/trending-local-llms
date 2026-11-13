@@ -1,6 +1,7 @@
 # The CPU leg's curated vocabulary is audited, homed, and yield-gated
 
 **Issue:** [#858](https://github.com/andyholst/trending-local-llms/issues/858)
+**PR:** [#891](https://github.com/andyholst/trending-local-llms/pull/891)
 **Capability:** `search-query-vocabulary`
 
 ## Why
