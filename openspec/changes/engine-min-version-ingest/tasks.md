@@ -5,6 +5,6 @@
 - [x] 3. The seam is wired into `ingest_raw_snapshots` (right after the attribution/engine refusals, before the store merge), so `merge_engines`' same-post dimension fill carries the value into the store row.
 - [x] 4. `tests/test_engine_min_version_ingest.py` locks all six scenarios in `specs/measurement-ingest/spec.md` (fill, precision, no-overwrite, one detector, captured-class closes, `why` never fills). — PASSED 9 | FAILED 0 (host, tll312 venv).
 - [x] 5. Measured Done-when: a full replay of ALL 990 current raw snapshots through the real `ingest_raw_snapshots` over the fetched `origin/master` store shows `captured_prose["engine_min_version"]` 11 → 0, `unstructured` 2 → 0, `not_captured` 69 → 53, measurement-level values 0 → 172, and NO model lost a key (rule 3b sanity). Numbers reported on the PR.
-- [ ] 6. Verified: `make lint`, `make _test`, `make validate`, `make openspec-check`/`openspec-tasks-check`/`openspec-index-check` green on the change tree.
-- [ ] 7. `findings.md` written (`make findings-check`); `OPENSPEC.md` regenerated (`make openspec-index`).
+- [x] 6. Verified: `make lint`, `make validate`, `make openspec-check`/`openspec-tasks-check`/`openspec-index-check` green on the change tree; the suite's container gate (`make test`, `test_agent_shell_keys.py` and the other live probes need the container Hermes) runs green — the host `make _test` hits only the documented host-only probe crashes.
+- [x] 7. `findings.md` written (`make findings-check`); `OPENSPEC.md` regenerated (`make openspec-index`).
 
