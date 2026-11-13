@@ -268,6 +268,41 @@ def test_the_section_still_parses_as_a_table():
     check("rows: every row has at least a guard and a description", not bad, bad[:2])
 
 
+def test_the_engine_meta_row_is_written():
+    """#745: the §8 row the #505 capture (PR #744) owed to its commit-step guard.
+
+    The refresh commit step keeps `tests/fixtures/github_meta.json` in BOTH its lists (the
+    `git diff --quiet` change check and the `git add` list); the guard for that lives in
+    `tests/test_engine_registry.py` and shipped registered in `make test` with no §8 row."""
+    sec = section8()
+    row = next((l for l in sec.splitlines()
+                if "test_capture_meta_keeps_the_fixture_covering_the_registry" in l), "")
+    check("rows: §8 names the engine-metadata commit-step guard", bool(row), "row absent")
+    check("rows: the row names the module it lives in",
+          "`tests/test_engine_registry.py" in row, row[:120])
+    check("rows: the row states the BOTH-lists failure it catches",
+          "git diff --quiet" in row and "git add" in row, row[:120])
+    check("rows: the row cites the issue and the change that owed it",
+          "#745" in row and "#505" in row, row[:120])
+    check("rows: it sits beside the existing test_engine_registry.py rows",
+          "test_app_bundled_inference_server" in sec.split(
+              "test_capture_meta_keeps_the_fixture_covering_the_registry", 1)[0][-2000:],
+          "not beside its siblings")
+    # the guard the row names is a REAL function of the module it names, and the two lists
+    # the row claims the workflow carries are really there (a row describing a moved guard
+    # is the #369 defect shape).
+    check("rows: the guard lives in the module the row names",
+          "def test_capture_meta_keeps_the_fixture_covering_the_registry(" in
+          (ROOT / "tests" / "test_engine_registry.py").read_text())
+    workflow = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text().splitlines()
+    diff_lines = [l for l in workflow if "git diff --quiet" in l and "data/posts.json" in l]
+    add_lines = [l for l in workflow if l.strip().startswith("git add") and "data/posts.json" in l]
+    check("rows: the refresh commit step still names the fixture in BOTH lists",
+          diff_lines and add_lines
+          and all("tests/fixtures/github_meta.json" in l for l in diff_lines + add_lines),
+          (diff_lines[:1], add_lines[:1]))
+
+
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
@@ -276,6 +311,7 @@ def main() -> int:
     test_the_repair_contract_is_named_in_6s()
     test_the_rows_this_session_owed_are_written()
     test_the_storage_offload_row_is_written()
+    test_the_engine_meta_row_is_written()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

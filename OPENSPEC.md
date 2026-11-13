@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **242**
+Active changes: **16** · archived: **243**
 
 ## Active changes
 
@@ -132,6 +132,7 @@ Active changes: **16** · archived: **242**
 | `engagement-tasks-claim` | archived | #699 (follow-up) — correct the residual false "typed README byte-identical" claim in the | — | [engagement-tasks-claim](openspec/changes/archive/engagement-tasks-claim/specs/engagement-tasks-claim/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engagement-tasks-claim/proposal.md) |
 | `engagement-value-fidelity` | archived | #699 — `ENH: #698 reader switch silently re-resolves engagement` | — | [engagement-value-fidelity](openspec/changes/archive/engagement-value-fidelity/specs/engagement-value-fidelity/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/engagement-value-fidelity/proposal.md) |
 | `engine-meta-capture-at-ingest` | archived | #334 | — | [engine-meta-capture](openspec/changes/archive/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/engine-meta-capture-at-ingest/proposal.md) |
+| `engine-meta-guard-agents-row` | archived | #745 | #906 | [rulebook](openspec/changes/archive/engine-meta-guard-agents-row/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/engine-meta-guard-agents-row/proposal.md) |
 | `engine-min-version-ingest` | archived | #877 | #880 | [measurement-ingest](openspec/changes/archive/engine-min-version-ingest/specs/measurement-ingest/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-version-ingest/proposal.md) |
 | `engine-name-case-warn` | archived | #645 | #899 | [engine-name-case-warning](openspec/changes/archive/engine-name-case-warn/specs/engine-name-case-warning/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-name-case-warn/proposal.md) |
 | `env-int-empty-is-missing` | archived | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/archive/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/env-int-empty-is-missing/proposal.md) |
