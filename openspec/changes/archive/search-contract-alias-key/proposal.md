@@ -1,6 +1,7 @@
 # Proposal: search-contract-alias-key
 
 Issue: #884
+PR: #887
 
 ## Why
 
