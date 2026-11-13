@@ -1,6 +1,7 @@
 # Proposal: tasks-gate-before-pr-open
 
 Issue: #658
+PR: #902
 
 ## Why
 

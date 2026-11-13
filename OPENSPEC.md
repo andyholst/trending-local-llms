@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **17** · archived: **240**
+Active changes: **16** · archived: **241**
 
 ## Active changes
 
@@ -28,7 +28,6 @@ Active changes: **17** · archived: **240**
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
-| `tasks-gate-before-pr-open` | active | #658 | — | [issue-bot-tasks-gate](openspec/changes/tasks-gate-before-pr-open/specs/issue-bot-tasks-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/tasks-gate-before-pr-open/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
@@ -257,6 +256,7 @@ Active changes: **17** · archived: **240**
 | `sweep-outcome-comment` | archived | the sweep's own outcome comment — the half `a-fresh-red-sweep-is-loud` (#498) recorded as "Tracked separately" | — | [bot-coordination](openspec/changes/archive/sweep-outcome-comment/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/sweep-outcome-comment/proposal.md) |
 | `sweep-reverifies-against-the-base` | archived | #494 (the owner's ruling: *"the sweep bot analyzes each issue again against the latest | — | [bot-coordination](openspec/changes/archive/sweep-reverifies-against-the-base/specs/bot-coordination/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/sweep-reverifies-against-the-base/proposal.md) |
 | `syntaxwarning-escape` | archived | #190 | — | [syntax-lint](openspec/changes/archive/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/syntaxwarning-escape/proposal.md) |
+| `tasks-gate-before-pr-open` | archived | #658 | #902 | [issue-bot-tasks-gate](openspec/changes/archive/tasks-gate-before-pr-open/specs/issue-bot-tasks-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/tasks-gate-before-pr-open/proposal.md) |
 | `the-artifact-is-the-alarm` | archived | #452 | — | [bot-alarms](openspec/changes/archive/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-artifact-is-the-alarm/proposal.md) |
 | `the-index-keeper-regenerates-both` | archived | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/archive/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | archived | #542 | — | [pr-body](openspec/changes/archive/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-other-two-pr-bodies/proposal.md) |
