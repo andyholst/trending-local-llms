@@ -760,6 +760,17 @@ agent-skills-report: ## Print every agent leg with its prompt size and preloaded
 # when a prompt actually uses it, never on every make invocation.
 MODEL_QUERIES = $(shell python3 scripts/query_coverage.py --queries 2>/dev/null)
 
+# The curated vocabulary of each leg comes from ONE reviewed home —
+# scripts/query_vocab.py (issue #858). The CPU leg's hand-copied words captured
+# zero models for eight refreshes while every gate stayed green, because three
+# copies (this file, scripts/smoke_search.py, and a near-copy in
+# update_trending.SEARCH_GROUPS) could each drift and nothing read the WORDS.
+# Recursive (=): the script runs only when a leg prompt uses the list.
+NVIDIA_KEYWORDS = $(shell python3 scripts/query_vocab.py --print nvidia 2>/dev/null)
+METAL_KEYWORDS = $(shell python3 scripts/query_vocab.py --print metal 2>/dev/null)
+CPU_KEYWORDS = $(shell python3 scripts/query_vocab.py --print cpu 2>/dev/null)
+AMD_KEYWORDS = $(shell python3 scripts/query_vocab.py --print amd 2>/dev/null)
+
 # The guard: every top-N trending model must be named by a query in the set the
 # searches use. Exit 1 when one is not, so a stale or broken derivation is LOUD
 # and separable from "the query ran and found nothing" (issue #264).
@@ -778,22 +789,22 @@ query-coverage: python-env-image ## Report which of the top trending models the 
 # fails a leg whose prompt grows back into a rulebook (PROMPT_BUDGET).
 .PHONY: _search-nvidia
 _search-nvidia:
-	hermes -z "Follow the preloaded skill data-search. Parameters: backend=nvidia; keywords=(rtx tokens per second llm, rtx 3090/4090/5090 tokens per second, rtx 3060 tokens per second, rtx 4060 tokens per second, rtx 4060 ti 16gb tokens per second, rtx 4070 tokens per second, 8gb vram llm tokens per second, 16gb vram llm tokens per second, bonsai 2 ternary, freetoken gpu, dflash speculative); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw nvidia < payload.json. AGENTS.md governs." \
+	hermes -z "Follow the preloaded skill data-search. Parameters: backend=nvidia; keywords=($(NVIDIA_KEYWORDS)); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw nvidia < payload.json. AGENTS.md governs." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_REASONING) $(HERMES_NONINTERACTIVE) -s data-search,bot-unattended
 
 .PHONY: _search-metal
 _search-metal:
-	hermes -z "Follow the preloaded skill data-search. Parameters: backend=metal; keywords=(mlx tokens per second, mlx apple silicon, mac m4 mlx local llm, mlxfast bonsai, tensorfold dflash mlx); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw metal < payload.json. AGENTS.md governs." \
+	hermes -z "Follow the preloaded skill data-search. Parameters: backend=metal; keywords=($(METAL_KEYWORDS)); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw metal < payload.json. AGENTS.md governs." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_REASONING) $(HERMES_NONINTERACTIVE) -s data-search,bot-unattended
 
 .PHONY: _search-cpu
 _search-cpu:
-	hermes -z "Follow the preloaded skill data-search. Parameters: backend=cpu; keywords=(llm tokens per second no gpu cpu, llama.cpp cpu only, raspberry pi llm tokens per second, local llm cpu); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw cpu < payload.json. AGENTS.md governs." \
+	hermes -z "Follow the preloaded skill data-search. Parameters: backend=cpu; keywords=($(CPU_KEYWORDS)); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw cpu < payload.json. AGENTS.md governs." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_REASONING) $(HERMES_NONINTERACTIVE) -s data-search,bot-unattended
 
 .PHONY: _search-amd
 _search-amd:
-	hermes -z "Follow the preloaded skill data-search, including its AMD leg's own rules. Parameters: backend=amd; keywords=(rx 7900 xtx tokens per second, rx 9070 xt tokens per second, rx 7600 tokens per second, rx 6600 tokens per second, rx 9060 xt tokens per second, radeon 8gb vram llm tokens per second, rocm tokens per second, llama.cpp vulkan amd tokens, strix halo tokens per second); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw amd < payload.json. AGENTS.md governs." \
+	hermes -z "Follow the preloaded skill data-search, including its AMD leg's own rules. Parameters: backend=amd; keywords=($(AMD_KEYWORDS)); model_queries=$(MODEL_QUERIES); write_raw=python3 scripts/update_trending.py --write-raw amd < payload.json. AGENTS.md governs." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_REASONING) $(HERMES_NONINTERACTIVE) -s data-search,bot-unattended
 
 .PHONY: _search

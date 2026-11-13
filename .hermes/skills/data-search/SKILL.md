@@ -57,7 +57,7 @@ The prompt carries this run's parameters. Nothing else is a rule to re-derive:
 |---|---|
 | `nvidia` | NVIDIA/CUDA keywords only: the RTX cards, the low-end 3060 / 4060 / 4060 Ti / 4070 queries, `8gb` / `16gb vram`, and the vendor-specific model queries. |
 | `metal` | Apple/Metal keywords only: MLX, Apple Silicon, MLX-fast, TensorFold, DFlash on MLX. Apple Silicon is judged by **unified memory**, never by a VRAM tier. |
-| `cpu` | CPU/embedded/edge keywords only: `llama.cpp` CPU-only, Raspberry Pi, "no gpu cpu". A CPU figure never earns a card tier — it keeps the CPU table. |
+| `cpu` | CPU/embedded/edge keywords only (issued to you from `scripts/query_vocab.py`, rewritten by the #858 audit): `cpu tokens per second`, `no gpu tokens per second`, `llama.cpp cpu tokens per second`, `raspberry pi tokens per second`. A CPU figure never earns a card tier — it keeps the CPU table. |
 | `amd` | AMD/ROCm keywords only, plus the ROCm rules below. |
 
 ### The AMD leg's own rules
