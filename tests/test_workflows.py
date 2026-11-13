@@ -1718,6 +1718,47 @@ def test_implement_prompt_requires_openspec_and_findings():
           prompt[-200:])
 
 
+def test_the_implement_leg_never_leaves_an_owed_rulebook_row_bare():
+    """Issue #659: a headless leg that owes an AGENTS.md row ends blocked-and-declared,
+    never with a bare `- [ ]`.
+
+    The measured failure (#654–657): AGENTS.md is a protected agent-instruction file,
+    so the detached leg's write is REFUSED (no approver — that refusal IS rule 3c), and
+    the change died on the unticked box the refusal left behind, PR after PR. The fix
+    is a contract the leg cannot miss: the box is written at creation as
+    `- [~] … — blocked: rule 3c human sign-off …`, and the FULL row text is handed to
+    the owed-row ledger through a `findings.md` Owed-row finding, which
+    `make file-findings` files carrying the registered `owed-row` marker.
+    """
+    mk = (ROOT / "Makefile").read_text()
+    recipe = re.search(r"\n_implement-issue:\n((?:\t[^\n]*\n)+)", mk)
+    prompt = recipe.group(1) if recipe else ""
+    skill = (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text()
+    rule = (ROOT / "AGENTS.md").read_text()
+    script = (ROOT / "scripts" / "file_findings.py").read_text()
+
+    # Given the implementer's contract (its preloaded skill), the rulebook and the seam
+    # When  all three are read
+    # Then  the skill forbids the bare box and teaches the blocked shape
+    check("skill: owes the rulebook a declared blocked box, never a bare `- [ ]`",
+          "Owed rulebook rows never leave a bare" in skill
+          and "- [~]" in skill and "blocked: rule 3c human sign-off" in skill,
+          skill[:400])
+    check("skill: routes the row text through the Owed-row finding into the ledger",
+          "Owed-row:" in skill and "make file-findings" in skill
+          and "make owed-rows-check" in skill, skill[:400])
+    check("prompt: the recipe still preloads that skill",
+          "-s issue-implement,bot-unattended" in prompt, prompt[-200:])
+    # And   the rulebook states the same contract (§6g), with ONE marker definition
+    check("rulebook: §6g declares owed rows blocked-and-ledgered",
+          "Owed rulebook rows (rule 3c) are DECLARED" in rule
+          and "green-but-review-required" in rule, "")
+    # And   the seam validates AND writes through bot_markers — no second grammar (6j)
+    check("seam: file_findings validates through parse_owed_rows and renders through owed_row_marker",
+          "parse_owed_rows" in script and "owed_row_marker" in script
+          and "import bot_markers" in script, "")
+
+
 def test_issue_bot_files_findings_only_when_green():
     """The bot files the findings — and only after its loop went green.
 
@@ -2866,6 +2907,7 @@ def main() -> int:
     test_action_pin_guard_wired_into_qa_validate()
     test_weekly_security_scan_slice1_targets()
     test_implement_prompt_requires_openspec_and_findings()
+    test_the_implement_leg_never_leaves_an_owed_rulebook_row_bare()
     test_issue_bot_files_findings_only_when_green()
     test_issue_bot_announces_its_window()
     test_issue_bot_reports_its_own_outcome_when_it_dies_before_its_verdict()

@@ -27,6 +27,10 @@ Format (strict enough to parse, loose enough to write):
     - **Evidence:** <file:line / command output / data point>
     - **Why:** <what breaks or rots without it>
     - **Done when:** <what the fix looks like>
+    - **Owed-row:** the row declaration as bot_markers.owed_row_marker renders it
+      (optional; a finding that OWES an AGENTS.md row (rule 3c). The declaration
+      must parse through scripts/bot_markers.parse_owed_rows — the filed issue
+      then carries the registered marker `make owed-rows-check` reads)
 
     - none                                   (a run that found nothing)
 
@@ -45,6 +49,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import bot_markers  # noqa: E402  # the ONE owed-row marker definition (rule 6j)
+
 FINDINGS = ROOT / "findings.md"
 LABEL = "tech-debt"
 LABEL_DESCRIPTION = "Real gap / technical debt surfaced by an implementation run"
@@ -54,8 +61,8 @@ _SECTION = re.compile(r"^##\s+(?P<title>.+?)\s*$", re.MULTILINE)
 # `## ` heading, or a blank line (issue #205: the single-line regex filed issue #202
 # as "`- **Evidence:** \`.github/workflows/issue-bot.yml\`, the \`pick\` job's" and
 # dropped the four lines of reasoning that made the finding worth filing).
-_FIELD_START = re.compile(r"^\s*[-*]\s+\*\*(?P<name>[A-Za-z][A-Za-z ]*?):?\*\*\s*:?\s*(?P<first>.*)$")
-_FIELD_NAMES = ("Signature", "Evidence", "Why", "Done when")
+_FIELD_START = re.compile(r"^\s*[-*]\s+\*\*(?P<name>[A-Za-z][A-Za-z -]*?):?\*\*\s*:?\s*(?P<first>.*)$")
+_FIELD_NAMES = ("Signature", "Evidence", "Why", "Done when", "Owed-row")
 _REQUIRED = ("Evidence", "Why", "Done when")
 
 
@@ -77,6 +84,13 @@ def render_finding(f: dict, pr: str | None, issue: str | None) -> str:
         f"- **Evidence:** {f['Evidence']}",
         f"- **Why:** {f['Why']}",
         f"- **Done when:** {f['Done when']}",
+    ]
+    for row in f.get("owed_rows") or []:
+        # Re-rendered through the ONE writer (rule 6d/6j): the filed issue carries
+        # the registered owed-row declaration, so `make owed-rows-check` reports the
+        # owed AGENTS.md row as landed/outstanding without re-reading a thread.
+        body.append(f"- **Owed-row:** {bot_markers.owed_row_marker(row['section'], row['needle'])}")
+    body += [
         "",
         "## Origin",
         "",
@@ -139,6 +153,21 @@ def parse(text: str) -> tuple[list[dict], str | None]:
         missing = [k for k in _REQUIRED if not f[k]]
         if missing:
             return [], f"finding {title!r} is missing {', '.join(missing)}"
+        # An Owed-row field (rule 3c: the finding owes an AGENTS.md row) must parse
+        # through the registered owed-row grammar — a half-written declaration is a
+        # defect, never a silently-skipped line (rule 6d), and it is what
+        # `make owed-rows-check` will read on the filed issue.
+        f["owed_rows"] = []
+        if f["Owed-row"]:
+            parsed = bot_markers.parse_owed_rows(f["Owed-row"])
+            if parsed["malformed"] or not parsed["rows"]:
+                return [], (
+                    f"finding {title!r} has an Owed-row field that declares nothing valid: "
+                    f"{parsed['malformed'] or 'no owed-row marker found'} — write "
+                    f"`{bot_markers.owed_row_marker('<id>', '<needle>')}` "
+                    "(scripts/bot_markers.owed_row_marker is the ONE writer)"
+                )
+            f["owed_rows"] = parsed["rows"]
         f["signature"] = slug(f["Signature"]) if f["Signature"] else slug(title)
         findings.append(f)
     return findings, None

@@ -287,6 +287,84 @@ def test_parse_helpers_are_the_scripts_own():
           b and b[0]["signature"].startswith("the-crawler-re-scrapes"), err_b or str(b))
 
 
+_OWED_ROW_FINDING = """# Findings
+
+## The §8 guard row for the new check is owed to a protected AGENTS.md
+
+- **Signature:** owed-row-protected-rulebook
+- **Evidence:** a new guard check ships under `make lint`, rule 6c owes the `AGENTS.md` §8 row,
+  and the headless implement leg is REFUSED the write (protected agent-instruction file,
+  measured on #654–657: the change died on the bare `- [ ]` the refusal left behind)
+- **Why:** an undeclared owed row vanishes — the PR goes red on the unticked box, or the rulebook
+  silently describes the pre-guard behaviour (rule 3c starvation)
+- **Done when:** an attended run lands the row from the ledger issue
+- **Owed-row:** <!-- owed-row: section=8 needle="owed rulebook row" -->
+"""
+
+
+def test_an_owed_row_finding_files_the_registered_marker():
+    """Issue #659: a finding that owes an AGENTS.md row carries it into the ledger.
+
+    Given a finding with a valid `- **Owed-row:**` declaration, --check parses it and
+    --file's issue body carries the marker RE-RENDERED through
+    scripts/bot_markers.owed_row_marker (the ONE writer, rule 6j) — the exact
+    declaration `make owed-rows-check` reads — beside the dedup signature."""
+
+    # Given the owed-row finding
+    mod = _module()
+    got, err = mod.parse(_OWED_ROW_FINDING)
+    check("owed-row: --check parses the finding", bool(got) and err is None, err or "")
+    check("owed-row: the declaration parses through bot_markers' grammar",
+          got and got[0]["owed_rows"] == [{"section": "8", "needle": "owed rulebook row"}],
+          str(got[0]) if got else "")
+
+    # When  it is filed through the real script (gh stubbed on PATH)
+    with tempfile.TemporaryDirectory() as td:
+        tdp = Path(td)
+        path = tdp / "findings.md"
+        path.write_text(_OWED_ROW_FINDING, encoding="utf-8")
+        env, log, body = _stub_env(tdp)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--file", "--path", str(path)],
+                              cwd=ROOT, capture_output=True, text=True, env=env)
+        filed = body.read_text(encoding="utf-8") if body.exists() else ""
+        calls = log.read_text(encoding="utf-8") if log.exists() else ""
+
+    # Then  exactly one issue, carrying BOTH markers in the registered shape
+    check("owed-row: one issue filed", proc.returncode == 0 and calls.count("issue create") == 1,
+          proc.stdout + proc.stderr)
+    check("owed-row: the filed body carries the registered owed-row marker",
+          '<!-- owed-row: section=8 needle="owed rulebook row" -->' in filed, filed[:600])
+    check("owed-row: the filed body keeps the dedup signature",
+          "tech-debt-signature: owed-row-protected-rulebook" in filed, filed[:600])
+
+
+def test_an_owed_row_field_that_declares_nothing_fails_loudly():
+    """Issue #659: a half-written Owed-row field is a defect, never a silent field."""
+
+    # Given  a findings file whose Owed-row field carries NO registered declaration
+    prose = _OWED_ROW_FINDING.replace(
+        '- **Owed-row:** <!-- owed-row: section=8 needle="owed rulebook row" -->',
+        "- **Owed-row:** section 8, needle owed rulebook row (plain prose, no marker)")
+    # And    one whose marker is malformed (no needle=)
+    malformed = _OWED_ROW_FINDING.replace(
+        'section=8 needle="owed rulebook row"', 'section=8')
+
+    for name, text in (("no-marker prose", prose), ("malformed marker", malformed)):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "findings.md"
+            path.write_text(text, encoding="utf-8")
+            proc = subprocess.run([sys.executable, str(SCRIPT), "--check", "--path", str(path)],
+                                  cwd=ROOT, capture_output=True, text=True)
+        check(f"owed-row {name}: exit non-zero", proc.returncode != 0, str(proc.returncode))
+        check(f"owed-row {name}: names the finding and the grammar",
+              "§8 guard row" in proc.stderr and "owed-row:" in proc.stderr, proc.stderr)
+    # And    a findings file with NO Owed-row field at all is still valid (optional field)
+    mod = _module()
+    got, err = mod.parse(_ONE_FINDING)
+    check("owed-row: findings without the field still parse (optional)",
+          bool(got) and err is None and got[0]["owed_rows"] == [], err or "")
+
+
 def test_wired_into_make_test_and_the_bot():
     """The script is reachable from make targets the pipeline runs (rule 6d)."""
 
@@ -318,6 +396,8 @@ def main() -> int:
     test_finding_is_filed_once_with_evidence_and_origin()
     test_already_filed_finding_is_skipped()
     test_parse_helpers_are_the_scripts_own()
+    test_an_owed_row_finding_files_the_registered_marker()
+    test_an_owed_row_field_that_declares_nothing_fails_loudly()
     test_wired_into_make_test_and_the_bot()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
