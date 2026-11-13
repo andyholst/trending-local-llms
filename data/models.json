@@ -1303,7 +1303,10 @@
       "system_ram_min": "32GB",
       "engine_min_version": "enable preserve_thinking to fix most tool-call format failures; Q6_K and Q8_0 quants run more stable tool calls than Q4_K_M",
       "context_tokens": "66000",
-      "weight_gb": "Q4_K_M"
+      "weight_gb": "Q4_K_M",
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "deepseek-v4.1-flash",
