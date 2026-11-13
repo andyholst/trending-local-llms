@@ -186,20 +186,29 @@ def described_scripts(doc: Path) -> set[str]:
     return names
 
 
+_RULEBOOK_PIPELINE_CLAIM = re.compile(r"^- \*\*`([A-Za-z0-9_.\-]+\.yml)`\*\*", re.M)
+
+
 def rulebook_pipelines(agents: Path) -> set[str]:
-    """The workflow names `AGENTS.md` §6b lists (its backticked `*.yml` tokens).
+    """The workflow names `AGENTS.md` §6b lists (its pipeline BULLET lines).
 
     The section is the one a contributor reads first, and it is hand-maintained:
     it named 6 of the 12 workflows in the tree while every one of them was
     described in `ARCHITECTURE.md` §4 — so "is it in the description?" could never
     notice. The pipeline's SHAPE stays §4's job (canonical, generated, and checked
     above); this list is the rulebook entry, so it must name every pipeline.
+
+    A claim is the bullet shape §6b requires — a line starting
+    ``- **`<name>.yml`** ``. A backticked `.yml` in a PROSE sentence is the
+    section explaining its own failure mode, never a pipeline claim: read as one
+    it turned the guard red the moment the paragraph documenting the rule existed
+    (issue #660).
     """
     if not agents.is_file():
         return set()
     body = section(agents.read_text(encoding="utf-8"), RULEBOOK_SECTION,
                    RULEBOOK_NEXT_SECTION)
-    return {t for t in _TICKED.findall(body) if t.endswith(".yml")}
+    return set(_RULEBOOK_PIPELINE_CLAIM.findall(body))
 
 
 def validate_stages(script: Path) -> set[str]:
