@@ -1975,10 +1975,17 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
     # data/raw, so a pasted URL can never 404 the raw-hf link check again.
     kept_models: list = []
     _link_cache: dict = {}
-    for _m in payload.get("models") or []:
-        if not isinstance(_m, dict):
-            kept_models.append(_m)
+    for _m0 in payload.get("models") or []:
+        if not isinstance(_m0, dict):
+            kept_models.append(_m0)
             continue
+        # Copy-on-write (issue #646): the id/hf rewrite, the formats rebuild and
+        # the refused-row drop belong to THIS snapshot only. The shallow top
+        # copy above did not cover the nested model dicts — they are the
+        # CALLER's objects, and mutating them meant a caller that re-uses its
+        # payload (a retry, a second backend, a batch write) silently wrote ids
+        # it never composed and rows it never agreed to lose.
+        _m = dict(_m0)
         if _m.get("hf"):
             _m["hf"] = normalize_hf_ref(_m["hf"])
         # The id must satisfy the store contract, or the raw snapshot fails
@@ -2003,10 +2010,11 @@ def write_raw_snapshot(backend: str, payload: dict, verify_hf: bool = False) -> 
                   f"a guessed id must not reach the PR")
             continue
         formats: list = []
-        for _f in _m.get("formats") or []:
-            if not isinstance(_f, dict):
-                formats.append(_f)
+        for _f0 in _m.get("formats") or []:
+            if not isinstance(_f0, dict):
+                formats.append(_f0)
                 continue
+            _f = dict(_f0)   # copy-on-write (issue #646): the caller's format dict stays as sent
             if _f.get("hf"):
                 _f["hf"] = normalize_hf_ref(_f["hf"])
                 if _f["hf"] == _m.get("hf"):
