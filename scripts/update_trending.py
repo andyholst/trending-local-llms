@@ -2602,11 +2602,81 @@ def refuse_cross_model_duplicate_measurements(
     return kept, refused
 
 
+# ---------------------------------------------------------------------------
+# Engine-build fill (issue #877): the INGEST half of the #876 detector.
+# `make data-gaps` can SEE an engine-build sentence in a captured measurement's
+# text — the phrasings #876 pinned BY NAME in its detector and its tests — and
+# already names that class the INGEST job
+# (`captured:engine_min_version`), yet the value stopped at the report because
+# nobody COMPUTED the structured key from the sentence the post stated. The key
+# is declared in both contracts, `merge_engines` already carries a STATED value
+# onto the same post's merged row, and the prompts already ask for it (#371);
+# this seam supplies the one missing step. The vocabulary of those sentences
+# lives in ONE place — data_gap_analysis's detector — never copied here (rule 6d,
+# refused by tests/test_engine_min_version_ingest.py).
+#
+# Rules the seam obeys:
+#  - measurement text only (`quant` / `hardware`): a measurement's own fields are
+#    the capturing post's record and stay evidence; a model's `why` is agent
+#    prose and NEVER fills a value (#470);
+#  - the stored value is the matched phrase VERBATIM and the measurement's
+#    existing `source_post` is its citation — the fill relocates what a real post
+#    already stated, it invents nothing (rule 3);
+#  - ADDITIVE-only (rule 2.3b): a MISSING key is filled, an existing value is
+#    never overwritten, no other key is touched;
+#  - a measurement whose text matches nothing gains NOTHING, so the precision
+#    class #213/#458 built stays exact (`Q4_K_M (~14.6GB) … 150 tok/s` is not a
+#    build claim);
+#  - the detector is the ONE `_ENGINE_MIN_TEXT` imported from data_gap_analysis
+#    (rule 6d) — a second copy of the pattern here is the silent-drift defect the
+#    marker registry exists to prevent, refused by
+#    tests/test_engine_min_version_ingest.py.
+# ---------------------------------------------------------------------------
+_ENGINE_MIN_TEXT_FIELDS = ("quant", "hardware")
+
+
+def _engine_min_detector():
+    """The ONE build-phrase detector, read from data_gap_analysis (rule 6d).
+    Imported lazily because data_gap_analysis reaches back into update_trending
+    inside its own functions."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import data_gap_analysis as _dga
+    finally:
+        sys.path.pop(0)
+    return _dga._ENGINE_MIN_TEXT
+
+
+def fill_engine_min_version(models: list[dict]) -> int:
+    """Fill a MISSING `engine_min_version` on each model's measurements from the
+    build phrase their OWN captured text states (issue #877). Returns how many
+    measurements were filled; nothing else in the measurement changes."""
+    detector = _engine_min_detector()
+    filled = 0
+    for m in models:
+        for e in m.get("engines") or []:
+            if e.get("engine_min_version") not in (None, "", [], {}):
+                continue
+            for field in _ENGINE_MIN_TEXT_FIELDS:
+                hit = detector.search(str(e.get(field) or ""))
+                if hit:
+                    e["engine_min_version"] = hit.group(0).strip()
+                    filled += 1
+                    break
+    return filled
+
+
 def ingest_raw_snapshots(store: dict, since: datetime | None = None,
-                         verify_hf: bool = False) -> tuple[int, int]:
+                         verify_hf: bool = False,
+                         raw_dir: Path | None = None) -> tuple[int, int]:
     """Merge the data/raw/*.json snapshots NEWER than `since` into the store.
     Each raw file holds one backend's captured findings (models). New models are
     added, existing ones updated, NONE removed. Returns (added, updated).
+
+    `raw_dir` defaults to the pipeline's own `data/raw` (issue #877): the tests
+    drive this ingest against a fixture snapshot directory through the REAL
+    function — the same parameter shape `data_gap_analysis.analyse(raw_dir=…)`
+    already has — never a stand-in for the merge itself.
 
     `since` is the store's own `generated_utc` — the instant of the last merge —
     which `main()` derives for every run. Only a snapshot STRICTLY NEWER than it
@@ -2617,10 +2687,11 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
     actually introduced a change. A snapshot this code cannot date is always
     merged (fail-open), never silently dropped."""
     added = updated = 0
-    if not RAW_DIR.exists():
+    raw_dir = raw_dir or RAW_DIR
+    if not raw_dir.exists():
         return 0, 0
     by_id = {m["id"]: m for m in store["models"]}
-    for path in sorted(RAW_DIR.glob("*.json")):
+    for path in sorted(raw_dir.glob("*.json")):
         try:
             data = json.loads(path.read_text())
         except Exception as e:  # noqa: BLE001
@@ -2704,6 +2775,18 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"{why}; post {post} — a stated weight that cannot belong to this model "
                         f"is not evidence about it"
                     )
+        # A captured engine-build sentence becomes the structured field HERE
+        # (issue #877): the refusals above have pruned what cannot be this model's
+        # data; what survives now earns its `engine_min_version` from the build
+        # phrase the capturing post itself stated — verbatim, cited by the
+        # measurement's own source_post — and `merge_engines`' same-post dimension
+        # fill carries it onto the store row that post produced.
+        filled = fill_engine_min_version(data.get("models", []))
+        if filled:
+            print(f"[engine-build-fill] {filled} measurement(s) in {path.name} gained "
+                  f"engine_min_version from the build phrase their capturing post "
+                  f"states (issue #877) — the value is the phrase, verbatim, cited "
+                  f"by that measurement's source_post")
         for m in data.get("models", []):
             mid = m.get("id")
             if not mid:
