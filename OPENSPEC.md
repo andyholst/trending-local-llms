@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **237**
+Active changes: **15** · archived: **238**
 
 ## Active changes
 
@@ -30,7 +30,6 @@ Active changes: **16** · archived: **237**
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
-| `write-raw-snapshot-copy-payload` | active | #646 | — | [write-raw-payload-immutability](openspec/changes/write-raw-snapshot-copy-payload/specs/write-raw-payload-immutability/spec.md) | 8/8 | [proposal.md](openspec/changes/write-raw-snapshot-copy-payload/proposal.md) |
 
 ## Archived changes
 
@@ -272,6 +271,7 @@ Active changes: **16** · archived: **237**
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |
 | `worktree-base-fresh` | archived | #271 | — | [worktree-base](openspec/changes/archive/worktree-base-fresh/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/worktree-base-fresh/proposal.md) |
+| `write-raw-snapshot-copy-payload` | archived | #646 | #897 | [write-raw-payload-immutability](openspec/changes/archive/write-raw-snapshot-copy-payload/specs/write-raw-payload-immutability/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/write-raw-snapshot-copy-payload/proposal.md) |
 | `write-raw-verifies-links` | archived | #644 | #850 | [write-raw-link-verification](openspec/changes/archive/write-raw-verifies-links/specs/write-raw-link-verification/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/write-raw-verifies-links/proposal.md) |
 
 ## How this file stays honest
