@@ -19,9 +19,9 @@
 - [x] `tests/test_measurement_attribution.py::test_alias_key_declared_in_both_contracts`
       — the pair-declaration assertion covers `measurement_model_aliases` in both
       contracts, neither `required`, same structural shape.
-- [ ] `make lint`, `make test` (host suite + container), `make validate`,
+- [x] `make lint`, `make test` (host suite + container), `make validate`,
       `make openspec-check`, `make architecture-check` all green; `ARCHITECTURE.md`
       §6 rows for `scripts/update_trending.py` and `scripts/validate.py` mention
       the alias union seam and the both-sides gate.
-- [ ] PR opened (ready, not draft) with the message pattern + single closing
+- [x] PR opened (ready, not draft) with the message pattern + single closing
       claim; monitored to green and auto-merged.
