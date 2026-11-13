@@ -79,12 +79,13 @@ verified against the lightbrd.com mirror.
 | MLX-fast Bonsai 2 | `mlxfast bonsai tokens per second` |
 | TensorFold / DFlash on MLX | `tensorfold dflash mlx qwen tokens per second` |
 
-### Backend C — CPU (sparse on X)
+### Backend C — CPU (sparse on X; vocabulary rewritten by the #858 audit, one home in `scripts/query_vocab.py`)
 | Goal | Query |
 |---|---|
-| No-GPU CPU runs | `llm tokens per second no gpu cpu` |
-| llama.cpp CPU only | `llama.cpp cpu only tokens per second` |
-| Local LLM on GPU (CPU offload) | `local llm tokens per second gpu` |
+| CPU throughput (the co-occurrence posts actually use) | `cpu tokens per second` |
+| No-GPU CPU runs | `no gpu tokens per second` |
+| llama.cpp on CPU | `llama.cpp cpu tokens per second` |
+| Raspberry Pi / edge | `raspberry pi tokens per second` |
 
 ### Backend D — AMD / ROCm (Radeon 8–48 GB + Strix Halo APUs)
 | Goal | Query |

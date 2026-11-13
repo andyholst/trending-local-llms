@@ -701,6 +701,22 @@ issue that skips a section is refused.
    (acquisition: only a new search can close it) or **stated in prose only**
    (ingest: structuring work) — so a gap is never again filed as one kind of
    work when it is the other.
+   **The curated vocabulary has ONE home, and a leg whose answered pages state
+   nothing is red** (issue #858). The same keyword lists were hand-written in
+   three places — the four `_search-<backend>` prompts, `smoke_search.py`, and
+   `update_trending.SEARCH_GROUPS` — and the CPU leg's newest runs answered and
+   captured zero models (measured 2026-11-11: seven per-query `cpu-*.json`
+   snapshots, every one `"models": []`, while the same runs' nvidia/metal/amd
+   legs captured 9/5/2), after the same leg had captured plenty through October —
+   its AND-style queries (`llm tokens per second no gpu cpu`) kept answering 200
+   with hundreds of posts on the mirror while yielding no CPU figure, and every
+   gate stayed green, because nothing read the WORDS, only HTTP status. So: the
+   leg vocabulary lives ONCE in `scripts/query_vocab.py`; the prompts receive it
+   as `$(<BACKEND>_KEYWORDS)`, `smoke_search.py` and the CPU fetch sampling import
+   the same dict, and `make search-smoke` labels every query by what its page
+   actually yielded (`yield: N rate-posts, M model-posts`, or SILENT) and FAILS
+   when an answered leg yields nothing at all — the mirror being reachable is
+   exactly the state that hid the starved CPU vocabulary.
 
 6p. **Every agent leg runs from a project skill, preloaded with `-s` — the
    `Makefile` recipe is a pointer plus parameters (MANDATORY).** A bot's behaviour
@@ -1836,6 +1852,7 @@ actually happened.
 | `tests/test_rule_numbers.py` (issue #270) | the hand-maintained rulebook numbering colliding unnoticed: two hard rules in §2 sharing an id (master carried TWO `6m.` rules — `#262` renumbered `6l`→`6m` because `6l` was taken, then `#265` picked `6m` for a different rule, and two tests cited "rule 6m" meaning different rules); a `rule <id>` citation anywhere in the tree that names an id §2 does not declare (a reader sent to a rule that is not there); the guard going vacuous (no rules parsed, or no citation found). It deliberately does NOT assert contiguity or order: the file is ordered by topic, not by number |
 | `tests/test_measurement_footprint.py::test_the_rulebook_names_every_measurement_dimension` (rules 3b/6c/6d, issues #337/#371/#375) | the rulebook describing a footprint narrower than the store can hold: §4's `data/models.json` bullet named four optional per-measurement dimensions (`weight_gb`, `context_tokens`, `system_ram_min`, `storage_offload`) while both contracts declare five — `engine_min_version` was added at measurement level by #371 and the sentence never followed, so an agent reading §4 had no reason to capture the minimum engine build and the gap chain's ranked dimension stayed closable only by accident; the pin DERIVES the set from `data_gap_analysis.DIMENSIONS` and the contracts' measurement items (never a hand-kept list, rule 6d), refuses a name §4 lists that no contract declares, and fails when a tracked dimension has no measurement key in either contract |
 | `tests/test_smoke_search.py` | smoke query lists drifting from the Makefile search prompts; an upstream error page counted as a healthy `HTTP 200` (a 502 mirror printing "all backends returned HTTP 200" while it is down — it must be its own `OUTAGE` label, never retried, loud, and not a smoke failure, issue #291); a 403 bot wall excused as an outage |
+| `tests/test_cpu_query_vocabulary.py` + the `make search-smoke` yield gate (rule 6o, issue #858) | the starved-CPU-query class: a leg whose queries ANSWER (HTTP 200, posts returned) and still capture nothing (measured 2026-11-11: 7 empty `cpu-*.json` snapshots while nvidia/metal/amd captured 9/5/2 on the same runs). The guard drives the REAL `main()` through its `probe_fn` seam and refuses (a) a CPU leg whose answered queries yield no candidate → exit 2 naming the vocabulary, (b) a query list that drifted from the single home `scripts/query_vocab.py` (the Makefile's `$(CPU_KEYWORDS)` indirection is RESOLVED to its literal value and compared), (c) a vocabulary that lost the probe-verified queries or cannot yield the posts captured verbatim from the live mirror — while a vocabulary change alone goes green. |
 | `tests/test_validate_readme.py` — `test_readme_generated_*` + `test_readme_generated_tests_are_clock_independent` (issue #88) | a hand-edited / stale README passing `check_readme_generated`; a test rendering the expected README from the wall clock instead of the store's `generated_utc` (the fixture aged out of the 7-day band on 2026-10-05 and master went red, run 37247105182); the AST guard rejects any `render_readme(..., now()/utcnow()/today())` under `tests/` |
 | `tests/test_readme_render.py` | engagement rank inert or post-count-only; placeholder URLs collapsing posts; legacy rows never scoring; range parsed by its first number; CPU figures under CUDA; most-loved not showing the true best per backend; engine matrix listing unmeasured engines; backend tables without hardware/quant or unsorted; escaped pipes breaking the table check; README re-render drifting with the wall clock |
 | `tests/test_post_signal.py` | a registry-only engine (e.g. Mac-only) with blank hardware landing in the CUDA table; renderer and validator classifying differently; search prompts not asking for the `…/status/<id>` URL + per-post counts; the coverage report failing CI |

@@ -50,6 +50,7 @@ def _load_smoke_backends() -> dict:
     # import smoke_search safely (it must not hit the network at import time)
     src = SMOKE.read_text()
     SEARCH_NS["BACKEND_KEYWORDS"] = None
+    SEARCH_NS["__file__"] = str(SMOKE)  # smoke imports query_vocab via __file__'s dir
     exec(compile(src, str(SMOKE), "exec"), SEARCH_NS)
     kw = SEARCH_NS["BACKEND_KEYWORDS"]
     assert isinstance(kw, dict), "BACKEND_KEYWORDS must be a dict"
@@ -57,19 +58,24 @@ def _load_smoke_backends() -> dict:
 
 
 def _makefile_keywords(backend: str) -> list:
-    """Extract the keyword list the Makefile `_search-<backend>` recipe passes as a parameter.
-
-    Issue #638: the keywords are a PARAMETER of the pointer prompt —
-    `Follow the preloaded skill data-search. Parameters: backend=<b>; keywords=(<k1>, <k2>, …);
-    model_queries=…; write_raw=…` — so the smoke and the leg still search exactly the same strings.
+    """Resolve the keyword list the Makefile `_search-<backend>` recipe passes, THROUGH its
+    indirection (issue #858): `keywords=($(<BACKEND>_KEYWORDS))` where the variable is
+    `$(shell python3 scripts/query_vocab.py --print <backend>)` — the one home
+    (scripts/query_vocab.py). A hand-copied list in the recipe no longer parses here,
+    which is the point: the prompt and the smoke read the SAME reviewed dict.
     """
+    import subprocess
+
     text = MAKEFILE.read_text()
-    target = "_search-" + backend + ":\n"
-    body = text[text.index(target):].split("\n.PHONY", 1)[0]
-    m = re.search(r"keywords=\((.*?)\)", body, re.S)
+    var = backend.upper() + "_KEYWORDS"
+    m = re.search(rf"^{var} = \$\(shell python3 scripts/query_vocab\.py --print {backend}\b",
+                  text, re.M)
     if not m:
         return []
-    return [k.strip() for k in m.group(1).split(",") if k.strip()]
+    resolved = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "query_vocab.py"), "--print", backend],
+        capture_output=True, text=True, check=True).stdout.strip()
+    return [k.strip() for k in resolved.split(",") if k.strip()]
 
 
 def test_an_upstream_error_page_is_its_own_outage_label():
@@ -160,7 +166,10 @@ def test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S: dict):
     check("run: main() exposes the probe seam", True)
 
     cpu = S["BACKEND_KEYWORDS"]["cpu"]
-    good = {"label": "OK", "status": 200, "ok": True, "upstream": 200, "elapsed": 0.3, "attempts": 1}
+    # A "good" probe YIELDS (issue #858): an OK page that states no rate and names
+    # no model is SILENT, and a fully-SILENT CPU leg is now a failure in itself.
+    good = {"label": "OK", "status": 200, "ok": True, "upstream": 200, "elapsed": 0.3,
+            "attempts": 1, "rate_hits": 2, "model_hits": 1}
     slow = {"label": "TIMEOUT", "status": 0, "ok": None, "upstream": None, "elapsed": 3.0, "attempts": 2}
 
     def run(slow_count: int):

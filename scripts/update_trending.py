@@ -28,6 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from hf_id import normalise as normalise_hf  # noqa: E402  (one HF-id definition)
+from query_vocab import CURATED as QUERY_VOCAB  # noqa: E402  (one curated vocabulary, #858)
 # Allow tests to run the make targets against a small fixture in a temp dir
 # instead of the real data/ tree. When set, all data paths resolve under it.
 _DATA_DIR = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
@@ -185,11 +186,7 @@ SEARCH_GROUPS = {
         "tensorfold dflash mlx qwen tokens per second",
         "mac m series local llm tokens per second",
     ],
-    "CPU": [
-        "llm tokens per second no gpu cpu",
-        "llama.cpp cpu only tokens per second",
-        "local llm tokens per second gpu",
-    ],
+    "CPU": list(QUERY_VOCAB["cpu"]),  # one home (#858): the fetch sampling IS the leg vocabulary
     "ROCm": [
         "rx 7900 xtx tokens per second",
         "rx 9070 xt tokens per second",

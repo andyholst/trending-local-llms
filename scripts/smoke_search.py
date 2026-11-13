@@ -28,46 +28,46 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-# Keep in sync with the Makefile _search-* prompts (verified by test_search_keywords_match).
-BACKEND_KEYWORDS = {
-    "nvidia": [
-        "rtx tokens per second llm",
-        "rtx 3090/4090/5090 tokens per second",
-        "rtx 3060 tokens per second",
-        "rtx 4060 tokens per second",
-        "rtx 4060 ti 16gb tokens per second",
-        "rtx 4070 tokens per second",
-        "8gb vram llm tokens per second",
-        "16gb vram llm tokens per second",
-        "bonsai 2 ternary",
-        "freetoken gpu",
-        "dflash speculative",
-    ],
-    "metal": [
-        "mlx tokens per second",
-        "mlx apple silicon",
-        "mac m4 mlx local llm",
-        "mlxfast bonsai",
-        "tensorfold dflash mlx",
-    ],
-    "cpu": [
-        "llm tokens per second no gpu cpu",
-        "llama.cpp cpu only",
-        "raspberry pi llm tokens per second",
-        "local llm cpu",
-    ],
-    "amd": [
-        "rx 7900 xtx tokens per second",
-        "rx 9070 xt tokens per second",
-        "rx 7600 tokens per second",
-        "rx 6600 tokens per second",
-        "rx 9060 xt tokens per second",
-        "radeon 8gb vram llm tokens per second",
-        "rocm tokens per second",
-        "llama.cpp vulkan amd tokens",
-        "strix halo tokens per second",
-    ],
-}
+import re
+import sys as _sys
+from pathlib import Path as _Path
+
+# The scripts dir for the vocabulary import below. `__file__` is absent when a
+# wiring test execs this file's source in a bare namespace (issue #858,
+# tests/test_amd_backend.py::test_wiring_parity), so fall back to the cwd the
+# target runs from — the repo root, where `scripts/` is.
+_scripts = _Path(globals().get("__file__") or _Path.cwd() / "scripts").resolve().parent
+if str(_scripts) not in _sys.path:
+    _sys.path.insert(0, str(_scripts))
+import query_vocab  # noqa: E402
+
+# ONE vocabulary (issue #858): scripts/query_vocab.py owns the per-leg curated
+# queries; the Makefile `_search-*` prompts get the same list through
+# `$(<BACKEND>_KEYWORDS) = $(shell python3 scripts/query_vocab.py --print <backend>)`,
+# so this probe provably scrapes what the bot actually searches.
+BACKEND_KEYWORDS = {leg: query_vocab.curated(leg) for leg in query_vocab.LEGS}
+
+# The yield audit (issue #858): does a query's page even CONTAIN a candidate?
+# A post counts when it states a generation rate in a form posts actually use,
+# or names a model this store ranks. `OK + zero candidates` is SILENT: the
+# mirror answered and the VOCABULARY found nothing — the exact state the 2026-11-11
+# refreshes sat in (seven empty cpu-*.json snapshots while nvidia/metal/amd
+# captured 9/5/2) while every gate stayed green.
+RATE_RE = re.compile(
+    r"\b\d[\d,.]{0,6}\s*(?:tok|t|tokens?)/s\b"
+    r"|\b\d[\d,.]{0,6}\s+(?:[a-z]+\s+){0,2}(?:tokens?|toks?)\s+per\s+second\b"
+    r"|\b\d[\d,.]{0,6}\s*tps\b", re.I)
+MODEL_RE = re.compile(
+    r"\b(qwen3?\.\d+(?:-[a-z0-9]+)*|qwen\d*\s*\d*b|gemma[- ]\d+[ a-z0-9]*|"
+    r"llama\s*\d|llama\.cpp|phi[- ]?\d|deepseek|mistral|strix halo|"
+    r"\d+b\b)\b", re.I)
+
+
+def page_yields(markdown: str) -> tuple[int, int]:
+    """(rate-mentioning lines, model-naming lines) of a scraped page."""
+    lines = [ln for ln in (markdown or "").splitlines() if ln.strip()]
+    return (sum(1 for ln in lines if RATE_RE.search(ln)),
+            sum(1 for ln in lines if MODEL_RE.search(ln)))
 
 SCRAPE_URL = "https://api.firecrawl.dev/v1/scrape"
 
@@ -119,6 +119,7 @@ def scrape(keyword: str, api_key: str, budget: float):
                 payload: object = json.loads(raw)
             except json.JSONDecodeError:
                 payload = None
+            page = ""
             if isinstance(payload, dict):
                 ok = payload.get("success")
                 raw_data = payload.get("data")
@@ -129,14 +130,20 @@ def scrape(keyword: str, api_key: str, budget: float):
                     if isinstance(value, (int, str)) and str(value).strip().isdigit():
                         upstream = int(value)
                         break
+                page = data.get("markdown") or ""
+            rate_hits, model_hits = page_yields(page)
             return {"status": resp.status, "ok": ok, "upstream": upstream,
+                    "rate_hits": rate_hits, "model_hits": model_hits,
                     "elapsed": time.time() - t0}
     except _Budget:
-        return {"status": 0, "ok": None, "upstream": None, "elapsed": time.time() - t0}
+        return {"status": 0, "ok": None, "upstream": None, "rate_hits": 0, "model_hits": 0,
+                "elapsed": time.time() - t0}
     except urllib.error.HTTPError as e:
-        return {"status": e.code, "ok": False, "upstream": None, "elapsed": time.time() - t0}
+        return {"status": e.code, "ok": False, "upstream": None, "rate_hits": 0, "model_hits": 0,
+                "elapsed": time.time() - t0}
     except Exception as e:  # noqa: BLE001 -- network/transport errors
-        return {"status": 0, "ok": False, "upstream": None, "elapsed": time.time() - t0}
+        return {"status": 0, "ok": False, "upstream": None, "rate_hits": 0, "model_hits": 0,
+                "elapsed": time.time() - t0}
     finally:
         signal.alarm(0)
 
@@ -241,31 +248,68 @@ def main(probe_fn=None) -> int:
     backends = [args.backend] if args.backend else list(BACKEND_KEYWORDS)
     probe_fn = probe_fn or probe
     outages = 0
-    blocking: list[str] = []
+    starved_blocking: list[str] = []
+    majority_blocking: list[str] = []
     sampled: list[str] = []
     for b in backends:
         total = missed = 0
+        answered = silent = 0
         for k in BACKEND_KEYWORDS[b]:
             total += 1
             res = probe_fn(k, args.key, args.budget, args.retries, args.retry_wait)
             tries = f" (attempt {res['attempts']})" if res["attempts"] > 1 else ""
+            rate = int(res.get("rate_hits") or 0)
+            model = int(res.get("model_hits") or 0)
+            yield_note = ""
+            if res["label"] == "OK":
+                answered += 1
+                if rate or model:
+                    yield_note = f" yield: {rate} rate-posts, {model} model-posts"
+                else:
+                    silent += 1
+                    yield_note = " yield: SILENT (no post states a rate or names a model)"
             print(f"[{b}] {res['label']} http={res['status']} success={res['ok']} "
-                  f"upstream={res['upstream']} {res['elapsed']:.1f}s{tries}  {lightbrd_url(k)}")
+                  f"upstream={res['upstream']} {res['elapsed']:.1f}s{tries}{yield_note}  "
+                  f"{lightbrd_url(k)}")
             if res["label"] == "OUTAGE":
                 outages += 1
             elif res["label"] != "OK":
                 missed += 1
+        # The yield gate (issue #858): a leg whose answered pages hold NO
+        # candidate at all has a dead VOCABULARY, not a dead mirror — the CPU
+        # leg sat starved precisely because every existing check stopped at
+        # HTTP status. The gate names the leg and tells the maintainer to fix
+        # the WORDS in scripts/query_vocab.py. (Scope: the CPU leg today; the
+        # labels are printed for every leg so the next starved one is visible
+        # before it needs an issue.)
+        if b == "cpu" and answered and silent == answered:
+            starved_blocking.append(
+                f"{b}: starved curated vocabulary — all {answered} answered pages of "
+                f"{len(BACKEND_KEYWORDS[b])} queries state NO generation rate and name "
+                f"NO model. The mirror is reachable; the queries capture nothing "
+                f"(issue #858). Fix the WORDS in scripts/query_vocab.py.")
         # The verdict is PER LEG (issue #258): a reachability probe samples its queries, so a
         # minority that missed the budget is a note, not a red run — while a majority, and so an
         # unreachable mirror (every query), still fails loudly.
         block, note = leg_verdict(total, missed)
         if block:
-            blocking.append(f"{b}: {note}")
+            majority_blocking.append(f"{b}: {note}")
         elif note:
             sampled.append(f"{b}: {note}")
+    blocking = starved_blocking + majority_blocking
     if blocking:
-        print(f"\n[smoke] {len(blocking)} leg(s) missed the budget on a MAJORITY of their "
-              f"queries: {'; '.join(blocking)}. That is a dead or unreachable source, not a flake.")
+        # Each rule's sentence is printed only for the rule that actually blocked
+        # (issue #858): a dead source is a dead source, a silent leg is a dead
+        # VOCABULARY — and neither is excused as a flake.
+        rules = []
+        if majority_blocking:
+            rules.append("a MAJORITY of budget-missed queries is a dead or unreachable "
+                         "source, not a flake (issue #258)")
+        if starved_blocking:
+            rules.append("an answered leg whose pages captured NOTHING is a starved "
+                         "curated vocabulary, not a flake (issue #858)")
+        print(f"\n[smoke] {len(blocking)} leg(s) failed: {'; '.join(blocking)}. "
+              + "; ".join(rules) + ".")
         return 2
     if sampled:
         print(f"\n[smoke] SAMPLED: {'; '.join(sampled)}. Not a failure — a MINORITY of the "
