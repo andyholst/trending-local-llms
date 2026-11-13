@@ -1,6 +1,7 @@
 # Proposal: rulebook-pipelines-read-bullets-only
 
 Issue: #660
+PR: #909
 
 ## Why
 
