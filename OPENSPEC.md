@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **230**
+Active changes: **15** · archived: **231**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `captured-recipe-is-silent` | active | — | — | [issue-bot-artifacts](openspec/changes/captured-recipe-is-silent/specs/issue-bot-artifacts/spec.md) | 6/6 | [proposal.md](openspec/changes/captured-recipe-is-silent/proposal.md) |
-| `engine-min-version-phrasings` | active | #214 | #876 | [data-gap-analysis](openspec/changes/engine-min-version-phrasings/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/engine-min-version-phrasings/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `index-failure-names-its-cause` | active | none — found while unblocking the dispatch-bot verification pass. | — | [openspec-index](openspec/changes/index-failure-names-its-cause/specs/openspec-index/spec.md) | 9/9 | [proposal.md](openspec/changes/index-failure-names-its-cause/proposal.md) |
@@ -59,6 +58,7 @@ Active changes: **16** · archived: **230**
 | `2026-11-12-per-round-log-capture` | archived | #631 | #846 | [agent-log-capture](openspec/changes/archive/2026-11-12-per-round-log-capture/specs/agent-log-capture/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-12-per-round-log-capture/proposal.md) |
 | `2026-11-12-secret-scan-gitignored-artifact-fileset` | archived | #836 | #838 | [secret-scan](openspec/changes/archive/2026-11-12-secret-scan-gitignored-artifact-fileset/specs/secret-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-12-secret-scan-gitignored-artifact-fileset/proposal.md) |
 | `2026-11-12-starved-leg-gap-files` | archived | #856 | #857 | [data-gap-analysis](openspec/changes/archive/2026-11-12-starved-leg-gap-files/specs/data-gap-analysis/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/2026-11-12-starved-leg-gap-files/proposal.md) |
+| `2026-11-13-engine-min-version-phrasings` | archived | #214 | #876 | [data-gap-analysis](openspec/changes/archive/2026-11-13-engine-min-version-phrasings/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-13-engine-min-version-phrasings/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |
