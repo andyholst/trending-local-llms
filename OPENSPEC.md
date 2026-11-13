@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **17** · archived: **240**
+Active changes: **16** · archived: **241**
 
 ## Active changes
 
@@ -26,7 +26,6 @@ Active changes: **17** · archived: **240**
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
-| `owed-rules-blocked-box` | active | #659 | — | [owed-rulebook-rows](openspec/changes/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/owed-rules-blocked-box/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `the-owed-section-8-rows` | active | — | — | [rulebook](openspec/changes/the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/the-owed-section-8-rows/proposal.md) |
@@ -193,6 +192,7 @@ Active changes: **17** · archived: **240**
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
+| `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | archived | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/archive/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pin-flash-1017-snapshot/proposal.md) |
 | `pipeline-failure-diagnosis` | archived | #802 (measured: qa-validate master run 43088760321 red on `openspec-archive-check` — diagnosed only because a human opened the run page; the chain ended as issue #800 → fix PR #808 → guard `tests/test_openspec_archive_check.py`) | #811 | [alarms](openspec/changes/archive/pipeline-failure-diagnosis/specs/alarms/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/pipeline-failure-diagnosis/proposal.md) |
