@@ -207,7 +207,7 @@ def test_the_pipeline_calls_the_ledger_target():
 def test_the_ledger_script_is_the_only_reacher_for_the_marker():
     """No second copy of the marker shape exists in the tree outside scripts/bot_markers.py."""
     hits = subprocess.run(
-        ["grep", "-rn", "owed-row:", str(ROOT / "scripts"), str(ROOT / ".github")],
+        ["grep", "-rIn", "owed-row:", str(ROOT / "scripts"), str(ROOT / ".github")],
         capture_output=True, text=True).stdout.splitlines()
     offenders = [h for h in hits if "scripts/bot_markers.py" not in h]
     assert offenders == [], f"marker shape re-spelled outside bot_markers.py: {offenders}"
