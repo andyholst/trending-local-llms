@@ -372,7 +372,10 @@ def test_the_guard_is_wired_to_a_target_a_workflow_and_the_gate():
 # changes active (their implementer runs used a copy of issue-bot.yml predating
 # the #776 record step), and openspec-archive-check only went red on the master
 # push, blocking every other PR. The third prong reads THIS PR's closing
-# issues (pr_closure's own parser) and refuses the merge-before-the-fact.
+# issues (pr_closure's own parser) and refuses the merge BEFORE the fact.
+# Issue #866 removes this prong's `PR:`-line exemption: the strands measured
+# after #779 (#851/#862/#889/#891, keepers #871/#892/#893) were all
+# recorded-but-unarchived — the closing head must now ARCHIVE its own change.
 # ---------------------------------------------------------------------------
 
 
@@ -391,16 +394,39 @@ def test_the_closing_pr_prong_fails_an_active_change_it_would_strand():
         check("names the remedy", "openspec-record-pr ISSUE=768 PR=781" in out, out)
 
 
-def test_the_closing_pr_prong_passes_when_the_change_names_that_pr():
+def test_the_closing_pr_prong_fails_a_recorded_but_unarchived_change():
+    """Issue #866: a `PR:` line alone must NOT pass the closing gate.
+
+    Every stranding measured after #779 took this exact shape — the closing PR
+    recorded its number, the gate exempted the change, the merge left it
+    ACTIVE, and a keeper PR (#871/#892/#893) repaired master while every open
+    PR's validate blocked. The head that merges must already hold the archive.
+    """
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
-        _change(root, "recorded-change", issue="#768", pr="#781")
+        _change(root, "half-recorded-change", issue="#768", pr="#781")
         rc, out = _run(
             root, _stub_gh(root),
             {"FAKE_BODY_781": "fix(x): y\n\nCloses #768"},
             args=["--pr", "781"],
         )
-        check("exit 0: the validating head already records this PR", rc == 0, out)
+        check("exit 1: ACTIVE with a `PR:` line is no longer enough", rc == 1, out)
+        check("names the change", "half-recorded-change" in out, out)
+        check("names the issue and this PR", "#768" in out and "#781" in out, out)
+        check("says a PR line is not enough", "not enough" in out, out)
+        check("names the remedy (records AND archives)", "openspec-record-pr ISSUE=768 PR=781" in out, out)
+
+
+def test_the_closing_pr_prong_passes_when_the_change_is_archived_by_the_pr():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "self-archived-change", issue="#768", pr="#781", archived=True)
+        rc, out = _run(
+            root, _stub_gh(root),
+            {"FAKE_BODY_781": "fix(x): y\n\nCloses #768"},
+            args=["--pr", "781"],
+        )
+        check("exit 0: the closing head already archived its own change", rc == 0, out)
         check("the OK line reports the closing set", "--pr 781 closes #768" in out, out)
 
 
@@ -449,7 +475,8 @@ def main() -> int:
         test_an_archived_change_is_left_alone,
         test_a_change_with_neither_pr_nor_issue_is_skipped,
         test_the_closing_pr_prong_fails_an_active_change_it_would_strand,
-        test_the_closing_pr_prong_passes_when_the_change_names_that_pr,
+        test_the_closing_pr_prong_fails_a_recorded_but_unarchived_change,
+        test_the_closing_pr_prong_passes_when_the_change_is_archived_by_the_pr,
         test_the_closing_pr_prong_ignores_changes_the_pr_does_not_close,
         test_an_unreadable_closing_pr_is_loud,
         test_the_workflow_passes_the_pull_request_number,

@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **236**
+Active changes: **15** · archived: **237**
 
 ## Active changes
 
@@ -245,6 +245,7 @@ Active changes: **15** · archived: **236**
 | `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
+| `strand-openspec-change-at-merge` | archived | #866 | #894 | [archived-change-lifecycle](openspec/changes/archive/strand-openspec-change-at-merge/specs/archived-change-lifecycle/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/strand-openspec-change-at-merge/proposal.md) |
 | `sweep-alarm-inflight-pending` | archived | #801 (sweep-alarm grades a delivery that is still running as a failed sweep) | #806 | [alarms](openspec/changes/archive/sweep-alarm-inflight-pending/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/sweep-alarm-inflight-pending/proposal.md) |
 | `sweep-alarm-weekly-window` | archived | #804 | #842 | [alarms](openspec/changes/archive/sweep-alarm-weekly-window/specs/alarms/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/sweep-alarm-weekly-window/proposal.md) |
 | `sweep-comments-read-whole-thread` | archived | #662 | #798 | [issue-bot-artifacts](openspec/changes/archive/sweep-comments-read-whole-thread/specs/issue-bot-artifacts/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/sweep-comments-read-whole-thread/proposal.md) |
