@@ -230,6 +230,20 @@ def test_a_blocked_task_without_a_reason_fails():
     check("unannotated: the message asks for `blocked:`", "blocked:` reason" in out, out)
 
 
+def test_a_name_naming_no_active_change_fails():
+    """(issue #658) An explicit NAME cannot pass vacuously by matching nothing."""
+    mod = _module()
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        _change(base, "real-change", "- [x] done\n")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = mod.check_all(only="ghost-change", base=base)
+    check("NAME=<ghost> fails rather than passing vacuously", rc == 1, rc)
+    check("NAME=<ghost> says WHY it failed", "no active tasks.md" in buf.getvalue(),
+          buf.getvalue()[:200])
+
+
 def test_real_repo_active_changes_are_all_ticked():
     """The repository's own active changes have every task ticked (rule: tick as verified)."""
 
@@ -278,6 +292,7 @@ def main() -> int:
     test_a_blocked_task_is_review_required_not_a_failure()
     test_a_blocked_task_is_neither_done_nor_silently_skipped()
     test_a_blocked_task_without_a_reason_fails()
+    test_a_name_naming_no_active_change_fails()
     test_real_repo_active_changes_are_all_ticked()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

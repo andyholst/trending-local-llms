@@ -276,6 +276,18 @@ def test_the_fixer_skill_names_the_openspec_failures():
         check(f"pr-fix skill names: {why}", needle in skill, needle)
 
 
+def test_the_implement_skill_states_the_tick_rule():
+    """(issue #658) The tick rule the pre-open gate enforces is stated in the skill itself."""
+    skill = (SKILLS / "issue-implement" / "SKILL.md").read_text()
+    flat = " ".join(skill.split())
+    check("tick rule: a box is ticked ONLY when the tree proves the step",
+          "ticked ONLY when the tree proves" in flat, flat[flat.find("tasks.md"):][:200])
+    check("tick rule: an owed step is written `- [~] … — blocked:` at creation",
+          "- [~]" in skill and "— blocked:" in skill, "")
+    check("tick rule: the skill names the gate that refuses an open PR with `- [ ]`",
+          "openspec-tasks-check" in skill, "")
+
+
 def main() -> int:
     print("agent-leg skills (issue #549)")
     for fn in (test_the_real_legs_preload_a_real_skill,
@@ -286,6 +298,7 @@ def main() -> int:
                test_the_workflows_name_rc_3_as_a_question,
                test_the_gate_is_wired_to_the_lint_target_and_the_suite,
                test_the_fixer_skill_names_the_openspec_failures,
+               test_the_implement_skill_states_the_tick_rule,
                test_the_gh_guard_refuses_instructions_and_keeps_forbiddances):
         print(f"-- {fn.__name__}")
         fn()
