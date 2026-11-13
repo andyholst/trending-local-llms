@@ -137,7 +137,7 @@ def test_optional_fields_filled():
     #    states the figure — an absent one is a reported data gap, and inventing
     #    one would be a fabrication (AGENTS.md §2 rule 2). Read from ingest so a
     #    new dimension is covered without editing this test.
-    sparse = {"engine_aliases"} | set(UT._ADDITIVE_MODEL_FIELDS)
+    sparse = {"engine_aliases", "measurement_model_aliases"} | set(UT._ADDITIVE_MODEL_FIELDS)
     optional = [k for k in items["properties"] if k not in required and k not in sparse]
     store = run_ingest(base_store())
     for m in store["models"]:

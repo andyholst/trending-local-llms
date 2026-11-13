@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **15** · archived: **231**
+Active changes: **15** · archived: **232**
 
 ## Active changes
 
@@ -164,6 +164,7 @@ Active changes: **15** · archived: **231**
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
+| `measurement-alias-map-data` | archived | #652 | #881 | [measurement-attribution](openspec/changes/archive/measurement-alias-map-data/specs/measurement-attribution/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/measurement-alias-map-data/proposal.md) |
 | `measurement-engine-min-version` | archived | #371 | #374 | [measurement-source-dimensions](openspec/changes/archive/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/measurement-engine-min-version/proposal.md) |
 | `measurement-store-normalized` | archived | #697 — `#689 slice 2: switch readers onto normalized measurement store, drop inline engines[]` | — | [catalog-measurements](openspec/changes/archive/measurement-store-normalized/specs/catalog-measurements/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-normalized/proposal.md) |
 | `measurement-store-split` | archived | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/archive/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-split/proposal.md) |
