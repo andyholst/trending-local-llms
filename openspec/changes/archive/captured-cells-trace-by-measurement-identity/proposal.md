@@ -1,5 +1,7 @@
 # Captured gap cells trace by measurement identity, never by raw row name
 
+Issue: #411
+
 ## Why
 
 Issue #411 measured the defect on real snapshots: a footprint (weights / context /
@@ -40,5 +42,4 @@ different store model also cites — the same-post-cited-by-two-ids class #411 n
   the #411 done-when already required and the echoed/quoted fixtures already pin.
 
 ## PR
-
-[will be recorded by `make openspec-record-pr` when the PR opens]
+PR: #910

@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **12** · archived: **249**
+Active changes: **11** · archived: **250**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `captured-cells-trace-by-measurement-identity` | active | — | — | [data-gap-analysis](openspec/changes/captured-cells-trace-by-measurement-identity/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/captured-cells-trace-by-measurement-identity/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
@@ -107,6 +106,7 @@ Active changes: **12** · archived: **249**
 | `bot-guards-allow-the-bot` | archived | #238 | — | [bot-guards-allow-the-bot](openspec/changes/archive/bot-guards-allow-the-bot/specs/bot-guards-allow-the-bot/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/bot-guards-allow-the-bot/proposal.md) |
 | `bot-marker-registry` | archived | #197 | — | [bot-markers](openspec/changes/archive/bot-marker-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/bot-marker-registry/proposal.md) |
 | `bot-verification-protocol` | archived | #279 | — | [bot-verification-protocol](openspec/changes/archive/bot-verification-protocol/specs/bot-verification-protocol/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/bot-verification-protocol/proposal.md) |
+| `captured-cells-trace-by-measurement-identity` | archived | #411 | #910 | [data-gap-analysis](openspec/changes/archive/captured-cells-trace-by-measurement-identity/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/captured-cells-trace-by-measurement-identity/proposal.md) |
 | `card-gap-report` | archived | #342 — `tech-debt: Only EMPTY tiers are reported as collection gaps — a model with no card evidence at all is silent` | — | [card-fit](openspec/changes/archive/card-gap-report/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/card-gap-report/proposal.md) |
 | `ci-secret-output-guard` | archived | #219 | — | [secret-output-guard](openspec/changes/archive/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/ci-secret-output-guard/proposal.md) |
 | `closure-on-body-edit` | archived | #290 — `tech-debt: A PR body edit never re-runs the closure check` | — | [pr-ci](openspec/changes/archive/closure-on-body-edit/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/closure-on-body-edit/proposal.md) |
