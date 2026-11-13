@@ -1,6 +1,7 @@
 # One checkbox vocabulary for both task readers
 
 **Issue:** [#636](https://github.com/andyholst/trending-local-llms/issues/636)
+**PR:** [#889](https://github.com/andyholst/trending-local-llms/pull/889)
 **Capability:** `openspec-task-checkbox`
 
 ## Why
