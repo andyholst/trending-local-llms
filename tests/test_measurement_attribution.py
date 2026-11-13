@@ -442,6 +442,35 @@ def test_existing_row_gains_aliases_additively():
           kept.get("measurement_model_aliases"))
 
 
+def test_the_shipped_joint_figure_is_documented_as_data():
+    """Issue #650: the joint figure on the shipped Qwen3.6-35B-A3B row (its
+    llama.cpp 33 t/s and vLLM 309 t/s posts compare it against Qwen3.8-27B) is
+    exempted by the exception carried on the DATA row, not by a code literal."""
+    store = UT.load_store()
+    rows = {m.get("id"): m for m in store.get("models", [])}
+    aliases = rows.get("qwen3.6-35b-a3b", {}).get("measurement_model_aliases")
+    check(isinstance(aliases, list) and "qwen3.8-27b" in aliases,
+          "alias: the shipped 35B-A3B row carries the qwen3.8-27b exception", aliases)
+    check("qwen3.8-27b" in rows,
+          "gate: the exception's counterpart is a model id in the store")
+    mis = V.misattributed_measurements(store.get("models", []))
+    check(not any("Qwen3.6-35B-A3B" in m[0] or "qwen3.6-35b-a3b" in m[0] for m in mis),
+          "scan: the documented joint figure is no longer an attribution WARN",
+          [m[0] for m in mis])
+    check(any("qwen-3.6-27b" in m[0] or "Qwen 3.6 27B" in m[0] for m in mis),
+          "scan: the owner-undecided Qwen 3.6 27B misattribution is still reported "
+          "(rule 3b removal awaits the owner ruling on issue #650)")
+    out = io.StringIO()
+    try:
+        with redirect_stdout(out):
+            V.check_measurement_alias_map(copy.deepcopy(store))
+        alias_ok = "measurement alias map resolves" in out.getvalue()
+    except SystemExit:
+        alias_ok = False
+    check(alias_ok, "gate: the shipped alias passes the counterpart check",
+          out.getvalue()[:200])
+
+
 def main() -> int:
     print("measurement attribution: a measurement naming another model (tech-debt #456/#468)")
     test_the_reported_measurement_is_refused()
@@ -461,6 +490,7 @@ def main() -> int:
     test_raw_snapshot_carrying_the_exception_conforms()
     test_new_model_keeps_captured_exception()
     test_existing_row_gains_aliases_additively()
+    test_the_shipped_joint_figure_is_documented_as_data()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
