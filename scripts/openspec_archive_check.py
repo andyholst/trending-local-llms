@@ -43,7 +43,7 @@ The repository comes from `--repo`, else `GITHUB_REPOSITORY`, else `gh`'s own
 resolution. Usage:
     python3 scripts/openspec_archive_check.py
     python3 scripts/openspec_archive_check.py --repo andyholst/trending-local-llms
-    python3 scripts/openspec_archive_check.py --pr 781   # validate a pull request (issue #779)
+    python3 scripts/openspec_archive_check.py --pr 781   # validate a pull request (issues #779/#866)
 """
 
 from __future__ import annotations
@@ -142,19 +142,28 @@ def closing_pr_issues(repo: str, pr: int) -> set[int]:
 def closing_pr_violations(
     active: list[tuple[str, Path]], closing: set[int], this_pr: int
 ) -> list[tuple[str, int]]:
-    """Active changes with no `PR:` line whose `Issue:` this very PR closes.
+    """Active changes whose `Issue:` this very PR closes — the ones it must archive.
 
     The AFTER-THE-FACT prongs can only see a stranded change once master is
     already red (issue #779: PRs #777/#781 merged unarchived because their
     runs used a pipeline copy predating the record step). This prong runs on
-    the PR itself: the head that merges must already record/archive the change
-    it completes.
+    the PR itself: the head that merges must already ARCHIVE the change it
+    completes.
+
+    Issue #866 removes the `PR:`-line exemption. Every stranding measured since
+    #779 was the RECORDED-BUT-UNARCHIVED shape — a closing PR (keeper-era
+    #851/#862, dispatch-loop #889/#891) named its PR, sailed the gate green,
+    merged with the change ACTIVE, and an unrelated keeper PR (#871/#892/#893)
+    had to archive it while every open PR's `validate` blocked behind the red.
+    A `PR:` line records intent; only the archive is the end of the lifecycle.
+    `make openspec-record-pr ISSUE=<n> PR=<pr>` records AND archives, so the
+    required shape is one command. (Archiving a change this PR does NOT close
+    remains a different, #812-governed question: this prong flags only changes
+    whose issue the PR closes.)
     """
     bad: list[tuple[str, int]] = []
     for name, path in active:
         refs = _refs(path / "proposal.md")
-        if pr_number(refs.get("PR")) is not None:
-            continue
         n_issue = pr_number(refs.get("Issue"))
         if n_issue is not None and n_issue in closing:
             bad.append((name, n_issue))
@@ -208,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
         and pr_number(_refs(path / "proposal.md").get("Issue")) is not None
     ]
 
-    if not with_pr and not with_issue:
+    if not with_pr and not with_issue and a.pr is None:
         print(
             f"[archive-check] OK: {len(active)} active change(s), none names a PR and none "
             f"references an issue ({len(archived)} archived) — nothing to assert"
@@ -262,10 +271,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     for name, n in bad_closing:
         print(
-            f"[archive-check]   {name} — THIS PR #{a.pr} closes issue #{n} but the change is "
-            f"still active with no `PR:` line: its merge would strand the change (issue #779). "
-            f"Run `make openspec-record-pr ISSUE={n} PR={a.pr}` (it archives too) or "
-            f"`make openspec-archive NAME={name}` + `make openspec-index` on this branch before merge",
+            f"[archive-check]   {name} — THIS PR #{a.pr} closes issue #{n} while the change is "
+            f"still ACTIVE (a `PR:` line is not enough, issue #866): its merge would strand the "
+            f"change. Run `make openspec-record-pr ISSUE={n} PR={a.pr}` (it records AND archives) "
+            f"or `make openspec-archive NAME={name}` + `make openspec-index` on this branch before merge",
             file=sys.stderr,
         )
     return 1
