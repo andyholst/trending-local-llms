@@ -1357,6 +1357,21 @@ check-commit-authorship: ## CI: fail when a commit's author/committer identity o
 commit-authorship-report: ## Show every commit in the range with its author, committer and subject
 	python3 scripts/check_commit_authorship.py report
 
+# ---- fix-loop self-archive guard (issue #812, host-only like check-commit-authorship) --
+# `scripts/fix_loop.sh` runs these two around every Hermes round. A round once ran
+# `make openspec-archive` on its OWN change: the tree landed with the change moved
+# into openspec/changes/archive/ while the PR was still open — green on every gate,
+# and blind to `make openspec-archive-check` (#779), which reads the ACTIVE changes.
+# `self-archive-snapshot` records the changes active after the loop's base merge
+# (a merge may legitimately archive; a round may not); `self-archive-guard` refuses
+# (and, with SELF_ARCHIVE_RESTORE=1, restores) a baseline-active change that vanished
+# from the tree mid-run. Git-only: it reads the tree the loop is repairing.
+.PHONY: self-archive-snapshot self-archive-guard
+self-archive-snapshot: ## Record the OpenSpec changes active now as the fix loop's baseline (SELF_ARCHIVE_BASELINE)
+	python3 scripts/self_archive_guard.py snapshot
+self-archive-guard: ## Fail when a change active at the baseline is gone from the tree (issue #812); SELF_ARCHIVE_RESTORE=1 restores it first
+	python3 scripts/self_archive_guard.py check
+
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
 # `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements

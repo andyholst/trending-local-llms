@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **16** · archived: **239**
+Active changes: **16** · archived: **240**
 
 ## Active changes
 
@@ -219,6 +219,7 @@ Active changes: **16** · archived: **239**
 | `refresh-pr-on-the-fetched-tip` | archived | #177 (`tech-debt: Two overlapping refresh PRs conflict on the generated store, README and baseline`) | — | [refresh-publish](openspec/changes/archive/refresh-pr-on-the-fetched-tip/specs/refresh-publish/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/refresh-pr-on-the-fetched-tip/proposal.md) |
 | `refresh-run-block-uses-gh-api` | archived | #320 | — | [refresh-run-block](openspec/changes/archive/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/refresh-run-block-uses-gh-api/proposal.md) |
 | `refresh-search-leg-hf-token` | archived | #363 | — | [bot-agent-run-safety](openspec/changes/archive/refresh-search-leg-hf-token/specs/bot-agent-run-safety/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/refresh-search-leg-hf-token/proposal.md) |
+| `refuse-fix-round-self-archive` | archived | #812 — `tech-debt: A fix round can archive an open PR's own OpenSpec change before its PR merges` | #901 | [fix-loop-self-archive](openspec/changes/archive/refuse-fix-round-self-archive/specs/fix-loop-self-archive/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/refuse-fix-round-self-archive/proposal.md) |
 | `registry-hiccup-is-not-absence` | archived | #235 — `tech-debt: \`published()\` reads a registry hiccup as "not published", so a transient outage rebuilds the toolchain` | — | [agent-image-publish](openspec/changes/archive/registry-hiccup-is-not-absence/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/registry-hiccup-is-not-absence/proposal.md) |
 | `remove-stray-qa-notes` | archived | #390 — `tech-debt: the fix loop leaves qa-report.txt.notes in the repo tree and git add -A commits it` | — | [fix-loop-scratch](openspec/changes/archive/remove-stray-qa-notes/specs/fix-loop-scratch/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/remove-stray-qa-notes/proposal.md) |
 | `render-only-readme` | archived | #195 — `tech-debt: A generated-README change forces a store timestamp bump and a snapshot write` | — | [readme-render](openspec/changes/archive/render-only-readme/specs/readme-render/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/render-only-readme/proposal.md) |
