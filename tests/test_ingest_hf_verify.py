@@ -31,6 +31,7 @@ Run:  python3 tests/test_ingest_hf_verify.py   or   make test
 from __future__ import annotations
 
 import contextlib
+import copy
 import io
 import json
 import os
@@ -360,6 +361,46 @@ def test_the_search_skill_requires_the_hf_lookup():
           "leave `hf` out" in text, "")
 
 
+def test_write_raw_never_mutates_the_caller_payload():
+    """Issue #646: the id/hf rewrite and the refused-row drop land on the
+    snapshot, never on the dict the caller passed — a caller that re-uses its
+    payload (a retry, a second backend, a batch write) must see the ids it
+    composed and the rows it agreed to."""
+    def run(base):
+        _HF.status_for = {"/api/models/gone/model": 404}
+        payload = {
+            "backend": "amd",
+            "models": [
+                {"id": "gone-model", "name": "gone-model", "hf": "gone/model",
+                 "engines": []},                        # 404: dropped from the file
+                {"id": "qwen3.8-27b-mlx_srv", "name": "M", "hf": "good/model",
+                 "engines": []},                        # contract-rewritten id
+                {"id": "url-model", "name": "U", "hf": "https://huggingface.co/good/model",
+                 "formats": [{"name": "Q4_K_M",
+                              "hf": "https://huggingface.co/good/fmt"}],  # URL forms rewritten
+                 "engines": []},
+            ],
+        }
+        before = copy.deepcopy(payload)
+        data = write_and_read(payload, backend="amd", verify_hf=True)
+        return payload, before, data
+
+    payload, before, data = _with_api(run)
+    check("write-raw: the caller's payload is byte-for-byte unchanged",
+          payload == before, str(json.dumps(payload)[:200]))
+    ids = [m["id"] for m in data["models"]]
+    check("write-raw: the snapshot still carries a contract-valid rewritten id",
+          "qwen3.8-27b-mlx_srv" not in ids
+          and any(UT.ID_PATTERN.match(i) for i in ids if i.startswith("qwen3")), str(ids))
+    check("write-raw: the snapshot still drops the refused model",
+          "gone-model" not in ids, str(ids))
+    url_model = next(m for m in data["models"] if m["id"] == "url-model")
+    check("write-raw: the snapshot still normalises the URL forms",
+          url_model["hf"] == "good/model"
+          and url_model["formats"][0]["hf"] == "good/fmt",
+          str((url_model["hf"], url_model["formats"])))
+
+
 def main() -> int:
     print("ingest HF link verification (#333) + the write-raw refusal (#417)")
     test_only_a_definitive_answer_is_a_finding()
@@ -373,6 +414,7 @@ def main() -> int:
     test_write_raw_default_makes_no_request()
     test_write_raw_cli_turns_on_verification()
     test_write_raw_normalises_hf_co_urls()
+    test_write_raw_never_mutates_the_caller_payload()
     test_the_search_skill_requires_the_hf_lookup()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
