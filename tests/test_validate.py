@@ -633,6 +633,33 @@ def test_models_order_matches_readme():
             V.README = saved_readme
 
 
+def test_measurement_alias_map_gate():
+    """Issue #652: the attribution exception is data on the row; a dangling
+    counterpart must fail the mapping stage, never sit as a silent no-op."""
+    reset()
+    s = good_store()
+    s["models"].append(dict(good_store()["models"][0], id="m1-variant", name="Model One Variant"))
+    s["models"][0]["measurement_model_aliases"] = ["m1-variant"]
+    V.check_measurement_alias_map(s)
+    check("alias map: a resolvable counterpart passes", len(V.FAILURES) == 0, str(V.FAILURES))
+    reset()
+    s = good_store()
+    s["models"][0]["measurement_model_aliases"] = ["m1-variant"]  # no such model
+    V.check_measurement_alias_map(s)
+    check("alias map: a dangling counterpart is refused naming both",
+          len(V.FAILURES) == 1 and "m1" in V.FAILURES[0] and "m1-variant" in V.FAILURES[0]
+          and "dangling" in V.FAILURES[0], str(V.FAILURES))
+    reset()
+    s = good_store()
+    s["models"][0]["measurement_model_aliases"] = "m1-variant"  # not a list
+    V.check_measurement_alias_map(s)
+    check("alias map: a non-list value is refused", len(V.FAILURES) == 1, str(V.FAILURES))
+    reset()
+    s = good_store()
+    V.check_measurement_alias_map(s)
+    check("alias map: no aliases at all passes (today's store shape)", len(V.FAILURES) == 0)
+
+
 def main() -> int:
     print("validator: direct unit tests")
     test_no_duplicates()
@@ -649,6 +676,7 @@ def main() -> int:
     test_no_removal()
     test_no_value_loss()
     test_every_check_is_wired_to_a_stage_and_a_makefile_target()
+    test_measurement_alias_map_gate()
     test_models_order_matches_readme()
     test_newline_terminators()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

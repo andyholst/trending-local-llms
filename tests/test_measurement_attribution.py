@@ -11,7 +11,9 @@ The fix has two halves, both asserted here:
 
   - INGEST refuses a measurement whose captured `quant`/`why` names a different model
     than the row it would merge into (`refuse_misattributed_measurements`), or documents
-    the real exception in the explicit `MEASUREMENT_MODEL_ALIASES` mapping.
+    the real exception as DATA on the row's `measurement_model_aliases` key (issue #652
+    replaced the old code-literal mapping; `check_measurement_alias_map` refuses a
+    counterpart that is not a store model id).
   - `make validate` FAILS a measurement that relies on a placeholder `source_post` AND
     claims engagement counts (`check_post_signal`), while a low-signal static placeholder
     row stays allowed. The attribution scan itself is report-only for history.
@@ -158,31 +160,44 @@ def test_an_unknown_identity_fails_open():
 
 
 def test_an_explicit_alias_mapping_documents_an_exception():
-    """The issue's 'or needs an explicit alias mapping' half."""
+    """The exception is DATA on the row (issue #652), never a code literal."""
     base = row("bonsai-2-27b", "Bonsai 2 27B")
-    variant = row("bonsai-2-27b-mlx", "Bonsai 2 27B MLX", engines=[
-        meas("ternary Bonsai 2 27B on an M1 Pro", post="https://lightbrd.com/u/status/7"),
-    ])
-    # The variant's own params are 27b, so the same-size mention is already kept; use a
-    # size-different base to exercise the mapping.
-    base = row("bonsai-2-27b", "Bonsai 2 27B")
-    variant = row("bonsai-2-9b", "Bonsai 2 9B", engines=[
+    plain = row("bonsai-2-9b", "Bonsai 2 9B", engines=[
         meas("ternary Bonsai 2 27B beside the 9B", post="https://lightbrd.com/u/status/7"),
     ])
-    store = {"models": [base, variant]}
-    saved = dict(UT.MEASUREMENT_MODEL_ALIASES)
-    try:
-        UT.MEASUREMENT_MODEL_ALIASES.clear()
-        kept, refused = UT.refuse_misattributed_measurements(variant, store)
-        check("attribution: without an alias mapping the different size is refused",
-              bool(refused), refused)
-        UT.MEASUREMENT_MODEL_ALIASES["bonsai-2-9b"] = {"bonsai-2-27b"}
-        kept, refused = UT.refuse_misattributed_measurements(variant, store)
-        check("attribution: an explicit alias mapping documents the exception",
-              not refused and kept, refused)
-    finally:
-        UT.MEASUREMENT_MODEL_ALIASES.clear()
-        UT.MEASUREMENT_MODEL_ALIASES.update(saved)
+    mapped = row("bonsai-2-9b", "Bonsai 2 9B", measurement_model_aliases=["bonsai-2-27b"],
+                 engines=[meas("ternary Bonsai 2 27B beside the 9B",
+                               post="https://lightbrd.com/u/status/7")])
+    store_plain = {"models": [base, plain]}
+    kept, refused = UT.refuse_misattributed_measurements(plain, store_plain)
+    check("attribution: without the data key the different size is refused",
+          bool(refused), refused)
+    check("attribution: the refusal names the data key a human can add",
+          refused and "measurement_model_aliases" in refused[0][1], refused)
+    store_mapped = {"models": [base, mapped]}
+    kept, refused = UT.refuse_misattributed_measurements(mapped, store_mapped)
+    check("attribution: the row's measurement_model_aliases documents the exception",
+          not refused and kept, refused)
+    # a NEW raw row inherits the exception already reviewed into the store row
+    incoming = {k: v for k, v in mapped.items() if k != "measurement_model_aliases"}
+    kept, refused = UT.refuse_misattributed_measurements(incoming, store_mapped)
+    check("attribution: the same-id store row's data key carries over to a new row",
+          not refused and kept, refused)
+
+
+def test_attribution_exceptions_live_in_data_not_code():
+    src = (ROOT / "scripts" / "update_trending.py").read_text()
+    check("code: MEASUREMENT_MODEL_ALIASES is gone from the script",
+          "MEASUREMENT_MODEL_ALIASES" not in src)
+    check("code: the reader reads the row key",
+          'def measurement_model_aliases(' in src
+          and '"measurement_model_aliases"' in src)
+    contract = json.loads((ROOT / "data" / "model_contract.json").read_text())
+    props = contract["properties"]["models"]["items"]["properties"]
+    check("contract: measurement_model_aliases is an optional model key",
+          "measurement_model_aliases" in props
+          and "measurement_model_aliases" not in contract["properties"]["models"]["items"].get("required", []),
+          props.get("measurement_model_aliases"))
 
 
 def test_ingest_calls_the_refusal():
@@ -264,6 +279,7 @@ def main() -> int:
     test_a_cross_family_mention_is_kept()
     test_an_unknown_identity_fails_open()
     test_an_explicit_alias_mapping_documents_an_exception()
+    test_attribution_exceptions_live_in_data_not_code()
     test_ingest_calls_the_refusal()
     test_ingest_drops_a_new_row_whose_only_measurement_is_refused()
     test_the_shipped_store_reports_the_known_row()

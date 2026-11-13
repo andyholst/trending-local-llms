@@ -2313,14 +2313,32 @@ def refuse_weight_gb_contradictions(
 
 
 
-#: An EXPLICIT alias mapping for measurement attribution: a row's id -> the ids of
-#: models whose names a measurement on that row may legitimately mention (a variant
-#: row naming its base model, a bake-off row naming the model it compares against).
-#: Empty by default: a name that a row's own text mentions but that belongs to a
-#: DIFFERENT model of the SAME family is refused, and an entry here is how a real
-#: exception is documented instead of widening the rule (the "or needs an explicit
-#: alias mapping" half of the tech-debt issue).
-MEASUREMENT_MODEL_ALIASES: dict[str, set[str]] = {}
+#: The attribution exception mapping is DATA (issue #652): an optional
+#: `measurement_model_aliases` key on a model row — the store model ids whose
+#: names a measurement on that row may legitimately mention (a variant row
+#: naming its base model, a bake-off row naming the model it compares against).
+#: There is deliberately no code literal for it: a documented exception must be
+#: reviewable in the store/contract diff and validated by `make validate`
+#: (`check_measurement_alias_map`), and a refresh rewrites scripts but never data.
+def measurement_model_aliases(model: dict, store: dict | None = None) -> set[str]:
+    """The model ids a measurement on this row may mention, read FROM THE ROWS.
+
+    The incoming row's own `measurement_model_aliases` plus the same-id STORE
+    row's (a new raw row inherits the exception already reviewed into the store).
+    Counterpart resolution through the store happens at the point of use in
+    `misattributed_measurement_reason`.
+    """
+    ids: set[str] = set()
+    for src in (model, next((x for x in (store or {}).get("models", [])
+                             if str(x.get("id") or "").lower()
+                             == str(model.get("id") or "").lower() and x is not model), None)):
+        if not src:
+            continue
+        for mid in (src.get("measurement_model_aliases") or []):
+            mid = str(mid or "").strip().lower()
+            if mid:
+                ids.add(mid)
+    return ids
 
 #: The single source of truth for an IDENTICAL cross-model measurement tuple.
 #: Keyed by the same identity key the report-only scan uses — (engine, tps,
@@ -2428,13 +2446,15 @@ def misattributed_measurement_reason(
     row whose `quant` reads "Qwen 3.5 35B served through LM Studio ...". Cross-family
     mentions are comparison context; a comparison cue rescues a bake-off sentence; a
     text that names the row's own model too is a multi-model post about this row; and
-    `MEASUREMENT_MODEL_ALIASES` documents the remaining real exceptions. A row whose
+    `measurement_model_aliases` on the row documents the remaining real exceptions
+    (issue #652). A row whose
     own params cannot be parsed fails open. A comparison cue no longer rescues
     everything (issue #651): a same-family, different-params mention with EXACTLY
     ONE t/s figure in the text is a JOINT figure — not attributable to one row —
-    and is refused; two or more figures is a per-model bake-off and is kept. There
-    is exactly ONE implementation (rule 6d): the ingest refusal and the validator's
-    report both call this.
+    and is refused; two or more figures is a per-model bake-off and is kept. The
+    remaining real exceptions are documented on the ROW as `measurement_model_aliases`
+    (issue #652). There is exactly ONE implementation (rule 6d): the ingest refusal
+    and the validator's report both call this.
     """
     own = measurement_model_identity(
         model.get("name") or model.get("full_name") or model.get("id") or model.get("hf")
@@ -2454,7 +2474,7 @@ def misattributed_measurement_reason(
         for k in ("name", "full_name", "id", "hf") if model.get(k)
     }
     own_named = any(p and p in norm for p in own_phrases)
-    alias_ids = MEASUREMENT_MODEL_ALIASES.get(str(model.get("id") or "").lower(), set())
+    alias_ids = measurement_model_aliases(model, store)
     allowed: set[tuple[str, str, str]] = set()
     for mid in alias_ids:
         other = next((x for x in (store or {}).get("models", []) if x.get("id") == mid), None)
@@ -2473,13 +2493,15 @@ def misattributed_measurement_reason(
         return (f"its text reports a JOINT figure: one t/s value comparing "
                 f"{family} {ver or ''} {params} with {own[0]} {own[1] or ''} {own[2]} "
                 f"(a joint figure is not attributable to one row; record a documented "
-                f"exception in MEASUREMENT_MODEL_ALIASES)").replace("  ", " ")
+                f"exception in the row's measurement_model_aliases)").replace("  ", " ")
     if cue:
         return None  # a comparison sentence with no single figure stays kept
     if own_named:
         return None  # the post measures this row's model too: not a misattribution
     return (f"its text names {family} {ver or ''} {params}, but the row is "
-            f"{own[0]} {own[1] or ''} {own[2]}").replace("  ", " ")
+            f"{own[0]} {own[1] or ''} {own[2]} (if this row may legitimately name "
+            f"that model, document the exception in the row's "
+            f"measurement_model_aliases)").replace("  ", " ")
 
 
 def refuse_misattributed_measurements(
@@ -2490,8 +2512,8 @@ def refuse_misattributed_measurements(
     Applied at INGEST, before a raw row merges into the store, so a measurement whose
     text names another model never lands on the wrong row — the same seam as
     `refuse_fabricated_engines` (issue #458), and the refusal carries the post so a
-    human can open the evidence. An explicit `MEASUREMENT_MODEL_ALIASES` entry
-    documents a row's real exceptions instead of widening the rule.
+    human can open the evidence. An explicit `measurement_model_aliases` entry on
+    the row documents a real exception instead of widening the rule (issue #652).
     """
     kept: list[dict] = []
     refused: list[tuple[str, str, str]] = []

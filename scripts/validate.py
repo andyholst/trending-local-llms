@@ -600,6 +600,31 @@ def check_search_contract() -> None:
         print(f"  OK: all {len(raws)} search snapshots conform to search_contract.json")
 
 
+def check_measurement_alias_map(store: dict) -> None:
+    """The attribution exception mapping is DATA (issue #652), so it must be CHECKED:
+    every `measurement_model_aliases` counterpart on a row must be a model id IN the
+    store. A dangling counterpart is a silent no-op at ingest — the exception names
+    a model that does not exist, the measurement is still refused, and nothing says
+    so. That is the exact class rule 3b exists to prevent, so this gate fails."""
+    ids = {str(m.get("id") or "").lower() for m in store.get("models", [])}
+    bad = 0
+    seen = 0
+    for m in store.get("models", []):
+        aliases = m.get("measurement_model_aliases") or []
+        if not isinstance(aliases, list):
+            bad += 1
+            fail(f"{m.get('id','?')}: measurement_model_aliases is not a list")
+            continue
+        for mid in aliases:
+            seen += 1
+            if str(mid or "").strip().lower() not in ids:
+                bad += 1
+                fail(f"{m.get('id','?')}: measurement_model_aliases counterpart "
+                     f"'{mid}' is not a model id in the store (dangling exception)")
+    if not bad:
+        print(f"  OK: measurement alias map resolves ({seen} documented counterpart(s))")
+
+
 def check_raw_mapping(store: dict) -> None:
     """Verify every data/raw/*.json search model maps to a known position in
     data/models.json — by id, then name, then hf (cross-store priority) — or is
@@ -2222,6 +2247,10 @@ def main() -> int:
     add("split flatten guard (flatten == store)", "schema", lambda: check_split_flatten(store))
     add("search/raw contract (search_contract.json)", "search", lambda: check_search_contract())
     add("raw -> models.json mapping", "mapping", lambda: check_raw_mapping(store))
+    # The attribution exception mapping is data (issue #652): the mapping stage owns
+    # the mapping checks, and `mapping` appears in `_validate-mapped`
+    # (`--only search,mapping`) and `_validate`'s `--only data,schema,mapping,removal`.
+    add("measurement alias map counterparts resolve", "mapping", lambda: check_measurement_alias_map(store))
     add("newline terminators", "data", lambda: check_newline_terminators())
     add("backend sort by t/s", "readme", lambda: check_backend_sort(store))
     add("README tables well-formed", "readme", lambda: check_readme_tables_wellformed(store))
