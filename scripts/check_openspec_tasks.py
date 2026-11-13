@@ -49,10 +49,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CHANGES_DIR = REPO_ROOT / "openspec" / "changes"
 
-# A line whose FIRST non-whitespace run is a list marker then a bracket.
-# Group 1 = the char inside the brackets (space = unchecked, x/X = checked,
-# ~ = blocked on a human).
-_CHECKBOX = re.compile(r"^\s*[-*+]\s+\[([ xX~])\]\s+")
+# The box vocabulary is NOT spelled here (issue #636): scripts/task_boxes.py is
+# its one home, and the index reader imports the same pattern.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import task_boxes  # noqa: E402
+
 # A blocked box must say WHO or WHY: the annotation is the difference between a
 # third state and a silent skip.
 _BLOCKED_REASON = re.compile(r"\bblocked:\s*\S", re.IGNORECASE)
@@ -81,7 +82,7 @@ def _boxes(file: Path) -> list[tuple[int, str, str]]:
     for i, ln in enumerate(lines):
         if _in_fence(lines, i):
             continue
-        m = _CHECKBOX.match(ln)
+        m = task_boxes.BOX_RE.match(ln)
         if m:
             out.append((i + 1, m.group(1), ln))
     return out
@@ -89,12 +90,12 @@ def _boxes(file: Path) -> list[tuple[int, str, str]]:
 
 def unchecked_tasks(file: Path) -> list[int]:
     """1-based line numbers of `- [ ]` boxes in *file* (the FAILING state)."""
-    return [ln for ln, state, _ in _boxes(file) if state == " "]
+    return [ln for ln, state, _ in _boxes(file) if task_boxes.open_box(state)]
 
 
 def blocked_tasks(file: Path) -> list[int]:
     """1-based line numbers of `- [~]` boxes in *file* (blocked on a human)."""
-    return [ln for ln, state, _ in _boxes(file) if state == "~"]
+    return [ln for ln, state, _ in _boxes(file) if task_boxes.blocked(state)]
 
 
 def unannotated_blocked_tasks(file: Path) -> list[int]:
@@ -102,7 +103,7 @@ def unannotated_blocked_tasks(file: Path) -> list[int]:
     return [
         ln
         for ln, state, text in _boxes(file)
-        if state == "~" and not _BLOCKED_REASON.search(text)
+        if task_boxes.blocked(state) and not _BLOCKED_REASON.search(text)
     ]
 
 

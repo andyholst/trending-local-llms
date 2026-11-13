@@ -600,6 +600,7 @@ for a reviewer to hold true.
 | `scripts/check_openspec_tasks.py` | The completion half of the OpenSpec gate: fails an active change with an unticked `- [ ]`, accepts a `- [~] … — blocked: <who/why>` box as REVIEW-REQUIRED (unfinished, reported, never counted as done), and fails an unannotated `- [~]` (issue #409) |
 | `scripts/check_openspec_test_lines.py` | The scenario-lock half of the OpenSpec gate (`make openspec-spec-tests-check`, bundled into `make openspec-check`, issue #621): every `- **Test:** <path>::<test>` in an ACTIVE change's spec must resolve — `<path>` exists in the tree and, for a Python module, `<test>` is defined top-level in it; a cited test that does not exist fails, and a scenario without a test line is reported |
 | `scripts/openspec_index.py` | Renders / verifies the root `OPENSPEC.md` from `openspec/changes/**`; a row's `Tasks` is `ticked/total`, with `· N blocked` when boxes are marked `- [~]` (issue #409); `discover()` takes the changes directory (the lifecycle guard reads the same layout through it) |
+| `scripts/task_boxes.py` | The ONE task-box vocabulary both `tasks.md` readers share (issue #636): `BOX_STATES`, the `BOX_CORE` shape composed FROM the states (a state added there is in every reader's pattern by construction), `box_pattern()`, `BOX_RE` / `BOX_RE_MULTILINE`, and `open_box()` / `checked()` / `blocked()` — so the completion gate and the index can never disagree about what a box IS; `tests/test_task_boxes.py` runs the mutation scenario (a new state in this file only) against copies of both readers |
 | `scripts/openspec_archive_check.py` | The lifecycle's end (rules 6f/#518): fails when an ACTIVE change's `PR:` line names a MERGED pull request, OR when the change names no `PR:` yet its `Issue:` references a CLOSED issue (the merged-and-forgotten shape a PR-less change takes), naming the change, the reference and the two commands (`make openspec-archive`, `make openspec-index`); skips archived changes and any change with no reference to assert; exits 2 — never 0 — when the GitHub read fails. PR state via `gh api …/pulls/<n> --jq .merged`, issue state via `gh api …/issues/<n> --jq .state` |
 | `scripts/openspec_record_pr.py` | The recording half of the change lifecycle (issue #518): writes `PR: #<m>` into every ACTIVE change whose proposal references `Issue: #<n>` (through the shared `openspec_index._refs` parser, rule 6d) and regenerates `OPENSPEC.md`. Run by issue-bot the moment `gh pr create` returns a number, so no change can be merged-and-forgotten with a vacuous "none names a PR" again. REFUSES (exit 2) when no active change names the issue — a recording that silently matched nothing would leave the guard blind again |
 | `scripts/openspec_duplicate_check.py` | Fail when two ACTIVE changes declare an ADDED/MODIFIED capability Requirement with the SAME heading of the SAME kind (`make openspec-duplicate-check`, bundled into `make openspec-check`, issue #622) — two changes proposing the same rule is a defect |
@@ -763,7 +764,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 203 make targets, 72 files in `scripts/`)
+### Bots in the tree (11 pipelines, 203 make targets, 73 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -934,6 +935,7 @@ One line each, taken from the script's own docstring.
 - `scripts/smoke_search.py` — Bounded reachability smoke for the four Hermes search targets.
 - `scripts/sweep_alarm.py` — Fail loudly when the weekly sweep has not been DELIVERED (issue #497).
 - `scripts/sweep_outcome.py` — The sweep's own outcome comment when a run dies before its verdict.
+- `scripts/task_boxes.py` — The ONE task-box vocabulary every OpenSpec `tasks.md` reader shares (issue #636).
 - `scripts/update_trending.py` — Update the trending-local-llms data store and regenerate README.md.
 - `scripts/validate.py` — QA validation for the trending-local-llms data store + README.
 - `scripts/verify_closure.py` — Did the issue a merged PR claimed to close ACTUALLY close? (issue #288)
