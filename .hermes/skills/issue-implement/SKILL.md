@@ -66,8 +66,10 @@ deliverable.
   leg)` — a blocked box is green-but-review-required, while a bare `- [ ]` fails the pre-PR
   `make tasks-check` gate and strands the change (measured: #654–657 died exactly that way);
   (2) record the FULL row text verbatim as a `findings.md` finding with an
-  `- **Owed-row:** <!-- owed-row: section=<id> needle="<needle>" -->` line, so
-  `make file-findings` files a ledger issue carrying the registered owed-row marker and
+  `- **Owed-row:**` field carrying the registered owed-row marker — write the field as
+  `bot_markers.owed_row_marker(section, needle)` renders it (the ONE writer, rule 6j; a
+  half-written field fails `make findings-check` loudly and the error shows the exact shape),
+  so `make file-findings` files a ledger issue carrying it and
   `make owed-rows-check` reports the row LANDED once an attended run applies the diff.
 - **Edit the files themselves.** No `*.patch`, `*.rej`, report dumps or backup copies — a change
   written into a patch file is not an implementation. `findings.md` is the ONE working file.
