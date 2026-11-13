@@ -174,6 +174,15 @@ mirror URL or a profile page** — and copy that post's **likes, comments, resha
 integers** onto the same measurement. A placeholder URL or missing counts scores the minimum 1 in
 `score_7d`, so the ranking degrades to a post count.
 
+**Which number is which counter (never map by guess).** A post page renders the post's engagement
+counters unlabeled in X's **fixed order** — **replies, retweets (store as `reshares`), likes,
+views** — always four numbers (e.g. `17 / 35 / 378 / 20,269`). Search-result cards render the same
+four in the same order but **omit zero counters**, so a card showing fewer than four numbers is
+ambiguous: count from the RIGHT (the last number is views) only when every number you need is
+present. Whenever the card omits a counter you must store, **open the cited post page** and read
+it there. **Never take a number from a neighbouring card** — a stored counter must be that post's
+own, or leave it unset.
+
 ### Never fabricate, never remove, never print the key
 
 - **Never fabricate.** A figure must trace to a post you actually read; if it cannot, leave the key

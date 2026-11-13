@@ -1178,20 +1178,27 @@ def check_readme_ranking(store: dict) -> None:
         print(f"  OK: most-loved table is in trend order; {len(rows)} Trend cells match the store")
 
 
-def post_signal_coverage(models: list[dict]) -> tuple[int, int, int]:
-    """(measurements, with a real …/status/<id> source_post, with any engagement count)."""
+def post_signal_coverage(models: list[dict]) -> tuple[int, int, int, int]:
+    """(measurements, with a real …/status/<id> source_post, with any engagement count,
+    with a positive views count).
+
+    The views count (issue #873): a capture mapped by guess stores `views: 0` beside real
+    likes, and 41% of the store did exactly that. Views drive `score_7d` the most, so the
+    coverage of it is what makes a counter-mapping regression visible.
+    """
     sys.path.insert(0, str(ROOT / "scripts"))
     try:
         import update_trending as ut
     finally:
         sys.path.pop(0)
-    total = real = counted = 0
+    total = real = counted = viewed = 0
     for m in models:
         for e in m.get("engines", []):
             total += 1
             real += bool(ut._is_post_url(e.get("source_post", "")))
             counted += any(int(float(e.get(k) or 0)) > 0 for k in ("likes", "comments", "reshares", "views"))
-    return total, real, counted
+            viewed += int(float(e.get("views") or 0)) > 0
+    return total, real, counted, viewed
 
 
 def fabricated_post_signal(models: list[dict]) -> list[tuple[str, str, str, str]]:
@@ -1370,13 +1377,14 @@ def check_post_signal(store: dict) -> None:
     row the issue's carve-out protects.
     """
     def line(label, models):
-        total, real, counted = post_signal_coverage(models)
+        total, real, counted, viewed = post_signal_coverage(models)
         if not total:
             return
         pct = lambda n: f"{100 * n / total:.0f}%"
         flag = "OK" if real == total and counted == total else "WARN"
         print(f"  {flag}: post-signal {label}: {real}/{total} ({pct(real)}) real post URLs, "
-              f"{counted}/{total} ({pct(counted)}) with engagement counts")
+              f"{counted}/{total} ({pct(counted)}) with engagement counts, "
+              f"{viewed}/{total} ({pct(viewed)}) with views")
         for name, engine, tps, why in fabricated_post_signal(models):
             fail(f"post-signal {label}: {name} ({engine} {tps} t/s) {why} — a count cannot "
                  f"come from a placeholder post")

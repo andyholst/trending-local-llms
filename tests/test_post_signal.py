@@ -68,6 +68,8 @@ def store() -> dict:
                 meas("oMLX", "88", "", "https://lightbrd.com/a/status/1", likes=40, views=900),
                 meas("llama.cpp", "61", "RTX 4090", "https://lightbrd.com/"),
                 meas("llama.cpp", "22", "Ryzen 9 7950X", "https://lightbrd.com/b"),
+                # the #873 bug shape: a real post URL, a real likes figure, views left 0
+                meas("llama.cpp", "10", "M4 Max", "https://lightbrd.com/dextune/status/2115088131636842866", likes=10743),
             ],
         }],
     }
@@ -120,10 +122,28 @@ def test_render_and_validator_agree():
 
 
 def test_post_signal_coverage():
-    total, real, counted = V.post_signal_coverage(store()["models"])
-    check("coverage: 3 measurements", total == 3, total)
-    check("coverage: 1 real /status/ URL (placeholder + profile excluded)", real == 1, real)
-    check("coverage: 1 with engagement counts", counted == 1, counted)
+    total, real, counted, viewed = V.post_signal_coverage(store()["models"])
+    check("coverage: 4 measurements", total == 4, total)
+    check("coverage: 2 real /status/ URLs (placeholder + profile excluded)", real == 2, real)
+    check("coverage: 2 with engagement counts", counted == 2, counted)
+    # issue #873's visible metric: a real-post capture with likes but views left 0 counts
+    # in `counted` and NOT in `viewed` — that is the mis-mapped-capture signature.
+    check("coverage: 1 with a positive views count", viewed == 1, viewed)
+    s = store()
+    V.FAILURES.clear()
+    saved_raw = V.RAW_DIR
+    V.RAW_DIR = Path(tempfile.mkdtemp()) / "none"
+    buf = io.StringIO()
+    try:
+        with redirect_stdout(buf):
+            V.check_post_signal(s)
+        errs = list(V.FAILURES)
+    finally:
+        V.RAW_DIR = saved_raw
+        V.FAILURES.clear()
+    out = buf.getvalue()
+    check("report line prints with-views coverage", "with views" in out, out[:200])
+    check("with-views coverage stays report-only", not errs, errs[:2])
 
 
 def test_post_signal_coverage_never_fails():
@@ -143,7 +163,7 @@ def test_post_signal_coverage_never_fails():
     finally:
         V.RAW_DIR = saved
     out = buf.getvalue()
-    check("report: 0% coverage is a WARN line", "WARN: post-signal store: 0/3" in out, out)
+    check("report: 0% coverage is a WARN line", "WARN: post-signal store: 0/4" in out, out)
     check("report: coverage never adds a failure", not V.FAILURES, V.FAILURES)
 
 
@@ -199,6 +219,15 @@ def test_prompts_ask_for_post_url():
           "never the bare mirror URL or a profile page" in flat, flat[:200])
     check("skill: per-post counts as integers",
           "likes, comments, reshares and views as integers" in flat, flat[:200])
+    # issue #873: the contract must NAME the mapping, not just demand integers.
+    check("skill names the fixed render order replies/retweets/likes/views",
+          "replies, retweets (store as reshares), likes, views" in flat, flat[:200])
+    check("skill names the card ambiguity (zero counters omitted)",
+          "omit zero counters" in flat, flat[:200])
+    check("skill requires opening the cited post page for an ambiguous card",
+          "open the cited post page" in flat, flat[:200])
+    check("skill forbids taking a counter from a neighbouring card",
+          "neighbouring card" in flat, flat[:200])
     for b in UT.SEARCH_LEGS:  # every search leg incl. amd
         recipe = text[text.index(f"_search-{b}:\n"):].split("\n.PHONY", 1)[0]
         check(f"prompt {b}: preloads the skill that carries the post rule",
