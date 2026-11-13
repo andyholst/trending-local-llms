@@ -449,6 +449,45 @@ def test_a_rulebook_line_with_no_workflow_is_reported():
           not any("workflow `ci.yml` is not named" in p for p in problems), problems)
 
 
+def test_prose_naming_a_backticked_yml_is_not_a_claim():
+    """rule 6h (#660): §6b's claims are its BULLETS, not any backticked `.yml`."""
+
+    # Given a consistent fixture tree whose §6b adds a prose sentence — not a
+    # bullet — naming a backticked `sneaky.yml` the workflows dir does not hold
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), workflows=("ci.yml",))
+        agents = root / "AGENTS.md"
+        text = agents.read_text(encoding="utf-8")
+        prose = (
+            "\nThe guard refuses a phantom pipeline claim; prose about it that "
+            "names `sneaky.yml` is the explanation, not a claim.\n"
+        )
+        agents.write_text(
+            text.replace("\n\n" + AGENTS_ANCHORS[1], prose + "\n" + AGENTS_ANCHORS[1]),
+            encoding="utf-8",
+        )
+
+        # When  the checker reads the rulebook's pipeline claims
+        claims = _module().rulebook_pipelines(agents)
+        problems = _module().findings(root)
+
+    # Then  the prose token is not a claim and the tree stays green
+    check("rulebook: prose naming a `.yml` registers no claim",
+          "sneaky.yml" not in claims, claims)
+    check("rulebook: the real bullet claim is still read",
+          "ci.yml" in claims, claims)
+    check("rulebook: the prose sentence turns no check red",
+          not any("sneaky.yml" in p for p in problems), problems)
+
+    # And   a BULLET naming `ghost.yml` is still a claim and still reported
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), workflows=("ci.yml",),
+                     agents_workflows=("ci.yml", "ghost.yml"))
+        claims = _module().rulebook_pipelines(root / "AGENTS.md")
+    check("rulebook: a ghost bullet is still a claim",
+          "ghost.yml" in claims, claims)
+
+
 def test_a_missing_agents_doc_is_a_finding_not_a_skip():
     """Deleting `AGENTS.md` cannot silence its own pipeline list (rule 6h)."""
 
@@ -684,6 +723,7 @@ def main() -> int:
     test_pipeline_job_names_match_the_workflow_job_keys()
     test_a_pipeline_missing_from_the_rulebook_is_reported()
     test_a_rulebook_line_with_no_workflow_is_reported()
+    test_prose_naming_a_backticked_yml_is_not_a_claim()
     test_a_missing_agents_doc_is_a_finding_not_a_skip()
     test_the_rulebook_points_at_the_canonical_pipeline_description()
     test_rule_6h_names_the_rulebook_obligation()
