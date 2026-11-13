@@ -1984,6 +1984,107 @@ def test_engine_min_version_detector_sees_the_build_phrases_posts_use():
               and len(flat) == len(set(flat)), str(flat))
 
 
+def test_a_measurement_captured_under_a_sibling_row_traces_to_the_row_that_owns_the_tuple():
+    """Issue #411: footprint text captured under ANOTHER model's raw row must trace to
+    the store row that uniquely owns that measurement (engine, tps, hardware, source_post).
+
+    The measured defect: a post cited by TWO raw ids; the figure merged onto a variant
+    row, the text stayed under the sibling id — so the variant's captured bucket was
+    empty and its cell read as an ACQUISITION gap while the post that states it sits in
+    the snapshots. Keying the captured cell by measurement identity (never by raw row)
+    makes it the INGEST job it always was. A text whose tuple is carried by TWO store
+    rows is joint and stays unattributed (see the joint test); a text whose tuple no
+    store row carries is never attributed to anything.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        plain = model("plain")                       # owns (llama.cpp 91 RTX4090 /status/1)
+        variant = model("variant", engines=[         # owns (llama.cpp 55 Ryzen /status/6)
+            {"engine": "llama.cpp", "tps": "55", "hardware": "Ryzen AI Max 128GB",
+             "quant": "Q4_K_M", "date": "2026-10-14",
+             "source_post": "https://lightbrd.com/u/status/6"}])
+        # Given the SAME post captured under `plain`'s raw row — including the variant's
+        # own measurement tuple, with the footprint sentence attached to IT
+        (raw / "cpu-20261114-000000.json").write_text(json.dumps({
+            "backend": "cpu", "generated_utc": "2026-11-14T00:00:00Z",
+            "models": [
+                {"id": "plain", "name": "plain",
+                 "engines": [
+                     {"engine": "llama.cpp", "tps": "91", "hardware": "RTX 4090 24GB",
+                      "quant": "Q4_K_M", "source_post": "https://lightbrd.com/u/status/1"},
+                     {"engine": "llama.cpp", "tps": "55", "hardware": "Ryzen AI Max 128GB",
+                      "quant": "Q4_K_M, 131072-token context",
+                      "source_post": "https://lightbrd.com/u/status/6"}]}]}))
+        contract = contract_from(td, "context_tokens")
+        store = store_with([plain, variant])
+
+        # When  the capture is built and the store analysed
+        capture = G.captured_text(store, raw)
+        report = G.analyse(store, contract, raw_dir=raw)
+        dim = next(d for d in G.DIMENSIONS if d["key"] == "context_tokens")
+
+        # Then  the variant's OWN tuple's text is in the variant's bucket …
+        check("post-keyed capture: the tuple's text traces to the row that uniquely owns it",
+              any("131072-token context" in t
+                  for t in G.captured_dim_texts(capture, "variant", dim)),
+              str(capture.get("variant")))
+        # … so the variant is the INGEST job the post proves, never an acquisition gap …
+        check("post-keyed capture: the owning row is an ingest job, not an acquisition gap",
+              "variant" in report["captured_prose"]["context_tokens"]
+              and "variant" not in report["not_captured"]["context_tokens"],
+              f"captured_prose={report['captured_prose']['context_tokens']} "
+              f"not_captured={report['not_captured']['context_tokens']}")
+        # … the classes still partition the missing set …
+        parts = (report["not_captured"][dim["key"]] + report["unstructured"][dim["key"]]
+                 + report["captured_prose"][dim["key"]] + report["untraceable"][dim["key"]])
+        check("post-keyed capture: the classes still partition the missing set",
+              sorted(parts) == sorted(report["missing"][dim["key"]])
+              and len(parts) == len(set(parts)), parts)
+
+
+def test_a_joint_or_unowned_measurement_text_is_never_traced_to_a_row():
+    """The never-copy side of #411: text stays out of a row's capture when its tuple
+    is carried by TWO store rows (joint — ownership is ambiguous) or by NO store row
+    (nothing owns that measurement, so no cell may claim its sentence)."""
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        echoed = model("echoed")     # default tuple (llama.cpp 91 RTX4090 /status/1) …
+        quoted = model("quoted")     # … carried by BOTH store rows
+        (raw / "nvidia-20261114-000001.json").write_text(json.dumps({
+            "backend": "nvidia", "generated_utc": "2026-11-14T00:00:01Z",
+            "models": [
+                {"id": "stray", "name": "stray",
+                 "engines": [
+                     # joint tuple (echoed AND quoted carry it) with a footprint sentence
+                     {"engine": "llama.cpp", "tps": "91", "hardware": "RTX 4090 24GB",
+                      "quant": "Q4_K_M, 131072-token context",
+                      "source_post": "https://lightbrd.com/u/status/1"},
+                     # tuple no store row carries at all
+                     {"engine": "llama.cpp", "tps": "77", "hardware": "A100 80GB",
+                      "quant": "Q8_0, 262144-token context",
+                      "source_post": "https://lightbrd.com/u/status/77"}]}]}))
+        store = store_with([echoed, quoted])
+        capture = G.captured_text(store, raw)
+        dim = next(d for d in G.DIMENSIONS if d["key"] == "context_tokens")
+
+        check("joint tuple: the sentence is not copied to either owner",
+              not any("131072-token context" in t
+                      for mid in ("echoed", "quoted")
+                      for t in G.captured_dim_texts(capture, mid, dim)),
+              str({mid: G.captured_dim_texts(capture, mid, dim)
+                   for mid in ("echoed", "quoted")}))
+        check("unowned tuple: no store row is given the sentence",
+              not any("262144-token context" in t
+                      for mid in ("echoed", "quoted")
+                      for t in G.captured_dim_texts(capture, mid, dim)),
+              str({mid: G.captured_dim_texts(capture, mid, dim)
+                   for mid in ("echoed", "quoted")}))
+        check("a raw id that maps to no store row gets no bucket",
+              "stray" not in capture, str(sorted(capture)))
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -2027,6 +2128,8 @@ def main() -> int:
     test_measurement_dimensions_trace_to_the_captured_snapshot()
     test_measurement_dimension_coverage_can_never_shrink()
     test_a_captured_measurement_footprint_is_never_lost_from_the_store()
+    test_a_measurement_captured_under_a_sibling_row_traces_to_the_row_that_owns_the_tuple()
+    test_a_joint_or_unowned_measurement_text_is_never_traced_to_a_row()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

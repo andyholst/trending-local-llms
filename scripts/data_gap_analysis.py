@@ -344,6 +344,61 @@ def _dim_texts(row: dict, dim: dict) -> list[str]:
     return texts
 
 
+def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> None:
+    """Trace captured text to the store row that UNIQUELY owns the measurement (issue #411).
+
+    The measured defect: one post cited by two raw ids; its figure merged onto a variant
+    row while its footprint sentence stayed captured under the sibling id — so the variant's
+    captured bucket was empty and its cell read as an ACQUISITION gap although the post that
+    states it sits in the snapshots. The captured cell is therefore also keyed by MEASUREMENT
+    identity — the exact (engine, tps, hardware, source_post) tuple, the ONE key
+    `update_trending._cross_model_identity` defines (rule 6d, the same key #702's ingest
+    refusal and `validate.same_post_cross_model_duplicates` read) — never by raw row name.
+
+    A captured ENGINE row's field text is added to the bucket of the store model that carries
+    that tuple, and ONLY when exactly one store row carries it. Two carriers is a JOINT
+    figure — ownership is ambiguous, the text is copied to NEITHER (the #458/#651 rule that
+    a joint figure belongs to no single row); zero carriers means no store cell exists to
+    trace to, so the text is attributed to nothing. This never MOVES a measurement between
+    rows (analysis-only; the store is untouched) and never credits text to a row that does
+    not carry the very measurement the sentence describes.
+    """
+    owners: dict[tuple, set[str]] = {}
+    for m in store.get("models") or []:
+        mid = str(m.get("id") or "")
+        if not mid:
+            continue
+        for e in m.get("engines") or []:
+            if isinstance(e, dict):
+                owners.setdefault(update_trending._cross_model_identity(e), set()).add(mid)
+    if not owners:
+        return
+    texts: dict[tuple, dict[str, list[str]]] = {}
+    for path in sorted(raw_dir.glob("*.json")):
+        data = load(path, {}) or {}
+        for row in data.get("models", []) or []:
+            if not isinstance(row, dict):
+                continue
+            for e in row.get("engines") or []:
+                if not isinstance(e, dict):
+                    continue
+                fields = texts.setdefault(update_trending._cross_model_identity(e), {})
+                for f in TEXT_FIELDS:
+                    v = e.get(f)
+                    if isinstance(v, str) and v.strip():
+                        fields.setdefault(f, []).append(v)
+    for ident, fields in texts.items():
+        carriers = owners.get(ident) or set()
+        if len(carriers) != 1:
+            continue  # joint (two owners) or unowned: the text is copied to no row
+        bucket = out.setdefault(next(iter(carriers)), {})
+        for f, ts in fields.items():
+            seen = bucket.setdefault(f, [])
+            for t in ts:
+                if t not in seen:
+                    seen.append(t)
+
+
 def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, list[str]]]:
     """Per STORE model id, the free text of every CAPTURED post, keyed by field.
 
@@ -366,6 +421,13 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
     states no window and no audio at all — crediting that echo turned issue #470's untraceable
     figure into a fake "ingest job" that no ingest change could ever close honestly. A
     MEASUREMENT's fields are that run's record and stay evidence.
+    MEASUREMENTS are evidence — and a captured ENGINE row is keyed by its own identity as
+    well as by its raw row (issue #411): a figure whose (engine, tps, hardware, source_post)
+    tuple is carried by exactly ONE store row contributes that tuple's footprint text to
+    THAT row's bucket, even when the raw row sat under a different id — the measured shape
+    where a variant's cell read as un-captured while its own post's sentence sat under a
+    sibling. A tuple carried by two store rows (joint) or by none is attributed to nobody.
+    See `_join_measurement_identity`.
     """
     out: dict[str, dict[str, list[str]]] = {}
     if not raw_dir.exists():
@@ -387,6 +449,7 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
                     value = source.get(f) if isinstance(source, dict) else None
                     if isinstance(value, str) and value.strip():
                         bucket.setdefault(f, []).append(value)
+    _join_measurement_identity(store, out, raw_dir)
     return out
 
 
