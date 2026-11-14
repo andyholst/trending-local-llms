@@ -90,6 +90,77 @@ def sections(agents_text: str) -> dict[str, tuple[int, int]]:
     return out
 
 
+def row_states(parsed: dict, agents_lines: list[str],
+               secs: dict[str, tuple[int, int]]) -> tuple[list[dict], int]:
+    """The PURE half of the ledger: the landing state of every parsed owed-row.
+
+    One dict per row: {section, needle, line, text, outside, missing_section}.
+    `line` is the 1-indexed rulebook line where the needle appears INSIDE the declared
+    section and `text` quotes that line; `outside` names a line where the needle appears
+    but NOT in its section (#509's class); `missing_section` marks a row whose declared
+    section heading does not exist. The problem count is missing-section rows + malformed
+    markers — the same number the report gates on. Shared by the report (below) and by
+    the close path (`owed_row_close_note`), so the two readers can never disagree
+    (rule 6d: one implementation of the landing decision).
+    """
+    states: list[dict] = []
+    problems = 0
+    for row in parsed["rows"]:
+        sid, needle = row["section"], row["needle"]
+        if sid not in secs:
+            states.append({"section": sid, "needle": needle, "line": None,
+                           "text": None, "outside": None, "missing_section": True})
+            problems += 1
+            continue
+        start, end = secs[sid]
+        in_section = next((i for i in range(start, end + 1)
+                           if needle in agents_lines[i - 1]), None)
+        outside = None
+        if in_section is None:
+            outside = next((i for i, ln in enumerate(agents_lines, 1) if needle in ln), None)
+        states.append({"section": sid, "needle": needle, "line": in_section,
+                       "text": agents_lines[in_section - 1].strip() if in_section else None,
+                       "outside": outside, "missing_section": False})
+    problems += len(parsed["malformed"])
+    return states, problems
+
+
+def owed_row_close_note(repo: str, number: int | str, agents_path: pathlib.Path) -> list[str]:
+    """Quote ONE issue's owed-row state for its close comment (issue #766).
+
+    A closed owed-row issue must carry its row's fate on the thread, the way a `close`
+    verdict already carries its EVIDENCE (issue #494): a LANDED row is quoted with its
+    `AGENTS.md:<line>` proof; an OUTSTANDING row is named so the closer records what is
+    still owed and the human who closes the row knows. Returns [] when the issue
+    declares no owed row — the close comment then gains nothing.
+
+    Raises (the caller refuses the close, exit 2 — never a silent skip): the thread or
+    the rulebook cannot be read, a marker is malformed, or a marker names a section that
+    does not exist. A close is a loud act; a broken ledger read must not launder one.
+    """
+    agents_text = agents_path.read_text(encoding="utf-8")
+    text = read_thread(repo, int(number))
+    parsed = parse_owed_rows(text)
+    if parsed["malformed"]:
+        raise RuntimeError(f"#{number} carries malformed owed-row marker(s): "
+                           + "; ".join(repr(m) for m in parsed["malformed"]))
+    states, _ = row_states(parsed, agents_text.splitlines(), sections(agents_text))
+    missing = sorted({s["section"] for s in states if s["missing_section"]})
+    if missing:
+        raise RuntimeError(f"#{number} declares owed rows in section(s) that do not exist "
+                           f"in {agents_path.name}: {', '.join(missing)}")
+    notes: list[str] = []
+    for st in states:
+        if st["line"]:
+            notes.append(f"- §{st['section']} **LANDED** at {agents_path.name}:{st['line']}: "
+                         f"{st['text'][:300]}")
+        else:
+            hint = (f" (needle appears at {agents_path.name}:{st['outside']}, outside "
+                    f"§{st['section']})" if st["outside"] else "")
+            notes.append(f"- §{st['section']} **OUTSTANDING** needle={st['needle']!r}{hint}")
+    return notes
+
+
 def check_ledger(repo: str, agents_path: pathlib.Path, limit: int) -> tuple[list[str], int]:
     """Print the ledger. Returns (lines, problems) — problems > 0 means exit 2."""
     try:
@@ -112,32 +183,26 @@ def check_ledger(repo: str, agents_path: pathlib.Path, limit: int) -> tuple[list
             problems += 1
             continue
         parsed = parse_owed_rows(text)
+        states, issues = row_states(parsed, agents_lines, secs)
         for raw in parsed["malformed"]:
             lines.append(f"[owed-rows] #{number} MALFORMED marker: {raw!r}")
-            problems += 1
-        for row in parsed["rows"]:
-            sid, needle = row["section"], row["needle"]
-            if sid not in secs:
-                lines.append(f"[owed-rows] #{number} section={sid} "
+        for st in states:
+            if st["missing_section"]:
+                lines.append(f"[owed-rows] #{number} section={st['section']} "
                              f"NO SUCH SECTION in {agents_path.name} "
                              f"(known: {', '.join(sorted(secs))})")
-                problems += 1
                 continue
-            start, end = secs[sid]
-            in_section = next((i for i in range(start, end + 1)
-                               if needle in agents_lines[i - 1]), None)
-            if in_section:
+            if st["line"]:
                 landed += 1
-                lines.append(f"[owed-rows] #{number} section={sid} needle={needle!r} "
-                             f"LANDED {agents_path.name}:{in_section}")
+                lines.append(f"[owed-rows] #{number} section={st['section']} "
+                             f"needle={st['needle']!r} LANDED {agents_path.name}:{st['line']}")
             else:
-                anywhere = next((i for i, l in enumerate(agents_lines, 1)
-                                 if needle in l), None)
-                hint = (f" (needle appears at {agents_path.name}:{anywhere}, outside "
-                        f"section {sid})" if anywhere else "")
+                hint = (f" (needle appears at {agents_path.name}:{st['outside']}, outside "
+                        f"section {st['section']})" if st["outside"] else "")
                 outstanding += 1
-                lines.append(f"[owed-rows] #{number} section={sid} needle={needle!r} "
-                             f"OUTSTANDING{hint}")
+                lines.append(f"[owed-rows] #{number} section={st['section']} "
+                             f"needle={st['needle']!r} OUTSTANDING{hint}")
+        problems += issues
         if not parsed["rows"] and not parsed["malformed"] and (labels & set(QUEUE_LABELS)):
             unmarked += 1
             lines.append(f"[owed-rows] #{number} NO MARKER (queue label "

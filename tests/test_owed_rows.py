@@ -213,6 +213,74 @@ def test_the_ledger_script_is_the_only_reacher_for_the_marker():
     assert offenders == [], f"marker shape re-spelled outside bot_markers.py: {offenders}"
 
 
+def test_the_close_path_and_the_report_land_from_one_implementation(tmp_path=None):
+    """#766: the verdict's close note quotes EXACTLY what the ledger report reports.
+
+    A second landing decision would drift silently (rule 6d). The close note is built
+    from the same `row_states` the report walks — same planted thread, same states,
+    same line numbers — and a broken ledger read RAISES (the verdict caller turns it
+    into exit 2), never a silent empty quote.
+    """
+    if tmp_path is None:  # the standalone runner passes no pytest fixture
+        tmp_path = Path(tempfile.mkdtemp())
+    import owed_rows_check  # the product's ONE landing implementation (rule 6d)
+
+    landed_marker = bot_markers.owed_row_marker("8", "tests/test_refresh_base.py")
+    owed_marker = bot_markers.owed_row_marker("6b", "make refresh-sync")
+    broken_marker = bot_markers.owed_row_marker("27", "nope")
+
+    # The pure states both readers share
+    parsed = bot_markers.parse_owed_rows(landed_marker + "\n\n" + owed_marker)
+    states, _problems = owed_rows_check.row_states(
+        parsed, AGENTS_FIXTURE.splitlines(), owed_rows_check.sections(AGENTS_FIXTURE))
+    landed = [s for s in states if s["line"]]
+    assert len(landed) == 1 and landed[0]["line"] is not None
+    assert any(not s["line"] and s["needle"] == "make refresh-sync" for s in states)
+    assert parsed["malformed"] == []
+
+    # The close note, end to end through the same stubbed gh (the real reader)
+    agents_file = tmp_path / "AGENTS.md"
+    agents_file.write_text(AGENTS_FIXTURE, encoding="utf-8")
+    bin_dir = _stub_gh(tmp_path, {
+        "issue:7": {"number": 7, "body": landed_marker + "\n\n" + owed_marker},
+        "comments:7": [{"created_at": "2026-11-13T00:00:00Z", "body": "(no markers here)"}],
+    })
+    old_path, old_fx = os.environ.get("PATH"), os.environ.get("OWED_ROWS_FIXTURES")
+    os.environ["PATH"] = f"{bin_dir}{os.pathsep}{os.environ['PATH']}"
+    os.environ["OWED_ROWS_FIXTURES"] = str(tmp_path / "fixtures.json")
+    try:
+        notes = owed_rows_check.owed_row_close_note(REPO, 7, agents_file)
+        assert any("LANDED" in n and f"AGENTS.md:{landed[0]['line']}" in n for n in notes), notes
+        assert any("OUTSTANDING" in n and "make refresh-sync" in n for n in notes), notes
+
+        # A marker naming a section the rulebook does not have RAISES — the verdict
+        # caller must refuse the close, never quote a section from thin air.
+        _stub_gh(tmp_path, {"issue:7": {"number": 7, "body": broken_marker},
+                            "comments:7": []})
+        try:
+            owed_rows_check.owed_row_close_note(REPO, 7, agents_file)
+            raise AssertionError("missing section must raise, not pass silently")
+        except RuntimeError as err:
+            assert "do not exist" in str(err), str(err)
+
+        # A malformed marker RAISES too — a close must not launder a broken declaration.
+        _stub_gh(tmp_path, {"issue:7": {"number": 7,
+                                        "body": bot_markers.owed_row_marker("8", "")},
+                            "comments:7": []})
+        try:
+            owed_rows_check.owed_row_close_note(REPO, 7, agents_file)
+            raise AssertionError("a malformed thread must raise")
+        except RuntimeError as err:
+            assert "malformed" in str(err).lower(), str(err)
+    finally:
+        if old_path is not None:
+            os.environ["PATH"] = old_path
+        if old_fx is not None:
+            os.environ["OWED_ROWS_FIXTURES"] = old_fx
+        else:
+            os.environ.pop("OWED_ROWS_FIXTURES", None)
+
+
 def main() -> int:
     tests = [
         test_the_owed_row_marker_is_registered_and_parses,
@@ -226,6 +294,7 @@ def main() -> int:
         test_an_unreadable_issue_is_a_problem,
         test_the_pipeline_calls_the_ledger_target,
         test_the_ledger_script_is_the_only_reacher_for_the_marker,
+        test_the_close_path_and_the_report_land_from_one_implementation,
     ]
     failed = 0
     for t in tests:
