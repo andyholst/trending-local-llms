@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **11** · archived: **258**
+Active changes: **11** · archived: **259**
 
 ## Active changes
 
@@ -218,6 +218,7 @@ Active changes: **11** · archived: **258**
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
 | `queued-run-alarm` | archived | #252 | — | [queued-run-alarm](openspec/changes/archive/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/queued-run-alarm/proposal.md) |
 | `raw-quarantine-underivable-models` | archived | #381 | — | [raw-snapshot-quarantine](openspec/changes/archive/raw-quarantine-underivable-models/specs/raw-snapshot-quarantine/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/raw-quarantine-underivable-models/proposal.md) |
+| `readme-bot-cadence-863` | archived | #863 | #930 | [validation](openspec/changes/archive/readme-bot-cadence-863/specs/validation/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/readme-bot-cadence-863/proposal.md) |
 | `real-pick-prints-one-line` | archived | #578 | — | [issue-queue](openspec/changes/archive/real-pick-prints-one-line/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/real-pick-prints-one-line/proposal.md) |
 | `rebuild-decision` | archived | #208 | — | [rebuild-decision](openspec/changes/archive/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/rebuild-decision/proposal.md) |
 | `recheck-before-the-agent` | archived | #522 | — | [issue-implementer](openspec/changes/archive/recheck-before-the-agent/specs/issue-implementer/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/recheck-before-the-agent/proposal.md) |
