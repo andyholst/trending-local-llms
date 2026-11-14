@@ -941,7 +941,7 @@ One line each, taken from the script's own docstring.
 - `scripts/refresh_run_block.py` — The refresh run's WINDOW as a machine-readable block (issue #199).
 - `scripts/require_env.py` — Fail LOUDLY when an environment variable a leg needs is missing or empty.
 - `scripts/reset_working_files.py` — Unstage the bot's working files, from ONE list (issue #543).
-- `scripts/run_tests.sh` — run_tests.sh — the ONE test runner (issues #176 and #192).
+- `scripts/run_tests.sh` — run_tests.sh — the ONE test runner (issues #176, #192 and #890).
 - `scripts/scrub_log.py` — Redact a captured agent log before any of it reaches a bot job's console.
 - `scripts/secret_scan_report.py` — The file set of `make secret-scan` is what git could commit (issue #836).
 - `scripts/secret_scan_self_test.py` — Prove the secret scan actually detects a credential (issue #122 / #836).
