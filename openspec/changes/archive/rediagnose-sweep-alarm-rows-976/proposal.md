@@ -1,9 +1,7 @@
 # Proposal: rediagnose-sweep-alarm-rows-976
 
 Issue: #976
-PR:
-
-## Why
+PR: #978
 
 Finding #976 (filed by PR #974 while re-diagnosing #821) measured that ledger rows for runs
 41956933757 (issue #824) and 43049550731 (issue #829) are UNDIAGNOSED copies of the SAME

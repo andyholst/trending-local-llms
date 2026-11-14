@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **289**
+Active changes: **2** · archived: **290**
 
 ## Active changes
 
@@ -245,6 +245,7 @@ Active changes: **2** · archived: **289**
 | `recheck-before-the-agent` | archived | #522 | — | [issue-implementer](openspec/changes/archive/recheck-before-the-agent/specs/issue-implementer/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/recheck-before-the-agent/proposal.md) |
 | `record-the-pr-on-a-change` | archived | #518 — `tech-debt: Most active OpenSpec changes carry no PR reference, so the lifecycle guard cannot see them` | #753 | [change-lifecycle](openspec/changes/archive/record-the-pr-on-a-change/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/record-the-pr-on-a-change/proposal.md) |
 | `red-run-and-repair-path` | archived | #558 | — | [red-run-and-repair-path](openspec/changes/archive/red-run-and-repair-path/specs/red-run-and-repair-path/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/red-run-and-repair-path/proposal.md) |
+| `rediagnose-sweep-alarm-rows-976` | archived | #976 | #978 | [alarms](openspec/changes/archive/rediagnose-sweep-alarm-rows-976/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rediagnose-sweep-alarm-rows-976/proposal.md) |
 | `refine-restatement-whole` | archived | #450 | — | [issue-bot-verdict](openspec/changes/archive/refine-restatement-whole/specs/issue-bot-verdict/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/refine-restatement-whole/proposal.md) |
 | `refresh-aggregate-advances-its-base` | archived | #448 (filed first, with the measurement) | — | [worktree-base](openspec/changes/archive/refresh-aggregate-advances-its-base/specs/worktree-base/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/refresh-aggregate-advances-its-base/proposal.md) |
 | `refresh-bot-stamps-its-window` | archived | #199 | — | [bot-coordination](openspec/changes/archive/refresh-bot-stamps-its-window/specs/bot-coordination/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/refresh-bot-stamps-its-window/proposal.md) |
