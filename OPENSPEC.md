@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **11** · archived: **257**
+Active changes: **11** · archived: **259**
 
 ## Active changes
 
@@ -139,6 +139,7 @@ Active changes: **11** · archived: **257**
 | `engine-name-case-warn` | archived | #645 | #899 | [engine-name-case-warning](openspec/changes/archive/engine-name-case-warn/specs/engine-name-case-warning/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-name-case-warn/proposal.md) |
 | `env-int-empty-is-missing` | archived | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/archive/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/env-int-empty-is-missing/proposal.md) |
 | `fetch-base-before-any-work` | archived | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/archive/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fetch-base-before-any-work/proposal.md) |
+| `filer-log-fetch-escape-retry` | archived | #923 (measured: all 12 issues #822–#833 filed UNDIAGNOSED on 2026-11-12 — every log fetch answered `the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway`) | #926 (PR #924 was closed unmerged: the closure check derives the implemented issue from the branch's trailing number) | [alarms](openspec/changes/archive/filer-log-fetch-escape-retry/specs/alarms/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/filer-log-fetch-escape-retry/proposal.md) |
 | `filer-stamps-owed-row` | archived | #765 | #917 | [owed-row-ledger](openspec/changes/archive/filer-stamps-owed-row/specs/owed-row-ledger/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/filer-stamps-owed-row/proposal.md) |
 | `findings-field-bodies` | archived | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/archive/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/findings-field-bodies/proposal.md) |
 | `fix-bot-announces-its-window` | archived | #198 | — | [bot-coordination](openspec/changes/archive/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fix-bot-announces-its-window/proposal.md) |
@@ -180,6 +181,7 @@ Active changes: **11** · archived: **257**
 | `measurement-store-normalized` | archived | #697 — `#689 slice 2: switch readers onto normalized measurement store, drop inline engines[]` | — | [catalog-measurements](openspec/changes/archive/measurement-store-normalized/specs/catalog-measurements/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-normalized/proposal.md) |
 | `measurement-store-split` | archived | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/archive/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-split/proposal.md) |
 | `message-pattern-in-pr-bodies` | archived | #771 | #772 | [message-pattern-enforcement](openspec/changes/archive/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/message-pattern-in-pr-bodies/proposal.md) |
+| `missing-gh-fixture-host-path` | archived | #895 | #927 | [testing](openspec/changes/archive/missing-gh-fixture-host-path/specs/testing/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/missing-gh-fixture-host-path/proposal.md) |
 | `model-id-matches-the-contract` | archived | #464 (measured on PR #461) | — | [model-id](openspec/changes/archive/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/model-id-matches-the-contract/proposal.md) |
 | `models-order-matches-readme` | archived | #708 | — | [models-order-matches-readme](openspec/changes/archive/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/models-order-matches-readme/proposal.md) |
 | `no-clarify-detach` | archived | #679 — the recurring refresh-leg failure (measured on the amd leg, run | — | [unattended-leg](openspec/changes/archive/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/no-clarify-detach/proposal.md) |
