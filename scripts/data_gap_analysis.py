@@ -70,6 +70,10 @@ IDENTITY_REFUSAL_STAGES = tuple(
     if s not in update_trending.REFUSAL_STAGE_DIMENSIONS
 )
 
+# The ONE declared-estimate detector (rule 6d, issue #936): the same `(est)` marker
+# the validator reads, from a stdlib-only module both the container and the host
+# filer can import. A second copy of the pattern here would drift silently.
+import declared_estimate  # noqa: E402
 DATA = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
 STORE = DATA / "models.json"
 CONTRACT = DATA / "model_contract.json"
@@ -645,6 +649,12 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
     not_captured: dict[str, list[str]] = {}   # NO captured post states it — a new search is the fix
     untraceable: dict[str, list[str]] = {}    # store prose states it, NO post states it (#470)
     contract_gaps: dict[str, str] = {}
+    # (issue #936) rule 2's published placeholders: values MARKED `(est)` are not
+    # missing and not prose — they are declared estimates, and a declared estimate is
+    # by its own marker the class of value a footprint query (rule 6o) can replace
+    # with a measured post. Without this class the acquisition chain never re-asks
+    # for them and a projection ships as advice forever.
+    declared_estimates = declared_estimate.footprint_estimates(models)
 
     # What the search actually brought back, per store id (the record of each real post).
     # One scan for every dimension: this is what tells an ACQUISITION gap from an INGEST gap.
@@ -776,6 +786,15 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
         gaps.append(f"{len(thin)} measurement(s) carry no hardware or no quant: {', '.join(thin[:5])}")
     if estimated:
         gaps.append(f"{len(estimated)} measurement(s) are estimates: {', '.join(estimated[:5])}")
+    # (issue #936) its own finding class: a FOOTPRINT value declared `(est)` is not the
+    # t/s estimate above — it is a card-table figure the refresh can RE-ASK for.
+    n_est_values = sum(len(v) for v in declared_estimates.values())
+    if n_est_values:
+        gaps.append(f"{n_est_values} declared (est) footprint value(s) across "
+                    f"{len(declared_estimates)} field(s) are re-askable — the derived "
+                    f"footprint queries (rule 6o) already name these models, so a new "
+                    f"search can replace each with a measured post: "
+                    f"{', '.join(sorted(e for v in declared_estimates.values() for e in v)[:5])}")
     # Empty raw legs are INFORMATIONAL one by one: a per-query write legitimately
     # captures nothing (the query had no hits). WHOLE-LEG starvation is the defect
     # (issue #856): when EVERY snapshot of a backend's newest run captured 0 models,
@@ -820,6 +839,10 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
         + (["refused:measurement-identity"]
            if any(str(r.get("stage") or "") in IDENTITY_REFUSAL_STAGES
                   for r in refused_rows) else [])
+        # (issue #936) one entry per FIELD that carries a declared estimate — never one
+        # per model, for the same #472 reason: the per-model detail lives in the report
+        # and the issue BODY, and the signature stays stable while the class persists.
+        + [f"reask_estimate:{k}" for k in declared_estimates if declared_estimates[k]]
     )
     return {
         "as_of": gen,
@@ -840,6 +863,9 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
         # map lives in update_trending.REFUSAL_STAGE_DIMENSIONS — rule 6d, one copy).
         "refused_at_ingest": refused_at_ingest,
         "refused_dimensions": refused_dimensions,
+        # (issue #936) the re-askable class: field -> model/engine:field=value entries
+        # whose value carries the declared-estimate marker.
+        "declared_estimates": declared_estimates,
         "maintenance": {"stale": stale, "thin_measurements": thin,
                         "estimated": estimated, "empty_raw_legs": empty_legs,
                         "starved_legs": starved_legs},
@@ -970,6 +996,14 @@ def render(report: dict) -> str:
         lines.append(f"- … recorded in full in data/refusals.json ({total_refused} total)")
     if not refused_map:
         lines.append("- none (ledger empty or absent)")
+    # (issue #936) the re-askable class: rule 2's published placeholders, per model+field.
+    lines += ["", "## Declared (est) footprint values (re-askable — a footprint query can replace them)", ""]
+    est = {k: v for k, v in (report.get("declared_estimates") or {}).items() if v}
+    for key, entries in sorted(est.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        lines.append(f"- **{key}** — {len(entries)} declared estimate(s): "
+                     + ", ".join(sorted(entries)[:6]) + (" …" if len(entries) > 6 else ""))
+    if not est:
+        lines.append("- none")
     lines += ["", "## Dimensions that cannot apply (never counted as missing)", ""]
     na = {k: v for k, v in (report.get("not_applicable") or {}).items() if v}
     for key, ids in sorted(na.items()):
@@ -1182,6 +1216,21 @@ def issue_body(report: dict, previous: dict | None) -> tuple[str, str]:
         body += [f"- **{k}** — {len(ids)} model(s): " + ", ".join(ids[:10])
                  + (" …" if len(ids) > 10 else "")
                  for k, ids in sorted(untraceable.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
+    # (issue #936) the re-askable class with the model+field named for each entry —
+    # the whole point of filing it: the derived footprint queries (rule 6o) can be
+    # aimed at exactly these models and fields on the next refresh.
+    est = {k: v for k, v in (report.get("declared_estimates") or {}).items() if v}
+    if est:
+        body += ["", "## Declared (est) footprint values (re-askable — model+field named)", "",
+                 "Each value below carries rule 2's `(est)` marker: a published projection,",
+                 "not a measurement. The refresh's derived footprint queries already name",
+                 "these trending models for vram/ram/context/weights/offload/engine-build",
+                 "figures (rule 6o), so re-ask each named model+field and replace the",
+                 "estimate with the measured post — never delete the estimate first",
+                 "(additive-only, rule 3b)."]
+        body += [f"- **{k}** — {len(entries)} declared estimate(s): "
+                 + ", ".join(sorted(entries)[:10]) + (" …" if len(entries) > 10 else "")
+                 for k, entries in sorted(est.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
     body += ["", "## Contract gaps", ""]
     body += [f"- {why}" for why in report["contract_gaps"].values()] or ["- none"]
     if added:
