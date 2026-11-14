@@ -509,9 +509,9 @@ base-check: ## Fail unless this checkout IS the freshly fetched <BASE> (CI runs 
 # 39329834698, 4/4 legs green, HEAD 2 commits behind, whole refresh discarded). This
 # fast-forwards a CLEAN checkout onto the fetched tip and refuses only a dirty tree or a
 # HEAD with commits the base does not have. Same ONE implementation (rule 6d/6m).
-branch-adopt: ## Cut or attach BRANCH at COMMIT time, reporting behind_base=N and asserting NO base (issue #500) (BRANCH=, BASE=)
-	@test -n "$(BRANCH)" || { echo "Usage: make branch-adopt BRANCH=<branch> [BASE=master]"; exit 1; }
-	python3 scripts/worktree_base.py adopt --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)"
+branch-adopt: ## Cut or attach BRANCH at COMMIT time, reporting behind_base=N and asserting NO base; with ISSUE= a NEW branch's name must implement it (issue #500, #807) (BRANCH=, BASE=, ISSUE=)
+	@test -n "$(BRANCH)" || { echo "Usage: make branch-adopt BRANCH=<branch> [BASE=master] [ISSUE=<n>]"; exit 1; }
+	python3 scripts/worktree_base.py adopt --branch "$(BRANCH)" --base "$(if $(BASE),$(BASE),master)" $(if $(ISSUE),--issue $(ISSUE),)
 
 base-rebase: ## Fetch the base and rebase BRANCH onto it; a conflict KEEPS the work and still SUCCEEDS (`base_rebase=conflict`) (BRANCH=, BASE=)
 	@test -n "$(BRANCH)" || { echo "Usage: make base-rebase BRANCH=<branch> [BASE=master]"; exit 1; }
@@ -536,9 +536,9 @@ refresh-sync: ## Move a refresh's generated tree onto the fetched <BASE>, keepin
 refresh-require-tip: ## Fail unless the refresh branch contains the freshly fetched <BASE> (issue #177)
 	python3 scripts/refresh_base.py require-tip $(if $(BASE),--base $(BASE),)
 
-worktree-new: ## Start a new branch off the freshly fetched base, in a worktree (IN_PLACE=1 for the CI checkout)
-	@test -n "$(BRANCH)" || { echo "Usage: make worktree-new BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>]"; exit 1; }
-	python3 scripts/worktree_base.py new --branch "$(BRANCH)" $(if $(BASE),--base $(BASE),) $(if $(IN_PLACE),--in-place,) $(if $(DIR),--dir "$(DIR)",)
+worktree-new: ## Start a new branch off the freshly fetched base, in a worktree; with ISSUE= the branch name is validated through the pr-closure parser at the cut (issue #807) (IN_PLACE=1 for the CI checkout)
+	@test -n "$(BRANCH)" || { echo "Usage: make worktree-new BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>] [ISSUE=<n>]"; exit 1; }
+	python3 scripts/worktree_base.py new --branch "$(BRANCH)" $(if $(BASE),--base $(BASE),) $(if $(IN_PLACE),--in-place,) $(if $(DIR),--dir "$(DIR)",) $(if $(ISSUE),--issue $(ISSUE),)
 
 worktree-resume: ## Resume an existing branch — fetched first, so a re-run of a one-ref checkout works
 	@test -n "$(BRANCH)" || { echo "Usage: make worktree-resume BRANCH=<branch> [BASE=master] [IN_PLACE=1] [DIR=<path>]"; exit 1; }
