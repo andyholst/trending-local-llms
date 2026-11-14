@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **270**
+Active changes: **2** · archived: **271**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -59,6 +58,7 @@ Active changes: **3** · archived: **270**
 | `2026-11-14-gap-covers-measurements` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-gap-covers-measurements/proposal.md) |
 | `2026-11-14-measurement-attribution-refusal` | archived | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/archive/2026-11-14-measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/archive/2026-11-14-measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-measurement-attribution-refusal/proposal.md) |
 | `2026-11-14-one-test-runner` | archived | — | — | [test-runner](openspec/changes/archive/2026-11-14-one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-14-one-test-runner/proposal.md) |
+| `2026-11-14-outage-verdict-tolerates-a-failed-query` | archived | — | — | [search-fetch](openspec/changes/archive/2026-11-14-outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-14-outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `2026-11-14-owed-guard-rows-landed` | archived | — | — | [agents-guard-registry](openspec/changes/archive/2026-11-14-owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-14-owed-guard-rows-landed/proposal.md) |
 | `2026-11-14-rulebook-names-every-pipeline` | archived | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/proposal.md) |
 | `2026-11-14-storage-offload-needs-a-medium` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/proposal.md) |

@@ -83,6 +83,14 @@ counts, so a `0 model hits` run is diagnosable (issue #293).
 
 - **Test:** `tests/test_firecrawl_fetch.py::test_the_live_check_exits_zero_on_an_outage_and_non_zero_otherwise`
 
+#### Scenario: a partial outage is still a failure
+
+- **GIVEN** a run where some queries answered the target's error page and the rest answered with no model,
+- **WHEN** the verdict is computed,
+- **THEN** it SHALL be `quiet` with a non-zero exit code.
+
+- **Test:** `tests/test_firecrawl_fetch.py::test_the_verdict_tells_an_outage_from_a_refusal_and_a_quiet_search`
+
 #### Scenario: a partial outage with an answering mirror is still a failure
 
 - **GIVEN** a run where some queries answered the target's error page and the rest answered with no model,
