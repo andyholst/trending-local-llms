@@ -1,6 +1,7 @@
 # Proposal: agent-shell-keys-loud-skip-946
 
 Issue: #946
+PR: #948
 
 ## Why
 
