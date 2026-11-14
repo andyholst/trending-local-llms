@@ -1,0 +1,58 @@
+{
+  "refusals": [
+    {
+      "utc": "2026-11-14T07:24:06Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-14T07:28:06Z",
+      "stage": "refuse_misattributed_measurements",
+      "backend": "nvidia",
+      "model": "qwen-3.6-27b",
+      "engine": "llama.cpp",
+      "reason": "its text names qwen 3.5 35b, but the row is qwen 3.6 27b (if this row may legitimately name that model, document the exception in the row's measurement_model_aliases)",
+      "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
+    },
+    {
+      "utc": "2026-11-14T07:29:36Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-14T07:32:07Z",
+      "stage": "refuse_misattributed_measurements",
+      "backend": "nvidia",
+      "model": "qwen-3.6-27b",
+      "engine": "llama.cpp",
+      "reason": "its text names qwen 3.5 35b, but the row is qwen 3.6 27b (if this row may legitimately name that model, document the exception in the row's measurement_model_aliases)",
+      "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
+    },
+    {
+      "utc": "2026-11-14T07:46:56Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-14T07:49:38Z",
+      "stage": "refuse_misattributed_measurements",
+      "backend": "nvidia",
+      "model": "qwen-3.6-27b",
+      "engine": "llama.cpp",
+      "reason": "its text names qwen 3.5 35b, but the row is qwen 3.6 27b (if this row may legitimately name that model, document the exception in the row's measurement_model_aliases)",
+      "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
+    }
+  ]
+}

@@ -62,11 +62,23 @@ import owed_row_derive  # noqa: E402
 # each captured row to the store id ingest would give it, so it can never disagree
 # with the merge about which model a post belongs to.
 import update_trending  # noqa: E402
+#: Which refusal stages are about a measurement's IDENTITY rather than a ranked
+#: dimension (issue #888): derived from update_trending's own stage registry, so the
+#: analysis and the writer can never disagree about which seam is which (rule 6d).
+IDENTITY_REFUSAL_STAGES = tuple(
+    s for s in update_trending.REFUSAL_STAGES
+    if s not in update_trending.REFUSAL_STAGE_DIMENSIONS
+)
+
 DATA = Path(os.environ.get("TRENDING_DATA_DIR", str(ROOT / "data")))
 STORE = DATA / "models.json"
 CONTRACT = DATA / "model_contract.json"
 SEARCH_CONTRACT = DATA / "search_contract.json"
 RAW_DIR = DATA / "raw"
+# The append-only ledger the ingest refusal seams write (issue #888): every dropped
+# measurement with its backend, model, engine, reason and source post. It is what
+# lets this analysis tell "refused at ingest" from "never captured".
+REFUSALS = DATA / "refusals.json"
 DEFAULT_BASELINE = DATA / "gap_baseline.json"
 LABEL = issue_queue.QUEUE_LABELS[0]
 LABEL_COLOR = "5319e7"
@@ -595,7 +607,31 @@ def unattributed_figures(store: dict) -> dict[str, list[str]]:
     return out
 
 
-def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
+def load_refusals(path: Path = REFUSALS) -> list[dict]:
+    """The ledger of measurements the ingest seams REFUSED (issue #888), or [] when absent.
+
+    Written by `update_trending.record_ingest_refusals` at every refusal seam. A missing
+    ledger is normal (nothing has been refused yet); an unreadable one is reported loudly
+    and read as no refusals — never as licence to rewrite it (rule 3b).
+    """
+    if not path.exists():
+        return []
+    try:
+        doc = json.loads(path.read_text())
+    except Exception as exc:  # noqa: BLE001
+        print(f"[data-gaps] refusals ledger {path.name} is unreadable ({exc}) — "
+              f"reporting no refusals rather than guessing", file=sys.stderr)
+        return []
+    rows = doc.get("refusals") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        print(f"[data-gaps] refusals ledger {path.name} has no 'refusals' list — "
+              f"reporting no refusals", file=sys.stderr)
+        return []
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
+            refusals: list[dict] | None = None) -> dict:
     """The gap report: per-dimension coverage, free-text-only mentions, and the
     store/maintenance gaps the refresh cannot see."""
     models = store.get("models") or []
@@ -613,6 +649,23 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
     # What the search actually brought back, per store id (the record of each real post).
     # One scan for every dimension: this is what tells an ACQUISITION gap from an INGEST gap.
     capture = captured_text(store, raw_dir)
+
+    # "REFUSED at ingest" is a third class beside those two (issue #888): the search
+    # DID capture the figure and a refusal seam (#458/#468/#702/#615) dropped it for a
+    # named reason, citing the post. Reporting it as "not stated by any captured post"
+    # would send a re-search after posts the pipeline already holds; the ledger names
+    # which seam dropped which measurement, so the analysis says so instead.
+    refused_rows = load_refusals() if refusals is None else refusals
+    refused_at_ingest: dict[str, list[dict]] = {}
+    refused_dimensions: dict[str, list[str]] = {}
+    for r in refused_rows:
+        rid = str(r.get("model") or "unknown")
+        refused_at_ingest.setdefault(rid, []).append({
+            k: r.get(k) for k in ("utc", "stage", "backend", "engine", "reason", "source_post")
+        })
+        dim = update_trending.REFUSAL_STAGE_DIMENSIONS.get(str(r.get("stage") or ""))
+        if dim and rid not in refused_dimensions.setdefault(dim, []):
+            refused_dimensions[dim].append(rid)
 
     for dim in DIMENSIONS:
         key = dim["key"]
@@ -758,6 +811,15 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         # starvation that continues is one stable entry that files once (the #472 lesson),
         # and `already_filed()` holds it to one open issue until the leg captures again.
         + [f"starved_leg:{s.split('@')[0]}" for s in starved_legs]
+        # A refusal at ingest (issue #888) is named at DIMENSION granularity — the same
+        # granularity that files at most ONE issue per gap (#472). The first refusal for
+        # a dimension changes the signature and files; repeats of the same class do not
+        # spam. The identity seams (fabricated engine, misattribution, cross-model copy)
+        # share one entry because they are the same work: fix what the capture names.
+        + [f"refused:{k}" for k in refused_dimensions if refused_dimensions[k]]
+        + (["refused:measurement-identity"]
+           if any(str(r.get("stage") or "") in IDENTITY_REFUSAL_STAGES
+                  for r in refused_rows) else [])
     )
     return {
         "as_of": gen,
@@ -773,6 +835,11 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR) -> dict:
         "captured_prose": captured,
         "not_applicable": not_applicable,
         "unstructured": unstructured,
+        # Issue #888: per-model ledger entries of everything a refusal seam dropped,
+        # and which ranked dimension each dropped value took away (the stage->dimension
+        # map lives in update_trending.REFUSAL_STAGE_DIMENSIONS — rule 6d, one copy).
+        "refused_at_ingest": refused_at_ingest,
+        "refused_dimensions": refused_dimensions,
         "maintenance": {"stale": stale, "thin_measurements": thin,
                         "estimated": estimated, "empty_raw_legs": empty_legs,
                         "starved_legs": starved_legs},
@@ -820,6 +887,14 @@ def _gap_kind(report: dict, key: str) -> str:
         # Its own kind, never folded into "ingest": no post states the sentence, so a
         # structured value cannot be attributed to one (#470).
         parts.append(f"{unt} stated but untraceable — no post behind the figure (capture gap)")
+    refused_here = list((report.get("refused_dimensions") or {}).get(dim) or [])
+    if refused_here:
+        # Issue #888: these figures WERE captured and a refusal seam dropped them for a
+        # named reason — the ledger names the seam and the post. A re-search is the
+        # wrong fix; the capture or the alias is. Named so it is never read as the
+        # acquisition/ingest work the other parts describe.
+        parts.append(f"{len(refused_here)} refused at ingest — captured then dropped "
+                     f"(fix the capture, not the query)")
     return f" — {', '.join(parts)}" if parts else ""
 
 
@@ -873,6 +948,28 @@ def render(report: dict) -> str:
                      + ", ".join(ids[:6]) + (" …" if len(ids) > 6 else ""))
     if not untraceable:
         lines.append("- none")
+    # Issue #888: the distinction the report exists to make. A "not captured" row for a
+    # model whose figure a refusal seam DROPPED sends a re-search after posts already
+    # held; the ledger names the seam, the engine and the post, so it is stated here as
+    # its own class instead. Bounded per model; the ledger stays complete.
+    lines += ["", "## Refused at ingest (captured, then dropped — the ledger names the post)", ""]
+    refused_map = report.get("refused_at_ingest") or {}
+    shown = 0
+    for mid in sorted(refused_map):
+        rows = refused_map[mid]
+        for r in rows[:4]:
+            shown += 1
+            lines.append(f"- **{mid}** ({r.get('backend')}, `{r.get('stage')}`) engine "
+                         f"{str(r.get('engine'))!r}: {str(r.get('reason'))[:140]}; "
+                         f"post {r.get('source_post')}")
+        if len(rows) > 4:
+            lines.append(f"- **{mid}** — {len(rows) - 4} more refusal(s) recorded in "
+                         f"data/refusals.json")
+    total_refused = sum(len(v) for v in refused_map.values())
+    if total_refused > shown:
+        lines.append(f"- … recorded in full in data/refusals.json ({total_refused} total)")
+    if not refused_map:
+        lines.append("- none (ledger empty or absent)")
     lines += ["", "## Dimensions that cannot apply (never counted as missing)", ""]
     na = {k: v for k, v in (report.get("not_applicable") or {}).items() if v}
     for key, ids in sorted(na.items()):
@@ -1186,6 +1283,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[data-gaps] signature {'CHANGED' if is_changed else 'unchanged'} "
           f"({len(report['signature'])} entries, {len(rank_impact(report))} ranked gaps)",
           file=sys.stderr)
+    refused_map = report.get("refused_at_ingest") or {}
+    refused_n = sum(len(v) for v in refused_map.values())
+    print(f"[data-gaps] refused at ingest: {refused_n} measurement(s) across "
+          f"{len(refused_map)} model(s) (ledger {REFUSALS.name}; issue #888 — these are "
+          f"NOT 'never captured')", file=sys.stderr)
 
     if a.write_baseline:
         write_baseline(report, baseline_path)

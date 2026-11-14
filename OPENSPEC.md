@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **271**
+Active changes: **2** · archived: **272**
 
 ## Active changes
 
@@ -167,6 +167,7 @@ Active changes: **2** · archived: **271**
 | `index-checked-on-the-pr-tree` | archived | #432 (measured) · #304 (the related finding) | — | [pr-ci](openspec/changes/archive/index-checked-on-the-pr-tree/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/index-checked-on-the-pr-tree/proposal.md) |
 | `ingest-names-a-dead-hf-link` | archived | #333 | — | [hf-link-verification](openspec/changes/archive/ingest-names-a-dead-hf-link/specs/hf-link-verification/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/ingest-names-a-dead-hf-link/proposal.md) |
 | `ingest-new-snapshots-only` | archived | #175 | — | [ingest-boundary](openspec/changes/archive/ingest-new-snapshots-only/specs/ingest-boundary/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ingest-new-snapshots-only/proposal.md) |
+| `ingest-refusal-ledger` | archived | #888 — "every ingest refusal must be traceable: the four refusal seams drop | #940 | [ingest-refusal-ledger](openspec/changes/archive/ingest-refusal-ledger/specs/ingest-refusal-ledger/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/ingest-refusal-ledger/proposal.md) |
 | `install-pin-carries-version` | archived | #218 | #794 | [agent-image](openspec/changes/archive/install-pin-carries-version/specs/agent-image/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/install-pin-carries-version/proposal.md) |
 | `issue-bot-checks-out-before-make` | archived | #281 | — | [issue-bot-checks-out-before-make](openspec/changes/archive/issue-bot-checks-out-before-make/specs/issue-bot-checks-out-before-make/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/issue-bot-checks-out-before-make/proposal.md) |
 | `issue-queue-branch-hold` | archived | #647 | — | [issue-queue-hold](openspec/changes/archive/issue-queue-branch-hold/specs/issue-queue-hold/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/issue-queue-branch-hold/proposal.md) |
