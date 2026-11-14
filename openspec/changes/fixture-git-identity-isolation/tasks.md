@@ -12,6 +12,6 @@
       global git identity) — the measured red `PASSED 122 | FAILED 1` becomes
       `PASSED 124 | FAILED 0` — and under a simulated bare environment
       (`GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null` on the outer shell)
-- [ ] 5. Gates green on the exact head: `make lint`, this suite,
+- [x] 5. Gates green on the exact head: `make lint`, this suite,
       `python3 tests/test_openspec_index.py`, `make openspec-check`,
       `make secret-scan` before push
