@@ -28,6 +28,12 @@ WORKDIR /workspace
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# The seam's third install path (`uv tool install`, scripts/install_hermes_ci.sh)
+# can only run if the image actually carries `uv` — it never did, so the fallback
+# the contract advertises was dead code in the very image it was written for
+# (issue #217). Installed BEFORE the seam runs, pinned by tests/test_install_hermes_ci.py.
+RUN pip install --no-cache-dir uv
+
 # Install the Hermes CLI into the image — through the SEAM (issue #207), not an
 # `ADD <url>`: the pin is a build arg, so a maintainer can point the build at a
 # mirror or a pinned release without editing this file, and the script refuses to

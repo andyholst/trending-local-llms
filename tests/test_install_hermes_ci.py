@@ -493,6 +493,39 @@ def test_an_empty_pin_records_the_version_without_asserting():
           vf.read_text() if vf.exists() else "<no version file>")
 
 
+def test_the_image_installs_uv_before_the_seam_runs():
+    """#217: the seam advertises `uv tool install` as its third path; the image
+    that runs the seam must actually carry `uv` before the seam line."""
+
+    def problems(docker: str) -> list[str]:
+        seam = docker.find("/usr/local/bin/install_hermes_ci.sh")
+        if seam < 0:
+            return ["Dockerfile runs no seam at all"]
+        uv = re.search(r"^RUN pip install --no-cache-dir uv$", docker, re.M)
+        if uv is None:
+            return ["no RUN installs `uv` — the seam's third path is dead in this image"]
+        if uv.start() > seam:
+            return ["`uv` is installed AFTER the seam runs"]
+        return []
+
+    # Given the planted broken shapes
+    broken = ("RUN chmod +x /usr/local/bin/install_hermes_ci.sh \\\n"
+              "    && /usr/local/bin/install_hermes_ci.sh\n")
+    late = ("RUN chmod +x /usr/local/bin/install_hermes_ci.sh \\\n"
+            "    && /usr/local/bin/install_hermes_ci.sh\n"
+            "RUN pip install --no-cache-dir uv\n")
+
+    # When  the Dockerfile is read the way CI builds it
+    # Then  the broken shapes are refused and the real image installs uv first
+    check("image: no uv install before the seam is refused",
+          problems(broken) != [], problems(broken))
+    check("image: uv installed after the seam is refused",
+          problems(late) != [], problems(late))
+    check("image: the real Dockerfile installs uv before the seam",
+          problems(DOCKERFILE.read_text()) == [],
+          problems(DOCKERFILE.read_text()))
+
+
 def main() -> int:
     print("install_hermes_ci.sh: one seam, one pin, a build that proves the alias")
     test_a_present_cli_is_used_and_nothing_is_downloaded()
@@ -502,6 +535,7 @@ def main() -> int:
     test_nothing_works_is_a_loud_failure_naming_every_path()
     test_the_seam_never_handles_a_credential()
     test_the_dockerfile_installs_through_the_seam()
+    test_the_image_installs_uv_before_the_seam_runs()
     test_the_dockerfile_asserts_the_alias_at_build_time()
     test_no_credential_value_is_baked_into_the_image()
     test_the_install_pin_has_one_definition_across_the_two_files()
