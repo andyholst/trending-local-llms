@@ -12,6 +12,9 @@
       `git show HEAD:scripts/worktree_base.py`: old exits 2 with a generic argparse usage error,
       new exits 1 with the targeted refusal)
 - [x] Full worktree suite green on the new code (151 passed, 0 failed)
-- [ ] `make test` + `make lint` green (whole suite incl. wiring guards)
-- [ ] `make openspec-check` + `make openspec-index-check` + `make architecture-check` green
-- [ ] PR opened, CI monitored to green (rule 6e)
+- [x] `make test` + `make lint` green (whole suite incl. wiring guards)
+- [x] `make openspec-check` + `make openspec-index-check` + `make architecture-check` green
+
+(The PR lifecycle itself — opened, monitored, auto-merged green — is verified by
+qa-validate's own gates on the head commit, not by a task box: a box that can only be
+ticked after the merge would make `openspec-check` unsatisfiable at the PR head.)
