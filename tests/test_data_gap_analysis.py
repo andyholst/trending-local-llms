@@ -2175,6 +2175,87 @@ def test_a_joint_raise_is_still_credited_to_neither():
               not any(any(RAISE_SENTENCE in t for t in b) for b in buckets), str(capture))
 
 
+def test_declared_estimates_surface_as_a_reaskable_class():
+    """Issue #936: a `(est)`-marked footprint value is not missing and not free text —
+    it is a DECLARED estimate, and by its own marker it is the class of value a footprint
+    query (rule 6o) can replace with a measured post. The report must name each
+    model+field, the signature must carry the class once per FIELD (the #472 stability
+    lesson), and the gap-issue body must name the model+field for every entry."""
+    with tempfile.TemporaryDirectory() as td:
+        est_model = model("est-class-27b",
+                          engine_min_version="llama.cpp b9100 (estimated)",
+                          engines=[{"engine": "llama.cpp", "tps": "40",
+                                    "hardware": "RTX 4090 24GB", "quant": "Q4_K_M",
+                                    "weight_gb": "14.6 (est)", "context_tokens": 131072,
+                                    "date": "2026-10-14",
+                                    "source_post": "https://lightbrd.com/u/status/2"}])
+        clean_model = model("est-clean-9b",
+                            engines=[{"engine": "llama.cpp", "tps": "91",
+                                      "hardware": "RTX 4080 16GB", "quant": "Q4_K_M",
+                                      "weight_gb": 5.9,
+                                      "date": "2026-10-14",
+                                      "source_post": "https://lightbrd.com/u/status/3"}])
+        report = G.analyse(store_with([est_model, clean_model]),
+                           {"model": set(), "measurement": set(), "search_model": set()},
+                           raw_dir=Path(td) / "raw")
+        est = report["declared_estimates"]
+        check("measurement-level (est) names the model+field",
+              any(e.startswith("est-class-27b/llama.cpp:weight_gb=")
+                  for e in est.get("weight_gb", [])), str(est))
+        check("model-row (estimated) is in the class too",
+              any(e.startswith("est-class-27b/-:engine_min_version=")
+                  for e in est.get("engine_min_version", [])), str(est))
+        check("a measured value never enters the class",
+              not any("est-clean-9b" in e for k in est for e in est[k]), str(est))
+        check("the signature carries the class once per field",
+              "reask_estimate:weight_gb" in report["signature"]
+              and "reask_estimate:engine_min_version" in report["signature"]
+              and sum(1 for s in report["signature"]
+                      if s.startswith("reask_estimate:")) == 2,
+              str(report["signature"]))
+        rendered = G.render(report)
+        check("the report names the re-askable class",
+              "Declared (est) footprint values (re-askable" in rendered
+              and "est-class-27b/llama.cpp:weight_gb=14.6 (est)" in rendered,
+              rendered[:600])
+        body, _title = G.issue_body(report, None)
+        check("the gap-issue body names each model+field",
+              "model+field named" in body
+              and "est-class-27b/llama.cpp:weight_gb=14.6 (est)" in body
+              and "est-class-27b/-:engine_min_version=llama.cpp b9100 (estimated)" in body,
+              body[:600])
+        clean_report = G.analyse(store_with([clean_model]),
+                                  {"model": set(), "measurement": set(),
+                                   "search_model": set()},
+                                  raw_dir=Path(td) / "raw")
+        check("no estimate -> no class, no signature entry, the section says none",
+              not clean_report["declared_estimates"]
+              and not any(s.startswith("reask_estimate:") for s in clean_report["signature"])
+              and "Declared (est) footprint values (re-askable — a footprint query can replace them)\n\n- none"
+              in G.render(clean_report), str(clean_report["signature"]))
+
+
+def test_the_declared_estimate_detector_is_one_detector():
+    """Rule 6d (issue #936): the `(est)` marker has exactly ONE detector —
+    scripts/declared_estimate.py — and its field set IS the analysis's DIMENSIONS.
+    A second regex in the analysis (or a field list kept in both places) would drift
+    silently, which is exactly the class this pins."""
+    import declared_estimate as DE
+    check("the footprint field set IS the analysis's DIMENSIONS keys",
+          DE.FOOTPRINT_FIELDS == tuple(d["key"] for d in G.DIMENSIONS),
+          f"{DE.FOOTPRINT_FIELDS} vs {tuple(d['key'] for d in G.DIMENSIONS)}")
+    src = (ROOT / "scripts" / "data_gap_analysis.py").read_text(encoding="utf-8")
+    check("the analysis reads the marker through the module, never its own regex",
+          "import declared_estimate" in src
+          and "(?:est|estimated)" not in src, src[:120])
+    check("the module matches both spellings and refuses the rest",
+          DE.has_declared_estimate("14.6 (est)")
+          and DE.has_declared_estimate("b9100 (estimated)")
+          and DE.has_declared_estimate("Q5_K_M ( est")
+          and not DE.has_declared_estimate("14.6")
+          and not DE.has_declared_estimate("estimated runtime 14.6"))
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -2224,6 +2305,8 @@ def main() -> int:
     test_an_unreconcilable_identity_is_reported_loudly()
     test_a_measurement_without_a_source_post_needs_equal_tps()
     test_a_joint_raise_is_still_credited_to_neither()
+    test_declared_estimates_surface_as_a_reaskable_class()
+    test_the_declared_estimate_detector_is_one_detector()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
