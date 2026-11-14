@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **287**
+Active changes: **2** · archived: **288**
 
 ## Active changes
 
@@ -224,6 +224,7 @@ Active changes: **2** · archived: **287**
 | `pipeline-failure-diagnosis` | archived | #802 (measured: qa-validate master run 43088760321 red on `openspec-archive-check` — diagnosed only because a human opened the run page; the chain ended as issue #800 → fix PR #808 → guard `tests/test_openspec_archive_check.py`) | #811 | [alarms](openspec/changes/archive/pipeline-failure-diagnosis/specs/alarms/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/pipeline-failure-diagnosis/proposal.md) |
 | `pipeline-failure-rediagnose-820` | archived | #820 | #967 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-820/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-820/proposal.md) |
 | `pipeline-failure-rediagnose-821` | archived | #821 | #974 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-821/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-821/proposal.md) |
+| `pipeline-failure-rediagnose-822` | archived | #822 | #977 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-822/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-822/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |

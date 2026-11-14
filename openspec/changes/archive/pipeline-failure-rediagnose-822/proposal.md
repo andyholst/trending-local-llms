@@ -1,9 +1,7 @@
 # Proposal: pipeline-failure-rediagnose-822
 
 Issue: #822
-PR:
-
-## Why
+PR: #977
 
 Issue #822 was filed UNDIAGNOSED: the filer's log reader (the defect issue #923 fixed) refused
 run 41922211098's alarm-job log, so its ledger row carries `fix_pr: null`, `guard: null`. A
