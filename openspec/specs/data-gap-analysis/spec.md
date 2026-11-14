@@ -66,3 +66,49 @@ SHALL NOT count as a build claim.
 - **When** `analyse` runs
 - **Then** the model stays in `not_captured:engine_min_version` (an acquisition gap)
 - **Test:** tests/test_data_gap_analysis.py::test_engine_min_version_detector_sees_the_build_phrases_posts_use
+
+### Requirement: A dimension captured on a measurement counts as captured
+
+`analyse()` MUST treat a dimension as stored when the model row OR any of its measurements
+carries a non-empty value, and MUST report `unstructured` only when neither does.
+
+#### Scenario: the value lives only on a measurement
+
+- **Given** a model whose only `storage_offload` is on one of its measurements, and a sibling that states it nowhere
+- **When** the store is analysed
+- **Then** the measured model is neither `missing` nor `unstructured`, the sibling is both reported as missing and named in the signature
+- **Test:** tests/test_data_gap_analysis.py::test_a_measurement_level_value_is_captured
+
+#### Scenario: free text is still not a stored value
+
+- **Given** a model whose only RAM figure is the string `"1432 MB peak RAM"` inside `quant`
+- **When** the store is analysed
+- **Then** it is reported as free-text-only and still counts as missing
+- **Test:** tests/test_data_gap_analysis.py::test_free_text_mention_is_unstructured_not_present
+
+### Requirement: A storage offload needs a medium and an offload wording
+
+The `storage_offload` free-text detector MUST require a storage medium
+(`ssd`/`nvme`/`flash`/`disk`/`hdd`/`storage`) AND an offload/streaming wording in the same
+sentence.
+
+#### Scenario: a memory offload
+
+- **Given** `"Q4_K_M with 26 MoE layers offloaded to the CPU"`
+- **When** the store is analysed
+- **Then** the model is NOT reported as naming a storage offload
+- **Test:** tests/test_data_gap_analysis.py::test_a_storage_offload_needs_a_medium_and_an_offload
+
+#### Scenario: a file size and a machine's own disk
+
+- **Given** `"4-bit MLX, 2.1GB on disk"` and `"M2 Ultra, 2TB SSD, 192GB unified memory"`
+- **When** the store is analysed
+- **Then** neither is reported
+- **Test:** tests/test_data_gap_analysis.py::test_a_storage_offload_needs_a_medium_and_an_offload
+
+#### Scenario: a genuine storage requirement
+
+- **Given** `"experts streamed from NVMe SSD"` and `"MoE expert offload to SSD"`
+- **When** the store is analysed
+- **Then** both are reported
+- **Test:** tests/test_data_gap_analysis.py::test_a_storage_offload_needs_a_medium_and_an_offload
