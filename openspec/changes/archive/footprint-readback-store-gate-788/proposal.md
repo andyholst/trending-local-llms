@@ -1,6 +1,7 @@
 # Proposal: footprint-readback-store-gate-788
 
 Issue: #788 — "Stored footprint values their captured source posts nowhere state are surfaced but never repaired".
+PR: #933
 
 ## Why
 
