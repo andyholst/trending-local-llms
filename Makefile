@@ -475,12 +475,14 @@ verify-closure:
 # target is how the sweep and a human reach it.
 .PHONY: _pr-health pr-health
 _pr-health:
-	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,)
+	python3 scripts/pr_health.py $(if $(REPO),--repo "$(REPO)",) $(if $(COMMENT),--comment,) $(if $(REBASE),--rebase,)
 
-# REPORT-ONLY since issue #814: the fix-bot repair pipeline was retired, so the sweep
-# flags silent PRs and comments the remedy; it dispatches nothing.
+# REPORT-ONLY since issue #814 for the DISPATCHED repairer (retired); issue #818 added the
+# rebaser half: REBASE=1 rebases behind-and-clean bot-owned (ci/) PR heads onto the fetched
+# base and pushes them to their own PR head. Conflicted PRs and human branches stay
+# report-only — the sweep never rewrites one.
 pr-health:
-	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)"
+	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)" REBASE="$(REBASE)"
 
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }

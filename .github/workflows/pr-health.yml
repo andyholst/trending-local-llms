@@ -16,7 +16,10 @@ name: pr-health
 # calls it through `make pr-health` (rules 6d/6m).
 #
 # Exit contract: 1 when at least one open PR is silent, so the scheduled run goes RED instead
-# of staying quiet. Read-only apart from ONE deduplicated comment per affected PR.
+# of staying quiet. Apart from the comments it leaves ONE repair mechanically (issue #818):
+# behind-and-clean BOT-owned (`ci/` prefix) PR heads are rebased onto the fetched base and
+# pushed to their own PR branch, which re-triggers that PR's gates. A conflicted PR and a
+# human-owned branch are never rewritten.
 on:
   schedule:
     - cron: "53 * * * 3"   # once a week, Wednesday (an odd minute; GitHub drops top-of-hour runs)
@@ -65,21 +68,29 @@ jobs:
   sweep:
     needs: guard
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    permissions:
+      contents: write   # issue #818: the rebaser pushes a rebased bot branch back to its
+                        # PR head with the default token; comments also use the default token
     steps:
       # `gh` resolves the repository from the remote, so the sweep needs a checkout (and the
-      # Makefile — every call goes through `make`, rule 6m).
+      # Makefile — every call goes through `make`, rule 6m). fetch-depth: 0 because the
+      # rebaser fetches PR branches and rebases them: a shallow clone cannot rebase across
+      # the shallow boundary.
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
 
-      # REPORT-ONLY since issue #814 (the fix-bot repair pipeline was retired): a silent PR is
-      # flagged with its remedy on the PR itself. The repair of a bot-owned PR is the AGENTS.md
-      # §6r sweep: `make worktree-resume`, `make base-rebase`, push to the PR's HEAD branch.
+      # Issue #814 retired the DISPATCHED repairer; issue #818 added the rebaser half:
+      # behind-and-clean bot-owned PR heads are rebased onto origin/master and pushed to
+      # their own PR head. A conflicted PR and a human-owned branch stay report-only:
+      # their repair is the PR's own fix loop (§6r) or a human.
 
       # The comment uses the DEFAULT token (rule 6b): the owner PAT has no Issues/PR-comment
       # scope here, and a refused comment would leave the sweep green over a silent PR.
-      - name: Flag every silent open PR
+      - name: Rebase drifted bot PRs and flag every silent open PR
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-        run: make pr-health REPO="$REPO" COMMENT=1
+        run: make pr-health REPO="$REPO" COMMENT=1 REBASE=1

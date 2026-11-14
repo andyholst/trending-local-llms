@@ -174,9 +174,21 @@ def test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard():
     # TWO tokens, deliberately (issue #475): the COMMENT uses the default token (rule 6b —
     # the owner PAT has no comment scope), while DISPATCHING a workflow is an Actions write
     # and needs the PAT. Each step must carry its own.
-    comment_step = wf[wf.index("Flag every silent open PR"):]
-    check("silent: the comment step uses the default token",
+    comment_step = wf[wf.index("Rebase drifted bot PRs and flag every silent open PR"):]
+    check("silent: the sweep step uses the default token",
           "GH_TOKEN: ${{ github.token }}" in comment_step, comment_step[:300])
+    # Issue #818: the same step carries the rebaser half — REBASE=1 — and the job may push
+    # a rebased bot branch back to its PR head (contents: write on the sweep job), on a
+    # full-history checkout (a shallow clone cannot rebase).
+    check("rebaser: the step calls make pr-health with REBASE=1",
+          "make pr-health" in comment_step and "REBASE=1" in comment_step, comment_step[:400])
+    check("rebaser: the sweep job may push (contents: write)",
+          "contents: write" in wf[wf.index("  sweep:"):], wf[wf.index("  sweep:"):200])
+    check("rebaser: the checkout carries full history (fetch-depth: 0)",
+          "fetch-depth: 0" in wf[wf.index("  sweep:"):])
+    mk = (ROOT / "Makefile").read_text(encoding="utf-8")
+    check("rebaser: the Makefile forwards REBASE to the flag",
+          '$(if $(REBASE),--rebase,)' in mk, "")
     # Issue #814: the sweep REPORTS only — the dispatch-to-fix-bot step was deleted
     # with the repair pipeline, and re-adding it re-adds this red.
     check("silent: the sweep dispatches no repairer (report-only since #814)",
@@ -286,6 +298,137 @@ def test_no_script_reads_a_number_straight_from_the_environment():
           not bare, bare)
 
 
+def test_rebase_plan_classifies_by_ownership_and_conflict():
+    """The DECISION half (rule 6d): ci/ branches are the sweep's to rebase, everything
+    else is untouchable, and a CONFLICTING bot PR is never auto-rebased (issue #818)."""
+    plan = PH.rebase_plan([
+        pr(1, "ci/data-gap-7-x"),
+        pr(2, "fix/human-branch"),
+        pr(3, "ci/clash-y", mergeable="CONFLICTING", state="DIRTY"),
+        pr(4, "ci/draft-z", draft=True),
+        pr(5, "keeper/human-z"),
+        pr(6, "tech-debt-slug-955"),
+        pr(7, "issue-523-tech-debt"),
+        pr(8, "data-gap-42-y"),
+        pr(9, "feature/human-idea"),
+    ])
+    by = {p["number"]: p["action"] for p in plan}
+    check("plan: a clean ci/ branch is rebase-if-behind", by[1] == "rebase-if-behind", plan)
+    check("plan: a human branch is never rewritten", by[2] == "human-branch" and by[5] == "human-branch" and by[9] == "human-branch", plan)
+    check("plan: a CONFLICTING bot PR is reported, never auto-rebased", by[3] == "conflict", plan)
+    check("plan: a draft is not touched at all", 4 not in by, plan)
+    check("plan: the agent-session shapes (tech-debt-/data-gap-/issue-) are the sweep's to rebase",
+          by[6] == "rebase-if-behind" and by[7] == "rebase-if-behind" and by[8] == "rebase-if-behind", plan)
+
+
+def _gitfx(cwd, *args):
+    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+
+
+def _commit_fx(cwd, path, text, msg):
+    (cwd / path).write_text(text, encoding="utf-8")
+    _gitfx(cwd, "add", "-A")
+    r = _gitfx(cwd, "-c", "user.name=fixture", "-c", "user.email=fixture@example.com",
+               "commit", "-q", "-m", msg)
+    assert r.returncode == 0, r.stderr
+
+
+def test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten():
+    """End-to-end through the REAL script against a REAL git remote (rule 6m: the external
+    system is a local repository the real git talks to; only `gh` is stubbed).
+
+    Planted: a behind-and-clean `ci/` PR branch, a behind HUMAN branch, a CONFLICTING `ci/`
+    branch, and an already-current `ci/` branch. Done-when of issue #818: the first is
+    rebased onto the base with its own commit intact; the others are byte-identical."""
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        origin = td / "origin.git"
+        assert _gitfx(td, "init", "--bare", "-q", str(origin)).returncode == 0
+        seed = td / "seed"
+        seed.mkdir()
+        assert _gitfx(seed, "init", "-q", "-b", "master").returncode == 0
+        _commit_fx(seed, "base.txt", "base\n", "base commit")
+        base_oid = _gitfx(seed, "rev-parse", "HEAD").stdout.strip()
+        _gitfx(seed, "remote", "add", "origin", str(origin))
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        # behind-and-clean bot branch (its file is nowhere else touched)
+        _gitfx(seed, "checkout", "-q", "-b", "ci/data-gap-7-x", base_oid)
+        _commit_fx(seed, "feature.txt", "feature\n", "feat: the PR's own commit")
+        _gitfx(seed, "push", "-q", "origin", "ci/data-gap-7-x")
+
+        # master moves ahead on a different file
+        _gitfx(seed, "checkout", "-q", "master")
+        _commit_fx(seed, "other.txt", "other\n", "master moves ahead")
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        # behind HUMAN-owned branch — must stay byte-identical
+        _gitfx(seed, "checkout", "-q", "-b", "fix/human-behind", base_oid)
+        _commit_fx(seed, "human.txt", "human\n", "human work")
+        _gitfx(seed, "push", "-q", "origin", "fix/human-behind")
+
+        # behind CONFLICTING bot branch (edits the same line master moved)
+        _gitfx(seed, "checkout", "-q", "-b", "ci/clash-8-y", base_oid)
+        _commit_fx(seed, "base.txt", "clash from the branch\n", "conflicting edit")
+        _gitfx(seed, "push", "-q", "origin", "ci/clash-8-y")
+
+        # already-current bot branch (cut from the CURRENT master tip, explicitly)
+        _gitfx(seed, "checkout", "-q", "-b", "ci/current-9-z", "refs/remotes/origin/master")
+        _commit_fx(seed, "fresh.txt", "fresh\n", "current work")
+        _gitfx(seed, "push", "-q", "origin", "ci/current-9-z")
+
+        clone = td / "clone"
+        assert _gitfx(td, "clone", "-q", str(origin), str(clone)).returncode == 0
+
+        def oid(ref):
+            return _gitfx(clone, "rev-parse", ref).stdout.strip()
+
+        before = {b: oid(f"refs/remotes/origin/{b}")
+                  for b in ("ci/data-gap-7-x", "fix/human-behind", "ci/clash-8-y",
+                            "ci/current-9-z", "master")}
+        prs = [
+            pr(7, "ci/data-gap-7-x", oid=before["ci/data-gap-7-x"]),
+            pr(8, "ci/clash-8-y", mergeable="CONFLICTING", state="DIRTY",
+               oid=before["ci/clash-8-y"]),
+            pr(9, "ci/current-9-z", oid=before["ci/current-9-z"]),
+            pr(10, "fix/human-behind", oid=before["fix/human-behind"]),
+        ]
+        runs = {p["headRefOid"]: 1 for p in prs}  # none silent: the rebaser is orthogonal
+        with tempfile.TemporaryDirectory() as s:
+            sd = Path(s)
+            (sd / "gh").write_text(STUB, encoding="utf-8")
+            (sd / "gh").chmod(0o755)
+            (sd / "prs.json").write_text(json.dumps(prs), encoding="utf-8")
+            (sd / "posted").write_text("")
+            env = {**os.environ, "PATH": f"{sd}:{os.environ['PATH']}",
+                   "FAKE_PRS": str(sd / "prs.json"), "FAKE_POSTED": str(sd / "posted")}
+            for oid_, _ in runs.items():
+                f = sd / "runs.json"
+                f.write_text(json.dumps([{"databaseId": 1}]), encoding="utf-8")
+                env[f"FAKE_RUNS_{oid_[:7]}"] = str(f)
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "--repo", "o/r", "--rebase",
+                 "--dir", str(clone)], capture_output=True, text=True, env=env)
+        check("rebaser: the run reports the rebase",
+              "rebaser #7" in proc.stdout and "REBASED" in proc.stdout,
+              proc.stdout + proc.stderr)
+        _gitfx(clone, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")
+        check("rebaser: the behind clean ci/ branch now carries origin/master as an ancestor",
+              _gitfx(clone, "merge-base", "--is-ancestor", "refs/remotes/origin/master",
+                     "refs/remotes/origin/ci/data-gap-7-x").returncode == 0, "")
+        log = _gitfx(clone, "log", "--oneline", "refs/remotes/origin/ci/data-gap-7-x").stdout
+        check("rebaser: the branch's own commit survived the rebase",
+              "feat: the PR's own commit" in log, log)
+        check("rebaser: a human-owned branch is byte-identical (never rewritten)",
+              oid("refs/remotes/origin/fix/human-behind") == before["fix/human-behind"], "")
+        check("rebaser: a CONFLICTING bot branch is byte-identical (never auto-rebased)",
+              oid("refs/remotes/origin/ci/clash-8-y") == before["ci/clash-8-y"], "")
+        check("rebaser: an already-current branch is not churned",
+              oid("refs/remotes/origin/ci/current-9-z") == before["ci/current-9-z"], "")
+        check("rebaser: master itself is untouched",
+              oid("refs/remotes/origin/master") == before["master"], "")
+
+
 def main() -> int:
     print("silent PR alarm (issue #442)")
     test_a_conflicting_pr_is_silent_and_named()
@@ -300,6 +443,8 @@ def main() -> int:
     test_an_empty_setting_means_missing()
     test_the_real_target_runs_report_only()
     test_no_script_reads_a_number_straight_from_the_environment()
+    test_rebase_plan_classifies_by_ownership_and_conflict()
+    test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
