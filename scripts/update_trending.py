@@ -866,9 +866,15 @@ def apply_engine_aliases(m: dict, engines: list[dict] | None = None) -> list[dic
     """Rename engines per the model's `engine_aliases` ({posted name: registry
     name}). Bonsai 2's ternary GGUFs only run on the PrismML llama.cpp fork, so
     a post that says 'llama.cpp' must be stored and linked as
-    'llama.cpp (PrismML fork)'. Applied to `engines` (default: the model's own)
+    'llama.cpp (PrismML fork)'. Underneath them sits the registry-wide spelling
+    map `engine_registry.ENGINE_NAME_ALIASES` (issue #795): a captured spelling
+    ('mlx.fast', 'Bonsai Oryon') re-homes to its registered engine on EVERY model,
+    not just the row that carried a private alias — the model's own `engine_aliases`
+    still win. Applied to `engines` (default: the model's own)
     and to supported_engines; idempotent. Returns the (renamed) engine list."""
-    aliases = m.get("engine_aliases") or {}
+    import engine_registry as _er
+    aliases = dict(_er.ENGINE_NAME_ALIASES)
+    aliases.update(m.get("engine_aliases") or {})
     es = m.get("engines", []) if engines is None else engines
     if not aliases:
         return es
@@ -2276,6 +2282,15 @@ def fabricated_engine_reason(engine: object, model: dict, registry: dict) -> str
     """
     name = str(engine or "").strip()
     if not name or name in (registry or {}):
+        return None
+    # A DECLARED spelling of a registered engine (issue #795) is not a fabrication:
+    # 'Bonsai Oryon' carries the hardware token `oryon` (the rule's own measured
+    # shape), yet it is the registry map's key for the engine that produced the
+    # figure ('llama.cpp (PrismML fork)'). canonical_engine_name resolves it only
+    # when the target is registered, so an unknown name still falls through to the
+    # provable-shape refusal below and keeps reding `make validate` for a human.
+    import engine_registry as _er
+    if _er.canonical_engine_name(name, registry) != name:
         return None
     # ONLY a provable shape is refused: a QUANTIZATION token in the engine name. An
     # engine name never contains FP4/NVFP4/Q4_K_M/AWQ/GGUF, so that alone proves the name

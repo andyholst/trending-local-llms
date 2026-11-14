@@ -10,7 +10,7 @@
     "llama.cpp (PrismML fork)": {
       "backend": "CUDA / CPU / Metal",
       "url": "https://github.com/PrismML-Eng/llama.cpp",
-      "note": "PrismML's llama.cpp fork (prism branch) — required for Ternary Bonsai 2 PTQ1_0/PQ2_0 (stock llama.cpp rejects them)"
+      "note": "PrismML's llama.cpp fork (prism branch) — required for Ternary Bonsai 2 PTQ1_0/PQ2_0 (stock llama.cpp rejects them). Issue #795: 'Bonsai Oryon' (github.com/SatoruGoj0/Bonsai-Oryon) is PACKAGING of this fork + ggml, not an inference engine — its captured figures (e.g. 34.8 t/s prompt processing, Lenovo Snapdragon X) re-home here via engine_registry.ENGINE_NAME_ALIASES"
     },
     "Ollama": {
       "backend": "CUDA / ROCm / CPU / Metal",
@@ -892,7 +892,13 @@
       "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
       "context_tokens": "250K",
       "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
-      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7"
+      "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7",
+      "measurement_model_aliases": [
+        "cyber-frost-3.8-mlx",
+        "qwen3-8-flash-next-125b",
+        "qwen3.8-27b",
+        "qwopus3.6-35b-a3b-coder-mtp"
+      ]
     },
     {
       "id": "gemma-4-26b",
@@ -1305,7 +1311,10 @@
       "context_tokens": "66000",
       "weight_gb": "Q4_K_M",
       "measurement_model_aliases": [
-        "qwen3.8-27b"
+        "qwen3.8-27b",
+        "lfm2.5-24b-a2b",
+        "qwen3-6-35b-a3b",
+        "qwopus3.6-35b-a3b-coder-mtp"
       ]
     },
     {
@@ -1478,7 +1487,10 @@
         "trend_score": 7.9
       },
       "weight_gb": "105GB (4-bit)",
-      "storage_offload": "105GB of weights streamed from SSD; 33GB memory budget"
+      "storage_offload": "105GB of weights streamed from SSD; 33GB memory budget",
+      "measurement_model_aliases": [
+        "qwen3.8-flash-next-125b"
+      ]
     },
     {
       "id": "qwen3.8-35b-a3b",
@@ -2755,7 +2767,14 @@
       "context_tokens": "262144 (262K ctx; 1M via YaRN)",
       "weight_gb": "13.1GB (UD-Q3_K_XL)",
       "engine_min_version": "llama.cpp 0.6.0; mlx-serve 26.9.5 / 26.10.1; oMLX 0.7.0",
-      "system_ram_min": "128GB"
+      "system_ram_min": "128GB",
+      "measurement_model_aliases": [
+        "bonsai-2-27b",
+        "qwen3-8-27b",
+        "qwen3.5-0.8b",
+        "qwen3.8-flash-next-125b",
+        "thinkingcap-27b"
+      ]
     },
     {
       "id": "lfm2.5-24b-a2b",
@@ -3007,7 +3026,10 @@
       "context_tokens": "131K",
       "system_ram_min": "unified memory (Strix Halo APU)",
       "weight_gb": "14.5GB 4-bit",
-      "engine_min_version": "SGLang day-0 (Liquid's own benchmarks run on vLLM/Liquid inference stack)"
+      "engine_min_version": "SGLang day-0 (Liquid's own benchmarks run on vLLM/Liquid inference stack)",
+      "measurement_model_aliases": [
+        "qwen3.6-35b-a3b"
+      ]
     },
     {
       "id": "qwen3.8-27b-twin-turbo",
@@ -3072,7 +3094,10 @@
         "trend_score": 0.0
       },
       "weight_gb": "Q4_K_S about 16-18GB",
-      "context_tokens": "262144"
+      "context_tokens": "262144",
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "bonsai-2-9b",
@@ -3551,7 +3576,11 @@
       },
       "engine_min_version": "llama.cpp MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on",
       "system_ram_min": "12GB",
-      "storage_offload": "experts streamed from phone flash storage"
+      "storage_offload": "experts streamed from phone flash storage",
+      "measurement_model_aliases": [
+        "gemma-4-26b",
+        "gemma-4-e4b"
+      ]
     },
     {
       "id": "bonsai-2-27b",
@@ -3845,7 +3874,11 @@
       "context_tokens": "262144",
       "engine_min_version": "llama.cpp (PrismML fork) + bonsai-ada-surgery serve patch",
       "system_ram_min": "16GB",
-      "storage_offload": "expert layers offloaded to CPU/SSD on 4GB-VRAM machines"
+      "storage_offload": "expert layers offloaded to CPU/SSD on 4GB-VRAM machines",
+      "measurement_model_aliases": [
+        "qwen3.8-27b",
+        "qwen3.8-27b-bonsai-2"
+      ]
     },
     {
       "id": "muse-spark-open",
@@ -4392,7 +4425,11 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b",
+        "qwen3.8-27b-coder390"
+      ]
     },
     {
       "id": "qwen2.5-0.5b",
@@ -4651,7 +4688,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "bonsai-2-27b"
+      ]
     },
     {
       "name": "Qwen3.8-27B (Apple Silicon)",
@@ -4727,7 +4767,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "qwen3-235b-a22b",
@@ -4918,7 +4961,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b-dflash2-teksedge3090"
+      ]
     },
     {
       "id": "qwen3.8-27b-ipad-egpu-r9700",
@@ -4970,7 +5016,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "qwen3.6-35b-a3b-kapitsa-m4-pro-mtp",
@@ -5037,7 +5086,11 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "system_ram_min": "48GB"
+      "system_ram_min": "48GB",
+      "measurement_model_aliases": [
+        "qwen3-6-35b-a3b",
+        "qwen3.6-35b-a3b"
+      ]
     },
     {
       "name": "Qwen3.6-35B-A3B (M4 Pro engine bakeoff)",
@@ -5091,7 +5144,11 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.6-35b-a3b",
+        "qwen3.6-35b-a3b-kapitsa-m4-pro-mtp"
+      ]
     },
     {
       "name": "Qwen3.8-Flash-Next 125B (Apple Silicon)",
@@ -5165,7 +5222,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-flash-next-125b"
+      ]
     },
     {
       "name": "Qwen3.8-Flash-Next 125B (MTPLX rd1.1)",
@@ -5215,7 +5275,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3-8-flash-next-125b"
+      ]
     },
     {
       "id": "qwen3.8-27b-thinkingcap-tensorfold-1spark",
@@ -5456,7 +5519,10 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "weight_gb": "~6GB (MLX 4-bit)"
+      "weight_gb": "~6GB (MLX 4-bit)",
+      "measurement_model_aliases": [
+        "qwen3.5-4b"
+      ]
     },
     {
       "id": "qwen3.8-27b-radeon-pro-r9700",
@@ -5756,7 +5822,10 @@
       "weight_gb": "11.8GB (UD-Q2_K_XL)",
       "system_ram_min": "12GB",
       "storage_offload": "cold experts left on flash, re-read on router change",
-      "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge, cold experts left on flash"
+      "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge, cold experts left on flash",
+      "measurement_model_aliases": [
+        "qwen3-30b"
+      ]
     },
     {
       "id": "qwen3.6-35b-a3b-mac-mini-m4-pro-flint",
@@ -6191,7 +6260,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "qwen3-0.6b",
@@ -6296,7 +6368,10 @@
         "trend_score": 0.0
       },
       "system_ram_min": "8GB",
-      "weight_gb": "~3GB (MLX 4-bit)"
+      "weight_gb": "~3GB (MLX 4-bit)",
+      "measurement_model_aliases": [
+        "qwen3.5-9b"
+      ]
     },
     {
       "id": "qwen3.6-35b-a3b-pt215-mps-m3-ultra",
@@ -6347,7 +6422,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.6-35b-a3b"
+      ]
     },
     {
       "id": "qwen3.6-27b",
@@ -6401,7 +6479,10 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "system_ram_min": "48GB"
+      "system_ram_min": "48GB",
+      "measurement_model_aliases": [
+        "qwen3-6-27b"
+      ]
     },
     {
       "id": "mellum-2-1-12b-a2-5b",
@@ -6504,7 +6585,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "gemma-4-e4b",
@@ -6557,7 +6641,10 @@
         "trend_score": 0.0
       },
       "weight_gb": "Q3_K_M",
-      "system_ram_min": "32GB"
+      "system_ram_min": "32GB",
+      "measurement_model_aliases": [
+        "gemma-4-26b-a4b"
+      ]
     },
     {
       "id": "nemotron-dory-4b",
@@ -6728,7 +6815,10 @@
         "trend_score": 0.0
       },
       "engine_min_version": "Metal 4-bit MLX build with the Swift 1.5 adapter",
-      "context_tokens": "131072"
+      "context_tokens": "131072",
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "raon-1-mini-preview",
@@ -6858,7 +6948,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "qwen3.8-27b-dgx-spark-sglang",
@@ -7260,7 +7353,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "bonsai-2-9b"
+      ]
     },
     {
       "id": "nemotron-3.5-bolt-74b-a9b",
@@ -7582,7 +7678,11 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b",
+        "qwen3.8-27b-ps5-llamacpp"
+      ]
     },
     {
       "id": "qwen3.8-27b-ps5-llamacpp",
@@ -7649,7 +7749,11 @@
         "trend_score": 0.0
       },
       "weight_gb": "UD-IQ2_XXS (2-bit)",
-      "system_ram_min": "about 6 GiB on a jailbroken PS5, CPU only (12 GiB with the GPU)"
+      "system_ram_min": "about 6 GiB on a jailbroken PS5, CPU only (12 GiB with the GPU)",
+      "measurement_model_aliases": [
+        "qwen3.5-0.8b",
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "qwen3.8-flash-next-125b-4090-hybrid",
@@ -7832,6 +7936,9 @@
           "name": "Qwen3.8-27B (PS5LM native GPU app on a jailbroken PS5)",
           "hf": "Qwen/Qwen3.8-27B"
         }
+      ],
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
       ]
     },
     {
@@ -7884,7 +7991,11 @@
         "trend_score": 0.0
       },
       "engine_min_version": "MLX-Serve 26.10.1, MTPLX drives the MTP head through custom Metal kernels",
-      "system_ram_min": "24GB"
+      "system_ram_min": "24GB",
+      "measurement_model_aliases": [
+        "bonsai-2-27b",
+        "qwen3.8-27b-bonsai-2"
+      ]
     },
     {
       "id": "qwen3-235b-a22b-strix-halo",
@@ -7936,7 +8047,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3-235b-a22b"
+      ]
     },
     {
       "id": "bonsai-2-4b-cmf-phone",
@@ -8192,7 +8306,11 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "engine_min_version": "llama.cpp b9292 (Vulkan), MTP speculative decode N=5"
+      "engine_min_version": "llama.cpp b9292 (Vulkan), MTP speculative decode N=5",
+      "measurement_model_aliases": [
+        "qwen3.6-35b-a3b",
+        "qwen3.8-flash-next-125b"
+      ]
     },
     {
       "id": "qwen3.8-27b-mlx-serve-26.10.1",
@@ -8311,7 +8429,10 @@
         "TensorFold"
       ],
       "context_tokens": "26k",
-      "engine_min_version": "TensorFold 0.6.5"
+      "engine_min_version": "TensorFold 0.6.5",
+      "measurement_model_aliases": [
+        "qwen3.8-flash-next-125b"
+      ]
     },
     {
       "name": "Qwen3.8-27B (Aegis RD1.2 + LM Studio)",
@@ -8348,7 +8469,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3-8-27b"
+      ]
     },
     {
       "id": "qwen3.8-27b-oluwaphilemon1-250k",
@@ -8540,7 +8664,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-27b"
+      ]
     },
     {
       "id": "qwen3.8-27b-dgx-spark-sglang-nvfp4",
@@ -8777,7 +8904,11 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "bonsai-2-27b",
+        "bonsai-2-27b-mlx"
+      ]
     },
     {
       "id": "qwen2.5-1.5b-instruct",
@@ -9006,7 +9137,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.8-flash-next-125b"
+      ]
     },
     {
       "id": "bonsai-2-27b-mac-m4-max",
@@ -9354,7 +9488,10 @@
         "score_7d": 0,
         "speed_bonus": 0.0,
         "trend_score": 0.0
-      }
+      },
+      "measurement_model_aliases": [
+        "qwen3.6-27b"
+      ]
     },
     {
       "id": "glm-5.2",

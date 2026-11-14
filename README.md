@@ -870,7 +870,7 @@ Best measured t/s per model on each engine (🟦 CUDA · 🟩 Metal · 🟨 CPU 
 | Engine | Backend | Models measured | Best for |
 |---|---|---|---|
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | CUDA / ROCm / CPU / Metal | 54 | Max control, custom quants; AMD via ROCm/HIP or Vulkan |
-| [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | CUDA / CPU / Metal | 7 | PrismML's llama.cpp fork (prism branch) — required for Ternary Bonsai 2 PTQ1_0/PQ2_0 (stock llama.cpp rejects them) |
+| [llama.cpp (PrismML fork)](https://github.com/PrismML-Eng/llama.cpp) | CUDA / CPU / Metal | 7 | PrismML's llama.cpp fork (prism branch) — required for Ternary Bonsai 2 PTQ1_0/PQ2_0 (stock llama.cpp rejects them). Issue #795: 'Bonsai Oryon' (github.com/SatoruGoj0/Bonsai-Oryon) is PACKAGING of this fork + ggml, not an inference engine — its captured figures (e.g. 34.8 t/s prompt processing, Lenovo Snapdragon X) re-home here via engine_registry.ENGINE_NAME_ALIASES |
 | [Ollama](https://github.com/ollama/ollama) | CUDA / ROCm / CPU / Metal | 10 | Easiest start |
 | [FreeToken](https://github.com/FlashML-org/FreeToken) | CUDA | 4 | Big MoE on small GPUs |
 | [vLLM](https://github.com/vllm-project/vllm) | CUDA / ROCm | 17 | Production serving, high throughput |

@@ -45,6 +45,43 @@ NON_ENGINE_NAMES = {
     "deepseekharness",
 }
 
+#: The engine SPELLING map — ONE definition (issue #795, rule 6d). A raw capture
+#: that names one of these keys stores its figures under the VALUE (a registered
+#: engine); the key itself is never registered. An alias only resolves when its
+#: target IS in the engine registry — an alias to a missing engine keeps the loud
+#: WARN, so this map can never hide a genuinely unknown engine. Each entry states
+#: its decision:
+#: - 'mlx.fast': the spelling 49 raw search snapshots use for the engine the
+#:   registry knows as 'MLX-fast (Bonsai 2)'
+#:   (github.com/Layr-Labs/mlxfast-bonsai2-27b-engine). Without the map it
+#:   decides 'no-repo' on every `make engine-check` run forever; the figure is
+#:   the same engine under two spellings.
+#: - 'Bonsai Oryon': PACKAGING, not an engine (issue #795 decision):
+#:   github.com/SatoruGoj0/Bonsai-Oryon packages PrismML's llama.cpp fork + ggml
+#:   as one .deb — `classify_repo` answers 'unknown: no inference-engine signal',
+#:   and the rule is that harnesses/apps are never engines. Its captured figures
+#:   (e.g. 34.8 t/s prompt processing on a Lenovo Snapdragon X laptop,
+#:   th3ycallmeibra/status/2111135412119117896) re-home to
+#:   'llama.cpp (PrismML fork)' — the engine that actually produced them.
+ENGINE_NAME_ALIASES = {
+    "mlx.fast": "MLX-fast (Bonsai 2)",
+    "Bonsai Oryon": "llama.cpp (PrismML fork)",
+}
+
+
+def canonical_engine_name(name: object, registry: dict | None = None) -> str:
+    """The registry name a captured engine spelling stores under (issue #795).
+
+    The alias applies only when the target IS registered — an unregistered target
+    keeps the raw name so the classification still WARNs loudly (the spelling map
+    resolves known spellings; it never hides an unknown engine)."""
+    raw = str(name or "")
+    canon = ENGINE_NAME_ALIASES.get(raw)
+    if canon and (registry is None or canon in (registry or {})):
+        return canon
+    return raw
+
+
 # STRONG not-engine signals always win: these repos are never inference
 # engines even when they mention one ("agent framework on top of vLLM").
 _NOT_ENGINE = re.compile(
@@ -187,6 +224,14 @@ def register_new_engines(store: dict, models: list[dict], fetch=fetch_repo_meta)
         for e in m.get("engines", []) or []:
             name = e.get("engine")
             if name and name not in reg:
+                # A declared spelling of an ALREADY-registered engine (issue #795):
+                # the figure re-homes to the registry name at ingest
+                # (update_trending.apply_engine_aliases); classifying the spelling as
+                # a new engine would WARN forever ('mlx.fast': no-repo). An alias
+                # whose target is NOT registered falls through — the WARN stays loud.
+                canon = canonical_engine_name(name, reg)
+                if canon != name:
+                    continue
                 by_engine.setdefault(name, []).append((m, e))
     out = []
     name_ok = _registry_name_pattern()
