@@ -111,7 +111,7 @@ def test_a_true_weekly_line_passes():
     check("true weekly line passes", fails == [], fails)
 
 
-def test_no_workflow_means_no_cron_assertion():
+def test_cadence_refusal_is_not_vacuous():
     # a named pipeline with no workflow file: cadence words still refused,
     # quoted crons cannot be cross-checked (nothing asserts vacuously)
     root = sandbox(
@@ -122,12 +122,12 @@ def test_no_workflow_means_no_cron_assertion():
     check("cadence refusal is not vacuous", any("hourly cadence" in f for f in fails), fails)
 
 
-def test_the_real_repo_readme_is_clean():
+def test_real_repo_readme_is_clean():
     fails = run_check(ROOT)
     check("real README matches the pinned crons", fails == [], fails)
 
 
-def test_the_render_template_no_longer_claims_hourly_queue():
+def test_render_template_no_longer_claims_hourly_queue():
     text = (ROOT / "scripts" / "update_trending.py").read_text(encoding="utf-8")
     check("template: no 'per hour' bot claim", "issue per hour" not in text)
     check("template: no 'twice an hour' alarm claim", "twice an hour" not in text)
@@ -135,9 +135,14 @@ def test_the_render_template_no_longer_claims_hourly_queue():
 
 
 def main() -> int:
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
-    for t in tests:
-        t()
+    test_a_true_weekly_line_passes()
+    test_cadence_refusal_is_not_vacuous()
+    test_hourly_claim_is_refused()
+    test_per_hour_claim_is_refused()
+    test_quoted_cron_must_match_the_workflow()
+    test_real_repo_readme_is_clean()
+    test_render_template_no_longer_claims_hourly_queue()
+    test_wrong_weekday_is_refused()
     print(f"\ntest_readme_bot_cadence: {_PASS} passed, {_FAIL} failed")
     return 1 if _FAIL else 0
 

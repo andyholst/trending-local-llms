@@ -48,4 +48,4 @@ appears on a line naming a scheduled pipeline.
 - **Given** this repository after the template fix and `make render-readme`
 - **When** the check runs against the real `README.md`, and the template is scanned for the retired claims
 - **Then** the check passes and the template holds no "per hour" / "twice an hour" / "weekly Monday `07:23`" bot claim
-- **Test:** tests/test_readme_bot_cadence.py::test_the_real_repo_readme_is_clean
+- **Test:** tests/test_readme_bot_cadence.py::test_real_repo_readme_is_clean
