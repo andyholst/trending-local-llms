@@ -17,8 +17,14 @@ code the agent's `terminal` tool uses), in the image the bots run, and fails —
 when a key that is set in the container is empty in the agent's shell. It prints LENGTHS only: never
 a value, never a prefix.
 
-NO-SKIP POLICY: a key that is not set in the container, or a Hermes that cannot be found, is a LOUD
-failure (exit 2). `--allow-unconfigured` is an explicit local opt-out that reports NOT CONFIGURED.
+NO-SKIP POLICY (issue #946): INSIDE the pinned test image (`IN_CONTAINER=1`, else `/.dockerenv`) a
+key that is not set, or a Hermes terminal wiring that cannot be resolved, is a LOUD failure (exit 2) —
+the gate is authoritative there and never skips. OUTSIDE that marker, a probe that cannot run because
+the LOCAL Hermes install cannot import its own terminal environment (measured host class: Hermes's own
+venv lacks `ruamel`, `ModuleNotFoundError` inside its checkout) is a LOUD SKIP (exit 0): an
+environment fact about that install, not a repo wiring defect — the host runs the gate through
+`make agent-shell-keys-check`, which re-runs it inside the container. A key not set is exit 2
+everywhere. `--allow-unconfigured` is an explicit local opt-out that reports NOT CONFIGURED.
 
 Usage:
     python3 scripts/agent_shell_keys_check.py NOUS_API_KEY FIRECRAWL_API_KEY HF_TOKEN TYPESAFE_API_KEY
@@ -39,6 +45,22 @@ FORCE_PREFIX = "_HERMES_FORCE_"
 
 #: A variable name we are willing to interpolate into a probe command.
 NAME = re.compile(r"^[A-Z_][A-Z0-9_]*$")
+
+#: A probe that failed because Hermes's own checkout cannot import its terminal env (or the
+#: checkout/interpreter is absent) is a fact about THAT install (issue #946's measured host class:
+#: Hermes's managed venv lacks `ruamel`), never a wiring defect of this repository.
+WIRING_UNRESOLVABLE = re.compile(
+    r"not installed here|interpreter was not found|ModuleNotFoundError|ImportError|No module named")
+
+
+def in_container() -> bool:
+    """The pinned test-image marker: the Makefile's own `IN_CONTAINER` when it is given (it is
+    'overridable for the tests only'), else the container's `/.dockerenv` (DOCKER_RUN forwards no
+    such env, so the file is the container's fact)."""
+    forced = os.environ.get("IN_CONTAINER")
+    if forced is not None:
+        return forced == "1"
+    return Path("/.dockerenv").is_file()
 
 #: The probe runs INSIDE Hermes's own interpreter, so it is the agent's real terminal env builder
 #: that decides — not a re-implementation of its filter here (rule 6m: no stand-in for the system).
@@ -129,6 +151,16 @@ def main(argv: list[str] | None = None) -> int:
     try:
         lengths = agent_shell_lengths(args.names)
     except Exception as exc:  # noqa: BLE001 — every cause is reported, loudly
+        text = str(exc)
+        if not in_container() and WIRING_UNRESOLVABLE.search(text):
+            # Issue #946: the probe cannot run because THIS machine's Hermes install cannot
+            # import its own terminal environment. A LOUD SKIP, not a repo failure: the gate
+            # stays authoritative in the pinned test image, where IN_CONTAINER=1 keeps exit 2.
+            print("[agent-shell-keys] SKIP [wiring]: the Hermes terminal probe cannot run here — "
+                  f"{text[:300]}. This is the local Hermes install's own import failure, not a "
+                  "repo wiring defect; `make test` / `make agent-shell-keys-check` enforce this "
+                  "gate inside the pinned test image (IN_CONTAINER=1).")
+            return 0
         print(f"[agent-shell-keys] FATAL: {exc}", file=sys.stderr)
         return 2
 

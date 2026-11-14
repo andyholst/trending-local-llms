@@ -16,8 +16,13 @@ ONE Makefile list; this suite proves it at three levels, with SENTINEL values on
   `LocalEnvironment`, no stand-in — rule 6m): RED with today's plain names (the blocklisted keys
   read EMPTY in the agent's shell), GREEN once the forced names are present.
 
-NO-SKIP POLICY: a missing Hermes is a LOUD FAILURE, never a skip — `make test` runs this in the test
-image, which carries the same Hermes the bots run.
+NO-SKIP POLICY (issue #946): INSIDE the pinned test image the probe group NEVER skips — a missing or
+unresolvable Hermes wiring is a LOUD FAILURE there, and `make test` runs this in the test image, which
+carries the same Hermes the bots run. OUTSIDE the container marker, a probe that cannot run because the
+LOCAL Hermes install cannot import its own terminal environment (measured host: its venv lacks
+`ruamel`) is reported as a LOUD SKIP and the probe group counts as SKIPPED, never FAILED — and the
+skip decision itself is guarded below by fixtures that drive BOTH container markers through the real
+script.
 
 Wired into `make test` (rule 6d). Runs as a plain script — the runner is scripts/run_tests.sh (issue #176).
 """
@@ -26,6 +31,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -40,6 +46,7 @@ FORCE = "_HERMES_FORCE_"
 
 _PASS = 0
 _FAIL = 0
+_SKIP = 0
 
 
 def check(name, cond, detail: object = ""):
@@ -50,6 +57,19 @@ def check(name, cond, detail: object = ""):
     else:
         _FAIL += 1
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
+
+
+def probe_skipped(out: str) -> bool:
+    """Issue #946: the script said the probe wiring is unresolvable HERE. Report it as a LOUD
+    skip (never a silent one, never a failure) — the container guard fixtures below prove the
+    decision both ways; inside the test image this string can never appear, because the script
+    exits 2 there."""
+    global _SKIP
+    if "SKIP [wiring]" in out:
+        _SKIP += 1
+        print("  skip  real Hermes probe group: " + out.strip().splitlines()[0])
+        return True
+    return False
 
 
 def _keys() -> list[str]:
@@ -154,6 +174,8 @@ def test_plain_names_leave_the_agent_shell_blind():
         env = _clean_env(HERMES_HOME=home, **{k: SENTINEL for k in _keys()})
         r = _run_check(env)
     out = r.stdout + r.stderr
+    if probe_skipped(out):  # issue #946: the host class — loud skip, the guard fixtures decide both ways
+        return
     check("real Hermes: plain names -> RED (exit 1)", r.returncode == 1, out[-500:])
     check("real Hermes: FIRECRAWL_API_KEY reads EMPTY in the agent shell",
           "FIRECRAWL_API_KEY: container=set agent-shell=EMPTY" in out, out[-500:])
@@ -167,6 +189,8 @@ def test_forced_names_make_every_key_visible():
                          **{FORCE + k: SENTINEL for k in _keys()})
         r = _run_check(env)
     out = r.stdout + r.stderr
+    if probe_skipped(out):  # issue #946
+        return
     check("real Hermes: forced names -> GREEN (exit 0)", r.returncode == 0, out[-500:])
     for k in _keys():
         check(f"real Hermes: {k} visible in the agent shell", f"{k}: container=set agent-shell=set (match" in out,
@@ -183,6 +207,41 @@ def test_a_key_missing_from_the_container_is_loud():
     wf_lines = [l for p in (ROOT / ".github" / "workflows").glob("*.yml") for l in p.read_text().splitlines()]
     check("opt-out: never in a workflow",
           not any("agent-shell-keys" in l and "allow-unconfigured" in l for l in wf_lines), "")
+
+
+def test_probe_wiring_unresolvable_decides_loudly_by_container_marker():
+    """Issue #946, both directions, through the REAL script.
+
+    A fixture Hermes checkout whose terminal env cannot be imported (the measured host class:
+    Hermes's own venv lacks `ruamel`) stands in for the EXTERNAL Hermes install (rule 6m allows a
+    stand-in for an external system; the decision code is the product's). Both container markers
+    are given explicitly, so the assertions are the same on the host and in CI: outside the marker
+    the unresolvable probe is a LOUD SKIP (exit 0), inside it the same failure stays exit 2.
+    """
+    with tempfile.TemporaryDirectory() as fake:
+        root = Path(fake) / "hermes-agent"
+        (root / "tools" / "environments").mkdir(parents=True)
+        (root / "tools" / "__init__.py").write_text("")
+        (root / "tools" / "environments" / "__init__.py").write_text("")
+        (root / "tools" / "environments" / "local.py").write_text(
+            "import a_module_this_fixture_cannot_resolve_946\n")
+        env = _clean_env(FIRECRAWL_API_KEY=SENTINEL, HERMES_AGENT_ROOT=str(root),
+                         HERMES_PYTHON=sys.executable)
+        run = subprocess.run([sys.executable, str(SCRIPT), "FIRECRAWL_API_KEY"],
+                             env={**env, "IN_CONTAINER": "0"}, capture_output=True, text=True,
+                             timeout=300)
+        ci = subprocess.run([sys.executable, str(SCRIPT), "FIRECRAWL_API_KEY"],
+                            env={**env, "IN_CONTAINER": "1"}, capture_output=True, text=True,
+                            timeout=300)
+    out_host = run.stdout + run.stderr
+    out_ci = ci.stdout + ci.stderr
+    check("skip decision: outside the container marker the unresolvable probe is a LOUD SKIP (exit 0)",
+          run.returncode == 0 and "SKIP [wiring]" in out_host, out_host[:400])
+    check("skip decision: the SKIP line is loud — it names the gate's authoritative home",
+          "IN_CONTAINER=1" in out_host and "cannot run here" in out_host, out_host[:400])
+    check("no-skip policy: inside the container marker the same failure stays a LOUD FAILURE (exit 2)",
+          ci.returncode == 2 and "FATAL" in out_ci, out_ci[:400])
+    check("the sentinel value is never printed by either decision", SENTINEL not in out_host + out_ci, "")
 
 
 def test_the_check_is_wired_to_a_make_target_ci_runs():
@@ -209,8 +268,9 @@ def main() -> int:
     test_plain_names_leave_the_agent_shell_blind()
     test_forced_names_make_every_key_visible()
     test_a_key_missing_from_the_container_is_loud()
+    test_probe_wiring_unresolvable_decides_loudly_by_container_marker()
     test_the_check_is_wired_to_a_make_target_ci_runs()
-    print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
+    print(f"\nPASSED {_PASS} | SKIPPED {_SKIP} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
 
