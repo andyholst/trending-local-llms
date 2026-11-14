@@ -147,9 +147,10 @@ def test_the_repair_contract_is_named_in_6s():
         ("make base-rebase", "the rebase seam is not named"),
         ("merges the FETCHED base before its first round", "the base merge is not stated"),
         ("an unmerged index stays", "the unmerged-index red rule is not stated"),
-        ("A bot PR is repaired by the sweep; a human's branch is only reported",
-         "the bot/human partition is not stated"),
-        ("report-only since #814", "pr-health's report-only half is not stated"),
+        ("A bot PR is repaired by the sweep — rebase and push (issue #818)",
+         "the bot half of the partition is not stated (issue #818 rewrote it)"),
+        ("human's branch is only reported", "the human carve-out is not stated"),
+        ("make pr-health REBASE=1", "pr-health's rebaser half is not stated"),
     ):
         check(f"6s: {why}", phrase in s6s, phrase)
 
