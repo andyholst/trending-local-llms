@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **282**
+Active changes: **2** · archived: **283**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `pipeline-failure-rediagnose-820` | active | #820 | — | [alarms](openspec/changes/pipeline-failure-rediagnose-820/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/pipeline-failure-rediagnose-820/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -220,6 +219,7 @@ Active changes: **3** · archived: **282**
 | `pin-actions-immutable-sha` | archived | #735 | — | [pin-actions-immutable-sha](openspec/changes/archive/pin-actions-immutable-sha/specs/pin-actions-immutable-sha/spec.md) | 20/20 | [proposal.md](openspec/changes/archive/pin-actions-immutable-sha/proposal.md) |
 | `pin-flash-1017-snapshot` | archived | #447 (filed first, with the measurement) | — | [model-pin](openspec/changes/archive/pin-flash-1017-snapshot/specs/model-pin/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pin-flash-1017-snapshot/proposal.md) |
 | `pipeline-failure-diagnosis` | archived | #802 (measured: qa-validate master run 43088760321 red on `openspec-archive-check` — diagnosed only because a human opened the run page; the chain ended as issue #800 → fix PR #808 → guard `tests/test_openspec_archive_check.py`) | #811 | [alarms](openspec/changes/archive/pipeline-failure-diagnosis/specs/alarms/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/pipeline-failure-diagnosis/proposal.md) |
+| `pipeline-failure-rediagnose-820` | archived | #820 | #967 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-820/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-820/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |
