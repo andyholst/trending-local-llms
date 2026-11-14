@@ -1,6 +1,7 @@
 # Proposal: fixture-git-identity-isolation
 
 Issue: #943 — "test_worktree_base.py's identity-fallback assertion reads the
+PR: #944
 host's global git config" (tech-debt, filed from the 2026-11-14 host-suite sweep).
 
 ## Why
