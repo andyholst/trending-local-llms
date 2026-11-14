@@ -318,7 +318,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-check file-findings findings-check action-pin-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-check file-findings findings-check action-pin-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -351,6 +351,9 @@ openspec-spec-tests-check: python-env-image ## Fail when an ACTIVE change's spec
 
 openspec-duplicate-check: python-env-image ## Fail when two ACTIVE changes declare an ADDED/MODIFIED capability Requirement with the SAME heading of the SAME kind (issue #622; NAME=<change> for one)
 	$(PYTHON_RUN) python3 scripts/openspec_duplicate_check.py $(NAME)
+
+openspec-backlog-check: python-env-image ## Fail when the ACTIVE OpenSpec backlog hits MAX 50 — auto-merge to master is blocked until the tail is archived (issue #938)
+	$(PYTHON_RUN) python3 scripts/openspec_backlog_check.py
 
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
@@ -388,7 +391,7 @@ openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:`
 	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
 	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
-openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the index current
+openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-spec-tests-check openspec-backlog-check openspec-index-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), the index current
 	docker run $(OS_OPTS) openspec validate --changes
 	@echo "[openspec-check] OK: active changes validate, no task is unticked, no two ACTIVE changes propose the same Requirement, every \`- **Test:**\` reference resolves, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 
