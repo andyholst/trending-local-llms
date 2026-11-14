@@ -50,6 +50,15 @@ case "$1" in
         # The registry can FAIL to answer (issue #235): that is not "the tag is absent".
         if [ -n "$FAKE_DOCKER_MANIFEST_ERROR" ]; then
           echo "$FAKE_DOCKER_MANIFEST_ERROR" >&2; exit 1; fi
+        # Issue #767: "PUBLISHED" (manifest inspect — the registry's answer) and
+        # "PRESENT HERE" (image inspect — this machine) are DIFFERENT facts. When
+        # a test seeds FAKE_DOCKER_IMAGES, `image inspect` answers from it alone;
+        # with no seed it answers from the availability file, as before (the
+        # base-ready and python-env shortcuts read it that way).
+        if [ "$1" = image ] && [ -f "$FAKE_DOCKER_IMAGES" ]; then
+          if grep -qxF "$3" "$FAKE_DOCKER_IMAGES"; then exit 0
+          else echo "locally absent: $3" >&2; exit 1; fi
+        fi
         if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0
         else echo "manifest unknown: $3" >&2; exit 1; fi ;;
     esac ;;
@@ -75,11 +84,14 @@ def check(name, cond, detail=""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
-def _run(args, available=(), env_extra=None):
+def _run(args, available=(), env_extra=None, images=None):
     """Run the real script with the docker CLI faked; return (rc, calls, out).
 
     `env_extra` lets a caller add the seams a mode needs (issue #206's push probe
     points `IMAGE_REGISTRY_HOST` at a local server); everything else is unchanged.
+    `images` seeds the separate "already on THIS machine" control that `docker
+    image inspect` answers from (issue #767); without it, image inspect answers
+    from the availability file exactly as before.
     """
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -101,6 +113,12 @@ def _run(args, available=(), env_extra=None):
             "IMAGE_REPO": IMAGE_REPO,
             **(env_extra or {}),
         }
+        if images is not None:
+            # Issue #767: "already on this machine" is a fact distinct from
+            # "published"; `docker image inspect` answers from this file alone.
+            imgs = td / "images.txt"
+            imgs.write_text("\n".join(images) + "\n")
+            env["FAKE_DOCKER_IMAGES"] = str(imgs)
         proc = subprocess.run([sys.executable, str(SCRIPT), *args],
                               cwd=ROOT, capture_output=True, text=True, env=env)
         calls = [l.split() for l in log.read_text().splitlines() if l.strip()]
@@ -158,18 +176,22 @@ def test_openspec_image_is_hash_tagged_and_pulled_or_built():
     check("tags: OPENSPEC_TAG is sha12(openspec/Dockerfile)",
           out.get("OPENSPEC_TAG") == ospec_tag, f"{out.get('OPENSPEC_TAG')} vs {ospec_tag}")
 
-    # Given a registry without that tag
-    rc, calls, log = _run(["ensure-openspec"], available=[])
+    # Given a registry without that tag AND no local copy (the fresh-host state)
+    rc, calls, log = _run(["ensure-openspec"], available=[], images=[])
 
-    # Then  the CLI image is built here from its own Dockerfile
+    # Then  the CLI image is built here from its own Dockerfile, tagged with
+    # BOTH the run name and the exact hash tag (issue #767: the next run on this
+    # machine must reuse the image instead of probing the registry again)
     check("ensure-openspec (unpublished): exit 0", rc == 0, log)
     check("ensure-openspec (unpublished): builds from openspec/Dockerfile",
-          ["build", "-f", "openspec/Dockerfile", "-t", "trending-local-llms-openspec:latest", "openspec"] in calls,
+          ["build", "-f", "openspec/Dockerfile", "-t", "trending-local-llms-openspec:latest",
+           "-t", ospec_tag, "openspec"] in calls,
           str(calls))
     check("ensure-openspec (unpublished): never pulls", not any(c[:1] == ["pull"] for c in calls), str(calls))
 
-    # Given the tag IS published
-    rc, calls, log = _run(["ensure-openspec"], available=[ospec_tag])
+    # Given the tag IS published and this machine does NOT already hold it
+    # (the fresh-CI-runner state — the CI pull path stays byte-identical)
+    rc, calls, log = _run(["ensure-openspec"], available=[ospec_tag], images=[])
 
     # Then  it is pulled and tagged locally, never rebuilt
     check("ensure-openspec (published): exit 0", rc == 0, log)
@@ -197,6 +219,42 @@ def test_openspec_image_is_hash_tagged_and_pulled_or_built():
                 npm_hits.append(f"{p.relative_to(ROOT)}: {line.strip()}")
     check("openspec: no host npm install for the CLI (the image is the one path)",
           not npm_hits, str(npm_hits))
+
+
+def test_ensure_openspec_present_locally_is_reused_without_a_pull():
+    """Issue #767: the seam must not re-pull a tag this machine already has.
+
+    Measured on the filing host (arm64; 2026-11-10, re-measured 2026-11-14): the
+    exact tag was local — `docker image inspect` answered it — while
+    `ensure_openspec` still ran `docker manifest inspect` and, seeing it
+    published, ran `docker pull`. The published tag is amd64-only (its publisher
+    runs on amd64 runners), so the pull died non-zero and every `make openspec-*`
+    target failed on a machine that already had the image. The OLD seam consults
+    the registry first, so the no-pull / no-probe / no-build checks below are RED
+    against it: the guard fails on the code it replaces (rule 6c).
+    """
+    ospec_tag = f"{IMAGE_REPO}-openspec:openspec-{_expected_hash(['openspec/Dockerfile'])}"
+
+    # Given the tag is published AND this machine already holds it (#767's state)
+    rc, calls, out = _run(["ensure-openspec"], available=[ospec_tag], images=[ospec_tag])
+    check("ensure-openspec (local): exit 0", rc == 0, out)
+    check("ensure-openspec (local): says the image is already here", "already here" in out, out)
+    check("ensure-openspec (local): tags the local image as the run name",
+          ["tag", ospec_tag, "trending-local-llms-openspec:latest"] in calls, str(calls))
+    check("ensure-openspec (local): never pulls", not any(c[:1] == ["pull"] for c in calls), str(calls))
+    check("ensure-openspec (local): never probes the registry",
+          not any(c[:2] == ["manifest", "inspect"] for c in calls), str(calls))
+    check("ensure-openspec (local): never rebuilds", not any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # Given the machine holds it while the registry would answer "absent": the tag
+    # name IS this revision's hash, so the local match stands on its own — no probe,
+    # no pull, no rebuild.
+    rc, calls, out = _run(["ensure-openspec"], available=[], images=[ospec_tag])
+    check("ensure-openspec (local, registry silent): exit 0", rc == 0, out)
+    check("ensure-openspec (local, registry silent): no pull, no probe, no build",
+          not any(c[0] in ("pull", "build", "manifest") for c in calls), str(calls))
+    check("ensure-openspec (local, registry silent): says the image is already here",
+          "already here" in out, out)
 
 
 def test_ensure_base_builds_only_when_the_tag_is_not_published():
@@ -604,6 +662,7 @@ def main() -> int:
     test_a_publish_is_not_done_until_the_registry_serves_it()
     test_force_reaches_the_script_as_a_value_not_a_bare_flag()
     test_openspec_image_is_hash_tagged_and_pulled_or_built()
+    test_ensure_openspec_present_locally_is_reused_without_a_pull()
     test_python_env_image_is_built_locally_and_does_not_probe_the_registry()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()

@@ -16,6 +16,17 @@ inline `docker pull`/`docker build` and a stale local pull cannot stand in for
 the revision's own base (measured: a cached GHCR base without the pinned nerve
 plugin produced a test image the credential guard could only fail on).
 
+The OpenSpec CLI seam checks the LOCAL machine first (issue #767): when this
+revision's exact hash tag is already available here it is tagged onto the run
+name and reused — no `docker pull`, no registry probe. The tag name IS the hash
+of this revision's `openspec/Dockerfile`, so a matching local image matches the
+inputs by construction (`python_env_ready()` applies the same shortcut, #712).
+The published tag is amd64-only — its publisher runs on amd64 runners — and
+forcing a host that already holds the matching image to re-pull it is the
+`docker pull` failure #767 measured on arm64. When the image is NOT here, the
+pull-or-build rules below apply unchanged, and a registry that fails to answer
+stays a loud error, never "absent" (issue #235).
+
 `tags` prints the tags it expects, for the publisher's rebuild decision:
 
     BASE_TAG=ghcr.io/.../trending-local-llms:dockerfile-abcdef123456
@@ -172,16 +183,42 @@ def openspec_tag() -> str:
     return f"{IMAGE_REPO}-openspec:openspec-{openspec_hash()}"
 
 
+def openspec_ready() -> bool:
+    """Whether this revision's exact OpenSpec tag is already available HERE.
+
+    A LOCAL check, not a registry probe (issue #767): the tag name is the hash of
+    this revision's `openspec/Dockerfile`, so an image answering to it locally
+    matches the inputs by construction — the shortcut `python_env_ready()` applies
+    to the python-env image (#712). The published tag is amd64-only; making a host
+    that already holds the matching image re-pull it is the `CalledProcessError`
+    #767 measured on arm64.
+    """
+    return subprocess.run(
+        ["docker", "image", "inspect", openspec_tag()], capture_output=True
+    ).returncode == 0
+
+
 def ensure_openspec() -> str:
-    """The OpenSpec CLI image: the one code path for `make openspec-*`."""
-    if published(openspec_tag()):
-        _run("docker", "pull", openspec_tag())
-        _run("docker", "tag", openspec_tag(), OPENSPEC_IMAGE)
-        return f"openspec: pulled {openspec_tag()} -> {OPENSPEC_IMAGE}"
-    _run("docker", "build", "-f", "openspec/Dockerfile", "-t", OPENSPEC_IMAGE, "openspec")
+    """The OpenSpec CLI image: the one code path for `make openspec-*`.
+
+    Order (issue #767): LOCAL FIRST. Reuse this revision's exact tag when it is
+    already here — zero registry calls; otherwise pull the published tag (the
+    unchanged CI path); otherwise build it here, tagging BOTH the run name and
+    the exact hash tag so the next run on this machine is a reuse.
+    """
+    tag = openspec_tag()
+    if openspec_ready():
+        _run("docker", "tag", tag, OPENSPEC_IMAGE)
+        return f"openspec: {tag} is already here — tagged {OPENSPEC_IMAGE}, no pull"
+    if published(tag):
+        _run("docker", "pull", tag)
+        _run("docker", "tag", tag, OPENSPEC_IMAGE)
+        return f"openspec: pulled {tag} -> {OPENSPEC_IMAGE}"
+    _run("docker", "build", "-f", "openspec/Dockerfile",
+         "-t", OPENSPEC_IMAGE, "-t", tag, "openspec")
     return (
-        f"openspec: {openspec_tag()} is not published; built {OPENSPEC_IMAGE} "
-        "from this revision's openspec/Dockerfile"
+        f"openspec: {tag} is not published; built {OPENSPEC_IMAGE} and tagged {tag} "
+        "from this revision's openspec/Dockerfile, so the next run reuses it"
     )
 
 

@@ -572,7 +572,12 @@ from**, so a pipeline pulls the published tag for *this* revision and otherwise
 builds it — one code path via `scripts/ensure_image.py` (`ensure`,
 `ensure-base`, `ensure-test`, `ensure-openspec`, `tags`). A Dockerfile change is
 therefore inert only until its own hash tag is published, not until the next
-Sunday.
+Sunday. The OpenSpec seam checks the **machine before the registry** (issue
+#767): when the exact `openspec-<sha12>` tag is already local it is tagged onto
+the run name and reused with no pull and no manifest probe — the published
+openspec tag is amd64-only, and re-pulling it on an arm64 host that already
+holds the matching image is what red `make openspec-*` locally; a locally built
+image tags the exact hash tag too, so the next run is a reuse.
 
 Credentials never enter an image: every key reaches a process as `-e <ENV_NAME>`
 at run time (the name the consumer actually resolves), never as `ENV`, never in
