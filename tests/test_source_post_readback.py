@@ -71,7 +71,8 @@ def write_raw(raw_dir: Path, captures):
                 {"engine": "llama.cpp", "tps": "100", "quant": row.get("quant", ""),
                  "hardware": row.get("hardware", ""), "date": "2026-10-05",
                  "source_post": sp, "weight_gb": row.get("weight_gb", ""),
-                 "context_tokens": row.get("context_tokens", "")}]})
+                 "context_tokens": row.get("context_tokens", ""),
+                 "engine_min_version": row.get("engine_min_version", "")}]})
         (raw_dir / fname).write_text(json.dumps(
             {"backend": "nvidia", "generated_utc": "2026-10-05T23:36:47Z", "models": models}))
 
@@ -157,6 +158,152 @@ def test_the_scan_is_report_only_it_never_fails():
           "NEITHER the capture's fields NOR the post text" in buf.getvalue(), buf.getvalue()[:200])
 
 
+def _ship_store_and_raw():
+    """The REAL shipped store + the REAL raw snapshot dir (no fixtures, rule 6m).
+
+    `load_store()` is the same seam the pipeline and `make validate` use: it flattens
+    `data/models.json` (catalog) + `data/measurements.json` + `data/posts.json` into the
+    inline shape every validator — and `source_post_figure_flags` — reads.
+    """
+    import update_trending as UT
+    return UT.load_store(), ROOT / "data" / "raw"
+
+
+def test_the_shipped_store_flags_no_unsupported_footprint_values():
+    """Issue #788 Done-when: the shipped store's readback residue is pinned at ZERO.
+
+    #531's scan flagged 23 values; the reconciling merges landed and the count is now 0.
+    This test is the gate that blocks the drift from returning: it runs the REAL scan over
+    the REAL `data/models.json` + `data/raw/` and names every flagged value if any appears.
+    """
+    store, raw = _ship_store_and_raw()
+    flags = V.source_post_figure_flags(store, raw)
+    detail = "\n".join(f"    {m} {eng} {tps} {field}={value!r} cites {sp}"
+                       for m, eng, tps, field, value, sp in flags)
+    check(f"shipped store flags {len(flags)} unsupported footprint value(s) — "
+          f"residue must be 0{chr(10) + detail if detail else ''}",
+          flags == [], detail)
+
+
+def test_the_store_gate_fires_on_a_planted_drift():
+    """The shipped-store gate is LIVE: planting the #531 drift (a `weight_gb` the cited post
+    nowhere states, the `5.93GB` vs `5.95GB` class) into a copy of the REAL store must make
+    the SAME scan return exactly that flag, attributed to model, field, value and post."""
+    import copy
+    store, raw = _ship_store_and_raw()
+    target = None
+    for m in store.get("models", []):
+        for e in m.get("engines", []):
+            if e.get("weight_gb"):
+                target = (m, e)
+                break
+        if target:
+            break
+    if target is None:
+        check("the shipped store carries a weight_gb footprint to plant against", False,
+              "no footprint row found")
+        return
+    m, e = target
+    planted = "7.41GB"
+    mutated = copy.deepcopy(store)
+    for mm in mutated["models"]:
+        if mm.get("id") == m.get("id"):
+            for ee in mm.get("engines", []):
+                if ee.get("engine") == e.get("engine") and ee.get("tps") == e.get("tps"):
+                    ee["weight_gb"] = planted
+    base = V.source_post_figure_flags(mutated, raw)
+    hit = [f for f in base if f[0] == str(m.get("id")) and f[3] == "weight_gb"
+           and f[4] == planted]
+    check("the planted drift is flagged with full attribution",
+          len(hit) == 1 and hit[0][5] == str(e.get("source_post")),
+          "; ".join(f"{f[0]}/{f[3]}={f[4]}" for f in hit[:2]))
+    check("and it is the ONLY new flag (the scan stays precise on the shipped store)",
+          len(base) == 1,
+          "; ".join(f"{f[0]}/{f[3]}={f[4]}" for f in base[:4]))
+
+
+def _raw_with(captures):
+    td = tempfile.TemporaryDirectory()
+    raw = Path(td.name) / "raw"
+    raw.mkdir()
+    write_raw(raw, captures)
+    return td, raw
+
+
+def test_a_declared_estimate_is_attributable_not_a_contradiction():
+    """Issue #788: a value carrying the canonical `(est)` marker (rule 2) is a DECLARED
+    estimate — attributable on its row — so the scan never flags it as a contradiction, and
+    `source_post_declared_estimates` counts it toward the visible residue."""
+    store = store_with([{"engine": "llama.cpp", "tps": "72", "hardware": "M5 Max",
+                         "quant": "8-bit MLX build", "date": "2026-10-05",
+                         "source_post": SP1, "weight_gb": "~29.5GB (est; 8-bit MLX)"}])
+    td, raw = _raw_with({"nvidia-1.json": {SP1: {"quant": "8-bit MLX build"}}})
+    flags = V.source_post_figure_flags(store, raw)
+    check("an (est)-marked value is never a contradiction flag", not flags, flags)
+    check("and it is counted as a declared estimate",
+          V.source_post_declared_estimates(store) == 1,
+          V.source_post_declared_estimates(store))
+    td.cleanup()
+    # Precision opposite: the SAME value WITHOUT the marker is still flagged.
+    store2 = store_with([{"engine": "llama.cpp", "tps": "72", "hardware": "M5 Max",
+                          "quant": "8-bit MLX build", "date": "2026-10-05",
+                          "source_post": SP1, "weight_gb": "~29.5GB (8-bit MLX)"}])
+    td2, raw2 = _raw_with({"nvidia-1.json": {SP1: {"quant": "8-bit MLX build"}}})
+    flags2 = V.source_post_figure_flags(store2, raw2)
+    check("the same unmarked value stays flagged (the marker is the only exemption)",
+          len(flags2) == 1 and flags2[0][3] == "weight_gb", flags2)
+    td2.cleanup()
+
+
+def test_the_captures_own_structured_value_supports_a_fuller_distillation():
+    """Issue #788 precision: the capture's structured `engine_min_version` "MTP=2" supports
+    the store's fuller distillation "llama.cpp with MTP=2" of the SAME claim (the shipped
+    `qwen3.8-27b llama.cpp 51.8` row was flagged only because containment ran one way).
+    Free text stays one-way — a capture's prose never confirms a longer stored guess."""
+    store = store_with([{"engine": "llama.cpp", "tps": "51.8", "hardware": "RTX 5090",
+                         "quant": "Q4_K_M", "date": "2026-10-05", "source_post": SP1,
+                         "engine_min_version": "llama.cpp with MTP=2"}])
+    td, raw = _raw_with({"nvidia-1.json": {SP1: {"quant": "Q4_K_M",
+                                                  "engine_min_version": "MTP=2"}}})
+    flags = V.source_post_figure_flags(store, raw)
+    check("the capture's own structured field confirms the store's distillation",
+          not flags, flags)
+    td.cleanup()
+    # Precision: a structured value under ANOTHER field does not leak support.
+    td2, raw2 = _raw_with({"nvidia-1.json": {SP1: {"quant": "Q4_K_M",
+                                                    "context_tokens": "MTP=2"}}})
+    flags2 = V.source_post_figure_flags(store, raw2)
+    check("a structured value of a different field confirms nothing",
+          len(flags2) == 1 and flags2[0][3] == "engine_min_version", flags2)
+    td2.cleanup()
+    # Precision: free text stays one-way (stored value must appear IN the text).
+    store3 = store_with([{"engine": "llama.cpp", "tps": "51.8", "hardware": "RTX 5090",
+                          "quant": "llama.cpp with MTP=2 draft head", "date": "2026-10-05",
+                          "source_post": SP1,
+                          "engine_min_version": "llama.cpp with MTP=2 plus parser tail prose"}])
+    td3, raw3 = _raw_with({"nvidia-1.json": {SP1: {"quant": "llama.cpp with MTP=2 draft head"}}})
+    flags3 = V.source_post_figure_flags(store3, raw3)
+    check("a stored distillation longer than the post prose is still flagged",
+          len(flags3) == 1, flags3)
+    td3.cleanup()
+
+
+def test_annotation_brackets_do_not_break_confirmation():
+    """Issue #788: `official checkpoints (no extreme quantization)` (stored) confirms against
+    the post's own `official checkpoints, no extreme quantization` — annotation brackets are
+    presentation, not a different figure (the shipped qwen3.6-35b-a3b row was flagged only on
+    the parenthesis)."""
+    store = store_with([{"engine": "llama.cpp", "tps": "39.3", "hardware": "RTX 3090",
+                         "quant": "official checkpoints, no extreme quantization",
+                         "date": "2026-10-05", "source_post": SP1,
+                         "weight_gb": "official checkpoints (no extreme quantization)"}])
+    td, raw = _raw_with({"nvidia-1.json": {SP1: {
+        "quant": "official checkpoints, no extreme quantization"}}})
+    flags = V.source_post_figure_flags(store, raw)
+    check("bracketed annotation matches the post phrase", not flags, flags)
+    td.cleanup()
+
+
 def main() -> int:
     print("the source-post readback scan (issue #531)")
     test_a_stored_value_the_capture_states_is_kept()
@@ -165,6 +312,11 @@ def main() -> int:
     test_a_cards_vram_never_confirms_a_weight_footprint()
     test_an_uncaptured_post_is_skipped()
     test_the_scan_is_report_only_it_never_fails()
+    test_the_shipped_store_flags_no_unsupported_footprint_values()
+    test_the_store_gate_fires_on_a_planted_drift()
+    test_a_declared_estimate_is_attributable_not_a_contradiction()
+    test_the_captures_own_structured_value_supports_a_fuller_distillation()
+    test_annotation_brackets_do_not_break_confirmation()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

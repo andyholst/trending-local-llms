@@ -981,7 +981,14 @@ The README is **generated**, not hand-maintained:
   `engine_min_version` (additive, never `required`, rule 3b) — because one
   model's quants fit different cards and its minimum engine build belongs to the
   engine that produced the figure, and the card-fit tables are built from that
-  evidence (issue #337, #371). **No duplicate models** (by id or name). The
+  evidence (issue #337, #371). A footprint value must trace to the post its row cites:
+  `make validate`'s readback scan compares stored footprint values against the captured
+  snapshots that cite them (issue #531, report-only). A value the cited post states in neither
+  its fields nor its text is therefore either **corrected** to one the post states or given the
+  canonical `(est)` marker (rule 2) — a marked value is a declared estimate, individually
+  attributable, and the scan counts it as such; **unmarked** contradictions are pinned at zero
+  by `tests/test_source_post_readback.py`'s shipped-store gate (issue #788).
+  **No duplicate models** (by id or name). The
   exact JSON schema is documented in `data/MODEL_CONTRACT.md` — read it before
   adding/editing a model.
 - `scripts/update_trending.py` — fetches new X data, merges it into the store,
@@ -1918,6 +1925,7 @@ actually happened.
 | `check_readme_ranking` (validate, readme stage) | most-loved rows not in the store's trend order; a Trend cell not showing the stored `trend_score` / post count |
 | `check_readme_bot_cadence` (validate, readme stage) + `tests/test_readme_bot_cadence.py` (rule 6c, issue #863) | generated README prose claiming a bot cadence the pipeline no longer has: a line naming a scheduled pipeline that says "hourly"/"per hour"/"twice an hour", names a non-Wednesday weekday (the measured "weekly Monday `07:23`" for `code-review-bot.yml`, which schedules `7 6 * * 3`), or quotes a cron the named workflow does not schedule — the real check runs against planted fixture READMEs (each shape MUST go red) and the real repo README + render template (green) |
 | `check_post_signal` (validate, report only) | how much of `score_7d` rests on real post URLs and engagement counts, per raw snapshot and for the store |
+| `tests/test_source_post_readback.py` — `test_the_shipped_store_flags_no_unsupported_footprint_values` + `test_the_store_gate_fires_on_a_planted_drift` (rules 2/3b/6c, issue #788) | #531's readback scan residue left unrepaired: `check_source_post_readback` is report-only by design (a parser miss must not red a refresh), so 23 flagged shipped-store footprint values sat there with every gate green while card-fit tables published them as measured advice; this gate runs the REAL scan against the REAL store and refuses any UNMARKED contradiction (goes red on a planted `5.93GB`-class drift; the precision rules are locked by paired fixtures — an unmarked value, a cross-field structured value and a stored value longer than the post prose all stay flagged, while an `(est)`-marked value is counted as a declared estimate and never flagged, structured same-field confirmation runs both ways, and annotation brackets never break confirmation) |
 | `check_readme_measurements` (validate, readme stage) | a measurement missing from — or rendered in the wrong — backend table row; a most-loved cell that is not the best for its backend |
 | `make search-smoke` (live, 3 s/attempt, 1 retry on timeout/429/5xx) | lightbrd mirror / Firecrawl key down, per backend. An uncached scrape can miss 3 s once (Firecrawl finishes and caches it server-side), so a transient miss gets ONE more 3 s attempt; auth errors (401/403) never retry. An UPSTREAM error page (`upstream >= 500`) is its own `OUTAGE` label — loud, never retried, and NOT a smoke failure, so a down mirror is visible without blocking every PR (issue #291). Retry policy unit-tested in `tests/test_smoke_search.py` |
 | `tests/test_search_budget.py` | searches not running with reasoning off; `HERMES_MAX_TOKENS` above the 65,536 bound; a stale model pin (`HERMES_MODEL` not the current SKU, or the retired SKU string left in any of Makefile / AGENTS.md / README.md / `skills/` / `scripts/` / `.github/workflows/` / `tests/` — the scan is by directory + suffix, so a new file is covered without editing the guard); prompts building one big payload instead of writing per query; same-second raw writes overwriting each other; `model_caps_check` logic (cap overrun, missing model, no `reasoning`) |

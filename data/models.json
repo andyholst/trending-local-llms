@@ -888,7 +888,7 @@
         "speed_bonus": 6.6,
         "trend_score": 22.0
       },
-      "system_ram_min": "32GB",
+      "system_ram_min": "32GB (est)",
       "weight_gb": "111GB (UD-Q4_K_XL, 4 GGUF shards)",
       "context_tokens": "250K",
       "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",

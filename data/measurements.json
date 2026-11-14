@@ -630,9 +630,9 @@
       "quant": "claimed 100 tok/s on consumer GPU",
       "date": "2026-10-04",
       "source_post": "https://lightbrd.com/yama_boku/status/2106890650969055716",
-      "system_ram_min": "32GB",
-      "weight_gb": "70GB download",
-      "storage_offload": "80GB disk"
+      "system_ram_min": "32GB (est)",
+      "weight_gb": "70GB download (est)",
+      "storage_offload": "80GB disk (est)"
     },
     {
       "engine": "Strata",
@@ -1076,8 +1076,8 @@
       "quant": "official checkpoints, no extreme quantization",
       "date": "2026-08-23",
       "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
-      "weight_gb": "official checkpoint (no extreme quantization)",
-      "system_ram_min": "32GiB LPDDR5"
+      "weight_gb": "official checkpoints (no extreme quantization)",
+      "system_ram_min": "32GiB LPDDR5 (est)"
     },
     {
       "engine": "Magnitude",
@@ -1607,8 +1607,8 @@
       "quant": "DFlash 2 speculative decoding (block-diffusion drafter), reported for Qwen3.8-27B on Apple Silicon",
       "date": "2026-10-22",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113186919760707688",
-      "weight_gb": "~29.5GB (8-bit MLX)",
-      "system_ram_min": "48GB"
+      "weight_gb": "~29.5GB (est; 8-bit MLX)",
+      "system_ram_min": "48GB (est)"
     },
     {
       "engine": "llama.cpp",
@@ -1868,7 +1868,7 @@
       "date": "2026-10-15",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
       "context_tokens": "8192",
-      "engine_min_version": "SGLang with drafter + cached kernel-tuning results",
+      "engine_min_version": "SGLang with drafter + cached kernel-tuning results (est)",
       "weight_gb": "NVFP4"
     },
     {
@@ -2124,8 +2124,8 @@
       "quant": "Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF, 128K context; community-reported ~45 tok/s",
       "date": "2026-10-07",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
-      "context_tokens": "30720",
-      "engine_min_version": "llama.cpp b11177"
+      "context_tokens": "131072",
+      "engine_min_version": "llama.cpp b11177 (est)"
     },
     {
       "engine": "TensorFold",
@@ -2233,8 +2233,8 @@
       "quant": "Q4_K_M + Z-Lab DFlash2 drafter + Unsloth UD-Q4_K_XL, patched llama.cpp, --spec-draft-n-max 4, acceptance 5.39 tokens/step; 30K ctx 87.05 t/s @22.2GB, 80K ctx 84.20 t/s @23.3GB, 110K ctx 83.35 t/s @23.96GB",
       "date": "2026-10-02",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105847723660349725",
-      "context_tokens": "90K",
-      "engine_min_version": "llama.cpp dev build with PR #27342, --spec-type draft-dflash --spec-draft-n-max 3 -ngl 99 -ctv q8_0 -ctk q8_0"
+      "context_tokens": "110K",
+      "engine_min_version": "llama.cpp dev build with PR #27342, --spec-type draft-dflash --spec-draft-n-max 3 -ngl 99 -ctv q8_0 -ctk q8_0 (est)"
     },
     {
       "engine": "DFlash2",
@@ -2267,7 +2267,7 @@
       "quant": "DFlash2 spec-decode draft head",
       "date": "2026-09-29",
       "source_post": "https://lightbrd.com/ScottLeimroth/status/2104905310691582345",
-      "context_tokens": "1.86 million (reported KV-cache capacity)"
+      "context_tokens": "1.86 million (est; reported KV-cache capacity)"
     },
     {
       "engine": "MLX",
@@ -2468,7 +2468,7 @@
       "weight_gb": "14.6GB IQ4_XS",
       "context_tokens": "64000",
       "system_ram_min": "16GB",
-      "engine_min_version": "25 GPU layers offloaded, Q4_0 KV cache, native MTP"
+      "engine_min_version": "25 GPU layers offloaded, Q4_0 KV cache, native MTP (est)"
     },
     {
       "engine": "llama.cpp",
@@ -2602,7 +2602,7 @@
       "quant": "Liquid AI's reported peak output throughput with batching/concurrency",
       "date": "2026-10-14",
       "source_post": "https://lightbrd.com/rubbletag/status/2110492005323403678",
-      "engine_min_version": "SGLang day-0 LFM2.5 support",
+      "engine_min_version": "SGLang day-0 LFM2.5 support (est)",
       "context_tokens": "131072"
     },
     {
@@ -2789,8 +2789,8 @@
       "date": "2026-10-16",
       "source_post": "https://lightbrd.com/lmoroney/status/2111199452228723159",
       "weight_gb": "2.0GB (ternary)",
-      "context_tokens": "262000",
-      "engine_min_version": "-m Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf --spec-type draft-mtp --spec-draft-n-max 2"
+      "context_tokens": "131072",
+      "engine_min_version": "-m Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf --spec-type draft-mtp --spec-draft-n-max 2 (est)"
     },
     {
       "engine": "llama.cpp (PrismML fork)",
@@ -2827,7 +2827,7 @@
       "date": "2026-10-15",
       "source_post": "https://lightbrd.com/pratikg/status/2110834170587238488",
       "weight_gb": "2GB",
-      "engine_min_version": "mlx.fast (Yukon Research challenge)"
+      "engine_min_version": "mlx.fast (est; Yukon Research challenge)"
     }
   ],
   "bonsai-2-9b-apple-silicon-yukon": [
@@ -3157,7 +3157,7 @@
       "date": "2026-10-12",
       "source_post": "https://lightbrd.com/localai_lab/status/2109533645279199248",
       "weight_gb": "5.9GB ternary (PTQ1_0)",
-      "context_tokens": "245000"
+      "context_tokens": "245000 (est)"
     },
     {
       "engine": "llama.cpp (PrismML fork)",
@@ -3210,7 +3210,7 @@
       "source_post": "https://lightbrd.com/qvac/status/2107139441425014846",
       "weight_gb": "5.95GB",
       "context_tokens": "262144",
-      "engine_min_version": "PrismML llama.cpp with usmaneth's PR #210 Handoff/DFlash runtime fix"
+      "engine_min_version": "PrismML llama.cpp with usmaneth's PR #210 Handoff/DFlash runtime fix (est)"
     },
     {
       "engine": "llama.cpp (PrismML fork)",
@@ -3219,9 +3219,9 @@
       "quant": "PQ2_0, 7.21GB, ~220K context, ~550 tok/s prefill",
       "date": "2026-10-05",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107064827923284104",
-      "weight_gb": "ternary PQ2_0 (fits one 12GB card where Qwen3.8-27B Q4 needs two)",
+      "weight_gb": "PQ2_0 7.21GB ternary",
       "context_tokens": "220K",
-      "engine_min_version": "PrismML fork required (stock llama.cpp rejects the ternary files); llama-server -ngl 999 -c 220000 -fa on --jinja -np 1 --cache-type-k q4_0 --cache-type-v q4_0",
+      "engine_min_version": "PrismML fork required (stock llama.cpp rejects the ternary files); llama-server -ngl 999 -c 220000 -fa on --jinja -np 1 --cache-type-k q4_0 --cache-type-v q4_0 (est)",
       "system_ram_min": "12GB (card VRAM the run used)"
     },
     {
