@@ -16,6 +16,7 @@ Run:  python3 tests/test_hermes_update_needed.py   or   make test
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -87,6 +88,14 @@ def test_force_updates_any_day():
 
 
 def main() -> int:
+    # (issue #890) this gate needs the container's libfaketime. On a host without
+    # it, report a loud SKIP naming the missing tool — exit 0, not a
+    # FileNotFoundError traceback a human must triage every session.
+    if shutil.which("faketime") is None:
+        print("SKIP: 'faketime' (libfaketime) is not on PATH — this gate runs "
+              "where the tool exists (the test image); reported as a loud SKIP, "
+              "not a traceback (issue #890).")
+        return 0
     print("hermes weekly-update decision — real make update-hermes, clock set via faketime")
     test_monday_through_saturday_skip()
     test_sunday_updates()
