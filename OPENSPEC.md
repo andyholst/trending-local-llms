@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **12** · archived: **253**
+Active changes: **11** · archived: **254**
 
 ## Active changes
 
@@ -20,7 +20,6 @@ Active changes: **12** · archived: **253**
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
-| `openspec-image-local-shortcut` | active | #767 | [pending] | [openspec-image-seam](openspec/changes/openspec-image-local-shortcut/specs/openspec-image-seam/spec.md) | 8/8 | [proposal.md](openspec/changes/openspec-image-local-shortcut/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
@@ -194,6 +193,7 @@ Active changes: **12** · archived: **253**
 | `one-stage-map-reader` | archived | #514 | — | [stage-wiring](openspec/changes/archive/one-stage-map-reader/specs/stage-wiring/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/one-stage-map-reader/proposal.md) |
 | `one-working-file-list` | archived | #543 | — | [bot-commit-safety](openspec/changes/archive/one-working-file-list/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/one-working-file-list/proposal.md) |
 | `openspec-archive-lifecycle` | archived | #183 | — | [openspec-lifecycle](openspec/changes/archive/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/openspec-archive-lifecycle/proposal.md) |
+| `openspec-image-local-shortcut` | archived | #767 | #920 | [openspec-image-seam](openspec/changes/archive/openspec-image-local-shortcut/specs/openspec-image-seam/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/openspec-image-local-shortcut/proposal.md) |
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |

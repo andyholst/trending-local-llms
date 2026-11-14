@@ -2,7 +2,7 @@
 
 **Issue:** #767
 **Capability:** `openspec-image-seam` (the one entry point that prepares the OpenSpec CLI image every `make openspec-*` target runs in)
-**PR:** [pending]
+PR: #920
 
 ## Why
 
