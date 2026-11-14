@@ -1,7 +1,7 @@
 # Filers stamp the owed rulebook row at issue creation
 
 **Issue:** [#765](https://github.com/andyholst/trending-local-llms/issues/765)
-PR: #915
+PR: #917
 **Capability:** `owed-row-ledger`
 
 ## Why
