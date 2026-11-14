@@ -55,6 +55,7 @@
       "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
     },
     {
+      "utc": "2026-11-14T21:07:13Z",
       "utc": "2026-11-14T20:37:55Z",
       "stage": "refuse_fabricated_engines",
       "backend": "metal-20261020-110550",
@@ -64,6 +65,7 @@
       "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
     },
     {
+      "utc": "2026-11-14T21:09:37Z",
       "utc": "2026-11-14T20:40:25Z",
       "stage": "refuse_misattributed_measurements",
       "backend": "nvidia",
