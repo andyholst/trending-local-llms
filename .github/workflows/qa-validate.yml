@@ -420,11 +420,20 @@ jobs:
             echo "$CHANGED"
             exit 1
           fi
-          OPEN=$(gh pr list --repo "$REPO" --state open --json headRefName \
-            --jq '[.[] | select(.headRefName | startswith("ci/openspec-index-repair-"))] | length')
+          # #960: only a keeper that CAN land suppresses a new one. A DIRTY/
+          # CONFLICTING keeper builds no merge commit and lands nothing, so it
+          # must not stand in for the repair (measured: run 43610043055 left
+          # master red because DIRTY keeper #956 counted as "already open").
+          KEEPERS=$(gh pr list --repo "$REPO" --state open --json headRefName,mergeStateStatus \
+            --jq '[.[] | select(.headRefName | startswith("ci/openspec-index-repair-")) | .mergeStateStatus]')
+          OPEN=$(echo "$KEEPERS" | jq '[.[] | select(. != "DIRTY" and . != "CONFLICTING")] | length')
+          DIRTY=$(echo "$KEEPERS" | jq '[.[] | select(. == "DIRTY" or . == "CONFLICTING")] | length')
           if [ "$OPEN" -gt 0 ]; then
-            echo "An index-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
+            echo "A mergeable index-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
             exit 0
+          fi
+          if [ "$DIRTY" -gt 0 ]; then
+            echo "[keeper-dedup #960] An earlier index-repair keeper is open but UNMERGEABLE (mergeStateStatus DIRTY/CONFLICTING) — it lands nothing; filing a fresh keeper against the current tip."
           fi
           branch="ci/openspec-index-repair-$(date -u +%Y%m%dT%H%M%SZ)"
           make git-identity
@@ -491,11 +500,18 @@ jobs:
             echo "$CHANGED"
             exit 1
           fi
-          OPEN=$(gh pr list --repo "$REPO" --state open --json headRefName \
-            --jq '[.[] | select(.headRefName | startswith("ci/architecture-block-repair-"))] | length')
+          # #960: the sibling keeper, same discriminator — only a MERGEABLE
+          # keeper suppresses a new one; an unmergeable one lands nothing.
+          KEEPERS=$(gh pr list --repo "$REPO" --state open --json headRefName,mergeStateStatus \
+            --jq '[.[] | select(.headRefName | startswith("ci/architecture-block-repair-")) | .mergeStateStatus]')
+          OPEN=$(echo "$KEEPERS" | jq '[.[] | select(. != "DIRTY" and . != "CONFLICTING")] | length')
+          DIRTY=$(echo "$KEEPERS" | jq '[.[] | select(. == "DIRTY" or . == "CONFLICTING")] | length')
           if [ "$OPEN" -gt 0 ]; then
-            echo "An architecture-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
+            echo "A mergeable architecture-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
             exit 0
+          fi
+          if [ "$DIRTY" -gt 0 ]; then
+            echo "[keeper-dedup #960] An earlier architecture-repair keeper is open but UNMERGEABLE (mergeStateStatus DIRTY/CONFLICTING) — it lands nothing; filing a fresh keeper against the current tip."
           fi
           branch="ci/architecture-block-repair-$(date -u +%Y%m%dT%H%M%SZ)"
           make git-identity
