@@ -348,7 +348,28 @@ def _dim_texts(row: dict, dim: dict) -> list[str]:
     return texts
 
 
-def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> None:
+def _tps_number(value) -> float | None:
+    """The numeric value of a reported t/s figure, or None if it is not a number."""
+    try:
+        return float(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _post_identity(e: dict) -> tuple[str, str, str]:
+    """(engine, hardware, source_post) — the measured-run identity WITHOUT the t/s.
+
+    A rule-3b t/s raise (AGENTS.md §2.3b: `merge_engines` may only RAISE a
+    measurement's t/s at ingest) moves the stored figure above the captured one,
+    so the exact four-field tuple no longer matches after a legitimate raise
+    (issue #912). The post itself is what proves "the same run"; tps is then
+    compared NUMERICALLY (stored >= captured), never string-wise.
+    """
+    return (str(e.get("engine") or ""), str(e.get("hardware") or ""),
+            str(e.get("source_post") or ""))
+
+
+def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> tuple[int, list[tuple]]:
     """Trace captured text to the store row that UNIQUELY owns the measurement (issue #411).
 
     The measured defect: one post cited by two raw ids; its figure merged onto a variant
@@ -366,8 +387,18 @@ def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> None:
     trace to, so the text is attributed to nothing. This never MOVES a measurement between
     rows (analysis-only; the store is untouched) and never credits text to a row that does
     not carry the very measurement the sentence describes.
+
+    Issue #912 widens the JOIN, not the key: when the exact tuple finds no carrier because
+    a rule-3b ingest RAISE moved the stored t/s, the post identity
+    `(engine, hardware, source_post)` is consulted and the t/s is compared NUMERICALLY —
+    a unique store carrier whose t/s is >= the captured figure is the same run, and its
+    text is credited. A measurement with NO source post keeps the strict rule (the only
+    link is the t/s itself: numeric equality). A post identity that matches a store row but
+    whose t/s comparison FAILS is returned as a MISS so `captured_text` reports it loudly —
+    never silently dropped. Returns (repaired_through_a_raise, missed_identities).
     """
     owners: dict[tuple, set[str]] = {}
+    owners_by_post: dict[tuple, list[tuple[str, float | None]]] = {}
     for m in store.get("models") or []:
         mid = str(m.get("id") or "")
         if not mid:
@@ -375,9 +406,12 @@ def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> None:
         for e in m.get("engines") or []:
             if isinstance(e, dict):
                 owners.setdefault(update_trending._cross_model_identity(e), set()).add(mid)
+                owners_by_post.setdefault(_post_identity(e), []).append(
+                    (mid, _tps_number(e.get("tps"))))
     if not owners:
-        return
-    texts: dict[tuple, dict[str, list[str]]] = {}
+        return 0, []
+    repaired = 0
+    missed: list[tuple] = []
     for path in sorted(raw_dir.glob("*.json")):
         data = load(path, {}) or {}
         for row in data.get("models", []) or []:
@@ -386,21 +420,37 @@ def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> None:
             for e in row.get("engines") or []:
                 if not isinstance(e, dict):
                     continue
-                fields = texts.setdefault(update_trending._cross_model_identity(e), {})
+                ident = update_trending._cross_model_identity(e)
+                carriers = set(owners.get(ident) or ())
+                via_raise = False
+                if not carriers:
+                    post_key = _post_identity(e)
+                    raw_num = _tps_number(e.get("tps"))
+                    candidates = owners_by_post.get(post_key) or []
+                    if post_key[2]:
+                        matches = {mid for mid, store_num in candidates
+                                   if raw_num is not None and store_num is not None
+                                   and store_num >= raw_num}
+                    else:
+                        matches = {mid for mid, store_num in candidates
+                                   if raw_num is not None and store_num is not None
+                                   and store_num == raw_num}
+                    if matches:
+                        carriers = matches
+                        via_raise = True
+                    elif candidates:
+                        missed.append(ident)  # post identity matched, t/s did not
+                        continue
+                if len(carriers) != 1:
+                    continue  # joint (two owners) or unowned: the text is copied to no row
+                if via_raise:
+                    repaired += 1
+                bucket = out.setdefault(next(iter(carriers)), {})
                 for f in TEXT_FIELDS:
                     v = e.get(f)
-                    if isinstance(v, str) and v.strip():
-                        fields.setdefault(f, []).append(v)
-    for ident, fields in texts.items():
-        carriers = owners.get(ident) or set()
-        if len(carriers) != 1:
-            continue  # joint (two owners) or unowned: the text is copied to no row
-        bucket = out.setdefault(next(iter(carriers)), {})
-        for f, ts in fields.items():
-            seen = bucket.setdefault(f, [])
-            for t in ts:
-                if t not in seen:
-                    seen.append(t)
+                    if isinstance(v, str) and v.strip() and v not in bucket.setdefault(f, []):
+                        bucket[f].append(v)
+    return repaired, missed
 
 
 def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, list[str]]]:
@@ -453,7 +503,13 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
                     value = source.get(f) if isinstance(source, dict) else None
                     if isinstance(value, str) and value.strip():
                         bucket.setdefault(f, []).append(value)
-    _join_measurement_identity(store, out, raw_dir)
+    repaired, missed = _join_measurement_identity(store, out, raw_dir)
+    if repaired or missed:
+        print(f"  measurement-identity: {repaired} trace(s) joined through a rule-3b t/s "
+              f"raise, {len(missed)} identity miss(es) credited to no row")
+        for ident in missed[:5]:
+            print(f"    missed: engine={ident[0]!r} tps={ident[1]!r} "
+                  f"hardware={ident[2]!r} post={ident[3]!r}")
     return out
 
 
