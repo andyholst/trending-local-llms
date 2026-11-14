@@ -1,6 +1,7 @@
 # Proposal: keeper-dedup-mergeable-960
 
 Issue: #960 — "an unmergeable (DIRTY) keeper PR suppresses the keeper repair it
+PR: #961
 was supposed to land"
 
 **Capability:** `keeper-repair`

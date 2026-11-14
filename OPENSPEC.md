@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **281**
+Active changes: **2** · archived: **282**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `keeper-dedup-mergeable-960` | active | #960 — "an unmergeable (DIRTY) keeper PR suppresses the keeper repair it | — | [keeper-repair](openspec/changes/keeper-dedup-mergeable-960/specs/keeper-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/keeper-dedup-mergeable-960/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -183,6 +182,7 @@ Active changes: **3** · archived: **281**
 | `issue-review-bot` | archived | #179 | — | [issue-review](openspec/changes/archive/issue-review-bot/specs/issue-review/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/issue-review-bot/proposal.md) |
 | `issue-triage` | archived | #210 | — | [issue-triage](openspec/changes/archive/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/issue-triage/proposal.md) |
 | `keeper-branch-closure-shape` | archived | #872 | #875 | [pr-lifecycle](openspec/changes/archive/keeper-branch-closure-shape/specs/pr-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-branch-closure-shape/proposal.md) |
+| `keeper-dedup-mergeable-960` | archived | #960 — "an unmergeable (DIRTY) keeper PR suppresses the keeper repair it | #961 | [keeper-repair](openspec/changes/archive/keeper-dedup-mergeable-960/specs/keeper-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-dedup-mergeable-960/proposal.md) |
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
