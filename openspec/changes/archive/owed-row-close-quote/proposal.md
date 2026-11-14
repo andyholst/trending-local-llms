@@ -1,6 +1,7 @@
 # Closing an owed-row issue quotes the ledger on the thread
 
 **Issue:** [#766](https://github.com/andyholst/trending-local-llms/issues/766)
+PR: #922
 
 ## Why
 
