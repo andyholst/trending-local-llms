@@ -39,6 +39,13 @@ README = Path(os.environ.get("TRENDING_README", str(ROOT / "README.md")))
 SCRAPE_DIR = _DATA_DIR / "scrape"
 SNAPSHOT_DIR = _DATA_DIR / "snapshots"
 RAW_DIR = _DATA_DIR / "raw"
+# The append-only ingest-refusal LEDGER (issue #888): every measurement a refusal seam
+# drops — fabricated engine (#458), misattribution (#468), cross-model copy (#702),
+# weight contradiction (#615) — is recorded here with its backend, model, engine, reason
+# and source post, so `make data-gaps` can tell "refused at ingest" from "never
+# captured". Rule 3b: entries are only ever APPENDED; the file is never rewritten or
+# truncated, and an unreadable ledger is never overwritten.
+REFUSALS_FILE = _DATA_DIR / "refusals.json"
 
 # --- normalised store split (issue #689) -----------------------------------
 # The store persisted as THREE files so the measurement volume grows with post
@@ -2286,6 +2293,87 @@ def fabricated_engine_reason(engine: object, model: dict, registry: dict) -> str
     return None
 
 
+#: Every refusal seam, by function name (issue #888). ONE registry: the ledger
+#: refuses to record a stage it does not know (rule 6d — a stage name that drifts
+#: from the seam names makes the ledger silently unreadable).
+REFUSAL_STAGES = (
+    "refuse_fabricated_engines",
+    "refuse_misattributed_measurements",
+    "refuse_cross_model_duplicate_measurements",
+    "refuse_weight_gb_contradictions",
+)
+
+#: Which RANKED footprint dimension (data_gap_analysis.DIMENSIONS key) each seam's
+#: refusal takes away from the model. Only the weight-gb seam maps to a ranked
+#: dimension; the other three refuse a measurement for reasons of IDENTITY (a fake
+#: engine, a text naming another model, a copy of a figure already owned elsewhere),
+#: and the gap analysis reports those as their own class beside the dimension map.
+#: Read by data_gap_analysis — never a second copy of this mapping there.
+REFUSAL_STAGE_DIMENSIONS = {
+    "refuse_weight_gb_contradictions": "weight_gb",
+}
+
+
+def record_ingest_refusals(
+    model: dict,
+    stage: str,
+    refused: list[tuple[str, str, str]],
+    backend: object,
+    path: Path | None = None,
+) -> int:
+    """Append every refused (engine, why, source_post) to the ledger; return how many landed.
+
+    The refusal seams (#458/#468/#702/#615) print their refusal loudly and drop the
+    measurement from the row — but until issue #888 the drop left NO trace the gap
+    analysis could read, so a model whose figure was CAPTURED-then-DROPPED was
+    reported as "no captured post states it", which sent a re-search after a post the
+    pipeline already has. Every refusal therefore lands here: backend, model, engine,
+    reason, source post, stage, timestamp. Append-only (rule 3b): an unreadable or
+    malformed ledger is reported loudly and NOT rewritten — a refusal still visible
+    in the log beats a ledger silently replaced.
+    """
+    if not refused:
+        return 0
+    if stage not in REFUSAL_STAGES:
+        raise ValueError(
+            f"record_ingest_refusals: unknown refusal stage {stage!r} — "
+            f"the seams are {REFUSAL_STAGES}"
+        )
+    p = path or REFUSALS_FILE
+    doc: dict = {"refusals": []}
+    if p.exists():
+        try:
+            loaded = json.loads(p.read_text())
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"[ingest] refusals ledger {p.name} is unreadable ({exc}) — NOT "
+                f"rewriting it (append-only, rule 3b); the refusal stands in the log"
+            )
+            return 0
+        if not isinstance(loaded, dict) or not isinstance(loaded.get("refusals"), list):
+            print(
+                f"[ingest] refusals ledger {p.name} has an unexpected shape — NOT "
+                f"rewriting it (append-only, rule 3b); the refusal stands in the log"
+            )
+            return 0
+        doc = loaded
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    mid = str(model.get("id") or model.get("name") or "unknown")
+    for engine, why, post in refused:
+        doc["refusals"].append({
+            "utc": now,
+            "stage": stage,
+            "backend": str(backend or "unknown"),
+            "model": mid,
+            "engine": str(engine),
+            "reason": str(why),
+            "source_post": str(post),
+        })
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+    return len(refused)
+
+
 def refuse_fabricated_engines(
     model: dict, registry: dict
 ) -> tuple[list[dict], list[tuple[str, str, str]]]:
@@ -2737,6 +2825,7 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
     actually introduced a change. A snapshot this code cannot date is always
     merged (fail-open), never silently dropped."""
     added = updated = 0
+    refused_total = 0  # measurements refused by a seam AND recorded to the ledger (#888)
     raw_dir = raw_dir or RAW_DIR
     if not raw_dir.exists():
         return 0, 0
@@ -2761,6 +2850,10 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             sys.path.pop(0)
         for d in _er.register_new_engines(store, data.get("models", [])):
             print(f"[ingest] engine {d['engine']!r}: {d['decision']} — {d['reason']}")
+        # (backend, model id, engine, source post) for every refusal this file's rows
+        # recorded to the ledger — the bounded per-file summary below reads it (#888).
+        file_refusals: list[tuple[str, str, str, str]] = []
+        file_backend = str(data.get("backend") or path.stem)
         # A FABRICATED engine never becomes data (issue #458). The search legs are told by
         # NAME never to write a model name or a quantization as the engine (Makefile
         # ENGINE_ASK, #378), and the metal leg wrote `FP4-Local` for
@@ -2777,6 +2870,10 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"post {post} — a t/s with no engine named by the post is not a valid "
                         f"entry (rule 5)"
                     )
+                if record_ingest_refusals(m, "refuse_fabricated_engines", refused, file_backend):
+                    file_refusals.extend(
+                        (file_backend, str(m.get("id")), name, post)
+                        for name, why, post in refused)
         # A MISATTRIBUTED measurement never lands on the wrong row either (tech-debt
         # #456/#468): a measurement whose own text names a different model inflates the
         # row's t/s and its posts_7d signal, and AGENTS.md §3 requires every figure to
@@ -2791,6 +2888,11 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"{why}; post {post} — a measurement must name the model whose row it "
                         f"is stored on"
                     )
+                if record_ingest_refusals(m, "refuse_misattributed_measurements", refused,
+                                          file_backend):
+                    file_refusals.extend(
+                        (file_backend, str(m.get("id")), name, post)
+                        for name, why, post in refused)
         # A CROSS-MODEL copy never becomes data either (issues #693/#702): a measurement
         # whose (engine, tps, hardware, source_post) is ALREADY carried by a different,
         # already-merged model id is one model's figure silently copied onto another the
@@ -2809,6 +2911,11 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"{m.get('id')}: {why}; post {post} — a t/s tuple already stored "
                         f"on another model is a copy, not a measurement of this model"
                     )
+                if record_ingest_refusals(m, "refuse_cross_model_duplicate_measurements",
+                                          refused, file_backend):
+                    file_refusals.extend(
+                        (file_backend, str(m.get("id")), name, post)
+                        for name, why, post in refused)
         # A measurement whose stated weight_gb CONTRADICTS the model's own footprint is not
         # this model's weights either (the write-time half of #614): measured — Bonsai 2 9B, a
         # 2 GB ternary model, carried `~493GB NVFP4` on a 4x M5 Ultra run, which the tier ladder
@@ -2825,6 +2932,21 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                         f"{why}; post {post} — a stated weight that cannot belong to this model "
                         f"is not evidence about it"
                     )
+                if record_ingest_refusals(m, "refuse_weight_gb_contradictions", refused,
+                                          file_backend):
+                    file_refusals.extend(
+                        (file_backend, str(m.get("id")), name, post)
+                        for name, why, post in refused)
+        if file_refusals:
+            refused_total += len(file_refusals)
+            shown = file_refusals[:8]
+            print(
+                f"[ingest] {path.name}: {len(file_refusals)} refusal(s) recorded in the "
+                f"refusals ledger — "
+                + "; ".join(f"{b}: {mid}/{eng} post {post}" for b, mid, eng, post in shown)
+                + (f"; +{len(file_refusals) - len(shown)} more (ledger data/refusals.json)"
+                   if len(file_refusals) > len(shown) else "")
+            )
         # A captured engine-build sentence becomes the structured field HERE
         # (issue #877): the refusals above have pruned what cannot be this model's
         # data; what survives now earns its `engine_min_version` from the build
@@ -2923,6 +3045,12 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                 added += 1
                 if verify_hf:
                     note_unresolved_hf(model)
+    if refused_total:
+        print(
+            f"[ingest] {refused_total} measurement(s) refused at ingest this run — every "
+            f"one recorded in data/refusals.json (issue #888); make data-gaps reads that "
+            f"ledger to tell 'refused at ingest' from 'never captured'"
+        )
     return added, updated
 
 def resolve_model_mapping(raw_model: dict, store: dict) -> dict:
