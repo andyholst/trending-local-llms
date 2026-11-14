@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **12** · archived: **256**
+Active changes: **11** · archived: **257**
 
 ## Active changes
 
@@ -22,7 +22,6 @@ Active changes: **12** · archived: **256**
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
-| `readme-bot-cadence-863` | active | #863 | — | [validation](openspec/changes/readme-bot-cadence-863/specs/validation/spec.md) | 3/6 | [proposal.md](openspec/changes/readme-bot-cadence-863/proposal.md) |
 | `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
 | `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
 | `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
@@ -217,6 +216,7 @@ Active changes: **12** · archived: **256**
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
 | `queued-run-alarm` | archived | #252 | — | [queued-run-alarm](openspec/changes/archive/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/queued-run-alarm/proposal.md) |
 | `raw-quarantine-underivable-models` | archived | #381 | — | [raw-snapshot-quarantine](openspec/changes/archive/raw-quarantine-underivable-models/specs/raw-snapshot-quarantine/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/raw-quarantine-underivable-models/proposal.md) |
+| `readme-bot-cadence-863` | archived | #863 | #930 | [validation](openspec/changes/archive/readme-bot-cadence-863/specs/validation/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/readme-bot-cadence-863/proposal.md) |
 | `real-pick-prints-one-line` | archived | #578 | — | [issue-queue](openspec/changes/archive/real-pick-prints-one-line/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/real-pick-prints-one-line/proposal.md) |
 | `rebuild-decision` | archived | #208 | — | [rebuild-decision](openspec/changes/archive/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/rebuild-decision/proposal.md) |
 | `recheck-before-the-agent` | archived | #522 | — | [issue-implementer](openspec/changes/archive/recheck-before-the-agent/specs/issue-implementer/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/recheck-before-the-agent/proposal.md) |
