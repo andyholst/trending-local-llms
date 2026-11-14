@@ -50,6 +50,12 @@ for t in "${modules[@]}"; do
 	out="$(mktemp)"
 	if python3 "$t" >"$out" 2>&1; then
 		ran=$((ran + 1))
+		# (issue #911) a PASSING module leaves a trace in the stream: the old
+		# runner discarded a passing module's output entirely, so a fully green
+		# suite was ONE line — and a capture that lost the container's stdout
+		# looked identical to a clean run. `[test] ok <module>` makes every
+		# collected module observable, and the host wrapper counts them.
+		echo "[test] ok $name"
 		rm -f "$out"
 		continue
 	fi
