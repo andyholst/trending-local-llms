@@ -95,6 +95,7 @@ GIT_COMMON_DIR := $(shell cd "$$(git rev-parse --git-common-dir 2>/dev/null)" 2>
 # client (a tool timeout) leaves it running (issue #720). The wrapper names the
 # run and removes it when that client dies.
 TEST_RUN := bash scripts/docker_test_run.sh --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
+	-e PYTHONUNBUFFERED=1 \
 	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
 
 
@@ -1664,7 +1665,15 @@ review-issue-window: HERMES_LOG_SCRUBBED := review.scrubbed.log
 
 .PHONY: test
 test:
-	$(TEST_RUN) make _test
+	@out="$$(mktemp)"; \
+	$(TEST_RUN) make _test 2>&1 | tee "$$out"; rc=$${PIPESTATUS[0]}; \
+	if ! grep -q '^\[test\] ' "$$out"; then \
+		echo "[harness] FAIL: 'make test' captured NO '[test]' line from the suite (suite rc=$$rc) — the suite's stream never reached the capture; an rc over an empty capture is UNVERIFIABLE (issue #911)" >&2; \
+		rm -f "$$out"; exit 1; \
+	fi; \
+	n_ok=$$(grep -c '^\[test\] ok ' "$$out" || true); \
+	echo "[harness] captured $$n_ok per-module trace(s) and the verdict line (suite rc=$$rc)" >&2; \
+	rm -f "$$out"; exit $$rc
 
 .PHONY: requirements generate-requirements
 requirements:
