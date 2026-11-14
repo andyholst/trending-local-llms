@@ -10,7 +10,8 @@ These tests run the REAL `source_post_figure_flags` against a REAL temp raw-snap
 no mock of the business logic (rule 6m). They lock the readback: a stored value the capture
 states is kept, one the capture nowhere states is flagged, a captured structured field
 confirms a value the free text lacks, a card's VRAM never confirms a weight footprint, an
-uncaptured post is skipped, and the scan is report-only.
+uncaptured post is skipped — and (issue #789) the verdict is split: the four numeric/hard
+fields FAIL the `data` stage on a contradiction, `engine_min_version` stays report-only.
 
 Run:  python3 tests/test_source_post_readback.py   or   make test
 """
@@ -138,7 +139,8 @@ def test_an_uncaptured_post_is_skipped():
     check("a post no snapshot captured is not checked", not flags, flags)
 
 
-def test_the_scan_is_report_only_it_never_fails():
+def test_a_hard_field_contradiction_fails_the_data_stage():
+    """#789: a contradicted NUMERIC/HARD footprint field is no longer a WARN — it fails `data`."""
     store = store_with([{"engine": "llama.cpp", "tps": "146", "hardware": "RTX 5090",
                          "quant": "5.95GB ternary", "date": "2026-10-05",
                          "source_post": SP2, "weight_gb": "5.93GB"}])
@@ -151,11 +153,82 @@ def test_the_scan_is_report_only_it_never_fails():
         try:
             with contextlib.redirect_stdout(buf):
                 V.check_source_post_readback(store)
+            problems = list(V.FAILURES)
         finally:
             V.RAW_DIR = saved
-    check("the scan reports but adds NO failure", len(V.FAILURES) == 0, V.FAILURES)
-    check("… and prints the contradiction, not a silent pass",
-          "NEITHER the capture's fields NOR the post text" in buf.getvalue(), buf.getvalue()[:200])
+            V.FAILURES.clear()
+    check("a hard-field contradiction adds exactly one data-stage failure",
+          len(problems) == 1, problems)
+    if problems:
+        check("the failure names the field, value, the hard-field reason and the post",
+              "weight_gb" in problems[0] and "5.93GB" in problems[0]
+              and "hard field" in problems[0] and SP2 in problems[0], problems[0])
+
+
+def test_a_prose_field_distillation_stays_report_only():
+    """#789: `engine_min_version` distillation never reds a refresh — WARN only, with its reason."""
+    store = store_with([{"engine": "llama.cpp", "tps": "146", "hardware": "RTX 5090",
+                         "quant": "5.95GB ternary", "date": "2026-10-05", "source_post": SP2,
+                         "engine_min_version": "llama.cpp dev build with PR #99999, "
+                                                "--spec-type draft-dflash"}])
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"; raw.mkdir()
+        write_raw(raw, {"nvidia-1.json": {SP2: {"quant": "5.95GB ternary"}}})
+        saved, V.RAW_DIR = V.RAW_DIR, raw
+        V.FAILURES.clear()
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                V.check_source_post_readback(store)
+            problems = list(V.FAILURES)
+        finally:
+            V.RAW_DIR = saved
+            V.FAILURES.clear()
+    check("a prose-field flag adds NO failure", problems == [], problems)
+    check("… and prints the contradiction with its report-only reason",
+          "engine_min_version" in buf.getvalue() and "report only" in buf.getvalue(),
+          buf.getvalue()[:200])
+
+
+def test_the_gate_and_report_field_sets_are_declared():
+    """#789: the split lives in ONE declaration; scan, gate and tests read the same tuples."""
+    check("the gate set is exactly the four numeric footprint fields",
+          V._SOURCE_POST_GATE_FIELDS == ("weight_gb", "context_tokens", "system_ram_min",
+                                         "storage_offload"), V._SOURCE_POST_GATE_FIELDS)
+    check("the report set is exactly the prose field",
+          V._SOURCE_POST_REPORT_FIELDS == ("engine_min_version",), V._SOURCE_POST_REPORT_FIELDS)
+    check("their union is the footprint tuple the scan walks",
+          V._SOURCE_POST_FOOTPRINT == V._SOURCE_POST_GATE_FIELDS + V._SOURCE_POST_REPORT_FIELDS,
+          V._SOURCE_POST_FOOTPRINT)
+
+
+def test_every_hard_field_contradiction_fails_and_prose_does_not():
+    """Each gated field goes red on a planted contradiction; the prose field never does."""
+    store = store_with([{"engine": "llama.cpp", "tps": "146", "hardware": "RTX 5090",
+                         "quant": "5.95GB ternary", "date": "2026-10-05", "source_post": SP2,
+                         "weight_gb": "5.93GB", "context_tokens": "262144",
+                         "system_ram_min": "412GB", "storage_offload": "84GB",
+                         "engine_min_version": "a build no capture states"}])
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"; raw.mkdir()
+        write_raw(raw, {"nvidia-1.json": {SP2: {"quant": "5.95GB ternary"}}})
+        saved, V.RAW_DIR = V.RAW_DIR, raw
+        V.FAILURES.clear()
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                V.check_source_post_readback(store)
+            problems = list(V.FAILURES)
+        finally:
+            V.RAW_DIR = saved
+            V.FAILURES.clear()
+    check("every gated field contributes exactly one failure (4 total)",
+          len(problems) == 4, problems)
+    check("each hard field is named by its own failure",
+          all(any(f in p for p in problems) for f in V._SOURCE_POST_GATE_FIELDS), problems)
+    check("the prose field contributes no failure but does warn",
+          not any("engine_min_version" in p for p in problems)
+          and "report only" in buf.getvalue(), problems)
 
 
 def _ship_store_and_raw():
@@ -311,7 +384,10 @@ def main() -> int:
     test_a_value_in_the_capture_structured_field_is_kept()
     test_a_cards_vram_never_confirms_a_weight_footprint()
     test_an_uncaptured_post_is_skipped()
-    test_the_scan_is_report_only_it_never_fails()
+    test_a_hard_field_contradiction_fails_the_data_stage()
+    test_a_prose_field_distillation_stays_report_only()
+    test_the_gate_and_report_field_sets_are_declared()
+    test_every_hard_field_contradiction_fails_and_prose_does_not()
     test_the_shipped_store_flags_no_unsupported_footprint_values()
     test_the_store_gate_fires_on_a_planted_drift()
     test_a_declared_estimate_is_attributable_not_a_contradiction()

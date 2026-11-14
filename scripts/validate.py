@@ -1616,8 +1616,17 @@ def check_duplicate_runs(store: dict) -> None:
 #: The footprint dimensions a measurement carries with its figure (per measurement, not per
 #: model — issue #337). These are the "dimension values" the source-post readback re-derives
 #: from the captured post text, in the same order the contracts declare them.
-_SOURCE_POST_FOOTPRINT = ("weight_gb", "context_tokens", "system_ram_min",
-                          "storage_offload", "engine_min_version")
+#: (issue #789) The split the report-only scan could not make until #788 measured the
+#: precision: the four NUMERIC/HARD fields carry figure tokens (`5.95GB`, `262144`, `110K`)
+#: a captured post either states or does not — a parser miss cannot hide one — so a stored
+#: value its post nowhere states is a FAILING gate. `engine_min_version` is free-text
+#: distillation (10 of #531's 23 flags were prose like `llama.cpp dev build with PR #27342,
+#: --spec-type draft-dflash…` the post never restates verbatim), so gating on it reds
+#: refresh PRs on parser misses — the outcome #458/#459 refused — and it stays report-only.
+#: ONE declaration; the scan, the gate and the tests all read these tuples.
+_SOURCE_POST_GATE_FIELDS = ("weight_gb", "context_tokens", "system_ram_min", "storage_offload")
+_SOURCE_POST_REPORT_FIELDS = ("engine_min_version",)
+_SOURCE_POST_FOOTPRINT = _SOURCE_POST_GATE_FIELDS + _SOURCE_POST_REPORT_FIELDS
 
 #: A free-text source is not evidence for every field: a card's VRAM (`RTX 5090 32GB`) is a
 #: machine's memory, never a weight footprint, so `hardware` must not "confirm" a stored
@@ -1785,31 +1794,42 @@ def _readback_supported(value: str, field: str, bucket: dict) -> bool:
 
 
 def check_source_post_readback(store: dict) -> None:
-    """REPORT ONLY (never fails): a stored figure its captured source post nowhere states.
+    """Hard footprint fields FAIL the data stage; the prose field stays report-only (issue #789).
 
-    Issue #531: nothing re-reads a measurement's `source_post`, so `data/models.json` can
-    carry a dimension value (`weight_gb` drives the card-fit rows) that contradicts the post
-    it cites while every gate stays green — measured: `bonsai-2-27b` carried `5.93GB` for a
-    post that states `5.95GB`. This scan re-derives the stored footprint values from each
-    captured post's text and flags one that appears in neither the capture's fields nor the
-    post text. It is report-only FIRST (like `check_duplicate_runs`, #459) so a parser miss or
-    a partial capture cannot red a refresh; the flag list on the store as it stands is the
-    precision a later change can turn into a gate.
+    Issue #531 built the scan report-only because a parser miss must not red a refresh;
+    issue #788 reconciled the flagged residue to 0 and pinned it; issue #789 splits the
+    verdict on the measured precision: a contradicted value of a NUMERIC/HARD field
+    (`weight_gb`, `context_tokens`, `system_ram_min`, `storage_offload` — figure tokens a
+    post either states or not) is a FAILURE naming model, engine, tps, field, value and post,
+    because `data/models.json` publishing a figure its own citation contradicts is the defect
+    the scan exists to catch, and the card-fit tables publish it as measured advice.
+    `engine_min_version` stays a WARN: its stored values are often a parser's distillation
+    the capture does not restate verbatim, and reding refresh PRs on that is what #458/#459
+    refused. A declared `(est)` value is attributable on either side (rule 2), never flagged.
     """
     flags = source_post_figure_flags(store, RAW_DIR)
     est = source_post_declared_estimates(store)
     est_note = f" ({est} footprint value(s) carry an explicit `(est)` marker — declared estimates, rule 2)" if est else ""
-    if not flags:
+    hard = [f for f in flags if f[3] in _SOURCE_POST_GATE_FIELDS]
+    prose = [f for f in flags if f[3] in _SOURCE_POST_REPORT_FIELDS]
+    if not hard and not prose:
         print("  OK: source-post readback: every unmarked stored footprint value is stated by "
               "the captured post it cites" + est_note)
         return
-    print(f"  WARN: source-post readback: {len(flags)} stored footprint value(s) appear in "
-          f"NEITHER the capture's fields NOR the post text — a figure that drifted from its "
-          f"citation (report only, issue #531)" + est_note)
-    for mid, engine, tps, field, value, post in flags[:15]:
-        print(f"    - {mid} ({engine} {tps} t/s): {field}={value!r} — {post}")
-    if len(flags) > 15:
-        print(f"    ... and {len(flags) - 15} more")
+    for mid, engine, tps, field, value, post in hard:
+        fail(f"source-post readback ({field} is a gated hard field): {mid} ({engine} {tps} t/s) "
+             f"stores {field}={value!r} but the cited post states it in NEITHER its capture "
+             f"fields nor its text — {post} (correct it to the capture's figure or declare it "
+             f"with '(est)', issue #789)")
+    if prose:
+        print(f"  WARN: source-post readback: {len(prose)} prose-footprint value(s) "
+              f"({', '.join(_SOURCE_POST_REPORT_FIELDS)}) appear in NEITHER the capture's "
+              f"fields NOR the post text — distillation the post does not restate verbatim "
+              f"(report only until its precision is measured, issues #531/#789)" + est_note)
+        for mid, engine, tps, field, value, post in prose[:15]:
+            print(f"    - {mid} ({engine} {tps} t/s): {field}={value!r} — {post}")
+        if len(prose) > 15:
+            print(f"    ... and {len(prose) - 15} more")
 
 
 def check_readme_has_all_models(store: dict) -> None:
@@ -2394,7 +2414,8 @@ def main() -> int:
     # history predates the ingest refusal and cannot be repaired by reding every PR.
     add("duplicate-run scan (report only)", "data", lambda: check_duplicate_runs(store))
     add("same-post cross-model scan (report only)", "data", lambda: check_cross_model_attribution(store))
-    add("source-post readback (report only)", "data", lambda: check_source_post_readback(store))
+    add("source-post readback (hard fields fail, prose report only)", "data",
+        lambda: check_source_post_readback(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))
     add("README bot cadence matches the pinned crons", "readme", lambda: check_readme_bot_cadence(store))
     add("README engine links", "readme", lambda: check_readme_engine_links(store))
