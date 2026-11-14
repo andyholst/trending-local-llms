@@ -131,8 +131,22 @@ def has_our_marker(repo: str, number: int) -> bool:
     return MARKER in json.dumps((comments or {}).get("comments") or [])
 
 
+try:  # the ONE definition of who a bot commits as (scripts/agent_identity.py, §7)
+    from agent_identity import AGENT_EMAIL, AGENT_NAME
+except ImportError:  # run from the repo root
+    from scripts.agent_identity import AGENT_EMAIL, AGENT_NAME
+
+
+def _identity_flags() -> list[str]:
+    """git needs an identity to REPLAY commits (rule 3f: the repo's agent commits as
+    Asimov Agent). A CI container has no global git config, so the rebaser supplies the
+    identity on the command line instead of assuming the checkout carries one."""
+    return ["-c", f"user.name={AGENT_NAME}", "-c", f"user.email={AGENT_EMAIL}"]
+
+
 def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+    return subprocess.run(["git", "-C", str(cwd), *_identity_flags(), *args],
+                          capture_output=True, text=True)
 
 
 def fetch_base(cwd: Path) -> bool:
