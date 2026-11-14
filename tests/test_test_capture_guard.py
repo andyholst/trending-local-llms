@@ -95,8 +95,8 @@ def test_the_first_red_stops_the_run_and_its_output_is_shown():
               r.stdout)
         check("the failing module's full output is shown", "the red evidence" in r.stdout,
               r.stdout)
-        check("the run stops at the first red", "test_dummy_c.py FAILED" in r.stdout,
-              r.stdout)
+        check("the failing module is named in the one final full red list (issue #890)",
+              "1 FAILED: test_dummy_c.py" in r.stdout, r.stdout)
 
 
 # ------------------------------------------------------------- Makefile -----
