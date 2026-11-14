@@ -1,6 +1,7 @@
 # Proposal: active-change-issue-binding-952
 
 Issue: #952 — "the sweep's OpenSpec change must bind the Issue it implements
+PR: #955
 BEFORE the record step — a refused openspec-record-pr wasted the 2026-11-12
 weekly sweep delivery"
 
