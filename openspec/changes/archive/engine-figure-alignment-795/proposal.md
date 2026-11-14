@@ -1,6 +1,7 @@
 # Proposal: engine-figure-alignment-795
 
 Issue: #795 — "the highest t/s per inference engine must stay an aligned, tested
+PR: #970
 contract": engine spellings split figures, an unknown engine stranded a captured
 34.8 t/s, and variant rows duplicate measurements.
 

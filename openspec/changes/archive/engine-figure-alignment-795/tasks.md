@@ -20,4 +20,4 @@
 - [x] Run the gates green: `make validate`, `make test`, `make lint`, `make engine-check`,
   `make openspec-check`
 - [x] Commit, push, open the PR (`closes #795`) — reviewable, never a draft, never merged here.
-- [~] This change archived on its own closing head by `make openspec-record-pr ISSUE=795 PR=<pr>` — blocked: the PR number exists only after `gh pr create`; the record runs on this branch immediately after opening (rule 6f's required shape)
+- [x] This change archived on its own closing head by `make openspec-record-pr ISSUE=795 PR=970` — the record+archive landed as a commit on this branch right after the PR opened (rule 6f's required shape)
