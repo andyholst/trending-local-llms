@@ -318,7 +318,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -357,6 +357,8 @@ openspec-backlog-check: python-env-image ## Fail when the ACTIVE OpenSpec backlo
 
 openspec-manifest-check: ## Refuse a published OpenSpec image tag unless its manifest answers linux/arm64 AND linux/amd64 (issue #919) — host docker, like rebuild-decision; pass TAG=<exact published tag>
 	@python3 scripts/openspec_manifest_check.py --tag "$(TAG)"
+openspec-binding-check: python-env-image ## Fail when an ACTIVE change binds no Issue and declares no keeper exemption — caught before the PR, not at the record step (issue #952)
+	$(PYTHON_RUN) python3 scripts/openspec_binding_check.py
 
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
@@ -394,7 +396,7 @@ openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:`
 	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
 	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
-openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), the index current
+openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check openspec-binding-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), every ACTIVE change binds the Issue its PR closes or declares `Binding-exempt:` (issue #952), the index current
 	docker run $(OS_OPTS) openspec validate --changes
 	@echo "[openspec-check] OK: active changes validate, no task is unticked, no two ACTIVE changes propose the same Requirement, every \`- **Test:**\` reference resolves, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 

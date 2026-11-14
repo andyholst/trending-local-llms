@@ -216,6 +216,7 @@ keep it honest (issue #207):
 | `openspec-duplicate-check` (`NAME=`) | Fail when two ACTIVE changes declare an ADDED/MODIFIED capability Requirement with the SAME heading of the SAME kind — two changes proposing the same rule is the defect (#622); bundled into `make openspec-check` |
 | `openspec-backlog-check` | Fail when the ACTIVE OpenSpec backlog hits the cap **50** — every active change is named with its Issue and the exact archive remedy, and auto-merge to `master` is blocked until the tail is archived; under the cap it prints `active=<n>/50` headroom (#938); bundled into `make openspec-check` |
 | `openspec-manifest-check` | Refuse a published OpenSpec image tag whose manifest answers fewer platforms than required (default `linux/amd64` + `linux/arm64`); exit 2 on an unreadable manifest or missing `TAG` — run by `refresh-bot.yml`'s `openspec-image` job after publish AND on the skip-rebuild branch (#919) |
+| `openspec-binding-check` | Fail when an ACTIVE OpenSpec change binds no `Issue:` (parsed through the ONE `openspec_index._refs`) and declares no `Binding-exempt: <reason>` keeper exemption — each offender named with the exact remedy; the binding `make openspec-record-pr` needs is refused while the implementing run can still repair it (#952); bundled into `make openspec-check` |
 | `openspec-index` | Regenerate the root `OPENSPEC.md` (`scripts/openspec_index.py --write`) |
 | `openspec-index-check` | Fail when `OPENSPEC.md` is stale or a change has no row |
 | `openspec-index-repair` | Classify a stale `OPENSPEC.md` against THIS tree and regenerate it when the drift is index-only; prints the one-line verdict `DRIFT=none|index-only` the keeper job acts on, exits 2 loudly when a present index cannot be read (`scripts/openspec_index_repair.py`, issue #304) |
@@ -616,6 +617,7 @@ for a reviewer to hold true.
 | `scripts/openspec_duplicate_check.py` | Fail when two ACTIVE changes declare an ADDED/MODIFIED capability Requirement with the SAME heading of the SAME kind (`make openspec-duplicate-check`, bundled into `make openspec-check`, issue #622) — two changes proposing the same rule is a defect |
 | `scripts/openspec_backlog_check.py` | Count ACTIVE OpenSpec changes (`archive/` excluded); exit 1 at `MAX_ACTIVE_OPENSPEC_CHANGES` (50) naming every change, its Issue and the archive remedy, exit 0 under the cap printing `active=<n>/50`, exit 2 when the tree is unreadable (`make openspec-backlog-check`, bundled into `make openspec-check`, issue #938) — the ACTIVE backlog ceiling at the merge gate |
 | `scripts/openspec_manifest_check.py` | Read a published OpenSpec image tag's manifest through `docker manifest inspect`; exit 1 when it answers fewer platforms than required (default linux/amd64 + linux/arm64), exit 2 when the tag or the manifest cannot be read — never a silent clean (`make openspec-manifest-check`, run by `refresh-bot.yml`'s `openspec-image` job on both refresh paths, issue #919) |
+| `scripts/openspec_binding_check.py` | Fail (exit 1) when an ACTIVE OpenSpec change binds no `Issue:` (parsed through the ONE `openspec_index._refs`) and declares no `Binding-exempt: <reason>` keeper exemption; exit 0 with the bound/exempt counts; exit 2 when the tree is unreadable (`make openspec-binding-check`, bundled into `make openspec-check`, issue #952) — the binding the record step needs is refused while the run can still repair it |
 | `scripts/openspec_index_repair.py` | The event-driven keeper's classifier+repair (issue #304): `--classify-and-write` compares the committed `OPENSPEC.md` to the tree and prints the one-line verdict `DRIFT=none|index-only` the `index-repair` job acts on (rule 6d — no second copy of the decision in shell), regenerating through `openspec_index.py --write` and re-verifying with its `--check` ONLY on index-only drift; a present-but-unreadable index is exit 2, never a silent clean. `--print-pr-body` composes the keeper PR body, which records the drift and `refs` #304 with NO closing keyword (rule 6e) |
 | `scripts/file_findings.py` | Parses `findings.md` and files one `tech-debt` issue per finding (deduped, linked, label re-verified) — used by the implementer AND by the reviewer |
 | `scripts/check_agent_skills.py` | The bots' contract gate (issues #549/#638): every `hermes -z` leg must preload a project skill and `bot-unattended`; the named skill must exist with a matching frontmatter `name` and `## Inputs`/`## Output`/`## Rules`; no recipe may inline the unattended contract or restate a retired rule (`RETIRED_RULES`); each retired rule must still be stated in the skill it moved to; a leg's prompt stays under `PROMPT_BUDGET` (900); the `Makefile` keeps the seam and its registration target. `check` exits 1 on any finding, `report` prints every leg and skill |
@@ -779,7 +781,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 207 make targets, 79 files in `scripts/`)
+### Bots in the tree (11 pipelines, 208 make targets, 80 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -926,6 +928,7 @@ One line each, taken from the script's own docstring.
 - `scripts/nerve_key_check.py` — The nerve-plugin credential guard (issue #120).
 - `scripts/openspec_archive_check.py` — An ACTIVE OpenSpec change must not sit completed-and-forgotten (issues #183/#513).
 - `scripts/openspec_backlog_check.py` — Fail when the ACTIVE OpenSpec backlog hits its ceiling (issue #938).
+- `scripts/openspec_binding_check.py` — Fail when an ACTIVE OpenSpec change carries no Issue binding (issue #952).
 - `scripts/openspec_duplicate_check.py` — Fail when two ACTIVE OpenSpec changes propose the same rule (issue #622).
 - `scripts/openspec_index.py` — Generate / verify the root OpenSpec index (`OPENSPEC.md`).
 - `scripts/openspec_index_repair.py` — openspec_index_repair.py — the DECISION behind qa-validate's `index-repair` job (issue #304).

@@ -52,6 +52,10 @@ deliverable.
   `make openspec-tasks-check` gates the implement job before commit/push (issue #658), so an
   unticked box means finish the step or declare it blocked — never open the PR.
   `make openspec-index` then `make openspec-check` before you finish.
+  The proposal's FIRST lines bind the issue — `Issue: #<n>` (issue #952):
+  `openspec-check` runs `make openspec-binding-check`, which FAILS an ACTIVE change
+  naming no issue unless it declares `Binding-exempt: <reason>` (the keeper shape);
+  the end-of-run `make openspec-record-pr` must never be the first place that notices.
 - **Additive only** in `data/models.json`, `data/raw/*.json`, `data/snapshots/*.json` and the
   contracts: never remove or rename a key, never shrink a value, and a new key is optional and
   never `required` (AGENTS.md rules 3b/6b).
