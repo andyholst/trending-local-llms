@@ -9,4 +9,5 @@
 - [~] 7. `validate.py` imports the module instead of its own `_DECLARED_ESTIMATE` literal — blocked: issue #933 (the validator side) must merge into `master` first; this branch rebases onto it and collapses the copy in the same change
 - [x] 8. `ARCHITECTURE.md` §6 row for the new script; inventory regenerated (`make architecture-refresh`)
 - [x] 9. `AGENTS.md` §8 guard row added in the same change (rule 6c)
-- [ ] 10. `OPENSPEC.md` regenerated; `make lint`, `make data-gaps`, `make test`, `make openspec-check` green; PR opened against #936 and monitored to green
+- [x] 10. `OPENSPEC.md` regenerated; `make lint`, `make data-gaps`, `make test`, `make openspec-check` green; PR opened against #936 and monitored to green
+- [~] 11. This change archived on its own closing head by `make openspec-record-pr ISSUE=936 PR=<pr>` — blocked: the PR number exists only after `gh pr create`; the record runs on this branch immediately after opening (rule 6f's required shape)
