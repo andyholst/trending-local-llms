@@ -1520,6 +1520,27 @@ owed-rows-check: ## Report the owed-row ledger: open issues' owed AGENTS.md rows
 	@test -n "$(REPO)" || { echo "Usage: make owed-rows-check REPO=<owner/repo> [LIMIT=300]"; exit 1; }
 	@$(MAKE) --no-print-directory _owed-rows-check
 
+# Rule 1's mechanical guard (issue #959): "never push master directly" had no
+# enforcement — master had zero branch protection and direct pushes landed
+# (measured 2026-11-14: e571aa3, 4c7c555). The guard reads the base branch's
+# protection (live `gh api` on the host, or a recorded payload via FROM_FILE —
+# the fixture seam rule 6m allows) and refuses any shape that is not the one
+# admitting ONLY qa-validate's auto-merge squash: strict required contexts
+# naming `validate` + `live-smoke`, enforce_admins true. Exit 1 = absent or
+# relaxed (named); exit 2 = the read itself failed, never a silent clean.
+# Read-only: APPLYING the protection is an owner-approved repository-settings
+# act (issue #959). Run by queued-alarm's alarm job (the scheduled half the
+# issue names), never a PR gate — the check needs the owner PAT to read
+# protection state, and a PR must not hold a secret it cannot read.
+.PHONY: _check-branch-protection
+_check-branch-protection:
+	python3 scripts/check_branch_protection.py $(if $(REPO),--repo "$(REPO)",) --branch "$(if $(BRANCH),$(BRANCH),master)" $(if $(FROM_FILE),--from-file "$(FROM_FILE)",)
+
+.PHONY: check-branch-protection
+check-branch-protection: ## Guard Rule 1: the base branch must carry auto-merge-shaped branch protection (REPO=<owner/name> or FROM_FILE=<recorded.json>, BRANCH=master; issue #959)
+	@test -n "$(REPO)" || test -n "$(FROM_FILE)" || { echo "Usage: make check-branch-protection REPO=<owner/repo> [BRANCH=master] [FROM_FILE=<recorded.json>]"; exit 1; }
+	@$(MAKE) --no-print-directory _check-branch-protection
+
 .PHONY: queued-alarm
 sweep-alarm: ## Fail loudly when the WEEKLY issue sweep has not been DELIVERED (REPO=<owner/name>; the window is the script's weekly default unless MAX_AGE_HOURS is supplied — issue #804)
 	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=<hours>]"; exit 1; }

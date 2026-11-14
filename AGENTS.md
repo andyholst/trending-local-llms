@@ -20,7 +20,15 @@ retains 30 days of history.
    is **auto-merged** (squash, feature branch deleted) by qa-validate's
    `auto-merge` job ONLY when `validate` AND `live-smoke` are green on the
    exact head commit; a red PR stays open for a human. No workflow may merge
-   from anywhere else, use `--admin`, or push to `master`.
+   from anywhere else, use `--admin`, or push to `master`. This is **guarded,
+   not promised** (issue #959): `master` carries branch protection — `strict`
+   required status checks naming `validate` + `live-smoke`, and
+   `enforce_admins` — so GitHub itself refuses a direct push and the squash is
+   the only path in, and `make check-branch-protection`
+   (`scripts/check_branch_protection.py`, run by the weekly `queued-alarm`
+   sweep) fails when that protection is missing or weakened. Applying or
+   restoring the setting is an owner-approved repository-settings act; no
+   workflow may write it.
 2. **Never fabricate data.** No engagement number, like count, or t/s figure
    may be invented. It must trace to a **real X post** (via the lightbrd.com
    mirror technique in `skills/gather-data.md`) or be marked explicitly as
@@ -1662,7 +1670,13 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   week (`37 * * * 3`) + a `minutes` dispatch input. A job whose runner label matches
   nothing does not fail — it stays `queued` for ever, so the run never concludes and
   every PR's checks sit at `PENDING` with no red anywhere; `make queued-alarm` makes
-  that state loud, deduped by marker so a second sweep cannot comment twice.
+  that state loud, deduped by marker so a second sweep cannot comment twice. The same
+  sweep carries Rule 1's guard (issue #959): `make check-branch-protection REPO=…`,
+  reading master's branch protection with the owner PAT (the default `github.token`
+  cannot read protection state) and going red when the shape that admits ONLY the
+  auto-merge squash — `strict` required contexts `validate` + `live-smoke`,
+  `enforce_admins` — is missing or weakened; it never writes a setting (applying one
+  is an owner-approved act).
 
 - **`code-review-bot.yml`** — the **tree and pipeline reviewer** (rules 6c/6m, issue
   #313): weekly (Monday `23 7`) + owner dispatch, `concurrency: code-review-bot` (queued, never cancelled). `make code-review-scan` reads the real
@@ -2019,6 +2033,7 @@ actually happened.
 
 | `tests/test_ensure_image.py` — `test_ensure_openspec_present_locally_is_reused_without_a_pull` (rules 6c/6m, issue #767) | the OpenSpec CLI seam re-pulling a tag this machine already holds: `ensure_openspec` consulted `docker manifest inspect` first and pulled whenever published, but `refresh-bot.yml` publishes `…-openspec:openspec-<sha12>` from amd64 runners, so an arm64 host that already had the exact tag locally (`docker image inspect` answered it) died on `docker pull` — `no matching manifest for linux/arm64/v8`, `CalledProcessError`, `make: *** [openspec-image] Error 1` — every `make openspec-*` target red while fresh amd64 CI runners never saw the defect (measured on the filing host 2026-11-10, re-measured 2026-11-14). The seam now checks the local image FIRST — exact tag present → tag onto the run name, zero registry calls — a local build tags the exact hash tag too so the next run is a reuse, and the published-but-absent pull path stays byte-identical (CI unchanged). The guard seeds `FAKE_DOCKER_IMAGES` (present-here) separately from `FAKE_DOCKER_AVAILABLE` (published); it is RED on the old seam, which probes the registry and pulls |
 | `tests/test_test_capture_guard.py` + `[test] ok` traces in `scripts/run_tests.sh`, `-e PYTHONUNBUFFERED=1` on `TEST_RUN`, the tee-guard in the `test:` recipe (rules 6c/6d/6m, issue #911) | `make test` on the host answering rc 0 over a capture with NOTHING from the suite (measured 2026-11-14 on a worktree branch: the captured log was the recipe echo + the platform warning only, rc 0). The old runner `mktemp`'d a passing module's output and deleted it, so a green suite was ONE verdict line and an empty container capture was indistinguishable from clean; `TEST_RUN` also lacked the explicit `PYTHONUNBUFFERED=1` the DOCKER_RUN lesson (#591) already teaches. The runner now prints `[test] ok <module>` for every passing module (module chatter still stays out of the stream; the first-red contract is unchanged), `TEST_RUN` sets the flag explicitly, and `test:` tees its capture and refuses with a loud `[harness] FAIL … UNVERIFIABLE` when no `[test]` line arrived — while still propagating the suite's rc and announcing it. End-to-end through the REAL recipe with the container as a PATH stub (rule 6m): silence → red, verdict lines → green with the trace count, red suite → red naming `suite rc=N`; 13 checks are RED on the pre-change runner/Makefile |
+| `tests/test_branch_protection.py` + `make check-branch-protection` (Rule 1, rules 6c/6d/6m, issue #959) | Rule 1 unguarded: "never push master" was a convention and `gh api …/branches/master/protection` answered 404, so direct pushes landed (measured 2026-11-14: `e571aa3`, `4c7c555`, committer `Mr. Asimov`, not the squash identity). The REAL guard runs end to end over recorded protection payloads (the fixture seam; the live half is the real `gh` client): the correct shape (strict, `validate` + `live-smoke` contexts bare or `workflow / job`, `enforce_admins` true) passes; non-strict, a dropped context, `enforce_admins` false, and `required_status_checks: null` each refuse exit 1 naming the gap; GitHub's 404 body refuses exit 1; a malformed payload is exit 2, never a silent clean; and the wiring refuses a Makefile that lost the target, a queued-alarm step that reaches the script without `make` (rule 6m), or a protection read attempted with the default `github.token` (it cannot read protection state — the step carries the owner PAT). Applying the setting is an owner-approved act, so the guard DETECTS and the sweep reports |
 
 When you add a stage or fix a pipeline bug, add its row here and its test in
 the same change (rule 6c).
