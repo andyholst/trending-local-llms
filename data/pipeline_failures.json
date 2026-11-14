@@ -52,12 +52,17 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/41860616772",
       "created_utc": "2026-11-04T15:43:00Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
-      "targets": [],
+      "targets": [
+        "sweep-alarm"
+      ],
       "issue_number": "821",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/821",
-      "fix_pr": null,
-      "guard": null,
-      "undiagnosed": "log fetch for job 126681146852 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway"
+      "fix_pr": 806,
+      "guard": "tests/test_sweep_alarm.py",
+      "undiagnosed": "log fetch for job 126681146852 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
+      "error_excerpt": "2026-11-04T15:43:12Z [sweep-alarm] FAIL: the newest delivery is only 0.2 h old but concluded 'in_progress' - a sweep that ran but did not succeed nothing was delivered\n2026-11-04T15:43:12Z [queued-alarm] sweep-alarm is FAIL: ...\n2026-11-04T15:43:12Z make: *** [Makefile:1333: sweep-alarm] Error 1\n2026-11-04T15:43:12Z ##[error]Process completed with exit code 2.",
+      "rediagnosed_utc": "2026-11-14T22:24:18.536337+00:00",
+      "rediagnosis_note": "re-diagnosed from the job log after the log-reader fix (issue #923): the alarm died on the in-flight misgrade - a delivery still in_progress 0.2 h after the 19 * * * 3 sweep began was graded as a failed sweep. That class is already fixed by PR #806 (issue #801: in-flight deliveries grade PENDING up to the in-flight cap) and guarded by tests/test_sweep_alarm.py; only the diagnosis was missing. Issue #821 closes on this row, not on prose (rule 6r)."
     },
     {
       "run_id": 41922211098,
