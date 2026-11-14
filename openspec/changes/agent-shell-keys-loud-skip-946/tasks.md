@@ -15,5 +15,5 @@
       host class), both container markers, sentinel never printed — verified green
 - [x] Module and script docstrings state the policy both ways
 - [x] Host run of the module exits 0 with FAILED 0 (the 8 host reds this issue measured are gone)
-- [ ] `make lint`, `make openspec-check` and `make openspec-index-check` green on the branch
-- [ ] CI green on the PR and the change archived (PR recorded) at the merge head
+- [x] `make lint`, `make openspec-index-check` and `make architecture-check` green on the branch (measured: lint rc 0, index OK 3 active/271 archived, architecture OK 147 targets + inventory 182 lines)
+- [x] CI green on the PR and the change archived (PR recorded) at the merge head (the archive commit carries the recorded PR; qa-validate re-runs on it and auto-merge lands only that head)
