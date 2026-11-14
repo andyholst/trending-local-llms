@@ -68,6 +68,13 @@ def git(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
 def run_script(mode: str, cwd: Path, *args: str,
                env: dict | None = None) -> subprocess.CompletedProcess:
     full = dict(os.environ)
+    # Fixture isolation (issue #943): the scripted git must see ONLY the fixture's
+    # own repo config — never the machine running the suite. A host WITH a global
+    # git identity made `git config user.email` inside the script non-empty, so the
+    # identity-fallback assertion was red locally and green only by the container's
+    # bareness. A caller's explicit env= entry below still overrides.
+    full["GIT_CONFIG_GLOBAL"] = "/dev/null"
+    full["GIT_CONFIG_SYSTEM"] = "/dev/null"
     full.update(env or {})
     return subprocess.run([sys.executable, str(SCRIPT), mode, *args],
                           cwd=str(cwd), capture_output=True, text=True, env=full)
@@ -533,6 +540,28 @@ def test_rebase_brings_the_commit_onto_the_fetched_tip(tmp: Path) -> None:
           git(["merge-base", "--is-ancestor", "origin/master", "HEAD"], ci).returncode == 0, "")
 
 
+def test_rebase_respects_a_configured_checkout_identity(tmp: Path) -> None:
+    """Issue #943's never-override half: `_identity_args` adds the bot's `-c user.*`
+    ONLY when the repo has no identity of its own — a fixture that configures one
+    keeps it, proved on a host that HAS a global git identity."""
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    advance(fx["seed"], "moved\n")
+    run_script("adopt", ci, "--branch", "b1")
+    (ci / "impl.py").write_text("x\n")
+    git(["add", "-A"], ci)
+    git(["commit", "-qm", "impl"], ci)
+    git(["config", "user.name", "Repo Bot"], ci)
+    git(["config", "user.email", "repo-bot@fixture.test"], ci)
+    proc = run_script("rebase", ci, "--branch", "b1")
+    check("rebase: a configured checkout identity gets NO fallback",
+          proc.returncode == 0 and "identity=fallback" not in proc.stdout,
+          proc.stdout[:300])
+    committer = git(["log", "-1", "--format=%ce"], ci).stdout.strip()
+    check("rebase: the rebased commit's committer is the repo's own identity",
+          committer == "repo-bot@fixture.test", committer)
+
+
 def test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp: Path) -> None:
     """The work is NEVER lost: a conflicted rebase is aborted, and the caller pushes anyway."""
     fx = fixture(tmp)
@@ -667,6 +696,7 @@ def main() -> int:
         test_adopt_attaches_an_existing_branch_instead_of_recutting_it(tmp / "c12")
         test_adopt_carries_uncommitted_work_onto_an_existing_branch(tmp / "c12b")
         test_rebase_brings_the_commit_onto_the_fetched_tip(tmp / "c13")
+        test_rebase_respects_a_configured_checkout_identity(tmp / "c13b")
         test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp / "c14")
         test_rebase_refuses_a_tree_with_uncommitted_changes(tmp / "c15")
         test_the_rulebook_states_the_rule()
