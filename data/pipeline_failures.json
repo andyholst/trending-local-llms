@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-11-11T23:30:00Z",
+  "updated_utc": "2026-11-14T21:02:06Z",
   "failures": [
     {
       "run_id": 43088760321,
@@ -32,12 +32,17 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/41788683672",
       "created_utc": "2026-11-04T06:55:01Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
-      "targets": [],
+      "targets": [
+        "sweep-alarm"
+      ],
       "issue_number": "820",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/820",
-      "fix_pr": null,
-      "guard": null,
-      "undiagnosed": "log fetch for job 126436727581 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway"
+      "fix_pr": 806,
+      "guard": "tests/test_sweep_alarm.py",
+      "undiagnosed": "log fetch for job 126436727581 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
+      "error_excerpt": "[sweep-alarm] FAIL: the newest delivery is only 0.3 h old but concluded 'in_progress' \u2014 a sweep that ran and did not succeed delivered nothing | make: *** [Makefile:1333: sweep-alarm] Error 1 | ##[error]Process completed with exit code 2.",
+      "rediagnosed_utc": "2026-11-14T21:02:06Z",
+      "rediagnosis_note": "rediagnosed 2026-11-14 from the run's own job log (readable after the log-reader fix, issue #923): the alarm job's failure is the measured in-flight misgrade class fixed by PR #806 (issue #801: an in_progress delivery must read PENDING, never 'a sweep that ran and did not succeed'); the regression lock is tests/test_sweep_alarm.py. The original undiagnosed field is kept (append-only, rule 3b)."
     },
     {
       "run_id": 41860616772,
