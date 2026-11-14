@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **11** · archived: **261**
+Active changes: **11** · archived: **262**
 
 ## Active changes
 
@@ -198,6 +198,7 @@ Active changes: **11** · archived: **261**
 | `one-stage-map-reader` | archived | #514 | — | [stage-wiring](openspec/changes/archive/one-stage-map-reader/specs/stage-wiring/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/one-stage-map-reader/proposal.md) |
 | `one-working-file-list` | archived | #543 | — | [bot-commit-safety](openspec/changes/archive/one-working-file-list/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/one-working-file-list/proposal.md) |
 | `openspec-archive-lifecycle` | archived | #183 | — | [openspec-lifecycle](openspec/changes/archive/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/openspec-archive-lifecycle/proposal.md) |
+| `openspec-backlog-cap` | archived | #938 — "openspec-check must FAIL the merge gate when 50 OpenSpec changes are | #939 | [openspec-backlog](openspec/changes/archive/openspec-backlog-cap/specs/openspec-backlog/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/openspec-backlog-cap/proposal.md) |
 | `openspec-image-local-shortcut` | archived | #767 | #921 | [openspec-image-seam](openspec/changes/archive/openspec-image-local-shortcut/specs/openspec-image-seam/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/openspec-image-local-shortcut/proposal.md) |
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
