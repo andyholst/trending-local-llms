@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **12** · archived: **258**
+Active changes: **11** · archived: **259**
 
 ## Active changes
 
@@ -19,7 +19,6 @@ Active changes: **12** · archived: **258**
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
-| `measurement-identity-tps-912` | active | #912 | — | [data-gap-analysis](openspec/changes/measurement-identity-tps-912/specs/data-gap-analysis/spec.md) | 6/6 | [proposal.md](openspec/changes/measurement-identity-tps-912/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
 | `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
@@ -178,6 +177,7 @@ Active changes: **12** · archived: **258**
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
 | `measurement-alias-map-data` | archived | #652 | #881 | [measurement-attribution](openspec/changes/archive/measurement-alias-map-data/specs/measurement-attribution/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/measurement-alias-map-data/proposal.md) |
 | `measurement-engine-min-version` | archived | #371 | #374 | [measurement-source-dimensions](openspec/changes/archive/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/measurement-engine-min-version/proposal.md) |
+| `measurement-identity-tps-912` | archived | #912 | #931 | [data-gap-analysis](openspec/changes/archive/measurement-identity-tps-912/specs/data-gap-analysis/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/measurement-identity-tps-912/proposal.md) |
 | `measurement-store-normalized` | archived | #697 — `#689 slice 2: switch readers onto normalized measurement store, drop inline engines[]` | — | [catalog-measurements](openspec/changes/archive/measurement-store-normalized/specs/catalog-measurements/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-normalized/proposal.md) |
 | `measurement-store-split` | archived | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/archive/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-split/proposal.md) |
 | `message-pattern-in-pr-bodies` | archived | #771 | #772 | [message-pattern-enforcement](openspec/changes/archive/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/message-pattern-in-pr-bodies/proposal.md) |
