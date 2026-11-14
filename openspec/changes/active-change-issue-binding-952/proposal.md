@@ -15,7 +15,7 @@ without that binding hits nothing until the record step at the END of the
 run — measured on the 2026-11-12 weekly `schedule` sweep of `issue-bot.yml`
 (run 43147959554, step 15): ~30 minutes of implementation, then
 `[openspec-record-pr] REFUSED: no change — active or archived — references
-Issue: #624 — nothing recorded`, a `failure` delivery, and `make sweep-alarm`
+  #624 — nothing recorded`, a `failure` delivery, and `make sweep-alarm`
 reds every queued-alarm until a newer schedule delivery replaces it (manual
 dispatch run 43599292096, 2026-11-14). The refusal is correct; noticing it
 last is the defect.
