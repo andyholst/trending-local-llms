@@ -1,9 +1,7 @@
 # Proposal: pipeline-failure-rediagnose-821
 
 Issue: #821
-PR:
-
-## Why
+PR: #974
 
 Issue #821 was filed UNDIAGNOSED: when `make pipeline-failure-issue` swept run
 41860616772 (queued-alarm, schedule 2026-11-04), the log fetch was refused by terminal
