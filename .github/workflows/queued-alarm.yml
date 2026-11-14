@@ -162,3 +162,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make owed-rows-check REPO="${{ github.repository }}"
+      # Rule 1's mechanical guard (issue #959): "never push master directly" was a convention —
+      # master had zero branch protection and two direct pushes landed on 2026-11-14 (e571aa3,
+      # 4c7c555). master must carry the protection shape that admits ONLY the auto-merge squash
+      # (strict required contexts validate + live-smoke, enforce_admins). The OWNER PAT reads it:
+      # the default github.token cannot read branch-protection state. A silently-removed
+      # protection turns THIS weekly sweep RED instead of restoring the unguarded state in
+      # silence. The step is read-only — applying the setting is an owner-approved act (#959).
+      - name: Fail loudly when master's branch protection is missing or weakened (issue #959)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+        run: make check-branch-protection REPO="${{ github.repository }}"

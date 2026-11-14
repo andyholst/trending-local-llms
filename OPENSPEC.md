@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **282**
+Active changes: **2** · archived: **283**
 
 ## Active changes
 
@@ -186,6 +186,7 @@ Active changes: **2** · archived: **282**
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
+| `master-push-guard-959` | archived | #959 | #966 | [master-push-guard](openspec/changes/archive/master-push-guard-959/specs/master-push-guard/spec.md) | 6/9 · 3 blocked | [proposal.md](openspec/changes/archive/master-push-guard-959/proposal.md) |
 | `measurement-alias-map-data` | archived | #652 | #881 | [measurement-attribution](openspec/changes/archive/measurement-alias-map-data/specs/measurement-attribution/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/measurement-alias-map-data/proposal.md) |
 | `measurement-engine-min-version` | archived | #371 | #374 | [measurement-source-dimensions](openspec/changes/archive/measurement-engine-min-version/specs/measurement-source-dimensions/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/measurement-engine-min-version/proposal.md) |
 | `measurement-identity-tps-912` | archived | #912 | #931 | [data-gap-analysis](openspec/changes/archive/measurement-identity-tps-912/specs/data-gap-analysis/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/measurement-identity-tps-912/proposal.md) |
