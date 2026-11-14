@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **279**
+Active changes: **2** · archived: **280**
 
 ## Active changes
 
@@ -208,6 +208,7 @@ Active changes: **2** · archived: **279**
 | `openspec-archive-lifecycle` | archived | #183 | — | [openspec-lifecycle](openspec/changes/archive/openspec-archive-lifecycle/specs/openspec-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/openspec-archive-lifecycle/proposal.md) |
 | `openspec-backlog-cap` | archived | #938 — "openspec-check must FAIL the merge gate when 50 OpenSpec changes are | #939 | [openspec-backlog](openspec/changes/archive/openspec-backlog-cap/specs/openspec-backlog/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/openspec-backlog-cap/proposal.md) |
 | `openspec-image-local-shortcut` | archived | #767 | #921 | [openspec-image-seam](openspec/changes/archive/openspec-image-local-shortcut/specs/openspec-image-seam/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/openspec-image-local-shortcut/proposal.md) |
+| `openspec-image-multiarch-919` | archived | #919 — "Publishing the OpenSpec CLI image stays amd64-only, so a fresh arm64 | #957 | [openspec-image-publishing](openspec/changes/archive/openspec-image-multiarch-919/specs/openspec-image-publishing/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/openspec-image-multiarch-919/proposal.md) |
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
 | `owed-row-close-quote` | archived | #766 | #922 | [agents-guard-registry](openspec/changes/archive/owed-row-close-quote/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-row-close-quote/proposal.md) |

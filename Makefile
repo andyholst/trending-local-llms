@@ -318,7 +318,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-check file-findings findings-check action-pin-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -354,6 +354,9 @@ openspec-duplicate-check: python-env-image ## Fail when two ACTIVE changes decla
 
 openspec-backlog-check: python-env-image ## Fail when the ACTIVE OpenSpec backlog hits MAX 50 — auto-merge to master is blocked until the tail is archived (issue #938)
 	$(PYTHON_RUN) python3 scripts/openspec_backlog_check.py
+
+openspec-manifest-check: ## Refuse a published OpenSpec image tag unless its manifest answers linux/arm64 AND linux/amd64 (issue #919) — host docker, like rebuild-decision; pass TAG=<exact published tag>
+	@python3 scripts/openspec_manifest_check.py --tag "$(TAG)"
 
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write

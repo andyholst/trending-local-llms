@@ -1111,8 +1111,17 @@ The README is **generated**, not hand-maintained:
 - **The OpenSpec CLI image is published the same way** (rule 6f, #172).
   `refresh-bot.yml`'s `openspec-image` job builds `openspec/Dockerfile` and pushes
   it as `ghcr.io/<owner>/trending-local-llms-openspec:openspec-<sha12>` whenever
-  that hash tag is not published; `make openspec-*` runs the CLI from it, pulling
-  the tag (else building it) through `scripts/ensure_image.py ensure-openspec`.
+  that hash tag is not published; the publish declares
+  `platforms: linux/amd64,linux/arm64`, and `make openspec-manifest-check`
+  (`scripts/openspec_manifest_check.py`) verifies on BOTH refresh paths — after a
+  publish and on the skip-rebuild branch — that the tag's manifest answers every
+  required architecture (exit 1 on a missing one, exit 2 on an unreadable
+  manifest, never a silent clean) — an amd64-only tag makes `docker pull` die on a
+  fresh arm64 host with `no matching manifest for linux/arm64/v8`, the #767 failure
+  measured locally 2026-11-14, where every `make openspec-*` needed a
+  `DOCKER_DEFAULT_PLATFORM` workaround (issue #919). `make openspec-*` runs the
+  CLI from it, pulling the tag (else building it) through
+  `scripts/ensure_image.py ensure-openspec`.
   Local and CI therefore run the SAME CLI, and a host `npm install` is never the
   path.
 - **Snapshots:** every refresh writes a timestamped snapshot to
