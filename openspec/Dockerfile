@@ -20,6 +20,12 @@
 # There is exactly ONE code path: the CLI runs in this image, locally and in CI
 # (both pull the published tag for this Dockerfile's content hash, or build it).
 # No host npm install, no second implementation — see AGENTS.md.
+#
+# This image is published as a MULTI-ARCHITECTURE manifest (linux/amd64 +
+# linux/arm64, issue #919): the base is multi-arch and the CLI is pure JS, and
+# refresh-bot's openspec-image job publishes both platforms, verified by
+# `make openspec-manifest-check`. An amd64-only publication breaks every fresh
+# arm64 checkout at `docker pull` ("no matching manifest for linux/arm64/v8").
 FROM node:22-alpine
 
 # openspec CLI (pinned; @fission-ai/openspec). Keep in step with

@@ -264,12 +264,20 @@ jobs:
           context: openspec
           file: openspec/Dockerfile
           push: true
+          # Multi-architecture manifest (issue #919): an amd64-only tag makes
+          # `docker pull` die on arm64 hosts with "no matching manifest" — the
+          # issue-#767 failure a fresh arm64 checkout still hits.
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.OPENSPEC_IMAGE }}
             ${{ steps.decide.outputs.openspec_tag }}
       - name: OpenSpec image already current — skip rebuild
         if: steps.decide.outputs.publish_openspec == 'yes'
         run: echo "The published OpenSpec image is built from this revision's openspec/Dockerfile; reusing it."
+      - name: Verify the manifest answers both architectures (make openspec-manifest-check)
+        # Runs on BOTH paths (issue #919): a legacy amd64-only tag for this
+        # revision must be refused here, not reused forever by the skip branch.
+        run: make openspec-manifest-check TAG="${{ steps.decide.outputs.openspec_tag }}"
 
   # Four independent searches (nvidia, metal, cpu, amd), run in parallel. Each PULLS the prebuilt image
   # (no rebuild), writes its own raw snapshot, and uploads it as an artifact.
