@@ -16,6 +16,8 @@ Run:  python3 tests/test_data_gap_analysis.py    or   make test
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import re
@@ -2085,6 +2087,94 @@ def test_a_joint_or_unowned_measurement_text_is_never_traced_to_a_row():
               "stray" not in capture, str(sorted(capture)))
 
 
+# --------------------------------------------------------------------------- issue #912:
+# the identity join survives a rule-3b t/s RAISE — post-keyed identity, numeric tps.
+
+RAISE_POST = "https://lightbrd.com/u/status/6006"
+RAISE_SENTENCE = "Q4_K_M, 131072-token context on Ryzen AI Max 128GB"
+
+
+def _raise_capture(td: str, store_tps: str, raw_tps: str, *,
+                   source_post: str | None = RAISE_POST, store_id: str = "raised-row"):
+    """A store row (stored tps) and a raw engine tuple (captured tps) sharing engine,
+    hardware and source_post; the raw row's own id maps to no store row, so ONLY the
+    identity join can credit its footprint sentence. Returns (capture, store_id)."""
+    raw = Path(td) / "raw"
+    raw.mkdir()
+    post = {"source_post": source_post} if source_post else {}
+    (raw / "cpu-20261114-000010.json").write_text(json.dumps({
+        "backend": "cpu", "generated_utc": "2026-11-14T00:00:10Z",
+        "models": [{"id": "raise-capture-source", "name": "raise-capture-source",
+                    "engines": [{"engine": "llama.cpp", "tps": raw_tps,
+                                 "hardware": "Ryzen AI Max 128GB", "quant": RAISE_SENTENCE,
+                                 "date": "2026-10-20", **post}]}]}))
+    store = store_with([model(store_id, engines=[
+        {"engine": "llama.cpp", "tps": store_tps, "hardware": "Ryzen AI Max 128GB",
+         "quant": "Q4_K_M", "date": "2026-10-21", **post}])])
+    return G.captured_text(store, raw), store_id
+
+
+def test_a_raised_tps_keeps_the_footprint_trace():
+    """Issue #912: rule 3b lets ingest RAISE a measurement's t/s (`merge_engines` may only
+    raise), and the #411 join keyed tps as a STRING — so a legitimate raise silently made that
+    post's footprint text untraceable. Post-keyed identity with a NUMERIC t/s comparison
+    (stored >= captured) must credit it."""
+    with tempfile.TemporaryDirectory() as td:
+        capture, mid = _raise_capture(td, store_tps="60", raw_tps="55")
+        bucket = (capture.get(mid) or {}).get("quant", [])
+        check("raised t/s: the captured sentence still traces to the raised row",
+              any(RAISE_SENTENCE in t for t in bucket), str(capture.get(mid)))
+
+
+def test_an_unreconcilable_identity_is_reported_loudly():
+    """Issue #912: a captured t/s HIGHER than the store's for the same post identity credits
+    no row AND is printed loudly — never swallowed as 'no such measurement'."""
+    buf = io.StringIO()
+    with tempfile.TemporaryDirectory() as td:
+        with contextlib.redirect_stdout(buf):
+            capture, mid = _raise_capture(td, store_tps="60", raw_tps="70")
+        printed = buf.getvalue()
+        bucket = (capture.get(mid) or {}).get("quant", [])
+        check("unreconcilable identity: the sentence is credited to no row",
+              not any(RAISE_SENTENCE in t for t in bucket), str(bucket))
+        check("unreconcilable identity: the miss is printed loudly",
+              "measurement-identity" in printed and "missed" in printed, printed)
+
+
+def test_a_measurement_without_a_source_post_needs_equal_tps():
+    """Issue #912: with no source post the ONLY link is the t/s itself; a stored t/s different
+    from the captured one is not the same measurement — the post-keyed leniency must not fire."""
+    with tempfile.TemporaryDirectory() as td:
+        capture, mid = _raise_capture(td, store_tps="60", raw_tps="55", source_post=None)
+        bucket = (capture.get(mid) or {}).get("quant", [])
+        check("no source post: a different t/s credits no row",
+              not any(RAISE_SENTENCE in t for t in bucket), str(capture))
+
+
+def test_a_joint_raise_is_still_credited_to_neither():
+    """Issue #912 keeps the #411 never-copy side: two store rows carrying the same post
+    identity — each with a raised t/s — is a JOINT figure; a raise never picks a winner."""
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "cpu-20261114-000011.json").write_text(json.dumps({
+            "backend": "cpu", "generated_utc": "2026-11-14T00:00:11Z",
+            "models": [{"id": "raise-capture-source", "name": "raise-capture-source",
+                        "engines": [{"engine": "llama.cpp", "tps": "55",
+                                     "hardware": "Ryzen AI Max 128GB",
+                                     "quant": RAISE_SENTENCE, "date": "2026-10-20",
+                                     "source_post": RAISE_POST}]}]}))
+        shared = {"engine": "llama.cpp", "tps": "60", "hardware": "Ryzen AI Max 128GB",
+                  "quant": "Q4_K_M", "date": "2026-10-21", "source_post": RAISE_POST}
+        store = store_with([model("raised-a", engines=[dict(shared)]),
+                            model("raised-b", engines=[dict(shared)])])
+        capture = G.captured_text(store, raw)
+        buckets = [(capture.get(m) or {}).get("quant", [])
+                   for m in ("raised-a", "raised-b", "raise-capture-source")]
+        check("joint raise: the sentence credits NEITHER row",
+              not any(any(RAISE_SENTENCE in t for t in b) for b in buckets), str(capture))
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -2130,6 +2220,10 @@ def main() -> int:
     test_a_captured_measurement_footprint_is_never_lost_from_the_store()
     test_a_measurement_captured_under_a_sibling_row_traces_to_the_row_that_owns_the_tuple()
     test_a_joint_or_unowned_measurement_text_is_never_traced_to_a_row()
+    test_a_raised_tps_keeps_the_footprint_trace()
+    test_an_unreconcilable_identity_is_reported_loudly()
+    test_a_measurement_without_a_source_post_needs_equal_tps()
+    test_a_joint_raise_is_still_credited_to_neither()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
