@@ -16,7 +16,7 @@ Active changes: **3** · archived: **282**
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `pipeline-failure-rediagnose-820` | active | #820 | — | [alarms](openspec/changes/pipeline-failure-rediagnose-820/specs/alarms/spec.md) | 3/7 | [proposal.md](openspec/changes/pipeline-failure-rediagnose-820/proposal.md) |
+| `pipeline-failure-rediagnose-820` | active | #820 | — | [alarms](openspec/changes/pipeline-failure-rediagnose-820/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/pipeline-failure-rediagnose-820/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
