@@ -51,6 +51,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import bot_markers  # noqa: E402  # the ONE owed-row marker definition (rule 6j)
+import owed_row_derive  # noqa: E402  # the ONE Done-when derivation (rule 6d, issue #765)
 
 FINDINGS = ROOT / "findings.md"
 LABEL = "tech-debt"
@@ -69,6 +70,16 @@ _REQUIRED = ("Evidence", "Why", "Done when")
 def slug(text: str) -> str:
     """A stable, URL-safe signature for a finding title."""
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:60]
+
+
+def _agents_text() -> str:
+    """The rulebook the derivation checks sections against (issue #765). An
+    unreadable AGENTS.md derives NOTHING — a filed issue then reads NO MARKER,
+    never a claim derived from an empty rulebook."""
+    try:
+        return (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 def render_finding(f: dict, pr: str | None, issue: str | None) -> str:
@@ -168,6 +179,16 @@ def parse(text: str) -> tuple[list[dict], str | None]:
                     "(scripts/bot_markers.owed_row_marker is the ONE writer)"
                 )
             f["owed_rows"] = parsed["rows"]
+        else:
+            # Issue #765: a Done-when that NAMES the owed row ("add the AGENTS.md §8
+            # guard row for tests/test_x.py") stamps the registered marker on the
+            # filed issue even without an explicit field — derived through
+            # scripts/owed_row_derive (the ONE derivation, rule 6d), never invented:
+            # only sections that exist as AGENTS.md headings and a needle the text
+            # itself names. Nothing derivable -> no marker -> the ledger reports
+            # NO MARKER, which is honest.
+            f["owed_rows"] = owed_row_derive.derive_rows(
+                f["Done when"], _agents_text())
         f["signature"] = slug(f["Signature"]) if f["Signature"] else slug(title)
         findings.append(f)
     return findings, None

@@ -54,6 +54,10 @@ import refresh_run_block  # noqa: E402
 # `issue_queue.QUEUE_LABELS` is the ONE list the sweep, the reviewer and this filer
 # all read — a second literal copy here would drift silently if the queue renamed.
 import issue_queue  # noqa: E402
+# The owed-row stamping pair (issue #765): the ONE marker writer and the ONE
+# derivation, shared with scripts/file_findings.py (rule 6d).
+import bot_markers  # noqa: E402
+import owed_row_derive  # noqa: E402
 # The ONE raw-row -> store-model resolver (rule 6d): the classification below maps
 # each captured row to the store id ingest would give it, so it can never disagree
 # with the merge about which model a post belongs to.
@@ -1037,6 +1041,21 @@ def issue_body(report: dict, previous: dict | None) -> tuple[str, str]:
     block = refresh_run_block.current_block()
     if block:
         body = [*block.splitlines(), "", *body]
+    # Owed rulebook rows (issue #765): when the body this filer composes names an
+    # AGENTS.md section AND an identifier a landed row would carry, stamp the
+    # registered owed-row marker so `make owed-rows-check` reports the row as
+    # outstanding/landed without re-reading the thread. Derived through the ONE
+    # derivation (rule 6d) against the live AGENTS.md; nothing stated -> nothing
+    # stamped, and the ledger says NO MARKER.
+    try:
+        agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    except OSError:
+        agents_text = ""
+    owed = owed_row_derive.derive_rows("\n".join(body), agents_text)
+    if owed:
+        body += ["", "## Owed rulebook rows", ""] + [
+            f"- **Owed-row:** {bot_markers.owed_row_marker(r['section'], r['needle'])}"
+            for r in owed]
     # The marker lets the NEXT run recognise this gap set (issue #157). Invisible
     # in the rendered issue, searchable in the body.
     body += ["", marker(signature_id(report))]
