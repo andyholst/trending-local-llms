@@ -1,6 +1,7 @@
 # Proposal: openspec-backlog-cap
 
 Issue: #938 — "openspec-check must FAIL the merge gate when 50 OpenSpec changes are
+PR: #939
 still ACTIVE — the backlog cap makes archiving mandatory" (owner directive, 2026-11-14).
 
 ## Why
