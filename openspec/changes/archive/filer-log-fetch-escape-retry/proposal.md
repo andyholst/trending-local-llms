@@ -1,7 +1,7 @@
 # Proposal: filer-log-fetch-escape-retry
 
 Issue: #923 (measured: all 12 issues #822–#833 filed UNDIAGNOSED on 2026-11-12 — every log fetch answered `the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway`)
-PR: #924
+PR: #926 (PR #924 was closed unmerged: the closure check derives the implemented issue from the branch's trailing number)
 
 ## Why
 
