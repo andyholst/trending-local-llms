@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **12** · archived: **253**
+Active changes: **11** · archived: **253**
 
 ## Active changes
 
@@ -18,7 +18,6 @@ Active changes: **12** · archived: **253**
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
 | `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
 | `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
-| `image-carries-uv-for-the-seam-fallback` | active | #217 | — | [agent-image](openspec/changes/image-carries-uv-for-the-seam-fallback/specs/agent-image/spec.md) | 4/4 | [proposal.md](openspec/changes/image-carries-uv-for-the-seam-fallback/proposal.md) |
 | `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
 | `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
 | `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
