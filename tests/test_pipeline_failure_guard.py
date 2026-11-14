@@ -141,6 +141,32 @@ def test_run_41860616772_is_rediagnosed_with_its_landed_guard() -> None:
     check("the committed ledger with issue #821 CLOSED passes the gate", rc == 0, str(lines))
 
 
+def test_run_41922211098_is_rediagnosed_with_its_landed_guard() -> None:
+    print("\nrediagnosed row: the undiagnosed sweep-alarm run 41922211098 carries its diagnosis + guard (issue #822)")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    row = [e for e in committed["failures"] if e["run_id"] == 41922211098]
+    check("the row exists in the committed ledger", len(row) == 1, str(row))
+    if not row:
+        return
+    e = row[0]
+    check("the row names fix PR #806 (the #801 in-flight misgrade fix)",
+          e.get("fix_pr") == 806, str(e.get("fix_pr")))
+    check("the row names a guard test that exists on disk",
+          G.guard_test_exists(e.get("guard") or "") and e.get("guard") == "tests/test_sweep_alarm.py",
+          str(e.get("guard")))
+    check("the diagnosis names the measured in-flight verdict line",
+          "in_progress" in (e.get("error_excerpt") or ""), str(e.get("error_excerpt")))
+    check("the diagnosis names the target the log names",
+          e.get("targets") == ["sweep-alarm"], str(e.get("targets")))
+    check("the original undiagnosed field is KEPT (append-only, rule 3b)",
+          "undiagnosed" in e, "")
+    # The exact post-merge gate shape: the re-diagnosed issues CLOSED, rows named -> green.
+    rc, lines = verdict(committed["failures"],
+                        states([(41922211098, 822, "CLOSED"), (41788683672, 820, "CLOSED"),
+                                (43088760321, 800, "CLOSED")]))
+    check("the committed ledger with issue #822 CLOSED passes the gate", rc == 0, str(lines))
+
+
 def test_fix_in_flight_is_reported_never_red() -> None:
     print("\nin flight: an OPEN issue with no fix PR yet is a report, not a red")
     rc, lines = verdict([entry(104, 55, None, None)], states([(104, 55, "OPEN")]))
@@ -226,6 +252,7 @@ def main() -> int:
     test_closed_with_landed_fix_and_guard_is_green()
     test_run_41788683672_is_rediagnosed_with_its_landed_guard()
     test_run_41860616772_is_rediagnosed_with_its_landed_guard()
+    test_run_41922211098_is_rediagnosed_with_its_landed_guard()
     test_fix_in_flight_is_reported_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
     test_guard_test_lookup_is_the_shape_make_test_collects()

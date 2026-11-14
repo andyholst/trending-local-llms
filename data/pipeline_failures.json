@@ -40,7 +40,7 @@
       "fix_pr": 806,
       "guard": "tests/test_sweep_alarm.py",
       "undiagnosed": "log fetch for job 126436727581 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
-      "error_excerpt": "[sweep-alarm] FAIL: the newest delivery is only 0.3 h old but concluded 'in_progress' \u2014 a sweep that ran and did not succeed delivered nothing | make: *** [Makefile:1333: sweep-alarm] Error 1 | ##[error]Process completed with exit code 2.",
+      "error_excerpt": "[sweep-alarm] FAIL: the newest delivery is only 0.3 h old but concluded 'in_progress' — a sweep that ran and did not succeed delivered nothing | make: *** [Makefile:1333: sweep-alarm] Error 1 | ##[error]Process completed with exit code 2.",
       "rediagnosed_utc": "2026-11-14T21:02:06Z",
       "rediagnosis_note": "rediagnosed 2026-11-14 from the run's own job log (readable after the log-reader fix, issue #923): the alarm job's failure is the measured in-flight misgrade class fixed by PR #806 (issue #801: an in_progress delivery must read PENDING, never 'a sweep that ran and did not succeed'); the regression lock is tests/test_sweep_alarm.py. The original undiagnosed field is kept (append-only, rule 3b)."
     },
@@ -72,12 +72,17 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/41922211098",
       "created_utc": "2026-11-04T22:06:08Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
-      "targets": [],
+      "targets": [
+        "sweep-alarm"
+      ],
       "issue_number": "822",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/822",
-      "fix_pr": null,
-      "guard": null,
-      "undiagnosed": "log fetch for job 126897357319 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway"
+      "fix_pr": 806,
+      "guard": "tests/test_sweep_alarm.py",
+      "undiagnosed": "log fetch for job 126897357319 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
+      "error_excerpt": "2026-11-04T22:06:26Z [sweep-alarm] FAIL: the newest delivery is only 0.2 h old but concluded 'in_progress' - a sweep that ran and did not succeed delivered nothing\n2026-11-04T22:06:26Z make: *** [Makefile:1333: sweep-alarm] Error 1\n2026-11-04T22:06:26Z ##[error]Process completed with exit code 2.",
+      "rediagnosed_utc": "2026-11-14T23:02:37.782506+00:00",
+      "rediagnosis_note": "re-diagnosed from the job log after the log-reader fix (issue #923): the alarm died on the in-flight misgrade - a delivery 0.2 h after the sweep began was still in_progress and was graded as a failed sweep. Same measured class as runs 41788683672 (#820, PR #967) and 41860616772 (#821, PR #974): fixed by PR #806 (issue #801: in-flight deliveries grade PENDING up to the in-flight cap), guarded by tests/test_sweep_alarm.py. Issue #822 closes on this row, not on prose (rule 6r)."
     },
     {
       "run_id": 41929086636,
