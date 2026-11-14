@@ -1,6 +1,7 @@
 # Proposal: openspec-image-multiarch-919
 
 Issue: #919 — "Publishing the OpenSpec CLI image stays amd64-only, so a fresh arm64
+PR: #957
 host still cannot pull it"
 
 **Capability:** `openspec-image-publishing`
