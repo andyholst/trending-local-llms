@@ -1,5 +1,8 @@
 # Proposal: host-suite loud skip and full red list
 
+Issue: #890
+PR: #945
+
 ## Why
 
 Issue #890: the host `make test` misleads its operator. `scripts/run_tests.sh`

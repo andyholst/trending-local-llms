@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **271**
+Active changes: **2** · archived: **272**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `host-suite-loud-skip-and-full-red-list` | active | — | — | [test-harness](openspec/changes/host-suite-loud-skip-and-full-red-list/specs/test-harness/spec.md) | 5/5 | [proposal.md](openspec/changes/host-suite-loud-skip-and-full-red-list/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -161,6 +160,7 @@ Active changes: **3** · archived: **271**
 | `hardware-is-not-an-engine` | archived | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/archive/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/hardware-is-not-an-engine/proposal.md) |
 | `heredoc-prose-is-not-a-call` | archived | #544 | — | [architecture-description](openspec/changes/archive/heredoc-prose-is-not-a-call/specs/architecture-description/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/heredoc-prose-is-not-a-call/proposal.md) |
 | `host-fleet-souls` | archived | #682 | #688 | [host-fleet](openspec/changes/archive/host-fleet-souls/specs/host-fleet/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/host-fleet-souls/proposal.md) |
+| `host-suite-loud-skip-and-full-red-list` | archived | #890 | #945 | [test-harness](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/specs/test-harness/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/proposal.md) |
 | `host-test-capture-guard` | archived | #911 | #929 | [testing](openspec/changes/archive/host-test-capture-guard/specs/testing/spec.md) | 6/8 | [proposal.md](openspec/changes/archive/host-test-capture-guard/proposal.md) |
 | `image-carries-uv-for-the-seam-fallback` | archived | #217 | #916 | [agent-image](openspec/changes/archive/image-carries-uv-for-the-seam-fallback/specs/agent-image/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/image-carries-uv-for-the-seam-fallback/proposal.md) |
 | `implement-step-live-scrub` | archived | #629 — `tech-debt: The implement step redacts its agent stream only AFTER the run — a post-mortem, not a live log` | #844 | [bot-agent-run-safety](openspec/changes/archive/implement-step-live-scrub/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/implement-step-live-scrub/proposal.md) |
