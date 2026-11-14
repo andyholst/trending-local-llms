@@ -1,6 +1,7 @@
 # Proposal: master-push-guard-959
 
 **Issue:** [#959](https://github.com/andyholst/trending-local-llms/issues/959) —
+PR: #966
 "Rule 1 (never push master) has no mechanical guard — master has zero branch
 protection and direct pushes land today"
 **Capability:** `master-push-guard`
