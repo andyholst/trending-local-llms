@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import data_gap_analysis as G  # noqa: E402
+import validate as V  # noqa: E402  # the ONE declared-estimate detector (issue #788)
 import update_trending as UT  # noqa: E402
 
 _PASS = 0
@@ -1727,6 +1728,16 @@ def test_storage_offload_coverage_can_never_shrink():
 
 MEASUREMENT_DIMENSIONS = ("weight_gb", "context_tokens", "system_ram_min",
                           "storage_offload", "engine_min_version")
+#: AGENTS.md §2's canonical estimate marker, imported from the validator itself
+#: (rule 6d — one detector, never a second spelling): a dimension value carrying it
+#: is a DECLARED estimate (rule 2 allows it), individually attributable by the
+#: marker on its value, so it is not required to appear verbatim in a captured post.
+EST_MARKER = V._DECLARED_ESTIMATE
+#: The residue left after reconciling the 23 readback flags of issue #788: 17 store
+#: values carry the explicit marker (the rest were re-attributed to the post's own
+#: wording, and 2 fabricated composites were reverted). The declared-estimate count
+#: may only grow (rule 3b), never shrink back to claimed evidence.
+EST_DECLARED_FLOOR = 17
 
 
 def _captured_raw_text() -> dict[str, str]:
@@ -1758,7 +1769,10 @@ def _captured_raw_text() -> dict[str, str]:
             if mid not in store_ids:
                 mid = by_name.get(str(m.get("name") or "").strip().lower(), mid)
             parts = text.setdefault(mid, [])
-            parts += [str(m.get(k, "")) for k in ("why", "quant", "hardware")]
+            # the raw capture's OWN top-level fields (text, dimensions) are captured
+            # text too — a value the search stored at model level is evidence (issue #788)
+            parts += [str(m.get(k, "")) for k in
+                      ("text", "why", "quant", "hardware", *MEASUREMENT_DIMENSIONS)]
             for e in m.get("engines", []):
                 parts += [str(e.get(k, "")) for k in
                           ("quant", "hardware", *MEASUREMENT_DIMENSIONS)]
@@ -1766,20 +1780,35 @@ def _captured_raw_text() -> dict[str, str]:
 
 
 def test_measurement_dimensions_trace_to_the_captured_snapshot():
-    """Every per-measurement dimension value in the store is the captured post's own
-    wording — a value no raw snapshot states is a fabrication."""
+    """Every per-measurement dimension value in the store is either the captured
+    post's own wording or a DECLARED estimate carrying the canonical `(est)` marker
+    (AGENTS.md rule 2). A value no raw snapshot states AND no `(est)` marker carries
+    is a fabrication (issue #788, gate the residue at zero)."""
     store = UT.load_store()
     text = _captured_raw_text()
     invented = []
+    declared = 0
     for m in store["models"]:
         hay = text.get(m["id"], "")
         for e in m.get("engines", []):
             for k in MEASUREMENT_DIMENSIONS:
                 v = e.get(k)
-                if v and str(v) not in hay:
-                    invented.append(f"{m['id']}/{e.get('engine')}:{k}={v!r}")
-    check("traceability: every measurement dimension value appears in the captured text",
+                if not v:
+                    continue
+                if str(v) in hay:
+                    continue
+                if EST_MARKER.search(str(v)):
+                    declared += 1
+                    continue
+                invented.append(f"{m['id']}/{e.get('engine')}:{k}={v!r}")
+    check("traceability: every dimension value is post-stated or an explicit (est) "
+          "estimate — no silent estimate",
           invented == [], invented[:5])
+    # The marker policy itself: the declared estimates the store carries must never
+    # be silently un-marked back into claimed evidence (rule 3b: the count only grows).
+    check("traceability: at least as many (est)-marked dimension values as the "
+          "reconciled residue (23 flags of issue #788)",
+          declared >= EST_DECLARED_FLOOR, str(declared))
 
 
 def test_measurement_dimension_coverage_can_never_shrink():

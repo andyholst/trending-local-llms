@@ -3219,7 +3219,7 @@
       "quant": "PQ2_0, 7.21GB, ~220K context, ~550 tok/s prefill",
       "date": "2026-10-05",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107064827923284104",
-      "weight_gb": "ternary PQ2_0 7.21GB (fits one 12GB card where Qwen3.8-27B Q4 needs two)",
+      "weight_gb": "ternary PQ2_0 (fits one 12GB card where Qwen3.8-27B Q4 needs two)",
       "context_tokens": "220K",
       "engine_min_version": "PrismML fork required (stock llama.cpp rejects the ternary files); llama-server -ngl 999 -c 220000 -fa on --jinja -np 1 --cache-type-k q4_0 --cache-type-v q4_0 (est)",
       "system_ram_min": "12GB (card VRAM the run used)"
