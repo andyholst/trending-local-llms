@@ -45,6 +45,9 @@ QUEUE = ROOT / "scripts" / "issue_queue.py"
 WF = ROOT / ".github" / "workflows" / "issue-bot.yml"
 MAKEFILE = ROOT / "Makefile"
 
+sys.path.insert(0, str(ROOT / "scripts"))
+import bot_markers  # noqa: E402  (the product's ONE marker writer — imported, never re-spelled)
+
 _PASS = 0
 _FAIL = 0
 
@@ -63,6 +66,9 @@ d="@D@"; echo "$*" >> "$d/calls.log"
 case "$1 $2" in
   "api repos/o/r/issues/42") cat "$d/issue.json" ;;
   "api repos/o/r/issues/42/comments") cat "$d/comments.jsonl" ;;
+  # owed_rows_check.read_thread uses the leading-slash api form (the #523 reader)
+  "api /repos/o/r/issues/42") cat "$d/issue.json" ;;
+  "api /repos/o/r/issues/42/comments") cat "$d/comments.jsonl" ;;
   "issue view") case "$*" in *"--json state"*) cat "$d/state.json" ;; *) cat "$d/labels.json" ;; esac ;;
   "issue edit")  # --add-label L
     for a in "$@"; do case "$prev" in --add-label) echo "{\\"labels\\":[{\\"name\\":\\"$a\\"}]}" > "$d/labels.json";; esac; prev="$a"; done ;;
@@ -83,7 +89,7 @@ def check(name, cond, detail: object = ""):
 
 
 def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verdict=None,
-        state="OPEN"):
+        state="OPEN", agents=None):
     """Run a script for real with the gh CLI faked; return (rc, out, calls, td)."""
     td = Path(tempfile.mkdtemp())
     bindir = td / "bin"
@@ -97,6 +103,9 @@ def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verd
     (td / "state.json").write_text(json.dumps({"state": state}))
     if verdict is not None:
         (td / "triage.md").write_text(verdict)
+    if agents is not None:
+        (td / "agents.md").write_text(agents)
+        args = [*args, "--agents-file", str(td / "agents.md")]
     env = {**os.environ, "PATH": f"{bindir}:{os.environ['PATH']}", "REPO": "o/r", "ISSUE": "42",
            "FAKE_GH_RC": rc, "TRIAGE_FILE": str(td / "triage.md")}
     proc = subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True,
@@ -491,6 +500,120 @@ def test_the_workflow_renders_the_thread_and_applies_the_verdict():
           wired(__file__), "")
 
 
+# A rulebook fixture for the close path (issue #766): §8 carries one real row; §6b exists
+# but holds nothing; nothing else is in it. Same shape as tests/test_owed_rows.py's fixture.
+AGENTS_ROW_FIXTURE = """# Rulebook
+
+## 6b. The pipelines
+
+- refresh-bot.yml runs searches.
+
+## 8. Regression guards
+
+| test | catches |
+| tests/test_refresh_base.py | the refresh base assertion |
+
+## 9. Style
+"""
+
+_CLOSE_VERDICT = ("TRIAGE: close\n"
+                  "EVIDENCE: `scripts/owed_rows_check.py` reports the row landed\n"
+                  "REASON: the guard row is already in the rulebook\n")
+
+
+def test_close_quotes_the_landed_owed_row_with_its_agents_md_line():
+    """#766: closing an owed-row issue quotes the LANDED row on the thread."""
+
+    # Given a close verdict on an issue whose thread declares an owed row that HAS landed
+    marker = bot_markers.owed_row_marker("8", "tests/test_refresh_base.py")
+    row_comment = {"user": {"login": "hermes-agent"}, "created_at": "2026-11-13T10:00:00Z",
+                   "body": f"Owed to the rulebook: {marker}"}
+
+    # When  the verdict is applied
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=_CLOSE_VERDICT,
+                            comments=[*COMMENTS, row_comment], agents=AGENTS_ROW_FIXTURE)
+
+    # Then  the close happens AND the comment quotes the row with its rulebook line
+    check("close(landed row): exit 0", rc == 0, out)
+    check("close(landed row): it closes", "issue close" in calls, calls)
+    check("close(landed row): the comment quotes the landed state",
+          "LANDED" in calls and "agents.md:10" in calls, calls)
+    check("close(landed row): it quotes the row's own text",
+          "the refresh base assertion" in calls, calls)
+
+
+def test_close_records_an_outstanding_owed_row_and_still_closes():
+    """A row that has NOT landed is named at close — the debt is on the record, not lost."""
+
+    # Given a close verdict on an issue whose owed row is OUTSTANDING
+    marker = bot_markers.owed_row_marker("6b", "make refresh-sync")
+    row_comment = {"user": {"login": "hermes-agent"}, "created_at": "2026-11-13T10:00:00Z",
+                   "body": f"Owed to the rulebook: {marker}"}
+
+    # When
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=_CLOSE_VERDICT,
+                            comments=[*COMMENTS, row_comment], agents=AGENTS_ROW_FIXTURE)
+
+    # Then  the close proceeds and the comment says the row is still owed
+    check("close(outstanding row): exit 0", rc == 0, out)
+    check("close(outstanding row): it closes", "issue close" in calls, calls)
+    check("close(outstanding row): the comment names the outstanding row",
+          "OUTSTANDING" in calls and "make refresh-sync" in calls, calls)
+
+
+def test_close_refuses_when_a_declared_section_does_not_exist():
+    """A marker pointing at a section the rulebook does not have is a broken ledger read —
+    it must refuse the close, never quote a section from thin air."""
+
+    # Given an owed row declaring section 27, which the fixture rulebook does not have
+    marker = bot_markers.owed_row_marker("27", "whatever")
+    row_comment = {"user": {"login": "hermes-agent"}, "created_at": "2026-11-13T10:00:00Z",
+                   "body": f"Owed: {marker}"}
+
+    # When
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=_CLOSE_VERDICT,
+                            comments=[*COMMENTS, row_comment], agents=AGENTS_ROW_FIXTURE)
+
+    # Then  the close is refused and NOTHING is written
+    check("close(unknown section): refused (exit 2)", rc == 2, f"{rc}\n{out}")
+    check("close(unknown section): says REFUSED", "REFUSED" in out, out)
+    check("close(unknown section): no comment, no close, no label",
+          "issue comment" not in calls and "issue close" not in calls, calls)
+
+
+def test_close_refuses_a_malformed_owed_row_marker():
+    """A marker missing its needle cannot be checked — a close must not launder it."""
+
+    # Given a malformed owed-row declaration (no needle)
+    marker = bot_markers.owed_row_marker("8", "")  # writes the malformed shape `needle=`
+    row_comment = {"user": {"login": "hermes-agent"}, "created_at": "2026-11-13T10:00:00Z",
+                   "body": f"Owed: {marker}"}
+
+    # When
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=_CLOSE_VERDICT,
+                            comments=[*COMMENTS, row_comment], agents=AGENTS_ROW_FIXTURE)
+
+    # Then  refused, loudly, with nothing written
+    check("close(malformed marker): refused (exit 2)", rc == 2, f"{rc}\n{out}")
+    check("close(malformed marker): names the malformed marker", "malformed" in out, out)
+    check("close(malformed marker): no comment, no close",
+          "issue comment" not in calls and "issue close" not in calls, calls)
+
+
+def test_an_issue_without_an_owed_row_closes_without_a_ledger_section():
+    """The quote is for owed-row issues; a plain close stays exactly as it was."""
+
+    # Given a close verdict on an issue with NO owed-row marker
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=_CLOSE_VERDICT,
+                            agents=AGENTS_ROW_FIXTURE)
+
+    # Then  the normal close happens and no ledger section is invented
+    check("close(no owed row): exit 0", rc == 0, out)
+    check("close(no owed row): it closes", "issue close" in calls, calls)
+    check("close(no owed row): no owed-rows section in the comment",
+          "Owed rows" not in calls, calls)
+
+
 def main() -> int:
     print("the implementer's triage: the whole thread in, a decided verdict out (#210)")
     test_the_thread_carries_the_body_and_every_comment_with_author_and_stamp()
@@ -504,6 +627,11 @@ def main() -> int:
     test_a_decorated_verdict_is_read_and_a_near_miss_is_not_guessed_at()
     test_the_label_is_verified_not_assumed()
     test_three_mock_issues_decide_implement_refine_or_close_against_the_tree()
+    test_close_quotes_the_landed_owed_row_with_its_agents_md_line()
+    test_close_records_an_outstanding_owed_row_and_still_closes()
+    test_close_refuses_when_a_declared_section_does_not_exist()
+    test_close_refuses_a_malformed_owed_row_marker()
+    test_an_issue_without_an_owed_row_closes_without_a_ledger_section()
     test_the_state_check_tells_a_finished_issue_from_a_failed_run()
     test_the_workflow_renders_the_thread_and_applies_the_verdict()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

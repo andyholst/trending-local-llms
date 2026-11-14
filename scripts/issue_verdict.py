@@ -36,6 +36,14 @@ line, and a copied grammar line (`implement | refine | close`) are still refused
 Exit codes: 0 = the verdict was applied (or `implement`, which applies nothing),
 2 = refused / misconfigured, so the workflow can tell the two apart.
 
+The `close` comment also quotes the owed-row ledger (issue #766): when the issue
+declares owed rows (`owed-row` markers, the #523 ledger), the close comment carries
+each row's fate — LANDED with its `AGENTS.md:<line>` proof, or OUTSTANDING — through
+`owed_rows_check.owed_row_close_note`, the ONE landing implementation (rule 6d). A
+thread or rulebook that cannot be read, a malformed marker, or a marker naming a
+section that does not exist REFUSES the close (exit 2): a broken ledger read must
+never launder a close.
+
 Env: REPO, ISSUE (or --repo/--issue), TRIAGE_FILE (default triage.md), GH_TOKEN
 for the gh calls — the DEFAULT token, because the owner PAT cannot comment on an
 issue (measured on #124: `Resource not accessible by personal access token`).
@@ -50,6 +58,8 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+from owed_rows_check import owed_row_close_note  # noqa: E402  (the ONE landing implementation, rule 6d)
 
 TRIAGE_FILE = os.environ.get("TRIAGE_FILE", "triage.md")
 
@@ -282,7 +292,7 @@ def _stamp(now: dt.datetime) -> str:
 
 
 def apply_verdict(repo: str, number: str, verdict: dict, now: dt.datetime,
-                  dry_run: bool = False) -> int:
+                  dry_run: bool = False, agents_file: str = "AGENTS.md") -> int:
     kind = verdict["triage"]
     marker = f"<!-- issue-bot-verdict: {kind} {_stamp(now)} -->"
 
@@ -310,6 +320,19 @@ def apply_verdict(repo: str, number: str, verdict: dict, now: dt.datetime,
               f"{LABELS['refine']} (no PR, no code change)")
         return 0
 
+    # The owed-row ledger is quoted AT CLOSE (issue #766): a closed owed-row issue must
+    # carry its row's fate on the thread, and a ledger that cannot be read refuses the
+    # close — a broken read must never launder it. A dry run reads nothing (its
+    # repo/number are sentinels), it only previews the verdict itself.
+    owed_notes: list[str] = []
+    if not dry_run:
+        try:
+            owed_notes = owed_row_close_note(repo, number, Path(agents_file))
+        except (OSError, RuntimeError, ValueError) as err:
+            print(f"[verdict] REFUSED: the owed-row ledger for #{number} could not be read "
+                  f"or is malformed: {err}", file=sys.stderr)
+            return 2
+
     body = "\n".join([
         marker,
         "**The implementer triaged this issue as *closed* — with evidence.**",
@@ -323,6 +346,9 @@ def apply_verdict(repo: str, number: str, verdict: dict, now: dt.datetime,
         "Reopen with a comment if the evidence does not hold; the sweep skips an issue "
         f"carrying `{LABELS['close']}`.",
     ])
+    if owed_notes:
+        body += ("\n\n**Owed rows (the ledger, quoted at close — issue #766):**\n\n"
+                 + "\n".join(owed_notes))
     if not dry_run:
         _gh("issue", "comment", number, "--repo", repo, "--body", body)
         _gh("issue", "close", number, "--repo", repo)
@@ -347,6 +373,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=None)
     ap.add_argument("--issue", default=None)
     ap.add_argument("--file", default=TRIAGE_FILE)
+    ap.add_argument("--agents-file", default="AGENTS.md",
+                    help="the rulebook the close comment quotes owed rows against "
+                         "(default ./AGENTS.md; issue #766)")
     ap.add_argument("--now", default=None)
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and validate, print what WOULD happen, touch nothing")
@@ -383,7 +412,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("[verdict] REFUSED: no issue number (--issue or ISSUE=...)")
     repo = resolve_repo(args.repo) if not args.dry_run else (args.repo or "OWNER/REPO")
     print(f"[verdict] {verdict['triage']} on #{number or '<none>'} ({repo})")
-    return apply_verdict(repo, number or "0", verdict, now, dry_run=args.dry_run)
+    return apply_verdict(repo, number or "0", verdict, now, dry_run=args.dry_run,
+                         agents_file=args.agents_file)
 
 
 if __name__ == "__main__":
