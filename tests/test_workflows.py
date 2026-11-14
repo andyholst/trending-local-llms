@@ -313,6 +313,37 @@ def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate
           perms)
 
 
+def test_keeper_dedup_counts_only_mergeable_keepers():
+    """#960 (rule 6q): measured on run 43610043055 (push aec1410; master red at
+    `openspec-index-check` 15:40:27Z), the `index-repair` keeper job ended green
+    WITHOUT filing a keeper PR — its dedup counted an open keeper by branch
+    prefix alone, and the only match was PR #956 with `mergeStateStatus=DIRTY`:
+    a conflicting keeper builds no merge commit and lands nothing, yet it
+    suppressed the very repair the red needed, repo-wide. Only a keeper that CAN
+    land may suppress a new one; a MERGEABLE open keeper must still suppress,
+    or every failed push would spam a fresh keeper beside a working one."""
+    wf = load("qa-validate.yml")
+    for name, prefix in (
+        ("index-repair", "ci/openspec-index-repair-"),
+        ("architecture-repair", "ci/architecture-block-repair-"),
+    ):
+        job = wf["jobs"].get(name)
+        check(f"qa: {name} exists to hold its keeper dedup", job is not None,
+              sorted(wf["jobs"]))
+        if not job:
+            continue
+        text = run_text(job)
+        check(f"qa: {name} dedup reads mergeStateStatus beside the branch prefix (#960)",
+              "--json headRefName,mergeStateStatus" in text
+              and f'startswith("{prefix}")' in text
+              and '. != "DIRTY"' in text and '. != "CONFLICTING"' in text,
+              text[:800])
+        check(f"qa: {name} names the UNMERGEABLE keeper it refused to honour (#960)",
+              "UNMERGEABLE" in text, text[:800])
+        check(f"qa: {name} suppresses only beside a MERGEABLE open keeper (#960)",
+              "A mergeable" in text and "already open" in text, text[:800])
+
+
 def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate():
     """#861 (rule 6q/6h): a merged PR that moved a target, script or job without
     `make architecture-refresh` staleness-reds the push-to-master `validate` at
@@ -2952,6 +2983,7 @@ def main() -> int:
     test_qa_validate()
     test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate()
     test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate()
+    test_keeper_dedup_counts_only_mergeable_keepers()
     test_qa_validate_header_points_at_pinned_action_howto()
     test_fix_pipeline_retired()
     test_issue_bot_pr_body_actually_closes_the_issue()
