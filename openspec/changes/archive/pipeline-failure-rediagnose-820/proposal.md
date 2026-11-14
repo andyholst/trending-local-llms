@@ -1,6 +1,7 @@
 # Proposal: pipeline-failure-rediagnose-820
 
 Issue: #820
+PR: #967
 
 ## Why
 
