@@ -9,22 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **11** · archived: **262**
+Active changes: **2** · archived: **271**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `firecrawl-refusal-is-loud` | active | — | — | [search-fetch](openspec/changes/firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/firecrawl-refusal-is-loud/proposal.md) |
-| `gap-covers-measurements` | active | — | — | [data-gap-analysis](openspec/changes/gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/gap-covers-measurements/proposal.md) |
-| `measurement-attribution-refusal` | active | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/measurement-attribution-refusal/proposal.md) |
-| `one-test-runner` | active | — | — | [test-runner](openspec/changes/one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/one-test-runner/proposal.md) |
-| `outage-verdict-tolerates-a-failed-query` | active | — | — | [search-fetch](openspec/changes/outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/outage-verdict-tolerates-a-failed-query/proposal.md) |
-| `owed-guard-rows-landed` | active | — | — | [agents-guard-registry](openspec/changes/owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/owed-guard-rows-landed/proposal.md) |
-| `rulebook-names-every-pipeline` | active | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/rulebook-names-every-pipeline/proposal.md) |
-| `storage-offload-needs-a-medium` | active | — | — | [data-gap-analysis](openspec/changes/storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/storage-offload-needs-a-medium/proposal.md) |
-| `weekly-cadence-wednesday` | active | — | — | [fleet-cadence](openspec/changes/weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/weekly-cadence-wednesday/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -63,6 +54,15 @@ Active changes: **11** · archived: **262**
 | `2026-11-13-one-queue-reader` | archived | — | — | [issue-review-queue](openspec/changes/archive/2026-11-13-one-queue-reader/specs/issue-review-queue/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-13-one-queue-reader/proposal.md) |
 | `2026-11-13-single-checkbox-vocabulary` | archived | #636 | #889 | [openspec-task-checkbox](openspec/changes/archive/2026-11-13-single-checkbox-vocabulary/specs/openspec-task-checkbox/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/2026-11-13-single-checkbox-vocabulary/proposal.md) |
 | `2026-11-13-the-owed-section-8-rows` | archived | — | — | [rulebook](openspec/changes/archive/2026-11-13-the-owed-section-8-rows/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-13-the-owed-section-8-rows/proposal.md) |
+| `2026-11-14-firecrawl-refusal-is-loud` | archived | — | — | [search-fetch](openspec/changes/archive/2026-11-14-firecrawl-refusal-is-loud/specs/search-fetch/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-14-firecrawl-refusal-is-loud/proposal.md) |
+| `2026-11-14-gap-covers-measurements` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-gap-covers-measurements/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-gap-covers-measurements/proposal.md) |
+| `2026-11-14-measurement-attribution-refusal` | archived | tech-debt — "A measurement names a different model than the row it is stored on" | — | [measurement-attribution](openspec/changes/archive/2026-11-14-measurement-attribution-refusal/specs/measurement-attribution/spec.md)<br>[post-signal](openspec/changes/archive/2026-11-14-measurement-attribution-refusal/specs/post-signal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-measurement-attribution-refusal/proposal.md) |
+| `2026-11-14-one-test-runner` | archived | — | — | [test-runner](openspec/changes/archive/2026-11-14-one-test-runner/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-14-one-test-runner/proposal.md) |
+| `2026-11-14-outage-verdict-tolerates-a-failed-query` | archived | — | — | [search-fetch](openspec/changes/archive/2026-11-14-outage-verdict-tolerates-a-failed-query/specs/search-fetch/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-14-outage-verdict-tolerates-a-failed-query/proposal.md) |
+| `2026-11-14-owed-guard-rows-landed` | archived | — | — | [agents-guard-registry](openspec/changes/archive/2026-11-14-owed-guard-rows-landed/specs/agents-guard-registry/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/2026-11-14-owed-guard-rows-landed/proposal.md) |
+| `2026-11-14-rulebook-names-every-pipeline` | archived | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/proposal.md) |
+| `2026-11-14-storage-offload-needs-a-medium` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/proposal.md) |
+| `2026-11-14-weekly-cadence-wednesday` | archived | — | — | [fleet-cadence](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |
