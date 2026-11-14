@@ -132,6 +132,15 @@ case "$1" in
     esac ;;
   api)
     if [ -e "$d/log-fail" ]; then echo "stub gh: job logs unavailable (502)" >&2; exit 1; fi
+    if [ -e "$d/log-escape" ]; then
+      # gh's measured refusal (issue #923): a plain logs fetch on an escape-bearing log is
+      # refused verbatim; ONLY a call carrying gh's own suggested flag gets the log.
+      case " $* " in
+        *" --allow-escape-sequences "*) cat "$d/log-escape.txt" ;;
+        *) echo "gh: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway" >&2; exit 1 ;;
+      esac
+      exit 0
+    fi
     cat "$d/log.txt" ;;
   *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
 esac
@@ -290,6 +299,67 @@ def test_undiagnosed_filing_is_loud_never_a_skip() -> None:
               all(e["undiagnosed"] for e in data["failures"]), str(data["failures"]))
 
 
+def test_an_escape_refused_log_is_diagnosed_on_the_flag_retry() -> None:
+    print("\nescape retry: gh's refusal is answered by gh's own suggested flag, not by UNDIAGNOSED (issue #923)")
+    canned = {
+        "runs-qa-validate_yml.json": [
+            {"databaseId": 110, "workflowName": "qa-validate.yml", "name": "escape-run",
+             "headBranch": "master", "headSha": "f" * 40, "event": "push",
+             "createdAt": "2026-11-12T19:00:00Z", "conclusion": "failure", "status": "completed",
+             "url": "https://github.com/octo/repo/actions/runs/110"}],
+        "jobs-110.json": {"jobs": [{"databaseId": 910, "name": "implement", "conclusion": "failure"}]},
+        # A marker file (empty content) arms the refusal branch; the colored log is the answer
+        # ONLY to the flag-carrying call — the exact live shape gh produced for 12 real failures.
+        "log-escape": "",
+        "log-escape.txt": (
+            "2026-11-12T19:04:00Z \x1b[31;1m##[error]\x1b[0mscripts/fix_loop.sh died: boom\n"
+            "2026-11-12T19:04:01Z \x1b[33mmake: *** [implement-issue] Error 1\x1b[0m\n"
+            "2026-11-12T19:04:02Z \x1b]0;runner window title\x07the auth header was Bearer fake-secret-value-1\n"
+            "2026-11-12T19:04:03Z \x1b[2J\x1b[1H\x1b[31;1m##[error]Process completed with exit code 2.\x1b[0m\n"
+        ),
+        "issues.json": [],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        count = int((tmp / "canned" / "create-count").read_text().strip())
+        check("exactly ONE issue filed", count == 1, f"create-count={count}\n{proc.stdout}")
+        body = (tmp / "canned" / "body-1.txt").read_text()
+        check("the colored log's error lines landed in the body",
+              "make: *** [implement-issue] Error 1" in body and "boom" in body,
+              body[:400])
+        check("NO escape character anywhere in the filed body", "\x1b" not in body,
+              "ESCAPE BYTE LEAKED INTO ISSUE BODY")
+        check("the gh refusal text is NOT in the body (the log WAS read)",
+              "terminal escape sequences" not in body, "")
+        check("the body is a diagnosis, not UNDIAGNOSED",
+              "UNDIAGNOSED" not in body and "could not be read" not in body, body[:400])
+        check("the planted secret is still scrubbed out", FAKE_SECRET not in body,
+              "SECRET LEAKED INTO ISSUE BODY")
+        data = json.loads(ledger.read_text())
+        row = {e["run_id"]: e for e in data["failures"]}[110]
+        check("the ledger row carries the diagnosis (job + reproduction target)",
+              row["job"] == "implement" and "implement-issue" in row["targets"], str(row))
+
+
+def test_strip_terminal_escapes_leaves_plain_text_intact() -> None:
+    print("\nstrip helper: sequences removed, ordinary text untouched")
+    s = F.strip_terminal_escapes
+    check("CSI color pair removed", s("\x1b[31;1mred\x1b[0m") == "red", repr(s("\x1b[31;1mred\x1b[0m")))
+    check("OSC window title removed (BEL-terminated)", s("\x1b]0;title\x07after") == "after", "")
+    check("CSI private sequences removed", s("\x1b[?25lcursor\x1b[?25h") == "cursor", "")
+    check("erase/position CSI removed", s("\x1b[2Kline\x1b[1A") == "line", "")
+    check("a bare bracket-number with NO ESC is NOT touched",
+          s("plain [31m text stays") == "plain [31m text stays", "")
+    check("a lone ESC is removed", s("lone \x1b ESC") == "lone  ESC", "")
+    check("log prose survives byte-identical",
+          s("2026-11-12T19:04:01Z make: *** [x] Error 1\n")
+          == "2026-11-12T19:04:01Z make: *** [x] Error 1\n", "")
+
+
 def test_read_failures_exit_2_never_a_fake_clean() -> None:
     print("\nread state: an unreadable pipeline state exits 2, not a silent 0")
     with tempfile.TemporaryDirectory() as td:
@@ -409,6 +479,8 @@ def main() -> int:
     test_filing_diagnoses_every_failure_with_the_log_error_block()
     test_ledger_and_marker_dedup_file_one_run_once_ever()
     test_undiagnosed_filing_is_loud_never_a_skip()
+    test_an_escape_refused_log_is_diagnosed_on_the_flag_retry()
+    test_strip_terminal_escapes_leaves_plain_text_intact()
     test_read_failures_exit_2_never_a_fake_clean()
     test_dry_run_previews_without_writing_anything()
     test_pure_halves_extract_targets_dedupe_and_cap()

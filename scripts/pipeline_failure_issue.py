@@ -43,6 +43,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -187,14 +188,40 @@ def failed_jobs(repo: str, run_id: int) -> list[dict]:
     return bad
 
 
+_ESCAPE_CSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+_ESCAPE_OSC = re.compile(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)")
+
+
+def strip_terminal_escapes(text: str) -> str:
+    """Remove every terminal escape SEQUENCE (CSI, OSC, lone ESC) — issue #923.
+
+    GitHub Actions wraps its `##[error]` decoration in ANSI color codes, so a plain
+    `gh api …/logs` answer is full of them (gh refuses such logs outright). Stripping runs
+    BEFORE extraction and scrubbing so escape bytes can never reach an issue body, while
+    ordinary text — a bare `[31m` with no ESC, log prose — is left exactly as written.
+    """
+    text = _ESCAPE_OSC.sub("", text)
+    text = _ESCAPE_CSI.sub("", text)
+    return text.replace("\x1b", "")
+
+
 def fetch_log(repo: str, job_id: int) -> str:
     """The job log, bounded to its tail; ONE retry, then a loud UNDIAGNOSED reason (never a
-    silent empty log — an empty body would read as 'the run failed cleanly')."""
+    silent empty log — an empty body would read as 'the run failed cleanly').
+
+    The retry is not a repeat: it carries gh's OWN suggested `--allow-escape-sequences` (issue
+    #923, measured: 12 issues #822–#833 filed UNDIAGNOSED because gh refuses any log containing
+    terminal escape sequences — exactly what Actions' colored `##[error]` writes). Whatever
+    arrives is stripped of escape sequences before the tail-bound, the extraction and the scrub.
+    """
     last_err = ""
     for attempt in (1, 2):
-        proc = _gh("api", f"repos/{repo}/actions/jobs/{job_id}/logs", check=False)
+        args = ["api", f"repos/{repo}/actions/jobs/{job_id}/logs"]
+        if attempt == 2:
+            args.append("--allow-escape-sequences")
+        proc = _gh(*args, check=False)
         if proc.returncode == 0 and proc.stdout.strip():
-            text = proc.stdout
+            text = strip_terminal_escapes(proc.stdout)
             if len(text.encode("utf-8")) > MAX_LOG_TAIL_BYTES:
                 text = text.encode("utf-8")[-MAX_LOG_TAIL_BYTES:].decode("utf-8", "replace")
                 text = "[log bounded to its tail]\n" + text
