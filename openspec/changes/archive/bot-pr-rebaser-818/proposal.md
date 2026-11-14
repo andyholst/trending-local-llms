@@ -1,6 +1,7 @@
 # Proposal: bot-pr-rebaser-818
 
 Issue: #818 — "Owner directive: an ACTIVE sweep must REBASE drifted bot PRs onto the
+PR: #963
 fetched base, not just report them" (the mechanical half of rule 6r's promise
 "a PR that is CONFLICTING or behind its base is RESOLVED — not noted").
 
