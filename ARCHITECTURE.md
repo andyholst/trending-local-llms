@@ -777,7 +777,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 206 make targets, 77 files in `scripts/`)
+### Bots in the tree (11 pipelines, 206 make targets, 78 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -899,6 +899,7 @@ One line each, taken from the script's own docstring.
 - `scripts/check_workflow_guards.py` — check_workflow_guards.py — the tree-wide identity-guard scan (AGENTS.md §6j, issue #816).
 - `scripts/code_review.py` — A code-review bot for this repo: read the TREE and the PIPELINES, file ONE issue per finding
 - `scripts/data_gap_analysis.py` — Post-refresh data-gap analysis (issue #115).
+- `scripts/declared_estimate.py` — The ONE declared-estimate detector and footprint-field set (rule 6d, issue #936).
 - `scripts/docker_test_run.sh` — docker_test_run.sh — remove the test container when the client dies.
 - `scripts/engine_registry.py` — Engine registry: classify + auto-register new inference engines at ingest.
 - `scripts/ensure_image.py` — Prepare the runner images for THIS revision — one code path, CI and local.
