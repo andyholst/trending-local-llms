@@ -40,6 +40,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import agent_identity as _AI  # the identity's ONE definition (issue #325)
 from update_trending import SEARCH_LEGS  # noqa: E402  ('nvidia', 'metal', 'cpu', 'amd')
 import pr_closure  # noqa: E402  the pipeline's OWN closure parser (issue #289)
+import architecture_bot as arch_bot  # noqa: E402  the ONE Makefile target scan (issue #752)
 import check_workflow_guards as scan_guards  # noqa: E402  §6j tree-wide guard scan — the ONE implementation (issue #816)
 
 from wiring import wired  # noqa: E402  (issues #176/#192)
@@ -2676,8 +2677,9 @@ def _makefile_commands() -> dict[str, list[str]]:
             if target and body and not body.startswith("#"):
                 commands.setdefault(target, []).append(body)
             continue
-        m = re.match(r"^([A-Za-z0-9_.-]+)\s*:(?!=)", line)
-        target = m.group(1) if m else None
+        # issue #752: the generator scan's own line view, not a private matcher
+        # (the copy here counted `.PHONY:` lines as targets the scan skips).
+        target = arch_bot.target_at_line(line)
     return commands
 
 
