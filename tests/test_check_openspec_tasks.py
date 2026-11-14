@@ -272,7 +272,7 @@ def test_wired_into_make_test():
     check("make: openspec-tasks-check runs the script",
           "openspec-tasks-check:" in mk and "python3 scripts/check_openspec_tasks.py" in mk, "")
     check("make: openspec-check runs the task gate",
-          "openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check" in mk, "")
+          "openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check" in mk, "")
     check("make: the task-gate tests run in the suite",
           wired(__file__), "")
     # issue #409: the gate's own words must not claim every task is ticked when

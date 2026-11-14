@@ -134,8 +134,13 @@ def test_the_real_tree_is_under_the_cap():
 
 
 def main() -> int:
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
-    for t in tests:
+    for t in (test_headroom_is_reported,
+              test_archived_changes_never_count,
+              test_exactly_at_the_cap_is_red,
+              test_over_the_cap_is_still_red,
+              test_missing_tree_is_loud,
+              test_the_cap_gates_the_merge_pipeline,
+              test_the_real_tree_is_under_the_cap):
         print(f"\n[{t.__name__}]")
         t()
     print(f"\n{_PASS} passed, {_FAIL} failed")

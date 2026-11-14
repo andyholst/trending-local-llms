@@ -391,7 +391,7 @@ openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:`
 	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
 	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
-openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-spec-tests-check openspec-backlog-check openspec-index-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), the index current
+openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), the index current
 	docker run $(OS_OPTS) openspec validate --changes
 	@echo "[openspec-check] OK: active changes validate, no task is unticked, no two ACTIVE changes propose the same Requirement, every \`- **Test:**\` reference resolves, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 
