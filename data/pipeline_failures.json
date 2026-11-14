@@ -107,12 +107,17 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/41956933757",
       "created_utc": "2026-11-05T02:42:23Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
-      "targets": [],
+      "targets": [
+        "sweep-alarm"
+      ],
       "issue_number": "824",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/824",
-      "fix_pr": null,
-      "guard": null,
-      "undiagnosed": "log fetch for job 127014006697 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway"
+      "fix_pr": 806,
+      "guard": "tests/test_sweep_alarm.py",
+      "undiagnosed": "log fetch for job 127014006697 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
+      "error_excerpt": "2026-11-05T02:42:40Z [sweep-alarm] FAIL: the newest delivery is only 0.2 h old but concluded 'in_progress' - a sweep that ran and did not succeed delivered nothing\n2026-11-05T02:42:40Z make: *** [Makefile:1333: sweep-alarm] Error 1\n2026-11-05T02:42:40Z ##[error]Process completed with exit code 2.",
+      "rediagnosed_utc": "2026-11-14T23:13:01.806670+00:00",
+      "rediagnosis_note": "re-diagnosed from the job log after the log-reader fix (issue #923): the alarm graded an in-flight delivery 0.2 h after the sweep began as a failed sweep - the measured in-flight misgrade class (issue #801; AGENTS.md names these exact run ids). Fixed by PR #806, guarded by tests/test_sweep_alarm.py; same landed fix as rows 41788683672 (#820), 41860616772 (#821), 41922211098 (#822). Issue #824 closes on this row, not on prose (rule 6r)."
     },
     {
       "run_id": 42973469114,
@@ -182,12 +187,17 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/43049550731",
       "created_utc": "2026-11-11T15:33:32Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
-      "targets": [],
+      "targets": [
+        "sweep-alarm"
+      ],
       "issue_number": "829",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/829",
-      "fix_pr": null,
-      "guard": null,
-      "undiagnosed": "log fetch for job 130622645547 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway"
+      "fix_pr": 806,
+      "guard": "tests/test_sweep_alarm.py",
+      "undiagnosed": "log fetch for job 130622645547 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
+      "error_excerpt": "2026-11-11T15:33:50Z [sweep-alarm] FAIL: the newest delivery is only 0.2 h old but concluded 'in_progress' - a sweep that ran and did not succeed delivered nothing\n2026-11-11T15:33:50Z make: *** [Makefile:1384: sweep-alarm] Error 1\n2026-11-11T15:33:50Z ##[error]Process completed with exit code 2.",
+      "rediagnosed_utc": "2026-11-14T23:13:01.806991+00:00",
+      "rediagnosis_note": "re-diagnosed from the job log after the log-reader fix (issue #923): the alarm graded an in-flight delivery 0.2 h after the sweep began as a failed sweep - the measured in-flight misgrade class (issue #801; AGENTS.md names these exact run ids). Fixed by PR #806, guarded by tests/test_sweep_alarm.py; same landed fix as rows 41788683672 (#820), 41860616772 (#821), 41922211098 (#822). Issue #829 closes on this row, not on prose (rule 6r)."
     },
     {
       "run_id": 43050447566,
