@@ -275,6 +275,42 @@ def _base_is_not_a_target(branch: str, base: str) -> None:
         )
 
 
+#: (issue #807) the branch shapes the cut-with-ISSUE accepts, shown for the refusal only.
+#: The DECISION is `pr_closure.implemented_issue` — this text never re-decides anything.
+_ISSUE_BRANCH_SHAPES = (
+    "ci/data-gap-<issue>-<slug>  or a branch name ENDING in -<issue>",
+)
+
+
+def _branch_name_carries_the_issue(branch: str, issue: int) -> None:
+    """A cut that declares an ISSUE must NAME it, checked by the same parser
+    `make pr-closure` applies (issue #807, rule 6d: one implementation, no second copy).
+
+    Measured cost of the absence (PRs #805/#803, runs 43104841635/43104841639): a
+    descriptive branch like `tech-debt-801-…` that parses to a DIFFERENT issue (or none)
+    sailed through every local seam and only went red at the PR webhook — on BOTH
+    `closure` and `validate`. And the repair is worse than the bug: renaming the branch
+    CLOSES the PR and GitHub cannot reopen it (measured on #805), forcing a brand-new PR.
+    So the name is validated HERE, before a worktree, a branch or a commit exists.
+    """
+    from pr_closure import implemented_issue  # THE parser (rule 6d) — never re-spelled
+
+    parsed = implemented_issue(branch)
+    if parsed == issue:
+        return
+    if parsed is None:
+        what = f"`{branch}` resolves to NO issue"
+    else:
+        what = f"`{branch}` resolves to issue #{parsed}, not #{issue}"
+    raise Refused(
+        f"refusing to cut `{branch}` for ISSUE={issue}: {what}.\n"
+        f"  The branch name must implement the issue it is cut for, by the same rule\n"
+        f"  `make pr-closure` reads: {' or '.join(_ISSUE_BRANCH_SHAPES)}.\n"
+        f"  (A name that parses elsewhere lands red on `closure` AND `validate` at the\n"
+        f"  webhook — and renaming the branch AFTER the PR closes it for good, #805.)"
+    )
+
+
 def mode_advance(args: argparse.Namespace) -> int:
     """Fetch the base and fast-forward a CLEAN checkout onto it (issue #448).
 
@@ -334,6 +370,8 @@ def mode_new(args: argparse.Namespace) -> int:
     cwd = os.getcwd()
     root = repo_root(cwd)
     _base_is_not_a_target(args.branch, args.base)
+    if getattr(args, "issue", None) is not None:
+        _branch_name_carries_the_issue(args.branch, args.issue)  # issue #807
     tip = fetch_base(args.base, args.remote, cwd)
     branch = args.branch
 
@@ -482,6 +520,12 @@ def mode_adopt(args: argparse.Namespace) -> int:
     local_exists = git(["show-ref", "--verify", "--quiet", local_ref], cwd).returncode == 0
     remote_exists = git(["ls-remote", "--exit-code", "--heads", args.remote, branch],
                         cwd).returncode == 0
+    # (issue #807) a NEW branch cut with ISSUE=<n> must name that issue — checked by the
+    # pr-closure parser before any commit lands on it. Attaching to a branch that already
+    # exists (a re-run) is never refused here: its name was validated when it was cut, and
+    # branches cut before this rule must stay resumable (#500's adopt is a rescue path).
+    if getattr(args, "issue", None) is not None and not (local_exists or remote_exists):
+        _branch_name_carries_the_issue(args.branch, args.issue)
 
     # THE TREE IS DIRTY BY DESIGN: it holds the implementation being adopted. `git checkout`
     # (and `-B`) refuses to move HEAD when the target branch differs from the current commit
@@ -656,6 +700,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--in-place", action="store_true",
                         help="work in this checkout instead of a worktree (the CI path)")
     parser.add_argument("--dir", help="the worktree directory (default: beside the checkout)")
+    parser.add_argument("--issue", type=int,
+                        help="issue # this cut implements (new/adopt, issue #807): the branch "
+                             "name is then validated THROUGH pr_closure.implemented_issue "
+                             "before the worktree or branch exists")
     args = parser.parse_args(argv)
 
     if args.mode in ("new", "resume", "adopt") and not args.branch:
@@ -663,6 +711,15 @@ def main(argv: list[str] | None = None) -> int:
               f"[--base {DEFAULT_BASE}] [--remote {DEFAULT_REMOTE}] [--in-place] [--dir <path>]",
               file=sys.stderr)
         return 2
+    if args.issue is not None:
+        if args.mode not in ("new", "adopt"):
+            print(f"Usage: --issue belongs to mode new/adopt only (issue #807), not {args.mode}.",
+                  file=sys.stderr)
+            return 2
+        if args.issue <= 0:
+            print(f"Usage: --issue must be a positive issue number, got {args.issue}.",
+                  file=sys.stderr)
+            return 2
     try:
         return MODES[args.mode](args)
     except Refused as exc:

@@ -495,7 +495,11 @@ jobs:
           # added since, and the guard would then fail on a missing script instead of on a
           # marker (run 40210081952).
           make check-conflict-markers
-          make branch-adopt BRANCH="$BRANCH"
+          # The cut declares its issue (issue #807): the branch name is validated
+          # through pr_closure.implemented_issue BEFORE a branch exists, so a name
+          # that parses to another issue can never reach a PR and red `closure`
+          # AND `validate` (measured: PRs #805/#803).
+          make branch-adopt BRANCH="$BRANCH" ISSUE="$ISSUE"
           git add -A
           # ignored reporting artifacts, never named in the pathspec (git exits 1
           # on an ignored path under bash -e and the work would be lost)

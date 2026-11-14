@@ -624,6 +624,9 @@ def test_the_rulebook_states_the_rule() -> None:
           "on ANY rejected push, never only the workflow-scope one" in text, "")
     check("AGENTS.md: 6n pins one implementation (rule 6d)",
           "scripts/worktree_base.py" in rule and "tests/test_worktree_base.py" in rule, "")
+    # (issue #807) a cut that declares ISSUE= has its NAME validated by THE closure parser.
+    check("AGENTS.md: 6n says a cut with ISSUE= must NAME that issue, checked by the pr-closure parser",
+          "ISSUE=" in rule and "implemented_issue" in rule and "#807" in rule, "")
     check("AGENTS.md: the section-8 guard table carries the row",
           "tests/test_worktree_base.py" in text[text.find("## 8. Regression guards"):], "")
 
@@ -641,6 +644,14 @@ def test_the_makefile_is_the_one_seam() -> None:
         recipe = re.search(rf"^{target}:.*\n((?:\t.*\n)+)", MAKEFILE, re.M)
         check(f"Makefile: `{target}` calls scripts/worktree_base.py {script}",
               bool(recipe) and f"worktree_base.py {script}" in recipe.group(1), "")
+    # (issue #807) the ISSUE= knob is forwarded to BOTH cut seams, never documented only.
+    for target in ("worktree-new", "branch-adopt"):
+        recipe = re.search(rf"^{target}:.*\n((?:\t.*\n)+)", MAKEFILE, re.M)
+        check(f"Makefile: `{target}` forwards ISSUE= as --issue (issue #807)",
+              bool(recipe) and "--issue $(ISSUE)" in recipe.group(1), "")
+    push = re.search(r'make branch-adopt BRANCH="\$BRANCH" ISSUE="\$ISSUE"', ISSUE_BOT)
+    check("issue-bot: the bot's own cut declares ISSUE= (the seam cannot be bypassed)",
+          push is not None, "")
     check("Makefile: the test is in the `_test` chain (rule 6d — a guard nothing runs)",
           wired(__file__), "")
     # Issue #500: the commit step cuts the branch AND brings it onto the base as it is NOW.
@@ -665,6 +676,124 @@ def test_the_makefile_is_the_one_seam() -> None:
     check("issue-bot: the patch artifact is not gated on the workflow-scope error alone",
           "steps.push.outputs.pushed != 'true'" in artifact
           and "scope_error" not in artifact, artifact)
+
+
+# ---- (issue #807) a cut that declares ISSUE= must NAME it, by the pr-closure parser ----
+
+
+def test_new_with_issue_refuses_a_branch_naming_a_different_issue(tmp: Path) -> None:
+    """The measured shape of PRs #805/#803: a branch like `tech-debt-801-…-933`
+    implements #801 but the parser reads #933 — every local seam stayed green and
+    only the PR webhook went red on `closure` AND `validate`, after which renaming
+    the branch closed the PR for good. Here the same name is refused AT THE CUT."""
+    fx = fixture(tmp)
+    proc = run_script("new", fx["ci"], "--branch", "tech-debt-801-queued-alarm-window-933",
+                      "--issue", "801")
+    check("new --issue: a name the parser reads as ANOTHER issue is refused",
+          proc.returncode == 1, proc.returncode)
+    check("new --issue: the refusal names BOTH numbers (what the branch says, what was declared)",
+          "issue #933" in proc.stderr and "#801" in proc.stderr, proc.stderr)
+    check("new --issue: the refusal points at the closure rule it would break",
+          "REFUSED" in proc.stderr and "make pr-closure" in proc.stderr, proc.stderr)
+    check("new --issue: NOTHING was cut — no branch, no worktree (fail before side effects)",
+          git(["show-ref", "--verify", "--quiet",
+               "refs/heads/tech-debt-801-queued-alarm-window-933"], fx["ci"]).returncode != 0
+          and "tech-debt-801-queued-alarm-window-933" not in git(["worktree", "list"],
+                                                                 fx["ci"]).stdout,
+          git(["worktree", "list"], fx["ci"]).stdout)
+
+
+def test_new_with_issue_refuses_a_name_that_implements_nothing(tmp: Path) -> None:
+    fx = fixture(tmp)
+    proc = run_script("new", fx["ci"], "--branch", "refresh-20261114T111522Z", "--issue", "801")
+    check("new --issue: a name resolving to NO issue is refused",
+          proc.returncode == 1 and "NO issue" in proc.stderr, proc.stderr)
+
+
+def test_new_with_issue_accepts_the_name_it_declares(tmp: Path) -> None:
+    fx = fixture(tmp)
+    proc = run_script("new", fx["ci"], "--branch", "tech-debt-801-queued-alarm-window-801",
+                      "--issue", "801")
+    check("new --issue: a trailing -<issue> that matches is accepted (exit 0)",
+          proc.returncode == 0, proc.stderr)
+    check("new --issue: the worktree really was created",
+          "tech-debt-801-queued-alarm-window-801" in git(["worktree", "list"], fx["ci"]).stdout,
+          git(["worktree", "list"], fx["ci"]).stdout)
+
+
+def test_new_without_issue_leaves_descriptive_names_legal(tmp: Path) -> None:
+    """The check binds a cut that DECLARES an issue; a plain descriptive cut is
+    unchanged (keeper branches, refresh branches — they implement nothing)."""
+    fx = fixture(tmp)
+    proc = run_script("new", fx["ci"], "--branch", "refresh-20261114T111522Z")
+    check("new without ISSUE=: a descriptive name stays legal", proc.returncode == 0, proc.stderr)
+
+
+def test_adopt_with_issue_refuses_a_mismatched_new_branch(tmp: Path) -> None:
+    fx = fixture(tmp)
+    git(["checkout", "-qb", "wip"], fx["ci"])
+    (fx["ci"] / "new.txt").write_text("this run's work\n")
+    proc = run_script("adopt", fx["ci"], "--branch", "tech-debt-801-fix-933", "--issue", "801")
+    check("adopt --issue: a NEW branch whose name parses elsewhere is refused",
+          proc.returncode == 1 and "933" in proc.stderr and "#801" in proc.stderr, proc.stderr)
+    check("adopt --issue: the refusal comes BEFORE the branch is cut",
+          git(["show-ref", "--verify", "--quiet", "refs/heads/tech-debt-801-fix-933"],
+              fx["ci"]).returncode != 0, "")
+    check("adopt --issue: the run's own work is still there (nothing was destroyed)",
+          (fx["ci"] / "new.txt").exists(), "")
+
+
+def test_adopt_with_issue_still_attaches_an_existing_branch(tmp: Path) -> None:
+    """A re-run's branch was validated when it was cut; refusing it now would break
+    the #500 rescue path — and every branch cut before this rule must stay resumable."""
+    fx = fixture(tmp)
+    proc = run_script("adopt", fx["ci"], "--branch", "ci/data-gap-1-x", "--issue", "999")
+    check("adopt --issue: attaching an EXISTING branch is not refused by the name rule",
+          "resolves to" not in proc.stderr, proc.stderr)
+    check("adopt --issue: the attach itself still works (exit 0)",
+          proc.returncode == 0, proc.stderr)
+
+
+def test_issue_belongs_to_the_cut_modes_only(tmp: Path) -> None:
+    fx = fixture(tmp)
+    proc = run_script("resume", fx["ci"], "--branch", "ci/data-gap-1-x", "--issue", "1")
+    check("resume --issue: a usage error, exit 2 (loud, not silent)",
+          proc.returncode == 2, proc.returncode)
+    check("resume --issue: the message names the modes it belongs to",
+          "new/adopt" in proc.stderr, proc.stderr)
+    proc = run_script("new", fx["ci"], "--branch", "feat-x", "--issue", "0")
+    check("new --issue 0: refused (a zero must never match a name parsing to nothing)",
+          proc.returncode == 2, proc.returncode)
+
+
+def test_the_cut_check_is_the_pr_closure_parser_itself() -> None:
+    """Rule 6d: ONE parser. The seam may not re-spell a branch-number rule of its own —
+    a second copy drifts silently, which is exactly the #805/#803 class."""
+    src = SCRIPT.read_text(encoding="utf-8")
+    check("cut-check: the seam imports THE parser (pr_closure.implemented_issue)",
+          "from pr_closure import implemented_issue" in src, "")
+    check("cut-check: worktree_base.py defines no second issue parser",
+          "def implemented_issue" not in src, "")
+
+
+def test_the_cut_check_agrees_with_the_parser_on_the_real_shapes() -> None:
+    """End to end, both production codes, the exact branch shapes measured on
+    #805/#803 and the bot's own `ci/data-gap-<issue>-<slug>`."""
+    import pr_closure
+    for branch, issue, should_pass in (
+        ("ci/data-gap-1-x", 1, True),                      # the bot's shape
+        ("tech-debt-801-queued-alarm-window-933", 933, True),   # trailing number matches
+        ("tech-debt-801-queued-alarm-window-933", 801, False),  # the measured #805 shape
+        ("refresh-20261114T111522Z", 801, False),              # implements nothing
+    ):
+        try:
+            WB._branch_name_carries_the_issue(branch, issue)
+            accepted = True
+        except WB.Refused:
+            accepted = False
+        check(f"cut-check agrees with the parser on `{branch}` for #{issue}",
+              accepted == should_pass,
+              f"parser={pr_closure.implemented_issue(branch)} accepted={accepted}")
 
 
 def main() -> int:
@@ -699,6 +828,15 @@ def main() -> int:
         test_rebase_respects_a_configured_checkout_identity(tmp / "c13b")
         test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp / "c14")
         test_rebase_refuses_a_tree_with_uncommitted_changes(tmp / "c15")
+        test_new_with_issue_refuses_a_branch_naming_a_different_issue(tmp / "c16")
+        test_new_with_issue_refuses_a_name_that_implements_nothing(tmp / "c17")
+        test_new_with_issue_accepts_the_name_it_declares(tmp / "c18")
+        test_new_without_issue_leaves_descriptive_names_legal(tmp / "c19")
+        test_adopt_with_issue_refuses_a_mismatched_new_branch(tmp / "c20")
+        test_adopt_with_issue_still_attaches_an_existing_branch(tmp / "c21")
+        test_issue_belongs_to_the_cut_modes_only(tmp / "c22")
+        test_the_cut_check_is_the_pr_closure_parser_itself()
+        test_the_cut_check_agrees_with_the_parser_on_the_real_shapes()
         test_the_rulebook_states_the_rule()
         test_the_makefile_is_the_one_seam()
     finally:
