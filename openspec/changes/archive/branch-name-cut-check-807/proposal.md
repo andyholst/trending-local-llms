@@ -1,6 +1,7 @@
 # Proposal: branch-name-cut-check-807
 
 Issue: #807
+PR: #951
 
 ## Why
 
