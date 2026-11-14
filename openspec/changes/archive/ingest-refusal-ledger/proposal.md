@@ -1,6 +1,7 @@
 # Proposal: ingest-refusal-ledger
 
 Issue: #888 — "every ingest refusal must be traceable: the four refusal seams drop
+PR: #940
 measurements with no ledger, so `make data-gaps` cannot tell 'refused at ingest' from
 'never captured'".
 
