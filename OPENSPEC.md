@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **283**
+Active changes: **2** · archived: **284**
 
 ## Active changes
 
@@ -138,6 +138,7 @@ Active changes: **2** · archived: **283**
 | `engagement-counter-mapping` | archived | #873 | #879 | [post-signal](openspec/changes/archive/engagement-counter-mapping/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-mapping/proposal.md) |
 | `engagement-tasks-claim` | archived | #699 (follow-up) — correct the residual false "typed README byte-identical" claim in the | — | [engagement-tasks-claim](openspec/changes/archive/engagement-tasks-claim/specs/engagement-tasks-claim/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engagement-tasks-claim/proposal.md) |
 | `engagement-value-fidelity` | archived | #699 — `ENH: #698 reader switch silently re-resolves engagement` | — | [engagement-value-fidelity](openspec/changes/archive/engagement-value-fidelity/specs/engagement-value-fidelity/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/engagement-value-fidelity/proposal.md) |
+| `engine-figure-alignment-795` | archived | #795 — "the highest t/s per inference engine must stay an aligned, tested | #970 | [engine-figure-alignment](openspec/changes/archive/engine-figure-alignment-795/specs/engine-figure-alignment/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/engine-figure-alignment-795/proposal.md) |
 | `engine-meta-capture-at-ingest` | archived | #334 | — | [engine-meta-capture](openspec/changes/archive/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/engine-meta-capture-at-ingest/proposal.md) |
 | `engine-meta-guard-agents-row` | archived | #745 | #906 | [rulebook](openspec/changes/archive/engine-meta-guard-agents-row/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/engine-meta-guard-agents-row/proposal.md) |
 | `engine-min-version-ingest` | archived | #877 | #880 | [measurement-ingest](openspec/changes/archive/engine-min-version-ingest/specs/measurement-ingest/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-version-ingest/proposal.md) |

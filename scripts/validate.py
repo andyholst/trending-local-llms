@@ -22,6 +22,7 @@ Run:  python3 scripts/validate.py [--snapshot-dir data/snapshots]
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
 import collections
@@ -1559,6 +1560,119 @@ def check_cross_model_attribution(store: dict) -> None:
         print(f"    ... and {len(dups) - 10} more")
 
 
+# ---------------------------------------------------------------------------
+# Cross-row duplicate measurements (issue #795): the FAILING gate.
+#
+# Issue #693 built a report-only scan keyed on (engine, tps, HARDWARE, source_post)
+# because no one had proven the shipped pairs to be copies (#458/#459 refused to red
+# every PR over history). #795 makes the class an aligned contract: a measurement
+# (engine + tps + DATE + source_post) under two model ids FAILS `make validate`.
+# The date key is the variant-row trap: a variant id renames hardware ("R9700" vs
+# "AMD R9700"), so the hardware-keyed scan misses the same figure copied onto a
+# `qwen3.8-27b-swift`-style row, while engine+tps+date+post is stable through the
+# rename. A variant id sharing (engine, tps, date) across two DIFFERENT posts is the
+# same defect class — the issue's measured pair `961.6 t/s (TokenSpeed)` under
+# `qwen3.8-27b` and `qwen3.8-27b-twin-turbo` sits on two posts — so a date-only
+# signature fires between VARIANT-RELATED ids (one normalized id is a prefix of the
+# other); two unrelated models reporting the same figure on the same day is a
+# coincidence, not a copy, and stays legal. A pair may stay only when justified as
+# data: a `measurement_model_aliases` exception (#652 vehicle — reviewable in the
+# store diff, checked by check_measurement_alias_map) on either row. No shipped row
+# is removed to pass the gate (rule 3b).
+
+def _norm_model_id(s: object) -> str:
+    return str(s or "").strip().lower().replace("_", "-")
+
+
+def _measurement_model_aliases(model: dict) -> set[str]:
+    """The row's declared measurement counterpart ids (#652 vehicle), normalized."""
+    return {str(x or "").strip().lower()
+            for x in (model.get("measurement_model_aliases") or []) if str(x or "").strip()}
+
+
+def _ids_variant_relation(a: str, b: str) -> bool:
+    """True when one normalized model id is a prefix of the other — the variant-row
+    shape (`qwen3-30b` ⊂ `qwen3-30b-a3b`, `qwen3.8-27b` ⊂ `qwen3.8-27b-twin-turbo`)."""
+    if not a or not b or a == b or len(a) < 4 or len(b) < 4:
+        return False
+    return b.startswith(a) if len(a) <= len(b) else a.startswith(b)
+
+
+def cross_row_duplicate_measurements(models: list[dict]) -> list[tuple[str, tuple, list[str]]]:
+    """Undocumented cross-row duplicates: (rule, identity key, [model ids]).
+
+    rule 'same post': engine+tps+date+source_post under two ids — the same post's
+    figure filed as two models. rule 'variant pair': engine+tps+date under two
+    VARIANT-RELATED ids (distinct posts) — the duplicate the hardware-keyed scan
+    cannot see because variants rename their hardware. Pairs justified by a
+    `measurement_model_aliases` entry on either row are NOT returned (a justified
+    exception is data, reviewed in the store diff, not a copy)."""
+    exact: dict[tuple, set[str]] = {}
+    variant: dict[tuple, set[str]] = {}
+    for m in models:
+        mid = _norm_model_id(m.get("id"))
+        if not mid:
+            continue
+        for e in m.get("engines", []) or []:
+            tps = e.get("tps")
+            if tps is None:
+                continue
+            eng = str(e.get("engine") or "").strip()
+            date = str(e.get("date") or "").strip()
+            post = str(e.get("source_post") or "").strip()
+            if post:
+                exact.setdefault((eng, str(tps), date, post), set()).add(mid)
+            if eng and date:
+                variant.setdefault((eng, str(tps), date), set()).add(mid)
+
+    def justified(a: str, b: str) -> bool:
+        for model in models:
+            mid = _norm_model_id(model.get("id"))
+            if mid == a:
+                if b in _measurement_model_aliases(model):
+                    return True
+            elif mid == b:
+                if a in _measurement_model_aliases(model):
+                    return True
+        return False
+
+    out: list[tuple[str, tuple, list[str]]] = []
+    flagged_pairs: set[tuple[str, str]] = set()
+    for key, ids in exact.items():
+        if len(ids) < 2:
+            continue
+        for pair in itertools.combinations(sorted(ids), 2):
+            if justified(*pair):
+                continue
+            flagged_pairs.add(pair)
+            out.append(("same post", key, list(pair)))
+    for key, ids in variant.items():
+        if len(ids) < 2:
+            continue
+        for pair in itertools.combinations(sorted(ids), 2):
+            if pair in flagged_pairs or justified(*pair):
+                continue
+            if not _ids_variant_relation(*pair):
+                continue
+            out.append(("variant pair", key, list(pair)))
+    return out
+
+
+def check_no_duplicate_measurements(store: dict) -> None:
+    """(issue #795, rule 6d) FAIL when one measurement is duplicated across model
+    rows without a justification recorded in the data."""
+    found = cross_row_duplicate_measurements(store.get("models", []) or [])
+    for rule, key, ids in found[:20]:
+        eng, tps = key[0], key[1]
+        tail = f"{key[2]} | {key[3]}" if len(key) == 4 else key[2]
+        fail(f"cross-row duplicate measurement ({rule}): '{tps} t/s ({eng})' "
+             f"[{tail}] is stored under {' and '.join(ids)} — merge the rows or "
+             "justify the pair with `measurement_model_aliases` on one of them "
+             "(issue #795)")
+    if len(found) > 20:
+        fail(f"cross-row duplicate measurements: {len(found) - 20} more")
+
+
 def duplicate_runs(models: list[dict]) -> list[tuple[str, str, str, str, list[str]]]:
     """One physical run stored twice under two engine names (issue #459).
 
@@ -2414,6 +2528,11 @@ def main() -> int:
     # history predates the ingest refusal and cannot be repaired by reding every PR.
     add("duplicate-run scan (report only)", "data", lambda: check_duplicate_runs(store))
     add("same-post cross-model scan (report only)", "data", lambda: check_cross_model_attribution(store))
+    # Cross-row duplicate measurements (issue #795): the same-post signature AND the
+    # variant-pair signature FAIL unless the pair is justified as data through
+    # `measurement_model_aliases`. Stage 'data' -> `_validate-data` (and `_validate`).
+    add("no duplicate measurements (cross-row gate)", "data",
+        lambda: check_no_duplicate_measurements(store))
     add("source-post readback (hard fields fail, prose report only)", "data",
         lambda: check_source_post_readback(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))
