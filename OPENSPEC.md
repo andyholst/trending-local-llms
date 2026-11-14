@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **278**
+Active changes: **2** · archived: **279**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `footprint-hard-fields-gate-789` | active | #789 — "The report-only scan cannot become a gate until the prose-field false-positive rate is measured". | — | [validate-source-post-readback](openspec/changes/footprint-hard-fields-gate-789/specs/validate-source-post-readback/spec.md) | 8/8 | [proposal.md](openspec/changes/footprint-hard-fields-gate-789/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -157,6 +156,7 @@ Active changes: **3** · archived: **278**
 | `fix-round-transcript` | archived | #566 | — | [fix-round-transcript](openspec/changes/archive/fix-round-transcript/specs/fix-round-transcript/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fix-round-transcript/proposal.md) |
 | `fixbot-gh-repo-before-checkout` | archived | #331 | — | [fixbot-before-checkout](openspec/changes/archive/fixbot-gh-repo-before-checkout/specs/fixbot-before-checkout/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fixbot-gh-repo-before-checkout/proposal.md) |
 | `fixture-git-identity-isolation` | archived | #943 — "test_worktree_base.py's identity-fallback assertion reads the | #944 | [os-agnostic-test-fixtures](openspec/changes/archive/fixture-git-identity-isolation/specs/os-agnostic-test-fixtures/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/fixture-git-identity-isolation/proposal.md) |
+| `footprint-hard-fields-gate-789` | archived | #789 — "The report-only scan cannot become a gate until the prose-field false-positive rate is measured". | #954 | [validate-source-post-readback](openspec/changes/archive/footprint-hard-fields-gate-789/specs/validate-source-post-readback/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/footprint-hard-fields-gate-789/proposal.md) |
 | `footprint-readback-store-gate-788` | archived | #788 — "Stored footprint values their captured source posts nowhere state are surfaced but never repaired". | #933 | [validate-source-post-readback](openspec/changes/archive/footprint-readback-store-gate-788/specs/validate-source-post-readback/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/footprint-readback-store-gate-788/proposal.md) |
 | `force-flag-parsing` | archived | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/archive/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/force-flag-parsing/proposal.md) |
 | `gap-files-once-per-dimension` | archived | #472 (the measured re-file loop) | — | [data-gap-baseline](openspec/changes/archive/gap-files-once-per-dimension/specs/data-gap-baseline/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/gap-files-once-per-dimension/proposal.md) |

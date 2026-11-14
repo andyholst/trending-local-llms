@@ -1,6 +1,7 @@
 # Proposal: footprint-hard-fields-gate-789
 
 Issue: #789 — "The report-only scan cannot become a gate until the prose-field false-positive rate is measured".
+PR: #954
 
 ## Why
 
