@@ -141,11 +141,19 @@ def _stub_gh(td: Path) -> Path:
     return bindir
 
 
-def _run(root: Path, bindir: Path | None, extra: dict | None = None, args: list[str] | None = None):
-    """Run the REAL script against `root` with the stub `gh` first on PATH."""
+def _run(root: Path, bindir: Path | None, extra: dict | None = None, args: list[str] | None = None,
+         bare_path: bool = False):
+    """Run the REAL script against `root` with the stub `gh` first on PATH.
+
+    `bare_path=True` REPLACES PATH with `bindir` — the shape that proves a tool is
+    missing. Prepending (the default) keeps the developer's real PATH visible, so on a
+    host that HAS `gh` installed a "missing gh" fixture would silently find the real
+    tool and red a host-only FAIL (issue #895). A bare PATH exercises the exit-2
+    contract identically on the host and in the gh-less container image.
+    """
     env = {**os.environ}
     if bindir is not None:
-        env["PATH"] = f"{bindir}:{env['PATH']}"
+        env["PATH"] = str(bindir) if bare_path else f"{bindir}:{env['PATH']}"
     env.pop("GITHUB_REPOSITORY", None)
     env.update(extra or {})
     r = subprocess.run(
@@ -303,7 +311,7 @@ def test_a_missing_gh_is_loud():
         empty = root / "empty-path"
         empty.mkdir()
 
-        rc, out = _run(root, empty)
+        rc, out = _run(root, empty, bare_path=True)
 
     check("missing gh: exits 2", rc == 2, str(rc))
     check("missing gh: names the tool", "gh` is not installed" in out, out)
