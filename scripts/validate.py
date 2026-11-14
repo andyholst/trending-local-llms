@@ -1631,8 +1631,19 @@ def _readback_norm(s: str) -> str:
 
     `5.95GB` and `5.95 GB` and `262,144` and `262144` must all be the same token, because a
     stored value and a captured post phrase them differently while being the same figure.
+    Parentheses/brackets are stripped too (issue #788): a stored annotation like
+    `official checkpoints (no extreme quantization)` must confirm against the post's own
+    phrase `official checkpoints, no extreme quantization` — the annotation brackets are
+    presentation, not a different figure.
     """
-    return re.sub(r"[\s,]+", "", str(s).lower())
+    return re.sub(r"[\s,()\[\]{}]+", "", str(s).lower())
+
+
+#: AGENTS.md §2's canonical estimate marker. A footprint value carrying `(est)` is a DECLARED
+#: estimate (rule 2 allows it explicitly) — individually attributable by the marker on its row,
+#: so the readback scan never flags it as a contradiction (issue #788 Done-when: the residue
+#: must be a near-zero, individually-attributable one).
+_DECLARED_ESTIMATE = re.compile(r"\(\s*(?:est|estimated)\b", re.I)
 
 
 _READBACK_FIGURE = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*(gb|mb|tb|kb|k)?\b", re.I)
@@ -1722,11 +1733,29 @@ def source_post_figure_flags(store: dict, raw_dir: Path = RAW_DIR) -> list[tuple
                 v = e.get(f)
                 if v in (None, "", [], {}):
                     continue
+                if _DECLARED_ESTIMATE.search(str(v)):
+                    continue            # declared estimate (rule 2): attributable, not a contradiction
                 if _readback_supported(str(v), f, bucket):
                     continue
                 flags.append((str(m.get("id") or "?"), str(e.get("engine") or "?"),
                               str(e.get("tps") or "?"), f, str(v), sp))
     return flags
+
+
+def source_post_declared_estimates(store: dict) -> int:
+    """Count footprint values carrying an explicit `(est)` marker (issue #788).
+
+    These are estimates the store DECLARES (rule 2) — the attributable half of the residue:
+    reported alongside the flag count so a shrink toward zero is visible, never hidden.
+    """
+    n = 0
+    for m in store.get("models", []):
+        for e in m.get("engines", []):
+            for f in _SOURCE_POST_FOOTPRINT:
+                v = e.get(f)
+                if v not in (None, "", [], {}) and _DECLARED_ESTIMATE.search(str(v)):
+                    n += 1
+    return n
 
 
 def _readback_supported(value: str, field: str, bucket: dict) -> bool:
@@ -1746,7 +1775,11 @@ def _readback_supported(value: str, field: str, bucket: dict) -> bool:
         if norm in _readback_norm(t) or (tokens and tokens & _readback_figure_tokens(t)):
             return True
     for s in (bucket.get("values") or {}).get(field, []):
-        if norm in _readback_norm(s) or (tokens and tokens & _readback_figure_tokens(s)):
+        # Structured SAME-field captures confirm both ways (issue #788): the capture's own
+        # distillation `MTP=2` supports the store's fuller distillation `llama.cpp with MTP=2`
+        # of the same claim. Free text stays one-way (a fragment of prose confirms nothing).
+        if norm in _readback_norm(s) or _readback_norm(s) in norm \
+                or (tokens and tokens & _readback_figure_tokens(s)):
             return True
     return False
 
@@ -1764,13 +1797,15 @@ def check_source_post_readback(store: dict) -> None:
     precision a later change can turn into a gate.
     """
     flags = source_post_figure_flags(store, RAW_DIR)
+    est = source_post_declared_estimates(store)
+    est_note = f" ({est} footprint value(s) carry an explicit `(est)` marker — declared estimates, rule 2)" if est else ""
     if not flags:
-        print("  OK: source-post readback: every stored footprint value is stated by the "
-              "captured post it cites")
+        print("  OK: source-post readback: every unmarked stored footprint value is stated by "
+              "the captured post it cites" + est_note)
         return
     print(f"  WARN: source-post readback: {len(flags)} stored footprint value(s) appear in "
           f"NEITHER the capture's fields NOR the post text — a figure that drifted from its "
-          f"citation (report only, issue #531)")
+          f"citation (report only, issue #531)" + est_note)
     for mid, engine, tps, field, value, post in flags[:15]:
         print(f"    - {mid} ({engine} {tps} t/s): {field}={value!r} — {post}")
     if len(flags) > 15:
