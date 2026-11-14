@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **11** · archived: **251**
+Active changes: **11** · archived: **252**
 
 ## Active changes
 
@@ -139,6 +139,7 @@ Active changes: **11** · archived: **251**
 | `engine-name-case-warn` | archived | #645 | #899 | [engine-name-case-warning](openspec/changes/archive/engine-name-case-warn/specs/engine-name-case-warning/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-name-case-warn/proposal.md) |
 | `env-int-empty-is-missing` | archived | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/archive/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/env-int-empty-is-missing/proposal.md) |
 | `fetch-base-before-any-work` | archived | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/archive/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fetch-base-before-any-work/proposal.md) |
+| `filer-stamps-owed-row` | archived | #765 | #915 | [owed-row-ledger](openspec/changes/archive/filer-stamps-owed-row/specs/owed-row-ledger/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/filer-stamps-owed-row/proposal.md) |
 | `findings-field-bodies` | archived | #205 — `tech-debt: A filed finding loses everything after its first line` | — | [findings-filing](openspec/changes/archive/findings-field-bodies/specs/findings-filing/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/findings-field-bodies/proposal.md) |
 | `fix-bot-announces-its-window` | archived | #198 | — | [bot-coordination](openspec/changes/archive/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fix-bot-announces-its-window/proposal.md) |
 | `fix-bot-guard-own-job` | archived | #259 | — | [bot-dispatch-guards](openspec/changes/archive/fix-bot-guard-own-job/specs/bot-dispatch-guards/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/fix-bot-guard-own-job/proposal.md) |

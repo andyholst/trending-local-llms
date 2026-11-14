@@ -20,6 +20,6 @@
 - [x] 7. Gates green on the exact head: `make lint`, `make test`,
       `make architecture-check`, `make openspec-check`, `make owed-rows-check`
       (the #765 row reports LANDED); `OPENSPEC.md` regenerated
-- [ ] 8. PR opened with the five-section body and `closes #765`; the change is
+- [x] 8. PR opened with the five-section body and `closes #765`; the change is
       recorded+archived (`make openspec-record-pr`) on the head that auto-merge
       lands (openspec-archive-check, #779/#866)
