@@ -1,6 +1,8 @@
-# Spec: agents-guard-registry (change agents2-owed-row-1014)
+# agents2-owed-row-1014
 
-## ADDED Requirement: Hard rule 2 names its gap-filer dedup guard
+## ADDED Requirements
+
+### Requirement: Hard rule 2 names its gap-filer dedup guard
 
 Hard rule 2 of `AGENTS.md` ("Never fabricate data") states, inside the §2
 span, the guard that keeps the data-gap filer's dedup marker a complete line:
