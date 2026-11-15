@@ -1,6 +1,7 @@
 # Proposal: refresh-sync-learns-ledger-stores
 
 Issue: #997 — "`refresh_base.py`'s `GENERATED_PATHS` never learned the three ledger stores
+PR: #999
 `make merge` writes, so every refresh with new data is refused at `refresh-sync` and no refresh PR
 can open"
 
