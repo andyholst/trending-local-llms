@@ -11,7 +11,10 @@ it runs in qa-validate's `validate` job on every PR and push, and it REFUSES:
     module under `tests/` — a guard that was promised and never landed.
 
 An entry whose fix is still IN FLIGHT (open issue, no fix PR yet) is REPORTED, never red — the
-gate enforces the closing move, not the opening one. An issue whose state cannot be read (a
+gate enforces the closing move, not the opening one. A ledger row stamped `log_expired` (issue
+#986 — the run's log aged out of Actions retention and can never be read) is reported as its OWN
+shape, a drain: never red and never the closed-without-guard refusal, because there is no error
+class a guard test could lock. An issue whose state cannot be read (a
 transport failure) is indeterminate, never counted as closed (the same rule the link check uses
 for 429/5xx).
 
@@ -143,6 +146,17 @@ def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None) -
         fix_pr = entry.get("fix_pr")
         guard = entry.get("guard")
         label = f"run {rid} issue {issue or '-'}"
+
+        # LOG EXPIRED (issue #986): the run's log aged out of Actions retention after
+        # MAX_REDIAGNOSE_ATTEMPTS still-unreadable re-reads — re-diagnosis is TERMINAL and there is
+        # no error class the pipeline can ever read, so there is nothing for a guard test to lock.
+        # Reported as its OWN shape (a drain, not a fix-in-flight and not a refusal); closing its
+        # issue is legitimate, never the closed-without-guard red.
+        if entry.get("log_expired"):
+            reports.append(f"{label}: log_expired — the run's log aged out of Actions retention "
+                           f"after {entry.get('rediagnose_attempts')} still-unreadable re-reads; "
+                           "re-diagnosis is TERMINAL (reported as a drain, never red)")
+            continue
 
         if fix_pr:
             if not guard or not guard_test_exists(guard):

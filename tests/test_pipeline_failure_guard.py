@@ -256,6 +256,25 @@ def test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix() -
     check("the committed ledger with #825 CLOSED passes the gate", rc == 0, str(lines))
 
 
+def test_log_expired_row_is_reported_as_its_own_shape_never_red() -> None:
+    print("\nlog_expired (issue #986): a row whose log aged out of retention is its OWN shape, never red")
+    expired = {"run_id": 200, "workflow": "qa-validate.yml", "job": "validate",
+               "issue_number": 91, "fix_pr": None, "guard": None,
+               "undiagnosed": "log fetch failed twice", "rediagnose_attempts": 3,
+               "log_expired": "log still unreadable: aged out", "filed_utc": "2026-11-11T21:00:00Z"}
+    for issue_state in ("OPEN", "CLOSED"):
+        rc, lines = verdict([dict(expired)], states([(200, 91, issue_state)]))
+        check(f"log_expired row with {issue_state} issue -> exit 0 (never red)", rc == 0, str(lines))
+        check("reported as the log_expired shape, not a generic in-flight line",
+              any("log_expired" in line and "TERMINAL" in line for line in lines), str(lines))
+        check("a CLOSED log_expired issue is NOT the closed-without-guard refusal",
+              not any("closed without a fix PR" in line for line in lines), str(lines))
+    # A log_expired row with NO issue number is still reported as its own shape.
+    rc2, lines2 = verdict([dict(expired, issue_number=None)], states([]))
+    check("log_expired row with no issue -> exit 0, its own shape", rc2 == 0
+          and any("log_expired" in line for line in lines2), str(lines2))
+
+
 def test_fix_in_flight_is_reported_never_red() -> None:
     print("\nin flight: an OPEN issue with no fix PR yet is a report, not a red")
     rc, lines = verdict([entry(104, 55, None, None)], states([(104, 55, "OPEN")]))
@@ -348,6 +367,7 @@ def main() -> int:
     test_run_41929086636_is_rediagnosed_onto_the_cancelled_delivery_guard()
     test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix()
     test_fix_in_flight_is_reported_never_red()
+    test_log_expired_row_is_reported_as_its_own_shape_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
     test_guard_test_lookup_is_the_shape_make_test_collects()
     test_unreadable_ledger_exits_2_end_to_end()
