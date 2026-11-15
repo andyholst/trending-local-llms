@@ -3884,6 +3884,7 @@
       "tps": "126.5",
       "hardware": "M5 Max MacBook Pro (Apple Silicon)",
       "quant": "MTPLX V2.11.3 with 8 exactness fixes, running through OpenCode; peak 126.5 TPS, 61 TPS at 100K context, 50 TPS at 200K",
+      "context_tokens": "200K",
       "date": "2026-10-23",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113748519588635100"
     },
@@ -3902,6 +3903,7 @@
       "tps": "126.5",
       "hardware": "M5 Max MacBook Pro 128GB unified memory (Apple Silicon)",
       "quant": "Qwen3.8-Flash-Next MTPLX Bare Speed build in MTPLX V2.11.3 (8 exactness fixes); peak 126.5 TPS, 61 TPS average at 100K context, 50 TPS at 200K, run through OpenCode",
+      "context_tokens": "200K",
       "date": "2026-10-23",
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113748519588635100",
       "system_ram_min": "128GB unified memory"
