@@ -773,7 +773,7 @@ issue that skips a section is refused.
    `Makefile` recipe is a pointer plus parameters (MANDATORY).** A bot's behaviour
    is not a shell recipe: it is a contract the agent reads, versioned in the tree
    and reviewed like code. So every `hermes -z` recipe in this repository
-   preloads its own skill from `.hermes/skills/<name>/SKILL.md` (plus the shared
+   preloads its own skill from `agents/skills/<name>/SKILL.md` (plus the shared
    `bot-unattended`) with `-s <skill>,bot-unattended`, and its inline prompt is
    little more than that pointer plus THIS run's parameters — the backend and its
    keyword list, `$(MODEL_QUERIES)`, the `--write-raw` command, the issue number,
@@ -781,7 +781,7 @@ issue that skips a section is refused.
    read BY NAME, the terminal-tool pin, the engine rule, the five measurement
    dimensions, the post-URL and counter rule, the per-query write, the AMD/ROCm
    rules, the OpenSpec and findings contracts, the repair rules) live in the
-   skill, ONCE. `.hermes/skills` is registered in the container's Hermes home by
+   skill, ONCE. `agents/skills` is registered in the container's Hermes home by
    `make _hermes-skills-register` (run and read back by `_setup`), because a
    directory Hermes does not know makes `-s` resolve NOTHING and the leg then runs
    with no contract at all and reports success. `make check-agent-skills`

@@ -228,7 +228,7 @@ def test_prompts_mention_forks():
     # carry a divergent copy: the rule is checked once, and then every leg is checked
     # to preload the skill that states it.
     skill = " ".join(
-        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
         .replace("`", "").split())
     check("engine ask: record forks by their registry name",
           "fork or custom build" in skill and "engines registry" in skill, skill[:160])

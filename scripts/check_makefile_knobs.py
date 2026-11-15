@@ -11,7 +11,7 @@ a fixture.
 
 The refused shape: any top-level `NAME ?=` in the Makefile whose name appears NOWHERE else in
 the runner's own tree — the Makefile recipes, `scripts/`, `.github/workflows/`, the Dockerfiles,
-`skills/` and `.hermes/skills/`. Deliberate exclusions:
+`skills/` and `agents/skills/` (issue #904). Deliberate exclusions:
 
   * the definition line itself;
   * comment-only lines (a knob documented to death is still unread);
@@ -47,7 +47,7 @@ READER_GLOBS = (
     "Dockerfile",
     "Dockerfile.*",
     "skills/**/*.md",
-    ".hermes/skills/**/*.md",
+    "agents/skills/**/*.md",
 )
 
 #: Never readers: fixtures (tests/) and history (openspec/).

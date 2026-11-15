@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import check_agent_skills as CAS  # noqa: E402
 
-SKILLS = ROOT / ".hermes" / "skills"
+SKILLS = ROOT / "agents" / "skills"
 UNATTENDED = "never ask a question"
 _PASS = 0
 _FAIL = 0
@@ -50,14 +50,14 @@ def check(name: str, cond: bool, detail: object = ""):
 def _tree(td: Path, makefile: str, skills: dict[str, str] | None = None) -> Path:
     """A minimal tree the real gate can read: a Makefile, skills, AGENTS.md."""
     root = td / "repo"
-    (root / ".hermes" / "skills").mkdir(parents=True)
+    (root / "agents" / "skills").mkdir(parents=True)
     (root / "Makefile").write_text(makefile, encoding="utf-8")
     (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
     # the gate asserts its contract-free probe exemption is real, so the fixture carries it
     (root / "scripts").mkdir()
     (root / "scripts" / "hermes_smoke.sh").write_text("#!/bin/sh\n", encoding="utf-8")
     for name, body in (skills or {}).items():
-        d = root / ".hermes" / "skills" / name
+        d = root / "agents" / "skills" / name
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(body, encoding="utf-8")
     return root
@@ -182,7 +182,7 @@ def test_the_gh_guard_refuses_instructions_and_keeps_forbiddances():
           [h for t, r in CAS.legs((ROOT / "Makefile").read_text()).items()
            for h in CAS.gh_findings(t, r)] == []
           and all(CAS.gh_findings(str(p), p.read_text(encoding="utf-8")) == []
-                  for p in sorted((ROOT / ".hermes" / "skills").glob("*/SKILL.md"))))
+                  for p in sorted((ROOT / "agents" / "skills").glob("*/SKILL.md"))))
 
 
 def test_setup_registers_the_directory_and_reads_it_back():
@@ -288,6 +288,83 @@ def test_the_implement_skill_states_the_tick_rule():
           "openspec-tasks-check" in skill, "")
 
 
+def test_registered_markers_in_skills_are_checked_against_the_registry_itself():
+    """(rule 6j, issue #904) A registered marker re-spelled inside a skill contract is a defect.
+
+    The names AND their acceptance shapes are derived from `scripts/bot_markers.py` — the gate
+    never re-spells a shape, so it cannot drift from the writers. The registry's own renderings
+    pass; naming a marker in prose or backticks (no `<!--`) stays legal; the shipped tree is clean.
+    """
+    import bot_markers
+    leg = ('\thermes -z "pointer" \\\n\t\t-m $(HERMES_ALIAS) --reasoning none '
+           '$(HERMES_NONINTERACTIVE) -s data-search,bot-unattended\n')
+    base = {CAS.UNATTENDED_SKILL: GOOD_SKILL.format(name=CAS.UNATTENDED_SKILL),
+            "data-search": DATA_SEARCH_SKILL}
+
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), SEAM + "search:\n" + leg, base)
+        check("markers: a marker-free fixture has no marker findings",
+              CAS.marker_findings(root) == [], CAS.marker_findings(root))
+
+    # A skill that copies a registered marker's NAME but loses the registry's shape (no Z).
+    respelled = GOOD_SKILL.format(name="issue-review") + (
+        "- stamp `<!-- issue-review: 2026-01-01T00:00:00 -->` before writing\n")
+    skills = dict(base, **{"issue-review": respelled})
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), SEAM + "search:\n" + leg, skills)
+        findings = CAS.check(root)  # end to end: the gate itself, not just the scan
+        hits = [f for f in findings if "issue-review" in f and "bot_markers.py" in f]
+        check("markers: a re-spelled registered marker reds the gate", bool(hits), findings)
+        check("markers: the finding names the file and line",
+              bool(hits) and re.match(r"agents/skills/issue-review/SKILL\.md:\d+:", hits[0]),
+              hits[0] if hits else "")
+
+    # Every rendering the registry itself writes passes the scan — the acceptance patterns are
+    # the registry's own grammar, not a second copy.
+    canonical = GOOD_SKILL.format(name="issue-review") + "".join(
+        f"- {ex}\n" for ex in bot_markers.canonical_examples())
+    skills = dict(base, **{"issue-review": canonical})
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), SEAM + "search:\n" + leg, skills)
+        check("markers: every canonical registry rendering stays green",
+              CAS.marker_findings(root) == [], CAS.marker_findings(root))
+
+    # Prose/backtick naming is not an occurrence.
+    prose = GOOD_SKILL.format(name="issue-review") + (
+        "- the `issue-review` marker opens the 3 h window (issue #411)\n")
+    skills = dict(base, **{"issue-review": prose})
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td), SEAM + "search:\n" + leg, skills)
+        check("markers: naming a marker in prose stays legal",
+              CAS.marker_findings(root) == [], CAS.marker_findings(root))
+
+    shipped = CAS.marker_findings(ROOT)
+    check("markers: the shipped agent skills carry no re-spelled registered marker",
+          shipped == [], shipped[:4])
+
+
+def test_registration_points_at_agents_skills_and_nothing_lives_in_dot_hermes():
+    """(issue #904 reviewer ruling) `agents/skills` is the ONE home; `.hermes/skills` is retired.
+
+    `_setup` registers agents/skills, the rulebook states it, and no Makefile, workflow or script
+    spells the old path — a half-moved seam registers a directory that no longer exists and every
+    `-s` then resolves NOTHING while reporting success.
+    """
+    mk = (ROOT / "Makefile").read_text()
+    check("registration: HERMES_SKILLS_DIR points at agents/skills",
+          "HERMES_SKILLS_DIR := $(CURDIR)/agents/skills" in mk)
+    check("registration: the rulebook states agents/skills",
+          "`agents/skills` is registered in the container's Hermes home" in (ROOT / "AGENTS.md").read_text())
+    offenders: list[str] = []
+    for p in sorted(list((ROOT / "scripts").glob("*"))
+                    + list((ROOT / ".github" / "workflows").glob("*"))):
+        if p.is_file() and p.suffix in {".py", ".sh", ".yml", ".yaml"}:
+            if ".hermes/skills" in p.read_text(encoding="utf-8", errors="replace"):
+                offenders.append(str(p.relative_to(ROOT)))
+    check("no scripted contract or seam spells .hermes/skills", offenders == [], offenders)
+    check("the old skills home is gone from the tree", not (ROOT / ".hermes" / "skills").exists())
+
+
 def main() -> int:
     print("agent-leg skills (issue #549)")
     for fn in (test_the_real_legs_preload_a_real_skill,
@@ -299,7 +376,9 @@ def main() -> int:
                test_the_gate_is_wired_to_the_lint_target_and_the_suite,
                test_the_fixer_skill_names_the_openspec_failures,
                test_the_implement_skill_states_the_tick_rule,
-               test_the_gh_guard_refuses_instructions_and_keeps_forbiddances):
+               test_the_gh_guard_refuses_instructions_and_keeps_forbiddances,
+               test_registered_markers_in_skills_are_checked_against_the_registry_itself,
+               test_registration_points_at_agents_skills_and_nothing_lives_in_dot_hermes):
         print(f"-- {fn.__name__}")
         fn()
     print(f"\n{_PASS} passed, {_FAIL} failed")

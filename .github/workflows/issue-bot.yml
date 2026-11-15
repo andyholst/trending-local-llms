@@ -815,7 +815,7 @@ jobs:
             exit 1
           fi
           if [ "${RC:-}" = "3" ]; then
-            echo "::error::the implementer asked for input and DETACHED (rc=3) - an unattended leg must decide without a user (issue #549). The unattended contract is preloaded from .hermes/skills/bot-unattended; check that \`hermes -s\` resolves it (issue #549) before reading this as a data, key or alias problem."
+            echo "::error::the implementer asked for input and DETACHED (rc=3) - an unattended leg must decide without a user (issue #549). The unattended contract is preloaded from agents/skills/bot-unattended; check that \`hermes -s\` resolves it (issue #549) before reading this as a data, key or alias problem."
             exit 1
           fi
           echo "::error::issue-bot produced no implementation for #$ISSUE (make implement-issue rc=${RC:-unknown})."

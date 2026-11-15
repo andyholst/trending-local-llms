@@ -7,9 +7,10 @@ is the measured shape of the issue-bot's failures — on 2026-10-24/25 three of 
 with `Input required; detached without cancelling` (rc=3), because `--yolo --accept-hooks` answers
 shell and hook prompts but NOT the agent's own `clarify` tool.
 
-The contract now lives in a Hermes **project skill** — `.hermes/skills/<name>/SKILL.md`, the layout
-Hermes discovers from a registered directory — preloaded by the leg with `hermes -s <name>`, and the
-leg's inline prompt is a pointer plus that run's parameters.
+The contract now lives in a Hermes **project skill** — `agents/skills/<name>/SKILL.md`, the layout
+Hermes discovers from a registered directory (issue #904 reviewer ruling: the `agents/` folder is
+the ONE home for agent skills; `.hermes/` was removed) — preloaded by the leg with `hermes -s
+<name>`, and the leg's inline prompt is a pointer plus that run's parameters.
 
 This gate keeps that true, because nothing else can:
 
@@ -24,11 +25,17 @@ This gate keeps that true, because nothing else can:
 * a `_setup` that no longer registers the directory leaves every leg preloading nothing;
 * a container-bound contract — a leg recipe or a preloaded skill — that instructs the agent to run
   `gh <subcommand>`, when the base image carries no GitHub CLI at all (issue #194): the write is
-  unreachable from inside the container and belongs in the host workflow step that wraps the leg.
+  unreachable from inside the container and belongs in the host workflow step that wraps the leg;
+* a REGISTERED marker written into an agent skill with a re-spelled shape — the rule-6j drift class
+  #904 found unguarded: names and acceptance patterns are derived from `scripts/bot_markers.py`
+  (the ONE definition), so the scanner can never keep its own copy of a shape. Naming a marker in
+  prose or backticks (no `<!--`) stays legal.
 
-Scan scope: the `Makefile`'s `hermes -z` recipes — the bot legs. `scripts/hermes_smoke.sh` also
-calls `hermes -z`, but it is a routing PROBE with no contract to carry (it asserts the alias
-answers), so it is named here as the one exemption rather than silently skipped.
+Scan scope: the `Makefile`'s `hermes -z` recipes — the bot legs; and every agent skill file
+(`agents/skills/*/SKILL.md`, `agents/*/SOUL.md`, `agents/*/skills/*/SKILL.md`) for the marker scan.
+`scripts/hermes_smoke.sh` also calls `hermes -z`, but it is a routing PROBE with no contract to
+carry (it asserts the alias answers), so it is named here as the one exemption rather than silently
+skipped.
 
 Usage:
     python3 scripts/check_agent_skills.py check    # exit 1 on any finding, 2 when the tree is unreadable
@@ -43,7 +50,19 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = Path(".hermes") / "skills"
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+import bot_markers  # noqa: E402  (the ONE definition of every marker's name and shape — rule 6j)
+
+#: The agent skills home (issue #904 reviewer ruling): the `agents/` folder is the
+#: one home for agent skills — `.hermes/` is no longer valid and was removed.
+SKILLS_DIR = Path("agents") / "skills"
+#: Every file that carries an agent contract and is therefore marker-scanned:
+#: the leg contracts and the fleet mirrors (SOUL.md + profile skills).
+MARKER_SCOPES = (
+    SKILLS_DIR / "*" / "SKILL.md",
+    Path("agents") / "*" / "SOUL.md",
+    Path("agents") / "*" / "skills" / "*" / "SKILL.md",
+)
 SKILL_FILE = "SKILL.md"
 #: The shared unattended contract, preloaded beside each bot's own skill.
 UNATTENDED_SKILL = "bot-unattended"
@@ -167,6 +186,41 @@ def skill_meta(path: Path) -> tuple[dict[str, str], str]:
     return fields, body
 
 
+def marker_findings(root: Path) -> list[str]:
+    """Registered markers written into an agent skill with a re-spelled shape (issue #904).
+
+    Names and acceptance patterns come from `scripts/bot_markers.py`'s own registry
+    (rule 6j): the scanner never re-spells a shape, so it cannot drift from the writers.
+    An occurrence `<!-- <registered-name>…` is legal only when the registry's acceptance
+    pattern matches it AT that position; anything else is a finding. Naming a marker in
+    prose or backticks (no `<!--`) is not an occurrence and stays legal.
+    """
+    findings: list[str] = []
+    acceptance = bot_markers.marker_acceptance()
+    # Longest name first so `issue-review: window` claims its occurrence before
+    # `issue-review` can misread the same span as a re-spelled start marker.
+    names = sorted(acceptance, key=lambda n: (-len(n), n))
+    for scope in MARKER_SCOPES:
+        for path in sorted(root.glob(str(scope))):
+            text = path.read_text(encoding="utf-8")
+            accepted = {m.start()
+                        for name in names
+                        for m in acceptance[name].finditer(text)}
+            for name in names:
+                for occ in re.finditer(re.escape(f"<!-- {name}"), text):
+                    if occ.start() in accepted:
+                        continue
+                    end = text.find("-->", occ.start())
+                    shown = (text[occ.start():end + 3] if end != -1
+                             else text[occ.start():occ.start() + 80]).splitlines()[0]
+                    line = text.count("\n", 0, occ.start()) + 1
+                    findings.append(
+                        f"{path.relative_to(root)}:{line}: `{shown}` uses registered marker "
+                        f"'{name}' but is not the registry's own rendering — names and shapes "
+                        "live in scripts/bot_markers.py (rule 6j)")
+    return findings
+
+
 def check(root: Path = REPO_ROOT) -> list[str]:
     """Every finding, in a stable order. An empty list is a green gate."""
     findings: list[str] = []
@@ -229,6 +283,8 @@ def check(root: Path = REPO_ROOT) -> list[str]:
         if offenders:
             findings.append(f"{', '.join(offenders)} restate '{needle}' inline — it belongs in "
                             f"{SKILLS_DIR / skill_name / SKILL_FILE}, not in a recipe")
+
+    findings.extend(marker_findings(root))
 
     agents = root / "AGENTS.md"
     if MAKEFILE_MARKER not in text:

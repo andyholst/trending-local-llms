@@ -423,7 +423,7 @@ def test_the_rule_is_documented():
           "Trending-model queries (issue #264)" in skill)
     # The leg's preloaded skill is where a prompt's rule now lives (issue #638): it must say that
     # each ranked model gets TWO queries, so the footprint half is never read as more throughput.
-    leg = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    leg = (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
     check("docs: the leg's skill says each ranked model gets a footprint query",
           "**two** queries" in leg
           and "**footprint** (`<id> vram ram context weights offload engine version`)" in leg,

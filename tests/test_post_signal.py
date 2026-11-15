@@ -211,7 +211,7 @@ def test_prompts_ask_for_post_url():
     """Issue #638: the search rules live in the skill the legs preload (`data-search`),
     so the post-signal contract is asserted there, at the same strength, and each leg is
     asserted to preload it and to keep no copy in its own recipe."""
-    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
     flat = " ".join(skill.replace("`", "").split())
     text = (ROOT / "Makefile").read_text()
     check("skill: requires the …/status/<id> post URL", "/status/<id>" in flat, flat[:160])

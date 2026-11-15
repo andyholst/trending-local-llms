@@ -207,7 +207,7 @@ def test_make_dry_run_single_hermes_command():
 
 def _data_search_flat() -> str:
     """The search legs' contract, flattened: the skill is where its rules live (issue #638)."""
-    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
     return " ".join(skill.replace("`", "").split())
 
 
