@@ -1059,28 +1059,47 @@ def write_baseline(report: dict, path: Path, judged: dict[str, str] | None = Non
 
 
 def signature_id(report: dict) -> str:
-    """A stable id for the gap SET (the issue marker), independent of `as_of`."""
+    """A stable id for the whole gap SET, independent of `as_of`.
+
+    No longer the dedup key: dedup is per signature ENTRY (issue #996), because a
+    whole-set hash made ONE volatile entry — a fluctuating `starved_leg` — change the
+    hash and re-file every persistent dimension that shared the set (three identical
+    `context_tokens` issues in five hours, #981/#991/#994). Kept as a helper for callers
+    that ask whether the gap STATE changed as a whole (e.g. tests/test_ingest_refusal_ledger.py).
+    """
     return hashlib.sha256("\n".join(report["signature"]).encode()).hexdigest()[:12]
 
 
-def marker(sig: str) -> str:
-    """The invisible marker carried in the issue body, searched for on the next run."""
-    return f"<!-- data-gap-signature: {sig} -->"
+def entry_id(entry: str) -> str:
+    """A stable id for ONE signature entry (`missing:context_tokens`, `starved_leg:cpu`, …),
+    independent of `as_of`. The per-ENTRY dedup key (issue #996): a filed issue carries one
+    marker per entry it claims, and `already_filed()` is consulted per entry, so a refresh
+    re-files ONLY the entries with no open issue — the persistent dimensions stay one open
+    issue until closed, while a starved leg still files once while starved."""
+    return hashlib.sha256(entry.encode()).hexdigest()[:12]
 
 
-def already_filed(sig: str) -> tuple[str | None, list[dict]]:
-    """The URL of an OPEN issue already carrying this gap signature, or None.
+def marker(eid: str) -> str:
+    """The invisible marker a filed issue carries for ONE signature entry, searched for on
+    the next run. A body carries one of these per entry it claims (issue #996)."""
+    return f"<!-- data-gap-signature: {eid} -->"
 
-    The baseline only reaches the repository through the refresh PR, so between
-    filing and that merge every run computes "changed" from the same old baseline
-    and would file the same issue again (two crons a day can both do it) — and a
-    refresh PR closed without merging would re-file it forever. A CLOSED issue
-    does not block: a closed gap-issue means the work was done or dropped, so the
-    gap set re-appearing later is new information, not a duplicate (#157).
+
+def already_filed(eid: str) -> tuple[str | None, list[dict]]:
+    """The URL of an OPEN issue already carrying this signature ENTRY's marker, or None.
+
+    Per-ENTRY dedup (issue #996): consulted once per signature entry, so an entry that
+    already sits behind an open issue is not re-filed alongside the entries that are new.
+    The baseline only reaches the repository through the refresh PR, so between filing and
+    that merge every run computes "changed" from the same old baseline and would file the
+    same issue again (two crons a day can both do it) — and a refresh PR closed without
+    merging would re-file it forever. A CLOSED issue does not block: a closed gap-issue
+    means the work was done or dropped, so the entry re-appearing later is new information,
+    not a duplicate (#157).
     """
     out = subprocess.run(
         ["gh", "issue", "list", "--state", "all", "--label", LABEL,
-         "--search", f"{sig} in:body", "--json", "number,state,url,closedAt"],
+         "--search", f"{eid} in:body", "--json", "number,state,url,closedAt"],
         text=True, capture_output=True)
     if out.returncode != 0:
         raise SystemExit(f"[data-gaps] gh issue list failed: {out.stderr.strip()}")
@@ -1171,14 +1190,20 @@ def ensure_label(number: str) -> None:
             f"instead of reporting it. gh said: {why}")
 
 
-def issue_body(report: dict, previous: dict | None) -> tuple[str, str]:
+def issue_body(report: dict, previous: dict | None, entries: list[str] | None = None) -> tuple[str, str]:
     """The issue body and title for a changed gap set — the ONE implementation the filer uses.
 
     Split out of `file_issue()` so the text a human reads is testable without a `gh` on PATH:
     it names, per ranked gap, whether it is an ACQUISITION gap (no captured post states the
     figure) or an INGEST gap (a post states it, the store holds no structured value).
-    """
+
+    `entries` (issue #996) is the set of signature entries THIS issue claims — one marker per
+    entry, so `already_filed()` can later be consulted per entry. Defaults to the whole
+    signature (every entry), which is exactly what the caller passes when there are no
+    pre-existing open issues."""
+
     added = sorted(set(report["signature"]) - set((previous or {}).get("signature", [])))
+    entries = report["signature"] if entries is None else entries
     ranked = rank_impact(report)
     body = [
         "## Goal",
@@ -1258,16 +1283,21 @@ def issue_body(report: dict, previous: dict | None) -> tuple[str, str]:
         body += ["", "## Owed rulebook rows", ""] + [
             f"- **Owed-row:** {bot_markers.owed_row_marker(r['section'], r['needle'])}"
             for r in owed]
-    # The marker lets the NEXT run recognise this gap set (issue #157). Invisible
-    # in the rendered issue, searchable in the body.
-    body += ["", marker(signature_id(report))]
+    # The marker lets the NEXT run recognise this gap set (issue #157): one marker PER
+    # signature entry this issue claims (issue #996), so `already_filed()` can be consulted
+    # per entry — a refresh re-files only the entries with no open issue, and a volatile
+    # `starved_leg` entry no longer re-claims the persistent dimensions already tracked.
+    body += [""] + [marker(entry_id(e)) for e in entries]
     title = (f"data-gap: {ranked[0][0]} ({ranked[0][1]} models)" if ranked else "data-gap: refresh analysis")
-    return "\n".join(body), title
+    return "\n".join(body) + "\n", title
 
 
-def file_issue(report: dict, previous: dict | None) -> str:
-    """One issue per changed gap set: `issue_body()`'s text, filed with the label the bots read."""
-    text, title = issue_body(report, previous)
+def file_issue(report: dict, previous: dict | None, entries: list[str] | None = None) -> str:
+    """One issue per changed gap set: `issue_body()`'s text, filed with the label the bots read.
+
+    `entries` (issue #996) is the subset of signature entries this issue newly claims. Defaults
+    to the whole signature (every entry is new)."""
+    text, title = issue_body(report, previous, entries)
     # The label must exist BEFORE the create: GitHub silently ignores an unknown
     # label, so `--label` below would be dropped and the filing would be invisible
     # to both bots while `gh` still exits 0 (issue #277).
@@ -1343,39 +1373,45 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[data-gaps] baseline written to {baseline_path} ({len(report['signature'])} entries)",
               file=sys.stderr)
     if a.issue and is_changed:
-        sig = signature_id(report)
-        existing, closed_issues = already_filed(sig)
         judged = dict((previous or {}).get("judged") or {})
-        # A CLOSED issue carrying this signature is a JUDGEMENT about the dimensions it named
+        # Per-ENTRY dedup (issue #996). The whole-set hash made ONE volatile entry — a
+        # fluctuating `starved_leg` — change the signature and re-file every persistent
+        # dimension that shared the set (#981/#991/#994). Each entry now carries its OWN
+        # marker and `already_filed()` is consulted per entry, so a refresh re-files ONLY
+        # the entries with no open issue.
+        already: dict[str, tuple[str | None, list[dict]]] = {}
+        for entry in report["signature"]:
+            already[entry] = already_filed(entry_id(entry))
+        # A CLOSED issue carrying an entry's marker is a JUDGEMENT about the dimension it named
         # (issue #491): the triage read the thread and decided the gap is not implementable from
-        # the store. Remember when, so the next refresh does not file the same dimension again
-        # for JUDGED_DAYS.
-        for item in closed_issues:
-            stamp = str(item.get("closedAt") or "")
-            if stamp:
-                for entry in report["signature"]:
-                    judged[dimension_of(entry)] = stamp
+        # the store. Remember when, so the next refresh does not file that dimension again for
+        # JUDGED_DAYS. (Per entry now, not per set — a closed starved-leg issue judges nothing
+        # about the persistent dimensions.)
+        for _e, (_open, _closed) in already.items():
+            for item in _closed:
+                stamp = str(item.get("closedAt") or "")
+                if stamp:
+                    judged[dimension_of(_e)] = stamp
         recent = judged_dimensions({"judged": judged}, report["as_of"])
         undecided = [e for e in report["signature"] if dimension_of(e) not in recent]
-        if existing:
-            # The baseline reaches master only through the refresh PR, so a second
-            # run before that merge (or after a PR was closed) sees the same change:
-            # report it, file nothing (issue #157).
-            print(f"[data-gaps] gap set {sig} is already filed: {existing} — no duplicate",
-                  file=sys.stderr)
-        elif not undecided:
-            # Every dimension in this set was judged inside its window: re-filing would repeat a
-            # decision a human or the reviewer already made (#491).
+        # Entries that are genuinely new here — no OPEN issue carries their marker, and their
+        # dimension was not recently judged.
+        fresh = [e for e in undecided if already[e][0] is None]
+        if fresh:
+            url = file_issue(report, previous, fresh)
+            print(f"[data-gaps] filed {url} ({len(fresh)} new entry(ies))", file=sys.stderr)
+            write_baseline(report, baseline_path, judged)
+        else:
+            # Nothing implements here: every entry is either already behind an open issue
+            # (dedup, #157) or was judged inside its window (#491).
+            for _e, (_open, _closed) in already.items():
+                if _open:
+                    print(f"[data-gaps] {_e} already filed: {_open} — no duplicate",
+                          file=sys.stderr)
             for dim, stamp in sorted(recent.items()):
                 print(f"[data-gaps] {dim}: judged at {stamp} — not re-filing within "
                       f"{JUDGED_DAYS} days (issue #491)", file=sys.stderr)
             write_baseline(report, baseline_path, judged)
-        else:
-            url = file_issue(report, previous)
-            print(f"[data-gaps] filed {url}", file=sys.stderr)
-            write_baseline(report, baseline_path, judged)
-    elif a.issue:
-        print("[data-gaps] no new gap set — no issue filed", file=sys.stderr)
     elif a.issue:
         print("[data-gaps] no new gap set — no issue filed", file=sys.stderr)
     if a.check and is_changed:
