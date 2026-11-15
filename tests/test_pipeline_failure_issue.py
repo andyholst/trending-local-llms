@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import datetime as dt
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -124,6 +125,16 @@ case "$1" in
         printf '%s' "$title" > "$d/title-$n.txt"
         printf '%s' "$body" > "$d/body-$n.txt"
         echo "https://github.com/octo/repo/issues/424${n}" ;;
+      comment)
+        # `gh issue comment <number> --repo <repo> --body <text>` — capture, never no-op.
+        number="$3"; body=""; prev=""
+        for a in "$@"; do
+          if [ "$prev" = "--body" ]; then body="$a"; fi
+          prev="$a"
+        done
+        m=$(bump comment-count)
+        printf '%s' "$body" > "$d/comment-$number-$m.txt"
+        echo "https://github.com/octo/repo/issues/$number#issuecomment-${m}" ;;
       view)
         if [ -f "$d/issue-state.json" ]; then cat "$d/issue-state.json"
         else echo '{"labels": [{"name": "tech-debt"}]}'; fi ;;
@@ -131,6 +142,15 @@ case "$1" in
       *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
     esac ;;
   api)
+    # `gh api repos/.../issues/<n>/comments ...` — the thread the re-diagnosis dedup reads.
+    # Serve a canned comment list (each line one JSON object) or an empty thread.
+    if [[ " $* " == *"/comments"* ]]; then
+      # bash-native extraction, no sed backreferences (which mangle through this test's write path)
+      url="$2"; num=""
+      [[ "$url" =~ /issues/([0-9]+)/comments ]] && num="${BASH_REMATCH[1]}"
+      if [ -n "$num" ] && [ -f "$d/thread-$num.json" ]; then cat "$d/thread-$num.json"; fi
+      exit 0
+    fi
     if [ -e "$d/log-fail" ]; then echo "stub gh: job logs unavailable (502)" >&2; exit 1; fi
     if [ -e "$d/log-escape" ]; then
       # gh's measured refusal (issue #923): a plain logs fetch on an escape-bearing log is
@@ -450,6 +470,15 @@ def test_wiring_rulebook_and_registry() -> None:
     check("the filer marker is registered (rule 6j)",
           bm.REGISTRY.get("queued-alarm", {}).get("failure") == "pipeline-run-failure"
           and ("queued-alarm", "failure") in bm.WRITTEN, "")
+    # The re-diagnosis annotation marker (issue #987) is declared via the UNREGISTERED_OWED seam —
+    # its AGENTS.md §6j table row is owed to rule 3c (a protected file a headless leg cannot write),
+    # so it lives here with the issue that lands the registration, a ONE-place named shape, and a
+    # writer + parser in the tree (the reverse-guard scan accepts it through UNREGISTERED_OWED).
+    check("the rediagnose annotation marker is DECLARED with its landing issue (rule 6j/3c)",
+          bm.UNREGISTERED_OWED.get(bm.REDIAGNOSE_NAME) == 987, str(bm.UNREGISTERED_OWED))
+    check("the rediagnose marker's shape round-trips its writer and parser",
+          bm.rediagnose_marker_run(bm.rediagnose_marker(
+              dt.datetime(2026, 11, 15, 8, 0, tzinfo=dt.timezone.utc), 123)) == "123", "")
     sys.path.insert(0, str(ROOT / "scripts"))
     import master_alarm
     gates = (set(getattr(master_alarm, "GATES", ()))
@@ -535,6 +564,84 @@ def test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log() 
         check("re-sweep raises nothing again (rediagnosed_utc ends the queue)",
               second.returncode == 0 and "REDIAGNOSED" not in second.stdout
               and ledger.read_text() == before, second.stdout)
+
+
+def test_a_raise_annotates_the_cited_issue_once() -> None:
+    print("\\nrediagnose annotation (#987): a raise posts ONE marker-deduplicated comment on the cited issue")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        # Issue 824's thread carries an unrelated comment (the original filing reply-ish), NO
+        # pipeline-rediagnose marker — so the raise must post exactly one annotation.
+        canned["thread-824.json"] = '{"id": 1, "createdAt": "2026-11-11T21:05:00Z", "body": "an unrelated note"}\n'
+        env = make_scene(tmp, canned)
+        ledger = _seed_ledger(tmp, [dict(UNDIAG_ROW)])
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the pass names the annotation", "annotated issue #824" in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = data["failures"][0]
+        check("the row is raised", bool(row.get("rediagnosed_utc")), str(row)[:200])
+        comments = sorted((tmp / "canned").glob("comment-*.txt"))
+        check("exactly ONE comment was posted on the cited issue", len(comments) == 1,
+              ", ".join(p.name for p in comments))
+        body = comments[0].read_text()
+        check("the comment carries the registered marker name (issue #987, rule 6j)",
+              "<!-- pipeline-rediagnose: " in body, body[:200])
+        check("the marker carries the run id (dedup key)", "run=100 -->" in body, body[-120:])
+        check("the comment quotes the landed targets", "`make validate`" in body, body[:300])
+        check("the comment quotes the scrubbed error excerpt",
+              "make: *** [validate] Error 1" in body, body[:400])
+        # The excerpt is scrubbed through the SAME redactor as the filed issue (rule 3f): the
+        # planted FAKE_SECRET must never reach the thread, in any spelling.
+        check("the planted secret NEVER reaches the comment (scrubbed)",
+              FAKE_SECRET not in body, "SECRET LEAKED INTO THREAD COMMENT")
+        check("the marker parses through the shared rediagnose parser (rule 6j)",
+              str(row["run_id"]) in bm.rediagnose_marker_runs(body), "")
+
+
+def test_a_raise_does_not_double_annotate() -> None:
+    print("\\nrediagnose annotation dedup: a thread already carrying the marker for this run is not commented twice")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["thread-824.json"] = (
+            '{"id": 1, "createdAt": "2026-11-11T21:05:00Z", "body": '
+            '"<!-- pipeline-rediagnose: 2026-11-11T21:05:00Z run=100 --> first annotation"}\n')
+        env = make_scene(tmp, canned)
+        ledger = _seed_ledger(tmp, [dict(UNDIAG_ROW)])
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        data = json.loads(ledger.read_text())
+        row = data["failures"][0]
+        check("the row IS still raised (dedup skips only the comment, never the raise)",
+              bool(row.get("rediagnosed_utc")), str(row)[:200])
+        comments = list((tmp / "canned").glob("comment-*.txt"))
+        check("NO second comment is posted for a run already annotated",
+              len(comments) == 0, ", ".join(p.name for p in comments))
+        check("the pass still reports the raise", "REDIAGNOSED run 100" in proc.stdout, proc.stdout)
+
+
+def test_a_raise_with_no_issue_cites_no_thread() -> None:
+    print("\\nrediagnose annotation: a row citing no issue is raised without attempting a comment")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        noissue = dict(UNDIAG_ROW)
+        noissue["issue_number"] = None
+        noissue["issue_url"] = None
+        env = make_scene(tmp, BASE_CANNED)
+        ledger = _seed_ledger(tmp, [noissue])
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the pass says no issue is cited", "no issue cited" in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = data["failures"][0]
+        check("the row IS still raised (no-issue is never a reason not to raise)",
+              bool(row.get("rediagnosed_utc")), str(row)[:200])
+        check("NO comment is posted (no thread to write)",
+              not (tmp / "canned" / "comment-count").exists(), "")
+        check("NO comment API read is made",
+              not (tmp / "canned" / "thread-824.json").exists(), "")
 
 
 def test_a_still_unreadable_log_leaves_the_row_undiagnosed_and_retries_next_sweep() -> None:
@@ -667,6 +774,9 @@ def main() -> int:
     test_ledger_and_marker_dedup_file_one_run_once_ever()
     test_undiagnosed_filing_is_loud_never_a_skip()
     test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log()
+    test_a_raise_annotates_the_cited_issue_once()
+    test_a_raise_does_not_double_annotate()
+    test_a_raise_with_no_issue_cites_no_thread()
     test_a_still_unreadable_log_leaves_the_row_undiagnosed_and_retries_next_sweep()
     test_a_run_that_ages_out_stamps_log_expired_and_drains_the_queue()
     test_log_expired_dry_mode_previews_the_stamp_and_writes_nothing()

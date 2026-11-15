@@ -388,6 +388,85 @@ def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[
     return {"number": number, "url": url, "title": title}
 
 
+def _issue_number(entry: dict) -> int | None:
+    """The issue number a re-diagnosis should annotate, from the ledger row's own fields.
+
+    Prefer `issue_number` (an int or a numeric string); fall back to the trailing number of
+    `issue_url` (`…/issues/<n>`). Returns None when the row cites no issue (e.g. a
+    marker-matched row filed before the ledger existed) — a raise for such a row is
+    comment-free (rule 2: the thread is the human's, but there is no thread here to write).
+    """
+    num = entry.get("issue_number")
+    if num is not None:
+        try:
+            return int(num)
+        except (TypeError, ValueError):
+            pass
+    m = re.search(r"/issues/([0-9]+)", str(entry.get("issue_url") or ""))
+    return int(m.group(1)) if m else None
+
+
+def _issue_comments(repo: str, number: int) -> list[dict]:
+    """The whole comment thread of an issue, oldest-first, one JSON object per line (paginated)."""
+    raw = _gh("api", f"repos/{repo}/issues/{number}/comments", "--paginate", "--jq", ".[]")
+    out: list[dict] = []
+    for line in raw.stdout.splitlines():
+        if line.strip():
+            out.append(json.loads(line))
+    return out
+
+
+def compose_rediagnose_comment(entry: dict, excerpt: str, targets: list[str],
+                               when: dt.datetime) -> str:
+    """The ONE comment posted on an issue whose UNDIAGNOSED row the sweep re-diagnosed.
+
+    Carries the `pipeline-rediagnose` marker (`run=<rid>` is the dedup key) and quotes the landed
+    scrubbed `error_excerpt` + `targets`, so the thread the row was filed on no longer reads
+    "log unreadable" — the ledger is the machine's memory, the thread is the human's (issue #987).
+    `excerpt` is already scrubbed by the caller before this is composed.
+    """
+    rid = entry.get("run_id") or 0
+    targets_txt = ", ".join(f"`make {t}`" for t in targets) if targets else "(no make target named)"
+    marker = bot_markers.rediagnose_marker(when, rid)
+    return (
+        "A UNDIAGNOSED main-pipeline failure was re-diagnosed on this sweep: the failed run's log "
+        f"has been re-read and the diagnosis landed in `data/pipeline_failures.json` "
+        f"(run {rid}). The issue body below is the ORIGINAL filing; this row in the ledger now "
+        "carries `rediagnosed_utc`, a scrubbed `error_excerpt` and the grown `targets` (rule 3b: "
+        "the `undiagnosed` field is KEPT).\n\n"
+        f"**Targets (make):** {targets_txt}\n\n"
+        "**Error block (scrubbed):**\n"
+        "```text\n"
+        f"{excerpt}\n"
+        "```\n\n"
+        f"{bot_markers.rediagnose_marker(when, rid)}"
+    )
+
+
+def post_rediagnose_comment(repo: str, entry: dict, excerpt: str, targets: list[str],
+                            when: dt.datetime) -> int | None:
+    """Post ONE marker-deduplicated comment on an issue whose row was re-diagnosed.
+
+    Reads the issue's existing comments FIRST and skips when a `pipeline-rediagnose` marker for
+    the same run id is already present — one comment per raised row, never per sweep (issue #987).
+    Returns the issue number annotated, or None when the row cites no issue. Written with the
+    default `github.token` (rule 6e: the owner PAT cannot comment — the caller `queued-alarm.yml`
+    passes `GH_TOKEN: ${{ github.token }}`).
+    """
+    number = _issue_number(entry)
+    if number is None:
+        return None
+    thread = "\n".join(c.get("body") or "" for c in _issue_comments(repo, number))
+    rid = entry.get("run_id")
+    # One comment PER RAISED ROW: dedup on THIS run's marker, so a thread carrying an older row's
+    # re-diagnosis comment is still annotated for a newly-raised row (issue #987).
+    if rid is not None and str(rid) in bot_markers.rediagnose_marker_runs(thread):
+        return number  # this exact run is already annotated — never a second comment for it
+    _gh("issue", "comment", str(number), "--repo", repo, "--body",
+        compose_rediagnose_comment(entry, excerpt, targets, when))
+    return number
+
+
 # ---------------------------------------------------------------------------
 # the re-diagnosis pass (issue #969): UNDIAGNOSED is not terminal
 # ---------------------------------------------------------------------------
@@ -476,12 +555,28 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
             lines.append(f"WOULD RAISE run {rid} (job {match.get('name')}): "
                          f"error_lines={len(block)} targets+={targets or '-'}")
             continue
-        entry["rediagnosed_utc"] = now.isoformat()
-        entry["error_excerpt"] = excerpt
         grown = list(entry.get("targets") or [])
         for t in targets:
             if t not in grown:
                 grown.append(t)
+        # The ledger is the machine's memory; the issue thread is the human's. A raise that lands a
+        # diagnosis must annotate the thread the row was filed on — ONE marker-deduplicated comment
+        # per raised row, never per sweep (issue #987). The comment is posted BEFORE the row is
+        # marked raised, so a raise always lands WITH its annotation: a comment the thread cannot
+        # accept keeps the row pending and is reported loudly, retried next sweep (a raised row
+        # with no thread annotation is exactly the gap this closes). A row that cites no issue is
+        # raised comment-free.
+        ann = "no issue cited"
+        try:
+            annotated = post_rediagnose_comment(repo, entry, excerpt, grown, now)
+            if annotated is not None:
+                ann = f"annotated issue #{annotated}"
+        except RuntimeError as exc:
+            lines.append(f"rediagnose run {rid}: thread annotation FAILED — row stays "
+                         f"UNDIAGNOSED, retried next sweep: {exc}")
+            continue
+        entry["rediagnosed_utc"] = now.isoformat()
+        entry["error_excerpt"] = excerpt
         entry["targets"] = grown
         entry["rediagnosis_note"] = (
             f"re-read on this sweep from job {match['databaseId']} ({match.get('name')}) by "
@@ -489,7 +584,7 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
         )
         ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
         lines.append(f"REDIAGNOSED run {rid} (job {match.get('name')}): error block landed, "
-                     f"targets={grown or '-'}")
+                     f"targets={grown or '-'} — {ann}")
     return lines
 
 

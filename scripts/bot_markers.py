@@ -65,15 +65,25 @@ ARTIFACTS: dict[str, str] = {
 #: tests/test_bot_markers.py::test_the_two_reviewer_markers_are_not_confused).
 FIELDS: frozenset = frozenset({("issue-bot", "verdict")})
 
+#: The re-diagnosis annotation marker's name (issue #987): `<!-- pipeline-rediagnose: <ISO> run=<rid> -->`.
+#: Declared in `UNREGISTERED_OWED` below (its AGENTS.md §6j table row is owed to rule 3c); its SHAPE
+#: lives in `rediagnose_marker` / `rediagnose_marker_run` at the bottom of this module so the writer
+#: and the reader share ONE spelling (rule 6j). Defined here because UNREGISTERED_OWED names it.
+REDIAGNOSE_NAME = "pipeline-rediagnose"
+
 #: Markers a WRITER in the tree emits that the registry does NOT declare yet, each with the issue
 #: that lands the declaration (issue #474). Declaring one is a two-file change — this registry AND
 #: the AGENTS.md §6j table, a protected file — so a marker whose row cannot be written stays here
 #: instead of being invented into the registry alone. The list is CLOSED: the guard fails on any
 #: other stray, so this can only shrink.
 UNREGISTERED_OWED: dict[str, int] = {
-    # Empty: `issue-bot-already-fixed` moved into REGISTRY once its §6j row could be written
-    # (issue #474). Kept as the seam so a future blocked registration has somewhere to live that
-    # the reverse guard can still see.
+    # `pipeline-rediagnose` — written by `make pipeline-failure-issue`'s re-diagnosis pass (issue
+    # #969) on the issue thread of a raised UNDIAGNOSED row: the ledger is the machine's memory, the
+    # thread is the human's, so a raise that lands a diagnosis must annotate the row's issue once.
+    # Its §6j table row is owed to rule 3c (a protected agent-instruction file a headless leg cannot
+    # write), so it stays here until an attended run lands the AGENTS.md row and this can move into
+    # REGISTRY + WRITTEN (issue #987).
+    REDIAGNOSE_NAME: 987,
 }
 
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
@@ -165,6 +175,42 @@ def parse_owed_rows(text: str) -> dict[str, list]:
             continue
         rows.append({"section": sec.group(1), "needle": need.group(1) or need.group(2)})
     return {"rows": rows, "malformed": malformed}
+
+
+# ---------------------------------------------------------------------------
+# The re-diagnosis annotation marker (issue #987): `<!-- pipeline-rediagnose: <ISO> run=<rid> -->`.
+#
+# Declared in UNREGISTERED_OWED (its AGENTS.md §6j row is owed to rule 3c — a protected file a
+# headless leg cannot write), yet its SHAPE still lives HERE so the writer (the failure filer's
+# re-diagnosis pass) and its reader (the same pass' dedup — it must not re-comment a raised row's
+# thread that already carries the marker) share ONE spelling (rule 6j: a reader that keeps its own
+# copy of a marker string drifts silently). `run=<rid>` is the dedup key.
+# ---------------------------------------------------------------------------
+REDIAGNOSE_RE = re.compile(
+    re.escape(f"<!-- {REDIAGNOSE_NAME}: ") + r"(" + TS + r")\s+run=([A-Za-z0-9_-]+)\s*-->"
+)
+
+
+def rediagnose_marker(when: dt.datetime, run: str | int) -> str:
+    """Write a re-diagnosis annotation marker: `<!-- pipeline-rediagnose: <ISO> run=<rid> -->`."""
+    stamp = when.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return f"<!-- {REDIAGNOSE_NAME}: {stamp} run={run} -->"
+
+
+def rediagnose_marker_run(text: str) -> str | None:
+    """The run id a `pipeline-rediagnose` marker in `text` carries, or None (the dedup key).
+
+    Returns the run of the NEWEST marker (the whole thread is scanned, never a first-page-only
+    read — the #662 class): the pass dedups ONE comment per raised row, and a thread carrying
+    several raised rows' annotations still reports its newest run.
+    """
+    hits = [m.group(2) for m in REDIAGNOSE_RE.finditer(text or "")]
+    return hits[-1] if hits else None
+
+
+def rediagnose_marker_runs(text: str) -> set[str]:
+    """Every run id the `pipeline-rediagnose` markers in `text` carry (for a per-run dedup)."""
+    return {m.group(2) for m in REDIAGNOSE_RE.finditer(text or "")}
 
 
 def marker_name(bot: str, kind: str) -> str:
