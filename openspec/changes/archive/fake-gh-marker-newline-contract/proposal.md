@@ -1,6 +1,7 @@
 # Proposal: fake-gh-marker-newline-contract
 
 Issue: #1002 — "The fake-gh `issue create` stubs and the final-marker newline
+PR: #1003
 are a latent coupling" (tech-debt).
 
 ## Why
