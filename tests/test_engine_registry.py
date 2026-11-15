@@ -16,9 +16,14 @@ metadata is stubbed (hermetic); the real PR #72 raw snapshot is a fixture.
   - test_engine_repo_stripped           store contract never sees it
   - test_real_pr72_snapshot             DeepSeekHarness refused, quillan.cpp registered, ingest end-to-end
   - test_check_engine_kind              validator fails a registered harness / uncited auto entry
-  - test_check_raw_report               --check-raw CLI reports, never fails
+  - test_check_raw_report               --check-raw CLI reports; undated fixtures prove no age
   - test_contracts_and_prompts          engine_repo in search contract; auto in model contract; prompts
   - test_fabricated_engine_refused_at_ingest  a model/quant name never becomes an engine (issue #458)
+  - test_repeat_warn_fails_the_check    a WARN first seen past one refresh window FAILS the check (issue #972)
+  - test_first_seen_warn_stays_report_only  a new WARN gets one refresh cycle of grace
+  - test_declined_engine_never_counts_as_repeat  a NON_ENGINE denial is settled, never a repeat
+  - test_oldest_dated_capture_decides_first_seen  a fresh capture cannot launder an old spelling's age
+  - test_shipped_raw_has_no_stale_warn  the shipped data/raw carries no unresolved repeat WARN
 
 Run:  python3 tests/test_engine_registry.py   or   make test
 """
@@ -629,16 +634,101 @@ def test_engine_check_cli_every_branch():
                            capture_output=True, text=True, timeout=60, cwd=ROOT, env=env)
         after = json.loads((Path(td) / "cpu-1.json").read_text())
     out = p.stdout
-    check("cli: exit 0 even with refusals (report only)", p.returncode == 0, p.stderr[-200:])
+    check("cli: exit 0 with UNDATED captures (age unprovable -> never a repeat)", p.returncode == 0, p.stderr[-200:])
     check("cli: quillan.cpp -> registered (OK)", "OK   'quillan.cpp': registered" in out, out)
-    check("cli: DeepSeekHarness -> not-engine (WARN)", "WARN 'DeepSeekHarness': not-engine" in out, out)
+    check("cli: DeepSeekHarness -> not-engine via the deny-list is SETTLED (OK, not a repeatable WARN)",
+          "OK   'DeepSeekHarness': not-engine — listed in NON_ENGINE_REPOS / NON_ENGINE_NAMES" in out
+          and "(declared refusal — settled)" in out, out)
     check("cli: missing repo -> unreachable (WARN)", "WARN 'Ghost': unreachable" in out, out)
     check("cli: no engine_repo -> no-repo (WARN)", "WARN 'NoRepo': no-repo" in out, out)
+    check("cli: undated capture names first_seen unknown (issue #972)", "first seen unknown" in out, out)
     check("cli: registered engine not reported", "'llama.cpp'" not in out, out)
-    check("cli: summary counts the 3 that will fail validation", "3 engine(s) will FAIL validation" in out, out)
+    check("cli: summary counts the 2 UNSETTLED engines (the declared refusal is settled)",
+          "2 engine(s) will FAIL validation" in out, out)
     check("cli: report never modifies the raw snapshot", after == raw)
     check("cli: report never modifies models.json",
           json.loads((ROOT / "data" / "models.json").read_text())["engines"].get("quillan.cpp") is None)
+
+
+def test_repeat_warn_fails_the_check():
+    """Issue #972: a WARN decision first seen OLDER than one refresh window is a
+    REPEAT and `--check-raw` FAILS (exit 1). The measured silence this ends:
+    'mlx.fast: no-repo' WARNed every run across 49 raw files for months with
+    every gate green. First-seen is read from the OLDEST dated capture naming
+    the spelling (the filename date), never from a new state file."""
+    raw = {"backend": "nvidia", "generated_utc": "2026-10-10T12:00:00Z",
+           "models": [{"id": "m", "engines": [meas("GhostEngine")]}]}
+    with tempfile.TemporaryDirectory() as td:
+        (Path(td) / "nvidia-20261010-120000.json").write_text(json.dumps(raw))
+        p = subprocess.run([sys.executable, str(ROOT / "scripts" / "engine_registry.py"),
+                            "--check-raw", td, "--now", "2026-10-20"],
+                           capture_output=True, text=True, timeout=60, cwd=ROOT)
+    out = p.stdout + p.stderr
+    check("repeat: first_seen 10d before --now (>7d window) -> exit 1", p.returncode == 1, out)
+    check("repeat: named REPEAT with its first-seen date",
+          "REPEAT past one refresh (7d)" in out and "first seen 2026-10-10" in out, out)
+    check("repeat: names the engine AND the three resolutions",
+          "GhostEngine" in out and "ENGINE_NAME_ALIASES" in out and "NON_ENGINE_REPOS" in out, out)
+
+
+def test_first_seen_warn_stays_report_only():
+    """A WARN first seen within the window is NEW: reported, exit 0 — the grace one
+    refresh cycle gives a genuinely new engine to register at the next ingest."""
+    raw = {"backend": "nvidia", "generated_utc": "2026-10-18T12:00:00Z",
+           "models": [{"id": "m", "engines": [meas("FreshEngine")]}]}
+    with tempfile.TemporaryDirectory() as td:
+        (Path(td) / "nvidia-20261018-120000.json").write_text(json.dumps(raw))
+        p = subprocess.run([sys.executable, str(ROOT / "scripts" / "engine_registry.py"),
+                            "--check-raw", td, "--now", "2026-10-20"],
+                           capture_output=True, text=True, timeout=60, cwd=ROOT)
+    check("new: within the window -> exit 0", p.returncode == 0, p.stdout + p.stderr)
+    check("new: reported as new within one refresh", "new within one refresh" in p.stdout, p.stdout)
+
+
+def test_declined_engine_never_counts_as_repeat():
+    """A spelling a human declined via NON_ENGINE_REPOS is SETTLED: it reports OK,
+    is never a WARN, and its age can never red the check (a correct refusal is a
+    recorded decision, not an open gap)."""
+    import os
+    raw = {"backend": "cpu", "generated_utc": "2026-01-01T00:00:00Z",
+           "models": [{"id": "m", "engines": [meas(
+               "DeepSeekHarness", repo="https://github.com/deepseek-ai/deepseek-harness")]}]}
+    with tempfile.TemporaryDirectory() as td:
+        (Path(td) / "cpu-20260101-000000.json").write_text(json.dumps(raw))
+        env = dict(os.environ, ENGINE_REGISTRY_META_FILE=str(META_FIXTURE))
+        p = subprocess.run([sys.executable, str(ROOT / "scripts" / "engine_registry.py"),
+                            "--check-raw", td, "--now", "2026-10-20"],
+                           capture_output=True, text=True, timeout=60, cwd=ROOT, env=env)
+    check("declined: settled OK even 290d old -> exit 0", p.returncode == 0, p.stdout + p.stderr)
+    check("declined: no REPEAT line", "REPEAT" not in p.stdout, p.stdout)
+    check("declined: not counted as will-FAIL-validation", "FAIL validation" not in p.stdout, p.stdout)
+
+
+def test_oldest_dated_capture_decides_first_seen():
+    """first_seen is the OLDEST dated capture naming the spelling — a spelling named
+    in a fresh file AND an old one is a repeat (the fresh file cannot launder its age)."""
+    old = {"backend": "amd", "models": [{"id": "m", "engines": [meas("GhostEngine")]}]}
+    fresh = {"backend": "amd", "models": [{"id": "m", "engines": [meas("GhostEngine")]}]}
+    with tempfile.TemporaryDirectory() as td:
+        (Path(td) / "amd-20261010-000000.json").write_text(json.dumps(old))
+        (Path(td) / "amd-20261019-000000.json").write_text(json.dumps(fresh))
+        p = subprocess.run([sys.executable, str(ROOT / "scripts" / "engine_registry.py"),
+                            "--check-raw", td, "--now", "2026-10-20"],
+                           capture_output=True, text=True, timeout=60, cwd=ROOT)
+    check("age: oldest dated capture wins -> REPEAT exit 1", p.returncode == 1, p.stdout + p.stderr)
+    check("age: first_seen names the OLD date, not the fresh one", "first seen 2026-10-10" in p.stdout, p.stdout)
+
+
+def test_shipped_raw_has_no_stale_warn():
+    """The shipped store today: every unregistered spelling in data/raw is resolved
+    or new. This gate goes RED (like the check itself) the day a repeat WARN is left
+    unresolved past one refresh — the alarm #972 asks for."""
+    p = subprocess.run([sys.executable, str(ROOT / "scripts" / "engine_registry.py"),
+                        "--check-raw", str(ROOT / "data" / "raw")],
+                       capture_output=True, text=True, timeout=120, cwd=ROOT)
+    check("shipped: engine-check exits 0 (no repeat WARN in the tree)",
+          p.returncode == 0, p.stdout[-500:] + p.stderr[-200:])
+    check("shipped: no REPEAT line", "REPEAT" not in p.stdout, p.stdout[:500])
 
 
 def test_ingest_idempotent_and_model_backends():
@@ -770,6 +860,11 @@ def main() -> int:
     test_fetch_repo_meta_network_paths()
     test_offline_cache()
     test_engine_check_cli_every_branch()
+    test_repeat_warn_fails_the_check()
+    test_first_seen_warn_stays_report_only()
+    test_declined_engine_never_counts_as_repeat()
+    test_oldest_dated_capture_decides_first_seen()
+    test_shipped_raw_has_no_stale_warn()
     test_ingest_idempotent_and_model_backends()
     test_capture_meta_keeps_the_fixture_covering_the_registry()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
