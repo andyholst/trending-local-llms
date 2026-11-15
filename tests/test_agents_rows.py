@@ -304,6 +304,24 @@ def test_the_engine_meta_row_is_written():
           (diff_lines[:1], add_lines[:1]))
 
 
+def test_the_per_entry_dedup_row_is_written():
+    """#1001: the §8 row the #996 per-entry gap-filing dedup (PR #996, commit 090b735) owed.
+
+    The guard test landed but the rulebook row did not, so the §8 table described the old
+    whole-SET signature behaviour while the filer had already moved on — the owed-row ledger
+    (#523) tracks exactly this gap; this pins the row so it cannot rot back to prose.
+    """
+    sec = section8()
+    row = next((l for l in sec.splitlines()
+                if "test_a_fluctuating_starved_leg_refiles_only_the_new_entry" in l), "")
+    check("rows: the per-entry dedup guard has a §8 row", bool(row), "no row naming the guard")
+    check("rows: … naming the landed per-entry guards",
+          "test_a_gap_set_is_filed_once" in row and "test_one_issue_per_changed_gap_set" in row,
+          row[:120])
+    check("rows: … naming the issues that measured it",
+          "#996" in row and "#1001" in row, row[:120])
+
+
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
@@ -313,6 +331,7 @@ def main() -> int:
     test_the_rows_this_session_owed_are_written()
     test_the_storage_offload_row_is_written()
     test_the_engine_meta_row_is_written()
+    test_the_per_entry_dedup_row_is_written()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
