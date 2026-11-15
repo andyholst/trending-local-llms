@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **309**
+Active changes: **2** · archived: **310**
 
 ## Active changes
 
@@ -261,6 +261,7 @@ Active changes: **2** · archived: **309**
 | `red-run-and-repair-path` | archived | #558 | — | [red-run-and-repair-path](openspec/changes/archive/red-run-and-repair-path/specs/red-run-and-repair-path/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/red-run-and-repair-path/proposal.md) |
 | `rediagnose-aggregate-cancel-823` | archived | #823 | #983 | [alarms](openspec/changes/archive/rediagnose-aggregate-cancel-823/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rediagnose-aggregate-cancel-823/proposal.md) |
 | `rediagnose-issue-bot-record-refuse-825` | archived | #825 | #984 | [alarms](openspec/changes/archive/rediagnose-issue-bot-record-refuse-825/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rediagnose-issue-bot-record-refuse-825/proposal.md) |
+| `rediagnose-issue-bot-trending-guard-830` | archived | #830 | #1048 | [alarms](openspec/changes/archive/rediagnose-issue-bot-trending-guard-830/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rediagnose-issue-bot-trending-guard-830/proposal.md) |
 | `rediagnose-sweep-alarm-rows-976` | archived | #976 | #978 | [alarms](openspec/changes/archive/rediagnose-sweep-alarm-rows-976/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rediagnose-sweep-alarm-rows-976/proposal.md) |
 | `rediagnosis-annotates-issue-thread` | archived | #987 | #1008 | [alarms](openspec/changes/archive/rediagnosis-annotates-issue-thread/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rediagnosis-annotates-issue-thread/proposal.md) |
 | `refine-restatement-whole` | archived | #450 | — | [issue-bot-verdict](openspec/changes/archive/refine-restatement-whole/specs/issue-bot-verdict/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/refine-restatement-whole/proposal.md) |
