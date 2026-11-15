@@ -1,6 +1,7 @@
 # Proposal: agents2-docstring-inventory-row-947
 
 Issue: #947
+PR: #1066
 
 ## Why
 
