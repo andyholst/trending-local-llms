@@ -2694,8 +2694,11 @@ def test_the_gap_issue_body_ends_with_a_newline():
           repr(body[-30:]))
     marker_line = next((l for l in body.splitlines()
                         if l.lstrip().startswith("<!-- data-gap-signature:")), None)
-    check("the marker is the final, complete line",
-          marker_line is not None and body.rstrip().endswith(marker_line.strip()),
+    # The renderer may append owed-row lines AFTER the signature (#659), so the
+    # contract is that the signature is a COMPLETE line the line-reading stub
+    # records — not that it is the body's last line.
+    check("the marker is a complete line of the body",
+          marker_line is not None and marker_line.rstrip().endswith("-->"),
           (marker_line or "").strip() or "<no marker>")
 
     # The stub contract: feeding exactly the emitted body to the fake `gh`
