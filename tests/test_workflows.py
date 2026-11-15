@@ -912,6 +912,32 @@ def test_only_the_refresh_pipeline_carries_a_schedule():
                   not crons, crons)
 
 
+def test_agents_md_forbids_an_agent_dispatching_a_pipeline():
+    """Rule 6t(e) pinned at the WORDING (issue #1055, owner directive 2026-11-15): a
+    Hermes/agent session never starts a CI pipeline — no `gh workflow run`, no re-run,
+    no dispatched sweep — and the bot work an agent is asked to do runs ON THE HOST,
+    by the agent itself (own worktree, same make targets, reviewed PR). The measured
+    drift this guard exists for: an attended sweep dispatched `issue-bot.yml` five
+    times in one day while the rulebook already forbade it — a rule with no test is a
+    convention. Dropping or weakening any half of the clause turns this red."""
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    clause = agents[agents.index("6t. **Cadence and LLM calls are owner-controlled"):]
+    check("6t(e): the agent never starts a CI pipeline (no gh workflow run from a session)",
+          "no `gh workflow run` from a session" in clause, clause[:120])
+    check("6t(e): agent bot work runs ON THE HOST by the agent itself",
+          "runs ON THE HOST" in clause and "the agent IS the bot, locally" in clause,
+          clause[:160])
+    check("6t(e): the host path names the bot targets, not a substitute ritual",
+          all(name in clause for name in ("implement-issue", "review-issue",
+                                          "search-*", "pr-health")),
+          clause[:200])
+    check("6t(e): only the human dispatch or the remaining cron fires the pipelines",
+          "only the human's dispatch or the remaining cron fires them" in clause,
+          clause[:200])
+    check("6t(e): the pin names this very test (a rulebook pointing at a dead test is a defect)",
+          "test_agents_md_forbids_an_agent_dispatching_a_pipeline" in clause)
+
+
 def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
     """A cron bot's scheduled run must not depend on which identity GitHub
     attributes it to (issue #238): its guard carries the schedule bypass, and a
@@ -2992,6 +3018,7 @@ def main() -> int:
     test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
     test_only_the_refresh_pipeline_carries_a_schedule()
+    test_agents_md_forbids_an_agent_dispatching_a_pipeline()
     test_the_guard_registry_is_derived_from_the_tree()
     test_a_repo_event_run_is_admitted_by_its_guard()
     test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()

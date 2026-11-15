@@ -1016,12 +1016,22 @@ issue that skips a section is refused.
    so an agent-authored issue, PR or comment can NEVER start an LLM pipeline by itself:
    starting a bot pipeline is the owner's dispatch, and sweeping the queue is a dispatch,
    not a trigger a bot can pull. (e) **The agent (a Hermes session) never starts a CI
-   pipeline** — no `gh workflow run` from a session; the agent works in its own worktree
-   (rule 6n) and the pipelines carry their own cadence. `tests/test_workflows.py` pins it:
-   `test_only_the_refresh_pipeline_carries_a_schedule` reds if ANY other workflow regains a
-   cron, and the `test_qa_validate` checks refuse `hermes-smoke`, `hermes -z` or an agent
-   target anywhere in qa-validate — a pipeline that drifts back to scheduled LLM runs, or a
-   model call that slips into the merge gate, turns CI red on purpose.
+   pipeline, and bot work an agent is asked to do runs ON THE HOST (owner directive,
+   2026-11-15, reinforced by #1055)** — no `gh workflow run` from a session, never a re-run
+   of a bot workflow, never a dispatched sweep: an attended agent that dispatched
+   `issue-bot.yml` five times in one day is exactly the defect this clause names. When an
+   agent is asked to implement, review, sweep or gather, **the agent IS the bot, locally**:
+   its own worktree (rule 6n), the very targets the bots run inside CI (`make
+   implement-issue`, `make review-issue`, the four `search-*` legs, `make pr-health`,
+   the §6s fixes), a feature branch and a reviewed PR. The pipelines carry their own
+   cadence and only the human's dispatch or the remaining cron fires them.
+   `tests/test_workflows.py` pins it: `test_only_the_refresh_pipeline_carries_a_schedule`
+   reds if ANY other workflow regains a cron, the `test_qa_validate` checks refuse
+   `hermes-smoke`, `hermes -z` or an agent target anywhere in qa-validate, and
+   `test_agents_md_forbids_an_agent_dispatching_a_pipeline` fails when this host-only
+   agent rule is dropped or weakened in the rulebook — a pipeline that drifts back to
+   scheduled LLM runs, or a model call that slips into the merge gate, turns CI red
+   on purpose.
 
 ## 3. Data source & collection
 
