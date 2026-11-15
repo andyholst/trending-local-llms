@@ -2573,6 +2573,7 @@ def main() -> int:
     test_the_report_and_issue_body_name_an_acquisition_gap()
     test_a_stated_figure_no_post_supports_is_its_own_class()
     test_engine_min_version_detector_sees_the_build_phrases_posts_use()
+    test_engine_min_version_detector_refuses_a_throughput_after_the_engine()
     test_a_whole_starved_leg_changes_the_signature()
     test_a_single_empty_snapshot_stays_informational()
     test_signature_tracks_the_store_not_the_noise()
