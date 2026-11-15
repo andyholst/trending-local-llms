@@ -352,6 +352,22 @@ def test_the_ledger_evidence_close_row_is_written():
     check("rows: … naming the issues that measured it",
           "#993" in row and "#998" in row, row[:120])
 
+def test_the_implement_stream_row_is_written():
+    """#1062: the §8 owed-row ledger row for the agent-leg test-image guard.
+
+    PR #1057 (issue #833) moved the hermes agent legs into the test-capable
+    image; #1062 declared the §8 row (#1062's needle `test_implement_stream`)
+    the headless leg could not write. The row must sit in §8 contiguous, with
+    the measured defect and its landing PR named.
+    """
+    sec = section8()
+    rows = [l for l in sec.splitlines() if "test_implement_stream" in l]
+    check("§8: one needle-contiguous row for test_implement_stream",
+          len(rows) == 1, f"found {len(rows)}")
+    line = rows[0] if rows else ""
+    check("§8: … naming the measured defect and its landing PR",
+          "#833" in line and "#1057" in line and "#1062" in line, line[:120])
+
 
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
@@ -365,6 +381,7 @@ def main() -> int:
     test_the_per_entry_dedup_row_is_written()
     test_the_gap_body_newline_row_is_written()
     test_the_ledger_evidence_close_row_is_written()
+    test_the_implement_stream_row_is_written()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
