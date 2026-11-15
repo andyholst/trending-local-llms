@@ -2211,6 +2211,78 @@ def test_engine_min_version_detector_sees_the_build_phrases_posts_use():
               and len(flat) == len(set(flat)), str(flat))
 
 
+def test_engine_min_version_detector_refuses_a_throughput_after_the_engine():
+    """Issue #998 (filed #1006): a t/s figure is not an engine build.
+
+    The `engine → <version>` branch of `_ENGINE_MIN_TEXT` matched ANY `\\d+\\.\\d+`
+    within 24 chars of an engine name, so a SPEED read as a build version: the
+    captured `llama.cpp 306.9 tokens/s on the identical GGUF` (empirically on
+    `qwen2.5-0.5b`) and `llama.cpp 44.8 tokens/s` (on `gemma-4-e4b`) surfaced both
+    as "stated in prose only, an ingest job" — and structuring them would store a
+    speed as an `engine_min_version` (rule 2 fabrication). A `<version>`
+    immediately followed by a throughput unit (`tokens/s` / `tok/s` / `TPS`) MUST
+    NOT be a build claim: the post states no build, so the row is an ACQUISITION
+    gap. Precision holds (#214/#213): a genuine build that merely precedes a later,
+    separate speed (`llama.cpp build 2.1, measured 306.9 tokens/s`) is still an
+    ingest job — the lookahead only bites when the very next word is a rate.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        qwen = model("qwen2.5-0.5b", engines=[{
+            "engine": "llama.cpp", "tps": "306.9", "hardware": "RTX 3050 8GB",
+            "quant": "Q4_K_M GGUF, median of three runs; same post: llama.cpp 306.9 tokens/s on the identical GGUF",
+            "date": "2026-10-24", "source_post": "https://lightbrd.com/u/status/9981"}])
+        gemma = model("gemma-4-e4b", engines=[{
+            "engine": "llama.cpp", "tps": "44.8", "hardware": "RTX 3050 8GB",
+            "quant": "Q3_K_M GGUF, median of three runs; same post: llama.cpp 44.8 tok/s on the identical GGUF",
+            "date": "2026-10-24", "source_post": "https://lightbrd.com/u/status/9982"}])
+        tps = model("tps-model", engines=[{
+            "engine": "llama.cpp", "tps": "150", "hardware": "RTX 3050 8GB",
+            "quant": "llama.cpp 150 TPS on the identical GGUF",
+            "date": "2026-10-24", "source_post": "https://lightbrd.com/u/status/9984"}])
+        real = model("real-build", engines=[{
+            "engine": "llama.cpp", "tps": "306.9", "hardware": "RTX 3050 8GB",
+            "quant": "llama.cpp build 2.1, measured 306.9 tokens/s",
+            "date": "2026-10-24", "source_post": "https://lightbrd.com/u/status/9983"}])
+        rows = [(m, m["engines"][0]) for m in (qwen, gemma, tps, real)]
+        (raw / "cpu-20261024-000000.json").write_text(json.dumps({
+            "backend": "cpu", "generated_utc": "2026-10-24T00:00:00Z",
+            "models": [{"id": m["id"], "name": m["name"],
+                        "engines": [{"engine": e["engine"], "tps": e["tps"],
+                                     "hardware": e["hardware"], "quant": e["quant"],
+                                     "source_post": e["source_post"]}]}
+                       for m, e in rows]}))
+        contract = contract_from(td, "engine_min_version")
+
+        # When  the store is analysed against those captures
+        report = G.analyse(store_with([qwen, gemma, tps, real]), contract, raw_dir=raw)
+
+        un = set(report["unstructured"]["engine_min_version"])
+        nc = set(report["not_captured"]["engine_min_version"])
+        # Then  each throughput-over-match is an ACQUISITION gap, never an ingest job.
+        check("engine build phrases: a speed after the engine is not a build claim (qwen2.5-0.5b, tokens/s)",
+              "qwen2.5-0.5b" in nc and "qwen2.5-0.5b" not in un,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        check("engine build phrases: a speed after the engine is not a build claim (gemma-4-e4b, tok/s)",
+              "gemma-4-e4b" in nc and "gemma-4-e4b" not in un,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        check("engine build phrases: a speed after the engine is not a build claim (TPS spelling)",
+              "tps-model" in nc and "tps-model" not in un,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        # … while a genuine build precedes a later speed is still an ingest job.
+        check("engine build phrases: a real build before a separate speed is still a build claim",
+              "real-build" in un and "real-build" not in nc,
+              f"un={sorted(un)} nc={sorted(nc)}")
+        # The classes still partition the missing set.
+        lists = [report[k]["engine_min_version"] for k in
+                 ("not_captured", "unstructured", "captured_prose", "untraceable")]
+        flat = [x for part in lists for x in part]
+        check("engine build phrases (throughput): the classes still partition the missing set",
+              sorted(flat) == sorted(report["missing"]["engine_min_version"])
+              and len(flat) == len(set(flat)), str(flat))
+
+
 def test_a_measurement_captured_under_a_sibling_row_traces_to_the_row_that_owns_the_tuple():
     """Issue #411: footprint text captured under ANOTHER model's raw row must trace to
     the store row that uniquely owns that measurement (engine, tps, hardware, source_post).

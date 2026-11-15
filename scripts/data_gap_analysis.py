@@ -139,19 +139,31 @@ _STREAMING_ENGINES = ("strata",)
 # Precision is the constraint, not coverage (#213's class): the version must sit beside an
 # ENGINE or BUILD word, never beside a capacity or a speed, so `Q4_K_M (~14.6GB) … 150
 # tok/s` and a bare card name stay NOT build claims. Matching stays per field (#456).
+#
+# Throughput is not a build (issue #998): `llama.cpp 306.9 tokens/s` states HOW FAST, and the
+# plain `<version>` read the `306.9` as an engine build — so `qwen2.5-0.5b` and `gemma-4-e4b`
+# surfaced as "stated in prose only, an ingest job", and structuring them would store a speed
+# as a version (rule 2 fabrication). A `<version>` immediately followed by a throughput unit
+# (`tokens/s` / `tok/s` / `TPS`) is refused at the version token itself, so every
+# build-vs-speed branch below stops matching it while a real build (`llama.cpp build 2.1,
+# measured 306.9 tokens/s`) still does — the lookahead only bites when the very next word is a
+# rate.
+_TPUT_RATE = r"(?:tokens?|tok)\s*/\s*s\b|\btps\b"
+# a build version must not be immediately followed by a throughput unit
+_BUILD_VERSION = rf"\d+\.\d+(?:\.\d+)?(?!\s*{_TPUT_RATE})"
 _ENGINE_BUILD_NAMES = (r"llama\.cpp|llama-cpp|llamacpp|ollama|vllm|sglang|exllam\w*|"
                        r"koboldcpp|lmdeploy|mlx|tgi|ctranslate2|llama\.rb|cuda")
 _ENGINE_MIN_TEXT = re.compile(
     r"\bflag\b|\bn[-_]gpu[-_]layers\b|\b--\w"  # the old claims, kept
-    rf"|\b(?:{_ENGINE_BUILD_NAMES})\b[^.\n]{{0,24}}?\b\d+\.\d+(?:\.\d+)?\b"
-    rf"|\b\d+\.\d+(?:\.\d+)?\b[^.\n]{{0,24}}?\b(?:{_ENGINE_BUILD_NAMES})\b"
+    rf"|\b(?:{_ENGINE_BUILD_NAMES})\b[^.\n]{{0,24}}?\b{_BUILD_VERSION}\b"
+    rf"|\b{_BUILD_VERSION}\b[^.\n]{{0,24}}?\b(?:{_ENGINE_BUILD_NAMES})\b"
     r"|\b(?:llama\.cpp|llama-cpp|llamacpp)\b[^.\n]{0,12}?\bb\d{3,6}\b"
     r"|\bb\d{3,6}\b[^.\n]{0,12}?\b(?:llama\.cpp|llama-cpp|llamacpp)\b"
     r"|\b(?:untouched upstream|stock llama\.cpp|from source|built from source|source build"
     r"|nightly build|main branch|master branch|bleeding edge|submodule)\b"
     r"|\bcommit [0-9a-f]{7,12}\b"
-    r"|\b(?:adapter|fork)\b[^.\n]{0,24}?\b\d+\.\d+(?:\.\d+)?\b"
-    r"|\b\d+\.\d+(?:\.\d+)?\b[^.\n]{0,24}?\b(?:adapter|fork)\b"
+    rf"|\b(?:adapter|fork)\b[^.\n]{{0,24}}?\b{_BUILD_VERSION}\b"
+    rf"|\b{_BUILD_VERSION}\b[^.\n]{{0,24}}?\b(?:adapter|fork)\b"
     r"|\bq[45][0-9_]*\b[^.\n]{0,16}\b(?:kv[- ]?cache|cache[- ]?type)\b"
     r"|\b(?:kv[- ]?cache|cache[- ]?type)\b[^.\n]{0,16}\bq[45][0-9_]*\b"
     r"|\bnative\b[^.\n]{0,16}\bdraft\b|\bdraft\b[^.\n]{0,16}\bnative\b",
