@@ -2823,16 +2823,16 @@ def refuse_cross_model_duplicate_measurements(
 #  - a measurement whose text matches nothing gains NOTHING, so the precision
 #    class #213/#458 built stays exact (`Q4_K_M (~14.6GB) … 150 tok/s` is not a
 #    build claim);
-#  - the detector is the ONE `_ENGINE_MIN_TEXT` imported from data_gap_analysis
-#    (rule 6d) — a second copy of the pattern here is the silent-drift defect the
-#    marker registry exists to prevent, refused by
-#    tests/test_engine_min_version_ingest.py.
+#  - the detection is the ONE claim reader `engine_min_claim` imported from
+#    data_gap_analysis (rule 6d) — it wraps the ONE `_ENGINE_MIN_TEXT` detector with
+#    the model-version guard (#1025). A second copy of the pattern, or a reader that
+#    re-implements the detection, is refused by tests/test_engine_min_version_ingest.py.
 # ---------------------------------------------------------------------------
 _ENGINE_MIN_TEXT_FIELDS = ("quant", "hardware")
 
 
 def _engine_min_detector():
-    """The ONE build-phrase detector, read from data_gap_analysis (rule 6d).
+    """The ONE build-claim reader, read from data_gap_analysis (rule 6d).
     Imported lazily because data_gap_analysis reaches back into update_trending
     inside its own functions."""
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -2840,13 +2840,14 @@ def _engine_min_detector():
         import data_gap_analysis as _dga
     finally:
         sys.path.pop(0)
-    return _dga._ENGINE_MIN_TEXT
+    return _dga.engine_min_claim
 
 
 def fill_engine_min_version(models: list[dict]) -> int:
     """Fill a MISSING `engine_min_version` on each model's measurements from the
     build phrase their OWN captured text states (issue #877). Returns how many
-    measurements were filled; nothing else in the measurement changes."""
+    measurements were filled; nothing else in the measurement changes. A match whose
+    version is the model's own version is refused — the claim reader (issue #1025)."""
     detector = _engine_min_detector()
     filled = 0
     for m in models:
@@ -2854,7 +2855,7 @@ def fill_engine_min_version(models: list[dict]) -> int:
             if e.get("engine_min_version") not in (None, "", [], {}):
                 continue
             for field in _ENGINE_MIN_TEXT_FIELDS:
-                hit = detector.search(str(e.get(field) or ""))
+                hit = detector(m, str(e.get(field) or ""))
                 if hit:
                     e["engine_min_version"] = hit.group(0).strip()
                     filled += 1
