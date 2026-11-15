@@ -1,6 +1,7 @@
 # Proposal: queued-alarm-diagnosis-half-runs-anyway
 
 Issue: #1024 — "the queued-alarm job skips its diagnosis half when the sweep-alarm step goes red first"
+PR: #1026
 
 ## Why
 
