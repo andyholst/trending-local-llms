@@ -52,7 +52,7 @@ def check(name, cond, detail=""):
 # ---------------------------------------------------------------------------
 def _data_search_flat() -> str:
     """The search legs' contract, flattened (issue #638: the rules live in the skill)."""
-    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
     return " ".join(skill.replace("`", "").split())
 
 
@@ -129,7 +129,7 @@ def test_the_tool_pin_has_exactly_one_definition():
         flat = " ".join(path.read_text().replace("`", "").split()).lower()
         return "never make it from execute_code" in flat
 
-    hits = [p.parent.name for p in (ROOT / ".hermes" / "skills").glob("*/SKILL.md") if states_it(p)]
+    hits = [p.parent.name for p in (ROOT / "agents" / "skills").glob("*/SKILL.md") if states_it(p)]
     check("tool pin: exactly one skill states it", hits == ["data-search"], hits)
     for leg in ("nvidia", "metal", "cpu", "amd"):
         recipe = mk.split(f"_search-{leg}:", 1)[1].split("\n.PHONY", 1)[0]

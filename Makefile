@@ -683,7 +683,7 @@ _setup:
 	@# recipe can resurrect it. Strict on failure: an agent that can still ask is the bug.
 	@hermes tools disable clarify >/dev/null 2>&1 || \
 		{ echo "FAIL: 'hermes tools disable clarify' unsupported — the bot's legs can still call \`clarify\` and DETACH (the recurring refresh-leg failure)"; exit 1; }
-	@# The bot contracts live in .hermes/skills and every leg preloads one with
+	@# The bot contracts live in agents/skills and every leg preloads one with
 	@# `hermes -s` (issue #549). Register the checkout's directory in THIS Hermes
 	@# home and read it back: a container where `-s` resolves nothing would run
 	@# every leg with no contract at all and still report success.
@@ -725,7 +725,7 @@ _hermes-alias-check:
 # model it was running with nobody watching it. Measured on the issue-bot sweep: three of five runs
 # on 2026-10-24/25 died with `Input required; detached without cancelling` (rc=3), because
 # `--yolo --accept-hooks` answers shell and hook prompts but NOT the agent's own `clarify` tool.
-# The contract now lives in `.hermes/skills/<name>/SKILL.md` (the layout Hermes discovers from a
+# The contract now lives in `agents/skills/<name>/SKILL.md` (the layout Hermes discovers from a
 # registered directory), each leg preloads it with `-s <skill>,bot-unattended`, and its inline
 # prompt is a pointer plus that run's parameters. `scripts/check_agent_skills.py` (through
 # `make check-agent-skills`, part of `make lint`) fails a leg that preloads nothing, names a skill
@@ -734,7 +734,7 @@ _hermes-alias-check:
 # The directory has to be REGISTERED in this container's Hermes home, or `-s` resolves nothing and
 # every leg runs with no contract at all — so `_setup` registers it and reads it back (the image
 # build runs `_setup`, and `WORKDIR /workspace` is where the repo is mounted at run time too).
-HERMES_SKILLS_DIR := $(CURDIR)/.hermes/skills
+HERMES_SKILLS_DIR := $(CURDIR)/agents/skills
 HERMES_HOME_DIR ?= $(if $(HERMES_HOME),$(HERMES_HOME),$(HOME)/.hermes)
 
 .PHONY: _hermes-skills-register
@@ -742,7 +742,7 @@ _hermes-skills-register:
 	python3 scripts/hermes_skills_register.py --home "$(HERMES_HOME_DIR)" --dir "$(HERMES_SKILLS_DIR)"
 
 .PHONY: hermes-skills-register
-hermes-skills-register: ## Register this checkout's .hermes/skills in the container's Hermes home so `hermes -s <name>` resolves (issue #549)
+hermes-skills-register: ## Register this checkout's agents/skills in the container's Hermes home so `hermes -s <name>` resolves (issue #549)
 	$(DOCKER_RUN) make _hermes-skills-register
 
 .PHONY: _hermes-skills-check
@@ -793,7 +793,7 @@ query-coverage: python-env-image ## Report which of the top trending models the 
 # The rules a search leg obeys — the fixed scrape request, the key read BY NAME, the
 # terminal-tool pin, the engine rule, the five measurement dimensions, the post-URL and
 # counter rule, the per-query write, the AMD/ROCm rules — live in
-# `.hermes/skills/data-search/SKILL.md`, which every leg preloads with
+# `agents/skills/data-search/SKILL.md`, which every leg preloads with
 # `-s data-search,bot-unattended`. The recipe is a POINTER plus THIS run's parameters:
 # the backend, its keyword list, the derived model queries and the write command.
 # A rule is therefore corrected in ONE reviewed file, and `make check-agent-skills`

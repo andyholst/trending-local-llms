@@ -323,7 +323,7 @@ def test_contracts_and_prompts():
     # so they are checked once there and each leg is checked to preload it — a leg
     # cannot carry a divergent copy of them.
     engine_ask = " ".join(
-        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
         .replace("`", "").split())
     check("engine ask: defines engine vs harness/app/benchmark", "harnesses, agent frameworks" in engine_ask)
     check("engine ask: asks for engine_repo, never invent",
@@ -336,7 +336,7 @@ def test_contracts_and_prompts():
     fix_recipe = re.search(r"\n_fix:\n((?:\t[^\n]*\n)+)", mk)
     fix = fix_recipe.group(1) if fix_recipe else ""
     # Issue #549: the fixer's rules are its project skill; the recipe is a pointer.
-    fix_skill = (ROOT / ".hermes" / "skills" / "pr-fix" / "SKILL.md").read_text()
+    fix_skill = (ROOT / "agents" / "skills" / "pr-fix" / "SKILL.md").read_text()
     check("prompt fix: never register a harness/app/benchmark", "never registered" in fix_skill)
     check("prompt fix: preloads its skill", "-s pr-fix,bot-unattended" in fix, fix[-120:])
     check("make: engine-check target", "_engine-check:" in mk and "engine_registry.py --check-raw" in mk)
@@ -448,7 +448,7 @@ def test_search_prompts_look_up_missing_repos():
     mk = (ROOT / "Makefile").read_text()
     lines = [l for l in mk.splitlines() if "hermes -z" in l and "--write-raw" in l]
     engine_ask = " ".join(
-        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
         .replace("`", "").split())
     check("engine ask: asks for a verified repo lookup when the post links none",
           "links no repo" in engine_ask and "page resolves" in engine_ask, engine_ask[-160:])

@@ -1413,7 +1413,7 @@ def test_issue_bot():
     check("issue-bot: the issue comment explains the token scope and the fix",
           "Workflows: Read and write" in comment_run and "workflow" in comment_run, "")
     check("issue-bot: the prompt forbids scratch artifacts (no *.patch 'implementation')",
-          "No `*.patch`" in (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text(),
+          "No `*.patch`" in (ROOT / "agents" / "skills" / "issue-implement" / "SKILL.md").read_text(),
           "")
 
     fail_step = step(impl, "Fail loudly")
@@ -1723,7 +1723,7 @@ def test_implement_prompt_requires_openspec_and_findings():
     prompt = recipe.group(1) if recipe else ""
     # Issue #549: the RULES are the implementer's project skill now — the recipe is a pointer plus
     # that run's parameters. The contract is asserted where it lives, at the same strength.
-    skill = (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "issue-implement" / "SKILL.md").read_text()
 
     # Given the implementer's contract (its skill) and the recipe that preloads it
     # When  both are read
@@ -1765,7 +1765,7 @@ def test_the_implement_leg_never_leaves_an_owed_rulebook_row_bare():
     mk = (ROOT / "Makefile").read_text()
     recipe = re.search(r"\n_implement-issue:\n((?:\t[^\n]*\n)+)", mk)
     prompt = recipe.group(1) if recipe else ""
-    skill = (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "issue-implement" / "SKILL.md").read_text()
     rule = (ROOT / "AGENTS.md").read_text()
     script = (ROOT / "scripts" / "file_findings.py").read_text()
 
@@ -2103,7 +2103,7 @@ def test_the_reviewer_never_edits_an_issue_inside_a_window():
     # where they live — at the same strength — and the recipes are asserted to preload it.
     body_prompt = makefile.split("_review-issue:")[1].split(".PHONY: review-issue")[0]
     window_prompt = makefile.split("_review-issue-window:")[1].split(".PHONY: review-issue-window")[0]
-    review_skill = (ROOT / ".hermes" / "skills" / "issue-review" / "SKILL.md").read_text()
+    review_skill = (ROOT / "agents" / "skills" / "issue-review" / "SKILL.md").read_text()
     check("skill: it must never implement the issue",
           "Never implement" in review_skill, review_skill[:200])
     check("skill: the markers are byte-identical or the run is wrong",

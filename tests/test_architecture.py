@@ -238,7 +238,7 @@ def test_wired_into_ci_the_loop_the_suite_and_the_prompt():
     loop = (ROOT / "scripts" / "fix_loop.sh").read_text()
     prompt = mk.split("_implement-issue:")[1][:6000]
     # Issue #549: the implementer's rules are its project skill; the recipe is a pointer.
-    skill = (ROOT / ".hermes" / "skills" / "issue-implement" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "issue-implement" / "SKILL.md").read_text()
 
     # When  their wiring is read
     # Then  the target exists, CI + the loop run it, the suite carries this file, and the prompt demands the update

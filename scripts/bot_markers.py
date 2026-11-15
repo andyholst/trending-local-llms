@@ -226,7 +226,7 @@ def read_marker(text: str, bot: str, kind: str) -> dict | None:
 def ts_of(text: str, bot: str, kind: str) -> dt.datetime | None:
     """The marker's timestamp as a datetime (UTC), or None — what the 3 h window compares."""
     hit = read_marker(text, bot, kind)
-    if not hit:
+    if hit is None:
         return None
     try:
         return dt.datetime.strptime(hit["at"].rstrip("Z"), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=dt.timezone.utc)
@@ -235,3 +235,54 @@ def ts_of(text: str, bot: str, kind: str) -> dt.datetime | None:
             return dt.datetime.fromisoformat(hit["at"].replace("Z", "+00:00"))
         except ValueError:
             return None
+
+
+# ---------------------------------------------------------------------------
+# Canonical renderings and their acceptance patterns (issue #904).
+#
+# The skills gate (`scripts/check_agent_skills.py`) scans every agent skill file
+# for `<!-- <registered-name> …` comments and must decide, without re-spelling
+# any shape (rule 6j), whether an occurrence is exactly what THIS registry
+# writes. So the acceptance patterns are derived here, from the same grammar
+# `parse_markers` reads: a scanner that kept its own copy of a shape would
+# drift from the writers silently — the exact failure this module exists to
+# prevent.
+# ---------------------------------------------------------------------------
+
+_CANONICAL_TS = "2026-01-01T00:00:00Z"
+_CANONICAL_FIELD = {"verdict": "refine"}  # the one marker whose shape carries a word (FIELDS)
+
+
+def canonical_examples() -> list[str]:
+    """One rendering per marker family, written exactly as the registry itself writes it."""
+    ref = dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc)
+    out: list[str] = []
+    for bot, kinds in REGISTRY.items():
+        for kind, name in sorted(kinds.items()):
+            if (bot, kind) in FIELDS:
+                out.append(f"<!-- {name}: {_CANONICAL_FIELD[kind]} {_CANONICAL_TS} run=7 -->")
+            else:
+                out.append(start_marker(bot, ref, run=7, kind=kind))
+    out.append(owed_row_marker("6b", "make owed-rows-check"))
+    out.extend(f"<!-- {key}: example-signature -->" for key in DEDUP_KEYS)
+    out.append(f"<!-- {ISSUE_PATTERN_MARKER} -->")
+    return out
+
+
+def marker_acceptance() -> dict[str, re.Pattern]:
+    """`marker name -> compiled pattern` accepting ONLY the registry's own rendering.
+
+    The pattern matches the FULL comment starting at `<!-- <name>`; a scanner
+    matches it at each occurrence and a miss is a re-spelling (issue #904).
+    """
+    acc: dict[str, re.Pattern] = {}
+    for bot, kinds in REGISTRY.items():
+        for kind, name in kinds.items():
+            field = r"(?:[a-z]+\s)?" if (bot, kind) in FIELDS else ""
+            acc[name] = re.compile(re.escape(f"<!-- {name}") + r"[:\s]+" + field
+                                   + TS + r"(?:\s+run=[A-Za-z0-9_-]+)?\s*-->")
+    acc[OWED_ROW] = re.compile(r"<!-- owed-row: section=[A-Za-z0-9]+ needle=(?:\"[^\"]*\"|\S+)\s*-->")
+    for key in DEDUP_KEYS:
+        acc[key] = re.compile(re.escape(f"<!-- {key}: ") + r"[^\s>]+ -->")
+    acc[ISSUE_PATTERN_MARKER] = re.compile(re.escape(f"<!-- {ISSUE_PATTERN_MARKER} -->"))
+    return acc

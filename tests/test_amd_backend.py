@@ -492,7 +492,7 @@ def test_wiring_parity():
     prompt = mk[mk.index("_search-amd:\n"):].split("\n", 2)[1]
     # Issue #638: the AMD leg's rules live in the skill it preloads, not in its prompt.
     amd_skill = " ".join(
-        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
         .replace("`", "").split()).lower()
     for needle, why in (("record the AMD card exactly as posted in hardware", "the card is what classifies ROCm"),
                         ("put the API (ROCm, HIP, Vulkan) in quant, never in the engine name", "no pseudo-engines"),

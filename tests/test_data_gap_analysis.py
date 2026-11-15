@@ -816,7 +816,7 @@ def test_a_stated_figure_no_post_supports_is_its_own_class():
 
     # And  the SEARCH PROMPT the legs preload stops the shape being written at all (rule 6p):
     #       a figure lives where its post lives, never only in the model-level prose.
-    skill = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    skill = (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
     flat = " ".join(skill.split())
     check("skill: a requirement figure lives on the measurement whose post states it",
           "A requirement figure lives where its POST lives" in flat, flat[:200])

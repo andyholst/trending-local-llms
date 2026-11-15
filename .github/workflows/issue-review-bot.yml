@@ -270,10 +270,10 @@ jobs:
           make review-issue
           rc=$?
           # rc=3 is Hermes DETACHING because the agent asked for input (issue #549): the
-          # unattended contract is preloaded from .hermes/skills/bot-unattended, so this
+          # unattended contract is preloaded from agents/skills/bot-unattended, so this
           # means the seam broke, not that the issue was unreadable.
           if [ "$rc" = "3" ]; then
-            echo "::error::the reviewer asked for input (detached, rc=3) - an unattended leg must decide without a user; check that .hermes/skills resolves for \`hermes -s\` (issue #549)."
+            echo "::error::the reviewer asked for input (detached, rc=3) - an unattended leg must decide without a user; check that agents/skills resolves for \`hermes -s\` (issue #549)."
           fi
           exit $rc
 
@@ -316,7 +316,7 @@ jobs:
           make review-issue-window
           rc=$?
           if [ "$rc" = "3" ]; then
-            echo "::error::the reviewer asked for input (detached, rc=3) - an unattended leg must decide without a user; check that .hermes/skills resolves for \`hermes -s\` (issue #549)."
+            echo "::error::the reviewer asked for input (detached, rc=3) - an unattended leg must decide without a user; check that agents/skills resolves for \`hermes -s\` (issue #549)."
           fi
           exit $rc
 

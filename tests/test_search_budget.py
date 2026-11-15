@@ -119,7 +119,7 @@ def test_prompts_write_per_query():
     # Issue #638: the per-query write rule lives in the skill the legs preload; the
     # recipe keeps only the write COMMAND as a parameter.
     skill = " ".join(
-        (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+        (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
         .replace("`", "").split())
     check("skill: write after EACH query",
           "After EACH query, immediately write only that query" in skill, skill[:160])

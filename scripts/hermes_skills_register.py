@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Register the checkout's `.hermes/skills` with Hermes, so `hermes -s <name>` resolves (issue #549).
+"""Register the checkout's `agents/skills` with Hermes, so `hermes -s <name>` resolves (issue #549).
 
 Every agent leg preloads its contract with `hermes -s <name>` instead of carrying 1000-2000
-characters of rules inline (`.hermes/skills/<name>/SKILL.md`). Hermes looks for skills in its own
+characters of rules inline (`agents/skills/<name>/SKILL.md`, issue #904). Hermes looks for skills in its own
 home and in `skills.external_dirs`, so the repository's skill directory has to be registered in the
 agent container's Hermes home — once, at setup time, before any leg runs.
 
@@ -14,7 +14,7 @@ file, it is already installed in every image that runs a leg, and the version pi
 which is the check this script performs either way.
 
 Usage:
-    python3 scripts/hermes_skills_register.py --home <hermes home> --dir <repo>/.hermes/skills
+    python3 scripts/hermes_skills_register.py --home <hermes home> --dir <repo>/agents/skills
     python3 scripts/hermes_skills_register.py --home <hermes home> --dir <…> --check
 
 Exit codes: 0 registered (or `--check` found it), 1 not registered (`--check` only),
@@ -83,7 +83,7 @@ def _same(a: str, b: str) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Register the checkout's .hermes/skills with Hermes so `hermes -s` resolves")
+        description="Register the checkout's agents/skills with Hermes so `hermes -s` resolves")
     ap.add_argument("--home", default=os.environ.get("HERMES_HOME") or str(Path.home() / ".hermes"),
                     help="the Hermes home (default: $HERMES_HOME or ~/.hermes)")
     ap.add_argument("--dir", required=True, help="the skills directory to register")

@@ -352,7 +352,7 @@ def test_write_raw_normalises_hf_co_urls():
 
 def test_the_search_skill_requires_the_hf_lookup():
     """The leg's preloaded contract asks for the lookup, not a plausible guess."""
-    text = (ROOT / ".hermes" / "skills" / "data-search" / "SKILL.md").read_text()
+    text = (ROOT / "agents" / "skills" / "data-search" / "SKILL.md").read_text()
     check("skill: names the authenticated HF API lookup",
           "https://huggingface.co/api/models?search=<name>" in text, "")
     check("skill: says the id is looked up, never guessed",
