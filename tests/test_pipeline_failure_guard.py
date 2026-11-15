@@ -442,6 +442,28 @@ def test_gate_is_wired_into_qa_validate_and_the_gate_registry() -> None:
           "pipeline-failure-guard-check" in named, str(sorted(named)))
 
 
+def test_run_43110467252_is_raised_onto_the_landed_implement_guard() -> None:
+    print("\nraised row: run 43110467252 (issue #833) names fix PR #1057 beside its guard (keeper raise)")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    row = [e for e in committed["failures"] if e["run_id"] == 43110467252]
+    check("the row exists in the committed ledger", len(row) == 1, str(row))
+    if not row:
+        return
+    e = row[0]
+    check("the row names fix PR #1057 (the landed #833 implementation)",
+          e.get("fix_pr") == 1057, str(e.get("fix_pr")))
+    check("the row names a guard test that exists on disk",
+          G.guard_test_exists(e.get("guard") or "") and e.get("guard") == "tests/test_implement_stream.py",
+          str(e.get("guard")))
+    check("the original undiagnosed field is KEPT (append-only, rule 3b)", "undiagnosed" in e, "")
+    check("the re-diagnosis fields are KEPT (append-only, rule 3b)",
+          "rediagnosed_utc" in e and "rediagnosis_note" in e, "")
+    # The exact post-merge gate shape: issue CLOSED, row names fix PR + real guard -> green.
+    rc, lines = verdict(committed["failures"],
+                        states([(43110467252, 833, "CLOSED"), (43088760321, 800, "CLOSED")]))
+    check("the committed ledger with issue #833 CLOSED passes the gate", rc == 0, str(lines))
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
@@ -457,6 +479,7 @@ def main() -> int:
     test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard()
     test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix()
     test_run_43109817750_is_rediagnosed_onto_the_landed_sweep_alarm_fix()
+    test_run_43110467252_is_raised_onto_the_landed_implement_guard()
     test_fix_in_flight_is_reported_never_red()
     test_log_expired_row_is_reported_as_its_own_shape_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
