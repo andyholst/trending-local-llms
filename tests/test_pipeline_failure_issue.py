@@ -470,12 +470,15 @@ def test_wiring_rulebook_and_registry() -> None:
     check("the filer marker is registered (rule 6j)",
           bm.REGISTRY.get("queued-alarm", {}).get("failure") == "pipeline-run-failure"
           and ("queued-alarm", "failure") in bm.WRITTEN, "")
-    # The re-diagnosis annotation marker (issue #987) is declared via the UNREGISTERED_OWED seam —
-    # its AGENTS.md §6j table row is owed to rule 3c (a protected file a headless leg cannot write),
-    # so it lives here with the issue that lands the registration, a ONE-place named shape, and a
-    # writer + parser in the tree (the reverse-guard scan accepts it through UNREGISTERED_OWED).
-    check("the rediagnose annotation marker is DECLARED with its landing issue (rule 6j/3c)",
-          bm.UNREGISTERED_OWED.get(bm.REDIAGNOSE_NAME) == 987, str(bm.UNREGISTERED_OWED))
+    # The re-diagnosis annotation marker (issue #987) is REGISTERED (rule 6j): its AGENTS.md §6j
+    # table row landed through an attended run (the rule 3c sign-off), so it moved from the
+    # UNREGISTERED_OWED seam into REGISTRY + WRITTEN; the §6j table and the registry are pinned
+    # equal by tests/test_bot_markers.py::test_agents_md_table_names_the_same_markers.
+    check("the rediagnose annotation marker is REGISTERED (rule 6j, issue #987)",
+          bm.REGISTRY.get("queued-alarm", {}).get("rediagnose") == bm.REDIAGNOSE_NAME
+          and ("queued-alarm", "rediagnose") in bm.WRITTEN
+          and bm.UNREGISTERED_OWED.get(bm.REDIAGNOSE_NAME) is None,
+          f"{bm.REGISTRY.get('queued-alarm')} / owed={bm.UNREGISTERED_OWED}")
     check("the rediagnose marker's shape round-trips its writer and parser",
           bm.rediagnose_marker_run(bm.rediagnose_marker(
               dt.datetime(2026, 11, 15, 8, 0, tzinfo=dt.timezone.utc), 123)) == "123", "")

@@ -15,6 +15,8 @@
       its issue) — the dedicated writer/parser round-trip and the reverse-scan acceptance stay green
 - [x] 6. The owed AGENTS.md §6j table row is recorded in `findings.md` with the registered owed-row
       marker (rule 3c), and the tasks box is written blocked — rule 3c human sign-off
-- [~] 6b. AGENTS.md §6j `queued-alarm` row names `pipeline-rediagnose` — blocked: rule 3c human sign-off (AGENTS.md protected in a headless leg)
+- [x] 6b. AGENTS.md §6j `queued-alarm` row names `pipeline-rediagnose` — LANDED: the rule 3c
+      human sign-off was given by an attended run, which moved the marker from UNREGISTERED_OWED
+      into REGISTRY + WRITTEN (issue #987)
 - [x] 7. Gates green on the exact head: `make openspec-check`, `make openspec-index`, `make test`,
       `make lint`, `make architecture-check`, `make validate-mapped`

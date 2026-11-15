@@ -38,3 +38,13 @@ one comment per raised row, never per sweep. The comment MUST be written with th
 - **When** the sweep raises it
 - **Then** the row gains `rediagnosed_utc` and no comment is attempted
 - **Test:** tests/test_pipeline_failure_issue.py::test_a_raise_with_no_issue_cites_no_thread
+
+#### Scenario: the annotation marker is registered, not owed (rule 3c sign-off landed)
+
+- **Given** `scripts/bot_markers.py` and the AGENTS.md §6j table after an attended run wrote the
+  owed `queued-alarm` row naming `pipeline-rediagnose`
+- **When** the registry is read
+- **Then** `pipeline-rediagnose` is `REGISTRY["queued-alarm"]["rediagnose"]`, present in
+  `WRITTEN`, ABSENT from `UNREGISTERED_OWED` (the owed list stays closed), and the §6j table names
+  it — table and registry pinned equal
+- **Test:** tests/test_pipeline_failure_issue.py::test_wiring_rulebook_and_registry

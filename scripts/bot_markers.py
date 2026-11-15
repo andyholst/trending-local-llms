@@ -26,6 +26,13 @@ from __future__ import annotations
 import datetime as dt
 import re
 
+#: The re-diagnosis annotation marker's name (issue #987): `<!-- pipeline-rediagnose: <ISO> run=<rid> -->`.
+#: REGISTERED in `REGISTRY["queued-alarm"]["rediagnose"]` (its AGENTS.md §6j table row landed
+#: through an attended run — the rule 3c sign-off); its SHAPE lives in `rediagnose_marker` /
+#: `rediagnose_marker_run` at the bottom of this module so the writer and the reader share ONE
+#: spelling (rule 6j). Defined above REGISTRY because the registry names it.
+REDIAGNOSE_NAME = "pipeline-rediagnose"
+
 #: `<bot> -> {kind: marker name}`. The name is the literal inside `<!-- ... -->`, so a reader and a
 #: writer that both go through this module can never disagree about it.
 REGISTRY: dict[str, dict[str, str]] = {
@@ -46,7 +53,14 @@ REGISTRY: dict[str, dict[str, str]] = {
     # The failure filer (issue #802): `queued-alarm.yml` announces EACH main-pipeline failure it
     # diagnoses from a failed run's logs by filing an issue that carries this marker — the stamp
     # dates the filing, `run=<id>` dedups it (one run files once, ledger + marker agree).
-    "queued-alarm":     {"failure": "pipeline-run-failure"},
+    "queued-alarm":     {"failure": "pipeline-run-failure",
+                         # The re-diagnosis annotation (issue #987): when the filer's re-diagnosis
+                         # pass raises a UNDIAGNOSED row, the cited issue's thread gets ONE
+                         # marker-deduplicated comment carrying this stamp — the ledger is the
+                         # machine's memory, the thread is the human's. Its §6j table row landed
+                         # through an attended run (rule 3c sign-off), so it moved out of
+                         # UNREGISTERED_OWED into the registry.
+                         "rediagnose": REDIAGNOSE_NAME},
 }
 
 #: Which artifact each bot announces on, before it mutates it (#197's table, for the guard).
@@ -55,7 +69,8 @@ ARTIFACTS: dict[str, str] = {
     "issue-review-bot": "the issue (before its first write)",
     "refresh-bot": "the PR it opens (and the gap issue it files)",
     "qa-validate": "the PR (immediately before the merge)",
-    "queued-alarm": "the issue it files for a diagnosed main-pipeline failure (issue #802)",
+    "queued-alarm": "the issue it files for a diagnosed main-pipeline failure (issue #802), and "
+                    "the issue thread of a ledger row its re-diagnosis pass raised (issue #987)",
 }
 
 #: The markers whose shape carries a WORD before the stamp (`issue-bot-verdict: refine <TS>`).
@@ -65,26 +80,13 @@ ARTIFACTS: dict[str, str] = {
 #: tests/test_bot_markers.py::test_the_two_reviewer_markers_are_not_confused).
 FIELDS: frozenset = frozenset({("issue-bot", "verdict")})
 
-#: The re-diagnosis annotation marker's name (issue #987): `<!-- pipeline-rediagnose: <ISO> run=<rid> -->`.
-#: Declared in `UNREGISTERED_OWED` below (its AGENTS.md §6j table row is owed to rule 3c); its SHAPE
-#: lives in `rediagnose_marker` / `rediagnose_marker_run` at the bottom of this module so the writer
-#: and the reader share ONE spelling (rule 6j). Defined here because UNREGISTERED_OWED names it.
-REDIAGNOSE_NAME = "pipeline-rediagnose"
-
 #: Markers a WRITER in the tree emits that the registry does NOT declare yet, each with the issue
 #: that lands the declaration (issue #474). Declaring one is a two-file change — this registry AND
 #: the AGENTS.md §6j table, a protected file — so a marker whose row cannot be written stays here
 #: instead of being invented into the registry alone. The list is CLOSED: the guard fails on any
-#: other stray, so this can only shrink.
-UNREGISTERED_OWED: dict[str, int] = {
-    # `pipeline-rediagnose` — written by `make pipeline-failure-issue`'s re-diagnosis pass (issue
-    # #969) on the issue thread of a raised UNDIAGNOSED row: the ledger is the machine's memory, the
-    # thread is the human's, so a raise that lands a diagnosis must annotate the row's issue once.
-    # Its §6j table row is owed to rule 3c (a protected agent-instruction file a headless leg cannot
-    # write), so it stays here until an attended run lands the AGENTS.md row and this can move into
-    # REGISTRY + WRITTEN (issue #987).
-    REDIAGNOSE_NAME: 987,
-}
+#: other stray, so this can only shrink. It is NOW EMPTY: every owed registration has landed —
+#: last was `pipeline-rediagnose` (issue #987), whose AGENTS.md §6j row an attended run wrote.
+UNREGISTERED_OWED: dict[str, int] = {}
 
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
 DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature")
@@ -119,6 +121,10 @@ WRITTEN: frozenset = frozenset({
     # Written by `scripts/pipeline_failure_issue.py` (via `make pipeline-failure-issue`,
     # issue #802) on the body of every issue it files for a failed main-pipeline run.
     ("queued-alarm", "failure"),
+    # Written by the SAME filer's re-diagnosis pass (issue #987) on the ISSUE THREAD of a raised
+    # UNDIAGNOSED ledger row: one marker-deduplicated comment, so the thread stops claiming
+    # "log unreadable" once the diagnosis landed in the ledger.
+    ("queued-alarm", "rediagnose"),
 })
 
 #: Registered but not yet written, with the issue that lands its writer. Declared here so a reader
