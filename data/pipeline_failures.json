@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-11-14T21:02:06Z",
+  "updated_utc": "2026-11-15T21:36:49Z",
   "failures": [
     {
       "run_id": 43088760321,
@@ -306,7 +306,7 @@
       ],
       "issue_number": "833",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/833",
-      "fix_pr": null,
+      "fix_pr": 1057,
       "guard": "tests/test_implement_stream.py",
       "undiagnosed": "log fetch for job 130843177357 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
       "rediagnosed_utc": "2026-11-15T14:55:56.846228+00:00",
