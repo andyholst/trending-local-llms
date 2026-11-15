@@ -322,6 +322,37 @@ def test_the_per_entry_dedup_row_is_written():
           "#996" in row and "#1001" in row, row[:120])
 
 
+def test_the_gap_body_newline_row_is_written():
+    """#1005: the §8 row the newline-contract guard (issue #1002, PR #1003) owed.
+
+    The shared assertion landed but the rulebook row did not — the owed-row ledger (#523)
+    tracks exactly this gap; this pins the row, needle-contiguous, so it cannot rot back
+    to prose and `make owed-rows-check` can prove it LANDED.
+    """
+    sec = section8()
+    row = next((l for l in sec.splitlines()
+                if "tests/test_data_gap_analysis.py::test_the_gap_issue_body_ends_with_a_newline"
+                in l), "")
+    check("rows: the gap-body newline guard has a §8 row", bool(row), "no needle-contiguous row")
+    check("rows: … naming the issues that measured it",
+          "#1002" in row and "#1005" in row, row[:120])
+
+
+def test_the_ledger_evidence_close_row_is_written():
+    """#998: the §8 row the ledger-evidence close gate (issue #993, PR #995) owed.
+
+    Same shape as #1005: the gate landed in code, its row stayed owed; this pins the row,
+    needle-contiguous, so the ledger can report it LANDED.
+    """
+    sec = section8()
+    row = next((l for l in sec.splitlines()
+                if "tests/test_issue_triage.py::test_a_pipeline_failure_close_is_accepted_only_with_a_merged_ledger_row"
+                in l), "")
+    check("rows: the ledger-evidence close gate has a §8 row", bool(row), "no needle-contiguous row")
+    check("rows: … naming the issues that measured it",
+          "#993" in row and "#998" in row, row[:120])
+
+
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
@@ -332,6 +363,8 @@ def main() -> int:
     test_the_storage_offload_row_is_written()
     test_the_engine_meta_row_is_written()
     test_the_per_entry_dedup_row_is_written()
+    test_the_gap_body_newline_row_is_written()
+    test_the_ledger_evidence_close_row_is_written()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
