@@ -2460,6 +2460,36 @@ def test_declared_estimates_surface_as_a_reaskable_class():
               in G.render(clean_report), str(clean_report["signature"]))
 
 
+def test_context_tokens_ingest_traceable_rows_carry_the_post_state():
+    """Issue #991 ingest half: a captured post that states a context window on a
+    correctly-attributed measurement must be STRUCTURED (in `context_tokens`), not
+    left prose-only — and it must stay clean against the `data`-stage source-post
+    readback gate (issue #789): a figure the cited post does not state, or that
+    belongs to a different row, is the defect this refuses. Locks the two shipped
+    MTPLX rows whose shared post states '50 TPS at 200K'."""
+
+    store = G._load_flat_store()
+    by_id = {m.get("id"): m for m in store["models"]}
+    mtplx = {}
+    for mid in ("qwen3-8-flash-next-125b", "qwen3-8-flash-next-125b-mtplx-rd1-1"):
+        row = by_id.get(mid) or {}
+        row_ctx = next((e.get("context_tokens") for e in (row.get("engines") or [])
+                        if e.get("engine") == "MTPLX"), None)
+        mtplx[mid] = row_ctx
+    check("the two MTPLX rows carry the context their post states",
+          mtplx == {"qwen3-8-flash-next-125b": "200K",
+                    "qwen3-8-flash-next-125b-mtplx-rd1-1": "200K"},
+          str(mtplx))
+
+    # The readback gate runs the REAL scan over the REAL store (rule 6m): a gated
+    # hard-field contradiction on the rows that now carry context_tokens is a defect.
+    hard = [f for f in V.source_post_figure_flags(store)
+            if f[0] in ("qwen3-8-flash-next-125b", "qwen3-8-flash-next-125b-mtplx-rd1-1")
+            and f[3] in V._SOURCE_POST_GATE_FIELDS]
+    check("the structured context values pass the source-post readback gate",
+          not hard, str(hard))
+
+
 def test_the_declared_estimate_detector_is_one_detector():
     """Rule 6d (issue #936): the `(est)` marker has exactly ONE detector —
     scripts/declared_estimate.py — and its field set IS the analysis's DIMENSIONS.
@@ -2534,6 +2564,7 @@ def main() -> int:
     test_a_measurement_without_a_source_post_needs_equal_tps()
     test_a_joint_raise_is_still_credited_to_neither()
     test_declared_estimates_surface_as_a_reaskable_class()
+    test_context_tokens_ingest_traceable_rows_carry_the_post_state()
     test_the_declared_estimate_detector_is_one_detector()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
