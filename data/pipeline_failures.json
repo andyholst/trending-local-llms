@@ -275,16 +275,17 @@
       "created_utc": "2026-11-11T22:12:44Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:1384: sweep-alarm"
+        "Makefile:1384: sweep-alarm",
+        "sweep-alarm"
       ],
       "issue_number": "832",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/832",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 806,
+      "guard": "tests/test_sweep_alarm.py",
       "undiagnosed": "log fetch for job 130822599916 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
       "rediagnosed_utc": "2026-11-15T14:55:56.846228+00:00",
       "error_excerpt": "2026-11-11T22:13:00.7922993Z [sweep-alarm] FAIL: the newest delivery is only 0.2 h old but concluded 'in_progress' \u2014 a sweep that ran and did not succeed delivered nothing\n2026-11-11T22:13:00.7999167Z make: *** [Makefile:1384: sweep-alarm] Error 1\n2026-11-11T22:13:00.8019147Z ##[error]Process completed with exit code 2.",
-      "rediagnosis_note": "re-read on this sweep from job 130822599916 (alarm) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
+      "rediagnosis_note": "re-read on this sweep from job 130822599916 (alarm) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT; raised append-only with fix_pr 806 + guard (rule 6r) by the #832 implementation"
     },
     {
       "run_id": 43110467252,

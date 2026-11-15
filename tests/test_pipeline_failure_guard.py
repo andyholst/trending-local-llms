@@ -316,6 +316,34 @@ def test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix() -
                                 (43088760321, 800, "CLOSED")]))
     check("the committed ledger with #831 CLOSED passes the gate", rc == 0, str(lines))
 
+def test_run_43109817750_is_rediagnosed_onto_the_landed_sweep_alarm_fix() -> None:
+    print("\n#832: the queued-alarm sweep-alarm row names the landed fix PR + guard (rule 6r)")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    row = [e for e in committed["failures"] if e["run_id"] == 43109817750]
+    check("row 43109817750 exists in the committed ledger", len(row) == 1, str(row))
+    if row:
+        e = row[0]
+        check("row 43109817750 names fix PR #806 (the #801 in-flight misgrade fix)",
+              e.get("fix_pr") == 806, str(e.get("fix_pr")))
+        check("row 43109817750 names a guard test that exists on disk",
+              G.guard_test_exists(e.get("guard") or "") and e.get("guard") == "tests/test_sweep_alarm.py",
+              str(e.get("guard")))
+        check("row 43109817750 diagnosis names the measured in-flight verdict line",
+              "in_progress" in (e.get("error_excerpt") or ""), str(e.get("error_excerpt"))[:200])
+        check("row 43109817750 targets were GROWN to the parseable target (rule 3b)",
+              "sweep-alarm" in (e.get("targets") or []), str(e.get("targets")))
+        check("row 43109817750 original undiagnosed field is KEPT (append-only, rule 3b)",
+              "undiagnosed" in e, "")
+    # The exact post-merge gate shape: #832 CLOSED with its row named -> green, beside the siblings.
+    rc, lines = verdict(committed["failures"],
+                        states([(43109817750, 832, "CLOSED"), (43050447566, 830, "CLOSED"),
+                                (42973469114, 825, "CLOSED"), (41929086636, 823, "CLOSED"),
+                                (41956933757, 824, "CLOSED"), (43049550731, 829, "CLOSED"),
+                                (41788683672, 820, "CLOSED"), (41860616772, 821, "CLOSED"),
+                                (41922211098, 822, "CLOSED"), (43088760321, 800, "CLOSED")]))
+    check("the committed ledger with #832 CLOSED passes the gate", rc == 0, str(lines))
+
+
 def test_log_expired_row_is_reported_as_its_own_shape_never_red() -> None:
     print("\nlog_expired (issue #986): a row whose log aged out of retention is its OWN shape, never red")
     expired = {"run_id": 200, "workflow": "qa-validate.yml", "job": "validate",
@@ -428,6 +456,7 @@ def main() -> int:
     test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix()
     test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard()
     test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix()
+    test_run_43109817750_is_rediagnosed_onto_the_landed_sweep_alarm_fix()
     test_fix_in_flight_is_reported_never_red()
     test_log_expired_row_is_reported_as_its_own_shape_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
