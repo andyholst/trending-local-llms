@@ -474,11 +474,138 @@ def test_wiring_rulebook_and_registry() -> None:
           "tests/test_pipeline_failure_issue.py" in agents, "")
 
 
+def _seed_ledger(tmp: Path, entries: list[dict]) -> Path:
+    """Write a pre-existing ledger (a past filed run) so the sweep enters in the re-diagnosis
+    state rather than filing."""
+    ledger = tmp / "ledger.json"
+    ledger.write_text(json.dumps({"failures": entries}))
+    return ledger
+
+
+UNDIAG_ROW = {
+    "run_id": 100, "workflow": "qa-validate.yml", "job": "validate",
+    "head_sha": "a" * 40, "run_url": "https://github.com/octo/repo/actions/runs/100",
+    "created_utc": "2026-11-11T20:00:00Z", "filed_utc": "2026-11-11T21:00:00Z",
+    "targets": [], "issue_number": "824", "issue_url": "https://github.com/octo/repo/issues/824",
+    "fix_pr": None, "guard": None,
+    "undiagnosed": "log fetch for job 900 failed twice: gh refused the escape-bearing log",
+}
+MARKER_MATCHED_ROW = {
+    "run_id": 104, "workflow": "qa-validate.yml", "job": "alarm",
+    "head_sha": "e" * 40, "run_url": "https://github.com/octo/repo/actions/runs/104",
+    "created_utc": "2026-11-11T19:00:00Z", "filed_utc": "2026-11-11T21:00:00Z",
+    "targets": [], "issue_number": None, "issue_url": None,
+    "fix_pr": None, "guard": None,
+    "note": "filed before the ledger existed (marker-matched)",
+}
+
+
+def test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log() -> None:
+    print("\nrediagnose (#969): a planted UNDIAGNOSED row becomes diagnosed on the next sweep")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, BASE_CANNED)
+        ledger = _seed_ledger(tmp, [dict(UNDIAG_ROW), dict(MARKER_MATCHED_ROW)])
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the pass names the raised run", "REDIAGNOSED run 100" in proc.stdout, proc.stdout)
+        check("NO new issue is filed for a run the ledger already knows",
+              not (tmp / "canned" / "create-count").exists(), proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = {e["run_id"]: e for e in data["failures"]}[100]
+        check("rediagnosed_utc stamped", bool(row.get("rediagnosed_utc")), str(row))
+        check("error_excerpt carries the log's own block",
+              "make: *** [validate] Error 1" in row.get("error_excerpt", ""), str(row)[:300])
+        check("the planted secret is masked in the raised row (rule 3f redaction)",
+              FAKE_SECRET not in row.get("error_excerpt", "")
+              and "***" in row.get("error_excerpt", ""), row.get("error_excerpt", "")[:200])
+        check("targets GROWN from the log (was [])", row.get("targets") == ["validate"], str(row))
+        check("the original undiagnosed field is KEPT (rule 3b additive)",
+              row.get("undiagnosed") == UNDIAG_ROW["undiagnosed"], str(row)[:300])
+        check("fix_pr/guard stay null — attribution is each fix's own decision",
+              row.get("fix_pr") is None and row.get("guard") is None, str(row))
+        check("a note names the seam that raised it", "#969" in row.get("rediagnosis_note", ""),
+              str(row))
+        row104 = {e["run_id"]: e for e in data["failures"]}[104]
+        check("a row that was never UNDIAGNOSED is untouched",
+              "rediagnosed_utc" not in row104, str(row104))
+        # Re-run: nothing left pending, nothing rewritten.
+        before = ledger.read_text()
+        second = run_filer(env, ledger)
+        check("re-sweep raises nothing again (rediagnosed_utc ends the queue)",
+              second.returncode == 0 and "REDIAGNOSED" not in second.stdout
+              and ledger.read_text() == before, second.stdout)
+
+
+def test_a_still_unreadable_log_leaves_the_row_undiagnosed_and_retries_next_sweep() -> None:
+    print("\nrediagnose retry: a log still refused keeps the row pending, loudly, never 'done'")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["log-fail"] = ""
+        env = make_scene(tmp, canned)
+        # Seed BOTH scene runs so nothing new is filed and only the re-diagnosis pass moves.
+        ledger = _seed_ledger(tmp, [dict(UNDIAG_ROW), dict(MARKER_MATCHED_ROW)])
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("exit 0 (a refused re-read is not the sweep's failure)",
+              proc.returncode == 0, proc.stderr)
+        check("the refusal is LOUD on the line", "rediagnose run 100: log still unreadable"
+              in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = data["failures"][0]
+        check("the row gains NO rediagnosed_utc — it stays pending",
+              "rediagnosed_utc" not in row, str(row)[:300])
+        check("the ledger file is byte-identical (nothing half-written)",
+              ledger.read_text() == before, "")
+    # A row naming a job the run's job list no longer has is reported, not guessed at.
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, BASE_CANNED)
+        ghost = dict(UNDIAG_ROW)
+        ghost["job"] = "no-such-job"
+        ledger = _seed_ledger(tmp, [ghost])
+        proc = run_filer(env, ledger)
+        check("a job-name mismatch is named, and the row stays UNDIAGNOSED",
+              proc.returncode == 0 and "no failed job 'no-such-job'" in proc.stdout
+              and "rediagnosed_utc" not in json.loads(ledger.read_text())["failures"][0],
+              proc.stdout)
+
+
+def test_a_rediagnosed_row_is_never_re_fetched_and_dry_previews_without_writing() -> None:
+    print("\nrediagnose bounds: done rows are skipped; --dry previews WOULD RAISE and writes nothing")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["log-fail"] = ""  # ANY log call would fail — a done row must not trigger one
+        env = make_scene(tmp, canned)
+        done = dict(UNDIAG_ROW)
+        done["rediagnosed_utc"] = "2026-11-12T00:00:00+00:00"
+        done["error_excerpt"] = "make: *** [validate] Error 1"
+        ledger = _seed_ledger(tmp, [done, dict(MARKER_MATCHED_ROW)])
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("a rediagnosed row is not re-fetched and prints no rediagnose line",
+              proc.returncode == 0 and "rediagnose run 100" not in proc.stdout
+              and ledger.read_text() == before, proc.stdout)
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, BASE_CANNED)
+        ledger = _seed_ledger(tmp, [dict(UNDIAG_ROW)])
+        before = ledger.read_text()
+        proc = run_filer(env, ledger, "--dry")
+        check("--dry prints the preview", "WOULD RAISE run 100" in proc.stdout, proc.stdout)
+        check("--dry writes NOTHING to the ledger", ledger.read_text() == before, "")
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
     test_ledger_and_marker_dedup_file_one_run_once_ever()
     test_undiagnosed_filing_is_loud_never_a_skip()
+    test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log()
+    test_a_still_unreadable_log_leaves_the_row_undiagnosed_and_retries_next_sweep()
+    test_a_rediagnosed_row_is_never_re_fetched_and_dry_previews_without_writing()
     test_an_escape_refused_log_is_diagnosed_on_the_flag_retry()
     test_strip_terminal_escapes_leaves_plain_text_intact()
     test_read_failures_exit_2_never_a_fake_clean()
