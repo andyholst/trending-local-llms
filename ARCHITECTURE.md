@@ -120,7 +120,13 @@ hold the host command. `$(DOCKER_RUN)` runs the **base image**
 ### Images / setup
 
 The base image **is** the agent image: it bakes the Hermes CLI and the pinned
-`keeltrace/hermes-nerve` plugin, and every bot job runs inside it. Two properties
+`keeltrace/hermes-nerve` plugin, and every bot job runs inside it (the four that
+must SELF-VERIFY against the canonical suite — `implement-issue`,
+`review-issue`, `review-issue-window`, `fix` — run inside the **test** image
+`$(TEST_RUN)`, a strict superset of the base that ALSO layers
+`requirements-test.txt`, because their own `make test`/`make validate` gate
+needs `markdown-it-py`, which the base python lacks — issue #833, measured on
+run 43110467252). Two properties
 keep it honest (issue #207):
 
 - **one installer seam** — the Dockerfile installs the CLI through
