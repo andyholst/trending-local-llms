@@ -1,6 +1,7 @@
 # Bot leg contracts move from .hermes/skills to agents/skills; marker scan covers agent skills
 
 **Issue:** [#904](https://github.com/andyholst/trending-local-llms/issues/904)
+PR: #982
 **Capability:** `agent-leg-skills`
 
 ## Why
