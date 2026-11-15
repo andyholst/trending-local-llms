@@ -1,6 +1,7 @@
 # Proposal: cross-model-ingest-date-identity
 
 Issue: #971 — "The ingest-time duplicate refusal still keys on hardware, not date"
+PR: #1009
 
 ## Why
 
