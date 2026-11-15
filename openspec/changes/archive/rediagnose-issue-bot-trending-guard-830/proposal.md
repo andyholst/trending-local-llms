@@ -1,6 +1,7 @@
 # Re-diagnose the issue-bot trending-guard row (issue #830)
 
 Issue: #830
+PR: #1048
 
 ## Why
 
