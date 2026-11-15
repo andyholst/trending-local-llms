@@ -1,6 +1,7 @@
 # Proposal: engine-build-refuses-throughput
 
 Issue: #1006 — "The gap reader over-matches throughput as `engine_min_version`"
+PR: #1010
 
 ## Why
 
