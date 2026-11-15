@@ -1,6 +1,7 @@
 # Rediagnose the cancelled refresh-bot aggregate row (issue #823)
 
 Issue: #823
+PR: #983
 
 ## Why
 
