@@ -1,6 +1,7 @@
 # Re-diagnose the issue-bot record-pr refusal row (issue #831)
 
 Issue: #831
+PR: #1051
 
 ## Why
 
