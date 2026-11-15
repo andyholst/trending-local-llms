@@ -52,8 +52,15 @@ except ImportError:  # pragma: no cover - only when run outside scripts/
 
 #: The files a refresh GENERATES. They are re-derived from the raw snapshots by
 #: `make merge`, so a reset may discard them — and NOTHING else. A path outside this
-#: set is somebody's real edit, and resetting it would silently lose it.
-GENERATED_PATHS = ("README.md", "data/models.json", "data/gap_baseline.json",
+#: set is somebody's real edit, and resetting it would silently lose it. The set
+#: includes every store file the merge writes (issue #531/#888 split): the catalog
+#: `data/models.json` AND the three additive ledgers `data/measurements.json`,
+#: `data/posts.json`, `data/refusals.json` — a refresh that changes data carries
+#: them dirty, and refusing them would strand every refresh with new data (issue
+#: #997).
+GENERATED_PATHS = ("README.md", "data/models.json", "data/measurements.json",
+                   "data/posts.json", "data/refusals.json",
+                   "data/gap_baseline.json",
                    "data/snapshots/", "data/raw/", "tests/fixtures/github_meta.json")
 
 #: The subset that is NOT re-derivable and must survive the reset: the raw snapshots
