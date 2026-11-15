@@ -153,6 +153,51 @@ def test_the_workflow_guards_first_and_calls_the_make_target():
           and not re.search(r"secrets\.FIXBOT_DISPATCH_TOKEN[\s\S]{0,400}?gh issue comment", text))
 
 
+def _unguarded_alarm_steps(text: str) -> list[str]:
+    """Names of `run: make` steps in the `alarm` job lacking `if: ${{ !cancelled() }}`.
+
+    ONE verifier (rule 6d): it checks the shipped workflow AND a planted copy of the old
+    shape, so the pin and the negative control can never disagree.
+    """
+    alarm = re.search(r"^  alarm:\n(.*)", text, re.S | re.M).group(1)
+    steps = re.split(r"^      - name: ", alarm, flags=re.M)[1:]
+    out = []
+    for block in steps:
+        # a detector step is `run: make …` OR a `run: |` block whose body runs a make target
+        if not re.search(r"^\s*run: make |^\s+make ", block, re.M):
+            continue
+        if re.search(r"^\s+if: \$\{\{ (?:!cancelled\(\)|always\(\)) \}\}", block, re.M):
+            continue
+        out.append(block.split("\n", 1)[0])
+    return out
+
+
+def test_every_alarm_step_runs_whatever_a_sibling_decided():
+    # Given the alarm workflow (issue #1024: dispatch run 43698769068 had `make sweep-alarm`
+    # exit 2 at step 4 and GitHub SKIPPED steps 5-10 — the failure filer, the ledger landing,
+    # the owed-row report and the branch-protection guard never ran, so the sweep failure
+    # 43147959554 was neither filed nor recorded in the ledger).
+    text = (WF / "queued-alarm.yml").read_text()
+    # Then every `run: make` step of the alarm job carries the sibling-proof condition ...
+    offenders = _unguarded_alarm_steps(text)
+    check("wf: no alarm step is skippable by a sibling's red",
+          not offenders, "; ".join(offenders[:4]))
+    check("wf: the condition is on at least the seven detector steps",
+          text.count("if: ${{ !cancelled() }}") >= 7,
+          f"count={text.count('if: ${{ !cancelled() }}')}")
+    # ... and the SAME verifier goes red on the pre-change shape: strip every `if:` line, and
+    # every detector step becomes an offender (rule 6c: the guard must FAIL on the old code).
+    old = re.sub(r"^\s+if: \$\{\{ !cancelled\(\) \}\}\n", "", text, flags=re.M)
+    old_offenders = _unguarded_alarm_steps(old)
+    check("wf: the verifier flags the pre-change shape (proven red on the old file)",
+          len(old_offenders) >= 7,
+          f"old_shape_offenders={len(old_offenders)}")
+    # The guard JOB still gates the whole alarm job — needs:, not a step condition (a step `if:`
+    # must never bypass a refused guard).
+    check("wf: alarm still needs the guard job",
+          re.search(r"^  alarm:\n(?:.*\n)*?^    needs: guard$", text, re.M), "")
+
+
 def test_the_make_target_passes_its_variables_through():
     # When the make target is printed
     r = subprocess.run(["make", "-n", "queued-alarm", "REPO=o/r", "MINUTES=15", "COMMENT=1"],
@@ -187,6 +232,7 @@ def main() -> int:
     test_a_short_queue_is_not_reported()
     test_comment_is_posted_once_per_run()
     test_the_workflow_guards_first_and_calls_the_make_target()
+    test_every_alarm_step_runs_whatever_a_sibling_decided()
     test_the_make_target_passes_its_variables_through()
     test_agents_md_carries_the_rule_and_the_guard_row()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

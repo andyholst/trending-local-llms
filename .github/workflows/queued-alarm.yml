@@ -79,6 +79,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Report jobs queued far too long, and comment once per affected run
+        if: ${{ !cancelled() }}
         env:
           # The DEFAULT token, not the owner PAT: the run/job queries need `actions: read` and
           # the one comment needs `issues: write` (both held by this job), and AGENTS.md rule 6e
@@ -94,6 +95,7 @@ jobs:
       # sweep asks for ONE delivery per Wednesday, so the window is sweep_alarm.py's own
       # weekly default — one implementation, rule 6d.
       - name: Fail loudly when the weekly sweep has not been delivered
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: make sweep-alarm REPO="${{ github.repository }}"
@@ -101,6 +103,7 @@ jobs:
       # run row for any other alarm to read, so the only honest signal is the age of the newest
       # committed snapshot. Twice-daily crons leave a ~11.7 h gap; 14 h is one missed slot.
       - name: Fail loudly when the published index is stale
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: make freshness-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=14
@@ -112,6 +115,7 @@ jobs:
       # reads the NEWEST push-to-master qa-validate run and goes RED when it concluded failure —
       # the same "a red or silent state must produce a signal" model as the alarms around it.
       - name: Fail loudly when the newest push-to-master qa-validate run is red (issue #527)
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: make master-alarm REPO="${{ github.repository }}"
@@ -125,6 +129,7 @@ jobs:
       # fix lands as its own reviewed change (rule 6g), and its closing PR must carry the guard
       # test that `make pipeline-failure-guard-check` refuses without.
       - name: Diagnose and file every unfiled main-pipeline failure from its logs (issue #802)
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: make pipeline-failure-issue REPO="${{ github.repository }}"
@@ -134,6 +139,7 @@ jobs:
       # used the default token for exactly that reason). The body carries NO closing keyword: this
       # PR implements no issue; it records the issues the fix PRs will close.
       - name: Land the ledger append as a reviewed PR (issue #802)
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
@@ -159,6 +165,7 @@ jobs:
       # cannot rot open. A landed/outstanding row is news (exit 0); only an unreadable ledger or
       # a malformed marker is red (exit 2). It never edits a body, label or issue state (rule 6j).
       - name: Report the owed-row ledger against AGENTS.md
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: make owed-rows-check REPO="${{ github.repository }}"
@@ -170,6 +177,7 @@ jobs:
       # protection turns THIS weekly sweep RED instead of restoring the unguarded state in
       # silence. The step is read-only — applying the setting is an owner-approved act (#959).
       - name: Fail loudly when master's branch protection is missing or weakened (issue #959)
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
         run: make check-branch-protection REPO="${{ github.repository }}"
