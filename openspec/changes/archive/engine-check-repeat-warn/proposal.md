@@ -1,6 +1,7 @@
 # Proposal: engine-check-repeat-warn
 
 Issue: #972
+PR: #1070
 
 ## Why
 
