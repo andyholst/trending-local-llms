@@ -1,6 +1,7 @@
 # Only the refresh cron stays active — every other cron job inactivated; LLM calls only through the harness image (owner directive)
 
 **Issue:** [#1029](https://github.com/andyholst/trending-local-llms/issues/1029)
+PR: #1030
 **Capability:** `fleet-cadence` (modified), `alarms` (added), `merge-gate-no-llm-calls` (new)
 
 ## Why
