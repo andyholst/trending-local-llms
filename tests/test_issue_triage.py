@@ -89,7 +89,7 @@ def check(name, cond, detail: object = ""):
 
 
 def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verdict=None,
-        state="OPEN", agents=None):
+        state="OPEN", agents=None, ledger=None):
     """Run a script for real with the gh CLI faked; return (rc, out, calls, td)."""
     td = Path(tempfile.mkdtemp())
     bindir = td / "bin"
@@ -106,6 +106,10 @@ def run(script, args, *, issue=ISSUE, comments=COMMENTS, labels=(), rc="0", verd
     if agents is not None:
         (td / "agents.md").write_text(agents)
         args = [*args, "--agents-file", str(td / "agents.md")]
+    if ledger is not None:
+        ledger_path = td / "ledger.json"
+        ledger_path.write_text(json.dumps(ledger))
+        args = [*args, "--ledger", str(ledger_path)]
     env = {**os.environ, "PATH": f"{bindir}:{os.environ['PATH']}", "REPO": "o/r", "ISSUE": "42",
            "FAKE_GH_RC": rc, "TRIAGE_FILE": str(td / "triage.md")}
     proc = subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True,
@@ -433,6 +437,63 @@ def test_three_mock_issues_decide_implement_refine_or_close_against_the_tree():
           rc != 0 and "REFUSED" in out, (rc, out[-200:]))
 
 
+def test_a_pipeline_failure_close_is_accepted_only_with_a_merged_ledger_row():
+    """Issue #993: a pipeline-failure issue's proof lives in the LEDGER, not a file:line.
+
+    The evidence gate refused every correct `close` on the pipeline-failure issues (#824,
+    run 43681625562): their proof is `data/pipeline_failures.json` run=<id> + fix_pr + guard.
+    An `EVIDENCE:` naming the ledger + a run id is now checkable ONLY when the ledger's row for
+    that run names a merged fix_pr AND a guard test `make test` collects — so an already-fixed
+    failure closes green, while a fix-in-flight, an unknown run, or prose stays refused.
+    """
+    # A planted ledger (what a test controls): one merged row, one fix-in-flight.
+    ledger = {
+        "updated_utc": "2026-11-15T00:00:00Z",
+        "failures": [
+            {"run_id": 41788683672, "issue_number": 820, "fix_pr": 806,
+             "guard": "tests/test_sweep_alarm.py"},
+            {"run_id": 42976201014, "issue_number": 822, "fix_pr": None, "guard": None},
+        ],
+    }
+
+    # Given  a close whose evidence cites the ledger run whose row HAS landed fix_pr + guard
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "TRIAGE: close\n"
+        "EVIDENCE: data/pipeline_failures.json run=41788683672 names fix_pr 806 and guard "
+        "tests/test_sweep_alarm.py\n"
+        "REASON: already fixed by PR #806\n"), ledger=ledger)
+    # Then   the close proceeds, posts the evidence, closes and labels agent:closed
+    check("pipeline-close(merged row): exit 0", rc == 0, (rc, out[-200:]))
+    check("pipeline-close(merged row): publishes verdict=close", "verdict=close" in out, out)
+    check("pipeline-close(merged row): closes the issue", "issue close" in calls, calls)
+    check("pipeline-close(merged row): applies agent:closed", "agent:closed" in calls, calls)
+
+    # Given  a close citing a run whose row names NO merged fix (the fix is in flight)
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "TRIAGE: close\n"
+        "EVIDENCE: data/pipeline_failures.json run=42976201014 has no fix_pr yet\n"
+        "REASON: the failure is fixed\n"), ledger=ledger)
+    # Then   REFUSED — a fix-in-flight failure must not be closed away before its guard lands
+    check("pipeline-close(fix in flight): REFUSED", rc != 0 and "REFUSED" in out, (rc, out[-200:]))
+    check("pipeline-close(fix in flight): no close, no label", "issue close" not in calls, calls)
+
+    # Given  a close citing a run id the ledger does NOT record
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "TRIAGE: close\n"
+        "EVIDENCE: data/pipeline_failures.json run=99999999999 fix_pr 806 guard "
+        "tests/test_sweep_alarm.py\n"
+        "REASON: fixed\n"), ledger=ledger)
+    check("pipeline-close(unknown run): REFUSED", rc != 0 and "REFUSED" in out, (rc, out[-200:]))
+    check("pipeline-close(unknown run): no close", "issue close" not in calls, calls)
+
+    # Given  a close whose evidence is prose only
+    rc, out, calls, _ = run(VERDICT, ["--issue", "42"], verdict=(
+        "TRIAGE: close\nREASON: looks obsolete\nEVIDENCE: it is old and probably fixed\n"),
+        ledger=ledger)
+    check("pipeline-close(prose): REFUSED", rc != 0 and "REFUSED" in out, (rc, out[-200:]))
+    check("pipeline-close(prose): no close", "issue close" not in calls, calls)
+
+
 def test_the_state_check_tells_a_finished_issue_from_a_failed_run():
     """Issue #520: the sweep must not go RED over an issue a merged PR already closed.
 
@@ -627,6 +688,7 @@ def main() -> int:
     test_a_decorated_verdict_is_read_and_a_near_miss_is_not_guessed_at()
     test_the_label_is_verified_not_assumed()
     test_three_mock_issues_decide_implement_refine_or_close_against_the_tree()
+    test_a_pipeline_failure_close_is_accepted_only_with_a_merged_ledger_row()
     test_close_quotes_the_landed_owed_row_with_its_agents_md_line()
     test_close_records_an_outstanding_owed_row_and_still_closes()
     test_close_refuses_when_a_declared_section_does_not_exist()
