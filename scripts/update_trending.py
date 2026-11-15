@@ -2494,8 +2494,9 @@ def measurement_model_aliases(model: dict, store: dict | None = None) -> set[str
     return ids
 
 #: The single source of truth for an IDENTICAL cross-model measurement tuple.
-#: Keyed by the same identity key the report-only scan uses — (engine, tps,
-#: hardware, source_post) -> [model ids]. Every remaining tuple is one of:
+#: Keyed by the SAME identity the ingest-time refusal reads — (engine, tps, date,
+#: source_post) -> [model ids] — the date-keyed identity shared with the post-merge
+#: gate (`cross_row_duplicate_identity`, issue #971). Every remaining tuple is one of:
 #:   * the SAME model under two store ids (qwen3.8-27b / -swift, bonsai = ternary
 #:     qwen3.8-27b, phone variants, qwen3-30b = its A3B id), or
 #:   * a post that measured BOTH models (the GuideboardLabs Agon bench reports the
@@ -2504,38 +2505,38 @@ def measurement_model_aliases(model: dict, store: dict | None = None) -> set[str
 #: The #695 test imports this list so the ingest-time refusal and the post-merge
 #: gate read the SAME allow-list and never disagree (issue #702).
 CROSS_MODEL_ALLOW_LIST: dict[tuple[str, str, str, str], set[str]] = {
-    ("llama.cpp", "80.76", "RTX 4090 24GB",
+    ("llama.cpp", "80.76", "2026-10-22",
      "https://lightbrd.com/Oluwaphilemon1/status/2113070110038450648"):
         {"qwen3.8-27b", "qwen3.8-27b-dflash2-teksedge3090"},
-    ("llama.cpp", "45", "RX 9070 XT 16GB",
+    ("llama.cpp", "45", "2026-10-07",
      "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112"):
         {"qwen3.8-27b", "qwen3.8-27b-swift"},
-    ("MLX", "34.5", "Mac Studio M4 Max, 128GB unified memory",
+    ("MLX", "34.5", "2026-09-18",
      "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783"):
         {"bonsai-2-27b-mac-m4-max", "qwen3.8-27b"},
-    ("llama.cpp", "69", "2024 MacBook Pro M4 Pro, 48GB unified memory",
+    ("llama.cpp", "69", "2026-10-23",
      "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273"):
         {"qwen3.6-35b-a3b", "qwen3.6-35b-a3b-kapitsa-m4-pro-mtp"},
-    ("vLLM", "25.4", "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo)",
+    ("vLLM", "25.4", "2026-10-14",
      "https://lightbrd.com/GuideboardLabs/status/2110246672166699354"):
         {"lfm2.5-24b-a2b", "qwen3.6-35b-a3b"},
-    ("llama.cpp", "190", "RX 7900 XTX 24GB",
+    ("llama.cpp", "190", "2026-07-11",
      "https://lightbrd.com/Whimsicali/status/2075976039113904260"):
         {"qwen3.6-35b-a3b", "qwopus3.6-35b-a3b-coder-mtp"},
-    ("MLX", "9", "M1 Pro MacBook Pro 16GB",
+    ("MLX", "9", "2026-09-18",
      "https://lightbrd.com/allambition/status/2101077523027435878"):
         {"bonsai-2-27b", "qwen3.8-27b-bonsai-2"},
-    ("MLX", "120", "iPhone 18 Pro Max",
+    ("MLX", "120", "2026-10-15",
      "https://lightbrd.com/eltc9584/status/2111091999638229038"):
         {"bonsai-2-2b", "bonsai-2-2b-phone"},
-    ("MLX", "34", "iPhone 18 Pro Max",
+    ("MLX", "34", "2026-10-16",
      "https://lightbrd.com/eltc9584/status/2111091999638229038"):
         {"bonsai-2-9b", "bonsai-2-9b-phone"},
-    ("MLX", "106", "Apple M5 Pro Mac mini, 64GB unified memory",
+    ("MLX", "106", "2026-10-10",
      "https://lightbrd.com/pratikg/status/2108994425166967019"):
         {"qwen3-30b", "qwen3-30b-a3b"},
     ("llama.cpp (strix-llama.cpp fork)", "21",
-     "jailbroken PS5, 12 GiB unified GDDR6, Vulkan on Mihawk-99's RADV port",
+     "2026-10-17",
      "https://lightbrd.com/laky_fx/status/2111512795803988237"):
         {"qwen3.5-0.8b", "qwen3.8-27b-ps5-llamacpp"},
 }
@@ -2680,13 +2681,45 @@ def refuse_misattributed_measurements(
     return kept, refused
 
 
-def _cross_model_identity(e: dict) -> tuple[str, str, str, str]:
-    """The identity key a same-post cross-model copy is defined by.
+def cross_row_duplicate_identity(e: dict) -> tuple[tuple | None, tuple | None]:
+    """The identity signatures a measurement carries for cross-row duplicate
+    detection, exactly as `validate.cross_row_duplicate_measures` reads them.
 
-    Exactly the key `validate.same_post_cross_model_duplicates` uses — an
-    identical (engine, tps, hardware, source_post) stored on two model ids. The
-    ingest-time refusal and the report-only scan therefore never disagree about
-    what a copy is (issue #702).
+    ONE implementation (rule 6d): the ingest-time refusal
+    (`refuse_cross_model_duplicate_measures`) and the post-merge gate
+    (`validate.cross_row_duplicate_measurements`) both key on these, so the two
+    seams can never disagree about what a duplicate is, and no second key-building
+    copy can drift (issue #971). Returns (same_post, variant):
+
+      * same_post = (engine, tps, date, source_post) when a source post is present
+        — the signature a copy of one post's figure onto another model id carries.
+        Keyed on DATE, never hardware: a capture that re-files the same figure with
+        a renamed hardware label ("R9700" vs "AMD R9700") still collides.
+      * variant   = (engine, tps, date) when engine and date are present — the
+        signature a variant row shares with its base across a DIFFERENT post.
+
+    A measurement with no tps participates in neither signature.
+    """
+    tps = e.get("tps")
+    if tps is None:
+        return None, None
+    eng = str(e.get("engine") or "").strip()
+    date = str(e.get("date") or "").strip()
+    post = str(e.get("source_post") or "").strip()
+    same_post = (eng, str(tps), date, post) if post else None
+    variant = (eng, str(tps), date) if (eng and date) else None
+    return same_post, variant
+
+
+def _cross_model_identity(e: dict) -> tuple[str, str, str, str]:
+    """The (engine, tps, hardware, source_post) OWNERSHIP key of a footprint tuple.
+
+    NOT the cross-row duplicate identity — that is `cross_row_duplicate_identity`
+    (#971, date-keyed, shared with the post-merge gate). This hardware-keyed tuple
+    is the ownership key the data-gap JOIN uses to trace a captured footprint
+    sentence to the store row that uniquely carries that run (issues #411/#912),
+    and `validate.same_post_cross_model_duplicates` reads it for its REPORT-ONLY
+    historical scan. The refusal seam and the gate key on date, not this.
     """
     return (str(e.get("engine") or ""), str(e.get("tps") or ""),
             str(e.get("hardware") or ""), str(e.get("source_post") or ""))
@@ -2695,12 +2728,17 @@ def _cross_model_identity(e: dict) -> tuple[str, str, str, str]:
 def cross_model_carriers(
     store: dict
 ) -> dict[tuple[str, str, str, str], set[str]]:
-    """(engine, tps, hardware, source_post) -> {model ids} ALREADY carrying it.
+    """(engine, tps, date, source_post) -> {model ids} ALREADY carrying it.
 
     Built from the established store only, exactly as the underlying defect is
-    defined — a raw measurement whose tuple ALREADY EXISTS on a different,
-    already-merged model id (issue #702: \"already exists on a different model
-    id\"). The batch row being checked is compared against these carriers, so a
+    defined — a raw measurement whose SAME-POST identity ALREADY EXISTS on a
+    different, already-merged model id (issue #702: "already exists on a different
+    model id"). The identity is the date-keyed one shared with the post-merge gate
+    (`cross_row_duplicate_identity`, issue #971) — NOT the hardware-keyed tuple the
+    data-gap JOIN and the #693 report scan read — so a capture that re-files a
+    figure with a renamed hardware label ("R9700" vs "AMD R9700", same date, same
+    post) collides here and is refused at ingest, instead of passing to validate.
+    The batch row being checked is compared against these carriers, so a
     legitimate established owner is never refused; only the copy arriving at
     ingest is.
     """
@@ -2708,7 +2746,9 @@ def cross_model_carriers(
     for m in store.get("models") or []:
         mid = str(m.get("id") or m.get("name") or "?")
         for e in m.get("engines") or []:
-            carriers.setdefault(_cross_model_identity(e), set()).add(mid)
+            same_post, _ = cross_row_duplicate_identity(e)
+            if same_post:
+                carriers.setdefault(same_post, set()).add(mid)
     return carriers
 
 
@@ -2717,39 +2757,42 @@ def refuse_cross_model_duplicate_measurements(
 ) -> tuple[list[dict], list[tuple[str, str, str]]]:
     """Split a model's measurements into (kept, [(engine, why, source_post)] refused).
 
-    APPLIED AT INGEST (issue #702), before a raw row merges into the store,
+    APPLIED AT INGEST (issues #702/#971), before a raw row merges into the store,
     mirroring the #458 fabricated-engine and #468 misattribution seams: a
-    measurement whose (engine, tps, hardware, source_post) tuple is ALREADY
+    measurement whose (engine, tps, date, source_post) identity is ALREADY
     carried by a DIFFERENT, already-merged model id is a copy of another model's
     figure onto this model — refused loudly with the owning model id, never
-    merged. A tuple that the documented allow-list pins as legitimate
-    (same-family variant ids, or a post that genuinely measured both models) is
-    kept; the allow-list and the #695 post-merge gate read the SAME
-    `CROSS_MODEL_ALLOW_LIST`, so the two gates never disagree. A measurement
-    with no source post cannot be a "copied from another model's post" — its
-    identity tuple keys on an empty post — so it is kept (fail open; never
-    refuse what is not provable).
+    merged. The identity is the SAME date-keyed one the post-merge gate reads
+    (`cross_row_duplicate_identity`), so the two seams can never disagree about
+    what a copy is (issue #971): a capture that duplicates a stored measurement
+    with a renamed hardware label still collides here. A tuple that the
+    documented allow-list pins as legitimate (same-family variant ids, or a post
+    that genuinely measured both models) is kept; the allow-list and the #695
+    post-merge gate read the SAME `CROSS_MODEL_ALLOW_LIST`. A measurement with no
+    source post cannot be a "copied from another model's post" — its identity
+    tuple keys on an empty post — so it is kept (fail open; never refuse what is
+    not provable).
     """
     kept: list[dict] = []
     refused: list[tuple[str, str, str]] = []
     this_id = str(model.get("id") or model.get("name") or "?")
     for e in model.get("engines") or []:
-        ident = _cross_model_identity(e)
-        if not e.get("source_post"):
+        same_post, _ = cross_row_duplicate_identity(e)
+        if not e.get("source_post") or same_post is None:
             kept.append(e)
             continue
-        others = carriers.get(ident, set()) - {this_id}
+        others = carriers.get(same_post, set()) - {this_id}
         if not others:
             kept.append(e)
-            continue  # no other model carries this tuple
-        allowed = CROSS_MODEL_ALLOW_LIST.get(ident)
+            continue  # no other model carries this identity
+        allowed = CROSS_MODEL_ALLOW_LIST.get(same_post)
         if allowed is not None and (set(others) | {this_id}) == allowed:
             kept.append(e)  # documented legitimate pair
             continue
         owner = ", ".join(sorted(others))
         refused.append((
             str(e.get("engine")),
-            f"identical (engine, tps, hardware, source_post) already carried by {owner}",
+            f"identical (engine, tps, date, source_post) already carried by {owner}",
             str(e.get("source_post") or "unknown"),
         ))
     return kept, refused
@@ -2908,13 +2951,13 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                     file_refusals.extend(
                         (file_backend, str(m.get("id")), name, post)
                         for name, why, post in refused)
-        # A CROSS-MODEL copy never becomes data either (issues #693/#702): a measurement
-        # whose (engine, tps, hardware, source_post) is ALREADY carried by a different,
-        # already-merged model id is one model's figure silently copied onto another the
-        # post never measured. The #458/#468 seams refuse by engine name / by the row's
-        # own text; a copy whose text names no other model slips past both — so refuse by
-        # identity tuple here, at the seam where the value would enter the store, loudly
-        # and by name, exactly as the post-merge gate (#695) sees the same tuples.
+        # A CROSS-MODEL copy never becomes data either (issues #693/#702/#971): a
+        # measurement whose (engine, tps, date, source_post) identity is ALREADY carried
+        # by a different, already-merged model id is one model's figure silently copied
+        # onto another the post never measured. The #458/#468 seams refuse by engine name
+        # / by the row's own text; a copy whose text names no other model slips past both
+        # — so refuse by the SAME date-keyed identity the post-merge gate reads (#795),
+        # here at the seam where the value would enter the store, loudly and by name.
         _carriers = cross_model_carriers(store)
         for m in data.get("models", []):
             kept, refused = refuse_cross_model_duplicate_measurements(m, _carriers)

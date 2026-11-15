@@ -131,9 +131,12 @@ def _raw_round1() -> dict:
                 _meas("llama.cpp", "41", "RTX 4090 24GB", POST3,
                       quant="Qwen 3.5 35B served through llama.cpp at 41 tok/s"),
             ]),
-            # (c) cross-model copy (#702): the exact carrier tuple.
+            # (c) cross-model copy (#702): the exact carrier tuple — same (engine,
+            #     tps, date, source_post) as carrier-model, with a RENAMED hardware
+            #     label to prove the refusal keys on date, never hardware (#971).
             _raw_model("copy-model", "Copy Model 14B", "Copy-Model-14B", "14B", "12GB", [
-                _meas("llama.cpp", "999", "RTX 4090 24GB", POST2, quant="Q4_K_M"),
+                _meas("llama.cpp", "999", "AMD R9700", POST2, quant="Q4_K_M",
+                      date="2026-11-12"),
             ]),
             # (d) weight contradiction (#615): 493GB cannot belong to a 2 GB model.
             _raw_model("tiny-model", "Tiny Model 2B", "Tiny-Model-2B", "2B", "4GB", [

@@ -1606,24 +1606,24 @@ def cross_row_duplicate_measurements(models: list[dict]) -> list[tuple[str, tupl
     VARIANT-RELATED ids (distinct posts) — the duplicate the hardware-keyed scan
     cannot see because variants rename their hardware. Pairs justified by a
     `measurement_model_aliases` entry on either row are NOT returned (a justified
-    exception is data, reviewed in the store diff, not a copy)."""
+    exception is data, reviewed in the store diff, not a copy).
+    The identity signatures come from the ONE shared `cross_row_duplicate_identity`
+    (issue #971, rule 6d) — the same function the ingest-time refusal builds its
+    carriers from, so the two seams can never disagree about what a duplicate is.
+    """
     exact: dict[tuple, set[str]] = {}
     variant: dict[tuple, set[str]] = {}
+    import update_trending as ut  # one implementation of the cross-row identity (rule 6d)
     for m in models:
         mid = _norm_model_id(m.get("id"))
         if not mid:
             continue
         for e in m.get("engines", []) or []:
-            tps = e.get("tps")
-            if tps is None:
-                continue
-            eng = str(e.get("engine") or "").strip()
-            date = str(e.get("date") or "").strip()
-            post = str(e.get("source_post") or "").strip()
-            if post:
-                exact.setdefault((eng, str(tps), date, post), set()).add(mid)
-            if eng and date:
-                variant.setdefault((eng, str(tps), date), set()).add(mid)
+            same_post, var_key = ut.cross_row_duplicate_identity(e)
+            if same_post:
+                exact.setdefault(same_post, set()).add(mid)
+            if var_key:
+                variant.setdefault(var_key, set()).add(mid)
 
     def justified(a: str, b: str) -> bool:
         for model in models:
