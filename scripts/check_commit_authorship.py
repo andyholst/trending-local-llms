@@ -86,7 +86,7 @@ IDENTITY_RE = re.compile(r"^(?P<name>.*?)\s*<(?P<email>[^<>]*)>\s*$")
 # The identity's ONE definition (issue #325): the name/email every committing job uses and
 # the sets this guard accepts. A hand-kept copy here was the fifth place to edit.
 from agent_identity import (AGENT_EMAIL, AGENT_NAME, ALLOWED_EMAILS, ALLOWED_NAMES,  # noqa: E402
-                            canonical_for, person_of)
+                            canonical_for, person_of, synthesized_account_identity)
 
 #: Refused even when the name or the email is allowed: an identity that CLAIMS
 #: to be Hermes is the exact leak this guard exists for (issue #317).
@@ -205,6 +205,35 @@ def ident_allowed_any(ident: str) -> bool:
     return identity_allowed(ident)
 
 
+#: The automation identities GitHub itself commits with. A squash is only LEGACY
+#: history when GitHub (or its bot) actually completed the commit — a feature
+#: branch cannot claim that shape.
+AUTOMATION_COMMITTER_EMAILS = (
+    "noreply@github.com",
+    "41898282+github-actions[bot]@users.noreply.github.com",
+)
+
+
+def synthesized_legacy_commit(commit: dict) -> bool:
+    """A git commit carrying the GitHub-synthesized account identity (issue #835).
+
+    GitHub squashes with the owner account, whose email IS the agent email, so the
+    merged commit's author becomes `Mr. Asimov <support@docondee.com>` — the second
+    spelling the spelling rule exists to refuse — with the trailer synthesized from
+    the real author. Rule 3 forbids rewriting those merged commits, so when a stale
+    base ref puts them back INSIDE the gate's range they are classified by shape as
+    legacy merged history: reported, never gated. The classification is bounded —
+    git itself is the list, and it can only grow with commits that actually landed.
+    A feature-branch commit with the account author name but committed by the agent
+    (a misconfigured `git config`) is NOT this shape and stays refused.
+    """
+    if not synthesized_account_identity(commit.get("author", "")):
+        return False
+    _, committer_email = split_identity(commit.get("committer", ""))
+    return (committer_email.lower() in AUTOMATION_COMMITTER_EMAILS
+            or synthesized_account_identity(commit.get("committer", "")))
+
+
 def collect(root: Path, rev_range: str) -> list[dict]:
     """Read the commits in `rev_range` — or raise `GuardUnavailable`."""
     fmt = "%x00".join(["%H", "%an <%ae>", "%cn <%ce>", "%s", "%B"]) + "%x00%x00"
@@ -272,6 +301,8 @@ def main(argv: list[str] | None = None) -> int:
 
     args = ap.parse_args(argv)
     root = Path(args.root).resolve()
+    legacy: list[dict] = []
+    gated = commits = []
 
     if args.message_file or args.identity:
         commits = []
@@ -285,14 +316,27 @@ def main(argv: list[str] | None = None) -> int:
             commits.append(
                 {"sha": "offline", "author": ident, "committer": ident, "subject": "", "message": ""}
             )
+        gated = commits  # the offline seams stay strict: no legacy classification
     else:
         try:
             commits = collect(root, args.rev_range)
         except GuardUnavailable as exc:
             print(f"[commit-authorship] FAIL {exc}", file=sys.stderr)
             return 2
+        # GitHub-completed squashes inside the range are merged history (issue #835):
+        # rule 3 forbids rewriting them, so the gate classifies the shape and reports
+        # it instead of gating it. The offline seams (--identity/--message-file) stay
+        # strict — no job may configure the account name.
+        legacy = [c for c in commits if synthesized_legacy_commit(c)]
+        gated = [c for c in commits if not synthesized_legacy_commit(c)]
 
-    bad = scan(commits)
+    bad = scan(gated)
+
+    if legacy:
+        print(f"[commit-authorship] legacy={len(legacy)} GitHub-synthesized squash "
+              "identities on merged history (issue #835, rule 3: reported, never gated):")
+        for c in legacy:
+            print(f"  {c['sha'][:12]}  {c['author']}  |  {c['subject']}")
 
     if args.cmd == "report":
         print(f"[commit-authorship] range={args.rev_range} commits={len(commits)}")
