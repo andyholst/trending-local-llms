@@ -1,0 +1,51 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-11-15T08:05:00Z",
+  "models": [
+    {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B",
+      "full_name": "Gemma 4 31B",
+      "hf": "google/gemma-4-31B-it",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "31B",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "Metal"
+      ],
+      "supported_engines": [
+        "MLX",
+        "llama.cpp"
+      ],
+      "last_seen": "2026-11-14",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "28",
+          "hardware": "Mac M5 Max 128GB",
+          "quant": "4-bit",
+          "date": "2026-11-14",
+          "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 68,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "24",
+          "hardware": "Mac M5 Max 128GB",
+          "quant": "4-bit GGUF",
+          "date": "2026-11-14",
+          "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981",
+          "likes": 0,
+          "comments": 1,
+          "reshares": 68,
+          "views": 0
+        }
+      ]
+    }
+  ]
+}

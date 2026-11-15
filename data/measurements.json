@@ -1,1312 +1,51 @@
 {
-  "qwen3.8-flash-next-125b": [
-    {
-      "engine": "Strata",
-      "tps": "141.3",
-      "hardware": "NVIDIA RTX 5070 12GB",
-      "quant": "IQ3_XXS, expert caching, CPU/RAM offload, MTP; 141.3 aggregate decode across nine prompts (118.7 median generation for short chats)",
-      "date": "2026-11-08",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2119271363995201817",
-      "context_tokens": "192K",
-      "system_ram_min": "64GB",
-      "engine_min_version": "Strata 0.2.10"
-    },
-    {
-      "engine": "llama.cpp (LlamAmpere fork)",
-      "tps": "121",
-      "hardware": "RTX 3090 24GB + 64GB system RAM",
-      "quant": "~80GB quant (51B n-gram table resident in system RAM)",
-      "date": "2026-11-08",
-      "source_post": "https://lightbrd.com/MartinSzerment/status/2119407682117382235",
-      "weight_gb": "~80GB",
-      "context_tokens": "100K",
-      "system_ram_min": "64GB",
-      "engine_min_version": "llamAmpere 0.6.3"
-    },
-    {
-      "engine": "Strata",
-      "tps": "50",
-      "hardware": "12GB VRAM consumer GPU",
-      "quant": "Unsloth Iq2_XS (dynamic quant)",
-      "date": "2026-11-08",
-      "source_post": "https://lightbrd.com/ai_hakase_/status/2119294599713771638",
-      "context_tokens": "131K",
-      "system_ram_min": "32GB",
-      "engine_min_version": "Strata"
-    },
-    {
-      "engine": "Strata",
-      "tps": "20",
-      "hardware": "8GB GPU (unspecified NVIDIA card)",
-      "quant": "Strata app, MoE; 20+ tok/s, up to 128K context",
-      "date": "2026-11-04",
-      "source_post": "https://lightbrd.com/RoundtableSpace/status/2117931109052776449"
-    },
-    {
-      "engine": "Strata",
-      "tps": "50",
-      "hardware": "home setup (Strata)",
-      "quant": "Strata, Qwen 3.8 Flash Next 125B MoE; ~50 tok/s",
-      "date": "2026-11-02",
-      "source_post": "https://lightbrd.com/randomrochford/status/2117212266630135999"
-    },
-    {
-      "engine": "Surogate",
-      "tps": "35.2",
-      "hardware": "RTX 5090",
-      "quant": "GGUF, experts parked in system RAM (vs 20.8 tok/s llama.cpp)",
-      "date": "2026-11-01",
-      "source_post": "https://lightbrd.com/OwnYourCompute/status/2116885470403801334"
-    },
-    {
-      "engine": "Strata",
-      "tps": "68",
-      "hardware": "NVIDIA RTX 3060 12GB + 48GB DDR5 RAM + consumer Intel CPU, PCIe 5.0 NVMe SSD (Ubuntu)",
-      "quant": "~83.6GB quantized MoE (Q4-like)",
-      "date": "2026-10-30",
-      "source_post": "https://lightbrd.com/uctive/status/2116142805064048686",
-      "system_ram_min": "48GB",
-      "context_tokens": "32768"
-    },
-    {
-      "engine": "Strata",
-      "tps": "75",
-      "hardware": "2x Intel Xeon E5-2670 v2 (no AVX2), 64GB DDR3, PCIe 2.0 + 2x CMP 50HX mining cards (10GB->20GB each); 98% experts on cards, 2% on CPU",
-      "quant": "MoE experts split GPU/CPU (DDR3-64GB)",
-      "date": "2026-10-30",
-      "source_post": "https://lightbrd.com/VRAMCalculator/status/2116179596315856980",
-      "system_ram_min": "64GB",
-      "context_tokens": "172144",
-      "engine_min_version": "Strata 0.2.0 (xrip custom build), 19 CPU workers, no-AVX2 CPU support (added 2026-10-04)"
-    },
-    {
-      "engine": "Strata",
-      "tps": "20.8",
-      "hardware": "NVIDIA GeForce RTX 3060 12GB (OCuLink), AMD Ryzen 7 PRO 8845HS",
-      "quant": "IQ1_M, 8-bit KV cache, MTP enabled, 32K context",
-      "date": "2026-10-30",
-      "context_tokens": "32768",
-      "system_ram_min": "31GB",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115959244088390062"
-    },
-    {
-      "engine": "Strata",
-      "tps": "140",
-      "date": "2026-10-28",
-      "hardware": "single RTX 5090 32GB",
-      "quant": "IQ3_S",
-      "weight_gb": "IQ3_S",
-      "source_post": "https://lightbrd.com/UnrealRafael/status/2115587389665992903"
-    },
-    {
-      "engine": "Slotstream",
-      "tps": "23.7",
-      "hardware": "48 GB M5 Pro (Apple Silicon), 33 GB memory budget",
-      "quant": "SSD-streamed expert MoE, MLX + Metal through Swift",
-      "date": "2026-10-28",
-      "source_post": "https://lightbrd.com/KanikaBK/status/2115368981678989443",
-      "system_ram_min": "33GB budget (48GB M5 Pro)",
-      "storage_offload": "SSD expert streaming",
-      "weight_gb": "105"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "22.52",
-      "date": "2026-10-27",
-      "hardware": "single RTX 4090 24GB + 110GB DDR4",
-      "quant": "hybrid inference: attention on the GPU, expert layers in system RAM; no MTP, DFlash or KV-cache quantization; 250K context",
-      "weight_gb": "111.4GB UD-Q4_K_XL across four shards",
-      "context_tokens": "250000",
-      "system_ram_min": "110GB DDR4",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114915498265579648",
-      "engine_min_version": "llama.cpp experimental PR #27742, -b 4096 -ub 4096"
-    },
-    {
-      "engine": "Strata",
-      "tps": "161",
-      "date": "2026-10-27",
-      "hardware": "RTX 5080 16GB + RTX 4060 Ti 16GB, 32GB system RAM (Strata DualGPU)",
-      "quant": "Strata DualGPU with a fine-tuned draft layer; code generation",
-      "engine_min_version": "Strata DualGPU + fine-tuned draft layer",
-      "source_post": "https://lightbrd.com/dextune/status/2115088131636842866"
-    },
-    {
-      "engine": "MLX",
-      "tps": "23.69",
-      "hardware": "Apple M5 Pro, 48GB unified memory (33GB memory budget)",
-      "quant": "Slotstream, long-prompt run; the same report measured 20.91 to 23.69 tok/s across short prompts, long prompts and coding tasks",
-      "date": "2026-10-26",
-      "system_ram_min": "33GB budget",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653"
-    },
-    {
-      "engine": "MLX",
-      "tps": "1.41",
-      "hardware": "base Mac mini M2, disk reads 1.5 GB/s",
-      "quant": "Slotstream, storage-bound run; the same build on an M5 Pro at 17.3 GB/s disk did 20.91 to 23.69 tok/s, and a 32K prompt on a 16GB Mac means over 6 minutes of waiting by the author's estimate",
-      "date": "2026-10-26",
-      "storage_offload": "disk reads 1.5 GB/s (M2 Mac mini) vs 17.3 GB/s on the M5 Pro",
-      "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877"
-    },
-    {
-      "engine": "oMLX",
-      "tps": "80",
-      "hardware": "M5 Ultra Studio",
-      "quant": "Q4 with MTP; 2,574 tok/s prefill at 64K context",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100630175260045820",
-      "context_tokens": "64000"
-    },
-    {
-      "engine": "oMLX",
-      "tps": "80",
-      "hardware": "Mac (256GB unified memory)",
-      "quant": "oMLX on a 256GB-unified-memory Mac, 4-bit",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113064463427354699",
-      "system_ram_min": "256GB unified memory"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "100",
-      "hardware": "Radeon Pro V620 32GB x8 (256GB total, user-built homelab cluster of ~$350 surplus cards)",
-      "quant": "W4A16 routed experts, 3-token drafting vs bare decode; vLLM fork with custom RDNA2 kernels, pipeline parallelism PP=4. Same post: 40-50 t/s bare decode, and 3000+ t/s prefill which is prompt processing, never the decode figure",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/raminaol9ykas/status/2108497527586611313",
-      "system_ram_min": "256GB"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "200.7",
-      "hardware": "NVIDIA DGX Spark (GB10, 128GB unified)",
-      "quant": "TensorFold on one DGX Spark with MiaAI_lab's recipe, 4-bit",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113064463427354699",
-      "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
-      "system_ram_min": "128GB unified memory"
-    },
-    {
-      "engine": "Strata",
-      "tps": "48",
-      "hardware": "RTX 5090 32GB + 128GB system RAM",
-      "quant": "125B MoE (about 6B active per token) with most of the model carried in system RAM",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/_floormodel/status/2114118381469389190",
-      "system_ram_min": "128GB"
-    },
-    {
-      "engine": "Strata",
-      "tps": "20",
-      "hardware": "NVIDIA RTX 3050 6GB Laptop + 32GB system RAM",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
-      "context_tokens": "16384",
-      "system_ram_min": "32GB",
-      "quant": "Gyro-S config, 16K unquantized KV cache (32K starts then cuts generation), ~94% VRAM and ~96% RAM used; reporter's range was 17-20 tok/s"
-    },
-    {
-      "engine": "MLX",
-      "tps": "80",
-      "hardware": "Mac Studio 256GB+ unified memory",
-      "quant": "mlx-community Qwen3.8-Flash-Next-4bit (~112GB of weights) on the 256GB+ Studio tier; needs a recent development build of mlx-vlm (earlier conversions had a bug); no measured t/s given, so 80 is the model's best Apple Silicon figure carried from a same-class measurement, not this post's benchmark",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
-      "weight_gb": "~112GB (4-bit MLX)",
-      "system_ram_min": "256GB",
-      "engine_min_version": "recent development build of mlx-vlm"
-    },
-    {
-      "engine": "Strata",
-      "tps": "40",
-      "hardware": "local NUC (RTX Spark class)",
-      "quant": "local run, ~6B active params per token",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/JD__Hayes/status/2113498954038133047"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "40",
-      "hardware": "local NUC (~$2500)",
-      "quant": "uncensored variant (refusals removed)",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/JD__Hayes/status/2113498954038133047"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "32",
-      "hardware": "pair of GeForce RTX 4090 Waterforce GPUs + cryptomining motherboard giving 960GB of inference RAM",
-      "quant": "Q4 weights, 256K context; owner reports 200 tok/s prompt reading against 32 tok/s generation — a multi-GPU host, not a single 4090",
-      "date": "2026-10-22",
-      "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
-      "weight_gb": "Q4",
-      "context_tokens": "256000",
-      "system_ram_min": "960GB inference RAM"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "73",
-      "hardware": "RTX 3090 24GB (24 GB+ RTX 30-series)",
-      "quant": "llama.cpp baseline that OpenJet compares against for Qwen3.8-27B on 24 GB",
-      "date": "2026-10-22",
-      "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365"
-    },
-    {
-      "engine": "Strata",
-      "tps": "32",
-      "hardware": "2 × GeForce RTX 4090 Waterforce (cryptomining board, 960GB system RAM)",
-      "quant": "Q4 with 256K context; generation 32 tok/s, prompt reading 200 tok/s",
-      "date": "2026-10-22",
-      "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
-      "context_tokens": "262144",
-      "system_ram_min": "960GB"
-    },
-    {
-      "engine": "Strata",
-      "tps": "167.3",
-      "hardware": "single consumer GPU (not named in the excerpt)",
-      "quant": "GSQ-RCO weights, Strata; median decode near 262K context (EXL3/TabbyAPI on the same test: 81.2 tok/s)",
-      "date": "2026-10-21",
-      "source_post": "https://lightbrd.com/MarcelHolter/status/2112906753134461067",
-      "context_tokens": "262K"
-    },
-    {
-      "engine": "Strata",
-      "tps": "250",
-      "hardware": "single RTX 5090",
-      "quant": "Strata expert offload across GPU/RAM/SSD; reported 3-5x faster than Qwen 3.8 Flash in the cloud",
-      "date": "2026-10-20",
-      "source_post": "https://lightbrd.com/BetterStackHQ/status/2112529266479100239"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "134.4",
-      "hardware": "NVIDIA GB300 workstation (ASUS ET900N G3)",
-      "quant": "NVFP4 weights, vLLM, a single instance serving 64 concurrent users from one request each; 134.4 tok/s per user with no extra acceleration techniques (same instance: Nemotron 3.5 Super VL 120B NVFP4 at 142.2 tok/s per user)",
-      "date": "2026-10-20",
-      "source_post": "https://lightbrd.com/AlicanKiraz0/status/2112630102366499175",
-      "weight_gb": "NVFP4"
-    },
-    {
-      "engine": "Strata",
-      "tps": "53.2",
-      "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
-      "quant": "at 60K context; comparison of complete serving setups, different quants from the llama.cpp run",
-      "weight_gb": "39.2GB IQ2_XS",
-      "context_tokens": "60000",
-      "date": "2026-10-19",
-      "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
-      "system_ram_min": "64GB"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "27",
-      "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
-      "quant": "at 60K context; same setup reached 53.2 tok/s with Strata",
-      "context_tokens": "60000",
-      "date": "2026-10-19",
-      "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
-      "system_ram_min": "64GB"
-    },
-    {
-      "engine": "strixite",
-      "tps": "938",
-      "hardware": "AMD Strix Halo (Ryzen AI Max+ 395, 128 GB unified memory), ROCm",
-      "quant": "New fast prefill profile on a 32K prompt (938 tok/s, was 611; 859 tok/s at 16K); distilled speculative draft ~20% faster on prose, optional 6-bit dense trunk +5-9% decode; this is a prefill figure, the decode campaign is not published yet",
-      "date": "2026-10-19",
-      "source_post": "https://lightbrd.com/KireiStudios/status/2112075417314046172",
-      "system_ram_min": "128GB",
-      "context_tokens": "32768"
-    },
-    {
-      "engine": "Strata",
-      "tps": "87",
-      "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
-      "quant": "IQ3_S quant split between GPU VRAM and system RAM at 261K context (~66 tok/s); IQ2_XS reaches ~87 tok/s, prompt processing ~1,900 tok/s",
-      "context_tokens": "261000",
-      "system_ram_min": "128GB DDR4-2400",
-      "date": "2026-10-17",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
-      "weight_gb": "IQ3_S",
-      "storage_offload": "experts split between GPU VRAM and system RAM"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "191",
-      "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
-      "quant": "NVIDIA Qwen3.8-Flash-Next FP4-Local weights served in an updated container; median 191 tok/s, 90th percentile 271, peak 328 (the older NVFP4 container did 85-88 on the same workload)",
-      "date": "2026-10-17",
-      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
-    },
-    {
-      "engine": "SGLang",
-      "tps": "68",
-      "hardware": "1x NVIDIA DGX Spark (GB10)",
-      "quant": "NVIDIA FP4-Local TP1, 90.8% SixCat (one of four ways the model was tested)",
-      "date": "2026-10-17",
-      "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166"
-    },
-    {
-      "engine": "Strata",
-      "tps": "68",
-      "hardware": "DGX Spark (GB10, 128GB unified)",
-      "quant": "NVFP4, FP4-Local TP1, 90.8% SixCat; 2 Sparks measured 32% slower decode",
-      "date": "2026-10-17",
-      "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166"
-    },
-    {
-      "engine": "Strata",
-      "tps": "87",
-      "hardware": "RX 7900 XTX 24GB",
-      "quant": "reported on a used 24GB Radeon-class card through Strata splitting the workload between VRAM and system RAM; IQ3_S ~70 tok/s and still ~66 tok/s at 261K context, IQ2_XS ~87 tok/s; prompt processing ~1,900 tok/s which is prefill, never the decode figure",
-      "weight_gb": "IQ2_XS / IQ3_S compressed builds",
-      "context_tokens": "267264",
-      "system_ram_min": "64GB (tested on 128GB dual-channel DDR4-2400)",
-      "date": "2026-10-17",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111308200163885268"
-    },
-    {
-      "engine": "MLX",
-      "tps": "97.1",
-      "hardware": "Mac Studio M3 Ultra",
-      "quant": "4-bit MTP build via oMLX; 23K context, ~1,131 tok/s uncached prefill",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099312823025496405"
-    },
-    {
-      "engine": "MLX",
-      "tps": "126.5",
-      "hardware": "MacBook M5 Max",
-      "quant": "MTPLX V2.11.3; 126.5 TPS peak, 61 TPS avg at 100K context, 50 TPS avg at 200K context, through OpenCode",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100499328376713348"
-    },
-    {
-      "engine": "Strata",
-      "tps": "94",
-      "hardware": "RTX 5070 12GB + 32GB system RAM, ~80GB disk",
-      "quant": "compressed Qwen3.8-Flash-Next with cold experts kept in system RAM (53-94 tok/s range on the RTX 5070 per the developers' tests)",
-      "system_ram_min": "32GB",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
-      "storage_offload": "~80GB disk"
-    },
-    {
-      "engine": "MLX",
-      "tps": "10.7",
-      "hardware": "Apple Silicon Mac with a fixed per-layer LRU expert budget",
-      "quant": "moe-offload, an experimental SSD expert-offloading loader for MLX: always-used weights stay in RAM, routed experts stream into a fixed-budget per-layer LRU cache with router prefetching; 8.9 GiB peak RSS, 94.7% hit rate, 0 swap",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/JAKEVIN16/status/2111317398292971586",
-      "system_ram_min": "8.9 GiB peak RSS"
-    },
-    {
-      "engine": "TokenSpeed",
-      "tps": "685",
-      "hardware": "4x NVIDIA GB300 (TP4/EP4), datacenter",
-      "quant": "TokenSpeed LightSeek, NVFP4, batch size 1 on SWE-Smith agent conversations with a 50K-token first turn; 3 MTP draft steps with ~3.23 tokens accepted per round; n-gram embedding table moved to host memory frees ~12.22 GiB per GPU",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/dextune/status/2110363008669290627"
-    },
-    {
-      "engine": "ExLlamaV3",
-      "tps": "35.3",
-      "hardware": "NVIDIA DGX Spark (GB10), 128GB unified memory",
-      "quant": "EXL3 3.05 bpw; ~31GB n-gram embedding table streams from NVMe; both models loaded concurrently with MiniCPM-V 4.7 35B-A3B; 88.6 tok/s code and 55.9 tok/s prose when generating alone; 26.2 tok/s while the worker model ran too; 262144-token Q8 KV cache",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
-      "context_tokens": "262144",
-      "system_ram_min": "128GB unified memory",
-      "storage_offload": "~31GB n-gram embedding table streams from NVMe",
-      "engine_min_version": "ExLlamaV3"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "67",
-      "hardware": "DGX Spark",
-      "quant": "4-bit MLX, MTP draft, thinking off (agent workload; fastest decode of the three models tested)",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
-      "weight_gb": "103GB"
-    },
-    {
-      "engine": "strixite",
-      "tps": "50",
-      "hardware": "Strix Halo 128GB",
-      "quant": "HIP (gfx1151), Qwen3.8-Flash-Next strixw-tuned; ~50 t/s out to ~492k context",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501"
-    },
-    {
-      "engine": "Strata",
-      "tps": "104",
-      "hardware": "RTX PRO 4000 Blackwell 24GB",
-      "quant": "IQ2_XS, llama-benchy 0.4.0, 512/8K/32K input; 104/83.9/82.9 t/s decode",
-      "date": "2026-10-10",
-      "source_post": "https://lightbrd.com/8CEVSmSRMT32119/status/2108971713463792113",
-      "weight_gb": "IQ2_XS",
-      "context_tokens": "32768"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "353",
-      "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
-      "quant": "decode, tuned build (independent issue #22 run)",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952"
-    },
-    {
-      "engine": "oMLX",
-      "tps": "157.7",
-      "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
-      "quant": "tuned oMLX",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
-      "engine_min_version": "oMLX 0.6.4, MTP depth 6",
-      "context_tokens": "195000"
-    },
-    {
-      "engine": "mlx-serve",
-      "tps": "90",
-      "hardware": "M5 Max 128GB",
-      "quant": "Sushi-4 hybrid pack, best public recipe",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
-      "context_tokens": "262144"
-    },
-    {
-      "engine": "Strata",
-      "tps": "140",
-      "hardware": "RTX 3090 24GB",
-      "quant": "IQ3_S (est)",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996"
-    },
-    {
-      "engine": "MLX",
-      "tps": "101",
-      "hardware": "M5 Max 128GB",
-      "quant": "MTPLX (MLX with MTP multi-token prediction) optimized",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/jlucas/status/2108390255363592378"
-    },
-    {
-      "engine": "mlx-serve",
-      "tps": "300",
-      "hardware": "M5 Max 128GB",
-      "quant": "mlx-serve, Qwen3.8-Flash-Next",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/thelogicalgate/status/2108375251637981693",
-      "system_ram_min": "128GB unified memory"
-    },
-    {
-      "engine": "mlx-serve",
-      "tps": "83",
-      "hardware": "M4 Max",
-      "quant": "MLX-Serve 26.9.5 Qwen3.8-Flash-Next decode",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
-      "engine_min_version": "MLX-Serve 26.9.5"
-    },
-    {
-      "engine": "Strata",
-      "tps": "58",
-      "hardware": "Radeon 8060S / Strix Halo 96GB (Bosgame M5)",
-      "quant": "Unsloth Q4 / GSQ-RCO weights, 140W Performance mode, pegged reference frames; 1400-1500 t/s prefill",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
-      "weight_gb": "Unsloth Q4 / GSQ-RCO",
-      "context_tokens": "262K",
-      "system_ram_min": "96GB",
-      "engine_min_version": "Strata with experimental Strix Halo support (Linux only)"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "112.3",
-      "hardware": "Apple Silicon",
-      "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
-      "engine_min_version": "Rapid-MLX 0.15.7"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "136",
-      "hardware": "M3 Ultra 80-core, 256GB",
-      "quant": "CYBER-FROST-3.8-MLX-4bit (Blackfrost's cybersecurity finetune of Qwen3.8-Flash-Next), oQ4e quantization with DWQ against the BF16 weights and a retrained MTP head; 96 tok/s at 26k agentic context with xhigh thinking, up to 136 tok/s on TensorFold's bench with thinking off",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/grantoverton/status/2107897439571309032",
-      "context_tokens": "26000",
-      "engine_min_version": "TensorFold 0.6.5"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "20",
-      "hardware": "Beelink SER 7 Pro iGPU Radeon 780M (Vulkan)",
-      "quant": "GSQ-RCO IQ3_S, MTP, Arifi Labs' custom Vulkan-optimised llama.cpp fork",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/ArifiLabs/status/2107703750957641985",
-      "weight_gb": "GSQ-RCO IQ3_S",
-      "system_ram_min": "48GB"
-    },
-    {
-      "engine": "Strata",
-      "tps": "120",
-      "hardware": "RTX 5090 32GB",
-      "quant": "more than 2x the speed of llama.cpp + Qwen3.8-27B on the same card (ts-bench comparison); Strata spreads the MoE across the machine's memory hierarchy",
-      "date": "2026-10-06",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107391242849914934"
-    },
-    {
-      "engine": "Strata",
-      "tps": "124",
-      "hardware": "RTX 5070 12GB",
-      "quant": "Q20 (2-bit-class), MoE experts across GPU/RAM/SSD, 64GB RAM",
-      "date": "2026-10-05",
-      "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
-      "weight_gb": "37.6GB Q2_0 / 39.2GB IQ2_XS",
-      "system_ram_min": "32GB",
-      "storage_offload": "~80GB SSD"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "33.7",
-      "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
-      "quant": "UD-Q2_K_XL, 65K ctx",
-      "date": "2026-10-05",
-      "source_post": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
-      "weight_gb": "UD-Q2_K_XL",
-      "context_tokens": "65000",
-      "system_ram_min": "64GB",
-      "engine_min_version": "llama.cpp with -n-cpu-moe=32 (-cmoe)"
-    },
-    {
-      "engine": "Strata",
-      "tps": "40",
-      "hardware": "2 × RTX 3060 12GB (24GB total) + 64GB DDR5 system RAM",
-      "quant": "IQ3_S GSQ-RCO, 256K context, 160,940-token prompt processed in 123 s (~1,308 prompt tok/s)",
-      "date": "2026-10-05",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106924430643302782",
-      "weight_gb": "IQ3_S GSQ-RCO",
-      "context_tokens": "262144",
-      "system_ram_min": "64GB DDR5"
-    },
-    {
-      "engine": "Strata",
-      "tps": "60",
-      "hardware": "RX 9070 XT 16GB",
-      "quant": "project-reported benchmark (Strata README); 52 tok/s on the higher-quality IQ3_S quantization; 2-3 bit compressed experts",
-      "weight_gb": "39.2GB IQ2_XS",
-      "system_ram_min": "32GB",
-      "storage_offload": "experts streamed from system RAM/SSD, ~80GB disk",
-      "date": "2026-10-04",
-      "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
-      "context_tokens": "131072"
-    },
-    {
-      "engine": "ExLlamaV3 (ROCm fork)",
-      "tps": "34.7",
-      "hardware": "32GB Radeon GPU (ROCm)",
-      "quant": "EXL3 5.05 bpw quant, Q8 KV cache, patched ExLlamaV3 ROCm fork; ~863 tok/s prefill while processing ~101K new tokens which is prefill, never the decode figure",
-      "weight_gb": "EXL3 5.05 bpw (does not fit entirely in VRAM)",
-      "context_tokens": "235520",
-      "system_ram_min": "~90GB",
-      "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
-      "engine_min_version": "patched ExLlamaV3 ROCm fork",
-      "date": "2026-10-04",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694"
-    },
-    {
-      "engine": "Strata",
-      "tps": "40",
-      "hardware": "Strix Halo (Ryzen AI Max APU)",
-      "quant": "ROCm",
-      "date": "2026-10-04",
-      "source_post": "https://lightbrd.com/basel_by/status/2106492205313478868"
-    },
-    {
-      "engine": "Strata",
-      "tps": "100",
-      "hardware": "RTX 4090 24GB",
-      "quant": "claimed 100 tok/s on consumer GPU",
-      "date": "2026-10-04",
-      "source_post": "https://lightbrd.com/yama_boku/status/2106890650969055716",
-      "system_ram_min": "32GB (est)",
-      "weight_gb": "70GB download (est)",
-      "storage_offload": "80GB disk (est)"
-    },
-    {
-      "engine": "Strata",
-      "tps": "110",
-      "hardware": "RTX 3090 / RTX 4090 / RTX 5090",
-      "quant": "70-100 t/s decode, ~1500 t/s prefill (coldniko's established figures)",
-      "date": "2026-10-03",
-      "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "80",
-      "hardware": "M3 Ultra",
-      "quant": "oQ8 + MTP spec decode, generation t/s",
-      "date": "2026-10-03",
-      "source_post": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468"
-    },
-    {
-      "engine": "Strata",
-      "tps": "80",
-      "hardware": "RTX 5090 32GB + 128GB DDR4-3200",
-      "quant": "MoE, prefill ~3,000 t/s",
-      "date": "2026-10-02",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105849239439843345"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "39.3",
-      "hardware": "DGX Spark (GB10, 128GB), TP1 (decode tests on two Sparks)",
-      "quant": "Vontra MLX 4-bit weights + MTP drafts, 131K context; serial decoding with drafts DISABLED, TensorFold 0.3.6.3 (commit 1911880) vs 0.3.4 (2f8e514): 36.1 -> 39.3 tok/s; with drafts: average 108.5 tok/s (median of five runs), sequence 129.1, code 87.9, at 48.8K context 67.9; 48.8K prompt prefill 107 -> 1,953 tok/s",
-      "date": "2026-09-30",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105480372578292054",
-      "context_tokens": "131072",
-      "engine_min_version": "TensorFold 0.3.6.3 (commit 1911880)"
-    },
-    {
-      "engine": "Strata",
-      "tps": "60",
-      "hardware": "RX 7900 XTX 24GB",
-      "quant": "ROCm, sustained 52-60 output t/s (generation); prompt processing 1250 t/s",
-      "date": "2026-09-29",
-      "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
-      "weight_gb": "39.2GB IQ2_XS",
-      "context_tokens": "131072",
-      "system_ram_min": "64GB",
-      "storage_offload": "experts across GPU/RAM/SSD, ~70GB download (SSD recommended)",
-      "engine_min_version": "Strata setup.sh --backend hip (ROCm, Linux)"
-    },
-    {
-      "engine": "Strata",
-      "tps": "40",
-      "hardware": "RX 7900 XT 20GB + 80GB DDR4 (WSL2)",
-      "quant": "ROCm, MoE experts across GPU/RAM; ~30-40 t/s",
-      "date": "2026-09-29",
-      "source_post": "https://lightbrd.com/smogporter/status/2105055489209868522"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "75",
-      "hardware": "2x Radeon AI PRO R9700 32GB",
-      "quant": "Radiance + vLLM, ROCm; generation t/s",
-      "date": "2026-09-27",
-      "source_post": "https://lightbrd.com/Italianclownz/status/2099877914481156294"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "92",
-      "hardware": "Apple Silicon (Mac, hardware not named in the post)",
-      "quant": "MLX 4-bit TensorFold on Qwen3.8-Flash-Next; the post's range is 88-92 tok/s",
-      "date": "2026-09-26",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "33",
-      "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtec Evo-X2)",
-      "quant": "Nathanw1014 portable Strix Halo 'Vulcan' build of llama.cpp, Qwen3.8-27B Q3_K_XL, 64K context, vision enabled; ~33 tok/s total shared across four concurrent lanes",
-      "context_tokens": "65536",
-      "engine_min_version": "Nathanw1014 portable Strix Halo Vulkan llama.cpp build",
-      "date": "2026-09-15",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2089073298487615541"
-    }
-  ],
-  "gemma-4-26b": [
-    {
-      "engine": "turbo-fieldfare",
-      "tps": "35",
-      "hardware": "MacBook Air M2 8GB (Apple Silicon, unified memory)",
-      "quant": "Swift/Metal, experts streamed from SSD",
-      "date": "2026-11-10",
-      "source_post": "https://lightbrd.com/deeponailabs/status/2120227672164798873",
-      "system_ram_min": "8GB",
-      "storage_offload": "experts streamed from SSD"
-    },
-    {
-      "engine": "MLX",
-      "tps": "72",
-      "hardware": "M4 Pro 48GB (Apple Silicon, unified memory)",
-      "quant": "MLX runner",
-      "date": "2026-11-09",
-      "source_post": "https://lightbrd.com/StevenMatison/status/2119864717523005591",
-      "weight_gb": "18GB",
-      "system_ram_min": "48GB",
-      "context_tokens": "131072"
-    },
-    {
-      "engine": "Ollama",
-      "tps": "72",
-      "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
-      "quant": "QAT GGUF (gemma4:26b-a4b-it-qat), 15GB on disk, 16GB loaded",
-      "date": "2026-11-09",
-      "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
-      "weight_gb": "15GB"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "4.1",
-      "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
-      "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
-      "date": "2026-08-13",
-      "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
-    }
-  ],
-  "qwen3.6-35b-a3b": [
-    {
-      "engine": "Ollama",
-      "tps": "61",
-      "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
-      "quant": "q4_K_M (qwen3.6:35b-a3b-q4_K_M), 23GB on disk, 24GB loaded",
-      "date": "2026-11-09",
-      "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
-      "weight_gb": "23GB"
-    },
-    {
-      "engine": "Kapitsa",
-      "tps": "154",
-      "hardware": "MacBook Pro M4 Pro 48GB unified memory (Apple Silicon)",
-      "quant": "4-bit; with DFlash2 speculative decoding",
-      "date": "2026-10-27",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114926668015951937",
-      "system_ram_min": "48GB unified memory"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "3.47",
-      "hardware": "CPU-only machine (no GPU)",
-      "quant": "Bolt model, llama.cpp with the drafter disabled",
-      "date": "2026-10-26",
-      "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
-    },
-    {
-      "engine": "PyTorch",
-      "tps": "61.3",
-      "hardware": "Apple M3 Ultra (MPS backend, torch.compile)",
-      "quant": "BF16, PyTorch 2.15 MPS Metal kernels; up from 9.4 tok/s on 2.14",
-      "date": "2026-10-26",
-      "source_post": "https://lightbrd.com/AIQuanting/status/2114781884144370049",
-      "engine_min_version": "PyTorch 2.15 (MPS)"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "120",
-      "date": "2026-10-26",
-      "hardware": "NVIDIA GPU (card not named in the post)",
-      "quant": "MTP enabled, Q8 KV cache, mmproj offload; 262,144-token context",
-      "context_tokens": "262144",
-      "engine_min_version": "MTP enabled, Q8 KV cache, mmproj offload",
-      "source_post": "https://lightbrd.com/reponsedalarabi/status/2114766815653990805"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "309",
-      "hardware": "RTX 5090 32GB",
-      "quant": "dense int4 27B (Qwen3.8-27B) 75.8 vs Marlin 77.1 on the same card; 35B MoE 309 tok/s with Humming vs 292 with Marlin",
-      "date": "2026-10-25",
-      "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
-      "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
-    },
-    {
-      "engine": "oMLX",
-      "tps": "123",
-      "hardware": "Apple Silicon M3 Max 36GB",
-      "quant": "MoE decode, oMLX",
-      "date": "2026-10-25",
-      "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455"
-    },
-    {
-      "engine": "Kapitsa",
-      "tps": "123",
-      "hardware": "Apple Silicon M3 Max 36GB",
-      "quant": "MoE decode, Kapitsa",
-      "date": "2026-10-25",
-      "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455"
-    },
-    {
-      "engine": "OpenVINO",
-      "tps": "30",
-      "hardware": "LattePanda Sigma 2 single-board computer (Intel Core Ultra X7 358H, Arc B390 graphics, up to 64GB LPDDR5X-8533)",
-      "quant": "INT4",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/AIQuanting/status/2113876566547845590",
-      "system_ram_min": "64GB LPDDR5X (up to 59GB usable for AI work)"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "64",
-      "hardware": "DGX Spark (GB10)",
-      "quant": "MTP speculative decoding off",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160"
-    },
-    {
-      "engine": "Ollama",
-      "tps": "1.34",
-      "hardware": "CPU-only machine (no GPU)",
-      "quant": "Ollama default build with its default drafter (MTP) enabled",
-      "date": "2026-10-24",
-      "engine_min_version": "Ollama with the default drafter (MTP) on",
-      "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "143",
-      "hardware": "RTX 5090 32GB (one owner's benchmark)",
-      "quant": "NVFP4 (4-bit floats)",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/0xaqt/status/2114002977413345358",
-      "weight_gb": "NVFP4"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "96.63",
-      "hardware": "NVIDIA RTX Spark laptop 128GB (ARM64, Windows 11 on ARM)",
-      "quant": "Q4_K_M (llama.cpp, RTX Spark laptop); AIPerf coding speed bench, third-party table quoted in the post",
-      "date": "2026-10-24",
-      "source_post": "https://lightbrd.com/urs69141/status/2114126182899666972",
-      "system_ram_min": "128GB"
-    },
-    {
-      "engine": "oMLX",
-      "tps": "127",
-      "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
-      "quant": "4-bit + DFlash2 speculative decoding (same reported benchmark)",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
-      "system_ram_min": "48GB unified memory",
-      "engine_min_version": "oMLX with DFlash2 draft"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "69",
-      "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
-      "quant": "4-bit + MTP speculative decoding (same reported benchmark)",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
-      "system_ram_min": "48GB unified memory",
-      "engine_min_version": "llama.cpp with MTP",
-      "weight_gb": "4-bit"
-    },
-    {
-      "engine": "Ollama",
-      "tps": "89",
-      "hardware": "MacBook Pro M4 Pro 48GB unified memory",
-      "quant": "4-bit Qwen3.6-35B-A3B with MTP multi-token prediction, reported comparison row (Kapitsa+DFlash2 154 t/s leads the same test)",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
-      "system_ram_min": "48GB",
-      "engine_min_version": "Ollama with MTP"
-    },
-    {
-      "engine": "mlx-serve",
-      "tps": "281",
-      "hardware": "M5 Max Mac, 128GB unified memory",
-      "quant": "4-bit Qwen3.6-35B-A3B; same report on a 2024 M4 Pro MacBook Pro 48GB: Kapitsa + DFlash2 154 tok/s, oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
-      "system_ram_min": "128GB unified memory"
-    },
-    {
-      "engine": "Kapitsa",
-      "tps": "281",
-      "hardware": "M5 Max Mac (128GB unified memory)",
-      "quant": "4-bit Qwen3.6-35B-A3B with DFlash2 speculative decoding; same report on a 2024 M4 Pro MacBook Pro 48GB: Kapitsa + DFlash2 154 tok/s, oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
-      "date": "2026-10-23",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
-      "system_ram_min": "128GB unified memory",
-      "engine_min_version": "Kapitsa with DFlash2 speculative decoding"
-    },
-    {
-      "engine": "LM Studio",
-      "tps": "86",
-      "hardware": "Apple M4 Pro MacBook Pro 2024, 48GB unified memory",
-      "quant": "4-bit Qwen3.6-35B-A3B",
-      "date": "2026-10-23",
-      "system_ram_min": "48GB",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273"
-    },
-    {
-      "engine": "MTPLX",
-      "tps": "80",
-      "hardware": "Apple M4 Pro MacBook Pro 2024, 48GB unified memory",
-      "quant": "4-bit Qwen3.6-35B-A3B",
-      "date": "2026-10-23",
-      "system_ram_min": "48GB",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
-      "engine_min_version": "MTPLX draft"
-    },
-    {
-      "engine": "Kapitsa",
-      "tps": "281",
-      "hardware": "MacBook Pro M4 Pro 2024, 48GB unified memory",
-      "quant": "4-bit model with DFlash2 speculative decoding; hand-optimized Metal kernels, model-aware caching, optimized MoE execution; ~2.2x llama.cpp+MTP (69 tok/s) in the same reported benchmark; also 281 tok/s on M5 Max 128GB",
-      "date": "2026-10-21",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
-      "system_ram_min": "48GB unified memory",
-      "engine_min_version": "DFlash2 drafter on"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "57",
-      "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
-      "quant": "ROCm build (per the post)",
-      "date": "2026-10-20",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
-      "weight_gb": "Q4_K_M",
-      "context_tokens": "262K",
-      "system_ram_min": "16GB"
-    },
-    {
-      "engine": "Magnitude",
-      "tps": "188.9",
-      "hardware": "NVIDIA DGX Spark (one), both engines with default drafters",
-      "quant": "Magnitude 0.2.9 on an independent rebuild of the vendor's copy-a-passage test with a ~64K-token Moby-Dick prompt, 66K-token prompt; the same test gives Ollama 0.40.5 87.2 tok/s",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
-      "context_tokens": "66000"
-    },
-    {
-      "engine": "Ollama",
-      "tps": "87.2",
-      "hardware": "NVIDIA DGX Spark (one), Ollama 0.40.5 with its default drafter",
-      "quant": "generation of a new story after a 67K-token prompt - the honest half of the same test, against Magnitude's 50.4 tok/s on the copy task's 188.9",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
-      "engine_min_version": "Ollama 0.40.5",
-      "system_ram_min": "128GB",
-      "context_tokens": "66000"
-    },
-    {
-      "engine": "Ollama",
-      "tps": "87.2",
-      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
-      "quant": "Ollama 0.40.5 registry tag (Q4_K_M with built-in MTP), f16 KV cache; repeat-a-passage round at a 66K-token prompt, median of 3 runs, thinking off; new-story round on the same box 63.4 tok/s (Magnitude 50.4); prefill 1,834 tok/s which is prompt processing, never the decode figure",
-      "weight_gb": "Q4_K_M (Ollama registry tag)",
-      "context_tokens": "67584",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461",
-      "engine_min_version": "Ollama 0.40.5"
-    },
-    {
-      "engine": "Magnitude",
-      "tps": "188.9",
-      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
-      "quant": "Magnitude 0.2.9 with its DFlash drafter and quantized KV cache, unsloth UD-Q4_K_XL on the repeat-a-passage round at a 66K-token prompt (75% drafter acceptance); new-story round 50.4 tok/s at 43% acceptance; prefill 2,332 tok/s",
-      "weight_gb": "UD-Q4_K_XL",
-      "context_tokens": "67584",
-      "system_ram_min": "128GB",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "50",
-      "hardware": "RTX 3060 12GB + 16GB system RAM",
-      "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
-      "weight_gb": "Q4_K_M",
-      "context_tokens": "262K",
-      "system_ram_min": "16GB"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "25.4",
-      "hardware": "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo)",
-      "quant": "same Agon bench run with LFM2.5-24B-A2B; the benchmark's median requests decoded at 25.4 tok/s; Qwen3.6-35B-A3B held first place at 89.9% before LFM2.5 took it",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/GuideboardLabs/status/2110246672166699354"
-    },
-    {
-      "engine": "MLX",
-      "tps": "108.6",
-      "hardware": "M4 Pro 64GB",
-      "quant": "Qwen3.6-35B-A3B 4-bit (~3B active) on Rapid-MLX vs Nemotron 3.5 Lightning 30B-A3B on TensorFold: 108.6 tok/s + 15/15 tools, both 5/5 needles at 245K",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/draslan_eth/status/2106705583718154587",
-      "system_ram_min": "64GB unified memory",
-      "context_tokens": "245000",
-      "engine_min_version": "Rapid-MLX"
-    },
-    {
-      "engine": "Janas",
-      "tps": "19",
-      "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
-      "quant": "Q4_K_M on the Janas runtime; Janas vs llama.cpp 12 tok/s in the same test",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
-      "system_ram_min": "32GB"
-    },
-    {
-      "engine": "FreeToken",
-      "tps": "61.4",
-      "hardware": "RTX PRO 2000 Blackwell 16GB",
-      "quant": "NVFP4 converted to FTW, FreeToken nightly, CPU pinned to E-cores",
-      "date": "2026-10-10",
-      "source_post": "https://lightbrd.com/8CEVSmSRMT32119/status/2108971713463792113",
-      "weight_gb": "NVFP4 (converted to FTW)",
-      "context_tokens": "32768"
-    },
-    {
-      "engine": "mlx-serve",
-      "tps": "239",
-      "hardware": "M4 Max",
-      "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
-      "engine_min_version": "MLX-Serve 26.9.5"
-    },
-    {
-      "engine": "FreeToken",
-      "tps": "39.3",
-      "hardware": "8GB GPU",
-      "quant": "MoE, experts in system RAM + GPU cache",
-      "date": "2026-09-27",
-      "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
-    },
-    {
-      "engine": "FreeToken",
-      "tps": "39.3",
-      "hardware": "RTX 4060 laptop 8GB",
-      "quant": "official checkpoints, no extreme quantization",
-      "date": "2026-08-23",
-      "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
-      "weight_gb": "official checkpoints (no extreme quantization)",
-      "system_ram_min": "32GiB LPDDR5 (est)"
-    },
-    {
-      "engine": "Magnitude",
-      "tps": "128",
-      "hardware": "DGX Spark (GB10)",
-      "quant": "MTP speculative decoding on; 28 t/s with it off",
-      "date": "2026-08-23",
-      "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160"
-    },
-    {
-      "engine": "Ollama",
-      "tps": "19",
-      "hardware": "Mac M5 (Ollama MLX backend)",
-      "quant": "35B model; prompt processing jumped ~57% (1,154 -> 1,810 tok/s) when Ollama swapped its engine to Apple's MLX framework",
-      "date": "2026-07-15",
-      "source_post": "https://lightbrd.com/BennyLam/status/2089620773119926380"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "190",
-      "hardware": "RX 7900 XTX 24GB",
-      "quant": "Vulkan, Q4_K_M, MTP head N=5, 291W power cap; 97% draft acceptance; MTP off 129 t/s",
-      "date": "2026-07-11",
-      "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
-      "weight_gb": "Q4_K_M",
-      "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
-    },
-    {
-      "engine": "MLX",
-      "tps": "19",
-      "hardware": "Mac mini M4 Pro 64GB",
-      "quant": "Qwen3.6-35B-A3B-4bit (~19GB model), Rapid-MLX upgraded to v0.9.12, used as a local backup agent lane",
-      "date": "2026-07-04",
-      "source_post": "https://lightbrd.com/Topaz750/status/2073331746217538012",
-      "system_ram_min": "64GB"
-    }
-  ],
-  "deepseek-v4.1-flash": [
-    {
-      "engine": "Strata",
-      "tps": "3.6",
-      "hardware": "NVIDIA RTX 3060 12GB + 30GB system RAM",
-      "quant": "IQ2_XXS, experts streamed from SSD page cache, 9GB LRU cache in VRAM, greedy decode; decode 2-3.6 tok/s (fluctuates with page-cache behaviour), 249GB model",
-      "date": "2026-11-09",
-      "source_post": "https://lightbrd.com/FatimaYappin/status/2119841304037487030",
-      "storage_offload": "SSD page cache",
-      "weight_gb": "~249GB",
-      "context_tokens": "4096",
-      "engine_min_version": "Strata (RustingStrata)",
-      "system_ram_min": "30GB"
-    },
-    {
-      "engine": "Strata",
-      "tps": "14",
-      "hardware": "GMKtec EVO-X2 Windows mini PC, Ryzen AI Max+ 395 (Strix Halo integrated Radeon), 128GB unified memory, no discrete GPU",
-      "quant": "2-bit / ISTA-DASLab IQ2_XXS 2.00 bpw, Faster mode (5 of 6 selected experts per step), Strata 0.2.7 Windows engine for Strix Halo",
-      "date": "2026-10-30",
-      "source_post": "https://lightbrd.com/llmrequirements/status/2116236484738945104",
-      "system_ram_min": "128GB",
-      "weight_gb": "~257 GB on NVMe (138 GB weights + 111 GB shared lookup table + 8 GB drafter)",
-      "storage_offload": "part of the model read from the SSD while it answers",
-      "engine_min_version": "Strata 0.2.7"
-    },
-    {
-      "engine": "Strata",
-      "tps": "10",
-      "hardware": "RTX 3060 12GB + 46-64GB system RAM, experts read from SSD",
-      "quant": "2-bit build from ISTA DASLab low-bit files, Strata 0.2.4 (MIT); ~257GB download, terminal only",
-      "date": "2026-10-25",
-      "source_post": "https://lightbrd.com/ChaiWithAi/status/2114302473200640332",
-      "weight_gb": "~257GB download",
-      "system_ram_min": "46GB",
-      "storage_offload": "SSD (rest of the model read from storage)",
-      "engine_min_version": "Strata 0.2.4"
-    },
-    {
-      "engine": "MLX",
-      "tps": "26.87",
-      "hardware": "Mac M5 Max",
-      "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326"
-    },
-    {
-      "engine": "MLX",
-      "tps": "58.2",
-      "hardware": "1x M5 Ultra (unified memory)",
-      "quant": "DeepSeek V4 Flash decode on MLX; two clustered M5 Ultras first decoded more slowly (35.3) and reached 58.2 with an optimized Thunderbolt 5 RDMA pipeline",
-      "date": "2026-09-25",
-      "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "17.4",
-      "hardware": "1x DGX Spark (GB10)",
-      "quant": "DeepSeek V4 Flash 0731 (284B) on one DGX Spark, llama.cpp; two Sparks with speculation 20.0 tok/s",
-      "date": "2026-09-25",
-      "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "75.6",
-      "hardware": "2x DGX Spark (GB10)",
-      "quant": "optimized vLLM, mixed FP8/FP4 weights, MTP speculative decoding; prefill 1,881 tok/s, TTFT 1.10 s",
-      "date": "2026-09-25",
-      "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "2",
-      "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
-      "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
-      "date": "2026-09-24",
-      "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893"
-    },
-    {
-      "engine": "llama.cpp (hikicoder fork)",
-      "tps": "2",
-      "hardware": "RTX A4500 20GB (~17GB VRAM used) + 128GB DDR5",
-      "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM; 192GB Engram on a Gen4 7GB/s NVMe with --moe-stream; generation slowed by thermal/IO pacing",
-      "date": "2026-09-24",
-      "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
-      "system_ram_min": "128GB (60GB used by the run)",
-      "storage_offload": "192GB Engram on Gen4 7GB/s NVMe (--moe-stream)",
-      "context_tokens": "32K",
-      "engine_min_version": "-ngl 99 -c 32768 -nkvo --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 --moe-stream-direct",
-      "weight_gb": "192GB engram on NVMe"
-    }
-  ],
-  "qwen3.8-flash-next-125b-strix-halo-strata": [
-    {
-      "engine": "Strata",
-      "tps": "49.1",
-      "hardware": "AMD Strix Halo (Radeon 8060S / Ryzen AI Max, integrated Radeon)",
-      "quant": "UD-Q4_K_XL; ROCm; Strata v0.2.13; decode 46.6-49.1 t/s (upper recorded)",
-      "date": "2026-11-09",
-      "engine_min_version": "Strata v0.2.13",
-      "source_post": "https://lightbrd.com/uctive/status/2119777745848689029"
-    },
-    {
-      "engine": "Slotstream",
-      "tps": "23.69",
-      "hardware": "MacBook Pro M5 Pro 48GB (Apple Silicon); 33GB memory budget",
-      "quant": "4-bit, roughly 105GB of weights streamed from SSD; 20.91-23.69 tok/s (upper figure recorded)",
-      "date": "2026-10-26",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653",
-      "weight_gb": "105GB (4-bit)",
-      "system_ram_min": "48GB"
-    },
-    {
-      "engine": "Strata",
-      "tps": "58",
-      "hardware": "Strix Halo laptop, 16GB VRAM + 96GB RAM (Bosgame M5), 140W performance mode",
-      "quant": "Unsloth Q4 / GSQ-RCO weights; ROCm; 55-58 t/s decode at performance mode, 1400-1500 t/s prefill excluded",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
-      "system_ram_min": "96GB (with 16GB VRAM)",
-      "context_tokens": "262144"
-    }
-  ],
-  "qwen3.8-35b-a3b": [
-    {
-      "engine": "llama.cpp",
-      "tps": "2.5",
-      "hardware": "CPU-only (4GB VRAM + 32GB system RAM, partial offload)",
-      "quant": "llama-server print_timing slot lines: tg = 2.50 t/s, tg_3s 2.53; ~12-12.5 t/s prompt processing on a ~4K-token prompt; user notes Qwen3.8-35B / MoE builds scale better than the dense Bonsai pack on a system this small",
-      "weight_gb": "Q4 (partial offload)",
-      "system_ram_min": "32GB",
-      "date": "2026-10-16",
-      "source_post": "https://lightbrd.com/AgoristQuest/status/2112691165860839855"
-    },
-    {
-      "engine": "ExLlamaV3",
-      "tps": "88.6",
-      "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
-      "quant": "Qwen3.8-Flash-Next EXL3 3.05 bpw as the main agent while MiniCPM-V 4.7 35B-A3B EXL3 3.74 bpw served 8 subagents (both loaded); 35.3 tok/s while both models were actively generating code (26.2 tok/s under the 8-worker synthetic test)",
-      "system_ram_min": "128GB",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
-      "engine_min_version": "ExLlamaV3 + Hermes Agent profile",
-      "context_tokens": "262144"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "50",
-      "hardware": "RTX 3060 12GB + 16GB system RAM",
-      "quant": "Q4_K_M; 262K context configured; ~550 tok/s prompt processing (prefill, never the decode figure)",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
-      "weight_gb": "Q4_K_M",
-      "context_tokens": "262K",
-      "system_ram_min": "16GB",
-      "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0",
-      "storage_offload": "26 MoE layers assigned to CPU"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "50",
-      "hardware": "RX 9070 XT 16GB",
-      "quant": "Q4_K_M, llama.cpp with Flash Attention and Q8 KV cache; --n-cpu-moe 26 -c 262144; ~550 tok/s prompt processing which is prefill, never the decode figure; 16GB system RAM",
-      "weight_gb": "Q4_K_M",
-      "context_tokens": "268288",
-      "system_ram_min": "16GB",
-      "engine_min_version": "llama.cpp --n-cpu-moe 26 -c 262144 (Flash Attention, Q8 KV)",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/DogukanUrker/status/2100346050473074805"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "5",
-      "hardware": "RTX 4060 8GB laptop + Intel i7-12700H, 16GB DDR4 (CPU/GPU split, 25 GPU layers)",
-      "quant": "Unsloth IQ4_XS (~14.6GB on disk), Q4_0 KV cache, native MTP, 25 GPU layers; 64K context, 150 tok/s prefill",
-      "date": "2026-09-16",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955"
-    }
-  ],
-  "alpie-seed-9b": [
-    {
-      "engine": "MLX",
-      "tps": "14.1",
-      "hardware": "Mac M2 16GB (Apple Silicon, unified memory)",
-      "quant": "4-bit",
-      "date": "2026-11-10",
-      "source_post": "https://lightbrd.com/The_Donsie/status/2120154511906074738",
-      "weight_gb": "5.24GB (4-bit)",
-      "system_ram_min": "16GB"
-    }
-  ],
   "qwen3.8-27b": [
+    {
+      "engine": "MLX",
+      "tps": "44.5",
+      "hardware": "Mac Studio M5 Ultra 512GB",
+      "quant": "4-bit",
+      "date": "2026-11-13",
+      "source_post": "https://lightbrd.com/LazyLocalLLM/status/2121282051588719000"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "146",
+      "hardware": "Mac Studio M5 Ultra 512GB",
+      "quant": "4-bit",
+      "date": "2026-11-13",
+      "source_post": "https://lightbrd.com/LazyLocalLLM/status/2121282051588719000",
+      "engine_min_version": "TensorFold 1.2.7 + DFlash2 draft"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "108.8",
+      "hardware": "2x RTX 5060 Ti 16GB",
+      "quant": "MLX 4-bit affine, 4.695 bpw, DFlash2 drafter",
+      "date": "2026-11-13",
+      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2121225315510784424",
+      "engine_min_version": "TensorFold Python engine v0.6.6 + 2 patch commits (head d902d5b)",
+      "context_tokens": "109511"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "60",
+      "hardware": "RTX 4090 24GB",
+      "quant": "Unsloth Dynamic Q4_K_XL GGUF, native MTP",
+      "date": "2026-11-12",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2120702256710299915",
+      "context_tokens": "131072",
+      "engine_min_version": "Q4 KV cache"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "103.1",
+      "hardware": "RTX 4090 Laptop GPU 16GB",
+      "quant": "oQ2 + DFlash2",
+      "date": "2026-11-12",
+      "source_post": "https://lightbrd.com/blue0orbit/status/2120869228039250065",
+      "engine_min_version": "TensorFold 1.2.7"
+    },
     {
       "engine": "vLLM",
       "tps": "140",
@@ -2488,6 +1227,1381 @@
       "source_post": "https://lightbrd.com/sudoingX/status/2045170387265392783"
     }
   ],
+  "qwen3.8-flash-next-125b": [
+    {
+      "engine": "Strata",
+      "tps": "141.3",
+      "hardware": "NVIDIA RTX 5070 12GB",
+      "quant": "IQ3_XXS, expert caching, CPU/RAM offload, MTP; 141.3 aggregate decode across nine prompts (118.7 median generation for short chats)",
+      "date": "2026-11-08",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2119271363995201817",
+      "context_tokens": "192K",
+      "system_ram_min": "64GB",
+      "engine_min_version": "Strata 0.2.10"
+    },
+    {
+      "engine": "llama.cpp (LlamAmpere fork)",
+      "tps": "121",
+      "hardware": "RTX 3090 24GB + 64GB system RAM",
+      "quant": "~80GB quant (51B n-gram table resident in system RAM)",
+      "date": "2026-11-08",
+      "source_post": "https://lightbrd.com/MartinSzerment/status/2119407682117382235",
+      "weight_gb": "~80GB",
+      "context_tokens": "100K",
+      "system_ram_min": "64GB",
+      "engine_min_version": "llamAmpere 0.6.3"
+    },
+    {
+      "engine": "Strata",
+      "tps": "50",
+      "hardware": "12GB VRAM consumer GPU",
+      "quant": "Unsloth Iq2_XS (dynamic quant)",
+      "date": "2026-11-08",
+      "source_post": "https://lightbrd.com/ai_hakase_/status/2119294599713771638",
+      "context_tokens": "131K",
+      "system_ram_min": "32GB",
+      "engine_min_version": "Strata"
+    },
+    {
+      "engine": "Strata",
+      "tps": "20",
+      "hardware": "8GB GPU (unspecified NVIDIA card)",
+      "quant": "Strata app, MoE; 20+ tok/s, up to 128K context",
+      "date": "2026-11-04",
+      "source_post": "https://lightbrd.com/RoundtableSpace/status/2117931109052776449"
+    },
+    {
+      "engine": "Strata",
+      "tps": "50",
+      "hardware": "home setup (Strata)",
+      "quant": "Strata, Qwen 3.8 Flash Next 125B MoE; ~50 tok/s",
+      "date": "2026-11-02",
+      "source_post": "https://lightbrd.com/randomrochford/status/2117212266630135999"
+    },
+    {
+      "engine": "Surogate",
+      "tps": "35.2",
+      "hardware": "RTX 5090",
+      "quant": "GGUF, experts parked in system RAM (vs 20.8 tok/s llama.cpp)",
+      "date": "2026-11-01",
+      "source_post": "https://lightbrd.com/OwnYourCompute/status/2116885470403801334"
+    },
+    {
+      "engine": "Strata",
+      "tps": "68",
+      "hardware": "NVIDIA RTX 3060 12GB + 48GB DDR5 RAM + consumer Intel CPU, PCIe 5.0 NVMe SSD (Ubuntu)",
+      "quant": "~83.6GB quantized MoE (Q4-like)",
+      "date": "2026-10-30",
+      "source_post": "https://lightbrd.com/uctive/status/2116142805064048686",
+      "system_ram_min": "48GB",
+      "context_tokens": "32768"
+    },
+    {
+      "engine": "Strata",
+      "tps": "75",
+      "hardware": "2x Intel Xeon E5-2670 v2 (no AVX2), 64GB DDR3, PCIe 2.0 + 2x CMP 50HX mining cards (10GB->20GB each); 98% experts on cards, 2% on CPU",
+      "quant": "MoE experts split GPU/CPU (DDR3-64GB)",
+      "date": "2026-10-30",
+      "source_post": "https://lightbrd.com/VRAMCalculator/status/2116179596315856980",
+      "system_ram_min": "64GB",
+      "context_tokens": "172144",
+      "engine_min_version": "Strata 0.2.0 (xrip custom build), 19 CPU workers, no-AVX2 CPU support (added 2026-10-04)"
+    },
+    {
+      "engine": "Strata",
+      "tps": "20.8",
+      "hardware": "NVIDIA GeForce RTX 3060 12GB (OCuLink), AMD Ryzen 7 PRO 8845HS",
+      "quant": "IQ1_M, 8-bit KV cache, MTP enabled, 32K context",
+      "date": "2026-10-30",
+      "context_tokens": "32768",
+      "system_ram_min": "31GB",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2115959244088390062"
+    },
+    {
+      "engine": "Strata",
+      "tps": "140",
+      "date": "2026-10-28",
+      "hardware": "single RTX 5090 32GB",
+      "quant": "IQ3_S",
+      "weight_gb": "IQ3_S",
+      "source_post": "https://lightbrd.com/UnrealRafael/status/2115587389665992903"
+    },
+    {
+      "engine": "Slotstream",
+      "tps": "23.7",
+      "hardware": "48 GB M5 Pro (Apple Silicon), 33 GB memory budget",
+      "quant": "SSD-streamed expert MoE, MLX + Metal through Swift",
+      "date": "2026-10-28",
+      "source_post": "https://lightbrd.com/KanikaBK/status/2115368981678989443",
+      "system_ram_min": "33GB budget (48GB M5 Pro)",
+      "storage_offload": "SSD expert streaming",
+      "weight_gb": "105"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "22.52",
+      "date": "2026-10-27",
+      "hardware": "single RTX 4090 24GB + 110GB DDR4",
+      "quant": "hybrid inference: attention on the GPU, expert layers in system RAM; no MTP, DFlash or KV-cache quantization; 250K context",
+      "weight_gb": "111.4GB UD-Q4_K_XL across four shards",
+      "context_tokens": "250000",
+      "system_ram_min": "110GB DDR4",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114915498265579648",
+      "engine_min_version": "llama.cpp experimental PR #27742, -b 4096 -ub 4096"
+    },
+    {
+      "engine": "Strata",
+      "tps": "161",
+      "date": "2026-10-27",
+      "hardware": "RTX 5080 16GB + RTX 4060 Ti 16GB, 32GB system RAM (Strata DualGPU)",
+      "quant": "Strata DualGPU with a fine-tuned draft layer; code generation",
+      "engine_min_version": "Strata DualGPU + fine-tuned draft layer",
+      "source_post": "https://lightbrd.com/dextune/status/2115088131636842866"
+    },
+    {
+      "engine": "MLX",
+      "tps": "23.69",
+      "hardware": "Apple M5 Pro, 48GB unified memory (33GB memory budget)",
+      "quant": "Slotstream, long-prompt run; the same report measured 20.91 to 23.69 tok/s across short prompts, long prompts and coding tasks",
+      "date": "2026-10-26",
+      "system_ram_min": "33GB budget",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653"
+    },
+    {
+      "engine": "MLX",
+      "tps": "1.41",
+      "hardware": "base Mac mini M2, disk reads 1.5 GB/s",
+      "quant": "Slotstream, storage-bound run; the same build on an M5 Pro at 17.3 GB/s disk did 20.91 to 23.69 tok/s, and a 32K prompt on a 16GB Mac means over 6 minutes of waiting by the author's estimate",
+      "date": "2026-10-26",
+      "storage_offload": "disk reads 1.5 GB/s (M2 Mac mini) vs 17.3 GB/s on the M5 Pro",
+      "source_post": "https://lightbrd.com/MartinSzerment/status/2114767212489969877"
+    },
+    {
+      "engine": "oMLX",
+      "tps": "80",
+      "hardware": "M5 Ultra Studio",
+      "quant": "Q4 with MTP; 2,574 tok/s prefill at 64K context",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100630175260045820",
+      "context_tokens": "64000"
+    },
+    {
+      "engine": "oMLX",
+      "tps": "80",
+      "hardware": "Mac (256GB unified memory)",
+      "quant": "oMLX on a 256GB-unified-memory Mac, 4-bit",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113064463427354699",
+      "system_ram_min": "256GB unified memory"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "100",
+      "hardware": "Radeon Pro V620 32GB x8 (256GB total, user-built homelab cluster of ~$350 surplus cards)",
+      "quant": "W4A16 routed experts, 3-token drafting vs bare decode; vLLM fork with custom RDNA2 kernels, pipeline parallelism PP=4. Same post: 40-50 t/s bare decode, and 3000+ t/s prefill which is prompt processing, never the decode figure",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/raminaol9ykas/status/2108497527586611313",
+      "system_ram_min": "256GB"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "200.7",
+      "hardware": "NVIDIA DGX Spark (GB10, 128GB unified)",
+      "quant": "TensorFold on one DGX Spark with MiaAI_lab's recipe, 4-bit",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113064463427354699",
+      "weight_gb": "~111.4GB Q4_K_XL across 4 shards",
+      "system_ram_min": "128GB unified memory"
+    },
+    {
+      "engine": "Strata",
+      "tps": "48",
+      "hardware": "RTX 5090 32GB + 128GB system RAM",
+      "quant": "125B MoE (about 6B active per token) with most of the model carried in system RAM",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/_floormodel/status/2114118381469389190",
+      "system_ram_min": "128GB"
+    },
+    {
+      "engine": "Strata",
+      "tps": "20",
+      "hardware": "NVIDIA RTX 3050 6GB Laptop + 32GB system RAM",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/luksamuk/status/2114105440112177399",
+      "context_tokens": "16384",
+      "system_ram_min": "32GB",
+      "quant": "Gyro-S config, 16K unquantized KV cache (32K starts then cuts generation), ~94% VRAM and ~96% RAM used; reporter's range was 17-20 tok/s"
+    },
+    {
+      "engine": "MLX",
+      "tps": "80",
+      "hardware": "Mac Studio 256GB+ unified memory",
+      "quant": "mlx-community Qwen3.8-Flash-Next-4bit (~112GB of weights) on the 256GB+ Studio tier; needs a recent development build of mlx-vlm (earlier conversions had a bug); no measured t/s given, so 80 is the model's best Apple Silicon figure carried from a same-class measurement, not this post's benchmark",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/sarthakcore/status/2113747794326597831",
+      "weight_gb": "~112GB (4-bit MLX)",
+      "system_ram_min": "256GB",
+      "engine_min_version": "recent development build of mlx-vlm"
+    },
+    {
+      "engine": "Strata",
+      "tps": "40",
+      "hardware": "local NUC (RTX Spark class)",
+      "quant": "local run, ~6B active params per token",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/JD__Hayes/status/2113498954038133047"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "40",
+      "hardware": "local NUC (~$2500)",
+      "quant": "uncensored variant (refusals removed)",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/JD__Hayes/status/2113498954038133047"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "32",
+      "hardware": "pair of GeForce RTX 4090 Waterforce GPUs + cryptomining motherboard giving 960GB of inference RAM",
+      "quant": "Q4 weights, 256K context; owner reports 200 tok/s prompt reading against 32 tok/s generation — a multi-GPU host, not a single 4090",
+      "date": "2026-10-22",
+      "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
+      "weight_gb": "Q4",
+      "context_tokens": "256000",
+      "system_ram_min": "960GB inference RAM"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "73",
+      "hardware": "RTX 3090 24GB (24 GB+ RTX 30-series)",
+      "quant": "llama.cpp baseline that OpenJet compares against for Qwen3.8-27B on 24 GB",
+      "date": "2026-10-22",
+      "source_post": "https://lightbrd.com/JeremyCMorgan/status/2113375294207746365"
+    },
+    {
+      "engine": "Strata",
+      "tps": "32",
+      "hardware": "2 × GeForce RTX 4090 Waterforce (cryptomining board, 960GB system RAM)",
+      "quant": "Q4 with 256K context; generation 32 tok/s, prompt reading 200 tok/s",
+      "date": "2026-10-22",
+      "source_post": "https://lightbrd.com/SpoogemanGhost/status/2113307032472232170",
+      "context_tokens": "262144",
+      "system_ram_min": "960GB"
+    },
+    {
+      "engine": "Strata",
+      "tps": "167.3",
+      "hardware": "single consumer GPU (not named in the excerpt)",
+      "quant": "GSQ-RCO weights, Strata; median decode near 262K context (EXL3/TabbyAPI on the same test: 81.2 tok/s)",
+      "date": "2026-10-21",
+      "source_post": "https://lightbrd.com/MarcelHolter/status/2112906753134461067",
+      "context_tokens": "262K"
+    },
+    {
+      "engine": "Strata",
+      "tps": "250",
+      "hardware": "single RTX 5090",
+      "quant": "Strata expert offload across GPU/RAM/SSD; reported 3-5x faster than Qwen 3.8 Flash in the cloud",
+      "date": "2026-10-20",
+      "source_post": "https://lightbrd.com/BetterStackHQ/status/2112529266479100239"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "134.4",
+      "hardware": "NVIDIA GB300 workstation (ASUS ET900N G3)",
+      "quant": "NVFP4 weights, vLLM, a single instance serving 64 concurrent users from one request each; 134.4 tok/s per user with no extra acceleration techniques (same instance: Nemotron 3.5 Super VL 120B NVFP4 at 142.2 tok/s per user)",
+      "date": "2026-10-20",
+      "source_post": "https://lightbrd.com/AlicanKiraz0/status/2112630102366499175",
+      "weight_gb": "NVFP4"
+    },
+    {
+      "engine": "Strata",
+      "tps": "53.2",
+      "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+      "quant": "at 60K context; comparison of complete serving setups, different quants from the llama.cpp run",
+      "weight_gb": "39.2GB IQ2_XS",
+      "context_tokens": "60000",
+      "date": "2026-10-19",
+      "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+      "system_ram_min": "64GB"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "27",
+      "hardware": "RTX 4070 12GB + i5-12600K, 64GB DDR5",
+      "quant": "at 60K context; same setup reached 53.2 tok/s with Strata",
+      "context_tokens": "60000",
+      "date": "2026-10-19",
+      "source_post": "https://lightbrd.com/codvynn/status/2106813525226307748",
+      "system_ram_min": "64GB"
+    },
+    {
+      "engine": "strixite",
+      "tps": "938",
+      "hardware": "AMD Strix Halo (Ryzen AI Max+ 395, 128 GB unified memory), ROCm",
+      "quant": "New fast prefill profile on a 32K prompt (938 tok/s, was 611; 859 tok/s at 16K); distilled speculative draft ~20% faster on prose, optional 6-bit dense trunk +5-9% decode; this is a prefill figure, the decode campaign is not published yet",
+      "date": "2026-10-19",
+      "source_post": "https://lightbrd.com/KireiStudios/status/2112075417314046172",
+      "system_ram_min": "128GB",
+      "context_tokens": "32768"
+    },
+    {
+      "engine": "Strata",
+      "tps": "87",
+      "hardware": "RTX 3090 24GB + 128GB dual-channel DDR4-2400 system RAM",
+      "quant": "IQ3_S quant split between GPU VRAM and system RAM at 261K context (~66 tok/s); IQ2_XS reaches ~87 tok/s, prompt processing ~1,900 tok/s",
+      "context_tokens": "261000",
+      "system_ram_min": "128GB DDR4-2400",
+      "date": "2026-10-17",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111251412973699533",
+      "weight_gb": "IQ3_S",
+      "storage_offload": "experts split between GPU VRAM and system RAM"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "191",
+      "hardware": "NVIDIA RTX PRO 6000 (Blackwell)",
+      "quant": "NVIDIA Qwen3.8-Flash-Next FP4-Local weights served in an updated container; median 191 tok/s, 90th percentile 271, peak 328 (the older NVFP4 container did 85-88 on the same workload)",
+      "date": "2026-10-17",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "engine": "SGLang",
+      "tps": "68",
+      "hardware": "1x NVIDIA DGX Spark (GB10)",
+      "quant": "NVIDIA FP4-Local TP1, 90.8% SixCat (one of four ways the model was tested)",
+      "date": "2026-10-17",
+      "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166"
+    },
+    {
+      "engine": "Strata",
+      "tps": "68",
+      "hardware": "DGX Spark (GB10, 128GB unified)",
+      "quant": "NVFP4, FP4-Local TP1, 90.8% SixCat; 2 Sparks measured 32% slower decode",
+      "date": "2026-10-17",
+      "source_post": "https://lightbrd.com/ViC305/status/2111523015234384166"
+    },
+    {
+      "engine": "Strata",
+      "tps": "87",
+      "hardware": "RX 7900 XTX 24GB",
+      "quant": "reported on a used 24GB Radeon-class card through Strata splitting the workload between VRAM and system RAM; IQ3_S ~70 tok/s and still ~66 tok/s at 261K context, IQ2_XS ~87 tok/s; prompt processing ~1,900 tok/s which is prefill, never the decode figure",
+      "weight_gb": "IQ2_XS / IQ3_S compressed builds",
+      "context_tokens": "267264",
+      "system_ram_min": "64GB (tested on 128GB dual-channel DDR4-2400)",
+      "date": "2026-10-17",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2111308200163885268"
+    },
+    {
+      "engine": "MLX",
+      "tps": "97.1",
+      "hardware": "Mac Studio M3 Ultra",
+      "quant": "4-bit MTP build via oMLX; 23K context, ~1,131 tok/s uncached prefill",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2099312823025496405"
+    },
+    {
+      "engine": "MLX",
+      "tps": "126.5",
+      "hardware": "MacBook M5 Max",
+      "quant": "MTPLX V2.11.3; 126.5 TPS peak, 61 TPS avg at 100K context, 50 TPS avg at 200K context, through OpenCode",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100499328376713348"
+    },
+    {
+      "engine": "Strata",
+      "tps": "94",
+      "hardware": "RTX 5070 12GB + 32GB system RAM, ~80GB disk",
+      "quant": "compressed Qwen3.8-Flash-Next with cold experts kept in system RAM (53-94 tok/s range on the RTX 5070 per the developers' tests)",
+      "system_ram_min": "32GB",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/RoundtableSpace/status/2111016141346783618",
+      "storage_offload": "~80GB disk"
+    },
+    {
+      "engine": "MLX",
+      "tps": "10.7",
+      "hardware": "Apple Silicon Mac with a fixed per-layer LRU expert budget",
+      "quant": "moe-offload, an experimental SSD expert-offloading loader for MLX: always-used weights stay in RAM, routed experts stream into a fixed-budget per-layer LRU cache with router prefetching; 8.9 GiB peak RSS, 94.7% hit rate, 0 swap",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/JAKEVIN16/status/2111317398292971586",
+      "system_ram_min": "8.9 GiB peak RSS"
+    },
+    {
+      "engine": "TokenSpeed",
+      "tps": "685",
+      "hardware": "4x NVIDIA GB300 (TP4/EP4), datacenter",
+      "quant": "TokenSpeed LightSeek, NVFP4, batch size 1 on SWE-Smith agent conversations with a 50K-token first turn; 3 MTP draft steps with ~3.23 tokens accepted per round; n-gram embedding table moved to host memory frees ~12.22 GiB per GPU",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/dextune/status/2110363008669290627"
+    },
+    {
+      "engine": "ExLlamaV3",
+      "tps": "35.3",
+      "hardware": "NVIDIA DGX Spark (GB10), 128GB unified memory",
+      "quant": "EXL3 3.05 bpw; ~31GB n-gram embedding table streams from NVMe; both models loaded concurrently with MiniCPM-V 4.7 35B-A3B; 88.6 tok/s code and 55.9 tok/s prose when generating alone; 26.2 tok/s while the worker model ran too; 262144-token Q8 KV cache",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+      "context_tokens": "262144",
+      "system_ram_min": "128GB unified memory",
+      "storage_offload": "~31GB n-gram embedding table streams from NVMe",
+      "engine_min_version": "ExLlamaV3"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "67",
+      "hardware": "DGX Spark",
+      "quant": "4-bit MLX, MTP draft, thinking off (agent workload; fastest decode of the three models tested)",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/dedene/status/2109556571189694745",
+      "weight_gb": "103GB"
+    },
+    {
+      "engine": "strixite",
+      "tps": "50",
+      "hardware": "Strix Halo 128GB",
+      "quant": "HIP (gfx1151), Qwen3.8-Flash-Next strixw-tuned; ~50 t/s out to ~492k context",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/BIGBULLapp/status/2109493637352509501"
+    },
+    {
+      "engine": "Strata",
+      "tps": "104",
+      "hardware": "RTX PRO 4000 Blackwell 24GB",
+      "quant": "IQ2_XS, llama-benchy 0.4.0, 512/8K/32K input; 104/83.9/82.9 t/s decode",
+      "date": "2026-10-10",
+      "source_post": "https://lightbrd.com/8CEVSmSRMT32119/status/2108971713463792113",
+      "weight_gb": "IQ2_XS",
+      "context_tokens": "32768"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "353",
+      "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
+      "quant": "decode, tuned build (independent issue #22 run)",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952"
+    },
+    {
+      "engine": "oMLX",
+      "tps": "157.7",
+      "hardware": "M5 Ultra 80-core 256GB (Apple Silicon)",
+      "quant": "tuned oMLX",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+      "engine_min_version": "oMLX 0.6.4, MTP depth 6",
+      "context_tokens": "195000"
+    },
+    {
+      "engine": "mlx-serve",
+      "tps": "90",
+      "hardware": "M5 Max 128GB",
+      "quant": "Sushi-4 hybrid pack, best public recipe",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/yume_arasaki/status/2108359576966094952",
+      "context_tokens": "262144"
+    },
+    {
+      "engine": "Strata",
+      "tps": "140",
+      "hardware": "RTX 3090 24GB",
+      "quant": "IQ3_S (est)",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2108406277499944996"
+    },
+    {
+      "engine": "MLX",
+      "tps": "101",
+      "hardware": "M5 Max 128GB",
+      "quant": "MTPLX (MLX with MTP multi-token prediction) optimized",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/jlucas/status/2108390255363592378"
+    },
+    {
+      "engine": "mlx-serve",
+      "tps": "300",
+      "hardware": "M5 Max 128GB",
+      "quant": "mlx-serve, Qwen3.8-Flash-Next",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/thelogicalgate/status/2108375251637981693",
+      "system_ram_min": "128GB unified memory"
+    },
+    {
+      "engine": "mlx-serve",
+      "tps": "83",
+      "hardware": "M4 Max",
+      "quant": "MLX-Serve 26.9.5 Qwen3.8-Flash-Next decode",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+      "engine_min_version": "MLX-Serve 26.9.5"
+    },
+    {
+      "engine": "Strata",
+      "tps": "58",
+      "hardware": "Radeon 8060S / Strix Halo 96GB (Bosgame M5)",
+      "quant": "Unsloth Q4 / GSQ-RCO weights, 140W Performance mode, pegged reference frames; 1400-1500 t/s prefill",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+      "weight_gb": "Unsloth Q4 / GSQ-RCO",
+      "context_tokens": "262K",
+      "system_ram_min": "96GB",
+      "engine_min_version": "Strata with experimental Strix Halo support (Linux only)"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "112.3",
+      "hardware": "Apple Silicon",
+      "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; 4.4x boost (25.5 -> 112.3)",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232",
+      "engine_min_version": "Rapid-MLX 0.15.7"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "136",
+      "hardware": "M3 Ultra 80-core, 256GB",
+      "quant": "CYBER-FROST-3.8-MLX-4bit (Blackfrost's cybersecurity finetune of Qwen3.8-Flash-Next), oQ4e quantization with DWQ against the BF16 weights and a retrained MTP head; 96 tok/s at 26k agentic context with xhigh thinking, up to 136 tok/s on TensorFold's bench with thinking off",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/grantoverton/status/2107897439571309032",
+      "context_tokens": "26000",
+      "engine_min_version": "TensorFold 0.6.5"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "20",
+      "hardware": "Beelink SER 7 Pro iGPU Radeon 780M (Vulkan)",
+      "quant": "GSQ-RCO IQ3_S, MTP, Arifi Labs' custom Vulkan-optimised llama.cpp fork",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/ArifiLabs/status/2107703750957641985",
+      "weight_gb": "GSQ-RCO IQ3_S",
+      "system_ram_min": "48GB"
+    },
+    {
+      "engine": "Strata",
+      "tps": "120",
+      "hardware": "RTX 5090 32GB",
+      "quant": "more than 2x the speed of llama.cpp + Qwen3.8-27B on the same card (ts-bench comparison); Strata spreads the MoE across the machine's memory hierarchy",
+      "date": "2026-10-06",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107391242849914934"
+    },
+    {
+      "engine": "Strata",
+      "tps": "124",
+      "hardware": "RTX 5070 12GB",
+      "quant": "Q20 (2-bit-class), MoE experts across GPU/RAM/SSD, 64GB RAM",
+      "date": "2026-10-05",
+      "source_post": "https://lightbrd.com/BrianRoemmele/status/2107164411362484382",
+      "weight_gb": "37.6GB Q2_0 / 39.2GB IQ2_XS",
+      "system_ram_min": "32GB",
+      "storage_offload": "~80GB SSD"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "33.7",
+      "hardware": "Ryzen 5950X 16C/32T CPU (n-cpu-moe=32) + RTX 3090 24GB, 64GB RAM",
+      "quant": "UD-Q2_K_XL, 65K ctx",
+      "date": "2026-10-05",
+      "source_post": "https://lightbrd.com/eirrann_art/status/2107233442476003353",
+      "weight_gb": "UD-Q2_K_XL",
+      "context_tokens": "65000",
+      "system_ram_min": "64GB",
+      "engine_min_version": "llama.cpp with -n-cpu-moe=32 (-cmoe)"
+    },
+    {
+      "engine": "Strata",
+      "tps": "40",
+      "hardware": "2 × RTX 3060 12GB (24GB total) + 64GB DDR5 system RAM",
+      "quant": "IQ3_S GSQ-RCO, 256K context, 160,940-token prompt processed in 123 s (~1,308 prompt tok/s)",
+      "date": "2026-10-05",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106924430643302782",
+      "weight_gb": "IQ3_S GSQ-RCO",
+      "context_tokens": "262144",
+      "system_ram_min": "64GB DDR5"
+    },
+    {
+      "engine": "Strata",
+      "tps": "60",
+      "hardware": "RX 9070 XT 16GB",
+      "quant": "project-reported benchmark (Strata README); 52 tok/s on the higher-quality IQ3_S quantization; 2-3 bit compressed experts",
+      "weight_gb": "39.2GB IQ2_XS",
+      "system_ram_min": "32GB",
+      "storage_offload": "experts streamed from system RAM/SSD, ~80GB disk",
+      "date": "2026-10-04",
+      "source_post": "https://lightbrd.com/RoundtableSpace/status/2106848080179909040",
+      "context_tokens": "131072"
+    },
+    {
+      "engine": "ExLlamaV3 (ROCm fork)",
+      "tps": "34.7",
+      "hardware": "32GB Radeon GPU (ROCm)",
+      "quant": "EXL3 5.05 bpw quant, Q8 KV cache, patched ExLlamaV3 ROCm fork; ~863 tok/s prefill while processing ~101K new tokens which is prefill, never the decode figure",
+      "weight_gb": "EXL3 5.05 bpw (does not fit entirely in VRAM)",
+      "context_tokens": "235520",
+      "system_ram_min": "~90GB",
+      "storage_offload": "~102GB BF16 n-gram table streamed from NVMe",
+      "engine_min_version": "patched ExLlamaV3 ROCm fork",
+      "date": "2026-10-04",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2106576426883227694"
+    },
+    {
+      "engine": "Strata",
+      "tps": "40",
+      "hardware": "Strix Halo (Ryzen AI Max APU)",
+      "quant": "ROCm",
+      "date": "2026-10-04",
+      "source_post": "https://lightbrd.com/basel_by/status/2106492205313478868"
+    },
+    {
+      "engine": "Strata",
+      "tps": "100",
+      "hardware": "RTX 4090 24GB",
+      "quant": "claimed 100 tok/s on consumer GPU",
+      "date": "2026-10-04",
+      "source_post": "https://lightbrd.com/yama_boku/status/2106890650969055716",
+      "system_ram_min": "32GB (est)",
+      "weight_gb": "70GB download (est)",
+      "storage_offload": "80GB disk (est)"
+    },
+    {
+      "engine": "Strata",
+      "tps": "110",
+      "hardware": "RTX 3090 / RTX 4090 / RTX 5090",
+      "quant": "70-100 t/s decode, ~1500 t/s prefill (coldniko's established figures)",
+      "date": "2026-10-03",
+      "source_post": "https://lightbrd.com/Krypto_Whitehat/status/2106466987551736101"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "80",
+      "hardware": "M3 Ultra",
+      "quant": "oQ8 + MTP spec decode, generation t/s",
+      "date": "2026-10-03",
+      "source_post": "https://lightbrd.com/ivanfioravanti/status/2106315764009521468"
+    },
+    {
+      "engine": "Strata",
+      "tps": "80",
+      "hardware": "RTX 5090 32GB + 128GB DDR4-3200",
+      "quant": "MoE, prefill ~3,000 t/s",
+      "date": "2026-10-02",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105849239439843345"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "39.3",
+      "hardware": "DGX Spark (GB10, 128GB), TP1 (decode tests on two Sparks)",
+      "quant": "Vontra MLX 4-bit weights + MTP drafts, 131K context; serial decoding with drafts DISABLED, TensorFold 0.3.6.3 (commit 1911880) vs 0.3.4 (2f8e514): 36.1 -> 39.3 tok/s; with drafts: average 108.5 tok/s (median of five runs), sequence 129.1, code 87.9, at 48.8K context 67.9; 48.8K prompt prefill 107 -> 1,953 tok/s",
+      "date": "2026-09-30",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105480372578292054",
+      "context_tokens": "131072",
+      "engine_min_version": "TensorFold 0.3.6.3 (commit 1911880)"
+    },
+    {
+      "engine": "Strata",
+      "tps": "60",
+      "hardware": "RX 7900 XTX 24GB",
+      "quant": "ROCm, sustained 52-60 output t/s (generation); prompt processing 1250 t/s",
+      "date": "2026-09-29",
+      "source_post": "https://lightbrd.com/coldniko/status/2104992294893936665",
+      "weight_gb": "39.2GB IQ2_XS",
+      "context_tokens": "131072",
+      "system_ram_min": "64GB",
+      "storage_offload": "experts across GPU/RAM/SSD, ~70GB download (SSD recommended)",
+      "engine_min_version": "Strata setup.sh --backend hip (ROCm, Linux)"
+    },
+    {
+      "engine": "Strata",
+      "tps": "40",
+      "hardware": "RX 7900 XT 20GB + 80GB DDR4 (WSL2)",
+      "quant": "ROCm, MoE experts across GPU/RAM; ~30-40 t/s",
+      "date": "2026-09-29",
+      "source_post": "https://lightbrd.com/smogporter/status/2105055489209868522"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "75",
+      "hardware": "2x Radeon AI PRO R9700 32GB",
+      "quant": "Radiance + vLLM, ROCm; generation t/s",
+      "date": "2026-09-27",
+      "source_post": "https://lightbrd.com/Italianclownz/status/2099877914481156294"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "92",
+      "hardware": "Apple Silicon (Mac, hardware not named in the post)",
+      "quant": "MLX 4-bit TensorFold on Qwen3.8-Flash-Next; the post's range is 88-92 tok/s",
+      "date": "2026-09-26",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "33",
+      "hardware": "Radeon 8060S / Strix Halo 128GB (GMKtec Evo-X2)",
+      "quant": "Nathanw1014 portable Strix Halo 'Vulcan' build of llama.cpp, Qwen3.8-27B Q3_K_XL, 64K context, vision enabled; ~33 tok/s total shared across four concurrent lanes",
+      "context_tokens": "65536",
+      "engine_min_version": "Nathanw1014 portable Strix Halo Vulkan llama.cpp build",
+      "date": "2026-09-15",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2089073298487615541"
+    }
+  ],
+  "gemma-4-26b": [
+    {
+      "engine": "turbo-fieldfare",
+      "tps": "35",
+      "hardware": "MacBook Air M2 8GB (Apple Silicon, unified memory)",
+      "quant": "Swift/Metal, experts streamed from SSD",
+      "date": "2026-11-10",
+      "source_post": "https://lightbrd.com/deeponailabs/status/2120227672164798873",
+      "system_ram_min": "8GB",
+      "storage_offload": "experts streamed from SSD"
+    },
+    {
+      "engine": "MLX",
+      "tps": "72",
+      "hardware": "M4 Pro 48GB (Apple Silicon, unified memory)",
+      "quant": "MLX runner",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/StevenMatison/status/2119864717523005591",
+      "weight_gb": "18GB",
+      "system_ram_min": "48GB",
+      "context_tokens": "131072"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "72",
+      "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
+      "quant": "QAT GGUF (gemma4:26b-a4b-it-qat), 15GB on disk, 16GB loaded",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
+      "weight_gb": "15GB"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "4.1",
+      "hardware": "12GB-RAM Android phone, plain CPU (4 cores), no GPU/NPU; experts streamed from flash",
+      "quant": "BigMoeOnEdge on stock llama.cpp (untouched upstream, submodule)",
+      "date": "2026-08-13",
+      "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+    }
+  ],
+  "qwen3.6-35b-a3b": [
+    {
+      "engine": "Ollama",
+      "tps": "61",
+      "hardware": "MacBook Pro M4 Pro 48GB (Apple Silicon, unified memory)",
+      "quant": "q4_K_M (qwen3.6:35b-a3b-q4_K_M), 23GB on disk, 24GB loaded",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/StevenMatison/status/2119864841817223188",
+      "weight_gb": "23GB"
+    },
+    {
+      "engine": "Kapitsa",
+      "tps": "154",
+      "hardware": "MacBook Pro M4 Pro 48GB unified memory (Apple Silicon)",
+      "quant": "4-bit; with DFlash2 speculative decoding",
+      "date": "2026-10-27",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114926668015951937",
+      "system_ram_min": "48GB unified memory"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "3.47",
+      "hardware": "CPU-only machine (no GPU)",
+      "quant": "Bolt model, llama.cpp with the drafter disabled",
+      "date": "2026-10-26",
+      "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
+    },
+    {
+      "engine": "PyTorch",
+      "tps": "61.3",
+      "hardware": "Apple M3 Ultra (MPS backend, torch.compile)",
+      "quant": "BF16, PyTorch 2.15 MPS Metal kernels; up from 9.4 tok/s on 2.14",
+      "date": "2026-10-26",
+      "source_post": "https://lightbrd.com/AIQuanting/status/2114781884144370049",
+      "engine_min_version": "PyTorch 2.15 (MPS)"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "120",
+      "date": "2026-10-26",
+      "hardware": "NVIDIA GPU (card not named in the post)",
+      "quant": "MTP enabled, Q8 KV cache, mmproj offload; 262,144-token context",
+      "context_tokens": "262144",
+      "engine_min_version": "MTP enabled, Q8 KV cache, mmproj offload",
+      "source_post": "https://lightbrd.com/reponsedalarabi/status/2114766815653990805"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "309",
+      "hardware": "RTX 5090 32GB",
+      "quant": "dense int4 27B (Qwen3.8-27B) 75.8 vs Marlin 77.1 on the same card; 35B MoE 309 tok/s with Humming vs 292 with Marlin",
+      "date": "2026-10-25",
+      "source_post": "https://lightbrd.com/witcheer/status/2114259758169432567",
+      "engine_min_version": "vLLM 0.32.0, --linear-backend humming"
+    },
+    {
+      "engine": "oMLX",
+      "tps": "123",
+      "hardware": "Apple Silicon M3 Max 36GB",
+      "quant": "MoE decode, oMLX",
+      "date": "2026-10-25",
+      "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455"
+    },
+    {
+      "engine": "Kapitsa",
+      "tps": "123",
+      "hardware": "Apple Silicon M3 Max 36GB",
+      "quant": "MoE decode, Kapitsa",
+      "date": "2026-10-25",
+      "source_post": "https://lightbrd.com/ai_hakase_/status/2114163034922930455"
+    },
+    {
+      "engine": "OpenVINO",
+      "tps": "30",
+      "hardware": "LattePanda Sigma 2 single-board computer (Intel Core Ultra X7 358H, Arc B390 graphics, up to 64GB LPDDR5X-8533)",
+      "quant": "INT4",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/AIQuanting/status/2113876566547845590",
+      "system_ram_min": "64GB LPDDR5X (up to 59GB usable for AI work)"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "64",
+      "hardware": "DGX Spark (GB10)",
+      "quant": "MTP speculative decoding off",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "1.34",
+      "hardware": "CPU-only machine (no GPU)",
+      "quant": "Ollama default build with its default drafter (MTP) enabled",
+      "date": "2026-10-24",
+      "engine_min_version": "Ollama with the default drafter (MTP) on",
+      "source_post": "https://lightbrd.com/CCIE4K/status/2114116609933721654"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "143",
+      "hardware": "RTX 5090 32GB (one owner's benchmark)",
+      "quant": "NVFP4 (4-bit floats)",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/0xaqt/status/2114002977413345358",
+      "weight_gb": "NVFP4"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "96.63",
+      "hardware": "NVIDIA RTX Spark laptop 128GB (ARM64, Windows 11 on ARM)",
+      "quant": "Q4_K_M (llama.cpp, RTX Spark laptop); AIPerf coding speed bench, third-party table quoted in the post",
+      "date": "2026-10-24",
+      "source_post": "https://lightbrd.com/urs69141/status/2114126182899666972",
+      "system_ram_min": "128GB"
+    },
+    {
+      "engine": "oMLX",
+      "tps": "127",
+      "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+      "quant": "4-bit + DFlash2 speculative decoding (same reported benchmark)",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+      "system_ram_min": "48GB unified memory",
+      "engine_min_version": "oMLX with DFlash2 draft"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "69",
+      "hardware": "2024 MacBook Pro M4 Pro, 48GB unified memory",
+      "quant": "4-bit + MTP speculative decoding (same reported benchmark)",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+      "system_ram_min": "48GB unified memory",
+      "engine_min_version": "llama.cpp with MTP",
+      "weight_gb": "4-bit"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "89",
+      "hardware": "MacBook Pro M4 Pro 48GB unified memory",
+      "quant": "4-bit Qwen3.6-35B-A3B with MTP multi-token prediction, reported comparison row (Kapitsa+DFlash2 154 t/s leads the same test)",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+      "system_ram_min": "48GB",
+      "engine_min_version": "Ollama with MTP"
+    },
+    {
+      "engine": "mlx-serve",
+      "tps": "281",
+      "hardware": "M5 Max Mac, 128GB unified memory",
+      "quant": "4-bit Qwen3.6-35B-A3B; same report on a 2024 M4 Pro MacBook Pro 48GB: Kapitsa + DFlash2 154 tok/s, oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+      "system_ram_min": "128GB unified memory"
+    },
+    {
+      "engine": "Kapitsa",
+      "tps": "281",
+      "hardware": "M5 Max Mac (128GB unified memory)",
+      "quant": "4-bit Qwen3.6-35B-A3B with DFlash2 speculative decoding; same report on a 2024 M4 Pro MacBook Pro 48GB: Kapitsa + DFlash2 154 tok/s, oMLX + DFlash2 127, Ollama + MTP 89, LM Studio 86, MTPLX 80, llama.cpp + MTP 69",
+      "date": "2026-10-23",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+      "system_ram_min": "128GB unified memory",
+      "engine_min_version": "Kapitsa with DFlash2 speculative decoding"
+    },
+    {
+      "engine": "LM Studio",
+      "tps": "86",
+      "hardware": "Apple M4 Pro MacBook Pro 2024, 48GB unified memory",
+      "quant": "4-bit Qwen3.6-35B-A3B",
+      "date": "2026-10-23",
+      "system_ram_min": "48GB",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273"
+    },
+    {
+      "engine": "MTPLX",
+      "tps": "80",
+      "hardware": "Apple M4 Pro MacBook Pro 2024, 48GB unified memory",
+      "quant": "4-bit Qwen3.6-35B-A3B",
+      "date": "2026-10-23",
+      "system_ram_min": "48GB",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2113439191832916273",
+      "engine_min_version": "MTPLX draft"
+    },
+    {
+      "engine": "Kapitsa",
+      "tps": "281",
+      "hardware": "MacBook Pro M4 Pro 2024, 48GB unified memory",
+      "quant": "4-bit model with DFlash2 speculative decoding; hand-optimized Metal kernels, model-aware caching, optimized MoE execution; ~2.2x llama.cpp+MTP (69 tok/s) in the same reported benchmark; also 281 tok/s on M5 Max 128GB",
+      "date": "2026-10-21",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112882922063634438",
+      "system_ram_min": "48GB unified memory",
+      "engine_min_version": "DFlash2 drafter on"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "57",
+      "hardware": "AMD Ryzen AI Max+ 395 (Strix Halo)",
+      "quant": "ROCm build (per the post)",
+      "date": "2026-10-20",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2112387747520369048",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "262K",
+      "system_ram_min": "16GB"
+    },
+    {
+      "engine": "Magnitude",
+      "tps": "188.9",
+      "hardware": "NVIDIA DGX Spark (one), both engines with default drafters",
+      "quant": "Magnitude 0.2.9 on an independent rebuild of the vendor's copy-a-passage test with a ~64K-token Moby-Dick prompt, 66K-token prompt; the same test gives Ollama 0.40.5 87.2 tok/s",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+      "context_tokens": "66000"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "87.2",
+      "hardware": "NVIDIA DGX Spark (one), Ollama 0.40.5 with its default drafter",
+      "quant": "generation of a new story after a 67K-token prompt - the honest half of the same test, against Magnitude's 50.4 tok/s on the copy task's 188.9",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111204284453044383",
+      "engine_min_version": "Ollama 0.40.5",
+      "system_ram_min": "128GB",
+      "context_tokens": "66000"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "87.2",
+      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+      "quant": "Ollama 0.40.5 registry tag (Q4_K_M with built-in MTP), f16 KV cache; repeat-a-passage round at a 66K-token prompt, median of 3 runs, thinking off; new-story round on the same box 63.4 tok/s (Magnitude 50.4); prefill 1,834 tok/s which is prompt processing, never the decode figure",
+      "weight_gb": "Q4_K_M (Ollama registry tag)",
+      "context_tokens": "67584",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461",
+      "engine_min_version": "Ollama 0.40.5"
+    },
+    {
+      "engine": "Magnitude",
+      "tps": "188.9",
+      "hardware": "Radeon 8060S / Strix Halo 128GB (ASUS Ascent GX10, GB10)",
+      "quant": "Magnitude 0.2.9 with its DFlash drafter and quantized KV cache, unsloth UD-Q4_K_XL on the repeat-a-passage round at a 66K-token prompt (75% drafter acceptance); new-story round 50.4 tok/s at 43% acceptance; prefill 2,332 tok/s",
+      "weight_gb": "UD-Q4_K_XL",
+      "context_tokens": "67584",
+      "system_ram_min": "128GB",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/niklaslenz_ai/status/2111621869157044461"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "50",
+      "hardware": "RTX 3060 12GB + 16GB system RAM",
+      "quant": "Q4_K_M; 262K context configured; Flash Attention + Q8 KV cache; ~550 tok/s prompt processing",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110556141641998790",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "262K",
+      "system_ram_min": "16GB"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "25.4",
+      "hardware": "Ryzen AI Max+ 395 (Radeon 8060S / Strix Halo)",
+      "quant": "same Agon bench run with LFM2.5-24B-A2B; the benchmark's median requests decoded at 25.4 tok/s; Qwen3.6-35B-A3B held first place at 89.9% before LFM2.5 took it",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/GuideboardLabs/status/2110246672166699354"
+    },
+    {
+      "engine": "MLX",
+      "tps": "108.6",
+      "hardware": "M4 Pro 64GB",
+      "quant": "Qwen3.6-35B-A3B 4-bit (~3B active) on Rapid-MLX vs Nemotron 3.5 Lightning 30B-A3B on TensorFold: 108.6 tok/s + 15/15 tools, both 5/5 needles at 245K",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/draslan_eth/status/2106705583718154587",
+      "system_ram_min": "64GB unified memory",
+      "context_tokens": "245000",
+      "engine_min_version": "Rapid-MLX"
+    },
+    {
+      "engine": "Janas",
+      "tps": "19",
+      "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+      "quant": "Q4_K_M on the Janas runtime; Janas vs llama.cpp 12 tok/s in the same test",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014",
+      "system_ram_min": "32GB"
+    },
+    {
+      "engine": "FreeToken",
+      "tps": "61.4",
+      "hardware": "RTX PRO 2000 Blackwell 16GB",
+      "quant": "NVFP4 converted to FTW, FreeToken nightly, CPU pinned to E-cores",
+      "date": "2026-10-10",
+      "source_post": "https://lightbrd.com/8CEVSmSRMT32119/status/2108971713463792113",
+      "weight_gb": "NVFP4 (converted to FTW)",
+      "context_tokens": "32768"
+    },
+    {
+      "engine": "mlx-serve",
+      "tps": "239",
+      "hardware": "M4 Max",
+      "quant": "MLX-Serve 26.9.5 (MoE, ~3B active)",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107649745275719898",
+      "engine_min_version": "MLX-Serve 26.9.5"
+    },
+    {
+      "engine": "FreeToken",
+      "tps": "39.3",
+      "hardware": "8GB GPU",
+      "quant": "MoE, experts in system RAM + GPU cache",
+      "date": "2026-09-27",
+      "source_post": "https://lightbrd.com/DailyDoseOfDS_/status/2104141556945134028"
+    },
+    {
+      "engine": "FreeToken",
+      "tps": "39.3",
+      "hardware": "RTX 4060 laptop 8GB",
+      "quant": "official checkpoints, no extreme quantization",
+      "date": "2026-08-23",
+      "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619",
+      "weight_gb": "official checkpoints (no extreme quantization)",
+      "system_ram_min": "32GiB LPDDR5 (est)"
+    },
+    {
+      "engine": "Magnitude",
+      "tps": "128",
+      "hardware": "DGX Spark (GB10)",
+      "quant": "MTP speculative decoding on; 28 t/s with it off",
+      "date": "2026-08-23",
+      "source_post": "https://lightbrd.com/jmurillocode/status/2091598658425004160"
+    },
+    {
+      "engine": "Ollama",
+      "tps": "19",
+      "hardware": "Mac M5 (Ollama MLX backend)",
+      "quant": "35B model; prompt processing jumped ~57% (1,154 -> 1,810 tok/s) when Ollama swapped its engine to Apple's MLX framework",
+      "date": "2026-07-15",
+      "source_post": "https://lightbrd.com/BennyLam/status/2089620773119926380"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "190",
+      "hardware": "RX 7900 XTX 24GB",
+      "quant": "Vulkan, Q4_K_M, MTP head N=5, 291W power cap; 97% draft acceptance; MTP off 129 t/s",
+      "date": "2026-07-11",
+      "source_post": "https://lightbrd.com/Whimsicali/status/2075976039113904260",
+      "weight_gb": "Q4_K_M",
+      "engine_min_version": "llama.cpp b9292 (Vulkan, MTP)"
+    },
+    {
+      "engine": "MLX",
+      "tps": "19",
+      "hardware": "Mac mini M4 Pro 64GB",
+      "quant": "Qwen3.6-35B-A3B-4bit (~19GB model), Rapid-MLX upgraded to v0.9.12, used as a local backup agent lane",
+      "date": "2026-07-04",
+      "source_post": "https://lightbrd.com/Topaz750/status/2073331746217538012",
+      "system_ram_min": "64GB"
+    }
+  ],
+  "qwen3.8-35b-a3b": [
+    {
+      "engine": "llama.cpp",
+      "tps": "2.5",
+      "hardware": "CPU-only (4GB VRAM + 32GB system RAM, partial offload)",
+      "quant": "llama-server print_timing slot lines: tg = 2.50 t/s, tg_3s 2.53; ~12-12.5 t/s prompt processing on a ~4K-token prompt; user notes Qwen3.8-35B / MoE builds scale better than the dense Bonsai pack on a system this small",
+      "weight_gb": "Q4 (partial offload)",
+      "system_ram_min": "32GB",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/AgoristQuest/status/2112691165860839855"
+    },
+    {
+      "engine": "ExLlamaV3",
+      "tps": "88.6",
+      "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+      "quant": "Qwen3.8-Flash-Next EXL3 3.05 bpw as the main agent while MiniCPM-V 4.7 35B-A3B EXL3 3.74 bpw served 8 subagents (both loaded); 35.3 tok/s while both models were actively generating code (26.2 tok/s under the 8-worker synthetic test)",
+      "system_ram_min": "128GB",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+      "engine_min_version": "ExLlamaV3 + Hermes Agent profile",
+      "context_tokens": "262144"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "50",
+      "hardware": "RTX 3060 12GB + 16GB system RAM",
+      "quant": "Q4_K_M; 262K context configured; ~550 tok/s prompt processing (prefill, never the decode figure)",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2109437411176382470",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "262K",
+      "system_ram_min": "16GB",
+      "engine_min_version": "--n-cpu-moe 26 -c 262144 -fa on --cache-type-k q8_0 --cache-type-v q8_0",
+      "storage_offload": "26 MoE layers assigned to CPU"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "50",
+      "hardware": "RX 9070 XT 16GB",
+      "quant": "Q4_K_M, llama.cpp with Flash Attention and Q8 KV cache; --n-cpu-moe 26 -c 262144; ~550 tok/s prompt processing which is prefill, never the decode figure; 16GB system RAM",
+      "weight_gb": "Q4_K_M",
+      "context_tokens": "268288",
+      "system_ram_min": "16GB",
+      "engine_min_version": "llama.cpp --n-cpu-moe 26 -c 262144 (Flash Attention, Q8 KV)",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/DogukanUrker/status/2100346050473074805"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "5",
+      "hardware": "RTX 4060 8GB laptop + Intel i7-12700H, 16GB DDR4 (CPU/GPU split, 25 GPU layers)",
+      "quant": "Unsloth IQ4_XS (~14.6GB on disk), Q4_0 KV cache, native MTP, 25 GPU layers; 64K context, 150 tok/s prefill",
+      "date": "2026-09-16",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100045376380100955"
+    }
+  ],
+  "deepseek-v4.1-flash": [
+    {
+      "engine": "Strata",
+      "tps": "3.6",
+      "hardware": "NVIDIA RTX 3060 12GB + 30GB system RAM",
+      "quant": "IQ2_XXS, experts streamed from SSD page cache, 9GB LRU cache in VRAM, greedy decode; decode 2-3.6 tok/s (fluctuates with page-cache behaviour), 249GB model",
+      "date": "2026-11-09",
+      "source_post": "https://lightbrd.com/FatimaYappin/status/2119841304037487030",
+      "storage_offload": "SSD page cache",
+      "weight_gb": "~249GB",
+      "context_tokens": "4096",
+      "engine_min_version": "Strata (RustingStrata)",
+      "system_ram_min": "30GB"
+    },
+    {
+      "engine": "Strata",
+      "tps": "14",
+      "hardware": "GMKtec EVO-X2 Windows mini PC, Ryzen AI Max+ 395 (Strix Halo integrated Radeon), 128GB unified memory, no discrete GPU",
+      "quant": "2-bit / ISTA-DASLab IQ2_XXS 2.00 bpw, Faster mode (5 of 6 selected experts per step), Strata 0.2.7 Windows engine for Strix Halo",
+      "date": "2026-10-30",
+      "source_post": "https://lightbrd.com/llmrequirements/status/2116236484738945104",
+      "system_ram_min": "128GB",
+      "weight_gb": "~257 GB on NVMe (138 GB weights + 111 GB shared lookup table + 8 GB drafter)",
+      "storage_offload": "part of the model read from the SSD while it answers",
+      "engine_min_version": "Strata 0.2.7"
+    },
+    {
+      "engine": "Strata",
+      "tps": "10",
+      "hardware": "RTX 3060 12GB + 46-64GB system RAM, experts read from SSD",
+      "quant": "2-bit build from ISTA DASLab low-bit files, Strata 0.2.4 (MIT); ~257GB download, terminal only",
+      "date": "2026-10-25",
+      "source_post": "https://lightbrd.com/ChaiWithAi/status/2114302473200640332",
+      "weight_gb": "~257GB download",
+      "system_ram_min": "46GB",
+      "storage_offload": "SSD (rest of the model read from storage)",
+      "engine_min_version": "Strata 0.2.4"
+    },
+    {
+      "engine": "MLX",
+      "tps": "26.87",
+      "hardware": "Mac M5 Max",
+      "quant": "ds4 (antirez); ~2.2 J/output token, ~0.61 kWh and EUR0.19 per million output tokens, single sequence",
+      "date": "2026-10-16",
+      "source_post": "https://lightbrd.com/ottaviofogliata/status/2083931974503178326"
+    },
+    {
+      "engine": "MLX",
+      "tps": "58.2",
+      "hardware": "1x M5 Ultra (unified memory)",
+      "quant": "DeepSeek V4 Flash decode on MLX; two clustered M5 Ultras first decoded more slowly (35.3) and reached 58.2 with an optimized Thunderbolt 5 RDMA pipeline",
+      "date": "2026-09-25",
+      "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "17.4",
+      "hardware": "1x DGX Spark (GB10)",
+      "quant": "DeepSeek V4 Flash 0731 (284B) on one DGX Spark, llama.cpp; two Sparks with speculation 20.0 tok/s",
+      "date": "2026-09-25",
+      "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "75.6",
+      "hardware": "2x DGX Spark (GB10)",
+      "quant": "optimized vLLM, mixed FP8/FP4 weights, MTP speculative decoding; prefill 1,881 tok/s, TTFT 1.10 s",
+      "date": "2026-09-25",
+      "source_post": "https://lightbrd.com/FT_IOxCS/status/2103392458767741215"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "2",
+      "hardware": "RTX A4500 16GB VRAM + 128GB DDR5, 192GB engram on Gen4 7GB/s NVMe (MoE experts streamed from SSD to CPU)",
+      "quant": "MXFP4 GGUF, full precision; custom llama.cpp build (hikicoder/llama.cpp branch dsv41-ada-medvram), --moe-stream SSD-streamed experts, heat-throttled",
+      "date": "2026-09-24",
+      "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893"
+    },
+    {
+      "engine": "llama.cpp (hikicoder fork)",
+      "tps": "2",
+      "hardware": "RTX A4500 20GB (~17GB VRAM used) + 128GB DDR5",
+      "quant": "DeepSeek-V4.1-Flash-UNCENSORED-MXFP4-engram GGUF, 32K context at fp16, 16GB on VRAM + 60GB RAM; 192GB Engram on a Gen4 7GB/s NVMe with --moe-stream; generation slowed by thermal/IO pacing",
+      "date": "2026-09-24",
+      "source_post": "https://lightbrd.com/HikiCoder/status/2103043114277486893",
+      "system_ram_min": "128GB (60GB used by the run)",
+      "storage_offload": "192GB Engram on Gen4 7GB/s NVMe (--moe-stream)",
+      "context_tokens": "32K",
+      "engine_min_version": "-ngl 99 -c 32768 -nkvo --moe-stream --moe-stream-cache 12s --moe-stream-l2 32 --moe-stream-direct",
+      "weight_gb": "192GB engram on NVMe"
+    }
+  ],
+  "qwen3.8-flash-next-125b-strix-halo-strata": [
+    {
+      "engine": "Strata",
+      "tps": "49.1",
+      "hardware": "AMD Strix Halo (Radeon 8060S / Ryzen AI Max, integrated Radeon)",
+      "quant": "UD-Q4_K_XL; ROCm; Strata v0.2.13; decode 46.6-49.1 t/s (upper recorded)",
+      "date": "2026-11-09",
+      "engine_min_version": "Strata v0.2.13",
+      "source_post": "https://lightbrd.com/uctive/status/2119777745848689029"
+    },
+    {
+      "engine": "Slotstream",
+      "tps": "23.69",
+      "hardware": "MacBook Pro M5 Pro 48GB (Apple Silicon); 33GB memory budget",
+      "quant": "4-bit, roughly 105GB of weights streamed from SSD; 20.91-23.69 tok/s (upper figure recorded)",
+      "date": "2026-10-26",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2114550873875472653",
+      "weight_gb": "105GB (4-bit)",
+      "system_ram_min": "48GB"
+    },
+    {
+      "engine": "Strata",
+      "tps": "58",
+      "hardware": "Strix Halo laptop, 16GB VRAM + 96GB RAM (Bosgame M5), 140W performance mode",
+      "quant": "Unsloth Q4 / GSQ-RCO weights; ROCm; 55-58 t/s decode at performance mode, 1400-1500 t/s prefill excluded",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/EugeneSmarts/status/2107979786437926941",
+      "system_ram_min": "96GB (with 16GB VRAM)",
+      "context_tokens": "262144"
+    }
+  ],
+  "gemma-4-31b": [
+    {
+      "engine": "MLX",
+      "tps": "28",
+      "hardware": "Mac M5 Max 128GB",
+      "quant": "4-bit",
+      "date": "2026-11-14",
+      "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "24",
+      "hardware": "Mac M5 Max 128GB",
+      "quant": "4-bit GGUF",
+      "date": "2026-11-14",
+      "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "17.17",
+      "hardware": "RTX 5090 24GB Laptop",
+      "quant": "q4_0 KV cache, 128k native context, thinking mode on; 15.36 t/s sustained on a 1,272-token thinking session, prompt eval 95-165 t/s",
+      "date": "2026-04-17",
+      "source_post": "https://lightbrd.com/sudoingX/status/2045170387265392783"
+    }
+  ],
+  "gemma-4-e2b": [
+    {
+      "engine": "llama.cpp",
+      "tps": "19",
+      "hardware": "CPU, 8 cores",
+      "quant": "4-bit Q4_0 (2.8GB download); 17.5-19.5 t/s range",
+      "date": "2026-11-14",
+      "source_post": "https://lightbrd.com/LumenToolsHQ/status/2121620580226965521",
+      "weight_gb": "2.8GB",
+      "engine_min_version": "llama.cpp v1.0.0 (build b12377)"
+    },
+    {
+      "engine": "MLX",
+      "tps": "39",
+      "hardware": "Apple Silicon (iOS device)",
+      "quant": "MLX with the new FoundationModels adapter; Perspective Intelligence 3.0 on iOS",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/mikedoise/status/2110198747657568407"
+    },
+    {
+      "engine": "LiteRT",
+      "tps": "9",
+      "hardware": "Raspberry Pi 5 (CPU)",
+      "quant": "1432 MB peak RAM",
+      "date": "2026-09-05",
+      "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
+      "weight_gb": "1432MB peak resident",
+      "system_ram_min": "1432MB peak",
+      "engine_min_version": "LiteRT-LM"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "1",
+      "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
+      "quant": "Gemma 4 E2B Q4_K_M (2.9GB); prompt 2.0 t/s, gen 1.0 t/s",
+      "date": "2026-04-16",
+      "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
+      "weight_gb": "2.9GB (Q4_K_M)",
+      "system_ram_min": "8GB",
+      "engine_min_version": "llama.cpp b8816"
+    }
+  ],
+  "alpie-seed-9b": [
+    {
+      "engine": "MLX",
+      "tps": "14.1",
+      "hardware": "Mac M2 16GB (Apple Silicon, unified memory)",
+      "quant": "4-bit",
+      "date": "2026-11-10",
+      "source_post": "https://lightbrd.com/The_Donsie/status/2120154511906074738",
+      "weight_gb": "5.24GB (4-bit)",
+      "system_ram_min": "16GB"
+    }
+  ],
   "lfm2.5-24b-a2b": [
     {
       "engine": "MLX",
@@ -2889,125 +3003,6 @@
       "system_ram_min": "4GB",
       "date": "2026-10-15",
       "source_post": "https://lightbrd.com/barronnotbaron/status/2110821341687664874"
-    }
-  ],
-  "gemma-4-26b-a4b": [
-    {
-      "engine": "vLLM",
-      "tps": "663",
-      "hardware": "H100 80GB",
-      "quant": "best speculative setting measured on Gemma-4-26B (DFlash-family drafter), single request; the diffusion+ORL arm of the same test reached ~1,400 tok/s",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167",
-      "engine_min_version": "DFlash-family speculative drafter"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "0.39",
-      "hardware": "15x off-brand Android TV boxes ($55 each)",
-      "quant": "sharded two layers per box in Anthropic's self-replication demo; distributed inference only, 0.39 tok/s",
-      "system_ram_min": "15 networked $55 Android TV boxes",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/botnewsnetwork/status/2110545043744555486"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "0.39",
-      "hardware": "15x $55 off-brand Android TV boxes (4GB RAM each), pipeline parallelism",
-      "quant": "Anthropic Frontier Red Team sharded Gemma-4-26B-A4B across 15 nodes with pipeline parallelism; distributed inference at ~0.39 tok/s",
-      "system_ram_min": "4GB per node",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/Milo_AIx/status/2110069604961620027"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "21.4",
-      "hardware": "Apple M5 (16GB RAM)",
-      "quant": "Gemma 4 26B at ~2GB of RAM usage via drumih/turbo-fieldfare (Metal, any M-series MacBook)",
-      "system_ram_min": "16GB",
-      "date": "2026-09-20",
-      "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "21.4",
-      "hardware": "Apple M5, 16GB unified memory",
-      "quant": "turbo-fieldfare build (drumih/turbo-fieldfare), ~2GB RAM usage reported",
-      "date": "2026-09-20",
-      "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
-      "system_ram_min": "16GB"
-    },
-    {
-      "engine": "turbo-fieldfare",
-      "tps": "21.4",
-      "hardware": "Apple M5 with 16GB RAM",
-      "quant": "Gemma 4 26B at ~2GB RAM usage, Metal backend of turbo-fieldfare (drumih/turbo-fieldfare)",
-      "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
-      "date": "2026-09-20",
-      "system_ram_min": "16GB",
-      "weight_gb": "~2GB runtime RAM"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "22.9",
-      "hardware": "NVIDIA RTX 3080 10GB",
-      "quant": "IQ2_M (Q2 quant); prompt processing 442.2 tok/s, vs 1,816.5 tok/s for Gemma 4 12B IQ4_XS on the same card",
-      "date": "2026-09-06",
-      "source_post": "https://lightbrd.com/PaulGugAI/status/2096528833998356946"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "20",
-      "hardware": "Mac mini M4 (base chip, 32GB unified memory), Metal backend",
-      "quant": "Gemma 4 26B-A4B (MoE) at 20-22 tok/s, ~1s first token, 14.6 GB footprint; same bench: Qwen3-30B-A3B 24-30 tok/s (17.3 GB), Qwen3.8-27B dense 4.4 tok/s",
-      "weight_gb": "14.6GB",
-      "system_ram_min": "32GB",
-      "date": "2026-08-29",
-      "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
-      "engine_min_version": "llama.cpp on Metal via LM Studio"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "4.1",
-      "hardware": "12GB Android phone, four cores, flash storage (no GPU, no NPU)",
-      "quant": "BigMoeOnEdge expert streaming from flash on stock llama.cpp; same device that runs gpt-oss-120b at 2.2 tok/s",
-      "date": "2026-08-13",
-      "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "406",
-      "hardware": "RTX 4090 24GB",
-      "quant": "UD-Q4_K_XL (QAT), -c 57344, -np 14, -b 2048 -ub 2048, -ngl 99, -fa on, 23.93GB VRAM, 14 concurrent slots, no KV quant / no MTP; 7,000 tokens generated + 28,000 prefill in 21s (aggregate decode throughput 406 t/s)",
-      "date": "2026-07-30",
-      "source_post": "https://lightbrd.com/analogalok/status/2082810858544169242"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "500",
-      "hardware": "RTX 4090 24GB",
-      "quant": "QAT GGUF, q8 KV cache, single RTX 4090, 24 concurrent user slots; 500+ t/s aggregate decode",
-      "date": "2026-07-28",
-      "source_post": "https://lightbrd.com/analogalok/status/2083175063050993981"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "160.35",
-      "hardware": "RTX 4090 24GB",
-      "quant": "UD-Q4_K_XL (QAT) + 1.2GB mmproj-F16 vision projector + MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on, VRAM 18.4GB, unquantized f16 KV cache; 5,004 t/s prefill",
-      "date": "2026-07-28",
-      "source_post": "https://lightbrd.com/analogalok/status/2082112688273133677"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "32",
-      "hardware": "RTX 4060 24GB (post's own wording)",
-      "quant": "gemma-4-26B-A4B-it UD-Q8_K_XL.gguf, -c 250000 -fa on, 22.8GB VRAM; 40 t/s at 128K context on the same card",
-      "date": "2026-06-05",
-      "source_post": "https://lightbrd.com/analogalok/status/2062908393816510813",
-      "weight_gb": "22.8GB UD-Q8_K_XL",
-      "context_tokens": "250000",
-      "engine_min_version": "llama.cpp built from source, -c 250000 -fa on"
     }
   ],
   "bonsai-2-27b": [
@@ -3613,58 +3608,6 @@
       "quant": "lossless single-layer speculative-decoding hidden-state drafter (Woodcock, MIT), up from 120 tok/s mlx.fast leaderboard run",
       "date": "2026-10-23",
       "source_post": "https://lightbrd.com/0xPascual/status/2113646362289905754"
-    }
-  ],
-  "nemotron-3.5-lightning-30b-a3b": [
-    {
-      "engine": "TensorFold",
-      "tps": "245.5",
-      "hardware": "Apple Silicon",
-      "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; +63% throughput (151 -> 245.5)",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232"
-    },
-    {
-      "engine": "TensorFold",
-      "tps": "206",
-      "hardware": "Apple Silicon",
-      "quant": "MLX 4-bit; 188-206 t/s",
-      "date": "2026-09-27",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
-    }
-  ],
-  "qwen3-4b": [
-    {
-      "engine": "vLLM",
-      "tps": "240",
-      "hardware": "H100 80GB",
-      "quant": "spec-decode comparison on GSM8K/HumanEval, single request: autoregressive 240 tok/s, EAGLE3 353 strict / 405 relaxed, DFlash 573 strict / 746 relaxed — the 240 figure is the plain AR baseline of the same run",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167"
-    },
-    {
-      "engine": "Janas",
-      "tps": "27",
-      "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
-      "quant": "Janas vs llama.cpp 18 tok/s; Q4_K_M",
-      "date": "2026-10-12",
-      "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014"
-    },
-    {
-      "engine": "MLX",
-      "tps": "74",
-      "hardware": "M1 Max",
-      "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
-      "date": "2026-10-09",
-      "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998"
-    },
-    {
-      "engine": "vLLM",
-      "tps": "2.55",
-      "hardware": "GPU serving test (vLLM)",
-      "quant": "parallel speculative decoding benchmark on one Qwen3-4B target model: DSpark reached 2.45-2.55x baseline throughput while DFlash achieved 1.96-2.09x; a lightweight draft model proposes several tokens in parallel and the target verifies them in one batch",
-      "date": "2026-08-10",
-      "source_post": "https://lightbrd.com/ZhihuFrontier/status/2086712577296633887"
     }
   ],
   "bonsai-2-27b-mlx-fast": [
@@ -4397,64 +4340,6 @@
       "context_tokens": "20000"
     }
   ],
-  "minicpm-v-4.7": [
-    {
-      "engine": "llama.cpp",
-      "tps": "13",
-      "hardware": "iPhone 17 Pro Max, ~3GB of memory (on-device)",
-      "quant": "OpenBMB's LES (Lookahead Expert Scheduling) MoE expert prefetch; 13+ tok/s decode in about 3GB",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/cutetoxicguy/status/2110783435866308677",
-      "system_ram_min": "3GB"
-    },
-    {
-      "engine": "MLX",
-      "tps": "17",
-      "hardware": "iPad Pro M4 (16GB)",
-      "quant": "~3GB MoE; LES lookahead expert scheduling + 4x/16x visual token compression; OpenBMB vendor figure",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/eltc9584/status/2110187197706170781",
-      "weight_gb": "~3GB MoE",
-      "system_ram_min": "16GB"
-    },
-    {
-      "engine": "MLX",
-      "tps": "13",
-      "hardware": "iPhone 17 Pro Max",
-      "quant": "~3GB MoE; LES lookahead expert scheduling; OpenBMB vendor figure",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/thePandaily/status/2110226678475620707",
-      "weight_gb": "~3GB MoE"
-    },
-    {
-      "engine": "ExLlamaV3 (ROCm fork)",
-      "tps": "69.8",
-      "hardware": "DGX Spark (GB10, 128GB unified memory)",
-      "quant": "SAGE EXL3 3.74 bpw, ExLlamaV3 + Hermes Agent, shared Q4 KV pool of 1,048,576 tokens across 8 concurrent workers; measured with Qwen3.8-Flash-Next also loaded and idle",
-      "weight_gb": "3.74 bpw EXL3 (~3 GB runtime on phones per OpenBMB)",
-      "system_ram_min": "128GB unified",
-      "context_tokens": "1048576",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930"
-    },
-    {
-      "engine": "ExLlamaV3",
-      "tps": "69.8",
-      "hardware": "NVIDIA DGX Spark (GB10, 128GB unified memory), shared with Qwen3.8-Flash-Next",
-      "quant": "MiniCPM-V 4.7 35B-A3B SAGE EXL3 3.74 bpw as the worker model under Hermes Agent, shared Q4 KV pool of 1,048,576 tokens over 8 concurrent 131K workers; ~69.8 tok/s while the main model is loaded but idle, 40.0 tok/s with both models generating",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
-      "context_tokens": "1048576 shared KV pool (131072 per worker)"
-    },
-    {
-      "engine": "MLX",
-      "tps": "90",
-      "hardware": "Apple Silicon via Nativ",
-      "quant": "Nativ runtime on MLX, image + video understanding, 4,000+ tps prefill (the 1B variant: 24,000+ tps prefill, 315 tps decode)",
-      "date": "2026-10-13",
-      "source_post": "https://lightbrd.com/TeksEdge/status/2110083153574383904"
-    }
-  ],
   "qwen3.8-27b-defiance-uncensored": [
     {
       "engine": "llama.cpp",
@@ -4496,16 +4381,6 @@
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110910826940965140"
     }
   ],
-  "orbin-1.5-35b-moe": [
-    {
-      "engine": "MLX",
-      "tps": "80",
-      "hardware": "Mac Studio M5 Ultra 256GB / M5 Max 128GB",
-      "quant": "MLX, noted as running 'at easy 80 tok/s with massive concurrency' where the fit is comfortable (est for the smaller 128GB config)",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/yume_arasaki/status/2092767101039898681"
-    }
-  ],
   "laya-mlx-decision-models": [
     {
       "engine": "MLX",
@@ -4522,17 +4397,6 @@
       "quant": "MLX decision models, P50 13.42 ms (421M) / 7.39 ms (322M); 75.4 moves/second over 2,400 Snake demo moves; Apple Silicon only, macOS 14+",
       "date": "2026-10-14",
       "source_post": "https://lightbrd.com/iamrexei/status/2102282038988484976"
-    }
-  ],
-  "qwen3.8-27b-dgx-spark-nvfp4-dflash2": [
-    {
-      "engine": "SGLang",
-      "tps": "74",
-      "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
-      "quant": "NVFP4 weights; DFlash2 speculative decoding with 4-bit drafter (16 proposed tokens/pass); BF16 KV cache; thinking off; median of 4 runs; 8K context (67 t/s at 65K, 38 t/s at 260K)",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
-      "context_tokens": "8192"
     }
   ],
   "qwen3-0.6b": [
@@ -4710,26 +4574,6 @@
       "system_ram_min": "32GB"
     }
   ],
-  "qwen3.8-27b-swift": [
-    {
-      "engine": "MLX",
-      "tps": "19",
-      "hardware": "Mac M5 Max 128GB",
-      "quant": "MLX 4-bit Swift 1.5 adapter (token-count cut, not a decode speedup)",
-      "date": "2026-10-13",
-      "source_post": "https://lightbrd.com/yume_arasaki/status/2110106503847747622"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "45",
-      "hardware": "RX 9070 XT 16GB",
-      "quant": "GSQ-RCO mixed-precision GGUF; community test at a 128K context configuration",
-      "weight_gb": "GSQ-RCO mixed-precision GGUF (27.3B architecture)",
-      "context_tokens": "131072",
-      "date": "2026-10-07",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112"
-    }
-  ],
   "raon-1-mini-preview": [
     {
       "engine": "llama.cpp",
@@ -4816,38 +4660,6 @@
       "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
       "weight_gb": "11.3GB",
       "system_ram_min": "32GB"
-    }
-  ],
-  "gemma-4-e2b": [
-    {
-      "engine": "MLX",
-      "tps": "39",
-      "hardware": "Apple Silicon (iOS device)",
-      "quant": "MLX with the new FoundationModels adapter; Perspective Intelligence 3.0 on iOS",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/mikedoise/status/2110198747657568407"
-    },
-    {
-      "engine": "LiteRT",
-      "tps": "9",
-      "hardware": "Raspberry Pi 5 (CPU)",
-      "quant": "1432 MB peak RAM",
-      "date": "2026-09-05",
-      "source_post": "https://lightbrd.com/v_shakthi/status/2096207003605737728",
-      "weight_gb": "1432MB peak resident",
-      "system_ram_min": "1432MB peak",
-      "engine_min_version": "LiteRT-LM"
-    },
-    {
-      "engine": "llama.cpp",
-      "tps": "1",
-      "hardware": "Raspberry Pi 4 (Cortex-A72, 4 cores, 8GB RAM), CPU-only ARMv8.0",
-      "quant": "Gemma 4 E2B Q4_K_M (2.9GB); prompt 2.0 t/s, gen 1.0 t/s",
-      "date": "2026-04-16",
-      "source_post": "https://lightbrd.com/TrelisResearch/status/2044888224045109437",
-      "weight_gb": "2.9GB (Q4_K_M)",
-      "system_ram_min": "8GB",
-      "engine_min_version": "llama.cpp b8816"
     }
   ],
   "muse-spark-open-mlx-2-studio-tp": [
@@ -5099,53 +4911,6 @@
       "source_post": "https://lightbrd.com/AGTPinsights/status/2110336928159784961"
     }
   ],
-  "bonsai-2-27b-mlx": [
-    {
-      "engine": "mlx-serve",
-      "tps": "19",
-      "hardware": "Apple Silicon (MLX-Serve 26.10.1)",
-      "quant": "Bonsai 2 among the models improved by the 26.10.1 MLX engine release; outputs byte-identical to 26.9.6 across 18 models",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284"
-    },
-    {
-      "engine": "MLX",
-      "tps": "11",
-      "hardware": "Mac mini M4, 24GB, 10-core GPU",
-      "quant": "ternary 1.72 bits/weight; 11.0 tok/s decode, 33 tok/s prefill; the 3.1x decode gap vs the M4 Max Studio lines up with the memory-bandwidth difference",
-      "date": "2026-09-18",
-      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783"
-    },
-    {
-      "engine": "MLX",
-      "tps": "9",
-      "hardware": "MacBook Pro M1 Pro, 16GB",
-      "quant": "ternary Bonsai 2 27B on a 2021 M1 Pro with only 16GB RAM - 9 tokens per second, no custom runtime",
-      "date": "2026-09-18",
-      "source_post": "https://lightbrd.com/allambition/status/2101077523027435878"
-    }
-  ],
-  "qwen3-235b-a22b-strix-halo": [
-    {
-      "engine": "llama.cpp",
-      "tps": "17",
-      "hardware": "Ryzen AI Max+ 395 (Strix Halo) 128GB unified LPDDR5X, Radeon 8060S",
-      "quant": "~Q3 (~100GB weights); Vulkan often edges out ROCm for generation; real-world decode 14-17 t/s",
-      "date": "2026-10-14",
-      "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340"
-    }
-  ],
-  "bonsai-2-4b-cmf-phone": [
-    {
-      "engine": "MLX",
-      "tps": "6",
-      "hardware": "CMF Phone 2 Pro (Android)",
-      "quant": "ternary weights, 0.95GB footprint",
-      "date": "2026-10-15",
-      "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
-      "weight_gb": "0.95GB ternary"
-    }
-  ],
   "deepseek-r1-1.5b": [
     {
       "engine": "Ollama",
@@ -5177,6 +4942,125 @@
       "engine_min_version": "mlx-serve 26.10.1"
     }
   ],
+  "gemma-4-26b-a4b": [
+    {
+      "engine": "vLLM",
+      "tps": "663",
+      "hardware": "H100 80GB",
+      "quant": "best speculative setting measured on Gemma-4-26B (DFlash-family drafter), single request; the diffusion+ORL arm of the same test reached ~1,400 tok/s",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167",
+      "engine_min_version": "DFlash-family speculative drafter"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "0.39",
+      "hardware": "15x off-brand Android TV boxes ($55 each)",
+      "quant": "sharded two layers per box in Anthropic's self-replication demo; distributed inference only, 0.39 tok/s",
+      "system_ram_min": "15 networked $55 Android TV boxes",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/botnewsnetwork/status/2110545043744555486"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "0.39",
+      "hardware": "15x $55 off-brand Android TV boxes (4GB RAM each), pipeline parallelism",
+      "quant": "Anthropic Frontier Red Team sharded Gemma-4-26B-A4B across 15 nodes with pipeline parallelism; distributed inference at ~0.39 tok/s",
+      "system_ram_min": "4GB per node",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/Milo_AIx/status/2110069604961620027"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "21.4",
+      "hardware": "Apple M5 (16GB RAM)",
+      "quant": "Gemma 4 26B at ~2GB of RAM usage via drumih/turbo-fieldfare (Metal, any M-series MacBook)",
+      "system_ram_min": "16GB",
+      "date": "2026-09-20",
+      "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "21.4",
+      "hardware": "Apple M5, 16GB unified memory",
+      "quant": "turbo-fieldfare build (drumih/turbo-fieldfare), ~2GB RAM usage reported",
+      "date": "2026-09-20",
+      "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
+      "system_ram_min": "16GB"
+    },
+    {
+      "engine": "turbo-fieldfare",
+      "tps": "21.4",
+      "hardware": "Apple M5 with 16GB RAM",
+      "quant": "Gemma 4 26B at ~2GB RAM usage, Metal backend of turbo-fieldfare (drumih/turbo-fieldfare)",
+      "source_post": "https://lightbrd.com/BlessingMwiti/status/2101614923725885912",
+      "date": "2026-09-20",
+      "system_ram_min": "16GB",
+      "weight_gb": "~2GB runtime RAM"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "22.9",
+      "hardware": "NVIDIA RTX 3080 10GB",
+      "quant": "IQ2_M (Q2 quant); prompt processing 442.2 tok/s, vs 1,816.5 tok/s for Gemma 4 12B IQ4_XS on the same card",
+      "date": "2026-09-06",
+      "source_post": "https://lightbrd.com/PaulGugAI/status/2096528833998356946"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "20",
+      "hardware": "Mac mini M4 (base chip, 32GB unified memory), Metal backend",
+      "quant": "Gemma 4 26B-A4B (MoE) at 20-22 tok/s, ~1s first token, 14.6 GB footprint; same bench: Qwen3-30B-A3B 24-30 tok/s (17.3 GB), Qwen3.8-27B dense 4.4 tok/s",
+      "weight_gb": "14.6GB",
+      "system_ram_min": "32GB",
+      "date": "2026-08-29",
+      "source_post": "https://lightbrd.com/tavioto/status/2093807682767495388",
+      "engine_min_version": "llama.cpp on Metal via LM Studio"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "4.1",
+      "hardware": "12GB Android phone, four cores, flash storage (no GPU, no NPU)",
+      "quant": "BigMoeOnEdge expert streaming from flash on stock llama.cpp; same device that runs gpt-oss-120b at 2.2 tok/s",
+      "date": "2026-08-13",
+      "source_post": "https://lightbrd.com/heyrimsha/status/2087915282664968460"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "406",
+      "hardware": "RTX 4090 24GB",
+      "quant": "UD-Q4_K_XL (QAT), -c 57344, -np 14, -b 2048 -ub 2048, -ngl 99, -fa on, 23.93GB VRAM, 14 concurrent slots, no KV quant / no MTP; 7,000 tokens generated + 28,000 prefill in 21s (aggregate decode throughput 406 t/s)",
+      "date": "2026-07-30",
+      "source_post": "https://lightbrd.com/analogalok/status/2082810858544169242"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "500",
+      "hardware": "RTX 4090 24GB",
+      "quant": "QAT GGUF, q8 KV cache, single RTX 4090, 24 concurrent user slots; 500+ t/s aggregate decode",
+      "date": "2026-07-28",
+      "source_post": "https://lightbrd.com/analogalok/status/2083175063050993981"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "160.35",
+      "hardware": "RTX 4090 24GB",
+      "quant": "UD-Q4_K_XL (QAT) + 1.2GB mmproj-F16 vision projector + MTP speculative drafter (--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.7), -c 80000, -ngl 99, -fa on, VRAM 18.4GB, unquantized f16 KV cache; 5,004 t/s prefill",
+      "date": "2026-07-28",
+      "source_post": "https://lightbrd.com/analogalok/status/2082112688273133677"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "32",
+      "hardware": "RTX 4060 24GB (post's own wording)",
+      "quant": "gemma-4-26B-A4B-it UD-Q8_K_XL.gguf, -c 250000 -fa on, 22.8GB VRAM; 40 t/s at 128K context on the same card",
+      "date": "2026-06-05",
+      "source_post": "https://lightbrd.com/analogalok/status/2062908393816510813",
+      "weight_gb": "22.8GB UD-Q8_K_XL",
+      "context_tokens": "250000",
+      "engine_min_version": "llama.cpp built from source, -c 250000 -fa on"
+    }
+  ],
   "qwen3.8-27b-tensorfold-m3-ultra": [
     {
       "engine": "TensorFold",
@@ -5187,6 +5071,58 @@
       "source_post": "https://lightbrd.com/YvesLaRose/status/2105730083767881779",
       "context_tokens": "65536",
       "system_ram_min": "512GiB unified memory"
+    }
+  ],
+  "nemotron-3.5-lightning-30b-a3b": [
+    {
+      "engine": "TensorFold",
+      "tps": "245.5",
+      "hardware": "Apple Silicon",
+      "quant": "Rapid-MLX 0.15.7 TensorFold-powered accelerated profile; +63% throughput (151 -> 245.5)",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/rapidmlx/status/2107857923045298232"
+    },
+    {
+      "engine": "TensorFold",
+      "tps": "206",
+      "hardware": "Apple Silicon",
+      "quant": "MLX 4-bit; 188-206 t/s",
+      "date": "2026-09-27",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2104031077647995117"
+    }
+  ],
+  "qwen3-4b": [
+    {
+      "engine": "vLLM",
+      "tps": "240",
+      "hardware": "H100 80GB",
+      "quant": "spec-decode comparison on GSM8K/HumanEval, single request: autoregressive 240 tok/s, EAGLE3 353 strict / 405 relaxed, DFlash 573 strict / 746 relaxed — the 240 figure is the plain AR baseline of the same run",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/Chenfeng_X/status/2110838790252319167"
+    },
+    {
+      "engine": "Janas",
+      "tps": "27",
+      "hardware": "Intel Core Ultra 9 185H (Arc iGPU) laptop, 32GB DDR5, NVMe SSD",
+      "quant": "Janas vs llama.cpp 18 tok/s; Q4_K_M",
+      "date": "2026-10-12",
+      "source_post": "https://lightbrd.com/MauCammalleri/status/2109656339043451014"
+    },
+    {
+      "engine": "MLX",
+      "tps": "74",
+      "hardware": "M1 Max",
+      "quant": "4-bit MLX, 2.1GB on disk, 2.4GB peak memory",
+      "date": "2026-10-09",
+      "source_post": "https://lightbrd.com/LittleBit_llm/status/2108543145831284998"
+    },
+    {
+      "engine": "vLLM",
+      "tps": "2.55",
+      "hardware": "GPU serving test (vLLM)",
+      "quant": "parallel speculative decoding benchmark on one Qwen3-4B target model: DSpark reached 2.45-2.55x baseline throughput while DFlash achieved 1.96-2.09x; a lightweight draft model proposes several tokens in parallel and the target verifies them in one batch",
+      "date": "2026-08-10",
+      "source_post": "https://lightbrd.com/ZhihuFrontier/status/2086712577296633887"
     }
   ],
   "muse-glimmer-30b": [
@@ -5364,6 +5300,74 @@
       "source_post": "https://lightbrd.com/IdleProtocol/status/2074186476779078137"
     }
   ],
+  "minicpm-v-4.7": [
+    {
+      "engine": "llama.cpp",
+      "tps": "13",
+      "hardware": "iPhone 17 Pro Max, ~3GB of memory (on-device)",
+      "quant": "OpenBMB's LES (Lookahead Expert Scheduling) MoE expert prefetch; 13+ tok/s decode in about 3GB",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/cutetoxicguy/status/2110783435866308677",
+      "system_ram_min": "3GB"
+    },
+    {
+      "engine": "MLX",
+      "tps": "17",
+      "hardware": "iPad Pro M4 (16GB)",
+      "quant": "~3GB MoE; LES lookahead expert scheduling + 4x/16x visual token compression; OpenBMB vendor figure",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/eltc9584/status/2110187197706170781",
+      "weight_gb": "~3GB MoE",
+      "system_ram_min": "16GB"
+    },
+    {
+      "engine": "MLX",
+      "tps": "13",
+      "hardware": "iPhone 17 Pro Max",
+      "quant": "~3GB MoE; LES lookahead expert scheduling; OpenBMB vendor figure",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/thePandaily/status/2110226678475620707",
+      "weight_gb": "~3GB MoE"
+    },
+    {
+      "engine": "ExLlamaV3 (ROCm fork)",
+      "tps": "69.8",
+      "hardware": "DGX Spark (GB10, 128GB unified memory)",
+      "quant": "SAGE EXL3 3.74 bpw, ExLlamaV3 + Hermes Agent, shared Q4 KV pool of 1,048,576 tokens across 8 concurrent workers; measured with Qwen3.8-Flash-Next also loaded and idle",
+      "weight_gb": "3.74 bpw EXL3 (~3 GB runtime on phones per OpenBMB)",
+      "system_ram_min": "128GB unified",
+      "context_tokens": "1048576",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930"
+    },
+    {
+      "engine": "ExLlamaV3",
+      "tps": "69.8",
+      "hardware": "NVIDIA DGX Spark (GB10, 128GB unified memory), shared with Qwen3.8-Flash-Next",
+      "quant": "MiniCPM-V 4.7 35B-A3B SAGE EXL3 3.74 bpw as the worker model under Hermes Agent, shared Q4 KV pool of 1,048,576 tokens over 8 concurrent 131K workers; ~69.8 tok/s while the main model is loaded but idle, 40.0 tok/s with both models generating",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/ViC305/status/2110318699186208930",
+      "context_tokens": "1048576 shared KV pool (131072 per worker)"
+    },
+    {
+      "engine": "MLX",
+      "tps": "90",
+      "hardware": "Apple Silicon via Nativ",
+      "quant": "Nativ runtime on MLX, image + video understanding, 4,000+ tps prefill (the 1B variant: 24,000+ tps prefill, 315 tps decode)",
+      "date": "2026-10-13",
+      "source_post": "https://lightbrd.com/TeksEdge/status/2110083153574383904"
+    }
+  ],
+  "orbin-1.5-35b-moe": [
+    {
+      "engine": "MLX",
+      "tps": "80",
+      "hardware": "Mac Studio M5 Ultra 256GB / M5 Max 128GB",
+      "quant": "MLX, noted as running 'at easy 80 tok/s with massive concurrency' where the fit is comfortable (est for the smaller 128GB config)",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/yume_arasaki/status/2092767101039898681"
+    }
+  ],
   "qwen3.8-27b-r9700-vllm-dflash2-w4a16": [
     {
       "engine": "vLLM",
@@ -5385,6 +5389,17 @@
       "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
       "context_tokens": "8192",
       "system_ram_min": "128GB unified memory"
+    }
+  ],
+  "qwen3.8-27b-dgx-spark-nvfp4-dflash2": [
+    {
+      "engine": "SGLang",
+      "tps": "74",
+      "hardware": "single NVIDIA DGX Spark (GB10, 128GB unified memory)",
+      "quant": "NVFP4 weights; DFlash2 speculative decoding with 4-bit drafter (16 proposed tokens/pass); BF16 KV cache; thinking off; median of 4 runs; 8K context (67 t/s at 65K, 38 t/s at 260K)",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2110695069434941517",
+      "context_tokens": "8192"
     }
   ],
   "qwen3-14b": [
@@ -5483,6 +5498,26 @@
       "quant": "Qwen2.5-1.5B Instruct ~1GB, fully offline, ~49 tok/s with GPU off",
       "date": "2026-10-09",
       "source_post": "https://lightbrd.com/Excavationpro/status/2108645459359420426"
+    }
+  ],
+  "qwen3.8-27b-swift": [
+    {
+      "engine": "MLX",
+      "tps": "19",
+      "hardware": "Mac M5 Max 128GB",
+      "quant": "MLX 4-bit Swift 1.5 adapter (token-count cut, not a decode speedup)",
+      "date": "2026-10-13",
+      "source_post": "https://lightbrd.com/yume_arasaki/status/2110106503847747622"
+    },
+    {
+      "engine": "llama.cpp",
+      "tps": "45",
+      "hardware": "RX 9070 XT 16GB",
+      "quant": "GSQ-RCO mixed-precision GGUF; community test at a 128K context configuration",
+      "weight_gb": "GSQ-RCO mixed-precision GGUF (27.3B architecture)",
+      "context_tokens": "131072",
+      "date": "2026-10-07",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112"
     }
   ],
   "ravenx-conjecture-qwen3-8b-mlx": [
@@ -5631,6 +5666,32 @@
       "source_post": "https://lightbrd.com/0x0SojalSec/status/2091576842771935619"
     }
   ],
+  "bonsai-2-27b-mlx": [
+    {
+      "engine": "mlx-serve",
+      "tps": "19",
+      "hardware": "Apple Silicon (MLX-Serve 26.10.1)",
+      "quant": "Bonsai 2 among the models improved by the 26.10.1 MLX engine release; outputs byte-identical to 26.9.6 across 18 models",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2105932411326300284"
+    },
+    {
+      "engine": "MLX",
+      "tps": "11",
+      "hardware": "Mac mini M4, 24GB, 10-core GPU",
+      "quant": "ternary 1.72 bits/weight; 11.0 tok/s decode, 33 tok/s prefill; the 3.1x decode gap vs the M4 Max Studio lines up with the memory-bandwidth difference",
+      "date": "2026-09-18",
+      "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2100946755487457783"
+    },
+    {
+      "engine": "MLX",
+      "tps": "9",
+      "hardware": "MacBook Pro M1 Pro, 16GB",
+      "quant": "ternary Bonsai 2 27B on a 2021 M1 Pro with only 16GB RAM - 9 tokens per second, no custom runtime",
+      "date": "2026-09-18",
+      "source_post": "https://lightbrd.com/allambition/status/2101077523027435878"
+    }
+  ],
   "qwen2-vl-72b-instruct": [
     {
       "engine": "MLX",
@@ -5652,14 +5713,14 @@
       "system_ram_min": "64GB unified memory"
     }
   ],
-  "gemma-4-31b": [
+  "qwen3-235b-a22b-strix-halo": [
     {
       "engine": "llama.cpp",
-      "tps": "17.17",
-      "hardware": "RTX 5090 24GB Laptop",
-      "quant": "q4_0 KV cache, 128k native context, thinking mode on; 15.36 t/s sustained on a 1,272-token thinking session, prompt eval 95-165 t/s",
-      "date": "2026-04-17",
-      "source_post": "https://lightbrd.com/sudoingX/status/2045170387265392783"
+      "tps": "17",
+      "hardware": "Ryzen AI Max+ 395 (Strix Halo) 128GB unified LPDDR5X, Radeon 8060S",
+      "quant": "~Q3 (~100GB weights); Vulkan often edges out ROCm for generation; real-world decode 14-17 t/s",
+      "date": "2026-10-14",
+      "source_post": "https://lightbrd.com/ScottsBaird/status/2110192647419703340"
     }
   ],
   "qwen3-6-27b": [
@@ -5693,6 +5754,17 @@
       "quant": "Q4_K_M, CPU-only, patched llama.cpp build; 12-15 t/s reported",
       "date": "2026-10-07",
       "source_post": "https://lightbrd.com/TeksEdge/status/2107652135479332932"
+    }
+  ],
+  "bonsai-2-4b-cmf-phone": [
+    {
+      "engine": "MLX",
+      "tps": "6",
+      "hardware": "CMF Phone 2 Pro (Android)",
+      "quant": "ternary weights, 0.95GB footprint",
+      "date": "2026-10-15",
+      "source_post": "https://lightbrd.com/EruditeSpartan_/status/2111096024383271058",
+      "weight_gb": "0.95GB ternary"
     }
   ],
   "gemma-3-4b": [
