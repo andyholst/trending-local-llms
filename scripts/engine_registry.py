@@ -20,8 +20,12 @@ measurement, and at ingest:
     the implementer's repair loop decides.
   - engine_repo is stripped from measurements (the store contract never sees it).
 
-CLI (report only, never fails):
+CLI (issue #972):
   python3 scripts/engine_registry.py --check-raw data/raw   # unregistered engines in raw snapshots
+  A WARN first seen within --refresh-window-days (default 7 = one refresh) is
+  new: report-only, exit 0. A WARN first seen older (oldest dated capture
+  naming it) is a REPEAT: the check FAILS until a human registers the engine,
+  declares the spelling in ENGINE_NAME_ALIASES, or declines it in NON_ENGINE_*.
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -333,6 +338,66 @@ def capture_meta(store: dict, path: Path = META_FIXTURE, fetch=fetch_repo_meta) 
     return added
 
 
+#: A raw capture's filename carries its search-time date (`<backend>-YYYYMMDD-HHMMSS.json`,
+#: written once by the search leg and never rewritten — rule 3b), so the OLDEST dated
+#: capture naming an engine spelling is its verifiable FIRST SEEN date (issue #972).
+_DATE_CAPTURE = re.compile(r"-([0-9]{8})-[0-9]{6}\.json$")
+
+#: The reason classify_repo gives for a spelling a human already declined in the tree.
+#: A declared refusal is SETTLED: it is not an unresolved WARN, it is a recorded decision.
+DECLINED_REASON = "listed in NON_ENGINE_REPOS / NON_ENGINE_NAMES"
+
+
+def capture_date(name: str) -> "date | None":
+    """The capture date encoded in a raw snapshot filename ('cpu-20261002-103802.json'
+    -> date(2026, 10, 2)); None for a capture whose filename carries no date."""
+    m = _DATE_CAPTURE.search(name)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d").date()
+    except ValueError:
+        return None
+
+
+def engine_first_seen(raw_dir: Path, names: set[str]) -> dict[str, "date | None"]:
+    """For each engine name, the OLDEST dated capture date that mentions it. A name
+    present only in UNDATED captures maps to None: its age cannot be proven from the
+    store, so it is reported but never counted as a repeat (issue #972)."""
+    seen: dict[str, "date | None"] = {}
+    dated: set[str] = set()
+    for f in sorted(raw_dir.glob("*.json")):
+        d = capture_date(f.name)
+        try:
+            models = json.loads(f.read_text()).get("models", [])
+        except Exception:  # noqa: BLE001
+            continue
+        for m in models:
+            for e in m.get("engines", []) or []:
+                name = e.get("engine")
+                if name not in names:
+                    continue
+                if d is None:
+                    seen.setdefault(name, None)
+                    continue
+                dated.add(name)
+                cur = seen.get(name)
+                if cur is None or d < cur:
+                    seen[name] = d
+    for name in seen:
+        if name in dated and seen[name] is None:
+            seen[name] = None  # unreachable by construction; keeps the None case honest
+    return seen
+
+
+def decision_settled(d: dict) -> bool:
+    """A decision that is already RESOLVED: the engine is registered, or a human
+    declined the spelling in NON_ENGINE_REPOS / NON_ENGINE_NAMES. Only unsettled
+    decisions are WARNs a repeat window can make fail (issue #972)."""
+    return d["decision"] == "registered" or (
+        d["decision"] == "not-engine" and DECLINED_REASON in d["reason"])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check-raw", metavar="DIR")
@@ -341,6 +406,12 @@ def main() -> int:
                          "test fixture lacks (issue #334)")
     ap.add_argument("--meta-file", default=str(META_FIXTURE))
     ap.add_argument("--store", default=str(Path(os.environ.get("TRENDING_DATA_DIR", ROOT / "data")) / "models.json"))
+    ap.add_argument("--refresh-window-days", type=int, default=7,
+                    help="a WARN first seen within this many days is NEW (report-only); "
+                         "first seen OLDER is a repeat past one refresh and FAILS the check "
+                         "(issue #972). Default 7 = the weekly refresh cadence.")
+    ap.add_argument("--now", default="", metavar="YYYY-MM-DD",
+                    help="override today's date (deterministic runs and tests)")
     args = ap.parse_args()
     store = json.loads(Path(args.store).read_text())
     if args.capture_meta:
@@ -352,18 +423,49 @@ def main() -> int:
         return 0
     if not args.check_raw:
         ap.error("one of --check-raw DIR or --capture-meta is required")
-    decisions = check_raw(Path(args.check_raw), store)
+    raw_dir = Path(args.check_raw)
+    decisions = check_raw(raw_dir, store)
     if not decisions:
         print("[engine-check] OK: every engine in the raw snapshots is registered (or auto-registrable)")
         return 0
+    window = args.refresh_window_days
+    now = date.fromisoformat(args.now) if args.now else datetime.now(timezone.utc).date()
+    warn_names = {d["engine"] for d in decisions if not decision_settled(d)}
+    first_seen = engine_first_seen(raw_dir, warn_names)
+    repeats: list[dict] = []
     for d in decisions:
-        flag = "OK  " if d["decision"] == "registered" else "WARN"
+        suffix = ""
+        if decision_settled(d):
+            flag = "OK  "
+            if d["decision"] != "registered":
+                suffix = " (declared refusal — settled)"
+        else:
+            fs = first_seen.get(d["engine"])
+            if fs is None:
+                flag = "WARN"
+                suffix = " [first seen unknown: named only in undated captures]"
+            else:
+                age = (now - fs).days
+                if age > window:
+                    flag = "WARN"
+                    suffix = f" [first seen {fs.isoformat()}, {age}d old: REPEAT past one refresh ({window}d)]"
+                    repeats.append(d)
+                else:
+                    flag = "WARN"
+                    suffix = f" [first seen {fs.isoformat()}, {age}d old: new within one refresh]"
         print(f"[engine-check] {flag} {d['engine']!r}: {d['decision']} — {d['reason']}"
-              + (f" ({d['repo']})" if d["repo"] else ""))
-    bad = [d for d in decisions if d["decision"] != "registered"]
+              + (f" ({d['repo']})" if d["repo"] else "") + suffix)
+    bad = [d for d in decisions if not decision_settled(d)]
     if bad:
         print(f"[engine-check] {len(bad)} engine(s) will FAIL validation unless registered by a human or the implementer's repair loop "
               f"(harnesses/apps/benchmarks must not be registered).")
+    if repeats:
+        names = ", ".join(sorted({d["engine"] for d in repeats}))
+        print(f"[engine-check] FAIL: {len(repeats)} engine(s) have WARNed for longer than one refresh "
+              f"({window}d): {names} — a repeat must be RESOLVED before the next refresh: register the engine, "
+              f"declare its spelling in engine_registry.ENGINE_NAME_ALIASES, or decline it in "
+              f"NON_ENGINE_REPOS / NON_ENGINE_NAMES.")
+        return 1
     return 0
 
 
