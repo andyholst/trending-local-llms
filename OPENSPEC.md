@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **297**
+Active changes: **2** · archived: **298**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `data-gap-context-tokens-capture` | active | #994 — `data-gap: context_tokens (69 models)` | — | [data-backfill](openspec/changes/data-gap-context-tokens-capture/specs/data-backfill/spec.md) | 9/9 | [proposal.md](openspec/changes/data-gap-context-tokens-capture/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -129,6 +128,7 @@ Active changes: **3** · archived: **297**
 | `cross-model-ingest-refusal` | archived | #702 | — | [cross-model-ingest-refusal](openspec/changes/archive/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/cross-model-ingest-refusal/proposal.md) |
 | `data-gap-acquired-footprint-capture` | archived | #395 — `data-gap: storage_offload (40 models)` | — | [data-gap-backfill](openspec/changes/archive/data-gap-acquired-footprint-capture/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-acquired-footprint-capture/proposal.md) |
 | `data-gap-baseline` | archived | #174 | — | [data-gap-baseline](openspec/changes/archive/data-gap-baseline/specs/data-gap-baseline/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-baseline/proposal.md) |
+| `data-gap-context-tokens-capture` | archived | #994 — `data-gap: context_tokens (69 models)` | #1004 | [data-backfill](openspec/changes/archive/data-gap-context-tokens-capture/specs/data-backfill/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/data-gap-context-tokens-capture/proposal.md) |
 | `data-gap-engine-min-version` | archived | #163 | — | [data-gap-backfill](openspec/changes/archive/data-gap-engine-min-version/specs/data-gap-backfill/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/data-gap-engine-min-version/proposal.md) |
 | `data-gap-filer-labels-its-issue` | archived | #277 | — | [data-gap-filer-labels-its-issue](openspec/changes/archive/data-gap-filer-labels-its-issue/specs/data-gap-filer-labels-its-issue/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/data-gap-filer-labels-its-issue/proposal.md) |
 | `data-gap-issue-dedup-per-entry` | archived | #996 — "The data-gap filer's signature is a whole-SET hash, so one volatile | #1000 | [data-gap-dedup](openspec/changes/archive/data-gap-issue-dedup-per-entry/specs/data-gap-dedup/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/data-gap-issue-dedup-per-entry/proposal.md) |
