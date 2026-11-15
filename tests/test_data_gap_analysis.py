@@ -1303,10 +1303,13 @@ case "$1 $2" in
     fi ;;
   "issue create")
     body=$(cat)
-    sig=$(printf '%s' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | head -1)
+    # One issue carries ONE marker PER signature entry it claims (issue #996): record every
+    # marker line in the body, all mapped to the SAME issue number, so a per-entry search
+    # (`issue list --search "<entry_id> in:body"`) later finds the issue by any of its entries.
     n=$(grep -c . "$FAKE_GH_STORE" 2>/dev/null || true)
     n=$(( ${n:-0} + 1 ))
-    printf '%s|%s|OPEN\n' "$sig" "$n" >> "$FAKE_GH_STORE"
+    printf '%s\n' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | \
+      while read -r sg; do [ -n "$sg" ] && printf '%s|%s|OPEN\n' "$sg" "$n" >> "$FAKE_GH_STORE"; done
     printf 'https://example.test/issues/%s\n' "$n" ;;
   "issue view")
     printf '{"labels":[{"name":"data-gap-analysis"}]}\n' ;;
@@ -1383,6 +1386,112 @@ def test_a_gap_set_is_filed_once():
         check("third run: it files again", "filed https://example.test" in third.stderr, third.stderr)
 
 
+def test_a_fluctuating_starved_leg_refiles_only_the_new_entry():
+    """Issue #996: dedup is per signature ENTRY, not per SET.
+
+    The whole-set hash made ONE volatile entry — a `starved_leg` that appears, disappears
+    and reappears with each search round — change the signature and re-file EVERY persistent
+    dimension that shared the set (measured three times in five hours: #981/#991/#994, all
+    titled `context_tokens`). The fix gives each signature entry its own marker and consults
+    `already_filed()` per entry, so a refresh re-files ONLY the entries with no open issue:
+    the persistent dimensions stay on their first issue, and a starved leg files once while
+    starved. Two runs whose signatures differ ONLY by a fluctuating starved_leg entry must
+    NOT produce a second filing of the persistent dimensions.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        # A scratch data dir (override via TRENDING_DATA_DIR so RAW_DIR/STORE both resolve
+        # to it at import — same shape the refresh aggregate runs with).
+        data = td / "data"
+        raw = data / "raw"
+        raw.mkdir(parents=True)
+        # Declare the requirement dimensions as model keys, so they are `missing:` entries
+        # (persistent) rather than `contract:` gaps.
+        contract = contract_declaring("system_ram_min", "weight_gb", "context_tokens",
+                                      "storage_offload", "engine_min_version")
+        (data / "model_contract.json").write_text(json.dumps(contract))
+        (data / "search_contract.json").write_text(json.dumps(contract))
+        # A flat legacy store: two dense 27B models, neither carrying any dimension value,
+        # so the four always-applicable dimensions are persistently `missing:` (storage_offload
+        # does not apply to a dense 27B, per the analysis's own `applies` rule).
+        store = {"generated_utc": "2026-11-02T06:00:00Z",
+                 "engines": {"llama.cpp": {"backend": "CUDA", "url": "https://github.com/ggml-org/llama.cpp"}},
+                 "models": [model("m1", engines=[]), model("m2", engines=[])]}
+        (data / "models.json").write_text(json.dumps(store))
+        # The ghost baseline: a stale master state (an unchanged/superset-set files nothing).
+        stale = json.dumps({"as_of": "2026-01-01T00:00:00Z", "signature": ["stale"]})
+
+        def run(baseline_text):
+            baseline = td / "baseline.json"
+            baseline.write_text(baseline_text)
+            env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
+                   "TRENDING_DATA_DIR": str(data),
+                   "FAKE_GH_LOG": str(td / "gh.log"),
+                   "FAKE_GH_STORE": str(td / "issues.txt"),
+                   "FAKE_GH_LABEL_FLAG": str(td / "label-exists")}
+            (td / "label-exists").touch()
+            return subprocess.run(
+                [sys.executable, "scripts/data_gap_analysis.py", "--issue",
+                 "--baseline", str(baseline)],
+                cwd=ROOT, capture_output=True, text=True, env=env)
+
+        def creates():
+            return [l for l in (td / "gh.log").read_text().splitlines()
+                    if l.startswith("issue create")]
+
+        def distinct_issues_for(marker_id):
+            """Distinct issue numbers in the store carrying `marker_id` — how many issues
+            claim that entry."""
+            return {l.split("|")[1] for l in (td / "issues.txt").read_text().splitlines()
+                    if l.split("|")[0] == marker_id}
+
+        ghost = td / "gh"
+        ghost.write_text(_GH_STUB_LABELS)
+        ghost.chmod(ghost.stat().st_mode | stat.S_IEXEC)
+        (td / "gh.log").write_text("")
+        (td / "issues.txt").write_text("")
+
+        # ----- run A: the cpu leg is starved, so the signature carries starved_leg:cpu -----
+        (raw / "cpu-20261111-120000.json").write_text(json.dumps({"models": []}))
+        (raw / "cpu-20261111-120100.json").write_text(json.dumps({"models": []}))
+        (raw / "nvidia-20261111-120200.json").write_text(json.dumps({"models": [{"name": "x"}]}))
+        a = run(stale)
+        creates_a = creates()
+        check("run A: the fluctuating-signature scenario files once", len(creates_a) == 1, str(creates_a))
+
+        # ----- run B: cpu recovered, amd now starved — signature differs from A ONLY by the starved_leg entry -----
+        # Remove the old raw set, write the new one: cpu capturing, amd starved, nvidia capturing.
+        for f in list(raw.glob("*.json")):
+            f.unlink()
+        (raw / "cpu-20261112-090000.json").write_text(json.dumps({"models": [{"name": "c"}]}))
+        (raw / "amd-20261112-090100.json").write_text(json.dumps({"models": []}))
+        (raw / "amd-20261112-090200.json").write_text(json.dumps({"models": []}))
+        (raw / "nvidia-20261112-090300.json").write_text(json.dumps({"models": [{"name": "n"}]}))
+        # The baseline is run A's own (what the refresh would have recorded), so only the
+        # starved-leg fluctuation is "new".
+        b = run(json.dumps({"as_of": "2026-11-02T06:00:00Z", "signature": ["stale"]}))
+        creates_b_total = creates()
+        check("run B: exactly ONE new issue is filed (the starved leg), not one for the set",
+              len(creates_b_total) == 2, str(creates_b_total))
+        # The persistent dimensions' markers must each be claimed by exactly ONE issue.
+        # (G.entry_id is the same in-process module already imported at the top of this file.)
+        for dim in ("context_tokens", "engine_min_version", "system_ram_min", "weight_gb"):
+            eid = G.entry_id(f"missing:{dim}")
+            n_issues = distinct_issues_for(eid)
+            check(f"run B: {dim} is still claimed by exactly one issue (not re-filed)",
+                  len(n_issues) == 1, f"{dim}: claimed by {n_issues}")
+        # The NEW starved leg got its own claim; the recovered starved_leg:cpu claim stays
+        # only on the first issue.
+        amd_id = G.entry_id("starved_leg:amd")
+        cpu_id = G.entry_id("starved_leg:cpu")
+        check("run B: the new starved_leg:amd is claimed once",
+              len(distinct_issues_for(amd_id)) == 1, str(distinct_issues_for(amd_id)))
+        check("run B: the old starved_leg:cpu claim is unchanged (still the first issue only)",
+              len(distinct_issues_for(cpu_id)) == 1, str(distinct_issues_for(cpu_id)))
+        check("run B: the persistent dims were NOT part of run B's filing",
+              "1 new entry" in b.stderr, b.stderr[-300:])
+
+
 # The same fake `gh`, extended for issue #161: `issue create` can silently DROP
 # the label (measured in CI), `issue view` reports what the store holds, and
 # `issue edit --add-label` can be made to fail as well.
@@ -1402,12 +1511,15 @@ case "$1 $2" in
     fi ;;
   "issue create")
     body=$(cat)
-    sig=$(printf '%s' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | head -1)
+    # One issue carries ONE marker PER signature entry it claims (issue #996): record every
+    # marker line in the body, all under the SAME issue number, so a per-entry `issue list`
+    # search for any of the entries finds the issue.
     n=$(grep -c . "$FAKE_GH_STORE" 2>/dev/null || true)
     n=$(( ${n:-0} + 1 ))
     labels=""
     [ "${FAKE_GH_DROP_LABEL:-0}" = "1" ] || labels="data-gap-analysis"
-    printf '%s|%s|OPEN|%s\\n' "$sig" "$n" "$labels" >> "$FAKE_GH_STORE"
+    printf '%s\n' "$body" | sed -n 's/.*data-gap-signature: \\([0-9a-f]*\\).*/\\1/p' | \
+      while read -r sg; do [ -n "$sg" ] && printf '%s|%s|OPEN|%s\n' "$sg" "$n" "$labels" >> "$FAKE_GH_STORE"; done
     printf 'https://example.test/issues/%s\\n' "$n" ;;
   "issue view")
     line=$(cut -d'|' -f2,4 "$FAKE_GH_STORE" | grep "^${3}|" | head -1)
@@ -2319,6 +2431,7 @@ def main() -> int:
     test_ingest_merge_list_covers_every_declared_dimension()
     test_analysis_is_wired_to_make_and_the_refresh_pipeline()
     test_a_gap_set_is_filed_once()
+    test_a_fluctuating_starved_leg_refiles_only_the_new_entry()
     test_a_filed_issue_carries_the_label_the_bots_trigger_on()
     test_the_filer_creates_the_label_the_bots_trigger_on()
     test_engine_min_version_backfill_traces_to_the_captured_source_text()

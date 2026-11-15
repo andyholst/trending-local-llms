@@ -97,7 +97,10 @@ Firecrawl → lightbrd.com mirror  ───────────────
   is what proves nothing was ever removed (`check_no_removal`,
   `check_no_value_loss`).
 * **`data/gap_baseline.json`** — the gap signature that was last *filed* as an
-  issue (written by `make data-gap-issue`, read by the next analysis run).
+  issue (written by `make data-gap-issue`, read by the next analysis run). Dedup
+  is per signature ENTRY (issue #996): each entry carries its own marker and is
+  consulted independently, so a volatile `starved_leg` entry no longer re-files the
+  persistent dimensions that already sit behind an open issue.
 * **`OPENSPEC.md`** — generated index of every OpenSpec change (see §8).
 * **Contracts** are versioned additively: a new *optional* key edits the same
   file; a breaking change adds `*.vN.json` and the validator routes old data to
@@ -197,7 +200,7 @@ keep it honest (issue #207):
 |---|---|
 | `data-gaps` | Report what the store still does not capture (missing/unsctructured requirement dimensions, contract gaps), ranked (`scripts/data_gap_analysis.py`) |
 | `refresh-run-block` | Print the current refresh run's WINDOW (issue #199): the marker line + `started=` + each leg's start + `aggregate=`, all from the run's REAL job timestamps read via `gh api` (`scripts/refresh_run_block.py`). Host-run, like `data-gap-issue`: `gh` lives on the runner, not in the image (#150). `aggregate` embeds it as the PR body; `make data-gap-issue` embeds it in the gap issue |
-| `data-gap-issue` | File **one** issue (label `data-gap-analysis`) when the gap set changed vs `data/gap_baseline.json`; writes the new baseline. Host-side: filing needs `gh` (issue #150) |
+| `data-gap-issue` | File **one** issue (label `data-gap-analysis`) when the gap set changed vs `data/gap_baseline.json`; writes the new baseline. Dedup is per signature ENTRY (issue #996): each entry (`missing:context_tokens`, `starved_leg:cpu`, …) carries its own marker and `already_filed()` is consulted per entry, so a refresh re-files ONLY the entries with no open issue — the persistent dimensions stay one issue until closed, a starved leg files once while starved. Host-side: filing needs `gh` (issue #150) |
 | `data-gap-baseline` | The filer's REPAIR half (issue #174): record the current gap signature as `data/gap_baseline.json` **without** filing an issue — the fix for a baseline write lost to a rebase or a refresh PR closed before it merged. Host-side, like `data-gap-issue` (it writes the file as the caller, never as root through the mount), and deliberately NOT in the refresh pipeline: run there it would set the baseline to the current set every run and silently stop the analysis filing anything |
 
 ### OpenSpec (spec-tracked changes)
