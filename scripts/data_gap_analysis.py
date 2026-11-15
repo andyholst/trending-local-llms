@@ -392,9 +392,11 @@ def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> tuple[i
     row while its footprint sentence stayed captured under the sibling id — so the variant's
     captured bucket was empty and its cell read as an ACQUISITION gap although the post that
     states it sits in the snapshots. The captured cell is therefore also keyed by MEASUREMENT
-    identity — the exact (engine, tps, hardware, source_post) tuple, the ONE key
-    `update_trending._cross_model_identity` defines (rule 6d, the same key #702's ingest
-    refusal and `validate.same_post_cross_model_duplicates` read) — never by raw row name.
+    identity — the exact (engine, tps, hardware, source_post) tuple that
+    `update_trending._cross_model_identity` defines (rule 6d, a deliberate SEPARATE key from
+    the DATE-keyed cross-row duplicate identity `cross_row_duplicate_identity` reads, issues
+    #971/#795: this JOIN traces a footprint sentence to the ONE store row that physically ran
+    it, so it keys on the hardware that ran it, not the date) — never by raw row name.
 
     A captured ENGINE row's field text is added to the bucket of the store model that carries
     that tuple, and ONLY when exactly one store row carries it. Two carriers is a JOINT

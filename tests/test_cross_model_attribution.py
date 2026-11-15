@@ -270,8 +270,8 @@ def test_cross_model_carriers_are_the_store_already_merged():
     check("carriers is non-empty for the real store",
           len(carriers) >= 11, len(carriers))
     # The two qwen3.8-27b / -swift variants that legitimately share a 45 t/s post.
-    check("carriers keys use the (engine, tps, hardware, source_post) identity",
-          ("llama.cpp", "45", "RX 9070 XT 16GB",
+    check("carriers key on the (engine, tps, date, source_post) identity",
+          ("llama.cpp", "45", "2026-10-07",
            "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112")
           in carriers, sorted(carriers)[:3])
 
@@ -294,7 +294,7 @@ def test_a_copy_onto_a_model_the_post_never_measured_is_refused():
     store = json.loads(json.dumps(store))
     # Find the true owner id of the (MLX, 18, ..., pratikg) tuple.
     carriers = ut.cross_model_carriers(store)
-    owner_ident = ("MLX", "18", "Apple M5 Pro Mac mini, 64GB unified memory",
+    owner_ident = ("MLX", "18", "2026-10-10",
                    "https://lightbrd.com/pratikg/status/2108994425166967019")
     owners = carriers.get(owner_ident, set())
     check("the gemma-3-1b copied tuple's owner is in the store",
@@ -316,13 +316,77 @@ def test_a_copy_onto_a_model_the_post_never_measured_is_refused():
           in refused[0][2], refused)
 
 
+def test_a_planted_hardware_renamed_duplicate_is_refused_at_ingest():
+    """Issue #971: the ingest-time refusal must read the SAME identity signature the
+    post-merge gate does — (engine, tps, DATE, source_post), never hardware. A raw
+    capture that re-files a stored figure with a renamed hardware label ("R9700" vs
+    "AMD R9700", same date, same post) used to slip past the hardware-keyed refusal
+    and was only caught at validate; under the date-keyed identity it collides at
+    ingest and is refused with the owning model id."""
+    store = _store()
+    store = json.loads(json.dumps(store))
+    carriers = ut.cross_model_carriers(store)
+    # A real stored identity (llama.cpp 45 on 2026-10-07, carried by the documented
+    # qwen3.8-27b / -swift variant pair).
+    owner_ident = ("llama.cpp", "45", "2026-10-07",
+                   "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112")
+    owners = carriers.get(owner_ident, set())
+    check("the stored tuple's owners are the documented variant pair",
+          owners == {"qwen3.8-27b", "qwen3.8-27b-swift"}, owners)
+
+    # A NEW model id re-files the identical (engine, tps, date, source_post) tuple
+    # with a RENAMED hardware label — the copy the hardware-keyed seam missed.
+    copy_model = {"id": "some-fake-99b", "engines": [{
+        "engine": "llama.cpp", "tps": "45", "hardware": "AMD R9700",
+        "quant": "IQ4_XS", "date": "2026-10-07",
+        "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
+    }]}
+    kept, refused = ut.refuse_cross_model_duplicate_measurements(copy_model, carriers)
+    check("a hardware-renamed duplicate is refused at ingest",
+          len(refused) == 1 and not kept, (kept, refused))
+    check("the refusal names the owning models",
+          "qwen3.8-27b" in refused[0][1] and "qwen3.8-27b-swift" in refused[0][1],
+          refused)
+    check("the refusal carries the source post",
+          "2107653402540790112" in refused[0][2], refused)
+
+
+def test_the_refusal_reads_the_gate_identity():
+    """Issue #971 (rule 6d): the ingest-time refusal and the post-merge gate use
+    ONE identity function — `ut.cross_row_duplicate_identity` — so a duplicate the
+    gate flags is already stopped at ingest, and no second hardware-keyed copy
+    survives in the refusal seam. The refusal's carriers are built from the SAME
+    (engine, tps, date, source_post) signature the gate reads."""
+    src_ut = (ROOT / "scripts" / "update_trending.py").read_text()
+    src_v = (ROOT / "scripts" / "validate.py").read_text()
+    check("the refusal builds its carriers with cross_row_duplicate_identity",
+          "cross_row_duplicate_identity" in src_ut
+          and "cross_row_duplicate_identity(e)" in src_ut, "refusal not shared")
+    check("the gate reads the same shared cross_row_duplicate_identity",
+          "cross_row_duplicate_identity" in src_v
+          and "same_post, var_key = ut.cross_row_duplicate_identity(e)" in src_v,
+          "gate not shared")
+    check("no hardware-keyed identity survives the refusal seam",
+          "refuse_cross_model_duplicate_measurements" in src_ut
+          and "cross_model_carriers" in src_ut
+          and "cross_row_duplicate_identity" in src_ut, "seam diverged")
+    # The gate's rule for a same-post duplicate and the refusal's rule both key the
+    # identity on (engine, tps, DATE, source_post): a shared measurement function.
+    same_post, _ = ut.cross_row_duplicate_identity({
+        "engine": "llama.cpp", "tps": "45", "hardware": "AMD R9700",
+        "date": "2026-10-07", "source_post": "p",
+    })
+    check("the shared identity carries date and post, not hardware",
+          same_post == ("llama.cpp", "45", "2026-10-07", "p"), same_post)
+
+
 def test_a_documented_allow_listed_pair_is_kept_at_ingest():
     # A NEW raw row for qwen3.8-27b-swift carrying the SAME tuple as qwen3.8-27b
     # (a documented same-family variant pair) must be KEPT — the allow-list says
     # this post measured both variants.
     store = _store()
     carriers = ut.cross_model_carriers(store)
-    ident = ("llama.cpp", "45", "RX 9070 XT 16GB",
+    ident = ("llama.cpp", "45", "2026-10-07",
              "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112")
     check("the variant pair is allow-listed",
           ident in ut.CROSS_MODEL_ALLOW_LIST
@@ -330,12 +394,22 @@ def test_a_documented_allow_listed_pair_is_kept_at_ingest():
           ut.CROSS_MODEL_ALLOW_LIST.get(ident))
     model = {"id": "qwen3.8-27b-swift", "engines": [{
         "engine": "llama.cpp", "tps": "45", "hardware": "RX 9070 XT 16GB",
-        "quant": "IQ4_XS", "date": "2026-10-11",
+        "quant": "IQ4_XS", "date": "2026-10-07",
         "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
     }]}
     kept, refused = ut.refuse_cross_model_duplicate_measurements(model, carriers)
     check("an allow-listed variant measurement is kept, not refused",
           len(kept) == 1 and not refused, (kept, refused))
+    # Even a hardware-RENAMED spelling of the same allow-listed tuple stays kept:
+    # the identity keys on date, never hardware (issue #971).
+    renamed = {"id": "qwen3.8-27b-swift", "engines": [{
+        "engine": "llama.cpp", "tps": "45", "hardware": "AMD RX 9070 XT 16GB",
+        "quant": "IQ4_XS", "date": "2026-10-07",
+        "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2107653402540790112",
+    }]}
+    kept2, refused2 = ut.refuse_cross_model_duplicate_measurements(renamed, carriers)
+    check("a hardware-renamed allow-listed tuple is still kept",
+          len(kept2) == 1 and not refused2, (kept2, refused2))
 
 
 def test_cross_model_refusal_is_wired_into_ingest():
@@ -444,6 +518,8 @@ def main() -> int:
     test_the_check_is_wired_into_the_data_stage()
     test_cross_model_carriers_are_the_store_already_merged()
     test_a_copy_onto_a_model_the_post_never_measured_is_refused()
+    test_a_planted_hardware_renamed_duplicate_is_refused_at_ingest()
+    test_the_refusal_reads_the_gate_identity()
     test_a_documented_allow_listed_pair_is_kept_at_ingest()
     test_cross_model_refusal_is_wired_into_ingest()
     test_ingest_refuses_a_re_capture_before_it_merges()
