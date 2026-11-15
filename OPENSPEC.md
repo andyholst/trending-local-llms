@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **303**
+Active changes: **2** · archived: **304**
 
 ## Active changes
 
@@ -171,6 +171,7 @@ Active changes: **2** · archived: **303**
 | `footprint-hard-fields-gate-789` | archived | #789 — "The report-only scan cannot become a gate until the prose-field false-positive rate is measured". | #954 | [validate-source-post-readback](openspec/changes/archive/footprint-hard-fields-gate-789/specs/validate-source-post-readback/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/footprint-hard-fields-gate-789/proposal.md) |
 | `footprint-readback-store-gate-788` | archived | #788 — "Stored footprint values their captured source posts nowhere state are surfaced but never repaired". | #933 | [validate-source-post-readback](openspec/changes/archive/footprint-readback-store-gate-788/specs/validate-source-post-readback/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/footprint-readback-store-gate-788/proposal.md) |
 | `force-flag-parsing` | archived | #227 — `tech-debt: FORCE=0 forces: any non-empty value is truthy to make` | — | [force-flag](openspec/changes/archive/force-flag-parsing/specs/force-flag/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/force-flag-parsing/proposal.md) |
+| `freshness-alarm-window-follows-cadence` | archived | #1031 | #1034 | [alarms](openspec/changes/archive/freshness-alarm-window-follows-cadence/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/freshness-alarm-window-follows-cadence/proposal.md) |
 | `gap-files-once-per-dimension` | archived | #472 (the measured re-file loop) | — | [data-gap-baseline](openspec/changes/archive/gap-files-once-per-dimension/specs/data-gap-baseline/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/gap-files-once-per-dimension/proposal.md) |
 | `git-out-vs-git-raw` | archived | #504 | — | [worktree-base](openspec/changes/archive/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/git-out-vs-git-raw/proposal.md) |
 | `green-when-the-issue-closed-while-in-flight` | archived | #520 (measured: run 39612330011 went RED over work PR #517 had already landed) | — | [bot-coordination](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/proposal.md) |

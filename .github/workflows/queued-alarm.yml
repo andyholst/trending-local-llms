@@ -99,11 +99,13 @@ jobs:
         run: make sweep-alarm REPO="${{ github.repository }}"
       # An alarm over the ARTIFACT, not the run (issue #452): a refresh slot GitHub DROPPED leaves no
       # run row for any other alarm to read, so the only honest signal is the age of the newest
-      # committed snapshot. Twice-daily crons leave a ~11.7 h gap; 14 h is one missed slot.
+      # committed snapshot. The window is the script's own weekly default (170 h), NOT a
+      # workflow literal: the 14 h override was the twice-daily era and red-ed dispatched
+      # alarm runs on an ordinary weekly gap (issue #1031, the #804 treatment for sweep-alarm).
       - name: Fail loudly when the published index is stale
         env:
           GH_TOKEN: ${{ github.token }}
-        run: make freshness-alarm REPO="${{ github.repository }}" MAX_AGE_HOURS=14
+        run: make freshness-alarm REPO="${{ github.repository }}"
       # A deterministic gate that goes red on a `push` to master has no repairer (issue #527): the
       # validate job of qa-validate runs on master push as well as on PRs, and the implementer's
       # fix loop and pr-health all act on PRs only (a push has none; the fix-bot pipeline was
