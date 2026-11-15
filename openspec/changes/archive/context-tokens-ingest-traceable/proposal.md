@@ -1,6 +1,7 @@
 # Proposal: context-tokens-ingest-traceable
 
 Issue: #991 — "data-gap: context_tokens (69 models) (2026-11-15)"
+PR: #1012
 
 ## Why
 
