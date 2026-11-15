@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **298**
+Active changes: **2** · archived: **299**
 
 ## Active changes
 
@@ -88,6 +88,7 @@ Active changes: **2** · archived: **298**
 | `agents-row-storage-offload` | archived | #369 | — | [agents-guard-registry](openspec/changes/archive/agents-row-storage-offload/specs/agents-guard-registry/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/agents-row-storage-offload/proposal.md) |
 | `agents-rows-two-label-sweep` | archived | #494 | — | [rulebook](openspec/changes/archive/agents-rows-two-label-sweep/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agents-rows-two-label-sweep/proposal.md) |
 | `agents-skills-relocation-904` | archived | #904 | #982 | [agent-leg-skills](openspec/changes/archive/agents-skills-relocation-904/specs/agent-leg-skills/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/agents-skills-relocation-904/proposal.md) |
+| `agents8-per-entry-dedup-row` | archived | #1001 | #1013 | [agents-guard-registry](openspec/changes/archive/agents8-per-entry-dedup-row/specs/agents-guard-registry/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/agents8-per-entry-dedup-row/proposal.md) |
 | `alias-one-definition` | archived | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/archive/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/alias-one-definition/proposal.md) |
 | `all-quarantined-capture-is-an-alarm` | archived | #624 — tech-debt "A capture where EVERY row is quarantined still exits 0 and reports | #837 | [raw-capture-alarm](openspec/changes/archive/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | archived | #309 | — | [code-review-scan](openspec/changes/archive/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/an-unchecked-scan-is-not-clean/proposal.md) |
