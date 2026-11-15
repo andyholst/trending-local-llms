@@ -999,6 +999,30 @@ issue that skips a section is refused.
      (rules 6d/6m); `tests/test_worktree_base.py` drives it against real git
      repositories and `AGENTS.md`'s own wording is pinned by that suite.
 
+6t. **Cadence and LLM calls are owner-controlled (MANDATORY, owner directive 2026-11-15,
+   issue #1029).** (a) The ONLY pipeline with an `on.schedule` block is `refresh-bot.yml` —
+   the data-trend gatherer, weekly on Wednesday (`'0 6 * * 3'` plus the `'43 17 * * 3'`
+   backup); every other pipeline (issue-bot, issue-review-bot, architecture-bot,
+   bot-health, code-review-bot, pr-health, queued-alarm) is **dispatch-only**: no cron, and
+   `issue-bot.yml` carries NO `issues:` trigger either. (b) **The main CI pipeline
+   (`qa-validate`, on `pull_request`/`push`) runs TESTS AND VALIDATORS ONLY — no real LLM
+   call may gate a merge** (its `make hermes-smoke` step was removed; the deterministic
+   `make search-smoke` fetch smoke stays). (c) **Every real model call executes only
+   through the Hermes harness-image containers the Makefile launches** — `make
+   implement-issue`, `make review-issue` / `review-issue-window`, the four `search-*` legs,
+   `make fix` / `scripts/fix_loop.sh`, `make refresh` — never a raw API call from a script
+   or a workflow `run:` line. (d) Those legs run only in pipelines whose `guard` admits the
+   owner, a write collaborator, `github-actions[bot]`, or a `schedule` event (rule 6j) —
+   so an agent-authored issue, PR or comment can NEVER start an LLM pipeline by itself:
+   starting a bot pipeline is the owner's dispatch, and sweeping the queue is a dispatch,
+   not a trigger a bot can pull. (e) **The agent (a Hermes session) never starts a CI
+   pipeline** — no `gh workflow run` from a session; the agent works in its own worktree
+   (rule 6n) and the pipelines carry their own cadence. `tests/test_workflows.py` pins it:
+   `test_only_the_refresh_pipeline_carries_a_schedule` reds if ANY other workflow regains a
+   cron, and the `test_qa_validate` checks refuse `hermes-smoke`, `hermes -z` or an agent
+   target anywhere in qa-validate — a pipeline that drifts back to scheduled LLM runs, or a
+   model call that slips into the merge gate, turns CI red on purpose.
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -1865,30 +1889,6 @@ Rules for the refresh run:
   trending, and that it is auto-merged once qa-validate is green.
 - The Nous token is read from the repo secret `NOUS_PORTAL_API_TOKEN`; never
   hardcode it in files or commit it.
-
-6t. **Cadence and LLM calls are owner-controlled (MANDATORY, owner directive 2026-11-15,
-   issue #1029).** (a) The ONLY pipeline with an `on.schedule` block is `refresh-bot.yml` —
-   the data-trend gatherer, weekly on Wednesday (`'0 6 * * 3'` plus the `'43 17 * * 3'`
-   backup); every other pipeline (issue-bot, issue-review-bot, architecture-bot,
-   bot-health, code-review-bot, pr-health, queued-alarm) is **dispatch-only**: no cron, and
-   `issue-bot.yml` carries NO `issues:` trigger either. (b) **The main CI pipeline
-   (`qa-validate`, on `pull_request`/`push`) runs TESTS AND VALIDATORS ONLY — no real LLM
-   call may gate a merge** (its `make hermes-smoke` step was removed; the deterministic
-   `make search-smoke` fetch smoke stays). (c) **Every real model call executes only
-   through the Hermes harness-image containers the Makefile launches** — `make
-   implement-issue`, `make review-issue` / `review-issue-window`, the four `search-*` legs,
-   `make fix` / `scripts/fix_loop.sh`, `make refresh` — never a raw API call from a script
-   or a workflow `run:` line. (d) Those legs run only in pipelines whose `guard` admits the
-   owner, a write collaborator, `github-actions[bot]`, or a `schedule` event (rule 6j) —
-   so an agent-authored issue, PR or comment can NEVER start an LLM pipeline by itself:
-   starting a bot pipeline is the owner's dispatch, and sweeping the queue is a dispatch,
-   not a trigger a bot can pull. (e) **The agent (a Hermes session) never starts a CI
-   pipeline** — no `gh workflow run` from a session; the agent works in its own worktree
-   (rule 6n) and the pipelines carry their own cadence. `tests/test_workflows.py` pins it:
-   `test_only_the_refresh_pipeline_carries_a_schedule` reds if ANY other workflow regains a
-   cron, and the `test_qa_validate` checks refuse `hermes-smoke`, `hermes -z` or an agent
-   target anywhere in qa-validate — a pipeline that drifts back to scheduled LLM runs, or a
-   model call that slips into the merge gate, turns CI red on purpose.
 
 <!-- agents:style -->
 ## 7. Style
