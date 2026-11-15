@@ -368,6 +368,29 @@ def test_the_implement_stream_row_is_written():
     check("§8: … naming the measured defect and its landing PR",
           "#833" in line and "#1057" in line and "#1062" in line, line[:120])
 
+def test_the_docstring_staleness_row_is_written():
+    """#947: the §2 owed-row sentence for the docstring-staleness trap.
+
+    A docstring-only edit under scripts/ rewrites one ARCHITECTURE.md §10
+    inventory line, so architecture-check's staleness gate reds a no-op change
+    (measured on run_tests.sh's docstring). The ledger needle is the phrase
+    itself — it must sit contiguous in the §2 span (no backticks inside), with
+    the measured defect and the architecture_bot pin named beside it.
+    """
+    text = AGENTS.read_text(encoding="utf-8")
+    start = text.index("## 2. Hard rules")
+    end = text.index("## 3.", start)
+    span = text[start:end]
+    needle = ("a docstring-only edit under scripts/ is enough to stale "
+              "the inventory block")
+    check("§2: rule 6h carries the contiguous ledger needle",
+          needle in span, "needle absent from §2 span")
+    i = span.index(needle)
+    window = span[max(0, i - 200):i + 500]
+    check("§2: … naming the measured defect and its pin",
+          "#947" in window and "tests/test_architecture_bot.py" in window,
+          window[:120])
+
 
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
@@ -382,6 +405,7 @@ def main() -> int:
     test_the_gap_body_newline_row_is_written()
     test_the_ledger_evidence_close_row_is_written()
     test_the_implement_stream_row_is_written()
+    test_the_docstring_staleness_row_is_written()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
