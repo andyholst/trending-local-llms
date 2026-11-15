@@ -8,5 +8,5 @@
       runner), the real runner is green with the `[test] ok` trace intact and
       leaves zero `__pycache__`, the seam owns the flag, and `make test` still
       reaches the suite only through the runner (rule 6m)
-- [ ] 4. Gates green on the exact head: `make lint`, the full `make test`
-- [ ] 5. `make openspec-index` regenerated; AGENTS.md §8 guard row added
+- [x] 4. Gates green on the exact head: `make lint`, the full `make test`
+- [x] 5. `make openspec-index` regenerated; AGENTS.md §8 guard row added
