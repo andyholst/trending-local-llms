@@ -1,6 +1,7 @@
 # Proposal: openspec-image-publish-gate-issue-989
 
 **Issue:** #989
+PR: #990
 
 ## Why
 
