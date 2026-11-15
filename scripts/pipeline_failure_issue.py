@@ -28,7 +28,10 @@ in the ledger `data/pipeline_failures.json` it:
 Dedup is the ledger (run id) plus a scan of issues (open OR closed) carrying the marker: one run
 files once, ever. A log fetch that fails after one retry is recorded in the ledger as UNDIAGNOSED
 with the reason — loudly, never silently — and the issue body then says the log was unreadable
-rather than guessing at a cause. This script never fixes anything and never merges anything
+rather than guessing at a cause. UNDIAGNOSED is not terminal: every sweep RE-READS the log of each
+still-undiagnosed row and raises it append-only (issue #969) — a row filed before a reader defect
+was fixed (the #923 class: 14 rows needed a manual change each) repairs itself on the next
+scheduled run. This script never fixes anything and never merges anything
 (rule 6g: analysis files, a separate reviewed change fixes).
 
 Exit: 0 report-only (filing IS the action); 2 when the pipeline state itself could not be read
@@ -379,6 +382,73 @@ def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[
 
 
 # ---------------------------------------------------------------------------
+# the re-diagnosis pass (issue #969): UNDIAGNOSED is not terminal
+# ---------------------------------------------------------------------------
+
+def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool,
+                           now: dt.datetime) -> list[str]:
+    """Re-read the log of every still-UNDIAGNOSED ledger row and raise it APPEND-ONLY.
+
+    The filer files UNDIAGNOSED when its own log fetch fails (a reader defect, a transient API
+    outage). Without this pass those rows stay UNDIAGNOSED forever: the #923 reader fix landed,
+    yet all 14 rows filed before it needed a MANUAL change each (#820–#825). Each sweep therefore
+    re-derives the failed job from the run's own job list, re-fetches through the
+    escape-tolerant reader, and raises the row: keys ADDED (`rediagnosed_utc`, scrubbed
+    `error_excerpt`, `rediagnosis_note`), `targets` GROWN only — no key removed, no value
+    shrunk, the `undiagnosed` field KEPT (rule 3b). `fix_pr`/`guard` are untouched: attribution
+    stays each fix's own decision (rule 6r). A log still unreadable is reported loudly and the
+    row stays eligible for the next sweep; a readable log with no error-shaped line never marks
+    the row done.
+    """
+    lines: list[str] = []
+    pending = [e for e in ledger["failures"]
+               if e.get("undiagnosed") and not e.get("rediagnosed_utc")]
+    for entry in pending:
+        rid = int(entry.get("run_id", 0))
+        job_name = entry.get("job")
+        try:
+            jobs = failed_jobs(repo, rid)
+        except RuntimeError as exc:
+            lines.append(f"rediagnose run {rid}: jobs unreadable again: {exc}")
+            continue
+        match = next((j for j in jobs if job_name is None or j.get("name") == job_name), None)
+        if match is None:
+            lines.append(f"rediagnose run {rid}: the run names no failed job {job_name!r} "
+                         f"(jobs: {[j.get('name') for j in jobs]}) — row stays UNDIAGNOSED")
+            continue
+        try:
+            block = extract_error_block(fetch_log(repo, match["databaseId"]))
+        except RuntimeError as exc:
+            lines.append(f"rediagnose run {rid}: log still unreadable: {exc}")
+            continue
+        if not block:
+            lines.append(f"rediagnose run {rid}: log readable but names no error-shaped line "
+                         "— row stays UNDIAGNOSED")
+            continue
+        targets = failed_make_targets(block)
+        excerpt = redact("\n".join(block))[0]
+        if dry:
+            lines.append(f"WOULD RAISE run {rid} (job {match.get('name')}): "
+                         f"error_lines={len(block)} targets+={targets or '-'}")
+            continue
+        entry["rediagnosed_utc"] = now.isoformat()
+        entry["error_excerpt"] = excerpt
+        grown = list(entry.get("targets") or [])
+        for t in targets:
+            if t not in grown:
+                grown.append(t)
+        entry["targets"] = grown
+        entry["rediagnosis_note"] = (
+            f"re-read on this sweep from job {match['databaseId']} ({match.get('name')}) by "
+            f"make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
+        )
+        ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+        lines.append(f"REDIAGNOSED run {rid} (job {match.get('name')}): error block landed, "
+                     f"targets={grown or '-'}")
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # the sweep
 # ---------------------------------------------------------------------------
 
@@ -448,6 +518,10 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
             filed += 1
             lines.append(f"FILED {issue['url']} (run {rid}, job {title_job}, "
                          f"targets={targets or '-'}, log_error={log_error or 'no'})")
+    # The re-diagnosis pass (issue #969): every still-undiagnosed row gets its log re-read on
+    # THIS sweep — including a row filed UNDIAGNOSED moments ago above (the in-memory ledger
+    # already holds it), so a transient log outage is repaired within the same sweep.
+    lines.extend(rediagnose_undiagnosed(repo, ledger, ledger_path, dry, now))
     lines.append(f"pipeline-failure-issue: window={window_hours}h failures={len(runs)} "
                  f"filed={filed} ledger={ledger_path.name}")
     return 0, lines
