@@ -5225,7 +5225,8 @@
       },
       "measurement_model_aliases": [
         "qwen3.8-flash-next-125b"
-      ]
+      ],
+      "context_tokens": "200000"
     },
     {
       "name": "Qwen3.8-Flash-Next 125B (MTPLX rd1.1)",
@@ -5278,7 +5279,8 @@
       },
       "measurement_model_aliases": [
         "qwen3-8-flash-next-125b"
-      ]
+      ],
+      "context_tokens": "200000"
     },
     {
       "id": "qwen3.8-27b-thinkingcap-tensorfold-1spark",
@@ -7939,7 +7941,8 @@
       ],
       "measurement_model_aliases": [
         "qwen3.8-27b"
-      ]
+      ],
+      "engine_min_version": "llama.cpp port (PS5LM)"
     },
     {
       "id": "bonsai-2-27b-mlx",
@@ -8908,7 +8911,8 @@
       "measurement_model_aliases": [
         "bonsai-2-27b",
         "bonsai-2-27b-mlx"
-      ]
+      ],
+      "engine_min_version": "PrismML llama.cpp fork"
     },
     {
       "id": "qwen2.5-1.5b-instruct",
