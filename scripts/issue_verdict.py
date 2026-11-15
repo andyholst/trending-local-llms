@@ -60,6 +60,7 @@ import sys
 from pathlib import Path
 
 from owed_rows_check import owed_row_close_note  # noqa: E402  (the ONE landing implementation, rule 6d)
+from pipeline_failure_guard_check import guard_test_exists, read_ledger  # noqa: E402  (the ONE ledger reader, rule 6d)
 
 TRIAGE_FILE = os.environ.get("TRIAGE_FILE", "triage.md")
 
@@ -147,6 +148,45 @@ _EVIDENCE_SHAPES = (
     re.compile(r"\bgh\s+(?:api|pr|issue)\b"),                       # a gh read that was run
 )
 
+#: The pipeline-failures ledger an EVIDENCE may cite (issue #993): a pipeline-failure issue
+#: (rule 6r) is closed with proof that lives in `data/pipeline_failures.json` — the run id,
+#: the merged `fix_pr` and the `guard` test — NOT in a file:line, so a `close` (or `refine`)
+#: whose EVIDENCE names the ledger + a run id is checkable ONLY when the ledger resolved
+#: against the fetched base has a row for that run naming a merged `fix_pr` and a guard test
+#: `make test` collects, decided through the ONE ledger reader (`pipeline_failure_guard_check`,
+#: rule 6d). A prose-only close, an unknown run, or a run whose row names no merged fix stays
+#: REFUSED. `--ledger` overrides the path so a test plants its own.
+_LEDGER_DEFAULT = Path(__file__).resolve().parent.parent / "data" / "pipeline_failures.json"
+_LEDGER_PATH = _LEDGER_DEFAULT
+
+# GitHub run ids (11+ digits here); never a 3-digit fix_pr / issue number.
+_PIPELINE_RUN_ID = re.compile(r"\b\d{8,}\b")
+
+
+def _pipeline_failure_ledger_is_checkable(text: str) -> bool:
+    """Is this EVIDENCE a checkable reference into the pipeline-failures ledger?
+
+    The evidence names the ledger file AND at least one GitHub run id; the ledger row for
+    that run must name a merged ``fix_pr`` and a ``guard`` test ``make test`` collects —
+    the same verdict the ledger gate applies (rule 6r), so a fix-in-flight or forgotten
+    run is never closed away on the strength of its ledger mention.
+    """
+    if "pipeline_failures.json" not in (text or ""):
+        return False
+    runs = [int(m) for m in _PIPELINE_RUN_ID.findall(text or "")]
+    if not runs:
+        return False
+    try:
+        ledger = read_ledger(_LEDGER_PATH)
+    except (OSError, RuntimeError, ValueError):
+        return False
+    by_run = {str(entry.get("run_id")): entry for entry in ledger.get("failures", [])}
+    for run in map(str, runs):
+        entry = by_run.get(run)
+        if entry and entry.get("fix_pr") and guard_test_exists(str(entry.get("guard", ""))):
+            return True
+    return False
+
 
 #: `--state` exit codes (issue #520): the caller branches on these, so they are a contract.
 STATE_OPEN, STATE_CLOSED, STATE_UNREADABLE = 0, 4, 2
@@ -169,8 +209,18 @@ def issue_state(repo: str, number: str) -> str:
 
 
 def evidence_is_checkable(text: str) -> bool:
-    """Does this EVIDENCE block point at something in the tree a reviewer can re-run or re-read?"""
-    return any(p.search(text or "") for p in _EVIDENCE_SHAPES)
+    """Does this EVIDENCE block point at something in the tree a reviewer can re-run or re-read?
+
+    A pipeline-failures LEDGER citation is decided by the ledger ROW, not by the visible
+    path shapes: `data/pipeline_failures.json` (and a `tests/test_*.py` guard) is ITSELF a
+    path shape, so the shape check would accept any ledger mention, merged or not — the
+    exact refusal this closes (issue #993). Only the ledger's row decides a ledger cite;
+    any other evidence falls through to the existing shapes.
+    """
+    text = text or ""
+    if "pipeline_failures.json" in text:
+        return _pipeline_failure_ledger_is_checkable(text)
+    return any(p.search(text) for p in _EVIDENCE_SHAPES)
 
 
 def parse(text: str) -> dict:
@@ -376,12 +426,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--agents-file", default="AGENTS.md",
                     help="the rulebook the close comment quotes owed rows against "
                          "(default ./AGENTS.md; issue #766)")
+    ap.add_argument("--ledger", default=None,
+                    help="the pipeline-failures ledger to resolve pipeline-run EVIDENCE "
+                         "against (default data/pipeline_failures.json; issue #993)")
     ap.add_argument("--now", default=None)
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and validate, print what WOULD happen, touch nothing")
     ap.add_argument("--state", action="store_true",
                     help="print the issue's state and exit 0 (open) / 4 (closed) / 2 (unreadable)")
     args = ap.parse_args(argv)
+    global _LEDGER_PATH
+    if args.ledger:
+        _LEDGER_PATH = Path(args.ledger)
 
     if args.state:
         # The FINAL check, after the implementation: an issue closed mid-run is a finished
