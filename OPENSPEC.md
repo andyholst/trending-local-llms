@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **313**
+Active changes: **2** · archived: **314**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `squash-identity-legacy-history` | active | #835 | — | [commit-authorship](openspec/changes/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/squash-identity-legacy-history/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -304,6 +303,7 @@ Active changes: **3** · archived: **313**
 | `skip-note-every-sweep` | archived | #202 | — | [issue-review-queue](openspec/changes/archive/skip-note-every-sweep/specs/issue-review-queue/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/skip-note-every-sweep/proposal.md) |
 | `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
+| `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
 | `strand-openspec-change-at-merge` | archived | #866 | #894 | [archived-change-lifecycle](openspec/changes/archive/strand-openspec-change-at-merge/specs/archived-change-lifecycle/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/strand-openspec-change-at-merge/proposal.md) |
 | `sweep-alarm-inflight-pending` | archived | #801 (sweep-alarm grades a delivery that is still running as a failed sweep) | #806 | [alarms](openspec/changes/archive/sweep-alarm-inflight-pending/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/sweep-alarm-inflight-pending/proposal.md) |

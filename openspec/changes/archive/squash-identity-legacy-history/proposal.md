@@ -1,6 +1,7 @@
 # squash-identity-legacy-history
 
 Issue: #835
+PR: #1059
 
 ## Why
 
