@@ -1,0 +1,52 @@
+{
+  "backend": "metal",
+  "generated_utc": "2026-11-15T08:00:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "Metal"
+      ],
+      "supported_engines": [
+        "TensorFold",
+        "MLX"
+      ],
+      "last_seen": "2026-11-13",
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "44.5",
+          "hardware": "Mac Studio M5 Ultra 512GB",
+          "quant": "4-bit",
+          "date": "2026-11-13",
+          "source_post": "https://lightbrd.com/LazyLocalLLM/status/2121282051588719000",
+          "likes": 256,
+          "comments": 6,
+          "reshares": 4,
+          "views": 0
+        },
+        {
+          "engine": "TensorFold",
+          "tps": "146",
+          "hardware": "Mac Studio M5 Ultra 512GB",
+          "quant": "4-bit",
+          "date": "2026-11-13",
+          "source_post": "https://lightbrd.com/LazyLocalLLM/status/2121282051588719000",
+          "likes": 256,
+          "comments": 6,
+          "reshares": 4,
+          "views": 0,
+          "engine_min_version": "TensorFold 1.2.7 + DFlash2 draft"
+        }
+      ]
+    }
+  ]
+}

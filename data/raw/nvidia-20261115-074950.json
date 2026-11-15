@@ -1,0 +1,41 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-11-15T07:40:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-35b-a3b",
+      "name": "Qwen3.8-35B-A3B",
+      "full_name": "Qwen3.8-35B-A3B",
+      "type": "LLM (MoE)",
+      "license": "Apache 2.0",
+      "params": "35B (MoE, 3B active)",
+      "hf": "empero-ai/Qwen3.8-35B-A3B-Distill",
+      "vram_tier": "12GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "50",
+          "hardware": "RTX 3060 12GB",
+          "quant": "Q4_K_M",
+          "date": "2026-11-13",
+          "source_post": "https://lightbrd.com/Oluwaphilemon1/status/2121053447734579580",
+          "likes": 68,
+          "comments": 3,
+          "reshares": 3,
+          "views": 8737,
+          "context_tokens": "262144",
+          "system_ram_min": "16GB",
+          "engine_min_version": "26 MoE layers CPU offload"
+        }
+      ],
+      "last_seen": "2026-11-15"
+    }
+  ]
+}

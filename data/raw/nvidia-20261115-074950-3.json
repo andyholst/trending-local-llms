@@ -1,0 +1,36 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-11-15T07:40:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "TensorFold"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "108.8",
+          "hardware": "2x RTX 5060 Ti 16GB",
+          "quant": "MLX 4-bit affine, 4.695 bpw, DFlash2 drafter",
+          "date": "2026-11-13",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2121225315510784424",
+          "engine_min_version": "TensorFold Python engine v0.6.6 + 2 patch commits (head d902d5b)",
+          "context_tokens": "109511"
+        }
+      ],
+      "last_seen": "2026-11-15"
+    }
+  ]
+}

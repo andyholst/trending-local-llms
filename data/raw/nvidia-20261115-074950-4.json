@@ -1,0 +1,38 @@
+{
+  "backend": "nvidia",
+  "generated_utc": "2026-11-15T07:40:00Z",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "TensorFold"
+      ],
+      "engines": [
+        {
+          "engine": "TensorFold",
+          "tps": "103.1",
+          "hardware": "RTX 4090 Laptop GPU 16GB",
+          "quant": "oQ2 + DFlash2",
+          "date": "2026-11-12",
+          "source_post": "https://lightbrd.com/blue0orbit/status/2120869228039250065",
+          "likes": 418,
+          "comments": 3,
+          "reshares": 9,
+          "engine_min_version": "TensorFold 1.2.7"
+        }
+      ],
+      "last_seen": "2026-11-15"
+    }
+  ]
+}

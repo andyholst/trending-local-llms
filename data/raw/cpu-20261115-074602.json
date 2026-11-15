@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-11-15T07:46:14Z",
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "full_name": "Gemma 4 E2B",
+      "type": "LLM",
+      "license": "Gemma license",
+      "params": "2B",
+      "hf": "google/gemma-4-E2B",
+      "vram_tier": "not stated",
+      "backends": [
+        "CPU"
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "19",
+          "hardware": "CPU, 8 cores",
+          "quant": "4-bit Q4_0 (2.8GB download); 17.5-19.5 t/s range",
+          "date": "2026-11-14",
+          "source_post": "https://lightbrd.com/LumenToolsHQ/status/2121620580226965521",
+          "weight_gb": "2.8GB",
+          "engine_min_version": "llama.cpp v1.0.0 (build b12377)",
+          "likes": 13,
+          "comments": 2,
+          "reshares": 1
+        }
+      ],
+      "last_seen": "2026-11-14",
+      "vram_min": "not stated"
+    }
+  ]
+}
