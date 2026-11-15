@@ -6,4 +6,4 @@
 - [x] AGENTS.md §8 guard row added; ARCHITECTURE.md target row + inventory block updated (`make architecture-refresh`)
 - [x] OpenSpec change (proposal, spec with per-scenario tests, tasks) + index regenerated
 - [x] Local gates green (`make lint`, freshness suite, secret-scan; `make openspec-check` on the head once the PR box is ticked)
-- [ ] PR opened with the five-section body and `closes #1031`
+- [x] PR opened with the five-section body and `closes #1031` (PR #1034)

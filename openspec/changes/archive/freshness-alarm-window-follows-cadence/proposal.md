@@ -1,6 +1,7 @@
 # Proposal: freshness-alarm-window-follows-cadence
 
 Issue: #1031
+PR: #1034
 
 ## Why
 
