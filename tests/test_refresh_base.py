@@ -19,6 +19,10 @@ in a temp dir (a local file remote is the external system, never a stand-in):
   2. `sync` is a no-op when the tree already is the fetched tip;
   3. `sync` refuses a dirty path a refresh does not generate, and a HEAD with commits of
      its own (it must never discard somebody's edit);
+  3b. `sync` ACCEPTS a tree dirty ONLY in the three ledger stores the merge writes
+      (`data/measurements.json`, `data/posts.json`, `data/refusals.json` — issue #997) and
+      resets them to the base's copies, and a guard proves `GENERATED_PATHS` covers every
+      store path `update_trending.py` writes so a future ledger cannot strand `refresh-sync`;
   4. `require-tip` FAILS on a branch behind the fetched base — the guard that stops a
      queued refresh from opening a PR `master` has already left — and passes after a
      sync;
@@ -40,6 +44,10 @@ from wiring import wired  # noqa: E402  (issues #176/#192)
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "refresh_base.py"
+SCRIPTDIR = str(ROOT / "scripts")
+sys.path.insert(0, SCRIPTDIR)  # import the real modules for the coverage guard (rule 6m)
+import refresh_base            # noqa: E402  (real GENERATED_PATHS — never a re-typed copy)
+import update_trending         # noqa: E402  (real store paths — the writer itself)
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
 REFRESH_BOT = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text(encoding="utf-8")
 
@@ -80,6 +88,8 @@ def fixture(tmp: Path) -> dict:
     (seed / "data" / "snapshots").mkdir(parents=True)
     (seed / "README.md").write_text("# trending\n\nas of 2026-10-21T00:00:00Z\n")
     (seed / "data" / "models.json").write_text('{"models": ["a"]}\n')
+    for ledger in ("measurements.json", "posts.json", "refusals.json"):
+        (seed / "data" / ledger).write_text(f'{{"{ledger}": "base"}}\n')
     (seed / "data" / "gap_baseline.json").write_text('{"signature": "base"}\n')
     git(["add", "-A"], seed)
     git(["commit", "-qm", "base"], seed)
@@ -162,6 +172,57 @@ def test_sync_refuses_a_dirty_path_a_refresh_does_not_generate(tmp: Path) -> Non
           "scripts/some_guard.py" in proc.stderr, proc.stderr)
     check("sync: the refused edit is still in the tree",
           (ci / "scripts" / "some_guard.py").read_text() == "# a real edit\n", "")
+
+
+def test_sync_accepts_a_tree_dirty_only_in_the_ledger_stores(tmp: Path) -> None:
+    """A merge that changed data carries the three ledger stores dirty. Those are
+    GENERATED (re-derived by `make merge`), so sync must reset them onto the moved
+    base — never refuse the whole refresh as if they were foreign edits (issue
+    #997)."""
+    fx = fixture(tmp)
+    ci, seed = fx["ci"], fx["seed"]
+    # the merge wrote new ledger content that differs from the base's copies
+    for ledger in ("measurements.json", "posts.json", "refusals.json"):
+        (ci / "data" / ledger).write_text(f'{{"{ledger}": "this-run"}}\n')
+    advance(seed, "merged while the legs searched\n")
+    proc = run_script("sync", ci)
+    tip = git(["rev-parse", "origin/master"], ci).stdout.strip()
+    check("sync: a tree dirty ONLY in the three ledgers exits 0 (new data lands)",
+          proc.returncode == 0, proc.stderr)
+    check("sync: it resets onto the fetched base", "sync=reset" in proc.stdout, proc.stdout)
+    check("sync: HEAD is the fetched tip", git(["rev-parse", "HEAD"], ci).stdout.strip() == tip,
+          proc.stdout)
+    check("sync: the ledgers are reset to the BASE's copies (re-derived, not kept)",
+          all((ci / "data" / l).read_text() == f'{{"{l}": "base"}}\n'
+              for l in ("measurements.json", "posts.json", "refusals.json")), "")
+
+
+def test_generated_paths_cover_every_store_path_update_trending_writes(tmp: Path) -> None:
+    """The sync guard stays in sync with the store: every `_DATA_DIR / "*.json"`
+    store path `update_trending.py` WRITES (the catalog AND the ledgers) must
+    resolve under `refresh_base.GENERATED_PATHS`, so a future ledger cannot strand
+    every refresh at `refresh-sync` again (issue #997)."""
+    # The writer's own store-path constants — derived from the module, never a
+    # re-typed list (rule 6m: one implementation of what the store is).
+    store_names = []
+    for attr in ("DATA", "MEASUREMENTS", "POSTS", "REFUSALS_FILE"):
+        path = getattr(update_trending, attr)
+        if path.name.startswith("models"):
+            store_names.append("data/models.json")
+        elif path.name.startswith("measurements"):
+            store_names.append("data/measurements.json")
+        elif path.name.startswith("posts.json"):
+            store_names.append("data/posts.json")
+        elif path.name.startswith("refusals.json"):
+            store_names.append("data/refusals.json")
+    check("store guard: the writer's store paths are all present",
+          {"data/models.json", "data/measurements.json", "data/posts.json",
+           "data/refusals.json"} <= set(store_names), store_names)
+    missing = [s for s in store_names
+               if not any(s == g or s.startswith(g) for g in refresh_base.GENERATED_PATHS)]
+    check("store guard: every store path the merge writes is GENERATED (a future ledger "
+          "cannot strand refresh-sync)",
+          not missing, (missing, refresh_base.GENERATED_PATHS))
 
 
 def test_sync_refuses_a_head_with_its_own_commits(tmp: Path) -> None:
@@ -264,6 +325,8 @@ def main() -> int:
         test_sync_moves_the_generated_tree_onto_the_fetched_base(tmp / "c1")
         test_sync_is_a_no_op_on_the_fetched_tip(tmp / "c2")
         test_sync_refuses_a_dirty_path_a_refresh_does_not_generate(tmp / "c3")
+        test_sync_accepts_a_tree_dirty_only_in_the_ledger_stores(tmp / "c3b")
+        test_generated_paths_cover_every_store_path_update_trending_writes(tmp / "c3c")
         test_sync_refuses_a_head_with_its_own_commits(tmp / "c4")
         test_require_tip_fails_on_a_branch_behind_the_fetched_base(tmp / "c5")
         test_require_tip_passes_after_the_tree_is_synced(tmp / "c6")
