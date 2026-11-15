@@ -392,6 +392,24 @@ def test_the_docstring_staleness_row_is_written():
           window[:120])
 
 
+def test_the_section2_row_names_the_gap_filer_guard():
+    """#1014: the §2 owed-row ledger row for the gap-filer dedup guard (#1002/#1003).
+
+    The needle `tests/test_data_gap_analysis.py` must sit INSIDE the §2 span
+    (owed-rows-check matches the needle within the declared section — a row filed
+    in §8 does not land a §2 debt), contiguous, and name what it measured.
+    """
+    text = AGENTS.read_text(encoding="utf-8")
+    start = text.index("## 2. Hard rules")
+    end = text.index("## 3.", start)
+    span = text[start:end]
+    check("§2: hard rule 2 names the gap-filer guard (contiguous needle)",
+          "tests/test_data_gap_analysis.py" in span, "needle absent from §2 span")
+    i = span.index("tests/test_data_gap_analysis.py")
+    window = span[i:i + 600]  # the guard sentence runs a few lines past the needle
+    check("§2: … in a guard sentence naming the measured defect and its PR",
+          "#1002" in window and "#1003" in window, window[:120])
+
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
@@ -406,6 +424,7 @@ def main() -> int:
     test_the_ledger_evidence_close_row_is_written()
     test_the_implement_stream_row_is_written()
     test_the_docstring_staleness_row_is_written()
+    test_the_section2_row_names_the_gap_filer_guard()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

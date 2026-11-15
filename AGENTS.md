@@ -33,6 +33,13 @@ retains 30 days of history.
    may be invented. It must trace to a **real X post** (via the lightbrd.com
    mirror technique in `skills/gather-data.md`) or be marked explicitly as
    `(est)` / `estimated` when it is a reasonable projection from quant size.
+   This is **guarded, not promised**: `tests/test_data_gap_analysis.py`
+   (`make test`) requires every filed data-gap issue body to END with its
+   registered `data-gap-signature` dedup marker as a complete line — measured
+   (#1002, landed PR #1003) that an unterminated body loses that marker line in
+   any line-reading tool, so re-running the filer re-creates an already-filed
+   gap forever. A finding is filed once, traceable, and never re-filed by
+   amnesia.
 3. **Never wipe history.** If a model stops trending or gets no new updates,
    it stays in the data store and the README — it just sorts **further down**.
    Only remove a model with an explicit human decision (e.g. confirmed dead
