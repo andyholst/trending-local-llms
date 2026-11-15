@@ -1,6 +1,7 @@
 # Change: rediagnosis-annotates-issue-thread
 
 Issue: #987
+PR: #1008
 
 ## Why
 
