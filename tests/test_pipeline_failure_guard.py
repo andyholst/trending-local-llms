@@ -256,6 +256,7 @@ def test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix() -
     check("the committed ledger with #825 CLOSED passes the gate", rc == 0, str(lines))
 
 
+<<<<<<< HEAD
 def test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard() -> None:
     print("\n#830: the issue-bot row that reded the trending-for-your-card guard names the landed fix (rule 6r)")
     committed = json.loads(COMMITTED_LEDGER.read_text())
@@ -280,11 +281,41 @@ def test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard() -> None
     # The post-merge gate shape: #830 CLOSED with its row named -> green, beside the siblings.
     rc, lines = verdict(committed["failures"],
                         states([(43050447566, 830, "CLOSED"), (42973469114, 825, "CLOSED"),
+=======
+def test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix() -> None:
+    print("\n#831: the issue-bot record-pr refusal row names the landed binding fix (rule 6r)")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    row = [e for e in committed["failures"] if e["run_id"] == 43108536309]
+    check("row 43108536309 exists in the committed ledger", len(row) == 1, str(row))
+    if row:
+        e = row[0]
+        check("row 43108536309 names fix PR #955 (the landed openspec-binding-check fix)",
+              e.get("fix_pr") == 955, str(e.get("fix_pr")))
+        check("row 43108536309 names a guard test that exists on disk",
+              G.guard_test_exists(e.get("guard") or "")
+              and e.get("guard") == "tests/test_openspec_binding.py",
+              str(e.get("guard")))
+        check("row 43108536309 diagnosis quotes the record-pr refusal the log carries",
+              "openspec-record-pr" in (e.get("error_excerpt") or "")
+              and "REFUSED" in (e.get("error_excerpt") or ""),
+              str(e.get("error_excerpt")))
+        check("row 43108536309 targets name the target the log names (rule 3b)",
+              "openspec-record-pr" in str(e.get("targets") or []), str(e.get("targets")))
+        check("row 43108536309 original undiagnosed field is KEPT (append-only, rule 3b)",
+              "undiagnosed" in e, "")
+    # The post-merge gate shape: #831 CLOSED with its row named -> green, beside the siblings.
+    rc, lines = verdict(committed["failures"],
+                        states([(43108536309, 831, "CLOSED"), (42973469114, 825, "CLOSED"),
+>>>>>>> b53d01f (feat(data-gap): implement #831 from the post-refresh gap analysis)
                                 (41929086636, 823, "CLOSED"), (41956933757, 824, "CLOSED"),
                                 (43049550731, 829, "CLOSED"), (41788683672, 820, "CLOSED"),
                                 (41860616772, 821, "CLOSED"), (41922211098, 822, "CLOSED"),
                                 (43088760321, 800, "CLOSED")]))
+<<<<<<< HEAD
     check("the committed ledger with #830 CLOSED passes the gate", rc == 0, str(lines))
+=======
+    check("the committed ledger with #831 CLOSED passes the gate", rc == 0, str(lines))
+>>>>>>> b53d01f (feat(data-gap): implement #831 from the post-refresh gap analysis)
 
 
 def test_log_expired_row_is_reported_as_its_own_shape_never_red() -> None:
@@ -397,7 +428,11 @@ def main() -> int:
     test_run_41956933757_and_43049550731_are_rediagnosed_onto_the_landed_sweep_alarm_fix()
     test_run_41929086636_is_rediagnosed_onto_the_cancelled_delivery_guard()
     test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix()
+<<<<<<< HEAD
     test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard()
+=======
+    test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix()
+>>>>>>> b53d01f (feat(data-gap): implement #831 from the post-refresh gap analysis)
     test_fix_in_flight_is_reported_never_red()
     test_log_expired_row_is_reported_as_its_own_shape_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
