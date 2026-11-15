@@ -1838,6 +1838,90 @@ def test_storage_offload_coverage_can_never_shrink():
           missing <= allowance, f"{missing} missing (allowance {allowance})")
 
 
+# ---- the backfill that closes THIS filed issue (issue #994): context_tokens ----
+#
+# A context window is a FIGURE the post states (a running t/s at that window, or
+# the window itself), evidenced by the captured text. The value written to the
+# store must appear, as a token or its K-scaled form, in the model's own
+# captured source text — a value no post states is a fabrication (rule 2). The
+# window is model-level here (these Flash-Next rows carry the figure on the row,
+# not per-measurement), so the guard reads the model row like the #163 one does.
+
+def _context_tokens_is_evidenced(value: str, captured: str) -> bool:
+    """True when the captured source text supports a `context_tokens` value: the
+    value's numeric core (or its K/M-scaled spelling) and at least one
+    distinctive token appear in the captured post text."""
+    hay = (captured or "").lower()
+    low = (value or "").lower().strip()
+    if not low:
+        return False
+    # The numeric core of the stored value, e.g. "200000" from "200000 (200K)".
+    m = re.search(r"\b(\d[\d,]*(?:\.\d+)?)\b", low)
+    if not m:
+        return False
+    core = m.group(1).replace(",", "")
+    try:
+        num = float(core)
+    except ValueError:
+        return False
+    # Accept the raw figure or a K/M-scaled spelling ("200000" or "200k" from "200K").
+    candidates = {core, f"{num/1000:.0f}k", f"{num/1000:.1f}k", f"{num/1e6:.0f}m"}
+    if not any(cand in hay for cand in candidates):
+        return False
+    # At least one distinctive token: the window word, or a token >= 4 chars.
+    tokens = [t for t in re.split(r"[^A-Za-z0-9]+", low) if len(t) >= 4]
+    contextual = any(t in hay for t in tokens) or "context" in hay or "ctx" in hay
+    return contextual
+
+
+def test_context_tokens_backfill_traces_to_the_captured_source_text():
+    """Issue #994's ingest portion closes with REAL data only: every structured
+    `context_tokens` the refresh captured in a post and the store lacked is the
+    post's own window statement — its numeric core and a contextual token are
+    present in the captured `data/raw/*.json` text for that model, and the post
+    it came from is a real `…/status/<id>` URL."""
+
+    store = G._load_flat_store()
+    captured = _captured_text()
+    # The specific backfill: the two Flash-Next rows whose capture states 200K.
+    backfilled = [m for m in store["models"]
+                  if m["id"] in ("qwen3-8-flash-next-125b",
+                                 "qwen3-8-flash-next-125b-mtplx-rd1-1")]
+
+    check("context_tokens backfill: the two 125B Flash-Next rows carry a structured"
+          " window", all(m.get("context_tokens") for m in backfilled),
+          ", ".join(str(m.get("id")) for m in backfilled))
+
+    for m in backfilled:
+        value = m["context_tokens"]
+        check(f"context_tokens: {m['id']} is evidenced by its captured source text",
+              _context_tokens_is_evidenced(value, captured.get(m["id"], "")),
+              value)
+        check(f"context_tokens: {m['id']} traces to a real …/status/<id> post",
+              any(UT._is_post_url(str(e.get("source_post", "")))
+                  for e in (m.get("engines") or [])), "no real post behind it")
+
+    # And an invented value — one no captured snapshot mentions — is refused
+    check("context_tokens: an unsupported value fails the evidence rule",
+          not _context_tokens_is_evidenced("999999 tokens", captured.get(
+              backfilled[0]["id"], "")),
+          "a value naming no captured window was accepted")
+
+
+def test_context_tokens_coverage_can_never_shrink():
+    """The closed gap must not silently reopen: the two models that predate the
+    refresh and now carry a window must not lose it, and the analysis reports
+    fewer missing than the filed issue (#994) recorded for them."""
+
+    store = G._load_flat_store()
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    by_id = {m["id"]: m for m in store["models"]}
+    for mid in ("qwen3-8-flash-next-125b", "qwen3-8-flash-next-125b-mtplx-rd1-1"):
+        check(f"context_tokens: {mid} carries a window (cannot silently reopen)",
+              bool(by_id[mid].get("context_tokens")),
+              "the filed backfill was lost")
+
+
 MEASUREMENT_DIMENSIONS = ("weight_gb", "context_tokens", "system_ram_min",
                           "storage_offload", "engine_min_version")
 #: AGENTS.md §2's canonical estimate marker, imported from the validator itself
@@ -2438,6 +2522,8 @@ def main() -> int:
     test_engine_min_version_coverage_can_never_shrink()
     test_storage_offload_backfill_traces_to_the_captured_source_text()
     test_storage_offload_coverage_can_never_shrink()
+    test_context_tokens_backfill_traces_to_the_captured_source_text()
+    test_context_tokens_coverage_can_never_shrink()
     test_measurement_dimensions_trace_to_the_captured_snapshot()
     test_measurement_dimension_coverage_can_never_shrink()
     test_a_captured_measurement_footprint_is_never_lost_from_the_store()
