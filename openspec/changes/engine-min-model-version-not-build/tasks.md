@@ -19,4 +19,6 @@
       `test_a_layer_offload_or_file_size_is_not_a_storage_requirement`
 - [x] OpenSpec: proposal, MODIFIED capability spec (every scenario names its test),
       tasks ledger
-- [ ] Full host suite green on the branch head
+- [x] Full host suite green on the branch head (122 modules; the single red
+      `test_openspec_index.py` was the pre-regeneration stale index and passes 26/26
+      on the committed tree)
