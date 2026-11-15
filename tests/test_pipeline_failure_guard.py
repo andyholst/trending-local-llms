@@ -256,7 +256,6 @@ def test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix() -
     check("the committed ledger with #825 CLOSED passes the gate", rc == 0, str(lines))
 
 
-<<<<<<< HEAD
 def test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard() -> None:
     print("\n#830: the issue-bot row that reded the trending-for-your-card guard names the landed fix (rule 6r)")
     committed = json.loads(COMMITTED_LEDGER.read_text())
@@ -281,7 +280,12 @@ def test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard() -> None
     # The post-merge gate shape: #830 CLOSED with its row named -> green, beside the siblings.
     rc, lines = verdict(committed["failures"],
                         states([(43050447566, 830, "CLOSED"), (42973469114, 825, "CLOSED"),
-=======
+                                (41929086636, 823, "CLOSED"), (41956933757, 824, "CLOSED"),
+                                (43049550731, 829, "CLOSED"), (41788683672, 820, "CLOSED"),
+                                (41860616772, 821, "CLOSED"), (41922211098, 822, "CLOSED"),
+                                (43088760321, 800, "CLOSED")]))
+    check("the committed ledger with #830 CLOSED passes the gate", rc == 0, str(lines))
+
 def test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix() -> None:
     print("\n#831: the issue-bot record-pr refusal row names the landed binding fix (rule 6r)")
     committed = json.loads(COMMITTED_LEDGER.read_text())
@@ -306,17 +310,11 @@ def test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix() -
     # The post-merge gate shape: #831 CLOSED with its row named -> green, beside the siblings.
     rc, lines = verdict(committed["failures"],
                         states([(43108536309, 831, "CLOSED"), (42973469114, 825, "CLOSED"),
->>>>>>> b53d01f (feat(data-gap): implement #831 from the post-refresh gap analysis)
                                 (41929086636, 823, "CLOSED"), (41956933757, 824, "CLOSED"),
                                 (43049550731, 829, "CLOSED"), (41788683672, 820, "CLOSED"),
                                 (41860616772, 821, "CLOSED"), (41922211098, 822, "CLOSED"),
                                 (43088760321, 800, "CLOSED")]))
-<<<<<<< HEAD
-    check("the committed ledger with #830 CLOSED passes the gate", rc == 0, str(lines))
-=======
     check("the committed ledger with #831 CLOSED passes the gate", rc == 0, str(lines))
->>>>>>> b53d01f (feat(data-gap): implement #831 from the post-refresh gap analysis)
-
 
 def test_log_expired_row_is_reported_as_its_own_shape_never_red() -> None:
     print("\nlog_expired (issue #986): a row whose log aged out of retention is its OWN shape, never red")
@@ -428,11 +426,8 @@ def main() -> int:
     test_run_41956933757_and_43049550731_are_rediagnosed_onto_the_landed_sweep_alarm_fix()
     test_run_41929086636_is_rediagnosed_onto_the_cancelled_delivery_guard()
     test_run_42973469114_is_rediagnosed_onto_the_landed_openspec_binding_fix()
-<<<<<<< HEAD
     test_run_43050447566_is_rediagnosed_onto_the_landed_trending_guard()
-=======
     test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix()
->>>>>>> b53d01f (feat(data-gap): implement #831 from the post-refresh gap analysis)
     test_fix_in_flight_is_reported_never_red()
     test_log_expired_row_is_reported_as_its_own_shape_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
