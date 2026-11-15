@@ -362,7 +362,7 @@ issue that skips a section is refused.
    | `issue-review-bot` | the issue, before its first write | `issue-review`, `issue-review: window` |
    | `refresh-bot` | the PR (and the gap issue) it opens | `refresh-bot-run` |
    | `qa-validate` | the PR, immediately before it merges | `bot-merge` |
-   | `queued-alarm` (the failure filer, issue #802) | the issue it diagnoses from a failing run's log | `pipeline-run-failure` |
+   | `queued-alarm` (the failure filer, issue #802; its re-diagnosis pass, issue #987) | the issue it diagnoses from a failing run's log, and the issue thread of a raised UNDIAGNOSED ledger row | `pipeline-run-failure`, `pipeline-rediagnose` |
 
    `tests/test_bot_markers.py` fails when this table and that registry disagree,
    when a registered marker has no writer in the tree, and when a marker whose
