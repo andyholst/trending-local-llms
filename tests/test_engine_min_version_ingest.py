@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -144,17 +145,59 @@ def test_an_existing_value_is_never_overwritten():
 
 
 def test_the_build_detector_has_one_implementation():
-    """Rule 6d: the fill reads the SAME pattern object `data_gap_analysis`
-    compiled; `update_trending` defines no own build-phrase regex or vocabulary."""
+    """Rule 6d: the fill reads the ONE claim reader `data_gap_analysis` exports —
+    `engine_min_claim`, which wraps the ONE compiled `_ENGINE_MIN_TEXT` detector
+    (#1025); `update_trending` defines no own build-phrase regex or vocabulary."""
     detector = UT._engine_min_detector()
-    check("the fill uses the ONE detector object from data_gap_analysis",
-          detector is G._ENGINE_MIN_TEXT)
+    check("the fill uses the ONE claim reader from data_gap_analysis",
+          detector is G.engine_min_claim)
+    check("the claim reader is built on the ONE detector object",
+          G.engine_min_claim.__globals__["_ENGINE_MIN_TEXT"] is G._ENGINE_MIN_TEXT)
     src = (ROOT / "scripts" / "update_trending.py").read_text()
     own_copy = any(tok in src for tok in
                    ("untouched upstream", "stock llama.cpp", "nightly build",
                     "bleeding edge", "n-gpu-layers"))
     check("update_trending carries no second copy of the detector vocabulary",
           not own_copy, "a build-phrase literal was written into update_trending")
+
+
+def test_a_model_version_collision_never_fills():
+    """Issue #1025: three live candidates where the match names the MODEL's version,
+    not an engine build. The claim reader refuses them, so no ingest job may structure
+    them (rule 2 fabrication). The exact sentences are the ones `data_gap_analysis.py`
+    lists under `unstructured:engine_min_version`."""
+    fixtures = [
+        ("glm-5.3-flash", "RED-SNOW-5.3-FLASH-MLX-4bit"),
+        ("qwen3.8-27b-ps5lm-native", "2-bit Qwen 3.8 27B (PS5LM, llama.cpp port)"),
+        ("bonsai-2-27b-mac-m4-max", "MLX weights (~7GB), 1.72 bits/weight"),
+    ]
+    for mid, phrase in fixtures:
+        filled = UT.fill_engine_min_version([model(mid, engines=[{
+            "engine": "llama.cpp", "tps": "10", "hardware": "RTX 4090 24GB",
+            "quant": phrase, "date": "2026-11-14", "likes": 1,
+            "source_post": "https://lightbrd.com/u/status/901"}])])
+        check(f"#1025: {mid} — {phrase!r} fills NOTHING",
+              filled == 0, f"filled={filled}")
+    # A genuine build phrase in the SAME text still claims after the collision (#1006's
+    # class): the reader skips the colliding match, it does not blind the field.
+    filled = UT.fill_engine_min_version([model("glm-5.3-flash", engines=[{
+        "engine": "llama.cpp", "tps": "10", "hardware": "RTX 4090 24GB",
+        "quant": "RED-SNOW-5.3-FLASH-MLX-4bit; mlx 0.25.1 required",
+        "date": "2026-11-14", "likes": 1,
+        "source_post": "https://lightbrd.com/u/status/902"}])])
+    check("#1025: a real build phrase after the collision still fills",
+          filled == 1, f"filled={filled}")
+
+
+def test_bits_per_weight_is_not_a_build():
+    """Issue #1025's quant shape: `1.72 bits/weight` beside an engine word is a
+    BIT-WIDTH, the sibling of #998's throughput lookahead — refused at the token."""
+    check("1.72 bits/weight is not a build version",
+          re.search(G._BUILD_VERSION, "7GB, 1.72 bits/weight on 4-bit") is None)
+    check("306.9 tokens/s stays refused (#998 regression)",
+          re.search(G._BUILD_VERSION, "306.9 tokens/s") is None)
+    check("a real build version is untouched",
+          re.search(G._BUILD_VERSION, "mlx 0.25.1") is not None)
 
 
 def test_the_captured_class_closes_after_the_fill():
@@ -216,6 +259,8 @@ def main() -> int:
     test_no_build_phrase_fills_nothing()
     test_an_existing_value_is_never_overwritten()
     test_the_build_detector_has_one_implementation()
+    test_a_model_version_collision_never_fills()
+    test_bits_per_weight_is_not_a_build()
     test_the_captured_class_closes_after_the_fill()
     test_model_why_prose_never_fills_a_value()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

@@ -460,11 +460,15 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
             str(e.get(f, "")) for e in (m.get("engines") or []) for f in fields]
 
     # Then  every claim can be pointed at a figure in the model's own text …
+    # (#1025: re-checked through the SAME claim reader `analyse()` used, `G.dim_claim`
+    # — a narrowed claim must not read as "unpinned" when only the raw detector fires.)
     unpinned = [f"{k}:{mid}" for k, ids in report["unstructured"].items() for mid in ids
-                if not any(next(d for d in G.DIMENSIONS if d["key"] == k)["text"].search(t)
+                if not any(G.dim_claim(next(d for d in G.DIMENSIONS if d["key"] == k))
+                           (by_id[mid], t)
                            for t in own_text(by_id[mid]))]
     unpinned += [f"{k}:{mid}" for k, ids in report["untraceable"].items() for mid in ids
-                 if not any(next(d for d in G.DIMENSIONS if d["key"] == k)["text"].search(t)
+                 if not any(G.dim_claim(next(d for d in G.DIMENSIONS if d["key"] == k))
+                            (by_id[mid], t)
                             for t in own_text(by_id[mid]))]
     check("real store: every 'unstructured' claim is a figure in the model's own text",
           unpinned == [], str(unpinned))
@@ -668,10 +672,13 @@ def test_the_real_store_splits_every_missing_dimension():
 
     # … no "not stated by any captured post" claim contradicts the capture itself (the guard
     #     that keeps the new label honest: a model the snapshots DO state must never be filed
-    #     as an acquisition gap) …
+    #     as an acquisition gap) … re-checked through the SAME claim reader `analyse()`
+    #     used (#1025, rule 6d) — one reader, two sides of the assertion.
+    by_id = {m.get("id"): m for m in store["models"]}
     contradicted = [f"{d['key']}:{mid}" for d in G.DIMENSIONS
                     for mid in report["not_captured"][d["key"]]
-                    if any(d["text"].search(t) for t in G.captured_dim_texts(capture, mid, d))]
+                    if any(G.dim_claim(d)(by_id.get(mid) or {"id": mid}, t)
+                           for t in G.captured_dim_texts(capture, mid, d))]
     check("real store: no un-captured claim is contradicted by a captured post",
           contradicted == [], str(contradicted[:5]))
 
@@ -2583,6 +2590,79 @@ def test_the_declared_estimate_detector_is_one_detector():
           and not DE.has_declared_estimate("estimated runtime 14.6"))
 
 
+def test_a_layer_offload_or_file_size_is_not_a_storage_requirement():
+    """Issue #1019: "Unsloth IQ4_XS (~14.6GB on disk), 25 layers offloaded, Q4_0 KV
+    cache" is a WEIGHT-FILE SIZE plus a GPU-LAYER offload — it does not say the model
+    streams experts from flash/SSD. `_STORAGE_TEXT` must not claim it, so the model is
+    not re-asked for a storage-offload value no post states. A real experts-to-NVMe
+    sentence still claims."""
+    file_size = model("unsloth-hermes-36b", params="36B", engines=[{
+        "engine": "llama.cpp", "tps": "12", "hardware": "RTX 4090 24GB",
+        "quant": "Unsloth IQ4_XS (~14.6GB on disk), 25 layers offloaded, Q4_0 KV cache",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/701"}])
+    real = model("moe-36b-nvme", params="36B", engines=[{
+        "engine": "llama.cpp", "tps": "9", "hardware": "RTX 4090 24GB",
+        "quant": "IQ4_XS, experts offloaded to NVMe storage",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/702"}])
+    with tempfile.TemporaryDirectory() as td:
+        contract = contract_from(td, "id")
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "cuda-20261114.json").write_text(json.dumps({
+            "backend": "cuda", "models": [file_size, real]}))
+        report = G.analyse(store_with([file_size, real]), contract, raw_dir=raw)
+        prose = prose_ids(report, "storage_offload")
+        check("#1019: a GB-on-disk file size + layers-offload is NOT a storage claim",
+              "unsloth-hermes-36b" not in prose, prose)
+        check("#1019: a real experts-offloaded-to-NVMe sentence still claims",
+              "moe-36b-nvme" in prose, prose)
+        # The honest outcome for the file-size model: it is an ACQUISITION gap
+        # (`not_captured` — a new footprint query may find a real offload figure),
+        # never an ingest job over text that states no such requirement.
+        reask = report["not_captured"]["storage_offload"]
+        check("#1019: the file-size model lands in the acquisition class, not ingest",
+              "unsloth-hermes-36b" in reask and "moe-36b-nvme" not in reask, reask)
+
+
+def test_a_model_version_is_not_an_engine_build_claim():
+    """Issue #1025: the gap scan lists `unstructured:engine_min_version` for
+    `glm-5.3-flash` ← "RED-SNOW-5.3-FLASH-MLX-4bit" and `qwen3.8-27b-ps5lm-native` ←
+    "2-bit Qwen 3.8 27B (PS5LM, llama.cpp port)" — matches naming the MODEL's version.
+    The ONE claim reader refuses them in the scan exactly as in the fill (rule 6d);
+    a genuine build phrase still lands in the ingest class."""
+    glm = model("glm-5.3-flash", params="5B", engines=[{
+        "engine": "MLX", "tps": "60", "hardware": "M4 Max 128GB",
+        "quant": "RED-SNOW-5.3-FLASH-MLX-4bit",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/703"}])
+    qwen = model("qwen3.8-27b-ps5lm-native", params="27B", engines=[{
+        "engine": "llama.cpp", "tps": "30", "hardware": "PS5",
+        "quant": "2-bit Qwen 3.8 27B (PS5LM, llama.cpp port)",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/704"}])
+    real = model("swift-model-real", params="27B", backends=["Metal"],
+                 supported_engines=["MLX"], engines=[{
+                     "engine": "MLX", "tps": "12", "hardware": "M4 Max 128GB",
+                     "quant": "MLX 4-bit Swift 1.5 adapter (token-count cut)",
+                     "date": "2026-11-14", "source_post":
+                         "https://lightbrd.com/u/status/705"}])
+    with tempfile.TemporaryDirectory() as td:
+        contract = contract_from(td, "id")
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "metal-20261114.json").write_text(json.dumps({
+            "backend": "metal", "models": [glm, qwen, real]}))
+        report = G.analyse(store_with([glm, qwen, real]), contract, raw_dir=raw)
+        prose = prose_ids(report, "engine_min_version")
+        captured = (report.get("captured_prose") or {}).get("engine_min_version", [])
+        check("#1025: glm-5.3-flash model-version collision is not a build claim",
+              "glm-5.3-flash" not in prose and "glm-5.3-flash" not in captured,
+              f"prose={prose} captured={captured}")
+        check("#1025: qwen3.8 PS5LM model-version collision is not a build claim",
+              "qwen3.8-27b-ps5lm-native" not in prose,
+              f"prose={prose} captured={captured}")
+        check("#1025: a real build phrase still lands in the ingest class",
+              "swift-model-real" in prose, f"prose={prose} captured={captured}")
+
+
 def main() -> int:
     print("data-gap analysis: unit tests")
     test_contract_gap_vs_stored_dimension()
@@ -2639,6 +2719,8 @@ def main() -> int:
     test_declared_estimates_surface_as_a_reaskable_class()
     test_context_tokens_ingest_traceable_rows_carry_the_post_state()
     test_the_declared_estimate_detector_is_one_detector()
+    test_a_layer_offload_or_file_size_is_not_a_storage_requirement()
+    test_a_model_version_is_not_an_engine_build_claim()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

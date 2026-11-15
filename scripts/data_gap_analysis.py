@@ -121,10 +121,16 @@ _CTX_TEXT = re.compile(
 # paged to disk — so a hyphenated compound (`single-stream`, `multi-stream`,
 # `stream-decode`) is refused as evidence (#456's class again, measured on a refresh
 # reading `oMLX (SSD caching), single-stream decode` back as a storage requirement).
-_STORAGE_MEDIUM = r"(?:ssd|nvme|flash[- ]?(?:storage|memory|drive)|disk|hdd|storage)"
+# Weight-file size and GPU-layer offload are not storage streaming either (issue #1019):
+# "Unsloth IQ4_XS (~14.6GB on disk), 25 layers offloaded" states a FILE SIZE on disk and a
+# LAYER-COUNT offload — `_STORAGE_MEDIUM` refuses `disk` when a `[GKMT]B on ` size sits right
+# before it, and the offload word is refused when `layer`/`layers ` sits right before it.
+_STORAGE_MEDIUM = (r"(?:ssd|nvme|flash[- ]?(?:storage|memory|drive)"
+                   r"|(?<!GB on )(?<!MB on )(?<!TB on )(?<!KB on )disk|hdd|storage)")
+_STORAGE_OFFLOAD = r"(?:(?<!layer )(?<!layers )offload\w*)"
 _STORAGE_TEXT = re.compile(
-    rf"\b(?:offload\w*|(?<!-)stream\w*|expert\w*|mmap\w*)\b[^.\n]{{0,32}}\b{_STORAGE_MEDIUM}\b"
-    rf"|\b{_STORAGE_MEDIUM}\b[^.\n]{{0,32}}\b(?:offload\w*|(?<!-)stream\w*|expert\w*|mmap\w*)\b",
+    rf"\b(?:{_STORAGE_OFFLOAD}|(?<!-)stream\w*|expert\w*|mmap\w*)\b[^.\n]{{0,32}}\b{_STORAGE_MEDIUM}\b"
+    rf"|\b{_STORAGE_MEDIUM}\b[^.\n]{{0,32}}\b(?:{_STORAGE_OFFLOAD}|(?<!-)stream\w*|expert\w*|mmap\w*)\b",
     re.I)
 
 #: Engines that stream experts from storage, so a model measured on one HAS a storage story.
@@ -149,8 +155,15 @@ _STREAMING_ENGINES = ("strata",)
 # measured 306.9 tokens/s`) still does — the lookahead only bites when the very next word is a
 # rate.
 _TPUT_RATE = r"(?:tokens?|tok)\s*/\s*s\b|\btps\b"
-# a build version must not be immediately followed by a throughput unit
-_BUILD_VERSION = rf"\d+\.\d+(?:\.\d+)?(?!\s*{_TPUT_RATE})"
+# a version immediately followed by a quant bit-width is a QUANT, not a build (#1025):
+# "MLX weights (~7GB), 1.72 bits/weight" states bits/weight, no engine build.
+_BIT_WIDTH = r"bits?\b|bpw\b"
+# a build version must not be immediately followed by a throughput unit or a bit-width,
+# and the version must be DIGIT-COMPLETE (#1025: `\d+\.\d+` alone matched "1.7" inside
+# "1.72 bits/weight" — the lookahead then saw "2 bits" and passed, refueling the exact
+# collision this guard exists to refuse): `(?!\d)` forces the token to end where a real
+# version ends, so every backtracking prefix of "1.72" is refused too.
+_BUILD_VERSION = rf"\d+\.\d+(?:\.\d+)?(?!\d)(?!\s*(?:{_TPUT_RATE}|{_BIT_WIDTH}))"
 _ENGINE_BUILD_NAMES = (r"llama\.cpp|llama-cpp|llamacpp|ollama|vllm|sglang|exllam\w*|"
                        r"koboldcpp|lmdeploy|mlx|tgi|ctranslate2|llama\.rb|cuda")
 _ENGINE_MIN_TEXT = re.compile(
@@ -168,6 +181,48 @@ _ENGINE_MIN_TEXT = re.compile(
     r"|\b(?:kv[- ]?cache|cache[- ]?type)\b[^.\n]{0,16}\bq[45][0-9_]*\b"
     r"|\bnative\b[^.\n]{0,16}\bdraft\b|\bdraft\b[^.\n]{0,16}\bnative\b",
     re.I)
+
+
+def _model_own_versions(model: dict) -> set[str]:
+    """The version tokens the model's OWN id/name/full_name spell (issue #1025):
+    `glm-5.3-flash` → {"5.3"}, `qwen3.8-27b-ps5lm-native` → {"3.8"}. A match whose only
+    version is one of these is the model's NAME restated, not an engine build."""
+    text = f"{model.get('id') or ''} {model.get('name') or ''} {model.get('full_name') or ''}"
+    return set(re.findall(r"\d+\.\d+(?:\.\d+)?", text))
+
+
+def engine_min_claim(model: dict, text: str) -> re.Match | None:
+    """The ONE engine-build claim reader (issue #1025).
+
+    `fill_engine_min_version` and the gap scan both go through this so the detector stays
+    ONE implementation (rule 6d). A build-phrase match whose version tokens are ALL the
+    model's own version tokens is a model-version collision — "RED-SNOW-5.3-FLASH-MLX"
+    on `glm-5.3-flash`, "2-bit Qwen 3.8 27B (PS5LM, llama.cpp port)" on
+    `qwen3.8-27b-ps5lm-native` — and is refused; a later genuine build phrase in the same
+    text still claims. Structuring such a match would store a model version as an engine
+    build (rule 2 fabrication, the #998/#1006 class)."""
+    own: set[str] | None = None
+    for hit in _ENGINE_MIN_TEXT.finditer(text):
+        versions = re.findall(r"\d+\.\d+(?:\.\d+)?", hit.group(0))
+        if versions:
+            if own is None:
+                own = _model_own_versions(model)
+            if all(v in own for v in versions):
+                continue
+        return hit
+    return None
+
+
+def dim_claim(dim: dict):
+    """The ONE claim reader for a dimension (issue #1025, rule 6d): the dimension's
+    `claim` wrapper when it declares one, else the raw detector's search. `analyse()`
+    and every consumer that RE-CHECKS a classification — e.g. the real-store guard in
+    tests/test_data_gap_analysis.py — share this one reader, so a narrowed claim can
+    never read as a contradiction on one side and a gap on the other."""
+    claim = dim.get("claim")
+    if claim:
+        return claim
+    return lambda m, t: dim["text"].search(t)
 
 
 def _params_b(model: dict) -> float | None:
@@ -254,6 +309,8 @@ DIMENSIONS = (
         "key": "engine_min_version",
         "label": "engine minimum version / required flags",
         "text": _ENGINE_MIN_TEXT,  # flags AND the build phrasings posts use (#214)
+        # The claim reader (#1025): a model-version collision never claims.
+        "claim": engine_min_claim,
         "why": "many figures only reproduce on a specific engine build or with explicit flags",
     },
 )
@@ -700,6 +757,9 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
         applies = dim.get("applies") or _applies_always
         applicable = [m for m in models if applies(m)]
         not_applicable[key] = [m.get("id", "?") for m in models if m not in applicable]
+        # Dimensions may narrow the claim with a reader (#1025); `dim_claim` is the ONE
+        # reader so the scan and any re-check share it.
+        reader = dim_claim(dim)
         ids = [m.get("id", "?") for m in applicable if not _stated(m, key)]
         missing[key] = ids
         text_models = []
@@ -711,12 +771,12 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
                 continue
             mid = m.get("id", "?")
             # The model's OWN prose (the store side, unchanged) …
-            own = any(dim["text"].search(t) for t in _dim_texts(m, dim))
+            own = any(reader(m, t) for t in _dim_texts(m, dim))
             # … and the CAPTURED post's prose, which the store may have pruned — the same
             # rule, over the text the search actually recorded. Computed once, because the
             # PAIR decides the class: a sentence a captured post states is an INGEST job,
             # a sentence only the store states is UNTRACEABLE (issue #470).
-            post = any(dim["text"].search(t) for t in captured_dim_texts(capture, mid, dim))
+            post = any(reader(m, t) for t in captured_dim_texts(capture, mid, dim))
             if own and post:
                 text_models.append(mid)
             elif post:
