@@ -1363,6 +1363,15 @@ def issue_body(report: dict, previous: dict | None, entries: list[str] | None = 
     # `starved_leg` entry no longer re-claims the persistent dimensions already tracked.
     body += [""] + [marker(entry_id(e)) for e in entries]
     title = (f"data-gap: {ranked[0][0]} ({ranked[0][1]} models)" if ranked else "data-gap: refresh analysis")
+<<<<<<< HEAD
+=======
+    # (issue #1002) the returned body MUST end with a trailing newline: the
+    # dedup marker is the body's FINAL line, and a fake-gh `issue create` stub
+    # that reads line-by-line (`while read`) drops the last marker line unless
+    # the body terminates with a newline. This renderer and those stubs are
+    # coupled by that contract — the append below and the stub comments pin it
+    # so a change to either side alone cannot silently remake a re-file risk.
+>>>>>>> 8818b8b (feat(data-gap): implement #1002 from the post-refresh gap analysis)
     return "\n".join(body) + "\n", title
 
 

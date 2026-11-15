@@ -1309,6 +1309,12 @@ case "$1 $2" in
       printf '[]\\n'
     fi ;;
   "issue create")
+    # Contract with scripts/data_gap_analysis.py::issue_body (issue #1002):
+    # the body it emits ENDS with a trailing newline, and the final line is the
+    # invisible dedup marker. This stub reads it via $(cat)+sed; a line-by-line
+    # consumer must not assume it terminates — keep the product's trailing
+    # newline and keep this consumption newline-complete, or the last marker is
+    # silently dropped (the #996 re-file class).
     body=$(cat)
     # One issue carries ONE marker PER signature entry it claims (issue #996): record every
     # marker line in the body, all mapped to the SAME issue number, so a per-entry search
@@ -1517,6 +1523,12 @@ case "$1 $2" in
       printf '[]\\n'
     fi ;;
   "issue create")
+    # Contract with scripts/data_gap_analysis.py::issue_body (issue #1002):
+    # the body it emits ENDS with a trailing newline, and the final line is the
+    # invisible dedup marker. This stub reads it via $(cat)+sed; a line-by-line
+    # consumer must not assume it terminates — keep the product's trailing
+    # newline and keep this consumption newline-complete, or the last marker is
+    # silently dropped (the #996 re-file class).
     body=$(cat)
     # One issue carries ONE marker PER signature entry it claims (issue #996): record every
     # marker line in the body, all under the SAME issue number, so a per-entry `issue list`
@@ -2662,6 +2674,51 @@ def test_a_model_version_is_not_an_engine_build_claim():
         check("#1025: a real build phrase still lands in the ingest class",
               "swift-model-real" in prose, f"prose={prose} captured={captured}")
 
+def test_the_gap_issue_body_ends_with_a_newline():
+    """Issue #1002: the body the data-gap filer emits MUST end with a trailing
+    newline, because its FINAL line is the invisible dedup marker and a fake-gh
+    `issue create` stub reading line-by-line drops the last marker line unless
+    the body terminates. The product renderer (`issue_body`) and the stubs
+    (`_GH_STUB`, `_GH_STUB_LABELS`) are coupled by that contract — this shared
+    assertion makes it explicit so a change to either side alone turns red.
+
+    The invocation below walks the REAL `file_issue` → stub path: the marker
+    must survive into the recorded store line, not just lie in the returned
+    string."""
+    store = G._load_flat_store()
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    body, _ = G.issue_body(report, None)
+
+    # The renderer contract: the body terminates with \n after the marker line.
+    check("the issue body ends with a trailing newline", body.endswith("\n"),
+          repr(body[-30:]))
+    marker_line = next((l for l in body.splitlines()
+                        if l.lstrip().startswith("<!-- data-gap-signature:")), None)
+    check("the marker is the final, complete line",
+          marker_line is not None and body.rstrip().endswith(marker_line.strip()),
+          (marker_line or "").strip() or "<no marker>")
+
+    # The stub contract: feeding exactly the emitted body to the fake `gh`
+    # `issue create` records the signature — the marker is NOT dropped.
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        stub = td / "gh"
+        stub.write_text(_GH_STUB)
+        stub.chmod(0o755)
+        storefile = td / "issues.txt"
+        storefile.write_text("")
+        env = {**os.environ, "PATH": f"{td}{os.pathsep}{os.environ['PATH']}",
+               "FAKE_GH_STORE": str(storefile)}
+        out = subprocess.run(["sh", "-c", "gh issue create"],
+                             input=body, text=True, capture_output=True, env=env)
+        line = storefile.read_text().strip()
+        stored_sig = line.split("|")[0] if line else ""
+        expected = ((marker_line or "").strip().split(":")
+                    [-1].strip(" -->")) if marker_line else ""
+        check("the stub records the final marker (not dropped)",
+              out.returncode == 0 and bool(expected) and stored_sig == expected,
+              f"stored={stored_sig!r} expected={expected!r} rc={out.returncode}")
+
 
 def main() -> int:
     print("data-gap analysis: unit tests")
@@ -2721,6 +2778,7 @@ def main() -> int:
     test_the_declared_estimate_detector_is_one_detector()
     test_a_layer_offload_or_file_size_is_not_a_storage_requirement()
     test_a_model_version_is_not_an_engine_build_claim()
+    test_the_gap_issue_body_ends_with_a_newline()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
