@@ -31,7 +31,10 @@ with the reason — loudly, never silently — and the issue body then says the 
 rather than guessing at a cause. UNDIAGNOSED is not terminal: every sweep RE-READS the log of each
 still-undiagnosed row and raises it append-only (issue #969) — a row filed before a reader defect
 was fixed (the #923 class: 14 rows needed a manual change each) repairs itself on the next
-scheduled run. This script never fixes anything and never merges anything
+scheduled run — but a still-UNREADABLE row is bounded (issue #986): after MAX_REDIAGNOSE_ATTEMPTS
+(3) still-unreadable sweeps it is stamped TERMINAL `log_expired` (loud, once, and excluded from the
+pending set) so a run whose log aged out of Actions retention drains the queue instead of printing
+retry noise for ever. This script never fixes anything and never merges anything
 (rule 6g: analysis files, a separate reviewed change fixes).
 
 Exit: 0 report-only (filing IS the action); 2 when the pipeline state itself could not be read
@@ -79,6 +82,10 @@ BAD_CONCLUSIONS = ("failure", "cancelled")
 #: Bounded extraction (the issue must carry a diagnosis, not a log dump).
 MAX_LOG_TAIL_BYTES = 60_000
 MAX_ERROR_LINES = 40
+
+#: A still-failing re-read is bounded (issue #986): after this many consecutive still-failing
+#: re-reads a row is stamped TERMINAL `log_expired` (loud, once) and the pending queue drains.
+MAX_REDIAGNOSE_ATTEMPTS = 3
 
 _ERROR_SHAPES = (
     "##[error]", "make: ***", "FAIL: ", "FAIL ", "FAILED", "Traceback (most recent call last)",
@@ -385,6 +392,35 @@ def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[
 # the re-diagnosis pass (issue #969): UNDIAGNOSED is not terminal
 # ---------------------------------------------------------------------------
 
+def _still_unreadable(entry: dict, rid: int, ledger: dict, ledger_path: Path, dry: bool,
+                      now: dt.datetime, message: str) -> list[str]:
+    """One still-unreadable re-read (issue #986): GROW the append-only attempt counter and, at the
+    bound, stamp TERMINAL `log_expired` (loud, once). Persists the counter every sweep so it
+    accumulates across weekly sweeps (rule 3b: growth only, `undiagnosed` KEPT, nothing removed).
+
+    The two branches this guards are the retention symptom — GitHub purges run logs after the
+    retention window, so `jobs unreadable again` / `log still unreadable` can never heal and must
+    drain the pending queue instead of printing retry noise for ever. `requested` attempts must be
+    written; `--dry` previews without writing.
+    """
+    entry["rediagnose_attempts"] = int(entry.get("rediagnose_attempts") or 0) + 1
+    out = [f"rediagnose run {rid}: {message}"]
+    if entry["rediagnose_attempts"] >= MAX_REDIAGNOSE_ATTEMPTS:
+        entry["log_expired"] = message
+        entry["log_expired_utc"] = now.isoformat()
+        if dry:
+            out.append(f"WOULD EXPIRE run {rid}: {message} — a {MAX_REDIAGNOSE_ATTEMPTS}th "
+                       "still-unreadable sweep would stamp TERMINAL log_expired and drain the "
+                       "pending queue (issue #986)")
+        else:
+            out.append(f"LOG EXPIRED run {rid}: {message} — after {MAX_REDIAGNOSE_ATTEMPTS} "
+                       "still-unreadable sweeps the run's log aged out of Actions retention and can "
+                       "never be diagnosed; the pending queue drains here (issue #986)")
+    if not dry:
+        ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    return out
+
+
 def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool,
                            now: dt.datetime) -> list[str]:
     """Re-read the log of every still-UNDIAGNOSED ledger row and raise it APPEND-ONLY.
@@ -396,20 +432,28 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
     escape-tolerant reader, and raises the row: keys ADDED (`rediagnosed_utc`, scrubbed
     `error_excerpt`, `rediagnosis_note`), `targets` GROWN only — no key removed, no value
     shrunk, the `undiagnosed` field KEPT (rule 3b). `fix_pr`/`guard` are untouched: attribution
-    stays each fix's own decision (rule 6r). A log still unreadable is reported loudly and the
-    row stays eligible for the next sweep; a readable log with no error-shaped line never marks
-    the row done.
+    stays each fix's own decision (rule 6r). A readable log with no error-shaped line never
+    marks the row done.
+
+    A RE-READ THAT CANNOT READ THE RUN (issue #986) is bounded: each still-unreadable sweep (jobs
+    unreadable again / log still unreadable — the retention symptom) GROWS the row's
+    `rediagnose_attempts`, and after MAX_REDIAGNOSE_ATTEMPTS a TERMINAL `log_expired` state is
+    stamped (loud, once) instead of retrying for ever. The row is then EXCLUDED from the pending
+    set by `log_expired`, so the queue drains. The two structural branches (no failed job, a
+    readable log with no error line) stay reported-and-retried per #969, not expired.
     """
     lines: list[str] = []
     pending = [e for e in ledger["failures"]
-               if e.get("undiagnosed") and not e.get("rediagnosed_utc")]
+               if e.get("undiagnosed") and not e.get("rediagnosed_utc")
+               and not e.get("log_expired")]
     for entry in pending:
         rid = int(entry.get("run_id", 0))
         job_name = entry.get("job")
         try:
             jobs = failed_jobs(repo, rid)
         except RuntimeError as exc:
-            lines.append(f"rediagnose run {rid}: jobs unreadable again: {exc}")
+            lines.extend(_still_unreadable(entry, rid, ledger, ledger_path, dry, now,
+                                           f"jobs unreadable again: {exc}"))
             continue
         match = next((j for j in jobs if job_name is None or j.get("name") == job_name), None)
         if match is None:
@@ -419,7 +463,8 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
         try:
             block = extract_error_block(fetch_log(repo, match["databaseId"]))
         except RuntimeError as exc:
-            lines.append(f"rediagnose run {rid}: log still unreadable: {exc}")
+            lines.extend(_still_unreadable(entry, rid, ledger, ledger_path, dry, now,
+                                           f"log still unreadable: {exc}"))
             continue
         if not block:
             lines.append(f"rediagnose run {rid}: log readable but names no error-shaped line "

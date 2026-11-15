@@ -553,23 +553,86 @@ def test_a_still_unreadable_log_leaves_the_row_undiagnosed_and_retries_next_swee
         check("the refusal is LOUD on the line", "rediagnose run 100: log still unreadable"
               in proc.stdout, proc.stdout)
         data = json.loads(ledger.read_text())
-        row = data["failures"][0]
+        row = {e["run_id"]: e for e in data["failures"]}[100]
         check("the row gains NO rediagnosed_utc — it stays pending",
               "rediagnosed_utc" not in row, str(row)[:300])
-        check("the ledger file is byte-identical (nothing half-written)",
-              ledger.read_text() == before, "")
+        check("the row stays eligible — no log_expired yet (issue #986)",
+              "log_expired" not in row, str(row)[:300])
+        check("the row records the FIRST append-only still-unreadable attempt (issue #986)",
+              row.get("rediagnose_attempts") == 1, str(row)[:300])
+        check("the ledger file gained only the attempt counter (rule 3b additive, nothing removed)",
+              ledger.read_text() != before and "rediagnose_attempts" in ledger.read_text(), "")
     # A row naming a job the run's job list no longer has is reported, not guessed at.
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         env = make_scene(tmp, BASE_CANNED)
         ghost = dict(UNDIAG_ROW)
         ghost["job"] = "no-such-job"
-        ledger = _seed_ledger(tmp, [ghost])
+        # Seed run 104 as marker-matched so the schedule run is not filed or re-diagnosed by the
+        # sweep — only the ghost's own row is under test.
+        ledger = _seed_ledger(tmp, [ghost, dict(MARKER_MATCHED_ROW)])
+        before2 = ledger.read_text()
         proc = run_filer(env, ledger)
         check("a job-name mismatch is named, and the row stays UNDIAGNOSED",
               proc.returncode == 0 and "no failed job 'no-such-job'" in proc.stdout
               and "rediagnosed_utc" not in json.loads(ledger.read_text())["failures"][0],
               proc.stdout)
+        check("a structural (non-retention) mismatch does not grow the attempt counter (issue #986)",
+              "rediagnose_attempts" not in json.loads(ledger.read_text())["failures"][0]
+              and ledger.read_text() == before2, proc.stdout)
+
+
+def test_a_run_that_ages_out_stamps_log_expired_and_drains_the_queue() -> None:
+    print("\nlog expired (issue #986): a run that ages out of retention is stamped TERMINAL, once")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["log-fail"] = ""
+        env = make_scene(tmp, canned)
+        # Give the row MAX-1 failed attempts already: this sweep is the bounded last one.
+        aged = dict(UNDIAG_ROW)
+        aged["rediagnose_attempts"] = F.MAX_REDIAGNOSE_ATTEMPTS - 1
+        # Seed run 104 as marker-matched so the schedule run is not filed/rediagnosed by the sweep
+        # — only run 100's aged row is under test.
+        ledger = _seed_ledger(tmp, [aged, dict(MARKER_MATCHED_ROW)])
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the terminal stamp is LOUD", "LOG EXPIRED run 100" in proc.stdout, proc.stdout)
+        data = json.loads(ledger.read_text())
+        row = {e["run_id"]: e for e in data["failures"]}[100]
+        check("the row carries the TERMINAL log_expired state with its reason",
+              row.get("log_expired") and "log still unreadable" in row["log_expired"],
+              str(row)[:300])
+        check("the counter reached the bound", row.get("rediagnose_attempts") == F.MAX_REDIAGNOSE_ATTEMPTS,
+              str(row)[:300])
+        check("the original undiagnosed field is KEPT (rule 3b additive)",
+              row.get("undiagnosed") == UNDIAG_ROW["undiagnosed"], str(row)[:300])
+        # Re-sweep: the row is now EXCLUDED from pending, so the queue drains — no re-read, no line.
+        data2 = json.loads(ledger.read_text())
+        before = json.dumps(data2)
+        second = run_filer(env, ledger)
+        check("a re-sweep no longer touches the drained row (no re-read, no line)",
+              second.returncode == 0 and "rediagnose run 100" not in second.stdout
+              and json.loads(ledger.read_text()) == data2 and json.dumps(json.loads(ledger.read_text())) == before,
+              second.stdout)
+
+
+def test_log_expired_dry_mode_previews_the_stamp_and_writes_nothing() -> None:
+    print("\nlog expired dry: --dry previews WOULD EXPIRE without writing the ledger (issue #986)")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["log-fail"] = ""
+        env = make_scene(tmp, canned)
+        aged = dict(UNDIAG_ROW)
+        aged["rediagnose_attempts"] = F.MAX_REDIAGNOSE_ATTEMPTS - 1
+        ledger = _seed_ledger(tmp, [aged])
+        before = ledger.read_text()
+        proc = run_filer(env, ledger, "--dry")
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("dry prints the WOULD EXPIRE preview",
+              "WOULD EXPIRE run 100" in proc.stdout, proc.stdout)
+        check("dry writes NOTHING to the ledger", ledger.read_text() == before, "")
 
 
 def test_a_rediagnosed_row_is_never_re_fetched_and_dry_previews_without_writing() -> None:
@@ -605,6 +668,8 @@ def main() -> int:
     test_undiagnosed_filing_is_loud_never_a_skip()
     test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log()
     test_a_still_unreadable_log_leaves_the_row_undiagnosed_and_retries_next_sweep()
+    test_a_run_that_ages_out_stamps_log_expired_and_drains_the_queue()
+    test_log_expired_dry_mode_previews_the_stamp_and_writes_nothing()
     test_a_rediagnosed_row_is_never_re_fetched_and_dry_previews_without_writing()
     test_an_escape_refused_log_is_diagnosed_on_the_flag_retry()
     test_strip_terminal_escapes_leaves_plain_text_intact()
