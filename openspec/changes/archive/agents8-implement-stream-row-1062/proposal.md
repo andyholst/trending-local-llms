@@ -1,6 +1,7 @@
 # Proposal: agents8-implement-stream-row-1062
 
 Issue: #1062
+PR: #1065
 
 ## Why
 
