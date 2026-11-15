@@ -1,6 +1,7 @@
 # Proposal: agents8-per-entry-dedup-row
 
 Issue: #1001
+PR: #1013
 
 ## Why
 
