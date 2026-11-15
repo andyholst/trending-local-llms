@@ -1,6 +1,7 @@
 # Keeper: raise the pipeline-failure ledger row for run 43110467252 (Issue: #833)
 
 Issue: #833
+PR: #1067
 Binding-exempt: keeper — a data raise observed by the master-alarm red run 43761917321; this change implements no open issue and closes none.
 
 ## Why
