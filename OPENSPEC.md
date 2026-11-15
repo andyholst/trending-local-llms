@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **311**
+Active changes: **2** · archived: **312**
 
 ## Active changes
 
@@ -81,6 +81,7 @@ Active changes: **2** · archived: **311**
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
 | `agent-shell-keys` | archived | #359 | — | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-shell-keys/proposal.md) |
 | `agent-shell-keys-loud-skip-946` | archived | #946 | #948 | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys-loud-skip-946/specs/bot-agent-run-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-shell-keys-loud-skip-946/proposal.md) |
+| `agent-work-host-only` | archived | #1055 | #1056 | [fleet-cadence](openspec/changes/archive/agent-work-host-only/specs/fleet-cadence/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/archive/agent-work-host-only/proposal.md) |
 | `agents-md-blocked-box-rule` | archived | #635 | #849 | [rulebook](openspec/changes/archive/agents-md-blocked-box-rule/specs/rulebook/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/agents-md-blocked-box-rule/proposal.md) |
 | `agents-md-footprint-dimensions` | archived | #375 | — | [agents-rulebook](openspec/changes/archive/agents-md-footprint-dimensions/specs/agents-rulebook/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agents-md-footprint-dimensions/proposal.md) |
 | `agents-md-rule-6h-boundary` | archived | #512 | — | [agents-rulebook](openspec/changes/archive/agents-md-rule-6h-boundary/specs/agents-rulebook/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/agents-md-rule-6h-boundary/proposal.md) |
