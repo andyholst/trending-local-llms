@@ -1597,8 +1597,14 @@ def test_every_job_prepares_the_images_it_uses():
             if not isinstance(body, dict):
                 continue
             runs = [s.get("run", "") for s in (body.get("steps") or []) if isinstance(s, dict)]
-            used = {t for r in runs for t in test_targets
-                    if re.search(rf"(?m)(^|\s)make\s+{re.escape(t)}\b", r)}
+            # A target token ends at ANY non-target character — including the hyphen.
+            # `review-issue\b` matches inside `make review-issue-guard` (word boundary
+            # before the hyphen), which falsely charged the host-side `pick` job for
+            # running the TEST_RUN `review-issue` (issue #833's move to TEST_RUN made
+            # this visible). The measured #145 shape (`make data-gaps` bare) still matches.
+            def make_call(target: str) -> "re.Pattern[str]":
+                return re.compile(rf"(?m)(^|\s)make\s+{re.escape(target)}(?![a-z0-9_-])")
+            used = {t for r in runs for t in test_targets if make_call(t).search(r)}
             if not used:
                 continue
             prep = "\n".join(runs)
@@ -1610,6 +1616,14 @@ def test_every_job_prepares_the_images_it_uses():
                     and not re.search(r"make image-ensure-test\b", prep):
                 problems.append(f"{wf.name}:{job} runs {sorted(used)} without preparing the test image")
     check("ci: every job prepares the test image it uses", not problems, problems)
+
+    # The hyphen collision itself is pinned (the #833 false positive): a hyphen-suffixed
+    # target is NOT a call to the base target, and the measured #145 shape still is.
+    probe = re.compile(r"(?m)(^|\s)make\s+review-issue(?![a-z0-9_-])")
+    check("matcher: `make review-issue-guard` is not a call to `review-issue`",
+          probe.search("run: make review-issue-guard ISSUE=1 PATH=body") is None, "")
+    check("matcher: `make review-issue` bare IS a call (the #145 shape survives)",
+          probe.search("run: |2\n    make review-issue\n    next") is not None, "")
 
     # …and the refresh aggregate job (the measured failure) prepares both
     rb = (WF / "refresh-bot.yml").read_text()

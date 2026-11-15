@@ -1,6 +1,7 @@
 # Agent legs that self-verify run in the TEST image, not the base (issue #833)
 
 **Issue:** [#833](https://github.com/andyholst/trending-local-llms/issues/833)
+PR: #1057
 **Capability:** `agent-leg-runs-in-test-image`
 
 ## Why

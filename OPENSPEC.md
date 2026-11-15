@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **315**
+Active changes: **2** · archived: **316**
 
 ## Active changes
 
@@ -78,6 +78,7 @@ Active changes: **2** · archived: **315**
 | `agent-identity-one-definition` | archived | #325 — `tech-debt: The agent identity is a literal repeated in every committing workflow` | — | [agent-identity](openspec/changes/archive/agent-identity-one-definition/specs/agent-identity/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-identity-one-definition/proposal.md) |
 | `agent-image-publish` | archived | #206 | — | [agent-image-publish](openspec/changes/archive/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-image-publish/proposal.md) |
 | `agent-install-seam` | archived | #207 | — | [agent-image](openspec/changes/archive/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/agent-install-seam/proposal.md) |
+| `agent-leg-runs-in-test-image` | archived | #833 | #1057 | [agent-leg-runs-in-test-image](openspec/changes/archive/agent-leg-runs-in-test-image/specs/agent-leg-runs-in-test-image/spec.md) | 14/15 · 1 blocked | [proposal.md](openspec/changes/archive/agent-leg-runs-in-test-image/proposal.md) |
 | `agent-openspec-and-debt-issues` | archived | #172 | #173 | [analysis-findings-issues](openspec/changes/archive/agent-openspec-and-debt-issues/specs/analysis-findings-issues/spec.md)<br>[spec-change-tracking](openspec/changes/archive/agent-openspec-and-debt-issues/specs/spec-change-tracking/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/agent-openspec-and-debt-issues/proposal.md) |
 | `agent-shell-keys` | archived | #359 | — | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-shell-keys/proposal.md) |
 | `agent-shell-keys-loud-skip-946` | archived | #946 | #948 | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys-loud-skip-946/specs/bot-agent-run-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-shell-keys-loud-skip-946/proposal.md) |
