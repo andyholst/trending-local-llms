@@ -1,6 +1,7 @@
 # Proposal: data-gap-issue-dedup-per-entry
 
 Issue: #996 — "The data-gap filer's signature is a whole-SET hash, so one volatile
+PR: #1000
 `starved_leg` entry re-files the entire persistent gap set — three identical
 `context_tokens` issues in five hours".
 
