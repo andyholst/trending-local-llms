@@ -23,6 +23,14 @@
 # shown and the summary names all of them), 2 = usage.
 set -uo pipefail
 
+# (issue #839) The suite must not litter the checkout with bytecode copies of its
+# credential fixtures: `tests/__pycache__/*.pyc` embed the planted FAKE secrets of
+# the secret-scan tests, and every filesystem walker over the checkout (secret-scan
+# today, any byte-level gate tomorrow) re-reads them — the exact false-leak source
+# issue #836 filed. One export here covers every caller: the container `_test`
+# recipe, the host, and direct `scripts/run_tests.sh` invocations.
+export PYTHONDONTWRITEBYTECODE=1
+
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dir="$here/../tests"
