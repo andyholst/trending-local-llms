@@ -1,6 +1,7 @@
 # Ledger raise: recording the completing PR stamps the pipeline-failure row (Issue: #1068)
 
 Issue: #1068
+PR: #1069
 
 ## Why
 
