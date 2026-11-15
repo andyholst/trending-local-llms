@@ -165,8 +165,10 @@ def test_the_sweep_is_wired_to_a_target_a_workflow_and_a_guard():
     check("silent: the workflow calls it through the Makefile", "make pr-health" in wf, "")
     check("silent: the guard is the FIRST job (rule 6j)",
           wf.index("guard:") < wf.index("sweep:"), wf[:400])
-    check("silent: it is a scheduled sweep with the bypass",
-          "schedule" in wf and "workflow_dispatch" in wf, "")
+    # (issue #1029) pr-health is DISPATCH-ONLY: no `schedule:` trigger — but its guard
+    # script still admits a schedule event (the bypass text stays).
+    check("silent: dispatch-only sweep (no schedule: trigger, #1029) with the bypass intact",
+          "\n  schedule:\n" not in wf and '"schedule"' in wf and "workflow_dispatch" in wf, wf[:300])
     # A PR comment needs `pull-requests: write`, and the comment uses the DEFAULT token
     # (rule 6b): the owner PAT has no PR scope, so a refused comment would leave the sweep
     # green over a silent PR.

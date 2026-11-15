@@ -14,8 +14,10 @@
 name: code-review-bot
 
 on:
-  schedule:
-    - cron: "7 6 * * 3"   # Wednesday 06:07 UTC — its own slot, no other bot's minute (issue #238)
+  # Cadence (owner directive 2026-11-15, issue #1029): this pipeline carries NO cron.
+  # Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs
+  # on its own events and on owner/collaborator/bot workflow_dispatch; re-adding a
+  # `schedule:` block here turns tests/test_workflows.py red on purpose.
   workflow_dispatch:
     inputs:
       dry:

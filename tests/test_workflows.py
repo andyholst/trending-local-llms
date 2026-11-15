@@ -253,7 +253,18 @@ def test_qa_validate():
     live = run_text(jobs.get("live-smoke", {}))
     for b in SEARCH_LEGS:
         check(f"qa: live search smoke for {b}", f"BACKEND={b}" in live, "")
-    check("qa: live hermes routing smoke", "make hermes-smoke" in live, "")
+    # (owner directive 2026-11-15, issue #1029) the main CI pipeline runs TESTS ONLY:
+    # `make hermes-smoke` was REMOVED from live-smoke — no real model call gates a merge.
+    check("qa: NO hermes-smoke step (no LLM call in main CI, #1029)",
+          "hermes-smoke" not in live, live[-160:])
+    whole = "\n".join(run_text(j) for j in jobs.values())
+    # `make search-smoke` stays: it is a bounded deterministic FIRECRAWL fetch smoke,
+    # not a model call. The banned tokens are the agent/LLM entry points (rule 6p).
+    check("qa: the pipeline calls NO agent/LLM target anywhere",
+          not any(t_ in whole for t_ in ("hermes-smoke", "implement-issue", "review-issue",
+                                         "fix_loop", "make fix ", "make fix\n",
+                                         "hermes -z", "make search-nvidia", "make search-metal",
+                                         "make search-cpu", "make search-amd")), "")
     check("qa: live model-caps check", "make model-caps" in live, "")
     check("qa: live --require-hits search", "make validate-fetch" in live, "")
     # Issue #814: the fix-bot repair pipeline was RETIRED. qa-validate dispatches
@@ -882,32 +893,23 @@ def test_guard_is_before_any_secret():
                       job in _deps(jobs, name), f"needs={jobs[name].get('needs')}")
 
 
-def test_every_pipeline_runs_weekly_on_wednesday():
-    """The `weekly-cadence` directive (#670–#677): every `on.schedule` cron is on
-    Wednesday (`* * 3`), once a week; the data gatherer is allowed its second same-day slot.
-
-    A pipeline that drifts back to an hourly/daily/weekday cron turns this red, so the
-    owner's "run once a week on Wednesday" cannot rot back into the old cadence silently.
+def test_only_the_refresh_pipeline_carries_a_schedule():
+    """Cadence directive (owner 2026-11-15, issue #1029): the ONLY scheduled pipeline
+    is the data-trend gatherer — refresh-bot, weekly on Wednesday (`0 6 * * 3` plus the
+    `43 17 * * 3` backup slot). Every other pipeline is dispatch-only: no `on.schedule`
+    block at all. A pipeline that regains a cron turns this red on purpose, so the fleet
+    cannot silently rot back into scheduled LLM runs — an agent-authored issue or event
+    must never start a model pipeline by itself.
     """
     wf_dir = ROOT / ".github" / "workflows"
-    seen: list[tuple[str, list[str]]] = []
     for wf_name in sorted(p.name for p in wf_dir.glob("*.yml")):
         crons = [c.get("cron", "") for c in (load(wf_name)["on"].get("schedule") or [])]
-        if not crons:
-            continue
-        bad = [c for c in crons if not c.endswith(" * * 3")]
-        check(f"cadence: {wf_name} only schedules Wednesday", not bad, (crons, bad))
         if wf_name == "refresh-bot.yml":
             check("cadence: refresh-bot runs twice on Wednesday (06:00 + 17:43 backup)",
                   crons == ["0 6 * * 3", "43 17 * * 3"], crons)
-        elif wf_name == "issue-bot.yml":
-            # Like refresh-bot, the implementer sweep keeps its same-day backup slot.
-            check("cadence: issue-bot runs twice on Wednesday (:19 + :49 backup)",
-                  crons == ["19 * * * 3", "49 * * * 3"], crons)
         else:
-            check(f"cadence: {wf_name} runs no more than once a week", len(crons) == 1, crons)
-        seen.append((wf_name, crons))
-    check("cadence: every cron-bearing pipeline is covered", len(seen) >= 8, seen)
+            check(f"cadence: {wf_name} carries NO schedule (dispatch-only, #1029)",
+                  not crons, crons)
 
 
 def test_every_bot_guard_with_a_cron_has_the_schedule_bypass():
@@ -1216,15 +1218,18 @@ def test_issue_bot():
     trig = wf.get("on") or wf.get(True) or {}
     jobs = wf["jobs"]
 
-    check("issue-bot: triggers on issues opened", (trig.get("issues") or {}).get("types") == ["opened"], trig.get("issues"))
-    # The surface is `issues: [opened]` + the backlog sweep + owner dispatch —
+    # (owner directive 2026-11-15, issue #1029) issue-bot is DISPATCH-ONLY: an
+    # agent-authored issue must never auto-start an LLM pipeline, and no cron sweeps it.
+    check("issue-bot: NO issues:[opened] auto-start (dispatch-only, #1029)",
+          "issues" not in trig, list(trig))
+    # The surface is owner dispatch (an issue number, or empty = sweep the backlog) —
     # never a PR, a comment, a push or a workflow_run (workflow_run double-fired
     # and was suppressed before, and a PR/comment is not an issue to implement).
     check("issue-bot: no PR/comment/push/workflow_run trigger",
           not ({"pull_request", "pull_request_target", "issue_comment", "workflow_run", "push"} & set(trig)),
           list(trig))
-    check("issue-bot: its only event triggers are issues, schedule and dispatch",
-          set(trig) == {"issues", "schedule", "workflow_dispatch"}, list(trig))
+    check("issue-bot: its ONLY trigger is workflow_dispatch (no cron, no issues event)",
+          set(trig) == {"workflow_dispatch"}, list(trig))
     check("issue-bot: owner dispatch takes an issue number",
           "issue_number" in str(trig.get("workflow_dispatch", {})), trig.get("workflow_dispatch"))
 
@@ -1242,9 +1247,10 @@ def test_issue_bot():
 
     impl = jobs["implement"]
     cond = str(impl.get("if", ""))
-    check("issue-bot: reacts only to a NEWLY-created issue (action == opened)", "action == 'opened'" in cond, cond)
-    check("issue-bot: ignores an issue without the analysis label",
-          "data-gap-analysis" in cond and "labels" in cond, cond)
+    # (issue #1029) the issues:[opened] entry path is GONE: no condition may reference an
+    # issue event — the implement job runs only for a dispatch (an issue number, or a sweep).
+    check("issue-bot: NO condition references an issues event (dispatch-only, #1029)",
+          "action == 'opened'" not in cond and "labels" not in cond, cond)
     check("issue-bot: the owner may dispatch it", "workflow_dispatch" in cond, cond)
     secret_steps = [i for i, st in enumerate(steps(impl)) if "secrets." in str(st)]
     check("issue-bot: every secret-using step is AFTER the guard job (guard is a separate job)",
@@ -1324,23 +1330,17 @@ def test_issue_bot():
           resolve.get("env", {}).get("GH_TOKEN") == "${{ github.token }}", resolve.get("env"))
     check("issue-bot: the PR step still uses the owner PAT (a GITHUB_TOKEN PR is held for approval)",
           PAT in str(step(impl, "Open the PR").get("env", {}).get("GH_TOKEN", "")))
-    # Sweep the existing backlog (#127): a WEEKLY (Wednesday) run implements ONE open
-    # labelled issue that no implementer has touched yet. Weekly rather than hourly:
-    # the owner moved the whole fleet to one run a week (`weekly-cadence` #670–#677);
-    # at the retired hourly cadence a backlog of N gap issues drained in N hours and an
-    # empty sweep was a green no-op either way — the cadence is what bounded the wait.
-    sched = trig.get("schedule")
-    crons = [str(s.get("cron", "")) for s in (sched if isinstance(sched, list) else [])]
-    check("issue-bot: sweeps the backlog weekly, on Wednesday",
-          "19 * * * 3" in crons, sched)
-    check("issue-bot: the sweep never sits on the hour (GitHub delays/drops those crons)",
-          bool(crons) and all(c.split()[0] != "0" for c in crons), crons)
+    # Sweep the existing backlog (#127, dispatch-only form after #1029): the owner
+    # dispatches with an EMPTY issue number and the picker implements ONE open labelled
+    # issue no implementer has touched yet. The weekly cron was removed by the owner
+    # directive — a bot-authored issue must never start an LLM pipeline by itself.
+    check("issue-bot: no schedule trigger (dispatch-only sweep, #1029)",
+          "schedule" not in trig, list(trig))
     pick = jobs.get("pick", {})
     check("issue-bot: the picker needs the guard", "guard" in _deps(jobs, "pick"), _deps(jobs, "pick"))
     pick_if = str(pick.get("if", ""))
-    check("issue-bot: the picker runs for the cron OR a dispatch with no issue number",
-          "github.event_name == 'schedule'" in pick_if
-          and "workflow_dispatch" in pick_if and "inputs.issue_number == ''" in pick_if, pick_if)
+    check("issue-bot: the picker runs for a dispatch with no issue number",
+          "workflow_dispatch" in pick_if and "inputs.issue_number == ''" in pick_if, pick_if)
     sweep_branches = [p for p in cond.split("||") if "issue_number == ''" in p]
     check("issue-bot: the sweep branch (cron or empty dispatch) requires a picked issue",
           bool(sweep_branches) and all("needs.pick.outputs.issue != ''" in p for p in sweep_branches),
@@ -1379,7 +1379,7 @@ def test_issue_bot():
           "issue" in pick.get("outputs", {}), pick.get("outputs"))
     check("issue-bot: implement needs the picker and honours a skipped pick",
           "pick" in _deps(jobs, "implement") and "always()" in cond, cond)
-    check("issue-bot: schedule path also requires a picked issue",
+    check("issue-bot: the dispatch sweep path also requires a picked issue",
           "needs.pick.outputs.issue != ''" in cond, cond)
     job_conc = impl.get("concurrency", {})
     check("issue-bot: ONE implementer per issue across paths (job-level group keyed by the issue)",
@@ -1978,13 +1978,8 @@ def test_issue_review_bot():
 
     # Then  it reacts to the weekly (Wednesday) cron and an owner dispatch ONLY — a review
     # must not fire on every issue event (an edit or a comment is not a review).
-    check("review: trigger surface is schedule + workflow_dispatch only",
-          set(triggers) == {"schedule", "workflow_dispatch"}, list(triggers))
-    crons = [c["cron"] for c in triggers["schedule"]]
-    check("review: weekly on Wednesday and OFF the hour (GitHub drops on-the-hour crons)",
-          crons == ["41 * * * 3"], crons)
-    check("review: the offset is not the implementer's sweep",
-          "19 * * * 3" not in crons, crons)
+    check("review: trigger surface is workflow_dispatch ONLY (no cron, #1029)",
+          set(triggers) == {"workflow_dispatch"}, list(triggers))
     check("review: a re-run is owner-gated before any secret",
           "guard" in review.get("needs", []) and bool(steps(guard)), review.get("needs"))
     check("review: the guard refuses anyone but the owner / a write collaborator",
@@ -2996,7 +2991,7 @@ def main() -> int:
     test_guard_behaviour()
     test_guard_is_before_any_secret()
     test_every_bot_guard_with_a_cron_has_the_schedule_bypass()
-    test_every_pipeline_runs_weekly_on_wednesday()
+    test_only_the_refresh_pipeline_carries_a_schedule()
     test_the_guard_registry_is_derived_from_the_tree()
     test_a_repo_event_run_is_admitted_by_its_guard()
     test_a_guarded_pipeline_gates_the_jobs_that_read_secrets()

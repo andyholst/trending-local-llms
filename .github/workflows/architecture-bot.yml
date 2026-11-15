@@ -21,14 +21,10 @@ name: architecture-bot
 # hide a description the bot failed to write.
 
 on:
-  schedule:
-    # Wednesday once a week (owner cadence, issues #670–#677), at an ODD minute (issue #526):
-    # a stale OPENSPEC.md reds every `qa-validate` push run on master, so the sweep lands within
-    # the week, and the odd minute avoids the on-the-hour slots GitHub is measured to delay and
-    # drop (issue #497). The run is cheap — two generators and two checks, no model — and it
-    # opens a PR only when a file actually changed.
-    - cron: "13 * * * 3"
-
+  # Cadence (owner directive 2026-11-15, issue #1029): this pipeline carries NO cron.
+  # Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs
+  # on its own events and on owner/collaborator/bot workflow_dispatch; re-adding a
+  # `schedule:` block here turns tests/test_workflows.py red on purpose.
   workflow_dispatch:
 
 permissions:

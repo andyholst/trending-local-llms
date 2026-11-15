@@ -5,11 +5,12 @@ These tests drive the REAL decision (`sweep_alarm.stale` / `missed_slots`) and t
 against a stub `gh` on PATH — an external system, which is the only permitted stand-in. Nothing
 here replaces the logic under test (rule 6m).
 
-The sweep now asks for ONE delivery per Wednesday (`cron: "19 * * * 3"` plus a `49 * * * 3`
-backup). The alarm measures the age of the newest delivery against `--max-age-hours` (default
-168 = a week) and the number of Wednesday slots missed since it, so "stale" means "a whole
-weekly slot was missed", not "3 × some hourly interval". The measured failures that earned this
-alarm (dropped crons on 2026-10-19 → 10-21) are preserved as history, not as the live cadence.
+The sweep is DISPATCH-ONLY now (owner directive 2026-11-15, issue #1029 — the `cron:
+"19 * * * 3"` + `49 * * * 3` weekly slots were removed): the alarm derives the mode from the
+workflow tree (`workflow_declares_schedule`) — with no cron, age alone never reds, only a
+FAILED or HUNG dispatch does; with a cron, staleness means "a whole weekly slot was missed".
+The measured failures that earned this alarm (dropped crons on 2026-10-19 → 10-21) are
+preserved as history, not as the live cadence.
 """
 from __future__ import annotations
 
@@ -214,18 +215,53 @@ def test_an_in_flight_delivery_past_the_cap_is_hung_and_loud():
           (hung.returncode, hung.stdout[-300:]))
 
 
+def test_a_dispatch_only_sweep_owes_no_weekly_slot():
+    """(issue #1029) with no cron, `scheduled=False`: age alone and 'no delivery' report OK,
+    while a FAILED or HUNG dispatch is still a verdict. Scheduled mode stays byte-identical."""
+    old_green = S.stale(_rows(MEASURED), _NOW_STALE, 168.0, scheduled=False)
+    check("dispatch-only: an 8-day-old green delivery is NOT stale", old_green is None, old_green)
+    check("dispatch-only: no delivery at all is OK too (nothing is owed)",
+          S.stale([], _NOW_STALE, 168.0, scheduled=False) is None, "none")
+    rows = _rows([("2026-10-21T06:00:00Z", "failure")])
+    now = dt.datetime(2026, 10, 21, 6, 30, tzinfo=U)
+    red = S.stale(rows, now, 168.0, scheduled=False)
+    check("dispatch-only: a FAILED dispatched sweep is STILL a verdict",
+          red is not None and red.get("fresh") is True, red)
+    # `deliveries()` maps an unfinished run to conclusion=status ("in_progress").
+    hung = S.stale([{"id": 0, "at": dt.datetime(2026, 10, 13, 6, 30, tzinfo=U),
+                     "conclusion": "in_progress", "url": "u"}],
+                   _NOW_STALE, 168.0, 3.0, scheduled=False)
+    check("dispatch-only: a dispatch stuck in flight past the cap is STILL hung",
+          hung is not None and hung.get("hung") is True, hung)
+    scheduled_old = S.stale(_rows(MEASURED), _NOW_STALE, 168.0)
+    check("scheduled mode unchanged: the same heap with a cron IS stale",
+          scheduled_old is not None and scheduled_old["missed"] == 1, scheduled_old)
+
+
 def test_the_cli_exit_codes_are_loud_in_every_direction():
     """Through the real CLI, with only `gh` stubbed: fresh=0, stale=1, unreadable=2."""
     with tempfile.TemporaryDirectory() as td:
         env = _stub(td, MEASURED)
-        stale = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
-                                "--now", "2026-10-28T06:30:00Z"], capture_output=True, text=True,
-                               env=env)
+        dispatch_only = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
+                                        "--now", "2026-10-28T06:30:00Z"],
+                                       capture_output=True, text=True, env=env)
+        planted = Path(td) / "wf"
+        planted.mkdir()
+        (planted / "issue-bot.yml").write_text(
+            "on:\n  schedule:\n    - cron: \"19 * * * 3\"\n")
+        scheduled = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
+                                    "--now", "2026-10-28T06:30:00Z",
+                                    "--workflows-dir", str(planted)],
+                                   capture_output=True, text=True, env=env)
         fresh = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
                                 "--now", "2026-10-21T02:00:00Z"], capture_output=True, text=True,
                                env=env)
-    check("cli: a stale heap exits 1 and says FAIL", stale.returncode == 1
-          and "FAIL" in stale.stdout, (stale.returncode, stale.stdout[-200:]))
+    check("cli (dispatch-only, #1029): a stale-but-green heap exits 0 — age alone is not a failure",
+          dispatch_only.returncode == 0 and "OK" in dispatch_only.stdout,
+          (dispatch_only.returncode, dispatch_only.stdout[-200:]))
+    check("cli (scheduled mode intact): the same heap with a scheduled sweep exits 1 and says FAIL",
+          scheduled.returncode == 1 and "FAIL" in scheduled.stdout,
+          (scheduled.returncode, scheduled.stdout[-200:]))
     check("cli: a fresh delivery exits 0 and says OK", fresh.returncode == 0
           and "OK" in fresh.stdout, (fresh.returncode, fresh.stdout[-200:]))
 
@@ -246,13 +282,15 @@ def test_the_cli_exit_codes_are_loud_in_every_direction():
           broken.returncode == 2 and "FAIL" in broken.stderr, (broken.returncode, broken.stderr[-200:]))
 
 
-def test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired():
-    """The two halves of the fix: a spare (Wednesday) cron slot, and a make target the alarm runs."""
+def test_the_sweep_is_dispatch_only_and_the_alarm_is_wired():
+    """(issue #1029, owner directive 2026-11-15) the sweep carries NO cron at all — and the
+    alarm is still wired through a make target the pipeline runs."""
     sweep = SWEEP.read_text()
     crons = [line.split('"')[1] for line in sweep.splitlines() if "cron:" in line]
-    check("wiring: the sweep carries MORE than one slot", len(crons) >= 2, crons)
-    check("wiring: both slots are on Wednesday and off the hour",
-          "19 * * * 3" in crons and "49 * * * 3" in crons, crons)
+    check("wiring: the sweep carries NO cron slot (dispatch-only, #1029)", crons == [], crons)
+    check("wiring: the sweep declares no schedule: trigger", "  schedule:" not in sweep, "")
+    check("wiring: the alarm derives the mode from the tree and the real sweep is dispatch-only",
+          S.workflow_declares_schedule(ROOT / ".github" / "workflows") is False, "")
     makefile = MAKEFILE.read_text()
     check("wiring: `make sweep-alarm` exists and calls the one implementation",
           "sweep-alarm:" in makefile and "scripts/sweep_alarm.py" in makefile, "")
@@ -303,7 +341,8 @@ def main() -> int:
     test_an_in_flight_delivery_is_pending_not_a_false_red()
     test_an_in_flight_delivery_past_the_cap_is_hung_and_loud()
     test_the_cli_exit_codes_are_loud_in_every_direction()
-    test_the_sweep_carries_a_second_slot_and_the_alarm_is_wired()
+    test_a_dispatch_only_sweep_owes_no_weekly_slot()
+    test_the_sweep_is_dispatch_only_and_the_alarm_is_wired()
     test_the_window_default_is_the_weekly_sweep()
     test_no_wiring_hardcodes_an_hourly_era_window()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")

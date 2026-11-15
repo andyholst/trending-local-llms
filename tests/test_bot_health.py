@@ -84,11 +84,14 @@ def pipeline_list() -> list[str]:
 
 def test_the_pipeline_list_is_derived_and_not_vacuous():
     names = pipeline_list()
-    check("pipelines: the list is non-vacuous", len(names) >= 5, names)
-    # qa-validate is NOT here on purpose: it runs on PRs and pushes, not on a cron — a pipeline
-    # with no scheduled runs has no "red on every run" to read (it is covered by pr-health).
-    for expected in ("refresh-bot.yml", "queued-alarm.yml", "pr-health.yml", "bot-health.yml"):
-        check(f"pipelines: {expected} is a cron pipeline of this repo", expected in names, names)
+    # (owner directive 2026-11-15, issue #1029) ONLY refresh-bot carries a cron; every other
+    # pipeline is dispatch-only, so bot-health derives exactly ONE scheduled pipeline here.
+    check("pipelines: the list is non-vacuous", len(names) >= 1, names)
+    check("pipelines: refresh-bot is the ONLY cron pipeline of this repo",
+          names == ["refresh-bot.yml"], names)
+    check("pipelines: a dispatch-only workflow is not in the list",
+          "queued-alarm.yml" not in names and "pr-health.yml" not in names
+          and "bot-health.yml" not in names, names)
     check("pipelines: a NON-cron workflow is not in the list",
           "publish-agent-image.yml" not in names, names)
 
@@ -106,15 +109,22 @@ def test_a_pipeline_red_on_every_run_fails_the_sweep():
 
 
 def test_one_green_run_is_enough_to_stay_quiet():
+    # Two cron pipelines are PLANTED in a sandbox root (issue #1029 left only refresh-bot
+    # scheduled in the real tree; the multi-pipeline behaviour is proven end to end, not
+    # assumed): a green run inside the window keeps ITS pipeline quiet, the sweep still
+    # fails for the others.
     with tempfile.TemporaryDirectory() as d:
         td = Path(d)
-        names = pipeline_list()
-        answers = {n: red(3) for n in names}
-        answers[names[0]] = [red(1)[0]] + green(2)      # one green inside the window
+        wf = td / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        for name in ("slow.yml", "fast.yml"):
+            (wf / name).write_text(
+                "on:\n  schedule:\n    - cron: \"7 * * * 3\"\njobs:\n  x: {}\n")
+        answers = {"slow.yml": red(3), "fast.yml": [red(1)[0]] + green(2)}
         env = stub_gh(td, answers)
-        p = run("--root", str(ROOT), "--repo", "o/r", "--limit", "3", env=env)
+        p = run("--root", str(td), "--repo", "o/r", "--limit", "3", env=env)
         check("mixed: a green run inside the window keeps that pipeline quiet",
-              f"ok   {names[0]}" in p.stdout, p.stdout[:300])
+              "ok   fast.yml" in p.stdout, p.stdout[:300])
         check("mixed: the sweep still fails for the OTHERS", p.returncode == 1, p.returncode)
 
 
@@ -152,7 +162,9 @@ def test_a_limit_of_zero_is_refused():
 
 def test_the_workflow_carries_a_guard_a_cron_and_the_target():
     wf = (ROOT / ".github" / "workflows" / "bot-health.yml").read_text()
-    check("workflow: it runs on a cron", "cron:" in wf, "")
+    # (owner directive 2026-11-15, issue #1029) bot-health is dispatch-only: NO cron.
+    check("workflow: NO schedule: trigger (dispatch-only, #1029)",
+          "\n  schedule:\n" not in wf, wf[:200])
     check("workflow: it has a guard job FIRST", wf.index("guard:") < wf.index("health:"), "")
     check("workflow: it calls the target", "make bot-health" in wf, "")
     check("workflow: it is read-only (no issues: write)", "issues: write" not in wf, "")
