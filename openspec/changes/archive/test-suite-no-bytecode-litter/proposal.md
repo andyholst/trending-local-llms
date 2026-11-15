@@ -1,6 +1,7 @@
 # Proposal: test-suite-no-bytecode-litter
 
 Issue: #839 — "make test litters the checkout with Python bytecode copies of
+PR: #1060
 its credential fixtures"
 
 ## Why
