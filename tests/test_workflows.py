@@ -1211,7 +1211,7 @@ def test_issue_bot_scrubs_the_agent_stream_before_it_reaches_the_log():
     check("issue-bot: the step performs no after-the-fact scrub (the target scrubs live)",
           "make scrub-log" not in run, run[:200])
     check("issue-bot: the TARGET owns the redaction (`implement-issue` calls the live seam)",
-          '$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _implement-issue")'
+          '$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _implement-issue")'
           in (ROOT / "Makefile").read_text(), "")
     check("issue-bot: the refusal contract is unchanged (rc captured, false → red)",
           'echo "rc=$rc" >> "$GITHUB_OUTPUT"' in run and "implemented=false" in run, run[:400])

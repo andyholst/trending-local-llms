@@ -143,13 +143,59 @@ def test_the_shipped_steps_stream_their_targets_uncaptured():
 def test_the_shipped_targets_own_the_live_seam():
     mk = (ROOT / "Makefile").read_text()
     for target in ("implement-issue", "review-issue", "review-issue-window"):
+        # The four self-verifying agent legs run in the TEST image, not the base
+        # (issue #833): the base python lacks markdown-it-py, so a leg's own
+        # `run_tests.sh`/`make test` self-check reds test_amd_backend.py there even
+        # though CI gates run in the TEST image that carries the validator deps.
         check(f"make: `{target}` pipes its stream through the live seam",
-              f'$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _{target}")' in mk,
+              f'$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _{target}")' in mk,
               "")
         check(f"guard: `{target}` is in the guard's own scrub list (rule 6d, one list)",
               target in cso.AGENT_TARGETS_TO_SCRUB, str(cso.AGENT_TARGETS_TO_SCRUB))
         check(f"guard: `{target}`'s RECIPE really scrubs (agent-target-does-not-scrub stays armed)",
               cso.public_target_scrubs(mk, target), "")
+
+
+def test_agent_legs_run_in_the_test_image():
+    """issue #833 (measured on run 43110467252): the four agent legs that must
+    SELF-VERIFY against the canonical suite run inside the TEST image
+    (`$(TEST_RUN)`), which layers requirements-test.txt (markdown-it-py,
+    tabulate, pyyaml) onto the base. On the pre-fix wiring the implementer ran
+    in the base image, so its own `python3 scripts/run_tests.sh` reded
+    `test_amd_backend.py` -> `check_readme_tables_wellformed` with
+    `readme-tables: 'markdown-it-py' is not installed` — a false red that
+    derailed the run. RED on `$(DOCKER_RUN)` for any of these legs."""
+    mk = (ROOT / "Makefile").read_text()
+    # `fix` drives `_correct-raw && _fix && _merge`, so its seam differs from the
+    # three single-prompt legs (implement/review). All four must run in TEST_RUN.
+    cases = [
+        ("implement-issue", '$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _implement-issue"'),
+        ("review-issue", '$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _review-issue"'),
+        ("review-issue-window", '$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _review-issue-window"'),
+        ("fix", '$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _correct-raw && make _fix'),
+    ]
+    for target, seam in cases:
+        base = seam.replace("$(TEST_RUN)", "$(DOCKER_RUN)")
+        check(f"agent-leg image: `{target}` runs in the TEST image (self-verifies) — not the base",
+              seam in mk, seam)
+        check(f"agent-leg image: `{target}` is NOT wired to the base image (would false-red the suite)",
+              base not in mk, base)
+
+
+def test_markdown_it_is_a_test_image_dependency():
+    """issue #833: `markdown-it-py` is the TEST-image-only dependency that the
+    readme-table validator (`check_readme_tables_wellformed`) and
+    `test_amd_backend.py` need. It is declared in `requirements-test.in` (the
+    image the agent legs and the gates run in) and MUST NOT leak into the base
+    `requirements.in` — if it ever does, a self-verifying leg could run in the
+    base again and the pre-#833 false red returns silently. RED on any base
+    `requirements.in` mention."""
+    base_in = (ROOT / "requirements.in").read_text()
+    test_in = (ROOT / "requirements-test.in").read_text()
+    check("markdown-it-py: declared in requirements-test.in (the TEST image)",
+          "markdown-it-py" in test_in, "")
+    check("markdown-it-py: ABSENT from base requirements.in (never a base-dep — the leg must use the TEST image)",
+          "markdown-it-py" not in base_in, "")
 
 
 def test_a_line_reaches_the_console_while_the_agent_is_still_running():
@@ -216,6 +262,8 @@ def main() -> int:
     print("live agent stream through the shipped step (issue #629)")
     test_the_shipped_steps_stream_their_targets_uncaptured()
     test_the_shipped_targets_own_the_live_seam()
+    test_agent_legs_run_in_the_test_image()
+    test_markdown_it_is_a_test_image_dependency()
     test_a_line_reaches_the_console_while_the_agent_is_still_running()
     test_the_live_console_carries_no_value_in_any_spelling()
     test_the_reviewer_steps_keep_the_detach_contract()

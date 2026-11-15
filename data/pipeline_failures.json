@@ -307,7 +307,7 @@
       "issue_number": "833",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/833",
       "fix_pr": null,
-      "guard": null,
+      "guard": "tests/test_implement_stream.py",
       "undiagnosed": "log fetch for job 130843177357 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
       "rediagnosed_utc": "2026-11-15T14:55:56.846228+00:00",
       "error_excerpt": "2026-11-11T23:04:54.9636769Z [agent] make: *** [Makefile:1256: _implement-issue] Error 3\n2026-11-11T23:04:54.9636988Z [agent] make: *** [Makefile:1268: implement-issue] Error 2\n2026-11-11T23:05:02.4265235Z [lint] FAIL 1 tracked file(s) do not end with a newline:\n2026-11-11T23:05:02.4265596Z make: *** [Makefile:548: lint] Error 1\n2026-11-11T23:05:02.4265850Z === make lint: FAILED ===\n2026-11-11T23:35:02.4375473Z make: *** [Makefile:1003: fix] Terminated\n2026-11-11T23:36:29.1597705Z [findings] FAIL findings.md is missing \u2014 every implementation run must analyse what it touched (write `- none` when it found nothing)\n2026-11-11T23:36:29.1598247Z make: *** [Makefile:360: findings-check] Error 1\n2026-11-11T23:36:29.1598527Z === make findings-check: FAILED ===\n2026-11-11T23:39:19.0818791Z [agent] **One caveat:** the full suite (`run_tests.sh`) reports a single FAIL in `test_amd_backend.py` \u2014 a validator check that needs `markdown-it-py`, which only exists in the test image (`requirements-test.txt`), not in this host python. It's an environment gap unrelated to this change; the bot's test container has it.\n2026-11-12T00:03:52.0472205Z ##[error]Process completed with exit code 1.",

@@ -71,7 +71,7 @@ def test_makefile_budget_settings():
     check("make: fix-bot reasoning low (not medium/high)", mkvar("HERMES_FIX_REASONING") == "low",
           mkvar("HERMES_FIX_REASONING"))
     fix_recipe = next((l for l in (ROOT / "Makefile").read_text().splitlines()
-                       if "make _fix" in l and "DOCKER_RUN" in l), "")
+                       if "make _fix" in l and "TEST_RUN" in l), "")
     check("make: the docker 'fix' wrapper forwards HERMES_FIX_REASONING into the container "
           "(fix_loop.sh retries with none when 'low' burns the budget)",
           "make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING)" in fix_recipe, fix_recipe)

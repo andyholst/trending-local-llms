@@ -1102,7 +1102,7 @@ correct-raw:
 
 .PHONY: fix
 fix:
-	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _correct-raw && make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING) HERMES_FIX_TIMEOUT=$(HERMES_FIX_TIMEOUT) && make _merge")
+	$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _correct-raw && make _fix HERMES_FIX_REASONING=$(HERMES_FIX_REASONING) HERMES_FIX_TIMEOUT=$(HERMES_FIX_TIMEOUT) && make _merge")
 
 .PHONY: merge
 merge:
@@ -1409,7 +1409,14 @@ implement-issue:
 	# auto-routes to whatever provider key is in the env — measured on the first
 	# issue-bot run (#124, run 38502619350): `HF_TOKEN` -> Hugging Face ->
 	# `HTTP 403 ... does not have sufficient permissions to call Inference Providers`.
-	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _implement-issue")
+	#
+	# This leg (and review-issue, review-issue-window, fix) runs in the TEST image
+	# ($(TEST_RUN)), which layers requirements-test.txt (markdown-it-py, tabulate,
+	# pyyaml) onto the base — the leg must SELF-VERIFY its own change against the
+	# canonical suite, and `make test`/`make validate`/`python3 scripts/run_tests.sh`
+	# red `test_amd_backend.py` on a base python without markdown-it-py while CI
+	# runs those gates in the TEST image (issue #833, measured on run 43110467252).
+	$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _implement-issue")
 # Log names the run artifact uploads; the seam writes both captures (issue #629).
 implement-issue: HERMES_LOG := implement.log
 implement-issue: HERMES_LOG_SCRUBBED := implement.scrubbed.log
@@ -1680,7 +1687,7 @@ review-issue:
 	# `_setup` in the SAME container as the hermes call, exactly like
 	# `implement-issue` (#124: without the alias Hermes auto-routes to whatever
 	# provider key is in the env -> HF_TOKEN -> HTTP 403).
-	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _review-issue")
+	$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _review-issue")
 review-issue: HERMES_LOG := review.log
 review-issue: HERMES_LOG_SCRUBBED := review.scrubbed.log
 
@@ -1697,7 +1704,7 @@ _review-issue-window:
 # Live redaction inside the target, the same seam (issue #629).
 .PHONY: review-issue-window
 review-issue-window:
-	$(call scrubbed_run,$(DOCKER_RUN) sh -c "make _setup && make _review-issue-window")
+	$(call scrubbed_run,$(TEST_RUN) sh -c "make _setup && make _review-issue-window")
 review-issue-window: HERMES_LOG := review.log
 review-issue-window: HERMES_LOG_SCRUBBED := review.scrubbed.log
 
