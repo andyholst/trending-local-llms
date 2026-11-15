@@ -231,8 +231,10 @@ def test_the_rebuild_decision_is_one_tested_unit():
           {"built", "test_built", "base_tag", "test_tag"} <= set(consumed), consumed)
     check("refresh: the openspec job consumes publish_openspec and openspec_tag",
           {"publish_openspec", "openspec_tag"} <= set(consumed), consumed)
-    check("refresh: the openspec build is gated on publish_openspec",
-          "steps.decide.outputs.publish_openspec == 'no'" in text, "")
+    check("refresh: the openspec build is gated on publish_openspec == 'yes' (missing tag builds; current tag skips) — same polarity as built (issue #989)",
+          "publish_openspec == 'yes'" in step(wf["jobs"]["openspec-image"], "Build + push the OpenSpec image").get("if", "")
+          and "publish_openspec == 'no'" in step(wf["jobs"]["openspec-image"], "already current").get("if", ""),
+          [s.get("if", "") for s in steps(wf["jobs"]["openspec-image"])])
     check("refresh: the base build is gated on built",
           "steps.decide.outputs.built == 'yes'" in text, "")
 
@@ -1836,10 +1838,11 @@ def test_issue_bot_files_findings_only_when_green():
     check("openspec image: the build uses openspec/Dockerfile and pushes the hash tag",
           str(ospec.get("steps", "")) .find("openspec/Dockerfile") >= 0
           and "decide.outputs.openspec_tag" in str(ospec.get("steps", "")), ospec.get("steps"))
-    check("openspec image: its decision is the same one tested unit (issue #208)",
+    check("openspec image: its decision is the same one tested unit (issue #208), and a MISSING tag triggers build+push, a current tag skips (issue #989)",
           "make rebuild-decision" in str(ospec.get("steps", ""))
-          and "decide.outputs.publish_openspec == 'no'" in str(ospec.get("steps", "")),
-          ospec.get("steps"))
+          and "publish_openspec == 'yes'" in step(ospec, "Build + push the OpenSpec image").get("if", "")
+          and "publish_openspec == 'no'" in step(ospec, "already current").get("if", ""),
+          [s.get("name") for s in steps(ospec)])
 
 
 def test_issue_bot_announces_its_window():

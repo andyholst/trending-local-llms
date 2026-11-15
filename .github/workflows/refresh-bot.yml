@@ -258,7 +258,13 @@ jobs:
             printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"
           done
       - name: Build + push the OpenSpec image (its hash tag is not published)
-        if: steps.decide.outputs.publish_openspec == 'no'
+        # `publish_openspec=yes` means the decision FOUND a publish reason
+        # (the hash tag is missing) — the SAME polarity as the base image's
+        # `built == 'yes'` gating above. The old wiring gated the build on
+        # 'no', so a merged openspec/Dockerfile change published NOTHING and
+        # the run died at openspec-manifest-check with "manifest unknown"
+        # (measured on runs 43658287668 / 43676720912, issue #989).
+        if: steps.decide.outputs.publish_openspec == 'yes'
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: openspec
@@ -272,7 +278,7 @@ jobs:
             ${{ env.OPENSPEC_IMAGE }}
             ${{ steps.decide.outputs.openspec_tag }}
       - name: OpenSpec image already current — skip rebuild
-        if: steps.decide.outputs.publish_openspec == 'yes'
+        if: steps.decide.outputs.publish_openspec == 'no'
         run: echo "The published OpenSpec image is built from this revision's openspec/Dockerfile; reusing it."
       - name: Verify the manifest answers both architectures (make openspec-manifest-check)
         # Runs on BOTH paths (issue #919): a legacy amd64-only tag for this
