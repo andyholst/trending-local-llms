@@ -1,6 +1,7 @@
 # Agents run bot work on the host — never dispatch CI pipelines
 
 **Issue:** [#1055](https://github.com/andyholst/trending-local-llms/issues/1055)
+PR: #1056
 **Capability:** `fleet-cadence`
 
 ## Why
