@@ -109,6 +109,48 @@ def test_the_workflow_runs_it_beside_the_sweep_alarm():
     check("makefile: it forwards MAX_AGE_HOURS", 'MAX_AGE_HOURS)' in makefile, "")
 
 
+def test_the_workflow_and_recipe_carry_no_window_literal():
+    """Issue #1031: the 14 h literal was the twice-daily era; the window is the script's
+    weekly default (the same #804 treatment sweep-alarm already got)."""
+    wf = (ROOT / ".github" / "workflows" / "queued-alarm.yml").read_text()
+    for line in wf.splitlines():
+        if "make freshness-alarm" in line:
+            check("workflow: the freshness-alarm step carries no MAX_AGE_HOURS literal",
+                  "MAX_AGE_HOURS" not in line, line.strip())
+            break
+    else:
+        check("workflow: the freshness-alarm step exists to read", False, "no such line")
+    makefile = (ROOT / "Makefile").read_text()
+    recipe = [ln for ln in makefile.splitlines() if "freshness_alarm.py" in ln]
+    check("makefile: the freshness recipe injects no window literal",
+          recipe and all("MAX_AGE_HOURS)" in ln and not any(
+              ch.isdigit() for ch in ln.split("--max-age-hours")[-1]) for ln in recipe),
+          recipe)
+
+
+def test_a_weekly_gap_is_inside_the_default_window():
+    """Wednesday 06:00 -> the next Monday is a ~120 h gap; even the backup-slot gap
+    (168 h) plus slack stays inside 170 h. A normal week must never red the alarm."""
+    with tempfile.TemporaryDirectory() as d:
+        root = tree(Path(d), ["trending-20261021-174300.json"])
+        p = run("--root", str(root), "--now", "2026-10-25T06:00:00Z")   # 132.3 h
+        check("weekly: a 132 h gap passes the script's own default window",
+              p.returncode == 0 and "170h window" in p.stdout, (p.returncode, p.stdout[-200:]))
+
+
+def test_a_missed_weekly_slot_is_red_and_names_the_window():
+    with tempfile.TemporaryDirectory() as d:
+        root = tree(Path(d), ["trending-20261014-174300.json"])
+        p = run("--root", str(root), "--now", "2026-10-21T12:00:00Z")   # 162.3 h: still inside
+        check("boundary: 162 h (one slot + grace headroom) passes", p.returncode == 0,
+              (p.returncode, p.stderr[-200:]))
+    with tempfile.TemporaryDirectory() as d2:
+        root2 = tree(Path(d2), ["trending-20261007-174300.json"])
+        p2 = run("--root", str(root2), "--now", "2026-10-21T12:00:00Z")  # 330 h: two slots missed
+        check("missed: a two-slot gap fails and names the 170 h window",
+              p2.returncode == 1 and "170h window" in p2.stderr, p2.stderr[-250:])
+
+
 def main() -> int:
     print("freshness alarm: the ARTIFACT, not the run (issue #452)")
     test_a_fresh_snapshot_passes()
@@ -117,6 +159,9 @@ def main() -> int:
     test_no_snapshot_at_all_is_never_a_pass()
     test_a_file_mtime_never_makes_a_stale_tree_fresh()
     test_the_workflow_runs_it_beside_the_sweep_alarm()
+    test_the_workflow_and_recipe_carry_no_window_literal()
+    test_a_weekly_gap_is_inside_the_default_window()
+    test_a_missed_weekly_slot_is_red_and_names_the_window()
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
     return 0 if _FAIL == 0 else 1
 

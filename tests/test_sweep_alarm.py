@@ -288,8 +288,11 @@ def test_no_wiring_hardcodes_an_hourly_era_window():
     sweep_calls = [line for line in alarm.splitlines() if "make sweep-alarm" in line]
     check("workflow: the sweep-alarm step carries no MAX_AGE_HOURS literal",
           bool(sweep_calls) and all("MAX_AGE_HOURS" not in line for line in sweep_calls), sweep_calls)
-    check("workflow: the freshness-alarm window (a different alarm) is untouched",
-          "make freshness-alarm" in alarm and 'MAX_AGE_HOURS=14' in alarm, "")
+    check("workflow: the freshness-alarm window (a different alarm) carries no literal either "
+          "(issue #1031: the 14 h twice-daily override was removed, the script's weekly default rules)",
+          "make freshness-alarm" in alarm and not any(
+              "MAX_AGE_HOURS" in line for line in alarm.splitlines() if "make freshness-alarm" in line),
+          "")
 
 
 def main() -> int:
