@@ -422,17 +422,20 @@ architecture-check: python-env-image ## Fail when ARCHITECTURE.md misses a make 
 # The LIVING half of this document (issue #479): the inventory of every pipeline
 # (its triggers, its jobs, the make targets they call), the product end to end and
 # one line per script is DERIVED from the tree, between two markers, so it cannot
-# rot into prose nobody re-reads. `architecture-bot.yml` runs this daily and opens
+# rot into prose nobody re-reads. `architecture-bot.yml` runs this on dispatch (the
+# owner directive 2026-11-15, issue #1029, left `refresh-bot.yml` the only pipeline
+# with a cron) and opens
 # a PR only when the block changed; `architecture-check` above fails while it is
-# stale, so the daily bot repairs drift instead of the drift living for weeks.
+# stale, so the dispatched bot repairs drift instead of the drift living for weeks.
 architecture-refresh: ## Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479)
 	python3 scripts/architecture_bot.py --write
 
 # The event-driven keeper for a red master ARCHITECTURE block gate (issue #861, rule 6q) —
 # the sibling of `openspec-index-repair` (#304) for the OTHER half of the generated pair.
 # A merged PR that moved a target/script/job without `architecture-refresh` reds the
-# push-to-master `validate` with no PR repair path; the Wednesday-only `architecture-bot`
-# leaves the merge queue red for days (measured after merge `91eb093`). qa-validate's
+# push-to-master `validate` with no PR repair path; the Wednesday-scheduled `architecture-bot`
+# of that day left the merge queue red for days (measured after merge `91eb093`; the
+# pipeline is dispatch-only since issue #1029). qa-validate's
 # `architecture-repair` job runs exactly this target against the post-merge tree that just
 # went red; the DRIFT= verdict (rule 6d) decides whether the workflow may land a keeper PR,
 # and the workflow re-decides nothing.
@@ -1413,7 +1416,9 @@ implement-issue: HERMES_LOG_SCRUBBED := implement.scrubbed.log
 
 # ---- the implementer's queue + the issue reviewer (issue #179) ----------------
 # TWO bots share ONE queue of `data-gap-analysis` issues: `issue-bot` implements
-# one per hour (oldest first), the issue reviewer refines the ones nobody has
+# one per dispatched run (oldest first; the owner directive 2026-11-15, issue #1029,
+# left `refresh-bot.yml` the only pipeline with a cron), the issue reviewer refines
+# the ones nobody has
 # started. They must never write the same issue at once, so the reviewer keeps a
 # quiet window around an implementer start — REVIEW_GAP_HOURS before the sweep
 # reaches the issue and the same gap after it started. ONE constant, read by both
@@ -1489,7 +1494,8 @@ issue-thread: ## Print an issue's whole thread for the implementer (ISSUE=<n>, R
 # The queued-run alarm (issue #252): a job whose runner label matches nothing does not fail —
 # it stays `queued` forever, so the run never concludes and every PR's checks sit at "pending".
 # The DECISION lives in scripts/queued_run_alarm.py (rule 6d); the workflow calls this target.
-# Exit 1 when a job is stuck, so the scheduled run goes red.
+# Exit 1 when a job is stuck, so the dispatched run goes red (issue #1029 retired this
+# pipeline's cron).
 .PHONY: _freshness-alarm
 _freshness-alarm:
 	python3 scripts/freshness_alarm.py $(if $(REPO),--repo "$(REPO)",) $(if $(MAX_AGE_HOURS),--max-age-hours $(MAX_AGE_HOURS),)
@@ -1531,8 +1537,8 @@ owed-rows-check: ## Report the owed-row ledger: open issues' owed AGENTS.md rows
 # naming `validate` + `live-smoke`, enforce_admins true. Exit 1 = absent or
 # relaxed (named); exit 2 = the read itself failed, never a silent clean.
 # Read-only: APPLYING the protection is an owner-approved repository-settings
-# act (issue #959). Run by queued-alarm's alarm job (the scheduled half the
-# issue names), never a PR gate — the check needs the owner PAT to read
+# act (issue #959). Run by queued-alarm's alarm job (the sweep half the
+# issue names; issue #1029 made that sweep dispatch-only), never a PR gate — the check needs the owner PAT to read
 # protection state, and a PR must not hold a secret it cannot read.
 .PHONY: _check-branch-protection
 _check-branch-protection:
@@ -1556,7 +1562,8 @@ queued-alarm: ## Report jobs stuck in `queued` far too long, and optionally comm
 # a push to master AFTER `auto-merge`, and every repair path in this repo needs a PR — so a red
 # master has no repairer and stays red until a human notices (measured: run 39625708799). This
 # alarm reads the NEWEST push-to-master qa-validate run and exits 1 when it is red, so the
-# scheduled alarm job goes RED in the Actions tab instead of staying quiet. The DECISION lives in
+# dispatched alarm job goes RED in the Actions tab instead of staying quiet (issue #1029
+# retired queued-alarm's cron). The DECISION lives in
 # scripts/master_alarm.py (rule 6d); the KEEPER/ALARM table for every validate gate lives beside
 # it. Host-side (needs gh + Makefile), called by queued-alarm's alarm job, never a PR gate.
 .PHONY: _master-alarm

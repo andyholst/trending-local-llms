@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Fail loudly when the weekly sweep has not been DELIVERED (issue #497).
+"""Fail loudly when the sweep's newest DELIVERED run is red or hung (issue #497; the
+dispatch-only mode is issue #1029 — the owner directive of 2026-11-15 removed the sweep's
+cron, so age alone never reds; only a FAILED or HUNG dispatch does).
 
-`issue-bot.yml` asks GitHub for `cron: "19 * * * 3"` (Wednesdays) and takes ONE issue per delivery. GitHub
+`issue-bot.yml` used to ask GitHub for `cron: "19 * * * 3"` (Wednesdays) and take ONE issue
+per delivery. GitHub
 drops and delays scheduled runs: the recorded sequence for 2026-10-19 → 2026-10-21 was
 
     01:41:54  ← 3h17 ← 22:24:00 (FAILED)  ← 3h53 ← 18:31:58
@@ -32,10 +35,20 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
+from pathlib import Path
 
 WORKFLOW = "issue-bot.yml"
+ROOT = Path(__file__).resolve().parent.parent
+#: Whether the sweep pipeline still OWES a weekly delivery (a `schedule:` block in its
+#: workflow). Issue #1029 (owner directive 2026-11-15) made the sweep dispatch-only: age
+#: alone is then not a failure — only a FAILED or HUNG dispatched delivery is. Derived
+#: from the tree (rule 6d), never from a hand-kept flag.
+def workflow_declares_schedule(workflows_dir: Path) -> bool:
+    return re.search(r"^\s{2}schedule:\s*$",
+                     (workflows_dir / WORKFLOW).read_text(), re.M) is not None
 #: The sweep runs at :19 on Wednesdays. Kept here as the schedule the alarm measures against,
 #: so "1 week stale" means "1 slot was missed", not "some interval".
 SLOT_MINUTE = 19
@@ -65,10 +78,12 @@ def _ts(value: str | None) -> dt.datetime | None:
 def deliveries(repo: str, limit: int = 20) -> list[dict]:
     """The workflow's `schedule` runs, newest first, as `{id, at, conclusion, url}`.
 
-    Only `schedule` runs: a `workflow_dispatch` or an `issues:`-event run proves the pipeline can
-    start, not that the CRON was delivered — and this alarm exists for the cron.
+    Every event counts now (issue #1029): the sweep is dispatch-only, so a
+    `workflow_dispatch` run IS the delivery this alarm measures. While a cron existed,
+    only `schedule` runs proved the cron was delivered; the mode decision lives in
+    `workflow_declares_schedule`, not in the run filter.
     """
-    raw = _gh(["run", "list", "--workflow", WORKFLOW, "--event", "schedule", "--limit", str(limit),
+    raw = _gh(["run", "list", "--workflow", WORKFLOW, "--limit", str(limit),
                "--json", "databaseId,createdAt,conclusion,status,url", "--repo", repo])
     rows = []
     for r in json.loads(raw or "[]"):
@@ -97,13 +112,17 @@ def missed_slots(newest: dt.datetime, now: dt.datetime) -> int:
 
 
 def stale(rows: list[dict], now: dt.datetime, max_age_hours: float,
-          inflight_cap_hours: float = 3.0) -> dict | None:
+          inflight_cap_hours: float = 3.0, scheduled: bool = True) -> dict | None:
     """The verdict as data — None when the newest delivery is fresh and green.
 
     Pure (rule 6d): the decision is testable without a network, and "no run at all" is a verdict
-    of its own rather than a crash.
+    of its own rather than a crash. `scheduled` (issue #1029): when the sweep carries no cron,
+    age alone is not a failure — a dispatch-only sweep owes no weekly slot, so a green delivery
+    of any age (or no delivery at all) reports OK; a FAILED or HUNG dispatch still goes red.
     """
     if not rows:
+        if not scheduled:
+            return None
         return {"reason": "no schedule run has ever been delivered", "age_hours": None,
                 "newest": None, "conclusion": None, "missed": None, "gaps": []}
     newest = rows[0]
@@ -144,6 +163,19 @@ def stale(rows: list[dict], now: dt.datetime, max_age_hours: float,
                 "age_hours": round(age, 2), "newest": newest["at"],
                 "conclusion": conclusion, "missed": 0, "gaps": gaps[:6],
                 "url": newest.get("url"), "fresh": True}
+    if not scheduled:
+        conclusion = newest.get("conclusion")
+        if conclusion == "success":
+            # A dispatch-only sweep owes no slot: old-but-green is not a failure (issue #1029).
+            return None
+        # Old AND not green is still loud: a dispatch that died (or never concluded) is
+        # exactly what this alarm exists for.
+        return {"reason": (f"the newest dispatch is {age:.1f} h old and concluded "
+                           f"'{conclusion}' — a dispatch-only sweep that never delivered a "
+                           f"green run is loud (issue #1029)"),
+                "age_hours": round(age, 2), "newest": newest["at"], "conclusion": conclusion,
+                "missed": None, "gaps": gaps[:6], "url": newest.get("url"),
+                "hung": conclusion in INFLIGHT_CONCLUSIONS}
     return {"reason": f"the newest delivery is {age:.1f} h old (max {max_age_hours} h)",
             "age_hours": round(age, 2), "newest": newest["at"], "conclusion": newest["conclusion"],
             "missed": missed_slots(newest["at"], now), "gaps": gaps[:6], "url": newest["url"]}
@@ -206,21 +238,35 @@ def main(argv: list[str] | None = None) -> int:
                     help="how long a delivery may be in flight before it is HUNG (issue #801)")
     ap.add_argument("--now", default=None, help="Iso8601 instant to measure from (tests)")
     ap.add_argument("--limit", type=int, default=20, help="how many deliveries to read")
+    ap.add_argument("--workflows-dir", default=str(ROOT / ".github" / "workflows"),
+                    help="the workflows tree that decides whether the sweep is scheduled "
+                         "(issue #1029)")
     args = ap.parse_args(argv)
 
     now = _ts(args.now) or dt.datetime.now(dt.timezone.utc)
+    try:
+        scheduled = workflow_declares_schedule(Path(args.workflows_dir))
+    except OSError as exc:
+        print(f"[sweep-alarm] FAIL: cannot read the sweep workflow to decide the mode: {exc}",
+              file=sys.stderr)
+        return 2
     try:
         rows = deliveries(args.repo, args.limit)
     except (RuntimeError, ValueError) as exc:
         print(f"[sweep-alarm] FAIL: {exc}", file=sys.stderr)
         return 2
 
-    verdict = stale(rows, now, args.max_age_hours, args.inflight_cap_hours)
+    verdict = stale(rows, now, args.max_age_hours, args.inflight_cap_hours, scheduled)
     if verdict is None:
+        if not rows:
+            print("[sweep-alarm] OK: dispatch-only sweep (issue #1029) — no delivery is owed")
+            return 0
         newest = rows[0]
-        print(f"[sweep-alarm] OK: newest schedule delivery "
-              f"{newest['at'].strftime('%Y-%m-%dT%H:%M:%SZ')} ({newest['conclusion']}), "
-              f"within {args.max_age_hours} h")
+        mode = ("schedule delivery" if scheduled
+                else "dispatch (dispatch-only sweep, #1029)")
+        print(f"[sweep-alarm] OK: newest {mode} "
+              f"{newest['at'].strftime('%Y-%m-%dT%H:%M:%SZ')} ({newest['conclusion']})"
+              + (f", within {args.max_age_hours} h" if scheduled else ""))
         return 0
     if verdict.get("pending"):
         print(render_pending(verdict))

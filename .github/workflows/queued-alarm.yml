@@ -13,8 +13,10 @@
 name: queued-alarm
 
 on:
-  schedule:
-    - cron: "37 * * * 3"   # once a week, Wednesday (an odd minute; GitHub drops top-of-hour runs)
+  # Cadence (owner directive 2026-11-15, issue #1029): this pipeline carries NO cron.
+  # Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs
+  # on its own events and on owner/collaborator/bot workflow_dispatch; re-adding a
+  # `schedule:` block here turns tests/test_workflows.py red on purpose.
   workflow_dispatch:
     inputs:
       minutes:
@@ -94,7 +96,10 @@ jobs:
       # sweep has not been delivered (issue #497). NO window literal here (issue #804): the
       # sweep asks for ONE delivery per Wednesday, so the window is sweep_alarm.py's own
       # weekly default — one implementation, rule 6d.
-      - name: Fail loudly when the weekly sweep has not been delivered
+      # (issue #1029, owner directive 2026-11-15) the sweep is dispatch-only: no cron slot
+      # to miss — the alarm now reds on a FAILED or HUNG dispatched sweep and reports a
+      # clean bill when a dispatch-only sweep simply has no delivery owed.
+      - name: Fail loudly when the sweep's newest delivery is red or hung
         if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}

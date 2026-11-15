@@ -24,25 +24,12 @@ name: issue-bot
 # (AGENTS.md rule 2, additive-only rule 3b, contract rule 6b, wiring rule 6d).
 
 on:
-  issues:
-    types: [opened]
-  # Backlog sweep (issue #127): weekly, on Wednesday, off the hour. GitHub delays/drops
-  # on-the-hour crons (the refresh-bot lesson), so this is :19. Weekly because the sweep
-  # implements ONE issue per run: a backlog of N open gap issues were draining in N hours
-  # at the old hourly cadence; the owner moved the whole fleet to one run a week (the
-  # `weekly-cadence` issues #670–#677). A sweep that finds nothing is a green no-op, so
-  # the quieter cadence costs nothing when there is no work. One run ONE issue — the oldest
-  # open issue with no implementer yet.
-  schedule:
-    - cron: "19 * * * 3"
-
-    # A SECOND slot, for the same reason refresh-bot carries a backup (issue #497): GitHub
-    # drops and delays scheduled runs, and the recorded deliveries of the :19 slot were
-    # 3–6 h apart. `concurrency: issue-bot-<…>` serialises the two and a run with nothing to
-    # do is a green no-op, so the spare slot costs nothing and buys coverage for the one day
-    # a week the sweep actually runs.
-    - cron: "49 * * * 3"
-
+  # Cadence (owner directive 2026-11-15, issue #1029): this pipeline is DISPATCH-ONLY.
+  # It carries NO cron and no issues:[opened] auto-start — an agent-authored issue
+  # must never start an LLM pipeline by itself. The owner (or a collaborator, or the
+  # guarded bot identities) dispatches it with an issue_number, or dispatches with
+  # nothing to sweep the backlog. Re-adding a `schedule:` or `issues:` trigger turns
+  # tests/test_workflows.py red on purpose.
   workflow_dispatch:
     inputs:
       issue_number:
@@ -110,12 +97,10 @@ jobs:
   # implements nothing. No checkout: the checks are API calls.
   pick:
     needs: guard
-    # A sweep is EITHER the cron OR an owner dispatch with NO issue number
-    # (measured: dispatching with an empty number skipped the picker and ran the
-    # implement job with an empty issue — nothing picked, nothing done).
+    # A sweep is an owner dispatch with NO issue number (issue #1029: the sweep is
+    # dispatch-only — no cron, no issues:[opened]).
     if: >-
-      github.event_name == 'schedule'
-      || (github.event_name == 'workflow_dispatch' && inputs.issue_number == '')
+      github.event_name == 'workflow_dispatch' && inputs.issue_number == ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -190,15 +175,11 @@ jobs:
       && needs.guard.result == 'success'
       && (
         (github.event_name == 'workflow_dispatch' && inputs.issue_number != '')
-        || (github.event_name == 'issues'
-            && github.event.action == 'opened'
-            && contains(github.event.issue.labels.*.name, 'data-gap-analysis'))
-        || ((github.event_name == 'schedule'
-             || (github.event_name == 'workflow_dispatch' && inputs.issue_number == ''))
+        || ((github.event_name == 'workflow_dispatch' && inputs.issue_number == '')
             && needs.pick.outputs.issue != '')
       )
-    # ONE implementer per issue ACROSS paths: an `issues: opened` event and a
-    # sweep that picked the same issue share this group and queue instead of
+    # ONE implementer per issue ACROSS dispatches: a dispatch on an issue number
+    # and a sweep that picked the same issue share this group and queue instead of
     # racing. Evaluated when the job starts, so it can use the picked number.
     concurrency:
       group: issue-bot-issue-${{ needs.pick.outputs.issue || github.event.issue.number || inputs.issue_number }}

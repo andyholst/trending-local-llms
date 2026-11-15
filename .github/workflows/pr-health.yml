@@ -21,8 +21,10 @@ name: pr-health
 # pushed to their own PR branch, which re-triggers that PR's gates. A conflicted PR and a
 # human-owned branch are never rewritten.
 on:
-  schedule:
-    - cron: "53 * * * 3"   # once a week, Wednesday (an odd minute; GitHub drops top-of-hour runs)
+  # Cadence (owner directive 2026-11-15, issue #1029): this pipeline carries NO cron.
+  # Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs
+  # on its own events and on owner/collaborator/bot workflow_dispatch; re-adding a
+  # `schedule:` block here turns tests/test_workflows.py red on purpose.
   workflow_dispatch:
 
 permissions:

@@ -25,12 +25,10 @@ name: issue-review-bot
 # `comment.md` and THIS workflow performs the `gh` write.
 
 on:
-  # Off the hour, and not `19` (issue-bot's sweep): GitHub delays/drops
-  # on-the-hour crons (the refresh-bot lesson). The window, not the offset, is
-  # what separates the two bots — each run re-checks the queue it shares.
-  schedule:
-    - cron: "41 * * * 3"
-
+  # Cadence (owner directive 2026-11-15, issue #1029): this pipeline carries NO cron.
+  # Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs
+  # on its own events and on owner/collaborator/bot workflow_dispatch; re-adding a
+  # `schedule:` block here turns tests/test_workflows.py red on purpose.
   workflow_dispatch:
     inputs:
       issue_number:

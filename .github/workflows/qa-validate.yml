@@ -264,8 +264,11 @@ jobs:
       - name: Model caps (model served, max_tokens fits, accepts reasoning)
         run: make model-caps
 
-      - name: Hermes routing smoke (real call through the search alias)
-        run: make hermes-smoke
+      # Cadence + no-LLM directive (owner, 2026-11-15, issue #1029): the main CI
+      # pipeline runs TESTS ONLY — no real model call. `make hermes-smoke` (a live
+      # LLM round-trip) left this pipeline; real Hermes proof lives in the bot
+      # pipelines that need the model (refresh / issue-bot / issue-review-bot),
+      # which only guard-admitted identities can start and which no cron starts.
 
       # Hermes STRIPS provider credentials from the agent's terminal, so a key
       # that reaches the container can still be EMPTY in the agent's `curl`

@@ -369,8 +369,9 @@ def test_the_keeper_regenerates_both_generated_documents():
 
     on = doc.get("on") or doc.get(True) or {}   # YAML 1.1 parses a bare `on:` as True
     crons = [c.get("cron") for c in (on.get("schedule") or [])]
-    check("index: the slot is the Wednesday weekly cadence at an odd minute (cron #526, cadence #670–#677)",
-          crons == ["13 * * * 3"], str(crons))
+    check("index: architecture-bot is dispatch-only — NO cron (cadence #670–#677 moved to "
+          "weekly, then the owner directive of issue #1029 removed every cron but refresh-bot's)",
+          crons == [], str(crons))
 
 
 def _cadence_problems(schedule_block: str) -> list:
@@ -398,9 +399,11 @@ def test_the_schedule_comment_names_the_cadence_it_pins():
     go RED naming the hourly claim.
     """
     text = (ROOT / ".github" / "workflows" / "architecture-bot.yml").read_text()
-    block = text[text.index("schedule:"):text.index("workflow_dispatch:")]
-    check("cadence: the shipped schedule prose matches the Wednesday cron it pins",
-          _cadence_problems(block) == [], str(_cadence_problems(block)))
+    # (owner directive 2026-11-15, issue #1029) the pipeline is dispatch-only: no schedule:
+    # trigger remains, so there is no schedule prose left to disagree with a cron.
+    import re as _re
+    check("cadence: NO schedule: trigger left to mismatch (dispatch-only, #1029)",
+          _re.search(r"^\s{2}schedule:\s*$", text, _re.M) is None, "")
     # The pre-change text (what origin/master held before this change) must fail
     # this guard — copied from git show origin/master:.github/workflows/architecture-bot.yml.
     old_block = ('schedule:\n'
