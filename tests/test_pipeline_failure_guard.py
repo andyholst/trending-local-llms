@@ -192,6 +192,36 @@ def test_run_41956933757_and_43049550731_are_rediagnosed_onto_the_landed_sweep_a
     check("the committed ledger with #824 and #829 CLOSED passes the gate", rc == 0, str(lines))
 
 
+def test_run_41929086636_is_rediagnosed_onto_the_cancelled_delivery_guard() -> None:
+    print("\nrediagnosed row: the cancelled refresh-bot aggregate names the landed guard (issue #823)")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    row = [e for e in committed["failures"] if e["run_id"] == 41929086636]
+    check("row 41929086636 exists in the committed ledger", len(row) == 1, str(row))
+    if row:
+        e = row[0]
+        check("row 41929086636 names fix PR #806 (the landed cancelled-delivery alarm fix)",
+              e.get("fix_pr") == 806, str(e.get("fix_pr")))
+        check("row 41929086636 names a guard test that exists on disk",
+              G.guard_test_exists(e.get("guard") or "") and e.get("guard") == "tests/test_sweep_alarm.py",
+              str(e.get("guard")))
+        check("row 41929086636 diagnosis names the measured cancel line",
+              "The operation was canceled" in (e.get("error_excerpt") or ""),
+              str(e.get("error_excerpt")))
+        check("row 41929086636 diagnosis names the healthy tests verdict it reached",
+              "PASSED 124 | FAILED 0" in (e.get("error_excerpt") or ""), "")
+        check("row 41929086636 keeps the empty targets the log justified (rule 3b)",
+              e.get("targets") == [], str(e.get("targets")))
+        check("row 41929086636 original undiagnosed field is KEPT (append-only, rule 3b)",
+              "undiagnosed" in e, "")
+    # The post-merge gate shape: #823 CLOSED with its row named -> green, beside the siblings.
+    rc, lines = verdict(committed["failures"],
+                        states([(41929086636, 823, "CLOSED"), (41956933757, 824, "CLOSED"),
+                                (43049550731, 829, "CLOSED"), (41788683672, 820, "CLOSED"),
+                                (41860616772, 821, "CLOSED"), (41922211098, 822, "CLOSED"),
+                                (43088760321, 800, "CLOSED")]))
+    check("the committed ledger with #823 CLOSED passes the gate", rc == 0, str(lines))
+
+
 def test_fix_in_flight_is_reported_never_red() -> None:
     print("\nin flight: an OPEN issue with no fix PR yet is a report, not a red")
     rc, lines = verdict([entry(104, 55, None, None)], states([(104, 55, "OPEN")]))
@@ -281,6 +311,7 @@ def main() -> int:
 
 
     test_run_41956933757_and_43049550731_are_rediagnosed_onto_the_landed_sweep_alarm_fix()
+    test_run_41929086636_is_rediagnosed_onto_the_cancelled_delivery_guard()
     test_fix_in_flight_is_reported_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
     test_guard_test_lookup_is_the_shape_make_test_collects()
