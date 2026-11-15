@@ -482,6 +482,65 @@ def test_the_guard_is_wired_into_the_repo():
     check("ci: the validate checkout is not shallow", "fetch-depth: 0" in qa, "")
 
 
+# ---------------------------------------------------------------------------
+# GitHub-synthesized squash identities on merged history (issue #835)
+# ---------------------------------------------------------------------------
+SQUASH = "Mr. Asimov <support@docondee.com>"
+
+
+def test_a_github_squash_identity_in_the_range_is_legacy_history_not_a_violation():
+    """The measured #835 shape: a stale `origin/master` ref puts master's merged
+    squash commits back INSIDE the gate's range. 101 of them are authored
+    `Mr. Asimov <support@docondee.com>` and committed `GitHub <noreply@github.com>`
+    (2 more predate branch protection and carry the account identity on both
+    roles). Rule 3 forbids rewriting them, so the gate CLASSIFIES the shape and
+    reports `legacy=N` instead of going red."""
+    import io
+    from contextlib import redirect_stdout
+
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "fix(ci): landed change (#900)",
+                body="Co-authored-by: Asimov Agent <support@docondee.com>",
+                author=SQUASH, committer=GITHUB)          # GitHub-completed squash
+        _commit(repo, "chore: pre-protection direct push",
+                author=SQUASH, committer=SQUASH)          # the 2 measured pushes
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = cca.main(["check", "--root", str(repo), "--range", "origin/master..HEAD"])
+        out = buf.getvalue()
+    check("legacy: merged GitHub squashes in the range exit 0", rc == 0, str(rc))
+    check("legacy: both shapes are reported as legacy history", "legacy=2" in out, out[:200])
+
+
+def test_a_feature_commit_spelled_mr_asimov_committed_as_the_agent_is_refused():
+    """The exemption is for GitHub-COMPLETED shapes. A feature-branch commit whose
+    author is the account display name but whose committer is the agent is a
+    misconfigured `git config` — exactly what the guard exists to refuse."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = _repo(Path(td))
+        _commit(repo, "feat(x): a change", author=SQUASH, committer=AGENT)
+        rc = cca.main(["check", "--root", str(repo), "--range", "origin/master..HEAD"])
+    check("legacy: a feature commit claiming the account name is still refused", rc == 1, str(rc))
+
+
+def test_the_identity_seam_still_refuses_the_account_name():
+    """`--identity` asks 'may a JOB configure this identity?' — never. The legacy
+    classification applies only to git commits GitHub completed."""
+    rc = cca.main(["check", "--identity", SQUASH])
+    check("identity seam: 'Mr. Asimov <support@docondee.com>' is refused", rc == 1, str(rc))
+
+
+def test_agents_md_states_the_squash_identity_contract():
+    """Rule 3c/option (b): the rulebook must NAME the synthesized identity and the
+    bounded-range contract, so a reader can tell legacy history from a live breach."""
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    check("AGENTS.md names the GitHub-synthesized account identity",
+          "Mr. Asimov <support@docondee.com>" in text, "")
+    check("AGENTS.md bounds the guard to new commits and calls merged squashes legacy",
+          "legacy" in text and "origin/master..HEAD" in text, "")
+
+
 def main() -> int:
     print("commit-authorship guard (scripts/check_commit_authorship.py, issue #317)")
     test_a_commit_that_credits_its_own_author_twice_is_refused()
@@ -506,6 +565,10 @@ def main() -> int:
     test_the_report_lists_the_commits_it_read()
     test_this_repository_never_credits_a_disallowed_identity()
     test_the_guard_is_wired_into_the_repo()
+    test_a_github_squash_identity_in_the_range_is_legacy_history_not_a_violation()
+    test_a_feature_commit_spelled_mr_asimov_committed_as_the_agent_is_refused()
+    test_the_identity_seam_still_refuses_the_account_name()
+    test_agents_md_states_the_squash_identity_contract()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

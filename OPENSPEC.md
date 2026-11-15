@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **313**
+Active changes: **2** · archived: **315**
 
 ## Active changes
 
@@ -303,6 +303,7 @@ Active changes: **2** · archived: **313**
 | `skip-note-every-sweep` | archived | #202 | — | [issue-review-queue](openspec/changes/archive/skip-note-every-sweep/specs/issue-review-queue/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/skip-note-every-sweep/proposal.md) |
 | `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
+| `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
 | `strand-openspec-change-at-merge` | archived | #866 | #894 | [archived-change-lifecycle](openspec/changes/archive/strand-openspec-change-at-merge/specs/archived-change-lifecycle/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/strand-openspec-change-at-merge/proposal.md) |
 | `sweep-alarm-inflight-pending` | archived | #801 (sweep-alarm grades a delivery that is still running as a failed sweep) | #806 | [alarms](openspec/changes/archive/sweep-alarm-inflight-pending/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/sweep-alarm-inflight-pending/proposal.md) |
@@ -314,6 +315,7 @@ Active changes: **2** · archived: **313**
 | `syntaxwarning-escape` | archived | #190 | — | [syntax-lint](openspec/changes/archive/syntaxwarning-escape/specs/syntax-lint/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/syntaxwarning-escape/proposal.md) |
 | `target-matchers-one-view` | archived | #752 | #913 | [architecture-description](openspec/changes/archive/target-matchers-one-view/specs/architecture-description/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/target-matchers-one-view/proposal.md) |
 | `tasks-gate-before-pr-open` | archived | #658 | #902 | [issue-bot-tasks-gate](openspec/changes/archive/tasks-gate-before-pr-open/specs/issue-bot-tasks-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/tasks-gate-before-pr-open/proposal.md) |
+| `test-suite-no-bytecode-litter` | archived | #839 — "make test litters the checkout with Python bytecode copies of | #1060 | [test-runner](openspec/changes/archive/test-suite-no-bytecode-litter/specs/test-runner/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/test-suite-no-bytecode-litter/proposal.md) |
 | `the-artifact-is-the-alarm` | archived | #452 | — | [bot-alarms](openspec/changes/archive/the-artifact-is-the-alarm/specs/bot-alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-artifact-is-the-alarm/proposal.md) |
 | `the-index-keeper-regenerates-both` | archived | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/archive/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | archived | #542 | — | [pr-body](openspec/changes/archive/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-other-two-pr-bodies/proposal.md) |

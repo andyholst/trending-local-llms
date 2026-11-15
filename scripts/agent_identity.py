@@ -84,6 +84,25 @@ PEOPLE = (
 )
 
 
+#: The GitHub-synthesized squash identity (issue #835). The auto-merge actor is
+#: the owner account whose email is `support@docondee.com`, so every squash GitHub
+#: completes on `master` carries the ACCOUNT DISPLAY NAME as the commit author —
+#: `Mr. Asimov <support@docondee.com>` — beside the `Co-authored-by:` trailer it
+#: synthesizes from the real author. Measured 2026-11-15: 103 such commits (101
+#: committed `GitHub <noreply@github.com>`, 2 pre-protection direct pushes). Rule 3
+#: forbids rewriting them; `check_commit_authorship.py` classifies this exact shape
+#: as LEGACY merged history. No job may ever CONFIGURE this name — the identity
+#: seam refuses it.
+SQUASH_NAME = "Mr. Asimov"
+
+
+def synthesized_account_identity(raw: str) -> bool:
+    """True when an identity is the GitHub account display name on the agent email."""
+    name, email = _split(raw)
+    return (" ".join(name.split()).lower() == "mr. asimov"
+            and email.lower() == AGENT_EMAIL.lower())
+
+
 def _split(raw: str) -> tuple[str, str]:
     """`Name <email>` -> `(name, email)`; a bare string is a name."""
     m = _IDENT_RE.match((raw or "").strip())
