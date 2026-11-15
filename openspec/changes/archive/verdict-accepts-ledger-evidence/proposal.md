@@ -1,6 +1,7 @@
 # Proposal: verdict-accepts-ledger-evidence
 
 Issue: #993 — "make issue-verdict refuses a close whose EVIDENCE is a ledger row, so
+PR: #995
 already-fixed pipeline-failure issues re-enter the queue"
 
 ## Why

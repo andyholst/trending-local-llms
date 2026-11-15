@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **294**
+Active changes: **2** · archived: **295**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `verdict-accepts-ledger-evidence` | active | #993 — "make issue-verdict refuses a close whose EVIDENCE is a ledger row, so | — | [triage-evidence](openspec/changes/verdict-accepts-ledger-evidence/specs/triage-evidence/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/verdict-accepts-ledger-evidence/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -304,6 +303,7 @@ Active changes: **3** · archived: **294**
 | `unique-rule-numbers` | archived | #270 | — | [rulebook-integrity](openspec/changes/archive/unique-rule-numbers/specs/rulebook-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/unique-rule-numbers/proposal.md) |
 | `unstructured-is-not-a-capacity` | archived | #213 (the finding, measured while attempting its backfill) | — | [data-gap-analysis](openspec/changes/archive/unstructured-is-not-a-capacity/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/unstructured-is-not-a-capacity/proposal.md) |
 | `unstructured-needs-a-figure` | archived | #456 — `data-gap: storage_offload (40 models)` | — | [data-gap-reporting](openspec/changes/archive/unstructured-needs-a-figure/specs/data-gap-reporting/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/unstructured-needs-a-figure/proposal.md) |
+| `verdict-accepts-ledger-evidence` | archived | #993 — "make issue-verdict refuses a close whose EVIDENCE is a ledger row, so | #995 | [triage-evidence](openspec/changes/archive/verdict-accepts-ledger-evidence/specs/triage-evidence/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/verdict-accepts-ledger-evidence/proposal.md) |
 | `verdict-grammar-tolerates-formatting` | archived | #245 | — | [issue-triage](openspec/changes/archive/verdict-grammar-tolerates-formatting/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/verdict-grammar-tolerates-formatting/proposal.md) |
 | `verdict-hold-ceiling` | archived | #203 — `A verdict hold has no ceiling: a re-review that keeps re-dating it holds an issue for ever` | — | [issue-queue](openspec/changes/archive/verdict-hold-ceiling/specs/issue-queue/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/verdict-hold-ceiling/proposal.md) |
 | `verdict-output-format` | archived | #346 | — | [ci-output-safety](openspec/changes/archive/verdict-output-format/specs/ci-output-safety/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/verdict-output-format/proposal.md) |
