@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **322**
+Active changes: **2** · archived: **323**
 
 ## Active changes
 
@@ -302,6 +302,7 @@ Active changes: **2** · archived: **322**
 | `search-tool-pinned` | archived | #362 | — | [bot-agent-run-safety](openspec/changes/archive/search-tool-pinned/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/search-tool-pinned/proposal.md) |
 | `secret-guard-derived-names` | archived | #223 — `the no-secret-VALUE guard's key set is a hand-maintained allowlist — a new key added to a workflow is invisible until added to SECRET_VARS` | — | [secret-output-guard](openspec/changes/archive/secret-guard-derived-names/specs/secret-output-guard/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/secret-guard-derived-names/proposal.md) |
 | `secret-guard-file-set` | archived | #224 — `tech-debt: the no-secret-VALUE guard only scans a fixed suffix set` | — | [secret-output-guard](openspec/changes/archive/secret-guard-file-set/specs/secret-output-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/secret-guard-file-set/proposal.md) |
+| `secret-selftest-mount-proof` | archived | #840 | #1079 | [secret-scan-self-test](openspec/changes/archive/secret-selftest-mount-proof/specs/secret-scan-self-test/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/secret-selftest-mount-proof/proposal.md) |
 | `section-boundary-anchors` | archived | #509 (tech-debt, "A guard that reads the wrong section boundary passes silently") | — | [architecture-description](openspec/changes/archive/section-boundary-anchors/specs/architecture-description/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/section-boundary-anchors/proposal.md) |
 | `section6-role-text-reviewed` | archived | #508 | — | [architecture-role-boundary](openspec/changes/archive/section6-role-text-reviewed/specs/architecture-role-boundary/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/section6-role-text-reviewed/proposal.md) |
 | `setup-output-visible` | archived | #222 — `tech-debt: \`make _setup >/dev/null\` hides the seam's own diagnosis on the wrapped targets` | — | [install-seam](openspec/changes/archive/setup-output-visible/specs/install-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/setup-output-visible/proposal.md) |
