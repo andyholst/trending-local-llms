@@ -431,6 +431,112 @@ def test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_n
               oid("refs/remotes/origin/master") == before["master"], "")
 
 
+def test_a_failed_rebase_round_announces_on_the_pr_thread_once():
+    """End-to-end (issue #964's Done-when): a rebase the sweep TRIED and git refused must
+    leave an artifact ON the PR thread, not only a stdout line in a scheduled run's log.
+
+    Planted: a behind `ci/` branch whose rebase git rejects while GitHub-side facts still say
+    MERGEABLE/CLEAN (the measured shape — GitHub has not yet labelled the PR CONFLICTING, so
+    the sweep attempts it), plus a behind-and-clean `ci/` branch that rebases fine. Round 1
+    with --rebase --comment: exactly ONE marker-stamped comment on the failing PR naming the
+    remedy, the failed branch byte-identical, and NOTHING posted for the landed rebase.
+    Round 2 on the same (branch, head), seeing its own marker on the thread: nothing new."""
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        origin = td / "origin.git"
+        assert _gitfx(td, "init", "--bare", "-q", str(origin)).returncode == 0
+        seed = td / "seed"
+        seed.mkdir()
+        assert _gitfx(seed, "init", "-q", "-b", "master").returncode == 0
+        _commit_fx(seed, "base.txt", "base\n", "base commit")
+        base_oid = _gitfx(seed, "rev-parse", "HEAD").stdout.strip()
+        _gitfx(seed, "remote", "add", "origin", str(origin))
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        # behind-and-clean bot branch: rebases fine, must NOT be announced
+        _gitfx(seed, "checkout", "-q", "-b", "ci/clean-12-b", base_oid)
+        _commit_fx(seed, "feature.txt", "feature\n", "feat: clean work")
+        _gitfx(seed, "push", "-q", "origin", "ci/clean-12-b")
+
+        # master moves ahead ON THE FILE the other branch edits
+        _gitfx(seed, "checkout", "-q", "master")
+        _commit_fx(seed, "base.txt", "base moved on master\n", "master moves ahead")
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        # behind bot branch whose rebase git rejects — GitHub-side facts still CLEAN
+        _gitfx(seed, "checkout", "-q", "-b", "ci/clash-11-a", base_oid)
+        _commit_fx(seed, "base.txt", "clash from the branch\n", "conflicting edit")
+        _gitfx(seed, "push", "-q", "origin", "ci/clash-11-a")
+
+        clone = td / "clone"
+        assert _gitfx(td, "clone", "-q", str(origin), str(clone)).returncode == 0
+
+        def oid(ref):
+            return _gitfx(clone, "rev-parse", ref).stdout.strip()
+
+        before = {b: oid(f"refs/remotes/origin/{b}")
+                  for b in ("ci/clash-11-a", "ci/clean-12-b", "master")}
+        prs = [pr(11, "ci/clash-11-a", oid=before["ci/clash-11-a"]),
+               pr(12, "ci/clean-12-b", oid=before["ci/clean-12-b"])]
+        runs = {p["headRefOid"]: 1 for p in prs}  # none silent: the announcement is the rebaser's own
+
+        sd = td / "stub"
+        sd.mkdir()
+        (sd / "gh").write_text(STUB, encoding="utf-8")
+        (sd / "gh").chmod(0o755)
+        (sd / "prs.json").write_text(json.dumps(prs), encoding="utf-8")
+        (sd / "posted").write_text("", encoding="utf-8")
+        (sd / "comments.json").write_text(json.dumps({"comments": []}), encoding="utf-8")
+
+        def sweep():
+            env = {**os.environ, "PATH": f"{sd}:{os.environ['PATH']}",
+                   "FAKE_PRS": str(sd / "prs.json"), "FAKE_POSTED": str(sd / "posted"),
+                   "FAKE_COMMENTS": str(sd / "comments.json")}
+            runs_file = sd / "runs.json"
+            runs_file.write_text(json.dumps([{"databaseId": 1}]), encoding="utf-8")
+            for oid_ in runs:
+                env[f"FAKE_RUNS_{oid_[:7]}"] = str(runs_file)
+            return subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r",
+                                   "--rebase", "--comment", "--dir", str(clone)],
+                                  capture_output=True, text=True, env=env)
+
+        proc = sweep()
+        posted = (sd / "posted").read_text(encoding="utf-8")
+        key = PH.rebase_run_key("ci/clash-11-a", before["ci/clash-11-a"])
+        check("failed rebase: the run says git refused the attempt",
+              "kept: rebase conflicted" in proc.stdout, proc.stdout + proc.stderr)
+        check("failed rebase: the round announces itself on the PR thread",
+              "announced the failed rebase" in proc.stdout, proc.stdout + proc.stderr)
+        check("failed rebase: exactly ONE comment posted for the failed (branch, head)",
+              posted.count(PH.REBASE_MARKER) == 1, posted[:400])
+        rb = [h for h in PH.parse_markers(posted) if h["kind"] == "rebase_failed"]
+        check("failed rebase: the comment carries the registered marker stamped with the failed pair",
+              len(rb) == 1 and rb[0]["bot"] == "pr-health" and rb[0]["run"] == key,
+              posted[:300])
+        check("failed rebase: the comment names the failure and the concrete remedy",
+              "rebase conflicted" in posted and "make base-rebase BRANCH=ci/clash-11-a" in posted
+              and "worktree-resume" in posted, posted[:400])
+        check("failed rebase: a LANDED rebase posts nothing",
+              "ci/clean-12-b" not in posted, posted[:400])
+        _gitfx(clone, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")
+        check("failed rebase: the failed branch stays byte-identical (never force-pushed)",
+              oid("refs/remotes/origin/ci/clash-11-a") == before["ci/clash-11-a"], "")
+        check("failed rebase: the clean branch still rebased fine",
+              _gitfx(clone, "merge-base", "--is-ancestor", "refs/remotes/origin/master",
+                     "refs/remotes/origin/ci/clean-12-b").returncode == 0, "")
+        check("failed rebase: master itself is untouched",
+              oid("refs/remotes/origin/master") == before["master"], "")
+
+        # Round 2: the thread now carries this round's marker — nothing new is posted.
+        (sd / "comments.json").write_text(json.dumps({"comments": [{"body": posted}]}),
+                                          encoding="utf-8")
+        proc2 = sweep()
+        posted2 = (sd / "posted").read_text(encoding="utf-8")
+        check("failed rebase: the same failed round is announced ONCE (shared marker parser dedups)",
+              "already announced" in proc2.stdout and posted2 == posted,
+              proc2.stdout + proc2.stderr)
+
+
 def main() -> int:
     print("silent PR alarm (issue #442)")
     test_a_conflicting_pr_is_silent_and_named()
@@ -447,6 +553,7 @@ def main() -> int:
     test_no_script_reads_a_number_straight_from_the_environment()
     test_rebase_plan_classifies_by_ownership_and_conflict()
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
+    test_a_failed_rebase_round_announces_on_the_pr_thread_once()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

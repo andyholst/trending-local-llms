@@ -17,11 +17,20 @@ The queue alarm (#252) covers a stuck JOB; nothing covered a PR that runs nothin
 Exit codes: 0 = every open PR has runs and no conflict, 1 = at least one is silent (so the
 scheduled run goes red), 2 = a GitHub call failed. Read-only apart from one deduplicated
 comment per affected PR.
+
+With `--rebase --comment` the rebaser half announces itself too (issue #964): a rebase the
+sweep TRIED and could not land (git conflict, failed lease push, unreadable refs) posts ONE
+marker-deduplicated comment on that PR's thread — stamped with the failed (branch, head) pair,
+so a weekly round that rediscovers the same failing attempt does not re-post, while a head that
+moved may be announced again. Without the announcement the only trace was a stdout line in a
+scheduled run's log, and the PR stayed quietly drifted forever.
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -30,7 +39,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_int import env_int  # noqa: E402  (one reading of an integer setting — issue #487)
 
-MARKER = "pr-health-alarm"
+try:  # the ONE definition of the markers this script writes (scripts/bot_markers.py, rule 6j)
+    from bot_markers import marker_name, parse_markers, start_marker
+except ImportError:  # run from the repo root
+    from scripts.bot_markers import marker_name, parse_markers, start_marker
+
+MARKER = marker_name("pr-health", "alarm")
+REBASE_MARKER = marker_name("pr-health", "rebase_failed")
 
 #: How to get a silent PR moving again, in the order that works: fetch the branch, bring it up
 #: to the base, push to the PR'S HEAD — which is not necessarily the local branch's name.
@@ -220,6 +235,61 @@ def run_rebaser(cwd: Path, prs: list[dict]) -> list[dict]:
     return outcomes
 
 
+def failed_rebases(outcomes: list[dict]) -> list[dict]:
+    """A rebase the sweep TRIED and could not land (issue #964): every outcome under the
+    `rebase-if-behind` plan action that did not end in `REBASED:`/`already current` — git
+    conflict, failed lease push, worktree failure, unreadable refs. A branch the plan refused
+    to touch (a conflict GitHub already knows, a human-owned branch) was never attempted, so
+    it is not a failed round."""
+    return [o for o in outcomes
+            if o.get("action") == "rebase-if-behind"
+            and not str(o.get("done") or "").startswith("REBASED")
+            and str(o.get("done") or "") != "already current"]
+
+
+def rebase_run_key(head: str, oid: str) -> str:
+    """The failed (branch, head) pair, as the `run=` value a marker dedup keys on (the shape
+    parse_markers accepts: letters, digits, `_`, `-`). Keyed on the head oid, so one failed
+    round is announced ONCE and a branch whose head later moved may be announced again."""
+    safe = re.sub(r"[^A-Za-z0-9_-]+", "-", str(head or ""))
+    return f"{safe}_{str(oid or '')[:12]}"
+
+
+def rebase_already_announced(repo: str, number: int, run_key: str) -> bool:
+    """Does this PR's thread already carry THIS round's rebase-failed marker? (read through
+    the shared marker parser — reader and writer cannot drift, rule 6d/6j)."""
+    comments = _gh_json(["pr", "view", str(number), "--repo", repo, "--json", "comments"]) or {}
+    text = json.dumps(comments.get("comments") or [])
+    return any(r["run"] == run_key for r in parse_markers(text)
+               if r["bot"] == "pr-health" and r["kind"] == "rebase_failed")
+
+
+def rebase_comment_body(o: dict, run_key: str) -> str:
+    """Announce a failed rebaser round on the PR thread (issue #964): what git refused, that
+    the branch was left untouched, and the concrete way to land it (rule 6s: conflict
+    resolution belongs to the PR's own fix loop or a human)."""
+    lines = [start_marker("pr-health", dt.datetime.now(dt.timezone.utc), run_key,
+                          kind="rebase_failed"),
+             "",
+             "**The sweep tried to rebase this PR's branch and the attempt failed** "
+             "(issue #964):",
+             "",
+             f"- `make pr-health --rebase` outcome: `{o['done']}`",
+             "",
+             "The branch was left **untouched** — the rebaser never force-pushes a conflicted "
+             "result. To land it:",
+             "",
+             f"- `make worktree-resume BRANCH={o['head']}`",
+             f"- `make base-rebase BRANCH={o['head']}` onto the fetched tip — a conflict aborts "
+             "the rebase, keeps every commit, and is resolved by this PR's own fix loop "
+             "(`scripts/fix_loop.sh`) or a human.",
+             "",
+             "Until it lands, every sweep round rediscovers this branch and repeats the same "
+             "failing attempt with no trace outside the run log — this comment is that "
+             "attempt's artifact."]
+    return "\n".join(lines)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Report silent open pull requests (issue #442)")
     ap.add_argument("--repo", default=None, help="owner/name (default: gh's own resolution)")
@@ -260,20 +330,44 @@ def main() -> int:
     # the fetched base and pushed to its own PR head — GitHub starts that PR's gates
     # again. A conflicted PR and a human-owned branch are reported, never rewritten
     # (rule 6r). This is orthogonal to the silent verdict below.
+    rebaser_outcomes: list[dict] = []
     if args.rebase:
-        for o in run_rebaser(Path(args.dir) if args.dir else Path.cwd(), prs):
+        rebaser_outcomes = run_rebaser(Path(args.dir) if args.dir else Path.cwd(), prs)
+        for o in rebaser_outcomes:
             print(f"  rebaser #{o['number']} {o['head']}: {o['done']}")
 
-    if not silent:
-        return 0
-
     repo = args.repo or ""
-    if not repo and args.comment:
+    if args.comment and not repo:
         try:
             repo = (_gh_json(["repo", "view", "--json", "nameWithOwner"]) or {}).get(
                 "nameWithOwner", "")
         except (RuntimeError, ValueError):
             repo = ""
+
+    # ANNOUNCE THE FAILED REBASER ROUNDS (issue #964): an attempted rebase that did not land
+    # used to exist only as one stdout line in a scheduled run's log, so the next round
+    # rediscovers the same branch and repeats the same failing attempt forever. With
+    # --comment each failed (branch, head) gets ONE marker-deduplicated comment on its own
+    # PR thread, naming the remedy. This is the comment half of the rebaser; the verdict
+    # below stays untouched.
+    if args.comment:
+        oids = {int(p.get("number") or 0): str(p.get("headRefOid") or "") for p in prs}
+        for o in failed_rebases(rebaser_outcomes):
+            key = rebase_run_key(o["head"], oids.get(int(o["number"] or 0), ""))
+            try:
+                if repo and rebase_already_announced(repo, int(o["number"]), key):
+                    print(f"  #{o['number']}: failed rebase already announced for {key} — "
+                          "not commenting again")
+                    continue
+                _gh(["pr", "comment", str(o["number"]), *repo_args, "--body",
+                     rebase_comment_body(o, key)])
+                print(f"  #{o['number']}: announced the failed rebase on the PR thread")
+            except RuntimeError as exc:
+                print(f"  #{o['number']}: could not announce the failed rebase ({exc})",
+                      file=sys.stderr)
+
+    if not silent:
+        return 0
 
     # Silent-PR flagging (issue #814 retired the dispatched repairer): the sweep comments
     # the remedy; conflict resolution belongs to the PR's own implementer loop
