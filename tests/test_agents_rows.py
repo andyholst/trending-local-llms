@@ -230,6 +230,39 @@ def test_the_storage_offload_row_is_written():
           "issue #163" in sec.split("test_storage_offload_backfill", 1)[0][-4000:], "not near #163")
 
 
+def test_the_invalid_change_repair_rows_are_written():
+    """#1087: the two rows #962 owed (its §6q keeper-registry text and its §8 guard row).
+
+    The code shipped (scripts/openspec_invalid_change_repair.py, the qa-validate
+    `invalid-change-repair` job) in a headless leg that could not write the protected rulebook,
+    so `make owed-rows-check` measured them OUTSTANDING. They are landed here from the ledger and
+    pinned, so the registry cannot lose the third repairer shape again.
+    """
+    rule = rule_section("6q")
+    check("rows: §6q names the invalid-active-change shape",
+          "an ACTIVE change that shipped" in rule and "INCOMPLETE" in rule, rule[:120])
+    check("rows: §6q names the repairer job and its target",
+          "invalid-change-repair" in rule and "openspec-invalid-change-repair" in rule, rule[:160])
+    check("rows: §6q names the three-state verdict the repair owns",
+          "DRIFT=none|index-drift|invalid-change" in rule, rule[:200])
+    check("rows: §6q states the registry names all three repairers",
+          "the registry names all three" in rule, rule[:240])
+    sec = section8()
+    row = next((l for l in sec.splitlines()
+                if "tests/test_openspec_invalid_change_repair.py" in l), "")
+    check("rows: §8 names the invalid-change guard module", bool(row), "no §8 row names it")
+    check("rows: §8 names the repair seam and its Makefile targets",
+          "scripts/openspec_invalid_change_repair.py" in row
+          and "openspec-invalid-change-check" in row
+          and "openspec-invalid-change-repair" in row, row[:160])
+    check("rows: §8 states outranking + no-fabrication (rule 2)",
+          "OUTRANKS the index drift" in row and "NO spec or task text is fabricated" in row,
+          row[:200])
+    check("rows: the modules the row names exist",
+          (ROOT / "tests/test_openspec_invalid_change_repair.py").exists()
+          and (ROOT / "scripts/openspec_invalid_change_repair.py").exists())
+
+
 def test_the_rows_name_modules_that_exist():
     sec = section8()
     for mod in ("tests/test_ci_wiring.py", "tests/test_code_review.py", "tests/test_fix_loop.py",
@@ -424,6 +457,7 @@ def main() -> int:
     test_the_ledger_evidence_close_row_is_written()
     test_the_implement_stream_row_is_written()
     test_the_docstring_staleness_row_is_written()
+    test_the_invalid_change_repair_rows_are_written()
     test_the_section2_row_names_the_gap_filer_guard()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
