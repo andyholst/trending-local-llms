@@ -21,11 +21,12 @@ A reference that does not resolve FAILS the gate, naming the change, the spec
 file:line (scenario) and the missing target.
 
 A `- **Test:**` line that names no `path::test` — prose, or a bare path with no
-`::symbol` — is NOT a resolvable reference: it is REPORTED as a note, never
-counted as resolved, so the scan cannot read as verified while its references
-are prose. A change whose specs carry no `- **Test:**` lines at all is likewise
-reported as having nothing to resolve. Archived changes are excluded (they keep
-the shape they were reviewed with).
+`::symbol` — is NOT a resolvable reference: it FAILS the gate (issue #870).
+Tolerated NOTEs were the defect: the scan read as "OK" while its citations were
+prose, and a green run that prints "not resolved" every time trains readers to
+skim gate output. A change whose specs carry no `- **Test:**` lines at all is
+likewise a failure — nothing locks its scenarios. Archived changes are excluded
+(they keep the shape they were reviewed with).
 
 Wired into `make openspec-spec-tests-check`, which `make openspec-check` runs
 and `qa-validate` calls on every PR (rule 6d: reachable from a make target CI
@@ -126,10 +127,11 @@ def _scan_change(
 ) -> tuple[list[str], list[str]]:
     """(failures, notes) for one ACTIVE change's specs.
 
-    A failure is a resolvable-reference-shaped citation that does not resolve.
-    A note is a `- **Test:**` line that names no `path::symbol`, or a change
-    whose specs carry no Test line at all — reported so the scan is never
-    vacuous, never a failure.
+    A failure is a citation that does not resolve — including a `- **Test:**`
+    line that names no `path::symbol`, and a change whose specs carry no Test
+    line at all (issue #870: notes are no longer tolerated). `notes` is kept in
+    the contract so a future report-only annotation stays visible, but this
+    scan no longer produces any.
     """
     failures: list[str] = []
     notes: list[str] = []
@@ -147,9 +149,10 @@ def _scan_change(
             saw_test_line = True
             ref = _reference(line)
             if ref is None:
-                notes.append(
-                    f"[openspec-test-lines] NOTE {name}:{rel}:{i} a `- **Test:**` "
-                    f"line names no `<path>::<test>` reference — not resolved"
+                failures.append(
+                    f"[openspec-test-lines] FAIL {name}: the `- **Test:**` line at "
+                    f"{rel}:{i} names no `<path>::<test>` reference — an ACTIVE "
+                    f"spec may not cite prose (issue #870)"
                 )
                 continue
             reason = _resolve(ref, root)
@@ -159,9 +162,9 @@ def _scan_change(
                     f"`{ref}` — {reason}"
                 )
     if not saw_test_line:
-        notes.append(
-            f"[openspec-test-lines] NOTE {name}: no `- **Test:**` reference in any "
-            f"active spec — nothing to resolve (vacuous)"
+        failures.append(
+            f"[openspec-test-lines] FAIL {name}: no `- **Test:**` reference in any "
+            f"active spec — nothing locks its scenarios (issue #870)"
         )
     return failures, notes
 
