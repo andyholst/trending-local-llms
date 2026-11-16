@@ -491,7 +491,7 @@ issue that skips a section is refused.
    targets each job calls, the product end to end, one line per script and the
    `README.md` sections a refresh rewrites — is derived from the tree by
    `scripts/architecture_bot.py` (`make architecture-refresh`), and
-   `architecture-check` ALSO fails on a stale block. `architecture-bot.yml`
+   `architecture-check` ALSO fails on a stale block — even a docstring-only edit under scripts/ is enough to stale the inventory block (issue #947, measured: `scripts/run_tests.sh`'s docstring gaining "(issues #176, #192 and #890)" reds `make architecture-check` with no behavior change), so any change touching a script docstring MUST ride `make architecture-refresh` in the same commit, and `tests/test_architecture_bot.py` pins the whole-tree staleness assertion. `architecture-bot.yml`
    regenerates it weekly (Wednesday) and opens a PR only when the block changed, so prose that
    stops matching the code is repaired instead of sitting until someone rereads
    it. A change that moves a workflow, a target, a script or a README section
