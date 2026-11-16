@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **335**
+Active changes: **2** · archived: **336**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `model-footprint-copy-traceability` | active | #934 | — | [footprint-traceability](openspec/changes/model-footprint-copy-traceability/specs/footprint-traceability/spec.md) | 6/6 | [proposal.md](openspec/changes/model-footprint-copy-traceability/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -226,6 +225,7 @@ Active changes: **3** · archived: **335**
 | `measurement-store-split` | archived | #689 — `arch(data): normalize per-engine measurement store out of the model catalog` | — | [measurement-store](openspec/changes/archive/measurement-store-split/specs/measurement-store/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/measurement-store-split/proposal.md) |
 | `message-pattern-in-pr-bodies` | archived | #771 | #772 | [message-pattern-enforcement](openspec/changes/archive/message-pattern-in-pr-bodies/specs/message-pattern-enforcement/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/message-pattern-in-pr-bodies/proposal.md) |
 | `missing-gh-fixture-host-path` | archived | #895 | #927 | [testing](openspec/changes/archive/missing-gh-fixture-host-path/specs/testing/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/missing-gh-fixture-host-path/proposal.md) |
+| `model-footprint-copy-traceability` | archived | #934 | #1104 | [footprint-traceability](openspec/changes/archive/model-footprint-copy-traceability/specs/footprint-traceability/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/model-footprint-copy-traceability/proposal.md) |
 | `model-id-matches-the-contract` | archived | #464 (measured on PR #461) | — | [model-id](openspec/changes/archive/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/model-id-matches-the-contract/proposal.md) |
 | `models-order-matches-readme` | archived | #708 | — | [models-order-matches-readme](openspec/changes/archive/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/models-order-matches-readme/proposal.md) |
 | `no-clarify-detach` | archived | #679 — the recurring refresh-leg failure (measured on the amd leg, run | — | [unattended-leg](openspec/changes/archive/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/no-clarify-detach/proposal.md) |

@@ -1,6 +1,7 @@
 # Change: model-footprint-copy-traceability
 
 **Issue:** #934
+PR: #1104
 
 ## Why
 
