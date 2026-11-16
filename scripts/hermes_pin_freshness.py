@@ -5,8 +5,12 @@ Issue #1091, rule 6k. The Makefile's ``HERMES_VERSION ?=`` and the Dockerfile's
 ``ARG HERMES_VERSION="…"`` pin the agent version every fleet image bakes (issue #218
 pins the two together); this reads BOTH back — a silent disagreement between them is
 itself the #218 defect, so the check REFUSES (exit 2) before comparing anything — and
-compares the pin against the upstream channel tag
-(``repos/NousResearch/hermes-agent/releases/latest``):
+compares the pin against the upstream release channel. The channel repo is DERIVED
+from the Makefile's install-pin block (issue #1094, rule 6d): the single
+``HERMES_CHANNEL_REPO ?=`` line beside ``HERMES_INSTALL_URL`` is the ONLY spelling in
+this repository, read through the same seam as the pins (``gh api
+repos/<channel>/releases/latest``), and a Makefile without it is a loud refusal —
+never a fallback literal baked into this script:
 
   equal           -> prints ``pin=<v> channel=<v> OK``, exit 0
   channel newer   -> exit 1 (loud: the queued-alarm sweep goes red) and files ONE
@@ -34,12 +38,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import bot_markers  # noqa: E402  (rule 6j: the marker shape lives there, never re-spelled here)
 
-#: The upstream release channel the pin is compared against (rule 6k: the agent
-#: installed through the ONE seam comes from this channel).
-CHANNEL_REPO = "NousResearch/hermes-agent"
-
 #: The upgrade rule the filed issue names: an upgrade raises BOTH pins together.
 UPGRADE_ISSUE = 218
+
+#: The channel repo has ONE spelling — the Makefile's install-pin block (issue
+#: #1094, rule 6d). This module NEVER bakes a channel literal; it reads the pin.
+CHANNEL_PIN_NAME = "HERMES_CHANNEL_REPO"
 
 #: The pin-drift dedup signature lives in scripts/bot_markers.py (rule 6j); this module
 #: renders it THROUGH the registered name and never re-spells it.
@@ -50,6 +54,7 @@ _LABEL = "tech-debt"
 _TAG = re.compile(r"^v?(\d+(?:\.\d+)*)(?:[-+].*)?$")
 _MAKE_PIN = re.compile(r"^\s*HERMES_VERSION\s*\?=\s*([^\s#]+)", re.M)
 _DOCKER_PIN = re.compile(r'^\s*ARG\s+HERMES_VERSION\s*=?\s*"?([^\s"#]+)"?', re.M)
+_MAKE_CHANNEL = re.compile(r"^\s*HERMES_CHANNEL_REPO\s*\?=\s*([^\s#]+)", re.M)
 
 
 class PinMismatch(Exception):
@@ -108,11 +113,30 @@ def read_pins(makefile: Path, dockerfile: Path) -> tuple[str, int, str, int]:
     return mk_pin, mk_line, df_pin, df_line
 
 
-def channel_tag(from_file: str | None) -> str:
+def read_channel_repo(makefile: Path) -> str:
+    """The channel repo DERIVED from the Makefile's install-pin block (issue #1094,
+    rule 6d): the single ``HERMES_CHANNEL_REPO ?=`` line beside ``HERMES_INSTALL_URL``
+    is the ONLY spelling in this repository. A Makefile without it is a loud refusal
+    naming the pin — never a fallback to a channel literal baked into this script."""
+    try:
+        text = makefile.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ChannelUnreadable(f"cannot read the channel pin in {makefile}: {exc}") from exc
+    m = _MAKE_CHANNEL.search(text)
+    if not m:
+        raise ChannelUnreadable(
+            f"{makefile.name} carries no `{CHANNEL_PIN_NAME} ?=` pin — the upstream release "
+            f"channel has no home to read it from (issue #1094: the channel's ONE spelling is "
+            f"the Makefile install-pin block)")
+    return m.group(1)
+
+
+def channel_tag(from_file: str | None, channel_repo: str) -> str:
     """The upstream channel's release tag, read from the REAL payload.
 
+    ``channel_repo`` is derived from the Makefile pin (``read_channel_repo``).
     ``from_file`` names a recorded payload (the FROM_FILE seam); without it this runs
-    ``gh api repos/NousResearch/hermes-agent/releases/latest`` and treats any failure —
+    ``gh api repos/<channel_repo>/releases/latest`` and treats any failure —
     gh missing, network, a payload with no ``tag_name`` — as UNREADABLE (exit 2), never
     as "fresh".
     """
@@ -122,11 +146,11 @@ def channel_tag(from_file: str | None) -> str:
         except (OSError, json.JSONDecodeError) as exc:
             raise ChannelUnreadable(f"recorded channel payload {from_file!r} unreadable: {exc}") from exc
     else:
-        proc = subprocess.run(["gh", "api", f"repos/{CHANNEL_REPO}/releases/latest"],
+        proc = subprocess.run(["gh", "api", f"repos/{channel_repo}/releases/latest"],
                               capture_output=True, text=True)
         if proc.returncode != 0:
             raise ChannelUnreadable(
-                f"`gh api repos/{CHANNEL_REPO}/releases/latest` failed "
+                f"`gh api repos/{channel_repo}/releases/latest` failed "
                 f"(rc={proc.returncode}): {proc.stderr.strip()[:300] or 'no stderr'}")
         try:
             payload = json.loads(proc.stdout)
@@ -169,14 +193,15 @@ def already_filed(repo: str, signature: str) -> str | None:
     return None
 
 
-def issue_body(repo: str, pin: str, mk_line: int, df_line: int, channel: str) -> str:
+def issue_body(repo: str, pin: str, mk_line: int, df_line: int, channel: str,
+               channel_repo: str) -> str:
     signature = drift_signature(channel)
     utc = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     return (
         "## Finding\n\n"
         f"- **Evidence:** `Makefile:{mk_line}` pins `HERMES_VERSION ?= {pin}` and "
         f"`Dockerfile:{df_line}` pins `ARG HERMES_VERSION=\"{pin}\"` — the agent version every "
-        f"fleet image bakes (issue #{UPGRADE_ISSUE}, rule 6k); `repos/{CHANNEL_REPO}/releases/latest` "
+        f"fleet image bakes (issue #{UPGRADE_ISSUE}, rule 6k); `repos/{channel_repo}/releases/latest` "
         f"answers tag `{channel}` — the upstream stable channel is strictly NEWER than the pin. "
         f"Compared by `make hermes-pin-freshness REPO={repo}`.\n"
         f"- **Why:** a pinned build is reproducible but silently ages: every image keeps baking "
@@ -193,7 +218,8 @@ def issue_body(repo: str, pin: str, mk_line: int, df_line: int, channel: str) ->
     )
 
 
-def file_drift_issue(repo: str, pin: str, mk_line: int, df_line: int, channel: str) -> tuple[str, str]:
+def file_drift_issue(repo: str, pin: str, mk_line: int, df_line: int, channel: str,
+                     channel_repo: str) -> tuple[str, str]:
     """('filed'|'already-filed', url) — ONE issue per drifted channel version, marker-deduped."""
     signature = drift_signature(channel)
     existing = already_filed(repo, signature)
@@ -203,7 +229,7 @@ def file_drift_issue(repo: str, pin: str, mk_line: int, df_line: int, channel: s
              f"(make hermes-pin-freshness)")
     proc = subprocess.run(
         ["gh", "issue", "create", "--repo", repo, "--title", title, "--label", _LABEL,
-         "--body", issue_body(repo, pin, mk_line, df_line, channel)],
+         "--body", issue_body(repo, pin, mk_line, df_line, channel, channel_repo)],
         capture_output=True, text=True)
     if proc.returncode != 0:
         raise SystemExit(f"[hermes-pin-freshness] gh issue create failed (rc={proc.returncode}): "
@@ -216,6 +242,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True, help="owner/name — the repo the drift issue is filed on")
     ap.add_argument("--from-file", help="a recorded channel payload (the FROM_FILE seam) instead of `gh api`")
+    ap.add_argument("--channel-repo", help="the release channel repo the recipe passes from the "
+                                           "Makefile's `HERMES_CHANNEL_REPO ?=` knob; without it "
+                                           "the same line is read from --makefile (issue #1094)")
     ap.add_argument("--makefile", default=str(ROOT / "Makefile"), help=argparse.SUPPRESS)
     ap.add_argument("--dockerfile", default=str(ROOT / "Dockerfile"), help=argparse.SUPPRESS)
     ap.add_argument("--dry-run", action="store_true", help="report the drift without filing")
@@ -235,7 +264,18 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        channel = channel_tag(args.from_file)
+        # The channel repo has ONE spelling: the Makefile install-pin block (issue #1094).
+        # The recipe forwards the expanded knob via --channel-repo; a direct invocation
+        # reads the SAME `HERMES_CHANNEL_REPO ?=` line from --makefile. Either way the
+        # script never consults a channel literal it baked.
+        channel_repo = args.channel_repo or read_channel_repo(Path(args.makefile))
+    except ChannelUnreadable as exc:
+        print(f"[hermes-pin-freshness] FAIL — the channel pin is missing: {exc}",
+              file=sys.stderr)
+        return 2
+
+    try:
+        channel = channel_tag(args.from_file, channel_repo)
     except ChannelUnreadable as exc:
         print(f"[hermes-pin-freshness] FAIL — the upstream channel could not be read: {exc}",
               file=sys.stderr)
@@ -256,7 +296,7 @@ def main(argv: list[str] | None = None) -> int:
         print("[hermes-pin-freshness] --dry-run: filing skipped")
         return 1
     try:
-        verdict, url = file_drift_issue(args.repo, pin, mk_line, df_line, channel)
+        verdict, url = file_drift_issue(args.repo, pin, mk_line, df_line, channel, channel_repo)
     except SystemExit as exc:
         print(f"[hermes-pin-freshness] FAIL — the drift issue could not be filed: {exc}", file=sys.stderr)
         return 2

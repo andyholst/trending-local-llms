@@ -118,6 +118,12 @@ HERMES_PACKAGE     ?= hermes-agent
 # TOGETHER with the Dockerfile's ARG HERMES_VERSION default; an upgrade is then
 # an explicit, reviewable change instead of whatever the channel serves.
 HERMES_VERSION     ?= 0.23.1
+# The upstream release CHANNEL the pin-freshness check queries (issue #1094, rule
+# 6d): `scripts/hermes_pin_freshness.py` READS this line — the channel repo has
+# no other spelling in scripts/, so an upstream move is a one-line edit HERE,
+# inside the install-pin block the Dockerfile ARGs and
+# `tests/test_install_hermes_ci.py` already pair.
+HERMES_CHANNEL_REPO ?= NousResearch/hermes-agent
 # Raise the per-reply output cap. The deepseek model was truncating its reply
 # mid-search (hit the default max_tokens), dropping the incomplete action and
 # failing `make refresh`. At 8000 the heavier Metal search still
@@ -1610,7 +1616,8 @@ check-branch-protection: ## Guard Rule 1: the base branch must carry auto-merge-
 # (issue #218 pins the two together). The check reads BOTH pins back — a silent
 # disagreement is the #218 defect and refuses with exit 2 before the channel is even
 # consulted — and compares the pin against the upstream release channel
-# (`gh api repos/NousResearch/hermes-agent/releases/latest`, or a recorded payload via
+# (`gh api repos/$(HERMES_CHANNEL_REPO)/releases/latest` — the channel repo is
+# read from the install-pin block above, issue #1094; or a recorded payload via
 # FROM_FILE — the same fixture seam as check-branch-protection): equal -> `pin=<v>
 # channel=<v> OK` exit 0; channel strictly newer -> files ONE marker-deduplicated
 # tech-debt issue naming the remedy (raise BOTH pins together per #218) and exits 1,
@@ -1619,7 +1626,7 @@ check-branch-protection: ## Guard Rule 1: the base branch must carry auto-merge-
 # alarm job (report-and-file), never a PR gate.
 .PHONY: _hermes-pin-freshness
 _hermes-pin-freshness:
-	python3 scripts/hermes_pin_freshness.py --repo "$(REPO)" $(if $(FROM_FILE),--from-file "$(FROM_FILE)",) $(if $(DRY),--dry-run,)
+	python3 scripts/hermes_pin_freshness.py --repo "$(REPO)" --channel-repo "$(HERMES_CHANNEL_REPO)" $(if $(FROM_FILE),--from-file "$(FROM_FILE)",) $(if $(DRY),--dry-run,)
 
 .PHONY: hermes-pin-freshness
 hermes-pin-freshness: ## Compare the pinned Hermes agent version against the upstream release channel (REPO=<owner/name> or FROM_FILE=<recorded.json>, DRY=1 previews; issue #1091)
