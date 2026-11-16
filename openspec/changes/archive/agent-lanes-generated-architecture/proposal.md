@@ -1,6 +1,7 @@
 # The generated inventory names the agent lanes: leg preloads, marker verbs, skill contracts (issue #935)
 
 **Issue:** [#935](https://github.com/andyholst/trending-local-llms/issues/935)
+PR: #1105
 **Capability:** `architecture-inventory`
 
 ## Why
