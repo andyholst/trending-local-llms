@@ -339,6 +339,7 @@ def test_keeper_dedup_counts_only_mergeable_keepers():
     for name, prefix in (
         ("index-repair", "ci/openspec-index-repair-"),
         ("architecture-repair", "ci/architecture-block-repair-"),
+        ("invalid-change-repair", "ci/openspec-invalid-change-repair-"),
     ):
         job = wf["jobs"].get(name)
         check(f"qa: {name} exists to hold its keeper dedup", job is not None,
@@ -405,6 +406,57 @@ def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architec
     check("qa: architecture-repair holds only what it writes",
           perms.get("contents") == "write" and perms.get("pull-requests") == "write",
           perms)
+
+
+def test_invalid_change_repair_job_is_the_sibling_keeper_for_an_incomplete_active_change():
+    """#962 (rule 6q/6h): an ACTIVE change that reached master incomplete (a proposal, no
+    capability spec, no task checklist) reds the push-to-master `validate` at
+    `openspec-check` while `OPENSPEC.md` is current, so `index-repair` answers `DRIFT=none`
+    and the red has a named cause with no named repairer (measured on run 43610043055).
+    qa-validate grows `invalid-change-repair`, the sibling keeper for that shape: it asks the
+    script for the verdict (rule 6d — the workflow re-decides nothing), and lands a keeper PR
+    only when the verdict is `REPAIR=archived` and only when the archive move plus the
+    regenerated index is all that changed — a keeper archives an incomplete change, it never
+    writes the spec or the task list it is missing (rule 2)."""
+    wf = load("qa-validate.yml")
+    job = wf["jobs"].get("invalid-change-repair")
+    check("qa: invalid-change-repair job exists", job is not None, sorted(wf["jobs"]))
+    if not job:
+        return
+    needs = job["needs"] if isinstance(job["needs"], list) else [job["needs"]]
+    check("qa: invalid-change-repair needs the guard AND validate (guard first, rule 6j)",
+          needs == ["guard", "validate"], needs)
+    text = run_text(job)
+    check("qa: invalid-change-repair classifies through the make target (rule 6m)",
+          "make openspec-invalid-change-repair" in text, "")
+    check("qa: a refuse-to-classify exits 2 loudly",
+          "exit 2" in text and "could not classify" in text, text[:400])
+    check("qa: the index-only shape is left to the index keeper (one verdict seam)",
+          "REPAIR=none" in text and "index-repair owns" in text, text[:600])
+    gate = str(job.get("if", ""))
+    check("qa: a keeper PR lands only on a FAILED push to master (event-driven, rule 6q)",
+          "failure()" in gate and "github.event_name == 'push'" in gate
+          and "refs/heads/master" in gate, gate)
+    check("qa: a keeper PR never lands on a PR event (no recursive repair of its own PR)",
+          "pull_request" not in str(job), str(job)[:600])
+    check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
+          "make openspec-invalid-change-repair-pr-body MASTER_SHA=" in text, "")
+    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert)",
+          "ci/openspec-invalid-change-repair-$(date -u +%Y%m%dT%H%M%SZ)" in text, "")
+    check("qa: it commits as the repo agent (rule 3f)", "make git-identity" in text, "")
+    check("qa: only the archive move + regenerated index may land (a wider drift is refused)",
+          "refusing to land" in text and "git diff --quiet -- OPENSPEC.md" in text
+          and "openspec/changes" in text, "")
+    check("qa: its dedupe read shares the keeper step's loud-failure shell and keys on the "
+          "exact branch prefix",
+          "set -euo pipefail" in text
+          and 'startswith("ci/openspec-invalid-change-repair-")' in text, "")
+    check("qa: invalid-change-repair never merges and never pushes master (rules 1/6e)",
+          "gh pr merge" not in text and "push origin master" not in text
+          and "--admin" not in text, "")
+    perms = job.get("permissions", {})
+    check("qa: invalid-change-repair holds only what it writes",
+          perms.get("contents") == "write" and perms.get("pull-requests") == "write", perms)
 
 
 def test_qa_validate_header_points_at_pinned_action_howto():
@@ -3021,6 +3073,7 @@ def main() -> int:
     test_qa_validate()
     test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate()
     test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate()
+    test_invalid_change_repair_job_is_the_sibling_keeper_for_an_incomplete_active_change()
     test_keeper_dedup_counts_only_mergeable_keepers()
     test_qa_validate_header_points_at_pinned_action_howto()
     test_fix_pipeline_retired()

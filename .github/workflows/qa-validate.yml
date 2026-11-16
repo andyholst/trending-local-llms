@@ -448,6 +448,102 @@ jobs:
             --title "chore(openspec): repair the generated index left stale by a master merge" \
             --body-file -
 
+  # The keeper for the THIRD way the OpenSpec gate goes red (issue #962, measured on
+  # run 43610043055 / push aec1410): an ACTIVE change reached `master` structurally
+  # incomplete — a bare `openspec/changes/<name>/proposal.md` with no
+  # `specs/<capability>/spec.md` and no `tasks.md`. `openspec validate --changes`
+  # refuses it, every open PR's `validate` waits behind it, and `index-repair`
+  # answers `DRIFT=none` because the index really was current: the red had a named
+  # cause and no named repairer. `make openspec-invalid-change-repair` archives the
+  # incomplete change (its proposal declaring the #952 keeper exemption) and
+  # regenerates the index; the verdict REPAIR=none|archived and the DRIFT=
+  # invalid-change classification live in scripts/openspec_invalid_change_repair.py
+  # and scripts/openspec_index_repair.py (rule 6d — this job re-decides nothing) and
+  # it lands a PR only when the archive move plus OPENSPEC.md is all that changed.
+  # It writes no spec and no task list: an incomplete change is archived and
+  # declared, never completed by a keeper (rule 2). Like the other keepers it records
+  # and carries NO closing keyword (rule 6e).
+  invalid-change-repair:
+    name: invalid-change-repair (keeper PR archiving an invalid active OpenSpec change)
+    needs: [guard, validate]
+    if: >-
+      failure() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: invalid-change-repair
+      cancel-in-progress: false
+    steps:
+      - name: Checkout the exact master commit that went red
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+
+      - name: Archive every structurally incomplete active change (the verdict is the script's)
+        run: |
+          set -euo pipefail
+          if ! make openspec-invalid-change-repair RUN_ID="${{ github.run_id }}"; then
+            echo "invalid-change-repair could not classify the OpenSpec gate against this tree (the script exits 2 on an unreadable change tree) — refusing to land anything."
+            exit 2
+          fi
+
+      - name: Land the archive as a keeper PR (owner PAT; records, never closes)
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
+          MASTER_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- OPENSPEC.md && [ -z "$(git status --porcelain)" ]; then
+            echo "REPAIR=none — no ACTIVE change is structurally incomplete (the verdict is the script's). If this red was index staleness, index-repair owns that shape; if it was another gate, neither keeper lands here."
+            exit 0
+          fi
+          CHANGED=$(git status --porcelain)
+          # The repair moves an incomplete change into the archive and rewrites the
+          # generated index. Anything else in the tree means this keeper is landing
+          # more than its repair — refused, never narrowed by hand.
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            path="${line:3}"
+            case "$path" in
+              openspec/changes/*|OPENSPEC.md) : ;;
+              *)
+                echo "The repair moved more than a change and the generated index — refusing to land:"
+                echo "$CHANGED"
+                exit 1 ;;
+            esac
+          done <<< "$CHANGED"
+          # #960: only a MERGEABLE keeper suppresses a new one; a DIRTY/CONFLICTING
+          # keeper lands nothing and must never stand in for the repair.
+          KEEPERS=$(gh pr list --repo "$REPO" --state open --json headRefName,mergeStateStatus \
+            --jq '[.[] | select(.headRefName | startswith("ci/openspec-invalid-change-repair-")) | .mergeStateStatus]')
+          OPEN=$(echo "$KEEPERS" | jq '[.[] | select(. != "DIRTY" and . != "CONFLICTING")] | length')
+          DIRTY=$(echo "$KEEPERS" | jq '[.[] | select(. == "DIRTY" or . == "CONFLICTING")] | length')
+          if [ "$OPEN" -gt 0 ]; then
+            echo "A mergeable invalid-change-repair keeper PR is already open — not opening a duplicate (one keeper per repair)."
+            exit 0
+          fi
+          if [ "$DIRTY" -gt 0 ]; then
+            echo "[keeper-dedup #960] An earlier invalid-change-repair keeper is open but UNMERGEABLE (mergeStateStatus DIRTY/CONFLICTING) — it lands nothing; filing a fresh keeper against the current tip."
+          fi
+          branch="ci/openspec-invalid-change-repair-$(date -u +%Y%m%dT%H%M%SZ)"
+          make git-identity
+          git switch -c "$branch"
+          git add -A openspec/changes OPENSPEC.md
+          git commit -m "chore(openspec): archive the invalid active change that reded master's OpenSpec gate (refs #962)"
+          git push origin "HEAD:refs/heads/$branch"
+          make openspec-invalid-change-repair-pr-body MASTER_SHA="$MASTER_SHA" RUN_URL="$RUN_URL" RUN_ID="$RUN_ID" \
+            | gh pr create --base master --head "$branch" \
+              --title "chore(openspec): archive the invalid active change left on master" \
+              --body-file -
+
   # The sibling keeper for the OTHER generated half of the pair (issue #861, rule 6q):
   # `architecture-check` is a gate of the same `validate` job and goes red on the same
   # event — a merged PR that moved a target/script/job without `architecture-refresh`
