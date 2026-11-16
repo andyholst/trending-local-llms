@@ -1,6 +1,7 @@
 # Proposal: land-invalid-change-repair-owed-rows
 
 Issue: #1087 (the §6q keeper-registry text and the §8 guard row #962 owed and could not write)
+PR: #1106
 
 ## Why
 
