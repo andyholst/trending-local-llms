@@ -1,6 +1,7 @@
 # Proposal: rebaser-failures-announced-on-pr-thread
 
 Issue: #964
+PR: #1076
 
 ## Why
 
