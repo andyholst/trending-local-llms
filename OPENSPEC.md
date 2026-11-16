@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **321**
+Active changes: **2** · archived: **322**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `query-coverage-wiring-derives-live-models` | active | #1077 | — | [query-coverage-wiring](openspec/changes/query-coverage-wiring-derives-live-models/specs/query-coverage-wiring/spec.md) | 3/3 | [proposal.md](openspec/changes/query-coverage-wiring-derives-live-models/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -258,6 +257,7 @@ Active changes: **3** · archived: **321**
 | `publish-is-verified` | archived | #228 — `tech-debt: Nothing verifies what the registry serves after a publish` | — | [agent-image-publish](openspec/changes/archive/publish-is-verified/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/publish-is-verified/proposal.md) |
 | `qa-validate-carries-the-guard` | archived | #279 | — | [qa-validate-carries-the-guard](openspec/changes/archive/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/qa-validate-carries-the-guard/proposal.md) |
 | `query-coverage-guard` | archived | #264 | — | [query-coverage](openspec/changes/archive/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/query-coverage-guard/proposal.md) |
+| `query-coverage-wiring-derives-live-models` | archived | #1077 | #1078 | [query-coverage-wiring](openspec/changes/archive/query-coverage-wiring-derives-live-models/specs/query-coverage-wiring/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/query-coverage-wiring-derives-live-models/proposal.md) |
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
 | `queued-alarm-diagnosis-half-runs-anyway` | archived | #1024 — "the queued-alarm job skips its diagnosis half when the sweep-alarm step goes red first" | #1026 | [alarms](openspec/changes/archive/queued-alarm-diagnosis-half-runs-anyway/specs/alarms/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/queued-alarm-diagnosis-half-runs-anyway/proposal.md) |
 | `queued-run-alarm` | archived | #252 | — | [queued-run-alarm](openspec/changes/archive/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/queued-run-alarm/proposal.md) |

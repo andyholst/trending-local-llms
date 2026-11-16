@@ -31,3 +31,4 @@ derivation regressions still go red through the planted stores.
 - Any change to `update_trending` derivation behavior — none needed; the fix is in the test.
 
 **Issue:** #1077
+PR: #1078
