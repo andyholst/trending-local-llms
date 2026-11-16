@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **333**
+Active changes: **2** · archived: **334**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `mark-untraceable-engine-build-prose-unverified` | active | #883 | — | [data-gap-analysis](openspec/changes/mark-untraceable-engine-build-prose-unverified/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/mark-untraceable-engine-build-prose-unverified/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -215,6 +214,7 @@ Active changes: **3** · archived: **333**
 | `ledger-fix-pr-stamp` | archived | #1068 | #1069 | [openspec-lifecycle](openspec/changes/archive/ledger-fix-pr-stamp/specs/openspec-lifecycle/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/ledger-fix-pr-stamp/proposal.md) |
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
+| `mark-untraceable-engine-build-prose-unverified` | archived | #883 | #1101 | [data-gap-analysis](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
 | `master-push-guard-959` | archived | #959 | #966 | [master-push-guard](openspec/changes/archive/master-push-guard-959/specs/master-push-guard/spec.md) | 6/9 · 3 blocked | [proposal.md](openspec/changes/archive/master-push-guard-959/proposal.md) |
 | `measurement-alias-map-data` | archived | #652 | #881 | [measurement-attribution](openspec/changes/archive/measurement-alias-map-data/specs/measurement-attribution/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/measurement-alias-map-data/proposal.md) |

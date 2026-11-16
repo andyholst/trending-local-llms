@@ -1,6 +1,7 @@
 # Engine-build claims no post supports are declared unverified on the model row
 
 **Issue:** [#883](https://github.com/andyholst/trending-local-llms/issues/883)
+PR: #1101
 **Capability:** `data-gap-analysis`
 
 ## Why
