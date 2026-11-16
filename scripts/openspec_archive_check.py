@@ -28,6 +28,17 @@ tool the pipelines use for every GitHub fact):
     never recorded, so the change never reached archive/ alone.
   * an active change with NO `PR:` and NO issue is skipped — there is nothing to
     assert; an ARCHIVED change is skipped — a merged PR is its expected state.
+  * with `--pr <n>` (issue #1109), the MIRROR question: every issue the PR CLOSES
+    must be named by the `Issue:` line of at least one change — ACTIVE or ARCHIVED
+    — in the tree (parsed with `openspec_index._refs`, the one parser). A closed
+    issue named by NO change is a failure (exit 1): rule 6f says work starts by
+    creating the change, before any code, and every earlier gate asked only the
+    reverse question — measured 2026-11-16, the branches for #1095/#934/#935
+    (PRs #1100/#1104/#1105) implemented with no change directory and passed every
+    openspec gate. Keeper branches (`ci/keeper-*`, #872) and refresh branches
+    (`ci/trending-refresh-*`) implement no issue by their own rule (rule 6e), so
+    they owe no change — the same branch-shape discrimination `make pr-closure`
+    applies, read from the PR's `headRefName`.
 
 The second prong is what makes the guard NON-vacuous: before it, a change with
 no `PR:` line was invisible. A GitHub read that fails is LOUD (exit 2): a check
@@ -58,7 +69,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from openspec_index import discover, _refs  # noqa: E402  (one parser, one layout — rule 6d)
-from pr_closure import closing_bindings, visible_text  # noqa: E402  (one closing-keyword parser — rule 6d)
+from pr_closure import (  # noqa: E402  (one closing-keyword parser — rule 6d)
+    KEEPER_BRANCH,
+    REFRESH_BRANCH,
+    closing_bindings,
+    visible_text,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _PR_NUMBER = re.compile(r"#(\d+)")
@@ -137,6 +153,41 @@ def closing_pr_issues(repo: str, pr: int) -> set[int]:
         body = ""
     text = visible_text(f"{title}\n{body}")
     return {issue for issue, _refs_seen in closing_bindings(text)}
+
+
+def head_ref_name(repo: str, pr: int) -> str:
+    """The PR's head branch name — the shape the closure gate already discriminates on.
+
+    Keeper branches (`ci/keeper-*`, #872) and refresh branches (`ci/trending-refresh-*`)
+    implement no issue by their own rule (rule 6e), so they owe no OpenSpec change.
+    A PR whose branch cannot be read raises — the caller reports exit 2.
+    """
+    out = _gh(["api", f"repos/{repo}/pulls/{pr}", "--jq", ".head.ref"])
+    if out in {"", "null"}:
+        raise RuntimeError(f"gh api repos/{repo}/pulls/{pr} answered {out!r} for .head.ref")
+    return out
+
+
+def referenced_issues(all_changes: list[tuple[str, Path]]) -> set[int]:
+    """Every issue named by an `Issue:` line of ANY change (active OR archived).
+
+    The change-required prong asks the mirror question of #779/#866: not "is an
+    active change stranded?" but "does each issue this PR closes have a change
+    at all?" An ARCHIVED change counts — the work was tracked and finished its
+    life; an issue named by NO change was implemented without one (rule 6f:
+    work starts by creating the change, before any code).
+    """
+    seen: set[int] = set()
+    for _name, path in all_changes:
+        n = pr_number(_refs(path / "proposal.md").get("Issue"))
+        if n is not None:
+            seen.add(n)
+    return seen
+
+
+def untracked_closing_violations(closing: set[int], referenced: set[int]) -> list[int]:
+    """Closed issues with no change naming them — the untracked implementations."""
+    return sorted(closing - referenced)
 
 
 def closing_pr_violations(
@@ -229,17 +280,32 @@ def main(argv: list[str] | None = None) -> int:
         bad_merged, bad_closed = violations(active, merged_lookup(repo), issue_closed_lookup(repo))
         closing: set[int] = set()
         bad_closing: list[tuple[str, int]] = []
+        bad_untracked: list[int] = []
+        exempt: str | None = None
         if a.pr is not None:
             closing = closing_pr_issues(repo, a.pr)
             bad_closing = closing_pr_violations(active, closing, a.pr)
+            # The change-required prong (issue #1109): each closed issue needs a
+            # change. Keeper/refresh branches implement no issue by shape
+            # (rule 6e), the same discrimination make pr-closure applies.
+            head = head_ref_name(repo, a.pr)
+            if KEEPER_BRANCH.match(head):
+                exempt = f"keeper branch {head} implements no issue (rule 6e)"
+            elif REFRESH_BRANCH.match(head):
+                exempt = f"refresh branch {head} implements no issue (rule 6e)"
+            else:
+                bad_untracked = untracked_closing_violations(
+                    closing, referenced_issues(active + archived))
     except RuntimeError as exc:
         print(f"[archive-check] FAIL cannot read PR/issue state: {exc}", file=sys.stderr)
         return 2
 
-    if not bad_merged and not bad_closed and not bad_closing:
+    if not bad_merged and not bad_closed and not bad_closing and not bad_untracked:
         pr_part = (
             f", --pr {a.pr} closes {', '.join(f'#{n}' for n in sorted(closing)) or 'nothing'} "
-            f"(no active change left unarchived)"
+            f"(no active change left unarchived"
+            + (f", change-required exempt: {exempt}" if exempt else "")
+            + ")"
             if a.pr is not None
             else ""
         )
@@ -275,6 +341,15 @@ def main(argv: list[str] | None = None) -> int:
             f"still ACTIVE (a `PR:` line is not enough, issue #866): its merge would strand the "
             f"change. Run `make openspec-record-pr ISSUE={n} PR={a.pr}` (it records AND archives) "
             f"or `make openspec-archive NAME={name}` + `make openspec-index` on this branch before merge",
+            file=sys.stderr,
+        )
+    for n in bad_untracked:
+        print(
+            f"[archive-check]   CLOSE of #{n} — NO OpenSpec change (active or archived) names "
+            f"Issue: #{n}: this PR would land untracked work (rule 6f: work starts by creating "
+            f"the change, before any code). Run `make openspec-new NAME=<kebab-name>` and bind "
+            f"`Issue: #{n}` in the proposal, or `make openspec-record-pr ISSUE={n} PR={a.pr}` "
+            f"when a change exists but lost its binding",
             file=sys.stderr,
         )
     return 1
