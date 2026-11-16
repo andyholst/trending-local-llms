@@ -166,6 +166,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make owed-rows-check REPO="${{ github.repository }}"
+      # Hermes pin freshness (issue #1091, rule 6k): the Makefile's `HERMES_VERSION ?=` and the
+      # Dockerfile's `ARG HERMES_VERSION` pin the agent version every fleet image bakes (issue #218
+      # pins the two together). The check reads BOTH pins back — a silent disagreement is the #218
+      # defect and refuses with exit 2 before the channel is even consulted — and compares the pin
+      # against the upstream release channel (`repos/NousResearch/hermes-agent/releases/latest`):
+      # equal → `pin=<v> channel=<v> OK` green; channel strictly NEWER → files ONE marker-
+      # deduplicated tech-debt issue naming the remedy (raise BOTH pins together per #218) and
+      # turns THIS sweep RED (exit 1) — a pinned build silently aging must not wait for the next
+      # image dispatch to be noticed; pin ahead → reported, stays green; unreadable channel → red
+      # (exit 2), never a silent clean. Files with the default token (filing needs issues:write).
+      - name: Fail loudly when the Hermes agent pin lags the upstream release channel (issue #1091)
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make hermes-pin-freshness REPO="${{ github.repository }}"
       # Rule 1's mechanical guard (issue #959): "never push master directly" was a convention —
       # master had zero branch protection and two direct pushes landed on 2026-11-14 (e571aa3,
       # 4c7c555). master must carry the protection shape that admits ONLY the auto-merge squash

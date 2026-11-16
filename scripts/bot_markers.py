@@ -96,8 +96,15 @@ FIELDS: frozenset = frozenset({("issue-bot", "verdict")})
 #: last was `pipeline-rediagnose` (issue #987), whose AGENTS.md §6j row an attended run wrote.
 UNREGISTERED_OWED: dict[str, int] = {}
 
+#: The pin-drift dedup signature (issue #1091): `scripts/hermes_pin_freshness.py` stamps
+#: it on the ONE `tech-debt` issue it files when the upstream Hermes release channel is
+#: strictly newer than the pinned agent version, so the same drifted channel version is
+#: filed once. A dedup key, same family as the two signature keys in DEDUP_KEYS below —
+#: not a bot window.
+PIN_DRIFT_SIGNATURE_KEY = "hermes-pin-drift-signature"
+
 #: Markers that are dedup keys, not windows — exposed for reference, never rewritten here.
-DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature")
+DEDUP_KEYS = ("data-gap-signature", "tech-debt-signature", PIN_DRIFT_SIGNATURE_KEY)
 
 #: An issue AUTHOR declares its body follows the MESSAGE PATTERN by carrying this marker (issue
 #: #771). Not a bot window and not a dedup key: it is a DECLARATION, like the owed-row marker
