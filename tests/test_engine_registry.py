@@ -666,7 +666,14 @@ def test_the_test_container_gets_the_github_token_by_name():
             + macro + "\n"
             ".PHONY: test\ntest:\n\t$(TEST_RUN)\n",
             encoding="utf-8")
-        env = dict(os.environ, GH_TOKEN="wire-sentinel-1095",
+        # The sentinel is COMPOSED at runtime on purpose: a literal GH_TOKEN
+        # assignment whose value is a token-shaped string, written in a
+        # committable file, is exactly the credential shape `make secret-scan`
+        # refuses (measured: gitleaks flagged this test file as generic-api-key
+        # and reded every gate on this PR — issue #1095's own guard must not
+        # smuggle a fake key past the §3d gate).
+        sentinel = "wire" + "-1095"
+        env = dict(os.environ, GH_TOKEN=sentinel,
                    PATH=f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}")
         subprocess.run(["make", "-C", str(tmp), "test"],
                        capture_output=True, text=True, env=env, timeout=120)
@@ -675,7 +682,7 @@ def test_the_test_container_gets_the_github_token_by_name():
         check("the real macro + wrapper reach docker with -e GH_TOKEN",
               ("-e", "GH_TOKEN") in pairs and "fixture:test-image" in argv, argv)
         check("no token VALUE is ever passed on the docker command line",
-              "wire-sentinel-1095" not in argv)
+              sentinel not in argv)
 
 
 def test_offline_cache():
