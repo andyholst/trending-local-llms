@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **335**
+Active changes: **2** · archived: **336**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `one-source-hermes-channel-pin` | active | #1094 | — | [hermes-pin-freshness](openspec/changes/one-source-hermes-channel-pin/specs/hermes-pin-freshness/spec.md) | 12/12 | [proposal.md](openspec/changes/one-source-hermes-channel-pin/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -239,6 +238,7 @@ Active changes: **3** · archived: **335**
 | `one-post-one-row` | archived | #389 — `tech-debt: One real post becomes several store measurements that disagree` | — | [ingest](openspec/changes/archive/one-post-one-row/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/one-post-one-row/proposal.md) |
 | `one-run-two-engine-names` | archived | #459 | — | [data-integrity](openspec/changes/archive/one-run-two-engine-names/specs/data-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/one-run-two-engine-names/proposal.md) |
 | `one-slow-query-is-not-a-red-run` | archived | #258 | — | [search-smoke](openspec/changes/archive/one-slow-query-is-not-a-red-run/specs/search-smoke/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/one-slow-query-is-not-a-red-run/proposal.md) |
+| `one-source-hermes-channel-pin` | archived | #1094 | #1108 | [hermes-pin-freshness](openspec/changes/archive/one-source-hermes-channel-pin/specs/hermes-pin-freshness/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/one-source-hermes-channel-pin/proposal.md) |
 | `one-stage-map-reader` | archived | #514 | — | [stage-wiring](openspec/changes/archive/one-stage-map-reader/specs/stage-wiring/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/one-stage-map-reader/proposal.md) |
 | `one-working-file-list` | archived | #543 | — | [bot-commit-safety](openspec/changes/archive/one-working-file-list/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/one-working-file-list/proposal.md) |
 | `only-refresh-cron-stays-active` | archived | #1029 | #1030 | [alarms](openspec/changes/archive/only-refresh-cron-stays-active/specs/alarms/spec.md)<br>[fleet-cadence](openspec/changes/archive/only-refresh-cron-stays-active/specs/fleet-cadence/spec.md)<br>[merge-gate-no-llm-calls](openspec/changes/archive/only-refresh-cron-stays-active/specs/merge-gate-no-llm-calls/spec.md) | 13/13 | [proposal.md](openspec/changes/archive/only-refresh-cron-stays-active/proposal.md) |

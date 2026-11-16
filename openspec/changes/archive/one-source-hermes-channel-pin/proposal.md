@@ -1,6 +1,7 @@
 # Change: one-source-hermes-channel-pin
 
 Issue: #1094
+PR: #1108
 
 ## Why
 
