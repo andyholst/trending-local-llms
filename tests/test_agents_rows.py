@@ -261,6 +261,38 @@ def test_the_invalid_change_repair_rows_are_written():
     check("rows: the modules the row names exist",
           (ROOT / "tests/test_openspec_invalid_change_repair.py").exists()
           and (ROOT / "scripts/openspec_invalid_change_repair.py").exists())
+def test_the_auto_merge_rebase_row_is_written():
+    """#1088: the §2 row #1049 owed (rule 6e names auto-merge's pre-squash gate; §6s names the
+    sweep rebaser's index regeneration).
+
+    The gate shipped in PR #1085 (qa-validate's `Rebase a behind-and-clean bot branch` step before
+    its squash, plus `scripts/pr_health.py` regenerating OPENSPEC.md before the leased push), but
+    a headless leg cannot write the protected rulebook (rule 3c), so the row was DECLARED owed on
+    #1088 and `make owed-rows-check` measured it OUTSTANDING. Landed here from the ledger, pinned
+    so the merge path's rulebook cannot drift from the workflow again.
+    """
+    sec2 = rule_section("6e")
+    check("rows: §2 names make auto-merge-rebase as auto-merge's pre-squash gate",
+          "auto-merge-rebase" in sec2 and "pre-squash gate" in sec2, sec2[:160])
+    check("rows: §2 names the seam script it binds",
+          "scripts/auto_merge_rebase.py" in sec2, sec2[:200])
+    check("rows: §2 states rebased=true skips the squash and the report-only partition",
+          "rebased=true" in sec2 and "report-only" in sec2, sec2[:240])
+    sec6s = rule_section("6s")
+    flat6s = " ".join(sec6s.split())
+    check("rows: §6s names the sweep rebaser's OPENSPEC.md regeneration on the rebased tree",
+          "regenerating `OPENSPEC.md` on the rebased tree" in flat6s, sec6s[:200])
+    row = next((r for r in section8().splitlines() if "test_auto_merge_rebase.py" in r), None)
+    check("rows: §8 carries the guard row for tests/test_auto_merge_rebase.py", row is not None)
+    if row:
+        for want in ("make auto-merge-rebase", "Rebase a behind-and-clean bot branch",
+                     "stale `OPENSPEC.md`", "refuses the squash when `rebased=true`",
+                     "the merge lands only at the head CI validated", "exit 3, no push",
+                     "human-owned branch stays byte-identical"):
+            check(f"rows: §8 row carries {want!r}", want in row, row[:120])
+    check("rows: the modules the row names exist",
+          (ROOT / "scripts/auto_merge_rebase.py").exists()
+          and (ROOT / "tests/test_auto_merge_rebase.py").exists())
 
 
 def test_the_rows_name_modules_that_exist():
@@ -458,6 +490,7 @@ def main() -> int:
     test_the_implement_stream_row_is_written()
     test_the_docstring_staleness_row_is_written()
     test_the_invalid_change_repair_rows_are_written()
+    test_the_auto_merge_rebase_row_is_written()
     test_the_section2_row_names_the_gap_filer_guard()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
