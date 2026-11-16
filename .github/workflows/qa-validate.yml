@@ -450,42 +450,17 @@ jobs:
           REPO: ${{ github.repository }}
           MASTER_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # ONE landing sequence (issue #869): the nothing-to-land case, the extra-changes
+        # refusal, the #960 mergeable-only keeper dedupe, the agent-identity commit/push and
+        # the body from `make openspec-index-repair-pr-body` all live in scripts/keeper_pr.py;
+        # this job names only THIS keeper's file, prefix, messages and body target.
         run: |
           set -euo pipefail
-          if git diff --quiet -- OPENSPEC.md; then
-            echo "OPENSPEC.md already matched the merged tree (DRIFT=none) — the red was not index staleness; no keeper PR."
-            exit 0
-          fi
-          CHANGED=$(git status --porcelain)
-          if [ "$CHANGED" != " M OPENSPEC.md" ]; then
-            echo "The regeneration changed more than the generated index — refusing to land:"
-            echo "$CHANGED"
-            exit 1
-          fi
-          # #960: only a keeper that CAN land suppresses a new one. A DIRTY/
-          # CONFLICTING keeper builds no merge commit and lands nothing, so it
-          # must not stand in for the repair (measured: run 43610043055 left
-          # master red because DIRTY keeper #956 counted as "already open").
-          KEEPERS=$(gh pr list --repo "$REPO" --state open --json headRefName,mergeStateStatus \
-            --jq '[.[] | select(.headRefName | startswith("ci/openspec-index-repair-")) | .mergeStateStatus]')
-          OPEN=$(echo "$KEEPERS" | jq '[.[] | select(. != "DIRTY" and . != "CONFLICTING")] | length')
-          DIRTY=$(echo "$KEEPERS" | jq '[.[] | select(. == "DIRTY" or . == "CONFLICTING")] | length')
-          if [ "$OPEN" -gt 0 ]; then
-            echo "A mergeable index-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
-            exit 0
-          fi
-          if [ "$DIRTY" -gt 0 ]; then
-            echo "[keeper-dedup #960] An earlier index-repair keeper is open but UNMERGEABLE (mergeStateStatus DIRTY/CONFLICTING) — it lands nothing; filing a fresh keeper against the current tip."
-          fi
-          branch="ci/openspec-index-repair-$(date -u +%Y%m%dT%H%M%SZ)"
-          make git-identity
-          git switch -c "$branch"
-          git add OPENSPEC.md
-          git commit -m "chore(openspec): regenerate the generated index after a master merge left it stale (refs #304)"
-          git push origin "HEAD:refs/heads/$branch"
-          make openspec-index-repair-pr-body MASTER_SHA="$MASTER_SHA" RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
-            --title "chore(openspec): repair the generated index left stale by a master merge" \
-            --body-file -
+          make keeper-pr FILE=OPENSPEC.md BRANCH_PREFIX=ci/openspec-index-repair DEDUPE=1 \
+            COMMIT_MESSAGE="chore(openspec): regenerate the generated index after a master merge left it stale (refs #304)" \
+            PR_TITLE="chore(openspec): repair the generated index left stale by a master merge" \
+            BODY_TARGET=openspec-index-repair-pr-body \
+            BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"
 
   # The keeper for the THIRD way the OpenSpec gate goes red (issue #962, measured on
   # run 43610043055 / push aec1410): an ACTIVE change reached `master` structurally
@@ -626,37 +601,13 @@ jobs:
           REPO: ${{ github.repository }}
           MASTER_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # ONE landing sequence (issue #869): the sibling of index-repair above — the whole
+        # guard/dedupe/branch/commit/push/body chain lives in scripts/keeper_pr.py (rule 6d:
+        # the #960 mergeable-only discriminator is fixed in ONE place, not re-typed per job).
         run: |
           set -euo pipefail
-          if git diff --quiet -- ARCHITECTURE.md; then
-            echo "ARCHITECTURE.md's block already matched the merged tree (DRIFT=none) — the red was not block staleness; no keeper PR."
-            exit 0
-          fi
-          CHANGED=$(git status --porcelain)
-          if [ "$CHANGED" != " M ARCHITECTURE.md" ]; then
-            echo "The regeneration changed more than the generated block — refusing to land:"
-            echo "$CHANGED"
-            exit 1
-          fi
-          # #960: the sibling keeper, same discriminator — only a MERGEABLE
-          # keeper suppresses a new one; an unmergeable one lands nothing.
-          KEEPERS=$(gh pr list --repo "$REPO" --state open --json headRefName,mergeStateStatus \
-            --jq '[.[] | select(.headRefName | startswith("ci/architecture-block-repair-")) | .mergeStateStatus]')
-          OPEN=$(echo "$KEEPERS" | jq '[.[] | select(. != "DIRTY" and . != "CONFLICTING")] | length')
-          DIRTY=$(echo "$KEEPERS" | jq '[.[] | select(. == "DIRTY" or . == "CONFLICTING")] | length')
-          if [ "$OPEN" -gt 0 ]; then
-            echo "A mergeable architecture-repair keeper PR is already open — not opening a duplicate (one keeper per drift)."
-            exit 0
-          fi
-          if [ "$DIRTY" -gt 0 ]; then
-            echo "[keeper-dedup #960] An earlier architecture-repair keeper is open but UNMERGEABLE (mergeStateStatus DIRTY/CONFLICTING) — it lands nothing; filing a fresh keeper against the current tip."
-          fi
-          branch="ci/architecture-block-repair-$(date -u +%Y%m%dT%H%M%SZ)"
-          make git-identity
-          git switch -c "$branch"
-          git add ARCHITECTURE.md
-          git commit -m "docs(architecture): regenerate the inventory block after a master merge left it stale (refs #861)"
-          git push origin "HEAD:refs/heads/$branch"
-          make architecture-block-repair-pr-body MASTER_SHA="$MASTER_SHA" RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
-            --title "docs(architecture): repair the generated inventory block left stale by a master merge" \
-            --body-file -
+          make keeper-pr FILE=ARCHITECTURE.md BRANCH_PREFIX=ci/architecture-block-repair DEDUPE=1 \
+            COMMIT_MESSAGE="docs(architecture): regenerate the inventory block after a master merge left it stale (refs #861)" \
+            PR_TITLE="docs(architecture): repair the generated inventory block left stale by a master merge" \
+            BODY_TARGET=architecture-block-repair-pr-body \
+            BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"

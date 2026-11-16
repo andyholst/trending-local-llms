@@ -223,8 +223,11 @@ def test_the_repair_is_wired_through_make_and_qa_validate():
     wf = (WF / "qa-validate.yml").read_text(encoding="utf-8")
     check("qa-validate: calls make openspec-index-repair and propagates its refusal (exit 2)",
           "if ! make openspec-index-repair; then" in wf and "exit 2" in wf, "")
-    check("qa-validate: composes the body through make openspec-index-repair-pr-body",
-          "make openspec-index-repair-pr-body MASTER_SHA=" in wf, "")
+    check("qa-validate: composes the body through make openspec-index-repair-pr-body "
+          "(inline, or delegated to the keeper seam as its body target — issue #869)",
+          "make openspec-index-repair-pr-body MASTER_SHA=" in wf
+          or ("BODY_TARGET=openspec-index-repair-pr-body" in wf
+              and 'BODY_ARGS="MASTER_SHA=' in wf), "")
     check("qa-validate: never runs the repair script directly (rule 6m)",
           "python3 scripts/openspec_index_repair.py" not in wf, "")
 

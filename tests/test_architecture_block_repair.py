@@ -251,8 +251,11 @@ def test_the_repair_is_wired_through_make_and_qa_validate():
     wf = (WF / "qa-validate.yml").read_text(encoding="utf-8")
     check("qa-validate: calls make architecture-block-repair and propagates its refusal (exit 2)",
           "if ! make architecture-block-repair; then" in wf, "")
-    check("qa-validate: composes the body through make architecture-block-repair-pr-body",
-          "make architecture-block-repair-pr-body MASTER_SHA=" in wf, "")
+    check("qa-validate: composes the body through make architecture-block-repair-pr-body "
+          "(inline, or delegated to the keeper seam as its body target — issue #869)",
+          "make architecture-block-repair-pr-body MASTER_SHA=" in wf
+          or ("BODY_TARGET=architecture-block-repair-pr-body" in wf
+              and 'BODY_ARGS="MASTER_SHA=' in wf), "")
     check("qa-validate: never runs the repair script directly (rule 6m)",
           "python3 scripts/architecture_block_repair.py" not in wf, "")
 

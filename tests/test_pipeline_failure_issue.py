@@ -461,10 +461,13 @@ def test_wiring_rulebook_and_registry() -> None:
     queue = QUEUE_WF.read_text()
     check("queued-alarm runs the filer through the Makefile",
           "make pipeline-failure-issue" in queue, "")
-    check("queued-alarm lands the ledger append as a PR through the Makefile",
-          "make pipeline-failure-ledger-pr-body" in queue, "")
-    check("the ledger PR step only fires when the filer changed the ledger",
-          "git diff --quiet -- data/pipeline_failures.json" in queue, "")
+    check("queued-alarm lands the ledger append as a PR through the ONE keeper seam (#869)",
+          "make keeper-pr" in queue
+          and "BODY_TARGET=pipeline-failure-ledger-pr-body" in queue, "")
+    check("the ledger PR step fires only when the filer changed the ledger "
+          "(the seam's nothing-to-land case is pinned by tests/test_keeper_pr.py)",
+          "FILE=data/pipeline_failures.json" in queue
+          and "BRANCH_PREFIX=ci/pipeline-failure-ledger" in queue, "")
     qa = QA_WF.read_text()
     check("qa-validate runs the guard as a step", "make pipeline-failure-guard-check" in qa, "")
     check("the filer marker is registered (rule 6j)",

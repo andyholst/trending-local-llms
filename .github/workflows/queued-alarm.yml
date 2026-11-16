@@ -151,26 +151,16 @@ jobs:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # ONE landing sequence (issue #869): scripts/keeper_pr.py lands it; the nothing-to-land
+        # case prints the healthy weekly message and exits 0. No DEDUPE here: each sweep's
+        # append is its own record and may land beside an older open ledger keeper.
         run: |
           set -euo pipefail
-          if git diff --quiet -- data/pipeline_failures.json; then
-            echo "The filer appended nothing new — no ledger PR (the healthy weekly case)."
-            exit 0
-          fi
-          branch="ci/pipeline-failure-ledger-$(date -u +%Y%m%dT%H%M%SZ)"
-          make git-identity
-          git switch -c "$branch"
-          git add data/pipeline_failures.json
-          git commit -m "chore(pipeline-failures): record the main-pipeline failures diagnosed by the weekly sweep (refs #802)"
-          git push origin "HEAD:refs/heads/$branch"
-          make pipeline-failure-ledger-pr-body RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
-            --title "chore(pipeline-failures): record the diagnosed main-pipeline failures" \
-            --body-file -
-      # The owed-row ledger (issue #523): open issues declare the AGENTS.md §/row they are owed
-      # via `owed-row` markers; this reports each declared row as LANDED (with its AGENTS.md
-      # evidence line) or OUTSTANDING, so a covered issue is closable on evidence and the ledger
-      # cannot rot open. A landed/outstanding row is news (exit 0); only an unreadable ledger or
-      # a malformed marker is red (exit 2). It never edits a body, label or issue state (rule 6j).
+          make keeper-pr FILE=data/pipeline_failures.json BRANCH_PREFIX=ci/pipeline-failure-ledger \
+            COMMIT_MESSAGE="chore(pipeline-failures): record the main-pipeline failures diagnosed by the weekly sweep (refs #802)" \
+            PR_TITLE="chore(pipeline-failures): record the diagnosed main-pipeline failures" \
+            BODY_TARGET=pipeline-failure-ledger-pr-body \
+            BODY_ARGS="RUN_URL=$RUN_URL"
       - name: Report the owed-row ledger against AGENTS.md
         if: ${{ !cancelled() }}
         env:
