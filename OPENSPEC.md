@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **329**
+Active changes: **2** · archived: **330**
 
 ## Active changes
 
@@ -207,6 +207,7 @@ Active changes: **2** · archived: **329**
 | `keeper-branch-closure-shape` | archived | #872 | #875 | [pr-lifecycle](openspec/changes/archive/keeper-branch-closure-shape/specs/pr-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-branch-closure-shape/proposal.md) |
 | `keeper-dedup-mergeable-960` | archived | #960 — "an unmergeable (DIRTY) keeper PR suppresses the keeper repair it | #961 | [keeper-repair](openspec/changes/archive/keeper-dedup-mergeable-960/specs/keeper-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-dedup-mergeable-960/proposal.md) |
 | `keeper-pipeline-ledger-raise-833` | archived | #833 | #1067 | [alarms](openspec/changes/archive/keeper-pipeline-ledger-raise-833/specs/alarms/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/keeper-pipeline-ledger-raise-833/proposal.md) |
+| `keeper-pr-one-landing-sequence` | archived | #869 | #1082 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-one-landing-sequence/specs/ci-keeper-pr/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/keeper-pr-one-landing-sequence/proposal.md) |
 | `ledger-fix-pr-stamp` | archived | #1068 | #1069 | [openspec-lifecycle](openspec/changes/archive/ledger-fix-pr-stamp/specs/openspec-lifecycle/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/ledger-fix-pr-stamp/proposal.md) |
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |

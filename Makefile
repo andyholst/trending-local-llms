@@ -483,6 +483,22 @@ _git-identity:
 
 git-identity:
 	$(MAKE) _git-identity
+
+# ONE keeper-PR landing sequence (issue #869): every keeper job lands its reviewed PR through
+# this seam instead of hand-spelling the branch/commit/push/body sequence — see
+# scripts/keeper_pr.py for the order (nothing-to-land, refuse-extra-changes, #960 mergeable-only
+# dedupe, one agent-identity commit, body from the keeper's own BODY_TARGET, no closing keyword).
+.PHONY: _keeper-pr keeper-pr
+_keeper-pr:
+	python3 scripts/keeper_pr.py --file "$(FILE)" --branch-prefix "$(BRANCH_PREFIX)" \
+		--commit-message "$(COMMIT_MESSAGE)" --pr-title "$(PR_TITLE)" \
+		--body-target "$(BODY_TARGET)" $(if $(BODY_ARGS),--body-args "$(BODY_ARGS)",) \
+		$(if $(DEDUPE),--dedupe,)
+
+keeper-pr:
+	$(MAKE) _keeper-pr FILE="$(FILE)" BRANCH_PREFIX="$(BRANCH_PREFIX)" \
+		COMMIT_MESSAGE="$(COMMIT_MESSAGE)" PR_TITLE="$(PR_TITLE)" \
+		BODY_TARGET="$(BODY_TARGET)" BODY_ARGS="$(BODY_ARGS)" DEDUPE="$(DEDUPE)"
 # After the MERGE: did the issue the body claimed to close actually close? `make pr-closure`
 # PREDICTS it; this proves it (issue #288 — PR #272 left #276 open with every job green).
 .PHONY: _verify-closure verify-closure

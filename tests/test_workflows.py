@@ -309,14 +309,21 @@ def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate
     check("qa: a keeper PR never lands on a PR event (no recursive repair of its own PR)",
           "pull_request" not in str(job), str(job)[:600])
     check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
-          "make openspec-index-repair-pr-body MASTER_SHA=" in text, "")
-    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert)",
-          "ci/openspec-index-repair-$(date -u +%Y%m%dT%H%M%SZ)" in text, "")
-    check("qa: it commits as the repo agent (rule 3f)",
-          "make git-identity" in text, "")
-    check("qa: only the generated index may land (a wider drift is refused here)",
-          "refusing to land" in text and "git diff --quiet -- OPENSPEC.md" in text
-          and '" M OPENSPEC.md"' in text, "")
+          "BODY_TARGET=openspec-index-repair-pr-body" in text
+          and 'BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"' in text, text[:700])
+    check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869)",
+          "make keeper-pr" in text and "FILE=OPENSPEC.md" in text
+          and "BRANCH_PREFIX=ci/openspec-index-repair" in text, text[:700])
+    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert); "
+          "the timestamp is stamped by the seam, not the shell (issue #869)",
+          "BRANCH_PREFIX=ci/openspec-index-repair" in text and "$(date" not in text, text[:700])
+    check("qa: it commits as the repo agent (rule 3f; the seam applies agent_identity, "
+          "the step carries no inline identity)",
+          "git config" not in text and "make git-identity" not in text, text[:700])
+    check("qa: only the generated index may land (the seam refuses a wider drift — "
+          "tests/test_keeper_pr.py pins the refusal)",
+          "git switch -c" not in text and "git status --porcelain" not in text
+          and "git diff --quiet" not in text, text[:700])
     check("qa: index-repair never merges and never pushes master (rules 1/6e)",
           "gh pr merge" not in text and "push origin master" not in text
           and "--admin" not in text, "")
@@ -337,9 +344,8 @@ def test_keeper_dedup_counts_only_mergeable_keepers():
     or every failed push would spam a fresh keeper beside a working one."""
     wf = load("qa-validate.yml")
     for name, prefix in (
-        ("index-repair", "ci/openspec-index-repair-"),
-        ("architecture-repair", "ci/architecture-block-repair-"),
-        ("invalid-change-repair", "ci/openspec-invalid-change-repair-"),
+        ("index-repair", "ci/openspec-index-repair"),
+        ("architecture-repair", "ci/architecture-block-repair"),
     ):
         job = wf["jobs"].get(name)
         check(f"qa: {name} exists to hold its keeper dedup", job is not None,
@@ -347,15 +353,31 @@ def test_keeper_dedup_counts_only_mergeable_keepers():
         if not job:
             continue
         text = run_text(job)
-        check(f"qa: {name} dedup reads mergeStateStatus beside the branch prefix (#960)",
-              "--json headRefName,mergeStateStatus" in text
-              and f'startswith("{prefix}")' in text
-              and '. != "DIRTY"' in text and '. != "CONFLICTING"' in text,
-              text[:800])
-        check(f"qa: {name} names the UNMERGEABLE keeper it refused to honour (#960)",
-              "UNMERGEABLE" in text, text[:800])
-        check(f"qa: {name} suppresses only beside a MERGEABLE open keeper (#960)",
-              "A mergeable" in text and "already open" in text, text[:800])
+        check(f"qa: {name} delegates the dedupe to the ONE seam instead of re-spelling it (#869)",
+              "DEDUPE=1" in text and f"BRANCH_PREFIX={prefix}" in text
+              and "gh pr list" not in text and "mergeStateStatus" not in text, text[:800])
+    invalid = wf["jobs"].get("invalid-change-repair")
+    check("qa: invalid-change-repair exists to hold its keeper dedup (#962)",
+          invalid is not None, sorted(wf["jobs"]))
+    if invalid:
+        invalid_text = run_text(invalid)
+        check("qa: invalid-change-repair dedup reads mergeStateStatus beside the branch prefix (#960)",
+              "--json headRefName,mergeStateStatus" in invalid_text
+              and 'startswith("ci/openspec-invalid-change-repair-")' in invalid_text
+              and '. != "DIRTY"' in invalid_text and '. != "CONFLICTING"' in invalid_text,
+              invalid_text[:800])
+        check("qa: invalid-change-repair names the UNMERGEABLE keeper it refused to honour (#960)",
+              "UNMERGEABLE" in invalid_text, invalid_text[:800])
+        check("qa: invalid-change-repair suppresses only beside a MERGEABLE open keeper (#960)",
+              "A mergeable" in invalid_text and "already open" in invalid_text, invalid_text[:800])
+    keeper_src = (ROOT / "scripts" / "keeper_pr.py").read_text()
+    check("keeper seam reads mergeStateStatus beside the branch prefix (#960)",
+          "headRefName,mergeStateStatus" in keeper_src
+          and '"DIRTY", "CONFLICTING"' in keeper_src, "")
+    check("keeper seam names the UNMERGEABLE keeper it refused to honour (#960)",
+          "UNMERGEABLE" in keeper_src, "")
+    check("keeper seam suppresses only beside a MERGEABLE open keeper (#960)",
+          "a mergeable keeper pr" in keeper_src.lower() and "already open" in keeper_src, "")
 
 
 def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate():
@@ -387,18 +409,25 @@ def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architec
     check("qa: a keeper PR never lands on a PR event (no recursive repair of its own PR)",
           "pull_request" not in str(job), str(job)[:600])
     check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
-          "make architecture-block-repair-pr-body MASTER_SHA=" in text, "")
-    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert)",
-          "ci/architecture-block-repair-$(date -u +%Y%m%dT%H%M%SZ)" in text, "")
-    check("qa: it commits as the repo agent (rule 3f)",
-          "make git-identity" in text, "")
-    check("qa: only the generated block may land (a wider drift is refused here)",
-          "refusing to land" in text and "git diff --quiet -- ARCHITECTURE.md" in text
-          and '" M ARCHITECTURE.md"' in text, "")
-    check("qa: its dedupe read shares the keeper step's loud-failure shell (set -euo pipefail, "
-          "same shape as #304) and keys on the exact branch prefix",
-          "set -euo pipefail" in text
-          and 'startswith("ci/architecture-block-repair-")' in text, "")
+          "BODY_TARGET=architecture-block-repair-pr-body" in text
+          and 'BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"' in text, text[:700])
+    check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869)",
+          "make keeper-pr" in text and "FILE=ARCHITECTURE.md" in text
+          and "BRANCH_PREFIX=ci/architecture-block-repair" in text, text[:700])
+    check("qa: the branch shape carries no issue number (the #852 discriminator stays inert); "
+          "the timestamp is stamped by the seam, not the shell (issue #869)",
+          "BRANCH_PREFIX=ci/architecture-block-repair" in text and "$(date" not in text, text[:700])
+    check("qa: it commits as the repo agent (rule 3f; the seam applies agent_identity, "
+          "the step carries no inline identity)",
+          "git config" not in text and "make git-identity" not in text, text[:700])
+    check("qa: only the generated block may land (the seam refuses a wider drift — "
+          "tests/test_keeper_pr.py pins the refusal)",
+          "git switch -c" not in text and "git status --porcelain" not in text
+          and "git diff --quiet" not in text, text[:700])
+    check("qa: its dedupe goes through the seam with DEDUPE=1 and re-spells nothing in "
+          "the shell (issue #869; the loud-failure exit 2 is pinned by tests/test_keeper_pr.py)",
+          "set -euo pipefail" in text and "DEDUPE=1" in text
+          and "gh pr list" not in text, text[:700])
     check("qa: architecture-repair never merges and never pushes master (rules 1/6e)",
           "gh pr merge" not in text and "push origin master" not in text
           and "--admin" not in text, "")
