@@ -803,7 +803,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 217 make targets, 84 files in `scripts/`)
+### Bots in the tree (11 pipelines, 219 make targets, 85 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -865,7 +865,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `workflow_dispatch`
 - **jobs:** `guard`, `alarm` (needs `guard`)
-- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1); `make sweep-alarm` — Fail loudly when the WEEKLY issue sweep has not been DELIVERED (REPO=<owner/name>; the window is the script's weekly default unless MAX_AGE_HOURS is supplied — issue #804); `make freshness-alarm` — Fail when the newest refresh snapshot is older than MAX_AGE_HOURS (issue #452); `make master-alarm` — Fail when the newest push-to-master qa-validate run is red, so a broken master has a signal (REPO=<owner/name>, LIMIT=10; issue #527); `make pipeline-failure-issue` — Diagnose each unfiled main-pipeline failure from its logs and file it as a tech-debt issue (REPO=<owner/name>, WINDOW_HOURS=192, DRY=1 previews; issue #802); `make keeper-pr`; `make owed-rows-check` — Report the owed-row ledger: open issues' owed AGENTS.md rows vs the rulebook (REPO=<owner/name>, LIMIT=300; issue #523); `make check-branch-protection` — Guard Rule 1: the base branch must carry auto-merge-shaped branch protection (REPO=<owner/name> or FROM_FILE=<recorded.json>, BRANCH=master; issue #959)
+- **calls:** `make queued-alarm` — Report jobs stuck in `queued` far too long, and optionally comment once per affected run (REPO=<owner/name>, MINUTES=30, COMMENT=1); `make sweep-alarm` — Fail loudly when the WEEKLY issue sweep has not been DELIVERED (REPO=<owner/name>; the window is the script's weekly default unless MAX_AGE_HOURS is supplied — issue #804); `make freshness-alarm` — Fail when the newest refresh snapshot is older than MAX_AGE_HOURS (issue #452); `make master-alarm` — Fail when the newest push-to-master qa-validate run is red, so a broken master has a signal (REPO=<owner/name>, LIMIT=10; issue #527); `make pipeline-failure-issue` — Diagnose each unfiled main-pipeline failure from its logs and file it as a tech-debt issue (REPO=<owner/name>, WINDOW_HOURS=192, DRY=1 previews; issue #802); `make keeper-pr`; `make owed-rows-check` — Report the owed-row ledger: open issues' owed AGENTS.md rows vs the rulebook (REPO=<owner/name>, LIMIT=300; issue #523); `make hermes-pin-freshness` — Compare the pinned Hermes agent version against the upstream release channel (REPO=<owner/name> or FROM_FILE=<recorded.json>, DRY=1 previews; issue #1091); `make check-branch-protection` — Guard Rule 1: the base branch must carry auto-merge-shaped branch protection (REPO=<owner/name> or FROM_FILE=<recorded.json>, BRANCH=master; issue #959)
 
 #### `.github/workflows/refresh-bot.yml` — refresh-bot
 

@@ -1,6 +1,7 @@
 # Hermes pin freshness: compare the pinned agent version against the upstream channel
 
 Issue: #1091
+PR: #1092
 
 ## Why
 
