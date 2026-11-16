@@ -81,4 +81,4 @@ AND both exit 0 on the empty tree (GREEN).
 - **Given** a throwaway directory containing `flask==2.2.2` / `werkzeug==2.2.2` and an empty directory
 - **When** the pinned trivy and grype images scan each (like `make trivy-scan` / `make grype-scan` do)
 - **Then** both exit non-zero on the vulnerable fixture and exit 0 on the empty tree
-- **Test:** `scripts/security_scan_self_test.py` — runs the real pinned images; host-side, network on first DB fetch
+- **Test:** `scripts/security_scan_self_test.py::main` — runs the real pinned images; host-side, network on first DB fetch (issue #870: the citation resolves to the script's real top-level entry)

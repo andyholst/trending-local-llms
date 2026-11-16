@@ -140,13 +140,9 @@ def test_a_resolvable_reference_is_green():
         _fixture(base, "solid",
                  "# solid\n#### Scenario: locked\n- **GIVEN** x\n- **WHEN** y\n- **THEN** z\n\n"
                  "- **Test:** tests/ok.py::test_ok\n"
-                 "- **Test:** `tests/ok.py::main`\n"
-                 "- **Test:** guides/notes.md\n")
+                 "- **Test:** `tests/ok.py::main`\n")
         _module_file(root, "tests/ok.py",
                      "def test_ok():\n    pass\n\ndef main():\n    return 0\n")
-        doc = root / "guides" / "notes.md"
-        doc.parent.mkdir(parents=True, exist_ok=True)
-        doc.write_text("locks nothing; file existence is the bound\n", encoding="utf-8")
 
         # When  the gate runs
         buf = io.StringIO()
@@ -154,13 +150,14 @@ def test_a_resolvable_reference_is_green():
             rc = mod.check_all(base=base, root=root)
         out = buf.getvalue()
 
-    # Then  it is green and names no failure
+    # Then  it is green, names no failure, and prints no tolerated NOTE (issue #870)
     check("resolvable: gate exits 0", rc == 0, str(rc) + " " + out)
     check("resolvable: no FAIL line", "FAIL" not in out, out)
+    check("resolvable: no NOTE line", "NOTE" not in out, out)
 
 
-def test_a_prose_test_line_is_reported_not_resolved():
-    """A `- **Test:**` line with no `path::symbol` is reported, never treated as resolved."""
+def test_a_prose_test_line_refuses_the_gate():
+    """A `- **Test:**` line with no `path::symbol` FAILS the gate (issue #870)."""
 
     # Given an active change whose spec has prose-style Test lines AND a real one
     mod = _module()
@@ -180,14 +177,18 @@ def test_a_prose_test_line_is_reported_not_resolved():
             rc = mod.check_all(base=base, root=root)
         out = buf.getvalue()
 
-    # Then  it is green but the two non-reference lines are REPORTED, never resolved
-    check("prose: gate exits 0", rc == 0, str(rc) + " " + out)
-    check("prose: the no-symbol lines are reported", out.count("names no `<path>::<test>`") >= 2, out)
-    check("prose: the resolvable line is not reported as prose", "tests/ok.py::test_ok` — " not in out, out)
+    # Then  it is RED: the two non-reference lines are named as failures
+    check("prose: gate refuses", rc > 0, str(rc) + " " + out)
+    check("prose: both no-symbol lines are named",
+          out.count("names no `<path>::<test>` reference") == 2, out)
+    check("prose: an ACTIVE spec may not cite prose",
+          out.count("may not cite prose") == 2, out)
+    check("prose: the resolvable line is not reported as prose",
+          "tests/ok.py::test_ok` — " not in out, out)
 
 
-def test_a_spec_with_no_test_lines_is_reported():
-    """A change whose specs carry no `- **Test:**` lines is reported as vacuous, never OK."""
+def test_a_spec_with_no_test_lines_refuses_the_gate():
+    """A change whose specs carry no `- **Test:**` lines FAILS the gate (issue #870)."""
 
     # Given an active change whose only spec has scenarios but no Test line
     mod = _module()
@@ -203,10 +204,10 @@ def test_a_spec_with_no_test_lines_is_reported():
             rc = mod.check_all(base=base, root=root)
         out = buf.getvalue()
 
-    # Then  it is green (no unresolvable citation) but the vacuous scan is named
-    check("vacuous: gate exits 0", rc == 0, str(rc) + " " + out)
-    check("vacuous: the scan reports nothing to resolve",
-          "untested" in out and "vacuous" in out, out)
+    # Then  it is RED and names the change as having nothing to lock its scenarios
+    check("vacuous: gate refuses", rc > 0, str(rc) + " " + out)
+    check("vacuous: the change is named",
+          "untested" in out and "no `- **Test:**` reference" in out, out)
 
 
 def test_archived_change_is_ignored():
@@ -245,10 +246,12 @@ def test_real_repo_references_resolve_and_the_gate_is_wired():
         rc = mod.check_all()
     proc = subprocess.run([sys.executable, str(SCRIPT)], cwd=ROOT, capture_output=True, text=True)
 
-    # Then  it is green both ways
+    # Then  it is green both ways, with NO tolerated NOTE (issue #870)
     check("real repo: every active change's references resolve", rc == 0, buf.getvalue())
+    check("real repo: no NOTE line", "NOTE" not in buf.getvalue(), buf.getvalue())
     check("real repo: the script's exit code is 0", proc.returncode == 0,
           proc.stdout + proc.stderr)
+    check("real repo: the CLI prints no NOTE", "NOTE" not in proc.stdout, proc.stdout)
 
     # And the wiring holds: the target runs the script, `openspec-check` bundles it,
     # and the tests run in the suite
@@ -265,8 +268,8 @@ def main() -> int:
     test_the_shipped_reference_is_red()
     test_a_missing_file_is_red()
     test_a_resolvable_reference_is_green()
-    test_a_prose_test_line_is_reported_not_resolved()
-    test_a_spec_with_no_test_lines_is_reported()
+    test_a_prose_test_line_refuses_the_gate()
+    test_a_spec_with_no_test_lines_refuses_the_gate()
     test_archived_change_is_ignored()
     test_real_repo_references_resolve_and_the_gate_is_wired()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
