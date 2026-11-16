@@ -293,6 +293,11 @@ jobs:
     concurrency:
       group: auto-merge-${{ github.event.pull_request.number }}
       cancel-in-progress: false
+    # #1049: the pre-squash rebase step pushes a REBASED bot-owned branch with the job's own
+    # GITHUB_TOKEN (--force-with-lease pinned to the fetched tip). contents: write for THIS job
+    # only; the merge itself stays the owner PAT's act. A human-owned branch is never pushed to.
+    permissions:
+      contents: write
     steps:
       # The job calls `make` (the closure proof below), and `make` needs the Makefile: a
       # `make` call in a job that never checked the repository out dies with
@@ -324,12 +329,46 @@ jobs:
             echo "hold=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # #1049: auto-merge squashes the PR head as the author last pushed it, but a bot head's
+      # generated OPENSPEC.md was rendered against the tree at BRANCH-CUT time — every archive
+      # merged into master while the PR waited is absent from it, so the squashed tree lands a
+      # stale index and the master push reds `openspec-index-check` (measured: keepers
+      # #1038/#1045/#1046/#1047 ping-ponging; rebased bot branches 45fb245/5df9735/28bf765/9a5830a
+      # red at the index gate on 2026-11-16). Before the squash, `make auto-merge-rebase` reads
+      # the PR and classifies it against the FETCHED master (scripts/auto_merge_rebase.py, rule
+      # 6d): a BEHIND-AND-CLEAN BOT-owned branch is rebased onto the fetched base, its
+      # OPENSPEC.md REGENERATED on the rebased tree, and pushed --force-with-lease pinned to
+      # the fetched tip (rule 6s ownership partition: a human-owned, conflicting, or already
+      # current branch is reported and left exactly as it was). When a rebase lands, THIS run
+      # skips the squash — its event head is now stale (`--match-head-commit` could only refuse
+      # it) — and the PR's CI on the new, index-current head lands the merge. Skipping is
+      # green and honest: the step names it in the log.
+      - name: Rebase a behind-and-clean bot branch and regenerate its index before the squash (#1049)
+        if: steps.dnm-check.outputs.hold != 'true'
+        id: auto-merge-rebase
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          # rule 3f: this step commits the regenerated index — set the agent identity first.
+          make git-identity
+          OUT=$(make auto-merge-rebase PR="$PR_NUM" REPO="$REPO")
+          printf '%s\n' "$OUT"
+          # rule 3d: parse an allowlist of keys, never the whole stdout
+          rebased=$(printf '%s\n' "$OUT" | sed -n 's/^rebased=//p' | tail -1)
+          printf 'rebased=%s\n' "${rebased:-false}" >> "$GITHUB_OUTPUT"
+
       # Squash-merge ONLY the exact commit that was validated (--match-head-commit):
       # a push after this run started leaves the PR open for the newer run.
       # Owner PAT, not GITHUB_TOKEN: a merge made with GITHUB_TOKEN starts no
       # workflows, so the post-merge qa-validate on master would never run.
+      # #1049: `rebased=true` means this run's event head was just rewritten by the step
+      # above — merging it here would squash the STALE head, so the squash is skipped and
+      # CI on the new head lands the merge.
       - name: Squash-merge the green PR + delete its branch (owner PAT)
-        if: steps.dnm-check.outputs.hold != 'true'
+        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true'
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}

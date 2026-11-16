@@ -506,6 +506,20 @@ _pr-health:
 pr-health:
 	$(MAKE) _pr-health REPO="$(REPO)" COMMENT="$(COMMENT)" REBASE="$(REBASE)"
 
+# #1049: the merge-time gate qa-validate's `auto-merge` job runs BEFORE its squash step. The
+# DECISION (not-open/draft/conflicting/human-owned/refs-unreadable/current/behind-and-clean-bot)
+# lives in scripts/auto_merge_rebase.py's pure `classify`; the git half reuses scripts/pr_health.py's
+# ONE rebaser, which now regenerates OPENSPEC.md on every rebased tree before pushing, so the
+# squash can only land a head whose generated index matches the merge-time tree. Host target:
+# needs gh + git (like verify-closure and _pr-health — the agent image carries neither). Prints
+# `verdict=<name>` and `rebased=true|false` for the workflow to parse (rule 3d allowlist).
+.PHONY: _auto-merge-rebase auto-merge-rebase
+_auto-merge-rebase:
+	python3 scripts/auto_merge_rebase.py --pr "$(PR)" $(if $(REPO),--repo "$(REPO)",)
+
+auto-merge-rebase: ## Auto-merge pre-squash gate (issue #1049): classify the PR against the fetched master; rebase a behind-and-clean bot branch onto it, regenerate OPENSPEC.md on the rebased tree, push --force-with-lease; prints `verdict=` and `rebased=true|false` (PR=<n>, REPO=<owner/name>)
+	@$(MAKE) _auto-merge-rebase PR="$(PR)" REPO="$(REPO)"
+
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
 	python3 scripts/pr_closure.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--branch "$(BRANCH)" $(if $(BODY_FILE),--body-file "$(BODY_FILE)",))
