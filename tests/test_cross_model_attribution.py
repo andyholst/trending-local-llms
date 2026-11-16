@@ -425,7 +425,10 @@ def test_cross_model_refusal_is_wired_into_ingest():
     check("all three refusal seams sit in the same ingest function",
           "refuse_fabricated_engines" in src
           and "refuse_misattributed_measurements" in src
-          and "REFUSED cross-model duplicate measurement" in src,
+          # (#882) the refusal line is now printed once per run by the grouped
+          # flush, so the wiring to prove is the seam FEEDING that flush.
+          and '_note_run_refusal(run_refusals, "cross-model duplicate measurement"' in src
+          and '[ingest] REFUSED {rule}' in src,
           "seams missing")
 
 

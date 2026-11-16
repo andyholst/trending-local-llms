@@ -2863,6 +2863,24 @@ def fill_engine_min_version(models: list[dict]) -> int:
     return filled
 
 
+def _note_run_refusal(run_refusals: dict, rule: str, model: dict, name: str,
+                      why: str, post: str, snapshot: str, tail: str) -> None:
+    """Record one seam refusal for the run-level grouped report (issue #882).
+
+    The same post is re-captured by every search leg, and each re-merge used to
+    print the SAME refusal again — noise growing with legs x snapshots that hid
+    NEW refusals. A refusal is keyed by (rule, model id, engine, source post) and
+    printed ONCE per run by `ingest_raw_snapshots`, naming every snapshot that
+    showed it. The refusal itself, the ledger record and the per-file ledger
+    summary are unchanged; only the per-snapshot log line is deduplicated."""
+    key = (rule, str(model.get("id")), str(name), str(post))
+    entry = run_refusals.get(key)
+    if entry is None:
+        run_refusals[key] = {"why": why, "tail": tail, "files": [snapshot]}
+    else:
+        entry["files"].append(snapshot)
+
+
 def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                          verify_hf: bool = False,
                          raw_dir: Path | None = None) -> tuple[int, int]:
@@ -2885,6 +2903,9 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
     merged (fail-open), never silently dropped."""
     added = updated = 0
     refused_total = 0  # measurements refused by a seam AND recorded to the ledger (#888)
+    # (#882) every seam refusal this run takes, keyed (rule, model id, engine, post);
+    # printed once at the end of the run instead of once per snapshot per leg.
+    run_refusals: dict[tuple[str, str, str, str], dict] = {}
     raw_dir = raw_dir or RAW_DIR
     if not raw_dir.exists():
         return 0, 0
@@ -2924,11 +2945,10 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             if refused:
                 m["engines"] = kept
                 for name, why, post in refused:
-                    print(
-                        f"[ingest] REFUSED fabricated engine {name!r} on {m.get('id')}: {why}; "
-                        f"post {post} — a t/s with no engine named by the post is not a valid "
-                        f"entry (rule 5)"
-                    )
+                    _note_run_refusal(run_refusals, "fabricated engine", m, name, why, post,
+                                      path.name,
+                                      "a t/s with no engine named by the post is not a valid "
+                                      "entry (rule 5)")
                 if record_ingest_refusals(m, "refuse_fabricated_engines", refused, file_backend):
                     file_refusals.extend(
                         (file_backend, str(m.get("id")), name, post)
@@ -2942,11 +2962,10 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             if refused:
                 m["engines"] = kept
                 for name, why, post in refused:
-                    print(
-                        f"[ingest] REFUSED misattributed measurement {name!r} on {m.get('id')}: "
-                        f"{why}; post {post} — a measurement must name the model whose row it "
-                        f"is stored on"
-                    )
+                    _note_run_refusal(run_refusals, "misattributed measurement", m, name, why,
+                                      post, path.name,
+                                      "a measurement must name the model whose row it is "
+                                      "stored on")
                 if record_ingest_refusals(m, "refuse_misattributed_measurements", refused,
                                           file_backend):
                     file_refusals.extend(
@@ -2965,11 +2984,10 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             if refused:
                 m["engines"] = kept
                 for name, why, post in refused:
-                    print(
-                        f"[ingest] REFUSED cross-model duplicate measurement {name!r} on "
-                        f"{m.get('id')}: {why}; post {post} — a t/s tuple already stored "
-                        f"on another model is a copy, not a measurement of this model"
-                    )
+                    _note_run_refusal(run_refusals, "cross-model duplicate measurement", m,
+                                      name, why, post, path.name,
+                                      "a t/s tuple already stored on another model is a copy, "
+                                      "not a measurement of this model")
                 if record_ingest_refusals(m, "refuse_cross_model_duplicate_measurements",
                                           refused, file_backend):
                     file_refusals.extend(
@@ -2986,11 +3004,10 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             if refused:
                 m["engines"] = kept
                 for name, why, post in refused:
-                    print(
-                        f"[ingest] REFUSED weight-gb contradiction {name!r} on {m.get('id')}: "
-                        f"{why}; post {post} — a stated weight that cannot belong to this model "
-                        f"is not evidence about it"
-                    )
+                    _note_run_refusal(run_refusals, "weight-gb contradiction", m, name, why,
+                                      post, path.name,
+                                      "a stated weight that cannot belong to this model is not "
+                                      "evidence about it")
                 if record_ingest_refusals(m, "refuse_weight_gb_contradictions", refused,
                                           file_backend):
                     file_refusals.extend(
@@ -3104,6 +3121,21 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                 added += 1
                 if verify_hf:
                     note_unresolved_hf(model)
+    # (#882): every seam refusal above prints HERE, once per (rule, model, engine,
+    # post) for the whole run — a post the legs re-captured N times produced N
+    # identical per-snapshot refusal lines before this, and the repetition buried
+    # NEW refusals in the noise. The per-file ledger summaries above are unchanged;
+    # a refusal's count and ledger record never shrink, only its log line dedupes.
+    for (rule, mid, name, post), seen in sorted(run_refusals.items()):
+        times = ""
+        if len(seen["files"]) > 1:
+            files = ", ".join(seen["files"][:3])
+            extra = f" (+{len(seen['files']) - 3} more)" if len(seen["files"]) > 3 else ""
+            times = f" — seen {len(seen['files'])}x across snapshots: {files}{extra}"
+        print(
+            f"[ingest] REFUSED {rule} {name!r} on {mid}: {seen['why']}; post {post} — "
+            f"{seen['tail']}{times}"
+        )
     if refused_total:
         print(
             f"[ingest] {refused_total} measurement(s) refused at ingest this run — every "

@@ -158,10 +158,17 @@ def test_the_ingest_wiring():
     check("all refusal seams sit in the same ingest function",
           "refuse_fabricated_engines" in src
           and "refuse_misattributed_measurements" in src
-          and "REFUSED weight-gb contradiction" in src,
+          and '_note_run_refusal(run_refusals, "weight-gb contradiction"' in src,
           "seams missing")
+    # (#882) the per-seam print was regrouped: each seam feeds its rule name into
+    # the run-wide refusal map and ONE grouped log line per (rule, model, engine,
+    # post) is printed at the end of ingest_raw_snapshots. The guard follows the
+    # contract it locks — the grouped line must still name the measurement and
+    # the post (rule 6c: an implementation change updates its test in the same
+    # change rather than leaving a test that only matches the old wiring).
     check("REFUSED weight-gb contradiction names the measurement and the post in the log line",
-          "REFUSED weight-gb contradiction" in src and "post {post}" in src,
+          '_note_run_refusal(run_refusals, "weight-gb contradiction"' in src
+          and 'f"[ingest] REFUSED {rule} {name!r} on {mid}' in src and "post {post}" in src,
           "log shape missing")
 
 
