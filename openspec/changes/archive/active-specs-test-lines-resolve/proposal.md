@@ -1,6 +1,7 @@
 # active-specs-test-lines-resolve
 
 **Issue:** [#870](https://github.com/andyholst/trending-local-llms/issues/870)
+PR: #1083
 
 ## Why
 

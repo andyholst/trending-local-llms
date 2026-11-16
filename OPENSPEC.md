@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **323**
+Active changes: **2** · archived: **324**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `active-specs-test-lines-resolve` | active | #870 | — | [openspec-test-lines-gate](openspec/changes/active-specs-test-lines-resolve/specs/openspec-test-lines-gate/spec.md) | 5/6 | [proposal.md](openspec/changes/active-specs-test-lines-resolve/proposal.md) |
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
@@ -72,6 +71,7 @@ Active changes: **3** · archived: **323**
 | `above-48-gb-tiers` | archived | #572 | — | [card-fit](openspec/changes/archive/above-48-gb-tiers/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/above-48-gb-tiers/proposal.md) |
 | `acquisition-gap-needs-a-search` | archived | tech-debt `ranked-gaps-need-new-search-data` (filed while implementing #395, surfaced by PR #410) | — | [data-gap-analysis](openspec/changes/archive/acquisition-gap-needs-a-search/specs/data-gap-analysis/spec.md)<br>[search-queries](openspec/changes/archive/acquisition-gap-needs-a-search/specs/search-queries/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/acquisition-gap-needs-a-search/proposal.md) |
 | `active-change-issue-binding-952` | archived | #952 — "the sweep's OpenSpec change must bind the Issue it implements | #955 | [openspec-change-binding](openspec/changes/archive/active-change-issue-binding-952/specs/openspec-change-binding/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/active-change-issue-binding-952/proposal.md) |
+| `active-specs-test-lines-resolve` | archived | #870 | #1083 | [openspec-test-lines-gate](openspec/changes/archive/active-specs-test-lines-resolve/specs/openspec-test-lines-gate/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/active-specs-test-lines-resolve/proposal.md) |
 | `adopt-carries-the-work` | archived | #580 | — | [worktree-base](openspec/changes/archive/adopt-carries-the-work/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/adopt-carries-the-work/proposal.md) |
 | `adopt-refuses-a-stale-branch` | archived | #592 | — | [worktree-base](openspec/changes/archive/adopt-refuses-a-stale-branch/specs/worktree-base/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/adopt-refuses-a-stale-branch/proposal.md) |
 | `adopt-takes-the-work-on-conflict` | archived | #583 | — | [worktree-base](openspec/changes/archive/adopt-takes-the-work-on-conflict/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/adopt-takes-the-work-on-conflict/proposal.md) |
