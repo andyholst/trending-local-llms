@@ -213,6 +213,74 @@ def engine_min_claim(model: dict, text: str) -> re.Match | None:
     return None
 
 
+# A benchmark POINT is not a stated window (issue #1017): a post that ran a model at
+# several context sizes to report throughput — `0K context (21.11 t/s at 32K, 21.58 at
+# 8K)`, `61 TPS at 100K context, 50 TPS at 200K` — states NO single window. The raw
+# `_CTX_TEXT` matched a sweep point and the gap scan then reported the model as
+# "stated in prose only, an ingest job", when there is nothing singular to structure
+# and only a new search can close the gap. `context_tokens_claim` refuses a match
+# whose figure is one of the throughput-qualified points of a multi-point sweep
+# segment; a window stated outside a sweep still claims, and a lone benchmark point
+# stays claimable (conservative: only MULTI-point sweeps are refused).
+_THROUGHPUT_WORD = re.compile(r"\b(?:t/s|tok[ ]?/s|toks/s|tps)\b", re.I)
+_SIZE_FIGURE = re.compile(r"\b(\d[\d,]*(?:\.\d+)?)\s*([kKmM])?\b")
+
+
+def _figure_value(s: str) -> float | None:
+    """The token count a figure spelling carries: "32K" → 32000, "200K" → 200000,
+    "131072" → 131072. None when the text names no figure."""
+    m = re.search(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM])\b", s)
+    if m:
+        return float(m.group(1).replace(",", "")) * (1000 if m.group(2) in "kK" else 1_000_000)
+    m = re.search(r"\d[\d,]*(?:\.\d+)?", s)
+    return float(m.group(0).replace(",", "")) if m else None
+
+
+def _sweep_sizes(segment: str) -> set[float]:
+    """Context sizes stated NEXT TO a throughput figure inside one `;`/`.`/newline
+    segment. A figure that is itself the speed (`21.11 t/s`) or a speed at a point
+    (`21.58 at 8K`) is not a size and is skipped."""
+    sizes: set[float] = set()
+    for m in _SIZE_FIGURE.finditer(segment):
+        after = segment[m.end():m.end() + 12]
+        if _THROUGHPUT_WORD.match(after.strip()[:8]) or re.match(r"\s*(?:at|@)\s*\d", after):
+            continue  # this figure IS a throughput reading, not a context size
+        try:
+            num = float(m.group(1).replace(",", ""))
+        except ValueError:
+            continue
+        if m.group(2):
+            num *= 1000 if m.group(2) in "kK" else 1_000_000
+        window = segment[max(0, m.start() - 30):m.end() + 30]
+        if _THROUGHPUT_WORD.search(window):
+            sizes.add(num)
+    return sizes
+
+
+def context_tokens_claim(model: dict, text: str) -> re.Match | None:
+    """The ONE context-window claim reader (issue #1017, rule 6d) — the
+    `context_tokens` dimension's `claim` wrapper, reached through `dim_claim` like
+    `engine_min_claim` (#1025), so the gap scan and every consumer that re-checks a
+    classification share it."""
+    # A `.` ends a sentence only when whitespace follows it: `21.11` must never be
+    # cut into `21` / `11`, or a sweep's points scatter across fragments undetected.
+    segments = re.split(r";|\n|(?<=\.)(?=\s)", text)
+    spans: list[tuple[int, int, set[float]]] = []
+    pos = 0
+    for seg in segments:
+        spans.append((pos, pos + len(seg), _sweep_sizes(seg)))
+        pos += len(seg) + 1
+    for hit in _CTX_TEXT.finditer(text):
+        for start, end, sizes in spans:
+            if start <= hit.start() < end and len(sizes) >= 2:
+                core = _figure_value(hit.group(0))
+                if core is not None and core in sizes:
+                    break  # a sweep POINT, not a stated window
+        else:
+            return hit
+    return None
+
+
 def dim_claim(dim: dict):
     """The ONE claim reader for a dimension (issue #1025, rule 6d): the dimension's
     `claim` wrapper when it declares one, else the raw detector's search. `analyse()`
@@ -288,6 +356,9 @@ DIMENSIONS = (
         "key": "context_tokens",
         "label": "context window / KV-cache cost",
         "text": _CTX_TEXT,
+        # The claim reader (#1017, rule 6d): a multi-point benchmark sweep states no
+        # window, and `dim_claim` is how the scan and every re-check share that refusal.
+        "claim": context_tokens_claim,
         "why": "KV cache scales with context and consumes RAM and VRAM alike",
     },
     {

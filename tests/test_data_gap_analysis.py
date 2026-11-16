@@ -475,22 +475,25 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
 
     # … the set is no larger than the measured, figure-bearing set — plus the models a
     # REFRESH has added since it was measured (AGENTS.md rule 6b: the assertion tracks
-    # the data, it is never widened to make a report go quiet). A brand-new model is
-    # legitimately figure-bearing in prose only: the 2026-10-24 refresh added
-    # `qwen3.8-27b-strix-halo-dflash2`, whose post sweeps 0K/8K/32K as benchmark
-    # POINTS rather than stating one context window, so the figure is real and
-    # unstructured and there is no single window to fill. Naming each added model
+    # the data, it is never widened to make a report go quiet). Naming each added model
     # keeps the check exact: a new prose claim on ANY other model still fails.
-    # The 2026-10-25 refresh added the same shape twice: both Flash-Next captures
-    # report MTPLX "peak 126.5 TPS, 61 TPS at 100K context, 50 TPS at 200K" — two
-    # benchmark POINTS, not one stated window, so there is nothing singular to fill.
+    # Issue #1017 SHANKS the sweep class outright: the posts for
+    # `qwen3.8-27b-strix-halo-dflash2` ("0K context (21.11 t/s at 32K, 21.58 at 8K)")
+    # and both Flash-Next captures ("61 TPS at 100K context, 50 TPS at 200K") sweep
+    # benchmark POINTS rather than stating one window, and `context_tokens_claim`
+    # now refuses every sweep point — so those models left `unstructured` for
+    # `missing` (an acquisition gap: only a new post can state a window) and the
+    # context allowlist no longer needs them.
     added_since_measurement = {"qwen3.8-27b-strix-halo-dflash2",
                                "qwen3-8-flash-next-125b",
                                "qwen3-8-flash-next-125b-mtplx-rd1-1"}
-    check("real store: context_tokens prose claims are the stated windows + models added since",
-          set(report["unstructured"]["context_tokens"])
-          <= {"qwen-3.6-27b", "gemma-4-12b"} | added_since_measurement,
+    check("real store: context_tokens prose claims are exactly the stated windows "
+          "(benchmark sweeps refused, #1017)",
+          set(report["unstructured"]["context_tokens"]) == {"qwen-3.6-27b"},
           str(report["unstructured"]["context_tokens"]))
+    check("real store: the dflash2 sweep model is MISSING now, not 'stated in prose' (#1017)",
+          "qwen3.8-27b-strix-halo-dflash2" in report["missing"]["context_tokens"],
+          str(report["missing"]["context_tokens"]))
     # …and the ONE model whose sentence no captured post states is NOT an ingest claim: it
     # is the untraceable class (issue #470), reported apart from the ingest work.
     check("real store: an untraceable stated figure is its own class, not 'unstructured'",
@@ -2674,6 +2677,62 @@ def test_a_model_version_is_not_an_engine_build_claim():
         check("#1025: a real build phrase still lands in the ingest class",
               "swift-model-real" in prose, f"prose={prose} captured={captured}")
 
+
+def test_a_benchmark_sweep_states_no_context_window():
+    """Issue #1017: `qwen3.8-27b-strix-halo-dflash2` was reported
+    `unstructured:context_tokens` — an "ingest job" — because its post text
+    "0K context (21.11 t/s at 32K, 21.58 at 8K)" matched the raw window detector.
+    That is a MULTI-POINT benchmark sweep: throughput at 32K and at 8K, tested at
+    0K — no single window is stated, so the model belongs in `missing`
+    (acquisition: only a new post can state one). `context_tokens_claim` refuses
+    sweep points; a window stated apart from a sweep and a LONE benchmark point
+    still claim."""
+    sweep = model("sweep-model", params="27B", engines=[{
+        "engine": "llama.cpp", "tps": "21.11", "hardware": "Strix Halo",
+        "quant": "UD-Q4_K_XL target + DFlash2 drafter; n=4; "
+                 "0K context (21.11 t/s at 32K, 21.58 at 8K)",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/801"}])
+    mtplx = model("mtplx-sweep", params="125B", engines=[{
+        "engine": "MTPLX", "tps": "61", "hardware": "RTX 6000 Pro",
+        "quant": "Q3_K_X", "why": "peak 126.5 TPS, 61 TPS at 100K context, "
+                                  "50 TPS at 200K",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/802"}])
+    stated = model("stated-window", params="27B", engines=[{
+        "engine": "llama.cpp", "tps": "30", "hardware": "7900 XTX",
+        "quant": "Q4_K_M", "why": "runs 80k context steady on the 24GB card",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/803"}])
+    beside = model("stated-beside-sweep", params="35B", engines=[{
+        "engine": "vLLM", "tps": "40", "hardware": "A100",
+        "quant": "fp8", "why": "It ships a 256K context window; peak 61 TPS "
+                               "at 100K, 50 TPS at 200K",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/804"}])
+    lone = model("lone-point", params="8B", engines=[{
+        "engine": "MLX", "tps": "40", "hardware": "M4",
+        "quant": "4-bit", "why": "sustains 40 t/s at 32K ctx",
+        "date": "2026-11-14", "source_post": "https://lightbrd.com/u/status/805"}])
+    with tempfile.TemporaryDirectory() as td:
+        contract = contract_from(td, "id")
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        (raw / "metal-20261114.json").write_text(json.dumps({
+            "backend": "metal", "models": [sweep, mtplx, stated, beside, lone]}))
+        report = G.analyse(store_with([sweep, mtplx, stated, beside, lone]),
+                           contract, raw_dir=raw)
+        prose = prose_ids(report, "context_tokens")
+        missing = report["missing"]["context_tokens"]
+        check("#1017: the dflash2-style sweep is NOT a stated window (missing, not prose)",
+              "sweep-model" not in prose and "sweep-model" in missing,
+              f"prose={prose} missing={missing}")
+        check("#1017: the MTPLX multi-point sweep is NOT a stated window",
+              "mtplx-sweep" not in prose and "mtplx-sweep" in missing,
+              f"prose={prose} missing={missing}")
+        check("#1017: a stated window still claims",
+              "stated-window" in prose, f"prose={prose}")
+        check("#1017: a stated window beside a sweep still claims (only sweep points refused)",
+              "stated-beside-sweep" in prose, f"prose={prose}")
+        check("#1017: a LONE benchmark point stays claimable (conservative)",
+              "lone-point" in prose, f"prose={prose}")
+
 def test_the_gap_issue_body_ends_with_a_newline():
     """Issue #1002: the body the data-gap filer emits MUST end with a trailing
     newline, because its FINAL line is the invisible dedup marker and a fake-gh
@@ -2781,6 +2840,7 @@ def main() -> int:
     test_the_declared_estimate_detector_is_one_detector()
     test_a_layer_offload_or_file_size_is_not_a_storage_requirement()
     test_a_model_version_is_not_an_engine_build_claim()
+    test_a_benchmark_sweep_states_no_context_window()
     test_the_gap_issue_body_ends_with_a_newline()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

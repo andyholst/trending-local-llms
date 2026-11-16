@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **323**
+Active changes: **2** · archived: **324**
 
 ## Active changes
 
@@ -128,6 +128,7 @@ Active changes: **2** · archived: **323**
 | `commit-message-check-discriminates-push-archive` | archived | #852 | #853 | [message-pattern-enforcement](openspec/changes/archive/commit-message-check-discriminates-push-archive/specs/message-pattern-enforcement/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-message-check-discriminates-push-archive/proposal.md) |
 | `conflict-merge-says-why` | archived | #563 | — | [bot-conflict-repair](openspec/changes/archive/conflict-merge-says-why/specs/bot-conflict-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/conflict-merge-says-why/proposal.md) |
 | `container-contracts-cannot-name-gh` | archived | #194 | #799 | [agent-leg-skills](openspec/changes/archive/container-contracts-cannot-name-gh/specs/agent-leg-skills/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/container-contracts-cannot-name-gh/proposal.md) |
+| `context-benchmark-points-not-windows` | archived | #1017 | #1075 | [data-gap-analysis](openspec/changes/archive/context-benchmark-points-not-windows/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/context-benchmark-points-not-windows/proposal.md) |
 | `context-tokens-ingest-traceable` | archived | #991 — "data-gap: context_tokens (69 models) (2026-11-15)" | #1012 | [context-tokens-ingest](openspec/changes/archive/context-tokens-ingest-traceable/specs/context-tokens-ingest/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/context-tokens-ingest-traceable/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | archived | #382 | — | [raw-snapshot-quarantine](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
