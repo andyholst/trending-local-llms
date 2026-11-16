@@ -5,4 +5,4 @@
 - [x] `weekly-security-scan`'s self-test scenario cites `scripts/security_scan_self_test.py::main` (zero unresolved citations in the shipped tree)
 - [x] `tests/test_openspec_spec_tests.py` asserts the refusals (rule 6c) and pins the shipped tree's zero-NOTE green
 - [x] `make openspec-spec-tests-check` and `make openspec-check` run green with no NOTE lines
-- [ ] `make test` (full suite), `make lint`, `make architecture-check`, `make secret-scan` green; findings recorded
+- [x] `make test` (full suite), `make lint`, `make architecture-check`, `make secret-scan` green; findings recorded
