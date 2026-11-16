@@ -1,6 +1,7 @@
 # Keeper: classify the five Nov-15 red-run ledger rows onto their landed guards (Issue: #1039, #1040, #1041, #1042, #1043)
 
 Issue: #1039, #1040, #1041, #1042, #1043
+PR: #1097
 Binding-exempt: keeper — a data classification observed while diagnosing the ledger's null `fix_pr` rows; this change implements no open issue and closes none (the issues close on ledger proof via `make issue-verdict` after this lands).
 
 ## Why
