@@ -464,6 +464,46 @@ def test_run_43110467252_is_raised_onto_the_landed_implement_guard() -> None:
     check("the committed ledger with issue #833 CLOSED passes the gate", rc == 0, str(lines))
 
 
+def test_the_nov15_ledger_rows_are_classified_onto_their_landed_guards() -> None:
+    print("\nraised rows: the five Nov-15 red-run rows name their landed fix PR + guard (keeper classification, issues #1039-#1043)")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    index = {e["run_id"]: e for e in committed["failures"]}
+    expect = {
+        43147240875: (922, "tests/test_owed_rows.py"),
+        43716345030: (1082, "tests/test_openspec_index_repair.py"),
+        43716362366: (1082, "tests/test_openspec_index_repair.py"),
+        43718826142: (1082, "tests/test_openspec_index_repair.py"),
+        43725338063: (1082, "tests/test_openspec_index_repair.py"),
+    }
+    for rid, (pr, guard) in expect.items():
+        row = index.get(rid)
+        check(f"run {rid} exists in the committed ledger", row is not None, "")
+        if row is None:
+            continue
+        check(f"run {rid} names fix PR #{pr} (merged)", row.get("fix_pr") == pr, str(row.get("fix_pr")))
+        check(f"run {rid} names guard {guard} (a module make test collects)",
+              row.get("guard") == guard and G.guard_test_exists(guard), str(row.get("guard")))
+        check(f"run {rid} keeps the filer's original fields (append-only, rule 3b)",
+              "undiagnosed" in row and "targets" in row and "created_utc" in row
+              and "issue_number" in row and "filed_utc" in row, "")
+    # The post-merge gate shape: every row classified, every issue CLOSED -> green.
+    five = [index[rid] for rid in expect]
+    closed = states([(rid, index[rid]["issue_number"], "CLOSED") for rid in expect])
+    rc, lines = verdict(five, closed)
+    check("the five classified rows pass the gate with all five issues CLOSED", rc == 0, str(lines))
+    # RED-before-classification: the same rows with the filer's nulls restored go red beside
+    # CLOSED issues — the raise is what the #993 close-with-proof verdict reads (rule 6c).
+    nullified = []
+    for e in five:
+        e2 = dict(e)
+        e2["fix_pr"] = None
+        e2["guard"] = None
+        nullified.append(e2)
+    rc_old, lines_old = verdict(nullified, closed)
+    check("unclassified null rows are RED with CLOSED issues (proven against the pre-raise shape)",
+          rc_old == 1 and all("CLOSED without a fix PR" in line for line in lines_old), str(lines_old))
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
@@ -480,6 +520,7 @@ def main() -> int:
     test_run_43108536309_is_rediagnosed_onto_the_landed_openspec_binding_fix()
     test_run_43109817750_is_rediagnosed_onto_the_landed_sweep_alarm_fix()
     test_run_43110467252_is_raised_onto_the_landed_implement_guard()
+    test_the_nov15_ledger_rows_are_classified_onto_their_landed_guards()
     test_fix_in_flight_is_reported_never_red()
     test_log_expired_row_is_reported_as_its_own_shape_never_red()
     test_closed_marker_issue_the_ledger_never_recorded_is_red()
