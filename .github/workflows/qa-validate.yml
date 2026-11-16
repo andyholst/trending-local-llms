@@ -282,6 +282,12 @@ jobs:
       # (every refresh search leg: HTTP 401 with `FIRECRAWL_API_KEY: ***` set).
       # Real secrets, the bot image, Hermes's own terminal env (issue #359).
       - name: Agent shell sees every credential (_HERMES_FORCE_<NAME>)
+        env:
+          # GH_TOKEN is now in AGENT_SHELL_KEYS (issue #1095), and Actions does
+          # NOT auto-inject GH_TOKEN — a job that names the key must forward it
+          # BY NAME (rule 3e): the job's own default token, value never on a
+          # command line. The key-check then proves the container sees it.
+          GH_TOKEN: ${{ github.token }}
         run: make agent-shell-keys-check
 
       - name: Search returns data (real Firecrawl->lightbrd, --require-hits)
