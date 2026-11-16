@@ -17,6 +17,16 @@ went red (the workflow carries the branch; the decision lives here, rule 6d):
                         red was not index staleness; nothing is written. exit 0.
       DRIFT=index-only  the index was stale; it has been rewritten, and the
                         rewrite is current by the generator's own verdict. exit 0.
+      DRIFT=invalid-change an ACTIVE change is structurally incomplete (rule 6f:
+                        proposal.md + specs/<capability>/spec.md + tasks.md). This
+                        red is NOT index staleness: `openspec validate --changes`
+                        refuses the change, and a regenerated index would only
+                        catalogue an incomplete change. The index is left untouched
+                        and the named repairer is printed — qa-validate's
+                        `invalid-change-repair` job, `make
+                        openspec-invalid-change-repair` (issue #962, measured on
+                        run 43610043055: the keeper answered `DRIFT=none` and owned
+                        nothing while every PR sat red). exit 0.
       unreadable index or change tree -> exit 2, LOUD, naming what could not be
                         read — never a silent clean.
 
@@ -38,6 +48,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import openspec_index as oi  # noqa: E402  (the ONE generator — write and check agree, #474)
+# Issue #962: the structural classifier is NOT re-spelled here — one definition shared
+# by the gate (`--check`), the repairer (`--classify-and-archive`) and this verdict
+# (rules 6d/6m: one implementation, no second copy in the seam that reads it).
+from openspec_invalid_change_repair import invalid_active_changes  # noqa: E402
+
+#: The named repairer for the invalid-active-change shape, printed by the verdict so
+#: a reader of the red run sees who owns that shape instead of assuming the index
+#: keeper does (issue #962).
+INVALID_REPAIRER = ("qa-validate invalid-change-repair "
+                    "(`make openspec-invalid-change-repair`)")
 
 
 def classify_and_write() -> int:
@@ -46,6 +66,25 @@ def classify_and_write() -> int:
     The verdict is printed as a machine-checkable `DRIFT=…` line so the workflow
     step can branch on it without re-deciding anything (rule 6d).
     """
+    # Issue #962 first, before any index rewrite: an ACTIVE change that shipped
+    # without its spec/tasks is a red the index keeper must NOT answer with a
+    # regenerated index (that would only catalogue the incomplete change), and it
+    # must not be reported as `DRIFT=none` either — that is the shape that left
+    # run 43610043055 with every PR red and no named repairer.
+    try:
+        invalid = invalid_active_changes(oi.CHANGES)
+    except Exception as exc:  # noqa: BLE001 - an unreadable tree is a loud defect, never a clean
+        print(f"[index-repair] ERROR: the change tree cannot be read: {exc}", file=sys.stderr)
+        return 2
+    if invalid:
+        print(f"[index-repair] DRIFT=invalid-change — {len(invalid)} ACTIVE change(s) are "
+              "structurally incomplete (rule 6f):")
+        for name, problems in invalid:
+            print(f"[index-repair]   {name}: {', '.join(problems)}")
+        print(f"[index-repair] this red is NOT index staleness: {oi.INDEX.name} is left "
+              f"untouched, and the named repairer is {INVALID_REPAIRER}")
+        return 0
+
     try:
         fresh = oi.render()
     except Exception as exc:  # noqa: BLE001 - an unreadable tree is a loud defect, never a clean

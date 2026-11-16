@@ -34,6 +34,7 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 WORKFLOW = "qa-validate.yml"
 HEAD_BRANCH = "master"
@@ -66,6 +67,12 @@ GATES: dict[str, tuple[str, str]] = {
     # driven, minutes after the merge. architecture-bot's weekly regeneration is
     # the backstop. A Wednesday-only keeper left auto-merge red for days (measured
     # 2026-11-12, pushes 28f2cd3 and ce57e9b).
+    # Issue #962 names the THIRD repairer for this gate's other shape: an ACTIVE
+    # change that shipped incomplete (proposal only, no spec, no tasks) reds
+    # `openspec validate --changes` with the index perfectly current, so
+    # `index-repair` answers `DRIFT=none` and owns nothing — the shape belongs to
+    # qa-validate's `invalid-change-repair` job (`SHAPES` below, then the alarm
+    # prints it per shape).
     "openspec-check": ("keeper", "qa-validate index-repair + architecture-bot"),
     # -- ALARM — the master-alarm makes a red push-to-master run visible.
     "lint": ("alarm", "master-alarm"),
@@ -92,6 +99,84 @@ KEEPERS = {g for g, (kind, _) in GATES.items() if kind == "keeper"}
 #: The make targets the master-alarm covers (explicit, so a NEW gate that is
 #: neither kept nor alarm-covered fails tests/test_master_alarm.py immediately).
 ALARMED = {g for g, (kind, _) in GATES.items() if kind == "alarm"}
+
+#: --------------------------------------------------------------------------
+#: The per-SHAPE routing of a keeper gate (issue #962). `GATES` answers "which
+#: list is this gate on"; this table answers "which repairer owns which shape of
+#: its red", because one gate can go red for more than one reason and a keeper
+#: that can only repair one of them leaves the other shape unnamed. Measured:
+#: run 43610043055 — `openspec-check` red on master for an INCOMPLETE ACTIVE
+#: change while the index was current, so the index keeper answered `DRIFT=none`
+#: and named nothing. `verdict()` renders these pathways into the alarm text, so
+#: a reader of the red run sees the repairer for the shape it actually hit.
+#: --------------------------------------------------------------------------
+SHAPES: dict[str, tuple[tuple[str, str], ...]] = {
+    "openspec-check": (
+        ("index-drift", "qa-validate index-repair + architecture-bot"),
+        ("invalid-change", "qa-validate invalid-change-repair"),
+    ),
+    "architecture-check": (
+        ("generated-block-stale", "qa-validate architecture-repair + architecture-bot"),
+    ),
+}
+
+
+def keeper_pathways(job: str) -> str:
+    """The named repairer(s) for one keeper gate, rendered for the alarm text.
+
+    A keeper gate with no shape routing falls back to its `GATES` action, so the
+    alarm never prints an empty pathway list.
+    """
+    shapes = SHAPES.get(job)
+    if shapes:
+        return "; ".join(f"{shape} -> {keeper}" for shape, keeper in shapes)
+    return GATES[job][1]
+
+
+#: The pipeline file the alarm reads its routing from (the same workflow gh reports).
+WORKFLOW_PATH = Path(__file__).resolve().parent.parent / ".github" / "workflows" / WORKFLOW
+
+
+def job_gate_map(wf_text: str | None = None) -> dict[str, list[str]]:
+    """job name -> the registry gates that job runs, read from the pipeline itself.
+
+    `gh run view --json jobs` reports JOB names; `GATES` registers `make <target>`
+    gates (issue #962). Without this map the alarm could name a keeper only when a
+    job happened to be spelled like a gate — it never is — so the routing is derived
+    from the workflow (rule 6d: one source, no hand-kept second copy of which job
+    runs which gate).
+    """
+    text = wf_text if wf_text is not None else WORKFLOW_PATH.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line == "jobs:"), len(lines))
+    out: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in lines[start + 1:]:
+        if line and not line.startswith(" "):
+            break  # the next top-level key ends the jobs block
+        key = re.match(r"^  ([a-z0-9_-]+):\s*(#.*)?$", line)
+        name = key.group(1) if key else None
+        if name:
+            current = name
+            out.setdefault(current, [])
+            continue
+        if current is None:
+            continue
+        for gate in re.findall(r"make\s+([a-z0-9_-]+)(?=[\"'\s]|$)", line):
+            if gate in GATES and gate not in out[current]:
+                out[current].append(gate)
+    return out
+
+
+def gates_of_failing_jobs(jfails: list[str]) -> list[str]:
+    """The registry gates a run's failing JOB(s) actually run (issue #962)."""
+    by_job = job_gate_map()
+    found: list[str] = []
+    for job in jfails:
+        for gate in by_job.get(job, []):
+            if gate not in found:
+                found.append(gate)
+    return sorted(found)
 
 
 def _gh(args: list[str]) -> str:
@@ -167,6 +252,24 @@ def verdict(repo: str, limit: int = 10) -> tuple[int, str]:
         url = run.get("url") or ""
         if url:
             lines.append(f"  run: {url}")
+        # Name the repairer for the shape that reded the run (issue #962): a keeper
+        # gate can fail for more than one reason, and the keeper that owns one shape
+        # (index drift) is not the repairer for the other (an incomplete ACTIVE
+        # change). The failing JOB is mapped to the registry gates it runs (one map,
+        # read from the pipeline), so a red master names the repairer for the shape it
+        # actually hit instead of being read as "the index keeper will handle it".
+        gates = gates_of_failing_jobs(jfails)
+        if gates:
+            lines.append("  failing gate(s) of that job: " + ", ".join(gates))
+        keepers = [g for g in gates if g in KEEPERS]
+        if keepers:
+            lines.append("  named repairer(s), by shape:")
+            for gate in keepers:
+                lines.append(f"    - {gate}: {keeper_pathways(gate)}")
+        alarmed = [g for g in gates if g in ALARMED]
+        if alarmed:
+            lines.append("  alarm-covered gate(s) (no keeper regenerates them): "
+                         + ", ".join(alarmed))
         lines.append("  master is red and no PR exists to repair it — this is the alarm that "
                      "makes it visible (issue #527).")
         return 1, "\n".join(lines)

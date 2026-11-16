@@ -318,7 +318,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -378,6 +378,25 @@ openspec-index-repair: python-env-image ## Classify a stale OPENSPEC.md against 
 openspec-index-repair-pr-body: ## Print the index-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #304)
 	@python3 scripts/openspec_index_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
 
+# The sibling keeper for the OTHER way the OpenSpec gate goes red (issue #962,
+# measured on run 43610043055): an ACTIVE change that reached `master` as a bare
+# proposal — no `specs/<capability>/spec.md`, no `tasks.md` — reds
+# `openspec validate --changes` while `OPENSPEC.md` is perfectly current, so
+# `make openspec-index-repair` answers `DRIFT=none` and owns nothing, and every
+# open PR's `validate` waits behind it. `make openspec-tasks-check` cannot see the
+# shape either: it walks only the changes that HAVE a tasks.md. This is the
+# deterministic Python half (no CLI image needed) plus the honest repairer: the
+# incomplete change is ARCHIVED with its keeper exemption, never completed by a
+# keeper (rule 2 — a keeper writes no spec and no task list).
+openspec-invalid-change-check: python-env-image ## Fail when an ACTIVE change is structurally incomplete (no proposal.md, no specs/<capability>/spec.md, or no tasks.md checklist) — the shape `openspec validate --changes` refuses and `openspec-index-repair` cannot own (issue #962)
+	$(PYTHON_RUN) python3 scripts/openspec_invalid_change_repair.py --check
+
+openspec-invalid-change-repair: python-env-image ## Archive every structurally incomplete ACTIVE change (keeper exemption stamped on its proposal, index regenerated; nothing is invented) (REPAIR=none|archived; issue #962)
+	$(PYTHON_RUN) python3 scripts/openspec_invalid_change_repair.py --classify-and-archive $(if $(RUN_ID),--run-id "$(RUN_ID)",)
+
+openspec-invalid-change-repair-pr-body: ## Print the invalid-change keeper PR body — no closing keyword, it records the archive (MASTER_SHA=… RUN_URL=… required; issue #962)
+	@python3 scripts/openspec_invalid_change_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)" $(if $(RUN_ID),--run-id "$(RUN_ID)",)
+
 # The lifecycle's END (rule 6f, issue #183): a change whose PR merged must be
 # archived in that PR, so an ACTIVE change naming a merged PR is a defect. Needs
 # `gh` (PR state is a GitHub fact); run on the host, where the token lives —
@@ -396,9 +415,9 @@ openspec-record-pr: ## Write `PR: #<PR>` into every ACTIVE change whose `Issue:`
 	@test -n "$(ISSUE)" && test -n "$(PR)" || { echo "Usage: make openspec-record-pr ISSUE=<n> PR=<m>"; exit 1; }
 	@python3 scripts/openspec_record_pr.py --issue "$(ISSUE)" --pr "$(PR)"
 
-openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check openspec-binding-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), every ACTIVE change binds the Issue its PR closes or declares `Binding-exempt:` (issue #952), the index current
+openspec-check: openspec-image openspec-tasks-check openspec-duplicate-check openspec-index-check openspec-spec-tests-check openspec-backlog-check openspec-binding-check openspec-invalid-change-check ## CI gate: every active change validates, no task unticked or blocked, no two changes propose the same rule, every `- **Test:**` reference resolves, the ACTIVE backlog is under the 50 cap (issue #938), every ACTIVE change binds the Issue its PR closes or declares `Binding-exempt:` (issue #952), every ACTIVE change is structurally complete — proposal + spec + tasks (issue #962), the index current
 	docker run $(OS_OPTS) openspec validate --changes
-	@echo "[openspec-check] OK: active changes validate, no task is unticked, no two ACTIVE changes propose the same Requirement, every \`- **Test:**\` reference resolves, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
+	@echo "[openspec-check] OK: active changes validate, no task is unticked, no two ACTIVE changes propose the same Requirement, every \`- **Test:**\` reference resolves, every ACTIVE change carries proposal.md + specs/<capability>/spec.md + tasks.md, OPENSPEC.md is current (a task marked 'blocked: <who/why>' is reported above as review-required)"
 
 file-findings: ## File ONE issue per finding in findings.md (host-side: needs gh + the repo)
 	python3 scripts/file_findings.py --file $(if $(PR),--pr $(PR)) $(if $(ISSUE),--issue $(ISSUE))

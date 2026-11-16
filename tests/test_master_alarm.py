@@ -232,11 +232,54 @@ def test_agents_md_carries_the_rule_and_the_guard_row():
           "tests/test_master_alarm.py" in text)
 
 
+def test_an_invalid_change_red_run_names_its_repairer():
+    """Issue #962's 'Done when': a red push-to-master run names the repairer for the SHAPE
+    that reded it, not only the run.
+
+    The measured gap (run 43610043055): an ACTIVE change that shipped incomplete (a
+    proposal, no capability spec, no task checklist) reds `openspec validate --changes`
+    while `OPENSPEC.md` is perfectly current, so the index keeper answers `DRIFT=none` and
+    names nothing — the alarm notified and no repairer owned the red. The registry routes
+    each shape to its repairer, the routing is derived from the pipeline (one map, rule 6d),
+    and the alarm text prints it (routing, not only notifying).
+    """
+    shapes = dict(a.SHAPES["openspec-check"])
+    check("registry: the invalid-change shape names its repairer",
+          shapes.get("invalid-change") == "qa-validate invalid-change-repair", shapes)
+    check("registry: the index-drift shape keeps its own repairer",
+          shapes.get("index-drift") == "qa-validate index-repair + architecture-bot", shapes)
+    by_job = a.job_gate_map()
+    check("routing: each job's registry gates are read from the pipeline itself",
+          "openspec-check" in by_job.get("validate", []), str(by_job.get("validate")))
+    check("routing: a gate name is never guessed from a job name",
+          all(gate in a.GATES for gates in by_job.values() for gate in gates), str(by_job))
+    td = _fake_gh([_red_run(962)], [[{"name": "validate", "conclusion": "failure"},
+                                     {"name": "live-smoke", "conclusion": "skipped"}]])
+    _set_path(td)
+    rc, msg = a.verdict("o/r")
+    check("alarm: a red validate job still exits 1", rc == 1, rc)
+    check("alarm: the red run names the gate that reded it", "openspec-check" in msg, msg)
+    check("alarm: the red run names the invalid-change repairer (#962)",
+          "invalid-change -> qa-validate invalid-change-repair" in msg, msg)
+    check("alarm: the red run names the index-drift repairer for the other shape",
+          "index-drift -> qa-validate index-repair + architecture-bot" in msg, msg)
+    wf_text = (WF / "qa-validate.yml").read_text()
+    check("pipeline: qa-validate carries the invalid-change-repair job (no registry claim "
+          "without a job behind it)", "\n  invalid-change-repair:\n" in wf_text, "")
+    check("pipeline: it repairs only through make (rule 6m)",
+          "make openspec-invalid-change-repair" in wf_text
+          and "python3 scripts/openspec_invalid_change_repair.py" not in wf_text, "")
+    check("pipeline: the Makefile defines the target the job calls",
+          bool(re.search(r"^openspec-invalid-change-repair:", (ROOT / "Makefile").read_text(),
+                         re.M)), "")
+
+
 def main() -> int:
     test_a_red_run_is_reported()
     test_a_green_or_pending_or_absent_run_is_not_an_alarm()
     test_every_validate_gate_is_on_a_list()
     test_the_architecture_gate_names_the_event_driven_keeper()
+    test_an_invalid_change_red_run_names_its_repairer()
     test_every_validate_step_target_is_a_gate_of_the_validate_job()
     test_the_workflow_guards_first_and_calls_the_make_target()
     test_the_make_target_passes_its_variables_through()
