@@ -1,6 +1,7 @@
 # Proposal: group-ingest-refusals-per-post
 
 Issue: #882 — "Re-captured posts repeat refusal noise across search legs; group the
+PR: #1102
 refusal report per (post, rule)"
 
 ## Why

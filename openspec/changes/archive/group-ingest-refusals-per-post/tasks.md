@@ -15,5 +15,7 @@
       `make openspec-index` + index-check green ("OPENSPEC.md is current:
       3 active, 333 archived"); `make test` green locally before the push (host
       suite, rule 6b change)
-- [ ] 6. PR opens with the five-section body closing #882; `make
-      openspec-record-pr ISSUE=882 PR=<pr>` archives at head; CI monitored green
+- [x] 6. PR #1102 opened with the five-section body closing #882
+      (`make pr-message-check` + `make pr-closure` green locally on the exact body:
+      "`#882` ← #882 — 1 closing keyword"); `make openspec-record-pr ISSUE=882
+      PR=1102` archived this change at head; CI monitored on the exact head
