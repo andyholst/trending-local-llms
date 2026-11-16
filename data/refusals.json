@@ -424,6 +424,42 @@
       "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
     },
     {
+      "utc": "2026-11-16T17:57:03Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-16T17:57:23Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-16T17:57:29Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-16T18:08:44Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
       "utc": "2026-11-16T19:19:23Z",
       "stage": "refuse_cross_model_duplicate_measurements",
       "backend": "nvidia",

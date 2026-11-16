@@ -96,7 +96,7 @@ GIT_COMMON_DIR := $(shell cd "$$(git rev-parse --git-common-dir 2>/dev/null)" 2>
 # run and removes it when that client dies.
 TEST_RUN := bash scripts/docker_test_run.sh --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
 	-e PYTHONUNBUFFERED=1 \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e GH_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
 
 
 HERMES_MODEL := deepseek/deepseek-v4-flash-0731

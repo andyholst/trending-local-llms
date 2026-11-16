@@ -24,6 +24,7 @@ metadata is stubbed (hermetic); the real PR #72 raw snapshot is a fixture.
   - test_declined_engine_never_counts_as_repeat  a NON_ENGINE denial is settled, never a repeat
   - test_oldest_dated_capture_decides_first_seen  a fresh capture cannot launder an old spelling's age
   - test_shipped_raw_has_no_stale_warn  the shipped data/raw carries no unresolved repeat WARN
+  - test_the_test_container_gets_the_github_token_by_name  TEST_RUN + qa-validate step forward GH_TOKEN by name into the test container (issue #1095)
 
 Run:  python3 tests/test_engine_registry.py   or   make test
 """
@@ -604,6 +605,78 @@ def test_fetch_repo_meta_network_paths():
         os.environ.update(saved_env)
 
 
+def test_the_test_container_gets_the_github_token_by_name():
+    """The wiring that reds every PR under GitHub rate limits (issue #1095).
+
+    fetch_repo_meta authenticates only when GH_TOKEN is in the container's
+    environment — measured run 43896135854 red `validate` on one aged WARN's
+    unauthenticated probe while the same head passed locally. TEST_RUN must
+    forward the NAME (rule 3e), qa-validate's test step must provide the value
+    through the job's own default token, and the flag must reach the real
+    docker argv through the real wrapper (only the external container is a
+    stub on PATH — rule 6m).
+    """
+    import os
+    import shutil
+    import stat
+
+    # (a) The Makefile's TEST_RUN macro: name-only forwarding.
+    lines = (ROOT / "Makefile").read_text(encoding="utf-8").splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.startswith("TEST_RUN :="))
+    block = [lines[start]]
+    i = start
+    while block[-1].rstrip().endswith("\\"):
+        i += 1
+        block.append(lines[i])
+    macro = "\n".join(block)
+    check("TEST_RUN forwards GH_TOKEN by name", "-e GH_TOKEN" in macro)
+    check("TEST_RUN never puts a GH_TOKEN value on the line", "-e GH_TOKEN=" not in macro)
+
+    # (b) qa-validate's test step provides the job token as the value, and the
+    # step still reaches the product only through make (rule 6m).
+    wf = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+    step = ("      - name: Run unit tests (in container)\n"
+            "        env:\n"
+            "          GH_TOKEN: ${{ github.token }}\n"
+            "        run: make test")
+    check("qa-validate: the test step maps GH_TOKEN to github.token", step in wf)
+
+    # (c) End-to-end: the real macro + the real wrapper run against a stubbed
+    # docker that records its argv.
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        stub_dir = tmp / "bin"
+        stub_dir.mkdir()
+        argv_file = tmp / "docker-argv.txt"
+        stub = stub_dir / "docker"
+        stub.write_text(
+            "#!/bin/sh\n"
+            f"for a in \"$@\"; do printf '%s\\n' \"$a\" >> {argv_file}; done\n"
+            "exit 0\n",
+            encoding="utf-8")
+        stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
+        (tmp / "scripts").mkdir()
+        shutil.copy(ROOT / "scripts" / "docker_test_run.sh", tmp / "scripts" / "docker_test_run.sh")
+        (tmp / "Makefile").write_text(
+            "SHELL := /bin/bash\n"
+            "NERVE_KEY_ENV := -e TYPESAFE_API_KEY\n"
+            "AGENT_SHELL_FORWARD :=\n"
+            "TEST_IMAGE := fixture:test-image\n"
+            + macro + "\n"
+            ".PHONY: test\ntest:\n\t$(TEST_RUN)\n",
+            encoding="utf-8")
+        env = dict(os.environ, GH_TOKEN="wire-sentinel-1095",
+                   PATH=f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}")
+        subprocess.run(["make", "-C", str(tmp), "test"],
+                       capture_output=True, text=True, env=env, timeout=120)
+        argv = argv_file.read_text(encoding="utf-8").splitlines() if argv_file.exists() else []
+        pairs = [(argv[i], argv[i + 1]) for i in range(len(argv) - 1)]
+        check("the real macro + wrapper reach docker with -e GH_TOKEN",
+              ("-e", "GH_TOKEN") in pairs and "fixture:test-image" in argv, argv)
+        check("no token VALUE is ever passed on the docker command line",
+              "wire-sentinel-1095" not in argv)
+
+
 def test_offline_cache():
     import os
     saved = os.environ.get("ENGINE_REGISTRY_META_FILE")
@@ -858,6 +931,7 @@ def main() -> int:
     test_auto_entry_validates_against_contract()
     test_search_contract_engine_repo_pattern()
     test_fetch_repo_meta_network_paths()
+    test_the_test_container_gets_the_github_token_by_name()
     test_offline_cache()
     test_engine_check_cli_every_branch()
     test_repeat_warn_fails_the_check()

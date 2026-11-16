@@ -237,7 +237,14 @@ jobs:
       - name: Architecture description (rule 6h)
         run: make architecture-check
 
+      # The suite probes api.github.com for engine-registry metadata (rule 5b);
+      # unauthenticated, the 60 req/h limit shared across NAT'd runner IPs reds
+      # every PR on one aged WARN's probe (issue #1095, measured run 43896135854).
+      # The job's own default token is forwarded BY NAME (rule 3e) — the value
+      # never touches a command line — and fetch_repo_meta sends it as Bearer.
       - name: Run unit tests (in container)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: make test
 
   live-smoke:
