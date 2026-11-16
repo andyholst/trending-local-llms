@@ -61,6 +61,12 @@ REGISTRY: dict[str, dict[str, str]] = {
                          # through an attended run (rule 3c sign-off), so it moved out of
                          # UNREGISTERED_OWED into the registry.
                          "rediagnose": REDIAGNOSE_NAME},
+    # The silent-PR sweeper (issues #442/#814/#964): the `alarm` marker flags an open PR that
+    # runs no checks at all; the `rebase_failed` marker announces a sweep round whose rebase
+    # attempt git rejected. Its `run=<branch>_<oid>` stamps the failed (branch, head) pair, so
+    # one failed round is announced ONCE and a head that moved may be announced again.
+    "pr-health":        {"alarm": "pr-health-alarm",
+                         "rebase_failed": "pr-health-rebase-failed"},
 }
 
 #: Which artifact each bot announces on, before it mutates it (#197's table, for the guard).
@@ -71,6 +77,8 @@ ARTIFACTS: dict[str, str] = {
     "qa-validate": "the PR (immediately before the merge)",
     "queued-alarm": "the issue it files for a diagnosed main-pipeline failure (issue #802), and "
                     "the issue thread of a ledger row its re-diagnosis pass raised (issue #987)",
+    "pr-health": "the open PR it flags silent (issue #442), and the PR whose rebase attempt a "
+                 "sweep round failed (issue #964)",
 }
 
 #: The markers whose shape carries a WORD before the stamp (`issue-bot-verdict: refine <TS>`).
@@ -125,6 +133,10 @@ WRITTEN: frozenset = frozenset({
     # UNDIAGNOSED ledger row: one marker-deduplicated comment, so the thread stops claiming
     # "log unreadable" once the diagnosis landed in the ledger.
     ("queued-alarm", "rediagnose"),
+    # Written by `scripts/pr_health.py`: the `alarm` comment flags a silent PR (issue #442);
+    # the `rebase_failed` comment announces a sweep round whose rebase attempt failed (#964).
+    ("pr-health", "alarm"),
+    ("pr-health", "rebase_failed"),
 })
 
 #: Registered but not yet written, with the issue that lands its writer. Declared here so a reader
