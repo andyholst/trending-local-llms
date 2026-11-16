@@ -45,6 +45,10 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import bot_markers  # noqa: E402  (the ONE marker registry — rule 6j)
+import check_agent_skills as agent_skills  # noqa: E402  (the ONE leg/preload parser — rule 6d)
+
 BEGIN = "<!-- architecture-bot:begin -->"
 END = "<!-- architecture-bot:end -->"
 
@@ -443,10 +447,60 @@ def _flow_problems(root: Path) -> list[str]:
     return problems
 
 
+def _recipe_bodies(makefile: str) -> dict[str, str]:
+    """{target: tab-indented recipe text} for every target the Makefile defines."""
+    bodies: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in makefile.splitlines():
+        if line.startswith("\t"):
+            if current:
+                bodies.setdefault(current, []).append(line)
+            continue
+        current = target_at_line(line) if not line.lstrip().startswith("#") else None
+        if current:
+            bodies.setdefault(current, [])
+    return {k: "\n".join(v) for k, v in bodies.items()}
+
+
+#: A recipe line that calls another target — the word `make` or `$(MAKE)`, with the
+#: `--no-print-directory` the Makefile itself uses.
+_RECIPE_MAKE_CALL = re.compile(
+    r"(?:\bmake\b|\$\(MAKE\))(?:\s+--no-print-directory)?\s+([A-Za-z0-9_][A-Za-z0-9_-]*)")
+
+
+def makefile_lanes(makefile: str) -> dict[str, list[str]]:
+    """{make target: the skill names a `hermes -z` leg PRELOADS through it} (issue #935).
+
+    A public target's recipe is followed into the internal targets it calls, so the lane
+    reports what a CI job ACTUALLY preloads, not what the wrapper line spells. The `-s`
+    flag is read by the ONE parser (`check_agent_skills.legs` / `.preloaded`) — never a
+    re-spelled copy (rule 6d, and the #752 one-view rule for Makefile readers).
+    """
+    legs = agent_skills.legs(makefile)
+    bodies = _recipe_bodies(makefile)
+    out: dict[str, list[str]] = {}
+
+    def gather(target: str, seen: set[str]) -> list[str]:
+        if target in seen:
+            return []
+        seen.add(target)
+        names = list(agent_skills.preloaded(legs.get(target, "")))
+        for m in _RECIPE_MAKE_CALL.finditer(bodies.get(target, "")):
+            names.extend(gather(m.group(1), seen))
+        return list(dict.fromkeys(names))
+
+    for target in sorted(bodies):
+        names = gather(target, set())
+        if names:
+            out[target] = names
+    return out
+
+
 def render(root: Path) -> str:
     """The generated block for this tree (deterministic: no dates, no SHAs)."""
     descs = make_descriptions(root)
     targets = make_targets(root)
+    lanes = makefile_lanes(_read(root / "Makefile"))  # issue #935: who preloads what
     wfs = sorted(p for p in (root / WF_DIR).glob("*.yml"))
     if not wfs:
         raise ArchitectureBotError(f"no workflows under {WF_DIR}/ — nothing to describe")
@@ -485,7 +539,51 @@ def render(root: Path) -> str:
                 desc = descs.get(c)
                 described.append(f"`make {c}`" if not desc else f"`make {c}` — {_shorten(desc)}")
             lines.append("- **calls:** " + "; ".join(described))
+        # The agent lane (issue #935): which skill contract each leg this pipeline runs
+        # preloads — resolved THROUGH wrapper targets, from the Makefile's `-s` pointers.
+        lane_pairs: list[tuple[str, list[str]]] = []
+        for c in calls:
+            if c.endswith("-*"):  # a dynamic call renders as its static prefix plus *
+                pre = c[:-2]
+                for t in sorted(lanes):
+                    if t.startswith(pre + "-"):
+                        lane_pairs.append((t, lanes[t]))
+            elif lanes.get(c):
+                lane_pairs.append((c, lanes[c]))
+        if lane_pairs:
+            lines.append("- **agent lanes:** " + "; ".join(
+                f"`make {t}` preloads " + ", ".join(f"`{s}`" for s in skills)
+                for t, skills in lane_pairs))
+        verbs = sorted(set(bot_markers.REGISTRY.get(path.stem, {}).values()))
+        if verbs:
+            lines.append("- **announces (marker verbs):** " + ", ".join(f"`{v}`" for v in verbs))
         lines.append("")
+
+    lines += [
+        "### Agent skill contracts (`agents/skills/`)",
+        "",
+        "Every project skill the bots preload (rule 6p), and the `make` targets whose legs "
+        "preload it — read from the Makefile's `-s` pointers. A skill no leg preloads is "
+        "printed as the orphan it is (issue #935).",
+        "",
+        "| skill | preloaded by |",
+        "|---|---|",
+    ]
+    skill_home = root / agent_skills.SKILLS_DIR
+    present = sorted(p.name for p in skill_home.iterdir()
+                     if p.is_dir() and (p / agent_skills.SKILL_FILE).is_file()) \
+        if skill_home.is_dir() else []
+    for name in present:
+        homes = sorted(t for t, skills in lanes.items() if name in skills)
+        lines.append(f"| `{name}` | "
+                     + (", ".join(f"`make {t}`" for t in homes) or "no leg — orphan contract")
+                     + " |")
+    named = {s for skills in lanes.values() for s in skills}
+    for name in sorted(named - set(present)):
+        homes = sorted(t for t, skills in lanes.items() if name in skills)
+        lines.append(f"- preload naming no skill file: `{name}` (preloaded by "
+                     + ", ".join(f"`make {t}`" for t in homes) + ")")
+    lines.append("")
 
     lines += [
         "### The product, end to end",

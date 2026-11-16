@@ -55,7 +55,8 @@ def _module():
 def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify"),
           workflows=("ci.yml",), scripts=("thing.py",), doci_wf=True, doc_script=True,
           doc_roles=None, jobs=("build",), doc_jobs=None,
-          validate_stages=None, only=(), agents_workflows=None):
+          validate_stages=None, only=(), agents_workflows=None,
+          hermes_legs=None, skills=()):
     """A minimal repo fixture: Makefile + ARCHITECTURE.md + AGENTS.md + workflows + scripts.
 
     `doc_roles` writes the §6 script table: since issue #506 a script needs a ROLE
@@ -65,14 +66,22 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
     `only` writes `--only` lists into the fixture Makefile (issue #182).
     `agents_workflows` is the §6b list in the fixture `AGENTS.md` (rule 6h): it
     defaults to the workflows in the fixture tree, i.e. the shape the rule requires.
+    `hermes_legs` adds `hermes -z` legs with their `-s` preload sets and `skills`
+    plants `agents/skills/<name>/SKILL.md` contracts (issue #935).
     """
     (td / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (td / "scripts").mkdir(parents=True, exist_ok=True)
     if validate_stages is not None and "validate.py" not in scripts:
         scripts = tuple(scripts) + ("validate.py",)
     only_target = "".join(f"validate-list:\n\tpython3 scripts/validate.py --only {o}\n" for o in only)
+    leg_names = tuple(hermes_legs or {})
+    leg_lines = "".join(
+        f"{t}: ## {t} the agent leg\n"
+        f"\t@hermes -z --yolo --accept-hooks -s {','.join(leg_skills)} \"go\"\n"
+        for t, leg_skills in (hermes_legs or {}).items())
     (td / "Makefile").write_text(
-        ".PHONY: build verify\n" + "".join(f"{t}:\n\techo {t}\n" for t in targets) + only_target,
+        ".PHONY: build verify " + " ".join(leg_names) + "\n"
+        + "".join(f"{t}:\n\techo {t}\n" for t in targets) + leg_lines + only_target,
         encoding="utf-8",
     )
     # The RULEBOOK's pipeline list (§6b, rule 6h): one line per pipeline, each
@@ -90,6 +99,13 @@ def _tree(td: Path, targets=("build", "verify"), doc_targets=("build", "verify")
             encoding="utf-8")
     for s in scripts:
         (td / "scripts" / s).write_text("# fixture\n", encoding="utf-8")
+    for skill_name in skills:
+        skill_dir = td / "agents" / "skills" / skill_name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {skill_name}\ndescription: fixture skill\n---\n\n# {skill_name}\n",
+            encoding="utf-8",
+        )
     if validate_stages is not None:
         adds = "".join(f'    add("a check", "{s}", lambda: None)\n' for s in validate_stages)
         (td / "scripts" / "validate.py").write_text(
@@ -710,6 +726,39 @@ def test_public_targets_are_a_projection_of_the_full_set():
           (ROOT / "scripts" / "architecture_check.py").read_text(), "")
 
 
+def test_agent_skill_contracts_and_leg_preloads_must_be_named():
+    """(issue #935, rule 6h) Every `agents/skills/` contract on disk, and every skill
+    name a Makefile leg preloads, must be named in the description — a dropped `-s`
+    pointer or an orphan contract fails the gate instead of vanishing quietly."""
+
+    # Given a fixture whose description names none of its lane skills
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(Path(td),
+                     doc_targets=("build", "verify", "implement-issue"),
+                     hermes_legs={"implement-issue": ("issue-implement", "bot-unattended")},
+                     skills=("issue-implement", "lonely-skill"))
+
+        # When  the checker runs
+        problems = _module().findings(root)
+
+        # Then  the on-disk contract, the orphan, and the preload name are each reported
+        check("lanes: a skill contract not named is reported",
+              any("`issue-implement`" in p and "#935" in p for p in problems), problems)
+        check("lanes: an orphan skill not named is reported",
+              any("`lonely-skill`" in p and "#935" in p for p in problems), problems)
+        check("lanes: a leg preload not named in the description is reported",
+              any("`bot-unattended`" in p and "preload" in p for p in problems), problems)
+
+        # And   naming them in the description turns the lane findings green
+        doc = root / "ARCHITECTURE.md"
+        doc.write_text(doc.read_text(encoding="utf-8")
+                       + "`issue-implement`, `bot-unattended` and `lonely-skill` are named.\n",
+                       encoding="utf-8")
+        problems = _module().findings(root)
+        check("lanes: naming them clears the findings",
+              not any("#935" in p for p in problems), problems)
+
+
 def main() -> int:
     print("architecture description + its guard (ARCHITECTURE.md, rule 6h)")
     test_missing_doc_is_a_failure()
@@ -737,6 +786,7 @@ def main() -> int:
     test_section6_role_text_is_reviewed_not_verified()
     test_real_repo_description_is_current()
     test_public_targets_are_a_projection_of_the_full_set()
+    test_agent_skill_contracts_and_leg_preloads_must_be_named()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

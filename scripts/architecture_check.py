@@ -51,7 +51,8 @@ from pathlib import Path
 #: `make_targets` (the full set the generator renders) are BOTH views of the one
 #: scan in `architecture_bot`, imported here — issue #512's two parsers became one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture_bot import public_targets, target_at_line, workflow_jobs  # noqa: E402
+from architecture_bot import makefile_lanes, public_targets, target_at_line, workflow_jobs  # noqa: E402
+import check_agent_skills as agent_skills  # noqa: E402  (SKILLS_DIR — the one skill home, issue #904)
 
 DOC_NAME = "ARCHITECTURE.md"
 VALIDATOR = "scripts/validate.py"
@@ -396,6 +397,24 @@ def findings(root: Path) -> list[str]:
                 for j in sorted(claimed[w] - real)]
         out += [f"workflow `{w}`'s job `{j}` is not named in its {DOC_NAME} §4 section"
                 for j in sorted(real - claimed[w])]
+
+    # The agent lanes (issue #935, rule 6h): every project skill on disk and every skill
+    # name a Makefile leg preloads must be NAMED in the description. Today a preload name
+    # appears in ARCHITECTURE.md only by prose accident — a leg whose `-s` pointer is
+    # dropped, renamed, or orphaned reads green. This makes the generated block's agent
+    # lane the contract it has to be.
+    lanes = makefile_lanes((root / "Makefile").read_text(encoding="utf-8"))
+    lane_names = {s for skills in lanes.values() for s in skills}
+    skill_home = root / agent_skills.SKILLS_DIR
+    on_disk = {p.name for p in skill_home.iterdir()
+               if p.is_dir() and (p / agent_skills.SKILL_FILE).is_file()} \
+        if skill_home.is_dir() else set()
+    out += [f"agent skill `{s}` is not named in {DOC_NAME}'s description "
+            f"(issue #935: the block must name every skill contract)"
+            for s in sorted(on_disk) if s not in text]
+    out += [f"Makefile leg preload `{s}` is not named in {DOC_NAME}'s description "
+            f"(issue #935: a dropped `-s` pointer must fail the gate)"
+            for s in sorted(lane_names) if s not in text]
     return out
 
 
