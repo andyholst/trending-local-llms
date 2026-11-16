@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-11-15T21:36:49Z",
+  "updated_utc": "2026-11-16T17:13:19Z",
   "failures": [
     {
       "run_id": 43088760321,
@@ -326,8 +326,8 @@
       ],
       "issue_number": "1039",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1039",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 922,
+      "guard": "tests/test_owed_rows.py",
       "undiagnosed": null
     },
     {
@@ -341,8 +341,8 @@
       "targets": [],
       "issue_number": "1040",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1040",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 1082,
+      "guard": "tests/test_openspec_index_repair.py",
       "undiagnosed": null
     },
     {
@@ -356,8 +356,8 @@
       "targets": [],
       "issue_number": "1041",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1041",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 1082,
+      "guard": "tests/test_openspec_index_repair.py",
       "undiagnosed": null
     },
     {
@@ -371,8 +371,8 @@
       "targets": [],
       "issue_number": "1042",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1042",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 1082,
+      "guard": "tests/test_openspec_index_repair.py",
       "undiagnosed": null
     },
     {
@@ -386,8 +386,8 @@
       "targets": [],
       "issue_number": "1043",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1043",
-      "fix_pr": null,
-      "guard": null,
+      "fix_pr": 1082,
+      "guard": "tests/test_openspec_index_repair.py",
       "undiagnosed": null
     }
   ]
