@@ -1605,6 +1605,27 @@ check-branch-protection: ## Guard Rule 1: the base branch must carry auto-merge-
 	@test -n "$(REPO)" || test -n "$(FROM_FILE)" || { echo "Usage: make check-branch-protection REPO=<owner/repo> [BRANCH=master] [FROM_FILE=<recorded.json>]"; exit 1; }
 	@$(MAKE) --no-print-directory _check-branch-protection
 
+# Hermes pin freshness (issue #1091, rule 6k): the Makefile's `HERMES_VERSION ?=` and
+# the Dockerfile's `ARG HERMES_VERSION` pin the agent version every fleet image bakes
+# (issue #218 pins the two together). The check reads BOTH pins back — a silent
+# disagreement is the #218 defect and refuses with exit 2 before the channel is even
+# consulted — and compares the pin against the upstream release channel
+# (`gh api repos/NousResearch/hermes-agent/releases/latest`, or a recorded payload via
+# FROM_FILE — the same fixture seam as check-branch-protection): equal -> `pin=<v>
+# channel=<v> OK` exit 0; channel strictly newer -> files ONE marker-deduplicated
+# tech-debt issue naming the remedy (raise BOTH pins together per #218) and exits 1,
+# loudly; pin ahead -> reported (AHEAD), exit 0; unreadable channel -> exit 2, never a
+# silent clean. Host-side like the other gh-bound verifiers. Run by queued-alarm's
+# alarm job (report-and-file), never a PR gate.
+.PHONY: _hermes-pin-freshness
+_hermes-pin-freshness:
+	python3 scripts/hermes_pin_freshness.py --repo "$(REPO)" $(if $(FROM_FILE),--from-file "$(FROM_FILE)",) $(if $(DRY),--dry-run,)
+
+.PHONY: hermes-pin-freshness
+hermes-pin-freshness: ## Compare the pinned Hermes agent version against the upstream release channel (REPO=<owner/name> or FROM_FILE=<recorded.json>, DRY=1 previews; issue #1091)
+	@test -n "$(REPO)" || { echo "Usage: make hermes-pin-freshness REPO=<owner/repo> [FROM_FILE=<recorded.json>] [DRY=1]"; exit 1; }
+	@$(MAKE) --no-print-directory _hermes-pin-freshness
+
 .PHONY: queued-alarm
 sweep-alarm: ## Fail loudly when the WEEKLY issue sweep has not been DELIVERED (REPO=<owner/name>; the window is the script's weekly default unless MAX_AGE_HOURS is supplied — issue #804)
 	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=<hours>]"; exit 1; }

@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""hermes-pin-freshness — the pinned Hermes agent version vs the upstream release channel.
+
+Issue #1091, rule 6k. The Makefile's ``HERMES_VERSION ?=`` and the Dockerfile's
+``ARG HERMES_VERSION="…"`` pin the agent version every fleet image bakes (issue #218
+pins the two together); this reads BOTH back — a silent disagreement between them is
+itself the #218 defect, so the check REFUSES (exit 2) before comparing anything — and
+compares the pin against the upstream channel tag
+(``repos/NousResearch/hermes-agent/releases/latest``):
+
+  equal           -> prints ``pin=<v> channel=<v> OK``, exit 0
+  channel newer   -> exit 1 (loud: the queued-alarm sweep goes red) and files ONE
+                     marker-deduplicated ``tech-debt`` issue naming the remedy —
+                     raise BOTH pins together per issue #218
+  pin ahead       -> reported (``AHEAD``), exit 0 — a reported state, not a red one
+  channel unreadable -> exit 2, never a silent clean
+
+The channel is compared through the real recorded payload: a live ``gh api`` on the
+host, or ``--from-file`` with a recorded payload (the ``check_branch_protection.py``
+FROM_FILE seam, issue #959) — no version-parsing mocks. The dedup marker lives in
+``scripts/bot_markers.py`` (rule 6j); this module imports it and never re-spells it.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import bot_markers  # noqa: E402  (rule 6j: the marker shape lives there, never re-spelled here)
+
+#: The upstream release channel the pin is compared against (rule 6k: the agent
+#: installed through the ONE seam comes from this channel).
+CHANNEL_REPO = "NousResearch/hermes-agent"
+
+#: The upgrade rule the filed issue names: an upgrade raises BOTH pins together.
+UPGRADE_ISSUE = 218
+
+#: The pin-drift dedup signature lives in scripts/bot_markers.py (rule 6j); this module
+#: renders it THROUGH the registered name and never re-spells it.
+PIN_DRIFT_KEY = bot_markers.PIN_DRIFT_SIGNATURE_KEY
+
+_LABEL = "tech-debt"
+
+_TAG = re.compile(r"^v?(\d+(?:\.\d+)*)(?:[-+].*)?$")
+_MAKE_PIN = re.compile(r"^\s*HERMES_VERSION\s*\?=\s*([^\s#]+)", re.M)
+_DOCKER_PIN = re.compile(r'^\s*ARG\s+HERMES_VERSION\s*=?\s*"?([^\s"#]+)"?', re.M)
+
+
+class PinMismatch(Exception):
+    """The Makefile and the Dockerfile name DIFFERENT agent versions (rule 6k)."""
+
+
+class ChannelUnreadable(Exception):
+    """The upstream channel tag could not be read — reported loudly, never silently clean."""
+
+
+class VersionError(Exception):
+    """A pin or a channel tag is not a version this check can honestly order."""
+
+
+def version_tuple(text: str) -> tuple[int, ...]:
+    m = _TAG.match(str(text).strip())
+    if not m:
+        raise VersionError(f"not a version this check can order: {text!r}")
+    return tuple(int(p) for p in m.group(1).split("."))
+
+
+def compare(left: str, right: str) -> int:
+    """-1 when left < right, 0 equal, 1 when left > right (zero-padded tuples)."""
+    a, b = version_tuple(left), version_tuple(right)
+    n = max(len(a), len(b))
+    a += (0,) * (n - len(a))
+    b += (0,) * (n - len(b))
+    return (a > b) - (a < b)
+
+
+def _first_pin(text: str, pattern: re.Pattern, spelling: str) -> tuple[str, int]:
+    """(value, 1-based line) of the first pin this pattern finds."""
+    m = pattern.search(text)
+    if not m:
+        raise PinMismatch(f"{spelling} carries no version pin the check can read")
+    line = text[: m.start()].count("\n") + 1
+    return m.group(1), line
+
+
+def read_pins(makefile: Path, dockerfile: Path) -> tuple[str, int, str, int]:
+    """(makefile_pin, makefile_line, dockerfile_pin, dockerfile_line) — rule 6k pins
+    them together, so a disagreement is refused BEFORE the channel is even consulted."""
+    try:
+        mk_text = makefile.read_text(encoding="utf-8")
+        df_text = dockerfile.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise PinMismatch(f"cannot read the pin files: {exc}") from exc
+    mk_pin, mk_line = _first_pin(mk_text, _MAKE_PIN, f"{makefile.name}")
+    df_pin, df_line = _first_pin(df_text, _DOCKER_PIN, f"{dockerfile.name}")
+    if version_tuple(mk_pin) != version_tuple(df_pin):
+        raise PinMismatch(
+            f"the pins disagree: {makefile.name}:{mk_line} `HERMES_VERSION ?= {mk_pin}` vs "
+            f"{dockerfile.name}:{df_line} `ARG HERMES_VERSION=\"{df_pin}\"` — rule 6k "
+            f"(issue #{UPGRADE_ISSUE}) pins the two together; raise or lower BOTH in one change"
+        )
+    return mk_pin, mk_line, df_pin, df_line
+
+
+def channel_tag(from_file: str | None) -> str:
+    """The upstream channel's release tag, read from the REAL payload.
+
+    ``from_file`` names a recorded payload (the FROM_FILE seam); without it this runs
+    ``gh api repos/NousResearch/hermes-agent/releases/latest`` and treats any failure —
+    gh missing, network, a payload with no ``tag_name`` — as UNREADABLE (exit 2), never
+    as "fresh".
+    """
+    if from_file:
+        try:
+            payload = json.loads(Path(from_file).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ChannelUnreadable(f"recorded channel payload {from_file!r} unreadable: {exc}") from exc
+    else:
+        proc = subprocess.run(["gh", "api", f"repos/{CHANNEL_REPO}/releases/latest"],
+                              capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise ChannelUnreadable(
+                f"`gh api repos/{CHANNEL_REPO}/releases/latest` failed "
+                f"(rc={proc.returncode}): {proc.stderr.strip()[:300] or 'no stderr'}")
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise ChannelUnreadable(f"the channel payload is not JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ChannelUnreadable("the channel payload is not a JSON object")
+    tag = str(payload.get("tag_name") or "").strip()
+    if not tag:
+        raise ChannelUnreadable("the channel payload carries no `tag_name`")
+    try:
+        version_tuple(tag)
+    except VersionError as exc:
+        raise ChannelUnreadable(f"the channel tag {tag!r} is not a version: {exc}") from exc
+    return tag
+
+
+def drift_signature(channel: str) -> str:
+    """ONE signature per drifted channel version (channel-keyed: the same drift the
+    sweep sees twice is one tracked issue; a closed issue does not block a fresh drift)."""
+    return "hermes-pin-" + ".".join(str(p) for p in version_tuple(channel))
+
+
+def already_filed(repo: str, signature: str) -> str | None:
+    """The URL of an OPEN issue already carrying this drift signature, or None."""
+    proc = subprocess.run(
+        ["gh", "issue", "list", "--repo", repo, "--state", "all", "--label", _LABEL,
+         "--search", f'"{signature}" in:body', "--json", "number,state,url"],
+        capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise SystemExit(f"[hermes-pin-freshness] gh issue list failed (rc={proc.returncode}): "
+                         f"{proc.stderr.strip()[:300]}")
+    try:
+        items = json.loads(proc.stdout or "[]")
+    except json.JSONDecodeError:
+        return None
+    for item in items:
+        if item.get("state") == "OPEN":
+            return str(item.get("url") or item.get("number"))
+    return None
+
+
+def issue_body(repo: str, pin: str, mk_line: int, df_line: int, channel: str) -> str:
+    signature = drift_signature(channel)
+    utc = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    return (
+        "## Finding\n\n"
+        f"- **Evidence:** `Makefile:{mk_line}` pins `HERMES_VERSION ?= {pin}` and "
+        f"`Dockerfile:{df_line}` pins `ARG HERMES_VERSION=\"{pin}\"` — the agent version every "
+        f"fleet image bakes (issue #{UPGRADE_ISSUE}, rule 6k); `repos/{CHANNEL_REPO}/releases/latest` "
+        f"answers tag `{channel}` — the upstream stable channel is strictly NEWER than the pin. "
+        f"Compared by `make hermes-pin-freshness REPO={repo}`.\n"
+        f"- **Why:** a pinned build is reproducible but silently ages: every image keeps baking "
+        f"`{pin}` while the upstream channel moved to `{channel}`, and the drift only surfaces at "
+        f"the next image dispatch/build (rule 6k) — today it has no tracked home until the sweep "
+        f"names it.\n"
+        f"- **Done when:** raise the Makefile's `HERMES_VERSION` and the Dockerfile's "
+        f"`ARG HERMES_VERSION` together per issue #{UPGRADE_ISSUE} (an explicit, reviewable "
+        f"upgrade — never one pin alone), and `make hermes-pin-freshness REPO={repo}` prints "
+        f"`pin=<v> channel=<v> OK` and exits 0.\n\n"
+        "## Origin\n\n"
+        f"Filed by `make hermes-pin-freshness` on {utc}.\n\n"
+        f"<!-- {PIN_DRIFT_KEY}: {signature} -->\n"
+    )
+
+
+def file_drift_issue(repo: str, pin: str, mk_line: int, df_line: int, channel: str) -> tuple[str, str]:
+    """('filed'|'already-filed', url) — ONE issue per drifted channel version, marker-deduped."""
+    signature = drift_signature(channel)
+    existing = already_filed(repo, signature)
+    if existing:
+        return "already-filed", existing
+    title = (f"tech-debt: Hermes agent pin {pin} lags the upstream release channel {channel} "
+             f"(make hermes-pin-freshness)")
+    proc = subprocess.run(
+        ["gh", "issue", "create", "--repo", repo, "--title", title, "--label", _LABEL,
+         "--body", issue_body(repo, pin, mk_line, df_line, channel)],
+        capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise SystemExit(f"[hermes-pin-freshness] gh issue create failed (rc={proc.returncode}): "
+                         f"{proc.stderr.strip()[:300]}")
+    url = proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else "?"
+    return "filed", url
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--repo", required=True, help="owner/name — the repo the drift issue is filed on")
+    ap.add_argument("--from-file", help="a recorded channel payload (the FROM_FILE seam) instead of `gh api`")
+    ap.add_argument("--makefile", default=str(ROOT / "Makefile"), help=argparse.SUPPRESS)
+    ap.add_argument("--dockerfile", default=str(ROOT / "Dockerfile"), help=argparse.SUPPRESS)
+    ap.add_argument("--dry-run", action="store_true", help="report the drift without filing")
+    args = ap.parse_args(argv)
+
+    if "/" not in args.repo or args.repo.count("/") != 1:
+        print("[hermes-pin-freshness] --repo must be owner/name", file=sys.stderr)
+        return 2
+
+    try:
+        pin, mk_line, _df_pin, df_line = read_pins(Path(args.makefile), Path(args.dockerfile))
+    except PinMismatch as exc:
+        print(f"[hermes-pin-freshness] FAIL — {exc}", file=sys.stderr)
+        return 2
+    except VersionError as exc:
+        print(f"[hermes-pin-freshness] FAIL — the pin is unreadable: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        channel = channel_tag(args.from_file)
+    except ChannelUnreadable as exc:
+        print(f"[hermes-pin-freshness] FAIL — the upstream channel could not be read: {exc}",
+              file=sys.stderr)
+        return 2
+
+    order = compare(pin, channel)
+    if order == 0:
+        print(f"pin={pin} channel={channel} OK")
+        return 0
+    if order > 0:
+        print(f"pin={pin} channel={channel} AHEAD — the pin is ahead of the upstream channel "
+              f"(reported, not red)")
+        return 0
+
+    print(f"pin={pin} channel={channel} DRIFT — the upstream release channel is strictly newer "
+          f"than the pinned agent version")
+    if args.dry_run:
+        print("[hermes-pin-freshness] --dry-run: filing skipped")
+        return 1
+    try:
+        verdict, url = file_drift_issue(args.repo, pin, mk_line, df_line, channel)
+    except SystemExit as exc:
+        print(f"[hermes-pin-freshness] FAIL — the drift issue could not be filed: {exc}", file=sys.stderr)
+        return 2
+    print(f"[hermes-pin-freshness] {verdict}={url}")
+    print(f"[hermes-pin-freshness] remedy: raise the Makefile `HERMES_VERSION` and the Dockerfile "
+          f"`ARG HERMES_VERSION` together per issue #{UPGRADE_ISSUE} (rule 6k)")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

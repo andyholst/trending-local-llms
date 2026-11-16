@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **330**
+Active changes: **2** · archived: **331**
 
 ## Active changes
 
@@ -189,6 +189,7 @@ Active changes: **2** · archived: **330**
 | `guard-registry-derived` | archived | #313 | — | [bot-guards](openspec/changes/archive/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/guard-registry-derived/proposal.md) |
 | `hardware-is-not-an-engine` | archived | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/archive/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/hardware-is-not-an-engine/proposal.md) |
 | `heredoc-prose-is-not-a-call` | archived | #544 | — | [architecture-description](openspec/changes/archive/heredoc-prose-is-not-a-call/specs/architecture-description/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/heredoc-prose-is-not-a-call/proposal.md) |
+| `hermes-pin-freshness` | archived | #1091 | #1092 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-freshness/specs/hermes-pin-freshness/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/hermes-pin-freshness/proposal.md) |
 | `host-fleet-souls` | archived | #682 | #688 | [host-fleet](openspec/changes/archive/host-fleet-souls/specs/host-fleet/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/host-fleet-souls/proposal.md) |
 | `host-suite-loud-skip-and-full-red-list` | archived | #890 | #945 | [test-harness](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/specs/test-harness/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/proposal.md) |
 | `host-test-capture-guard` | archived | #911 | #929 | [testing](openspec/changes/archive/host-test-capture-guard/specs/testing/spec.md) | 6/8 | [proposal.md](openspec/changes/archive/host-test-capture-guard/proposal.md) |
