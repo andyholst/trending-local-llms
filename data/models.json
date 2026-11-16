@@ -3265,6 +3265,7 @@
       "supported_engines": [
         "MLX"
       ],
+      "engine_min_version": "PrismML/DarkbloomAI optimization-challenge build on Yukon Research mlx.fast (est)",
       "formats": [
         {
           "name": "Bonsai 2 9B (mlx.fast optimization challenge)",
@@ -4194,6 +4195,7 @@
       "supported_engines": [
         "SonicBoom"
       ],
+      "engine_min_version": "SonicBoom benchmark baseline build, version unstated (est)",
       "formats": [
         {
           "name": "Qwen2.5-0.5B",
@@ -4780,6 +4782,7 @@
       "supported_engines": [
         "mlx-serve"
       ],
+      "engine_min_version": "mlx-serve 26.10.1; TensorFold; oMLX (est)",
       "formats": [
         {
           "name": "Qwen3.8-Flash-Next 125B",
@@ -5954,6 +5957,7 @@
       "supported_engines": [
         "SonicBoom"
       ],
+      "engine_min_version": "SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) (est)",
       "formats": [
         {
           "name": "Gemma 4 E4B",
@@ -7882,6 +7886,7 @@
       "supported_engines": [
         "vLLM"
       ],
+      "engine_min_version": "vLLM 0.28 on native Windows with ROCm 7.15 (est)",
       "engagement": {
         "likes": 0,
         "comments": 0,
