@@ -2879,6 +2879,7 @@ def main() -> int:
     test_a_filed_issue_carries_the_label_the_bots_trigger_on()
     test_the_filer_creates_the_label_the_bots_trigger_on()
     test_engine_min_version_backfill_traces_to_the_captured_source_text()
+    test_untraceable_engine_build_prose_is_declared_unverified_in_the_store()
     test_engine_min_version_coverage_can_never_shrink()
     test_storage_offload_backfill_traces_to_the_captured_source_text()
     test_storage_offload_coverage_can_never_shrink()
