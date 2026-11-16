@@ -1,6 +1,7 @@
 # Proposal: land-auto-merge-rebase-rule-row
 
 Issue: #1088 (the §2/§8 rows #1049 owed and could not write)
+PR: #1107
 
 ## Why
 
