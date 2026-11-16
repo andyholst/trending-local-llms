@@ -1946,6 +1946,158 @@ def check_source_post_readback(store: dict) -> None:
             print(f"    ... and {len(prose) - 15} more")
 
 
+# ---------------------------------------------------------------------------
+# Model-level footprint copies (issue #934): the catalog copy is gated against
+# the model's OWN captured data — its measurement rows and its raw captures.
+# ---------------------------------------------------------------------------
+
+def model_capture_footprint_index(raw_dir: Path = RAW_DIR) -> dict[str, dict[str, list]]:
+    """PER model key a raw capture used, the footprint values captured FOR that model.
+
+    The model-level copy on the catalog row was seeded from the search snapshots:
+    `data/raw/*.json` records row-level footprint values keyed by model id/name. This is the
+    model's own capture pool — the same structured semantics as the source-post pool (#788),
+    keyed by model instead of by post.
+    """
+    index: dict[str, dict[str, list]] = {}
+    if not raw_dir.exists():
+        return index
+    for path in sorted(raw_dir.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except Exception:  # noqa: BLE001  (an unreadable snapshot is skipped, never fatal)
+            continue
+        for row in data.get("models", []) or []:
+            keys = {str(row.get("id") or ""), str(row.get("name") or "")}
+            keys.discard("")
+            if not keys:
+                continue
+            for f in _SOURCE_POST_FOOTPRINT:
+                # row-level AND measurement-level captures — a search snapshot states a figure
+                # on the model row or on the measurement that cites the post (both are captures
+                # of this model; the source-post pool reads them the same way, #788)
+                sources = [row] + list(row.get("engines", []) or [])
+                for src in sources:
+                    v = src.get(f)
+                    if isinstance(v, str) and v.strip():
+                        for k in keys:
+                            index.setdefault(k, {}).setdefault(f, []).append(v)
+    return index
+
+
+#: Bare K/M notation: a model-level copy writes `200000`, a capture writes `200K`. Same figure.
+_COPY_KM = re.compile(r"(\d+(?:\.\d+)?)(k|m)", re.I)
+
+
+def _copy_figures(value: str) -> set[str]:
+    """Figure tokens of a model-level or captured value, K/M notation EXPANDED.
+
+    `_readback_figure_tokens` keeps the unit it read (`200k`); a raw number (`200000`) is its
+    own token. Both forms are the same context window, so the bare-k/m tokens are expanded to
+    their number too — tokens already resolved to `gb`/`mb`/`tb` units are untouched.
+    """
+    out = _readback_figure_tokens(value)
+    expanded: set[str] = set()
+    for tok in out:
+        m = _COPY_KM.fullmatch(tok)
+        if m:
+            num, suf = m.group(1), m.group(2).lower()
+            expanded.add(num + "000" if suf == "k" else num + "000000")
+    return out | expanded
+
+
+def _footprint_copy_supported(value: str, field: str, candidates: list[str]) -> bool:
+    """Does a model-level copy match a captured SAME-field value — a measurement row or raw capture?
+
+    The structured two-way semantics of `_readback_supported`'s structured branch (whole form
+    normalized either way, or a shared figure token), with `_copy_figures`' K/M expansion. One
+    matching implementation shared by the pool and the gate (rule 6d).
+    """
+    norm = _readback_norm(value)
+    tokens = _copy_figures(value)
+    for s in candidates:
+        if norm in _readback_norm(s) or _readback_norm(s) in norm \
+                or (tokens and tokens & _copy_figures(s)):
+            return True
+    return False
+
+
+def model_level_declared_estimates(store: dict) -> int:
+    """Model-level footprint values carrying the canonical `(est)` marker (rule 2, issue #788's
+    model-side twin): declared estimates are individually attributable, never drift."""
+    n = 0
+    for m in store.get("models", []):
+        for f in _SOURCE_POST_FOOTPRINT:
+            v = m.get(f)
+            if v not in (None, "", [], {}) and _DECLARED_ESTIMATE.search(str(v)):
+                n += 1
+    return n
+
+
+def model_level_footprint_flags(store: dict, raw_dir: Path = RAW_DIR):
+    """Model-level footprint copies that NO capture of their own model states (issue #934).
+
+    For every catalog row, every unmarked footprint value: SUPPORTED when it matches one of the
+    model's own measurement rows OR a raw capture keyed to the same id/name. Returns
+    `(hard_flags, prose_flags)` — HARD footprint fields are the gate's subject,
+    `engine_min_version` distillations stay report-only (the #789 verdict).
+    """
+    captures = model_capture_footprint_index(raw_dir)
+    posts = source_post_capture_index(raw_dir)
+    flags: list[tuple[str, str, str]] = []
+    prose_flags: list[tuple[str, str, str]] = []
+    for m in store.get("models", []):
+        mid = str(m.get("id") or "?")
+        pool = captures.get(mid) or {}
+        rows = m.get("engines", []) or []
+        cited = {str(e.get("source_post") or "") for e in rows
+                 if "lightbrd.com" in str(e.get("source_post") or "")
+                 and "/status/" in str(e.get("source_post") or "")}
+        for f in _SOURCE_POST_FOOTPRINT:
+            v = m.get(f)
+            if v in (None, "", [], {}):
+                continue
+            sval = str(v)
+            if _DECLARED_ESTIMATE.search(sval):
+                continue  # declared estimate (rule 2): attributable, not drift
+            candidates = list(pool.get(f) or [])
+            candidates += [str(e[f]) for e in rows if e.get(f)]
+            for sp in cited:
+                bucket = posts.get(sp)
+                if bucket:
+                    candidates += list((bucket.get("values") or {}).get(f) or [])
+            if not _footprint_copy_supported(sval, f, candidates):
+                (prose_flags if f in _SOURCE_POST_REPORT_FIELDS else flags).append((mid, f, sval))
+    return flags, prose_flags
+
+
+def check_model_footprint_copy(store: dict) -> None:
+    """A model-level footprint copy that traces to NOTHING fails the data stage (issue #934).
+
+    The measurement-side copy has been readback-checked against its cited post since #788; the
+    catalog-side copy was never cross-checked against the model's own data — 72 model-level
+    fields matched no measurement row when the gap was measured. HARD footprint values FAIL:
+    a divergent figure is reconciled to a captured value or carries the canonical `(est)`
+    marker (rule 2), never kept silently. `engine_min_version` distillations remain
+    report-only — reding every PR on a prose parser miss is the #789 refusal.
+    """
+    flags, prose_flags = model_level_footprint_flags(store)
+    estimates = model_level_declared_estimates(store)
+    if not flags:
+        print(f"  OK: model-level hard footprint copies trace to their model's measurements or "
+              f"captures ({estimates} declared estimates; "
+              f"{len(prose_flags)} prose distillations report-only).")
+        return
+    for mid, f, v in flags[:_REPORT_LIMIT]:
+        fail(f"{mid}: model-level {f} {v!r} matches no measurement row and no capture of the model "
+             f"— reconcile to a captured value or mark it (est)")
+    if len(flags) > _REPORT_LIMIT:
+        fail(f"... and {len(flags) - _REPORT_LIMIT} more untraceable model-level footprint copies")
+    if prose_flags:
+        print(f"  report: {len(prose_flags)} model-level engine_min_version distillations no "
+              f"capture restates (report-only, #789 precedent).")
+
+
 def check_readme_has_all_models(store: dict) -> None:
     if not README.exists():
         fail("README.md missing")
@@ -2535,6 +2687,11 @@ def main() -> int:
         lambda: check_no_duplicate_measurements(store))
     add("source-post readback (hard fields fail, prose report only)", "data",
         lambda: check_source_post_readback(store))
+    # Model-level footprint copies (issue #934): the catalog copy must trace to the model's own
+    # measurement rows or its raw captures; hard fields FAIL, engine_min_version report-only.
+    # Stage 'data' -> `_validate-data` (and `_validate`).
+    add("model footprint copy traces to captures (hard fail, prose report only)", "data",
+        lambda: check_model_footprint_copy(store))
     add("most-loved in trend order", "readme", lambda: check_readme_ranking(store))
     add("README bot cadence matches the pinned crons", "readme", lambda: check_readme_bot_cadence(store))
     add("README engine links", "readme", lambda: check_readme_engine_links(store))
