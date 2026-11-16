@@ -206,15 +206,18 @@ def test_shipped_store_has_no_untraceable_hard_copy():
           hard2[:3])
 
 
-TESTS = [test_row_match_passes, test_capture_match_passes, test_ksuffix_expansion_passes,
-         test_untraceable_copy_fails, test_est_marker_passes, test_prose_field_report_only,
-         test_shipped_store_has_no_untraceable_hard_copy]
+
 
 
 def main() -> int:
     print("== model footprint copy traces to captures (issue #934) ==")
-    for t in TESTS:
-        t()
+    test_row_match_passes()
+    test_capture_match_passes()
+    test_ksuffix_expansion_passes()
+    test_untraceable_copy_fails()
+    test_est_marker_passes()
+    test_prose_field_report_only()
+    test_shipped_store_has_no_untraceable_hard_copy()
     print(f"== {_PASS} passed, {_FAIL} failed ==")
     return 1 if _FAIL else 0
 
