@@ -365,6 +365,24 @@ def test_registration_points_at_agents_skills_and_nothing_lives_in_dot_hermes():
     check("the old skills home is gone from the tree", not (ROOT / ".hermes" / "skills").exists())
 
 
+def test_data_search_skill_names_the_measurement_alias_key():
+    """The data-search skill states the attribution EXCEPTION, not only the refusal (issue #885).
+
+    #652 made `measurement_model_aliases` the data home for a legitimate
+    attribution exception and #884 made the search contract declare it, but a
+    search leg reads only its preloaded skill (rule 6p): if the skill names
+    only the refusal, the agent facing a legitimate exception cannot record it.
+    Deleting the paragraph in agents/skills/data-search/SKILL.md reds this test.
+    """
+    skill = (SKILLS / "data-search" / "SKILL.md").read_text(encoding="utf-8")
+    check("data-search names the exception key measurement_model_aliases",
+          "measurement_model_aliases" in skill)
+    check("it names the validator that checks the key",
+          "check_measurement_alias_map" in skill)
+    check("it states the key is row-level data",
+          "on the ROW" in skill)
+
+
 def main() -> int:
     print("agent-leg skills (issue #549)")
     for fn in (test_the_real_legs_preload_a_real_skill,
@@ -378,7 +396,8 @@ def main() -> int:
                test_the_implement_skill_states_the_tick_rule,
                test_the_gh_guard_refuses_instructions_and_keeps_forbiddances,
                test_registered_markers_in_skills_are_checked_against_the_registry_itself,
-               test_registration_points_at_agents_skills_and_nothing_lives_in_dot_hermes):
+               test_registration_points_at_agents_skills_and_nothing_lives_in_dot_hermes,
+               test_data_search_skill_names_the_measurement_alias_key):
         print(f"-- {fn.__name__}")
         fn()
     print(f"\n{_PASS} passed, {_FAIL} failed")

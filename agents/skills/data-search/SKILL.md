@@ -167,6 +167,17 @@ ingest work or nothing, and no later change can structure it without inventing t
 lists the rest as a capture job). So if the post does not state it, do NOT write it into `why` —
 record the dimensions on the measurement, and keep `why` to what the post actually says.
 
+- **The attribution exception is DATA, not prose (issue #652).** When a measurement's
+  text legitimately names a DIFFERENT model than the row — a variant row naming its base
+  model, or a multi-figure bake-off row naming the model it compares against (the
+  `#651` rule keeps these and refuses single-figure joint figures) — record the
+  exception on the ROW as `measurement_model_aliases`:
+  an optional list of store model ids whose names that row's measurements may mention.
+  It is validated by `make validate` (`check_measurement_alias_map`) and reviewed in
+  the store/contract diff; there is deliberately no code literal for it, so a row that
+  refuses with "names another model" can only be fixed by DOCUMENTING the alias, never
+  by loosening the refusal.
+
 ### `source_post` is the post itself, with its counters
 
 Set `source_post` to the exact post URL `https://lightbrd.com/<user>/status/<id>` — **never the bare
