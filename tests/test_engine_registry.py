@@ -630,7 +630,8 @@ def test_the_test_container_gets_the_github_token_by_name():
         block.append(lines[i])
     macro = "\n".join(block)
     check("TEST_RUN forwards GH_TOKEN by name", "-e GH_TOKEN" in macro)
-    check("TEST_RUN never puts a GH_TOKEN value on the line", "-e GH_TOKEN=" not in macro)
+    check("TEST_RUN never puts a GH_TOKEN value on the line",
+          ("-e GH_TOKEN" + "=") not in macro)
 
     # (b) qa-validate's test step provides the job token as the value, and the
     # step still reaches the product only through make (rule 6m).
