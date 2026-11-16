@@ -324,17 +324,27 @@ def test_the_prompts_and_the_guard_are_wired():
           "python3 scripts/query_coverage.py" in
           mk.split("_validate-search:", 1)[1].split("self_correct_raw", 1)[0])
 
-    # ... and the prompts really carry the ranked models once expanded
+    # ... and the prompts really carry the ranked models once expanded. The expected query is
+    # DERIVED from the live store (issue #1077): the top-N trend band is data that moves with
+    # every weekly refresh — pinning one model id here reds the whole suite (and with it
+    # auto-merge repo-wide) the moment the refresh re-ranks, measured on push runs 43775050919
+    # and 43777818475 after keeper merge bfcff45. What this check locks is the WIRING — the
+    # first derived query of the real store must reach the expanded prompt; the anti-tautology
+    # half (a broken derivation, a model the queries miss) stays locked by the synthetic-store
+    # tests and the exit-1 guard above.
     out = subprocess.run(["make", "-n", "_search-amd"], cwd=str(ROOT), capture_output=True,
                          text=True, timeout=60).stdout
+    live_top = UT.derived_queries(REAL_STORE)
+    live_fp = UT.footprint_queries(REAL_STORE)
+    check("wiring: the live derivation names a ranked model (the check is never vacuous)",
+          bool(live_top) and bool(live_fp), (len(live_top), len(live_fp)))
     check("wiring: the expanded prompt names the ranked models",
-          "qwen3.8-flash-next-125b tokens per second" in out, out[:120])
+          bool(live_top) and live_top[0] in out, out[:120])
     # ... including a FOOTPRINT query per ranked model (the dimension gaps), and a sentence
     # that tells the agent what they ask for — a bare list would read as more throughput
     # queries and the footprint figure would stay unrecorded.
     check("wiring: the expanded prompt carries a footprint query",
-          "qwen3.8-flash-next-125b vram ram context weights offload engine version" in out,
-          out[:200])
+          bool(live_fp) and live_fp[0] in out, out[:200])
     # The wording that tells the agent what the footprint queries ASK for lives in the leg's
     # PRELOADED skill, not in the prompt (issue #638: a prompt is a pointer plus this run's
     # parameters, so a rule duplicated there would drift from the one reviewed file).
