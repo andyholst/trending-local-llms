@@ -1729,6 +1729,7 @@ def test_engine_min_version_backfill_traces_to_the_captured_source_text():
     from is a real `…/status/<id>` URL."""
 
     import update_trending as UT  # noqa: E402
+    import declared_estimate as DE  # noqa: E402
 
     store = G._load_flat_store()
     captured = _captured_text()
@@ -1738,16 +1739,24 @@ def test_engine_min_version_backfill_traces_to_the_captured_source_text():
     check("engine_min_version: at least one model carries a structured value",
           bool(carried), "no model carries engine_min_version")
 
-    # … every value is evidenced by the captured text of a real post …
+    # … every value is evidenced by the captured text of a real post, OR carries
+    # the declared-estimate marker (issue #883, rule 2): a `(est)` value claims
+    # no fact — it is the honest "reported as unverified on the model row"
+    # landing #883's Done-when names, re-askable by the footprint query — while
+    # an UNmarked value stays fully gated by the evidence rule …
     unevidenced = [m.get("id") for m in carried
-                   if not _engine_min_version_is_evidenced(m["engine_min_version"],
+                   if not DE.has_declared_estimate(m["engine_min_version"])
+                   and not _engine_min_version_is_evidenced(m["engine_min_version"],
                                                            captured.get(m.get("id"), ""))]
     check("engine_min_version: every value is present in the model's captured source text",
           not unevidenced, str(unevidenced))
 
-    # … and each such model has a real `…/status/<id>` post behind it
+    # … and each such model has a real `…/status/<id>` post behind it — same
+    # (est) exemption: a marked estimate declares up front that no post backs
+    # it yet, which is exactly what #878/#883 keep OPEN as acquisition work.
     untraceable = [m.get("id") for m in carried
-                   if not any(UT._is_post_url(str(e.get("source_post", "")))
+                   if not DE.has_declared_estimate(m["engine_min_version"])
+                   and not any(UT._is_post_url(str(e.get("source_post", "")))
                               for e in (m.get("engines") or []))]
     check("engine_min_version: every value traces to a real …/status/<id> post",
           not untraceable, str(untraceable))
@@ -1756,6 +1765,13 @@ def test_engine_min_version_backfill_traces_to_the_captured_source_text():
     check("engine_min_version: an unsupported value fails the evidence rule",
           not _engine_min_version_is_evidenced("llama.cpp b999999, --invented-flag 7.7.7",
                                                captured.get(carried[0].get("id"), "")))
+
+    # … and the (est) exemption is ONLY the marker: an invented value without
+    # the marker is not exempted, and a marked one is (issue #883 boundary).
+    check("engine_min_version: an unmarked invented value is not exempted",
+          not DE.has_declared_estimate("llama.cpp b999999, --invented-flag 7.7.7"))
+    check("engine_min_version: a marked estimate is exempted as declared",
+          DE.has_declared_estimate("llama.cpp b999999, --invented-flag 7.7.7 (est)"))
 
 
 def test_engine_min_version_coverage_can_never_shrink():
@@ -1778,6 +1794,48 @@ def test_engine_min_version_coverage_can_never_shrink():
     check("engine_min_version: no model that predates the refresh lost it "
           "(filed 29/30 + models added since)",
           missing <= allowance, f"{missing} missing (allowance {allowance})")
+
+
+def test_untraceable_engine_build_prose_is_declared_unverified_in_the_store():
+    """Issue #883's "reported as unverified on model rows" branch lands with REAL
+    data: the engine-build claims no captured post supports — the Yukon mlx.fast
+    challenge build, the SonicBoom 0.0.3 / benchmark-baseline claims, the mlx-serve
+    26.10.1 distillation and the vLLM 0.28-on-Windows-ROCm-7.15 claim on the r9700
+    row — no longer live as unattributed free text in `why`. Each of those rows
+    carries a model-level `engine_min_version` marked as a DECLARED estimate:
+    attributable to its row, re-askable by the derived footprint query, and the
+    analysis's untraceable engine_min_version class comes back EMPTY. The other
+    half of #883/#878 — capturing the posts that actually record those builds —
+    stays open acquisition work."""
+
+    store = G._load_flat_store()
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    by_id = {m.get("id"): m for m in store["models"]}
+    import declared_estimate as DE  # noqa: E402
+
+    flagged = ["bonsai-2-9b-apple-silicon-yukon", "qwen2.5-0.5b",
+               "qwen3-8-flash-next-125b", "gemma-4-e4b",
+               "qwen3.8-27b-r9700-vllm-dflash2-w4a16"]
+
+    check("engine_min_version: the shipped store states no untraceable engine build",
+          report["untraceable"]["engine_min_version"] == [],
+          str(report["untraceable"]["engine_min_version"]))
+
+    unmarked = [mid for mid in flagged
+                if not (by_id[mid].get("engine_min_version")
+                        and DE.has_declared_estimate(by_id[mid]["engine_min_version"]))]
+    check("engine_min_version: every flagged row carries its build as a marked estimate",
+          unmarked == [], str(unmarked))
+
+    entries = report["declared_estimates"].get("engine_min_version", [])
+    unrestated = [mid for mid in flagged if not any(mid in e for e in entries)]
+    check("engine_min_version: the marked values appear as re-askable declared estimates",
+          unrestated == [], str(unrestated))
+
+    check("engine_min_version: none of them reappears as an 'unstructured' claim",
+          all(mid not in report["unstructured"].get("engine_min_version", [])
+              for mid in flagged),
+          str(report["unstructured"].get("engine_min_version", [])))
 
 
 # A storage-offload value names a storage MEDIUM and (usually) a size. The value
