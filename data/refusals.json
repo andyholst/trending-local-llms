@@ -449,6 +449,33 @@
       "engine": "llama.cpp",
       "reason": "its text names qwen 3.5 35b, but the row is qwen 3.6 27b (if this row may legitimately name that model, document the exception in the row's measurement_model_aliases)",
       "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
+    },
+    {
+      "utc": "2026-11-16T20:54:48Z",
+      "stage": "refuse_cross_model_duplicate_measurements",
+      "backend": "nvidia",
+      "model": "bonsai-2-27b",
+      "engine": "llama.cpp",
+      "reason": "identical (engine, tps, date, source_post) already carried by qwen3.8-27b",
+      "source_post": "https://lightbrd.com/laky_fx/status/2113901739170501046"
+    },
+    {
+      "utc": "2026-11-16T20:54:49Z",
+      "stage": "refuse_fabricated_engines",
+      "backend": "metal-20261020-110550",
+      "model": "qwen3.8-flash-next-125b",
+      "engine": "FP4-Local",
+      "reason": "the name carries the quantization token 'FP4'",
+      "source_post": "https://lightbrd.com/bdambrosio/status/2111548404866433346"
+    },
+    {
+      "utc": "2026-11-16T21:00:00Z",
+      "stage": "refuse_misattributed_measurements",
+      "backend": "nvidia",
+      "model": "qwen-3.6-27b",
+      "engine": "llama.cpp",
+      "reason": "its text names qwen 3.5 35b, but the row is qwen 3.6 27b (if this row may legitimately name that model, document the exception in the row's measurement_model_aliases)",
+      "source_post": "https://lightbrd.com/0xbelorix/status/2075607981027393583"
     }
   ]
 }

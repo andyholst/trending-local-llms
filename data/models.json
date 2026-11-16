@@ -5269,8 +5269,8 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "system_ram_min": "50GB",
-      "storage_offload": "100GB NVMe, MoE experts on SSD",
+      "system_ram_min": "50GB (est)",
+      "storage_offload": "100GB NVMe, MoE experts on SSD (est)",
       "weight_gb": "~306GB at FP8",
       "context_tokens": "262144"
     },
@@ -5376,9 +5376,9 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "weight_gb": "11.8GB (UD-Q2_K_XL)",
+      "weight_gb": "11.8GB (UD-Q2_K_XL) (est)",
       "system_ram_min": "12GB",
-      "storage_offload": "cold experts left on flash, re-read on router change",
+      "storage_offload": "cold experts left on flash, re-read on router change (est)",
       "engine_min_version": "stock llama.cpp (untouched upstream, submodule) + BigMoeOnEdge, cold experts left on flash",
       "measurement_model_aliases": [
         "qwen3-30b"
@@ -7383,7 +7383,7 @@
       "supported_engines": [
         "MLX"
       ],
-      "weight_gb": "2.1GB (MLX 4-bit)"
+      "weight_gb": "2.1GB (MLX 4-bit) (est)"
     },
     {
       "id": "muse-glimmer-30b",
@@ -8023,7 +8023,7 @@
         "Ollama"
       ],
       "vram_min": "8GB",
-      "context_tokens": "30k",
+      "context_tokens": "30720",
       "engine_min_version": "llama.cpp b11177"
     },
     {
@@ -8223,8 +8223,8 @@
           "hf": "Qwen/Qwen2.5-1.5B-Instruct"
         }
       ],
-      "system_ram_min": "8GB",
-      "weight_gb": "~1GB"
+      "system_ram_min": "8GB (est)",
+      "weight_gb": "~1GB (est)"
     },
     {
       "id": "qwen3.8-27b-swift",
@@ -8538,9 +8538,9 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "weight_gb": "48GB (80B-A3B file)",
+      "weight_gb": "48GB (80B-A3B file) (est)",
       "system_ram_min": "32GB",
-      "storage_offload": "experts streamed from NVMe SSD",
+      "storage_offload": "experts streamed from NVMe SSD (est)",
       "engine_min_version": "Janas draft block; llama.cpp cpu-moe Q4_K_M baseline"
     },
     {
@@ -8932,8 +8932,8 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "system_ram_min": "128GB",
-      "weight_gb": "47.5GB (Q4_K_M)",
+      "system_ram_min": "128GB (est)",
+      "weight_gb": "47.5GB (Q4_K_M) (est)",
       "engine_min_version": "patched llama.cpp build (community GGUF Q4_K_M)"
     },
     {
@@ -9010,9 +9010,9 @@
         "speed_bonus": 0.0,
         "trend_score": 0.0
       },
-      "weight_gb": "~2.5GB (Q4_K_M)",
-      "system_ram_min": "6GB",
-      "storage_offload": "weights mmap'd on flash (no GPU backend)",
+      "weight_gb": "~2.5GB (Q4_K_M) (est)",
+      "system_ram_min": "6GB (est)",
+      "storage_offload": "weights mmap'd on flash (no GPU backend) (est)",
       "engine_min_version": "llama.cpp CPU-only, mmap GGUF, arm64 KleidiAI, no GPU backend"
     },
     {
