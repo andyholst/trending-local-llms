@@ -1,6 +1,7 @@
 # Proposal: closing-pr-requires-bounded-openspec-change (Issue: #1109)
 
 Issue: #1109
+PR: #1111
 
 ## Why
 
