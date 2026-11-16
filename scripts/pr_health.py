@@ -183,12 +183,46 @@ def branch_behind(cwd: Path, head: str) -> bool | None:
     return None
 
 
+def regenerate_index(wt: Path) -> tuple[bool, str]:
+    """Regenerate the generated `OPENSPEC.md` ON the rebased tree and commit it (issue #1049).
+
+    A rebase moves the base under the branch's generated index: `OPENSPEC.md` on the branch
+    was rendered against the tree at branch-cut time, so a squash of a rebased head would
+    still land an index that predates the archives merged since (measured: keepers
+    #1038/#1045/#1046/#1047 ping-ponging; rebased bot branches 45fb245/5df9735/28bf765/9a5830a
+    red at `openspec-index-check` on 2026-11-16). So every rebase this rebaser lands
+    regenerates the index first — through the tree's OWN generator, the same
+    `scripts/openspec_index.py --write` `make openspec-index` runs (rule 6d: never a second
+    implementation) — and commits it as the agent (rule 3f) BEFORE the lease push. A failed
+    regeneration stops the push: the remote branch stays untouched."""
+    gen = wt / "scripts" / "openspec_index.py"
+    if not gen.is_file():
+        return True, ""  # a tree without the generator has no index to regenerate
+    r = subprocess.run([sys.executable, str(gen), "--write"], capture_output=True, text=True)
+    if r.returncode != 0:
+        return False, f"index regeneration failed: {(r.stderr or r.stdout).strip()[:160]}"
+    st = _git(wt, "status", "--porcelain", "--", "OPENSPEC.md")
+    if not st.stdout.strip():
+        return True, ""  # the rebased tree's index was already current
+    add = _git(wt, "add", "--", "OPENSPEC.md")
+    if add.returncode != 0:
+        return False, f"index add failed: {add.stderr.strip()[:120]}"
+    c = _git(wt, "commit", "-q",
+             "-m", "chore(openspec): regenerate the index on the rebased tree (issue #1049)")
+    if c.returncode != 0:
+        return False, f"index commit failed: {c.stderr.strip()[:120]}"
+    return True, " + OPENSPEC.md regenerated on the rebased tree"
+
+
 def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
     """Rebase origin/<head> onto origin/master in a scratch worktree and push it back to
     the PR's own HEAD branch (rule 6r: push to the PR's head, which re-triggers its CI).
 
     The scratch worktree keeps the checkout untouched; a conflict ABORTS the rebase and the
-    branch is left byte-identical — the rebaser never force-pushes a conflicted result."""
+    branch is left byte-identical — the rebaser never force-pushes a conflicted result. A
+    CLEAN rebase regenerates `OPENSPEC.md` on the rebased tree before the push (issue #1049:
+    the merge-time-current index; shared here so the weekly sweep and qa-validate's
+    `auto-merge` gate, which both call this one rebaser, can never disagree)."""
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         wt = Path(td) / "wt"
@@ -200,6 +234,9 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
             if rb.returncode != 0:
                 _git(wt, "rebase", "--abort")
                 return False, "rebase conflicted — branch left untouched (fix-loop/human work)"
+            regen_ok, regen_note = regenerate_index(wt)
+            if not regen_ok:
+                return False, f"{regen_note} — branch left untouched (nothing was pushed)"
             # A rebase REWRITES the branch history, so the push must be a lease push:
             # --force-with-lease pinned to the remote tip THIS run just fetched. If anyone
             # moved the branch since the fetch, the lease fails and nothing is overwritten.
@@ -208,7 +245,7 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
                         "origin", f"HEAD:refs/heads/{head}")
             if push.returncode != 0:
                 return False, f"push failed: {push.stderr.strip()[:120]}"
-            return True, "rebased onto origin/master and pushed to the PR head"
+            return True, "rebased onto origin/master and pushed to the PR head" + regen_note
         finally:
             _git(cwd, "worktree", "remove", "--force", str(wt))
 

@@ -1192,6 +1192,27 @@ def test_auto_merge():
           "do-not-merge" in hrun and "gh pr merge" not in hrun and "not auto-merge" in hrun.lower(), hrun[:160])
     check("auto-merge: the merge step is skipped while the hold fires (label can appear mid-run)",
           "steps.dnm-check.outputs.hold != 'true'" in str(st.get("if", "")), st.get("if"))
+    # Issue #1049: auto-merge must land a merge-time-CURRENT OPENSPEC.md. A PR head
+    # whose index predates the merge wave squashes a stale index that reds
+    # `openspec-index-check` on the master push (keepers #1038/#1045/#1046/#1047).
+    # The job's rebase seam (`make auto-merge-rebase` -> scripts/auto_merge_rebase.py)
+    # must run BEFORE the squash, and the squash's `if:` must refuse the merge when
+    # the seam rebased the head — the merge ref is now stale for the branch just
+    # pushed, and --match-head-commit would refuse the merge anyway.
+    rebase_st = step(am, "Rebase a behind-and-clean bot branch")
+    rebase_at = next((i for i, n in enumerate(names)
+                      if "Rebase a behind-and-clean bot branch" in n), -1)
+    check("auto-merge: the rebase seam runs BEFORE the squash-merge",
+          0 <= rebase_at < merge_at, (rebase_at, merge_at))
+    rrun = rebase_st.get("run", "")
+    check("auto-merge: the rebase seam reaches the product through make (rule 6m)",
+          "make auto-merge-rebase" in rrun, rrun[:200])
+    check("auto-merge: the rebase seam publishes the allowlisted rebased= key (rule 3d)",
+          "rebased=" in rrun and '>> "$GITHUB_OUTPUT"' in rrun, rrun[:240])
+    check("auto-merge: the rebase step sets the agent identity (it commits the index — rule 3f)",
+          "make git-identity" in rrun, rrun[:120])
+    check("auto-merge: the squash-merge SKIPS when the seam rebased the head (stale merge ref is never merged)",
+          "steps.auto-merge-rebase.outputs.rebased != 'true'" in str(st.get("if", "")), st.get("if"))
 
 
 def _run_dnm_hold(labels: list[str]) -> tuple[int, str, str]:

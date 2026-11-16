@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -431,6 +432,101 @@ def test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_n
               oid("refs/remotes/origin/master") == before["master"], "")
 
 
+def test_the_rebaser_regenerates_the_index_on_the_rebased_tree():
+    """Issue #1049: a sweep rebase regenerates `OPENSPEC.md` on the rebased tree
+    BEFORE the lease push, and the regenerated file is the tree's OWN generator's
+    output (`openspec-index --check` green on the pushed head).
+
+    Measured: rebased bot branches 45fb245/5df9735/28bf765/9a5830a went red at
+    `openspec-index-check` because their committed index predated archives that
+    landed on master after the branch was cut — the sweep rebased them but never
+    re-rendered the index."""
+    with tempfile.TemporaryDirectory() as d:
+        td = Path(d)
+        origin = td / "origin.git"
+        assert _gitfx(td, "init", "--bare", "-q", str(origin)).returncode == 0
+        seed = td / "seed"
+        seed.mkdir()
+        assert _gitfx(seed, "init", "-q", "-b", "master").returncode == 0
+        _commit_fx(seed, "base.txt", "base\n", "base commit")
+        # the tree carries the REAL generator (and its one helper) + a valid
+        # openspec/ change + the generated index, exactly as the product repo does
+        (seed / "scripts").mkdir()
+        shutil.copy(ROOT / "scripts" / "openspec_index.py", seed / "scripts" / "openspec_index.py")
+        shutil.copy(ROOT / "scripts" / "task_boxes.py", seed / "scripts" / "task_boxes.py")
+        (seed / "openspec" / "changes" / "change-one").mkdir(parents=True)
+        (seed / "openspec" / "changes" / "change-one" / "proposal.md").write_text(
+            "# Change One\n\nIssue: #7\n\n## Why\n\nFixture change.\n", encoding="utf-8")
+        (seed / "openspec" / "changes" / "change-one" / "tasks.md").write_text(
+            "# Tasks\n\n- [x] land one\n", encoding="utf-8")
+        gen = subprocess.run([sys.executable, str(seed / "scripts" / "openspec_index.py"), "--write"],
+                             capture_output=True, text=True, cwd=str(seed))
+        assert gen.returncode == 0, gen.stderr
+        _gitfx(seed, "add", "-A")
+        r = _gitfx(seed, "-c", "user.name=fixture", "-c", "user.email=fixture@example.com",
+                   "commit", "-q", "-m", "seed: openspec tree with a current index")
+        assert r.returncode == 0, r.stderr
+        base_oid = _gitfx(seed, "rev-parse", "HEAD").stdout.strip()
+        _gitfx(seed, "remote", "add", "origin", str(origin))
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        # the PR branch: its committed OPENSPEC.md is CURRENT for the CUT-TIME tree
+        _gitfx(seed, "checkout", "-q", "-b", "ci/data-gap-7-x", base_oid)
+        _commit_fx(seed, "feature.txt", "feature\n", "feat: branch work")
+        _gitfx(seed, "push", "-q", "origin", "ci/data-gap-7-x")
+        branch_oid = _gitfx(seed, "rev-parse", "HEAD").stdout.strip()
+
+        # master moves: the change gets ARCHIVED (the merge-wave shape)
+        _gitfx(seed, "checkout", "-q", "master")
+        (seed / "openspec" / "changes" / "archive").mkdir(parents=True, exist_ok=True)
+        _gitfx(seed, "mv", "openspec/changes/change-one", "openspec/changes/archive/2026-11-16-one")
+        _gitfx(seed, "-c", "user.name=Test Bot", "-c", "user.email=test-bot@example.com",
+               "commit", "-q", "-m", "archive: the change closed on master")
+        _gitfx(seed, "push", "-q", "origin", "master")
+
+        clone = td / "clone"
+        assert _gitfx(td, "clone", "-q", str(origin), str(clone)).returncode == 0
+
+        prs = [pr(7, "ci/data-gap-7-x", oid=branch_oid)]
+        sd = td / "stub"
+        sd.mkdir()
+        (sd / "gh").write_text(STUB, encoding="utf-8")
+        (sd / "gh").chmod(0o755)
+        (sd / "prs.json").write_text(json.dumps(prs), encoding="utf-8")
+        (sd / "posted").write_text("", encoding="utf-8")
+        runs_file = sd / "runs.json"
+        runs_file.write_text(json.dumps([{"databaseId": 1}]), encoding="utf-8")
+        env = {**os.environ, "PATH": f"{sd}:{os.environ['PATH']}",
+               "FAKE_PRS": str(sd / "prs.json"), "FAKE_POSTED": str(sd / "posted"),
+               "FAKE_COMMENTS": str(sd / "comments.json"),
+               f"FAKE_RUNS_{branch_oid[:7]}": str(runs_file)}
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", "o/r", "--rebase",
+                               "--dir", str(clone)], capture_output=True, text=True, env=env)
+        _gitfx(clone, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")
+
+        check("index-at-merge-time: the sweep reports the rebase AND the regeneration",
+              "REBASED" in proc.stdout and "OPENSPEC.md regenerated" in proc.stdout,
+              proc.stdout + proc.stderr)
+        log = _gitfx(clone, "log", "--format=%s", "refs/remotes/origin/ci/data-gap-7-x").stdout
+        check("index-at-merge-time: the regeneration commit is on the pushed head",
+              "regenerate the index on the rebased tree" in log, log)
+        head_index = _gitfx(clone, "show",
+                            "refs/remotes/origin/ci/data-gap-7-x:OPENSPEC.md").stdout
+        check("index-at-merge-time: the pushed index lists the archive, not an active change",
+              "2026-11-16-one" in head_index and "Active changes: **0**" in head_index,
+              head_index[:200])
+        check("index-at-merge-time: the old committed index claimed an active change",
+              "Active changes: **1**" in _gitfx(clone, "show",
+                                                f"{branch_oid}:OPENSPEC.md").stdout)
+        wt = td / "check-wt"
+        _gitfx(clone, "worktree", "add", "--detach", str(wt), "refs/remotes/origin/ci/data-gap-7-x")
+        chk = subprocess.run([sys.executable, str(wt / "scripts" / "openspec_index.py"), "--check"],
+                             capture_output=True, text=True, cwd=str(wt))
+        check("index-at-merge-time: openspec-index --check is GREEN on the pushed head",
+              chk.returncode == 0, chk.stdout + chk.stderr)
+        _gitfx(clone, "worktree", "remove", "--force", str(wt))
+
+
 def test_a_failed_rebase_round_announces_on_the_pr_thread_once():
     """End-to-end (issue #964's Done-when): a rebase the sweep TRIED and git refused must
     leave an artifact ON the PR thread, not only a stdout line in a scheduled run's log.
@@ -553,6 +649,7 @@ def main() -> int:
     test_no_script_reads_a_number_straight_from_the_environment()
     test_rebase_plan_classifies_by_ownership_and_conflict()
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
+    test_the_rebaser_regenerates_the_index_on_the_rebased_tree()
     test_a_failed_rebase_round_announces_on_the_pr_thread_once()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
