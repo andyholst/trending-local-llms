@@ -24,6 +24,16 @@ marker-deduplicated comment on that PR's thread — stamped with the failed (bra
 so a weekly round that rediscovers the same failing attempt does not re-post, while a head that
 moved may be announced again. Without the announcement the only trace was a stdout line in a
 scheduled run's log, and the PR stayed quietly drifted forever.
+
+The THIRD silence (issue #1123): a PR whose head commit edits `.github/workflows/` and whose
+commit author GitHub maps to an outside contributor gets every pipeline run on that head HELD
+in `action_required` — GitHub asks a collaborator to approve the branch's own workflows before
+any job executes. The runs EXIST but executed nothing: `gh pr checks` is empty,
+`mergeStateStatus` is `UNSTABLE` forever, and the old sweep read the run COUNT and called it
+healthy. Measured on PR #1116 (head `b10716488d`, 2026-11-17): `qa-validate` run 44037397846
+and `pr-closure` run completed `action_required`, zero jobs, no alarm anywhere. The sweep now
+flags a head whose every run is `action_required` and names the human remedy (approve the
+pending runs) — approving is a collaborator's act (rule 6t), so the sweep announces, never acts.
 """
 from __future__ import annotations
 
@@ -46,6 +56,10 @@ except ImportError:  # run from the repo root
 
 MARKER = marker_name("pr-health", "alarm")
 REBASE_MARKER = marker_name("pr-health", "rebase_failed")
+#: The third silence (issue #1123): every run on the head is `action_required` — GitHub is
+#: holding the branch's own workflows for approval, so the runs exist and executed nothing.
+APPROVAL_HOLD_REASON = ("pipelines HELD FOR APPROVAL (every run on its head commit is "
+                        "`action_required` — GitHub executed no jobs)")
 
 #: How to get a silent PR moving again, in the order that works: fetch the branch, bring it up
 #: to the base, push to the PR'S HEAD — which is not necessarily the local branch's name.
@@ -107,12 +121,23 @@ def _gh_json(args: list[str]):
     return json.loads(_gh(args) or "null")
 
 
-def findings(prs: list[dict], runs_for: dict[int, int]) -> list[dict]:
+def approval_hold(total_runs: int, held_runs: int) -> bool:
+    """True when a head commit HAS runs and EVERY one of them is `action_required` (issue #1123).
+
+    The runs exist and executed nothing: GitHub held the branch's own workflows for approval.
+    It is its own reason — never "no check runs" (there ARE runs) and never a conflict."""
+    return total_runs > 0 and held_runs == total_runs
+
+
+def findings(prs: list[dict], runs_for: dict[int, int],
+             holds_for: dict[int, int] | None = None) -> list[dict]:
     """The SILENT open PRs, from the PR list and a {pr number: check-run count} map.
 
-    Pure on purpose (rule 6d): the decision is testable without a network, and the two reasons
-    are kept apart — a conflicting PR cannot run anything, while a PR with no runs and no
-    conflict is a pipeline that never started (a renamed workflow, a disabled Actions tab).
+    Pure on purpose (rule 6d): the decision is testable without a network, and the three reasons
+    are kept apart — a conflicting PR cannot run anything; a PR with no runs and no
+    conflict is a pipeline that never started (a renamed workflow, a disabled Actions tab);
+    and a head whose EVERY run is `action_required` is GitHub holding the branch's own
+    workflows for approval (issue #1123) — the runs exist and executed nothing.
     """
     out = []
     for pr in prs:
@@ -123,8 +148,12 @@ def findings(prs: list[dict], runs_for: dict[int, int]) -> list[dict]:
         state = str(pr.get("mergeStateStatus") or "").upper()
         if mergeable == "CONFLICTING" or state == "DIRTY":
             reasons.append("CONFLICTING (GitHub builds no merge commit, so NO workflow runs)")
-        if not runs_for.get(int(pr.get("number") or 0), 0):
+        number = int(pr.get("number") or 0)
+        total = runs_for.get(number, 0)
+        if not total:
             reasons.append("no check runs on its head commit")
+        elif approval_hold(total, (holds_for or {}).get(number, 0)):
+            reasons.append(APPROVAL_HOLD_REASON)
         if reasons:
             out.append({"number": pr.get("number"), "head": pr.get("headRefName"),
                         "title": (pr.get("title") or "")[:70], "reasons": reasons})
@@ -134,10 +163,19 @@ def findings(prs: list[dict], runs_for: dict[int, int]) -> list[dict]:
 def comment_body(f: dict) -> str:
     lines = [f"<!-- {MARKER} -->", "**This pull request is silent** (issue #442):", ""]
     lines += [f"- {r}" for r in f["reasons"]]
-    lines += ["", f"To get it moving: `make worktree-resume BRANCH={f['head']}` to reuse the "
-                  f"worktree that holds the branch, {FIX_HINT}.",
-              "", "A conflicting PR runs no workflows at all, so an empty check list is not a "
-                  "quiet queue — it is this."]
+    if any(APPROVAL_HOLD_REASON in r for r in f["reasons"]):
+        lines += ["", "GitHub is holding **this PR's own workflows** for approval: the branch "
+                      "touches `.github/workflows/`, so a collaborator must approve the pending "
+                      "runs before any job executes (Actions tab → the held run → *Review "
+                      "pending workflows* → Approve, or `gh api -X POST "
+                      "repos/<owner>/<repo>/actions/runs/<run-id>/approvals`). Approving a "
+                      "workflow run is a human collaborator's act (rule 6t): the sweep names "
+                      "it, never performs it."]
+    else:
+        lines += ["", f"To get it moving: `make worktree-resume BRANCH={f['head']}` to reuse the "
+                      f"worktree that holds the branch, {FIX_HINT}.",
+                  "", "A conflicting PR runs no workflows at all, so an empty check list is not a "
+                      "quiet queue — it is this."]
     return "\n".join(lines)
 
 
@@ -346,18 +384,23 @@ def main() -> int:
                         "--json", "number,title,headRefName,isDraft,mergeable,mergeStateStatus,"
                                   "headRefOid"]) or []
         runs_for = {}
+        holds_for = {}
         for pr in prs:
             if pr.get("isDraft"):
                 continue
             oid = pr.get("headRefOid")
-            runs = _gh_json(["run", "list", "--commit", str(oid), "--limit", "1",
-                             *repo_args, "--json", "databaseId"]) or []
-            runs_for[int(pr.get("number") or 0)] = len(runs)
+            runs = _gh_json(["run", "list", "--commit", str(oid), "--limit", "100",
+                             *repo_args, "--json", "databaseId,conclusion"]) or []
+            number = int(pr.get("number") or 0)
+            runs_for[number] = len(runs)
+            # issue #1123: runs GitHub HELD for approval executed no jobs.
+            holds_for[number] = sum(1 for r in runs
+                                    if str(r.get("conclusion") or "").lower() == "action_required")
     except (RuntimeError, ValueError) as exc:
         print(f"[pr-health] FAIL: {exc}", file=sys.stderr)
         return 2
 
-    silent = findings(prs, runs_for)
+    silent = findings(prs, runs_for, holds_for)
     open_checked = [p for p in prs if not p.get("isDraft")]
     print(f"[pr-health] {len(open_checked)} open non-draft PR(s), {len(silent)} silent")
     for f in silent:

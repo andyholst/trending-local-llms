@@ -63,7 +63,8 @@ def check(name, cond, detail: object = ""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
-def run(prs: list, runs: dict[str, int], comments: str = "", comment: bool = False):
+def run(prs: list, runs: dict[str, int], comments: str = "", comment: bool = False,
+        held=()):
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         (td / "prs.json").write_text(json.dumps(prs))
@@ -74,7 +75,9 @@ def run(prs: list, runs: dict[str, int], comments: str = "", comment: bool = Fal
                "FAKE_POSTED": str(td / "posted")}
         for oid, count in runs.items():
             f = td / f"runs_{oid}.json"
-            f.write_text(json.dumps([{"databaseId": i} for i in range(count)]))
+            concl = "action_required" if oid in held else "success"
+            f.write_text(json.dumps([{"databaseId": i, "conclusion": concl}
+                                     for i in range(count)]))
             env[f"FAKE_RUNS_{oid[:7]}"] = str(f)
         (td / "gh").write_text(STUB)
         (td / "gh").chmod(0o755)
@@ -113,6 +116,56 @@ def test_a_pr_whose_pipeline_never_started_is_flagged_too():
           proc.stdout)
     check("silent: its reason is the missing runs, not a conflict",
           "no check runs" in proc.stdout and "CONFLICTING" not in proc.stdout, proc.stdout)
+
+
+def test_a_pr_whose_runs_are_all_held_for_approval_is_flagged():
+    # The THIRD silence (issue #1123), measured on PR #1116 (head b10716488d, 2026-11-17):
+    # a bot PR whose head commit edits .github/workflows/ gets every pipeline run on that
+    # head concluded `action_required` — GitHub holds the branch's own workflows for a
+    # collaborator's approval, so NO job executes, `gh pr checks` is empty, and the state
+    # stays UNSTABLE forever. The old sweep read only the run COUNT and called it healthy.
+    oid = "a000116" + "0" * 33
+    proc, _ = run([pr(1116, "tech-debt-rebase-keeper-push-with-owner-pat-1115", oid=oid)],
+                  {oid: 2}, held=[oid])
+    check("hold: a PR whose head runs are all action_required exits 1",
+          proc.returncode == 1, proc.stdout)
+    check("hold: the reason names the approval hold",
+          "HELD FOR APPROVAL" in proc.stdout, proc.stdout)
+    check("hold: it is NOT mis-reported as missing runs (the runs exist)",
+          "no check runs" not in proc.stdout, proc.stdout)
+    check("hold: it is NOT mis-reported as a conflict",
+          "CONFLICTING" not in proc.stdout, proc.stdout)
+
+
+def test_a_held_pr_and_a_ran_pr_are_separated():
+    held_oid = "a000116" + "0" * 33
+    ok_oid = "a000022" + "0" * 33
+    proc, _ = run([pr(1116, "held/workflows", oid=held_oid), pr(22, "fix/ran-fine")],
+                  {held_oid: 2, ok_oid: 3}, held=[held_oid])
+    check("hold: only the held PR is silent", proc.returncode == 1 and "1 silent" in proc.stdout,
+          proc.stdout)
+    check("hold: the PR whose runs executed is not flagged", "#22" not in proc.stdout,
+          proc.stdout)
+    check("hold: the pure decision agrees with the sweep",
+          [f["number"] for f in PH.findings([pr(1116, "held"), pr(22, "ok")],
+                                            {1116: 2, 22: 3}, {1116: 2, 22: 0})] == [1116])
+
+
+def test_the_hold_comment_names_the_human_approval_remedy():
+    oid = "a000116" + "0" * 33
+    prs = [pr(1116, "tech-debt-held-workflows-1123", oid=oid)]
+    proc, posted = run(prs, {oid: 2}, held=[oid], comment=True)
+    check("hold: --comment posts the flag", "pr-health-alarm" in posted, posted)
+    check("hold: the comment names how to release the hold",
+          "Review pending workflows" in posted and "approv" in posted.lower(), posted)
+    check("hold: the comment says approving is a human collaborator's act (rule 6t)",
+          "rule 6t" in posted, posted)
+    check("hold: the comment does NOT tell anyone to rebase (the hold is not a stale base)",
+          "make worktree-resume" not in posted, posted)
+    proc2, posted2 = run(prs, {oid: 2}, held=[oid], comment=True,
+                         comments=json.dumps({"comments": [{"body": f"<!-- {PH.MARKER} -->"}]}))
+    check("hold: a second sweep does not comment again",
+          "already flagged" in proc2.stdout and "pr-health-alarm" not in posted2, posted2)
 
 
 def test_drafts_are_left_alone():
@@ -638,6 +691,9 @@ def main() -> int:
     test_a_conflicting_pr_is_silent_and_named()
     test_a_healthy_pr_is_not_flagged()
     test_a_pr_whose_pipeline_never_started_is_flagged_too()
+    test_a_pr_whose_runs_are_all_held_for_approval_is_flagged()
+    test_a_held_pr_and_a_ran_pr_are_separated()
+    test_the_hold_comment_names_the_human_approval_remedy()
     test_drafts_are_left_alone()
     test_the_comment_carries_the_fix_and_is_deduplicated()
     test_the_decision_is_pure_and_the_reasons_are_separate()
