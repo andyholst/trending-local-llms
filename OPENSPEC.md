@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **346**
+Active changes: **2** · archived: **347**
 
 ## Active changes
 
@@ -164,6 +164,7 @@ Active changes: **2** · archived: **346**
 | `engine-min-model-version-not-build` | archived | #1025 | #1037 | [data-gap-analysis](openspec/changes/archive/engine-min-model-version-not-build/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-model-version-not-build/proposal.md) |
 | `engine-min-version-ingest` | archived | #877 | #880 | [measurement-ingest](openspec/changes/archive/engine-min-version-ingest/specs/measurement-ingest/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-version-ingest/proposal.md) |
 | `engine-name-case-warn` | archived | #645 | #899 | [engine-name-case-warning](openspec/changes/archive/engine-name-case-warn/specs/engine-name-case-warning/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-name-case-warn/proposal.md) |
+| `ensure-image-corrupt-blob-fallback` | archived | #1118 — "ensure_image treats a published-but-undownloadable base tag as pullable" | #1119 | [agent-image-publish](openspec/changes/archive/ensure-image-corrupt-blob-fallback/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ensure-image-corrupt-blob-fallback/proposal.md) |
 | `env-int-empty-is-missing` | archived | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/archive/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/env-int-empty-is-missing/proposal.md) |
 | `fake-gh-marker-newline-contract` | archived | #1002 — "The fake-gh `issue create` stubs and the final-marker newline | #1003 | [fake-gh-marker-newline-contract](openspec/changes/archive/fake-gh-marker-newline-contract/specs/fake-gh-marker-newline-contract/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/fake-gh-marker-newline-contract/proposal.md) |
 | `fetch-base-before-any-work` | archived | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/archive/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fetch-base-before-any-work/proposal.md) |

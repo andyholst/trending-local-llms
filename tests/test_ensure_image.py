@@ -62,6 +62,12 @@ case "$1" in
         if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0
         else echo "manifest unknown: $3" >&2; exit 1; fi ;;
     esac ;;
+  pull)
+    # Issue #1118: a tag whose manifest the registry SERVES but whose blobs it
+    # cannot serve. The test asks the stub to fail the pull with real docker's
+    # wording; the seam must tell that apart from any other pull failure.
+    if [ -n "$FAKE_DOCKER_PULL_ERROR" ]; then
+      echo "$FAKE_DOCKER_PULL_ERROR" >&2; exit 1; fi ;;
   push)
     if grep -qxF "$2" "$FAKE_DOCKER_TAGS" 2>/dev/null; then
       # A real push makes the ref READABLE — unless the test asks for a registry that
@@ -437,6 +443,63 @@ def test_a_publish_is_not_done_until_the_registry_serves_it():
     check("publish: it names both refs", ":latest" in out and "dockerfile-" in out, out[-400:])
 
 
+def test_a_published_tag_with_unfetchable_blobs_falls_back_to_a_local_build():
+    """Issue #1118 (measured on PR #1116's run 44020917206): the manifest for the
+    content-hash tag ANSWERS, but a layer blob is gone from the registry, so the
+    pull dies with `could not fetch content descriptor … from remote: not found`.
+
+    published()/build cover "served" and "absent"; this is the THIRD state —
+    published-but-corrupt — and the seam must fall back to building THIS
+    revision's Dockerfile, while a pull failure that is NOT a missing blob stays
+    loud (the #235 rule: never rebuild on a hiccup)."""
+    base_tag = f"{IMAGE_REPO}:dockerfile-{_expected_hash(['Dockerfile', 'Dockerfile.test'])}"
+    corrupt = ("failed to copy: httpReadSeeker: failed open: could not fetch "
+               "content descriptor sha256:5da1ec363d9440e00535ca3434297e8c8cc0ae33a9ca9e81415f68fe62ec4a02 "
+               "(application/vnd.oci.image.layer.v1.tar+gzip) from remote: not found")
+
+    # Given the base tag is published but its blobs 404 on pull
+    rc, calls, out = _run(["ensure-base"], available=[base_tag],
+                          env_extra={"FAKE_DOCKER_PULL_ERROR": corrupt})
+
+    # Then  the pull is attempted, the failure recognised, and the local build used
+    check("ensure-base (corrupt tag): exit 0", rc == 0, out[-400:])
+    check("ensure-base (corrupt tag): attempts the pull first",
+          ["pull", base_tag] in calls, str(calls))
+    check("ensure-base (corrupt tag): falls back to the local build",
+          ["build", "-t", "trending-local-llms:latest", "."] in calls, str(calls))
+    check("ensure-base (corrupt tag): the verdict names the corrupt state",
+          "not fetchable" in out, out[-400:])
+
+    # Given the pull fails for any OTHER reason
+    rc, calls, out = _run(["ensure-base"], available=[base_tag],
+                          env_extra={"FAKE_DOCKER_PULL_ERROR": "no space left on device"})
+
+    # Then  it fails LOUDLY and never rebuilds (a wrong-tree build would overwrite
+    # the tag decision the same way the #235 hiccup must not)
+    check("ensure-base (unrelated pull failure): exit non-zero", rc != 0, out[-300:])
+    check("ensure-base (unrelated pull failure): never rebuilds",
+          not any(c[:1] == ["build"] for c in calls), str(calls))
+
+    # Given the test image's tag is published but corrupt
+    base_hash = _expected_hash(["Dockerfile", "Dockerfile.test"])
+    test_hash = hashlib.sha256(
+        b"".join((ROOT / p).read_bytes() for p in ["Dockerfile.test", "requirements-test.txt"])
+        + f"base={base_hash}".encode()
+    ).hexdigest()[:12]
+    test_tag = f"{IMAGE_REPO}-test:test-{test_hash}"
+    rc, calls, out = _run(["ensure-test"], available=[test_tag],
+                          env_extra={"FAKE_DOCKER_PULL_ERROR": corrupt})
+
+    # Then  the test image is BUILT on an ensured base instead of dying on the pull
+    check("ensure-test (corrupt tag): exit 0", rc == 0, out[-400:])
+    check("ensure-test (corrupt tag): pulls the published test tag first",
+          ["pull", test_tag] in calls, str(calls))
+    check("ensure-test (corrupt tag): builds the test image locally",
+          ["build", "-f", "Dockerfile.test", "--build-arg",
+           "BASE_IMAGE=trending-local-llms:latest", "-t", "trending-local-llms-test:latest", "."]
+          in calls, str(calls))
+
+
 def test_wired_into_make_test():
     """The suite runs under `make test` (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -666,6 +729,7 @@ def main() -> int:
     test_python_env_image_is_built_locally_and_does_not_probe_the_registry()
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()
+    test_a_published_tag_with_unfetchable_blobs_falls_back_to_a_local_build()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
