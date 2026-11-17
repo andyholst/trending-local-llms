@@ -51,7 +51,7 @@ from pathlib import Path
 #: `make_targets` (the full set the generator renders) are BOTH views of the one
 #: scan in `architecture_bot`, imported here — issue #512's two parsers became one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture_bot import makefile_lanes, public_targets, target_at_line, workflow_jobs  # noqa: E402
+from architecture_bot import public_targets, makefile_lanes, target_at_line, workflow_jobs  # noqa: E402
 import check_agent_skills as agent_skills  # noqa: E402  (SKILLS_DIR — the one skill home, issue #904)
 
 DOC_NAME = "ARCHITECTURE.md"

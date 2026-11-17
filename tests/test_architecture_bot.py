@@ -592,7 +592,10 @@ def test_agent_lanes_skill_contracts_and_bot_verbs_are_named():
             Path(d),
             workflows={"issue-bot.yml": _workflow(targets=("implement-issue",)),
                        "ci.yml": _workflow()},
-            targets=("merge",),
+            # The planted Makefile must satisfy the bot's own flow-backing
+            # invariant: FLOW names `make search` and `make render-readme`, so a
+            # tree that lacks them is refused at WRITE before the lane renders.
+            targets=("merge", "search", "render-readme"),
             hermes_legs={"implement-issue": ("issue-implement", "bot-unattended")},
             skills=("issue-implement", "bot-unattended", "lonely-skill"),
         )
