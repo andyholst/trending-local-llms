@@ -324,7 +324,7 @@ PYTHON_RUN := docker run --rm --user $$(id -u):$$(id -g) -v "$$PWD":/workspace -
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
-.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check
+.PHONY: openspec-image python-env-image openspec-new openspec-validate openspec-status openspec-archive openspec-shell openspec-tasks-check openspec-spec-tests-check openspec-duplicate-check openspec-index openspec-index-check openspec-index-repair openspec-index-repair-pr-body openspec-invalid-change-check openspec-invalid-change-repair openspec-invalid-change-repair-pr-body openspec-archive-check openspec-record-pr openspec-backlog-check openspec-binding-check openspec-check file-findings findings-check action-pin-check openspec-manifest-check image-manifest-check
 openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, else build it)
 	python3 scripts/ensure_image.py ensure-openspec
 
@@ -363,6 +363,10 @@ openspec-backlog-check: python-env-image ## Fail when the ACTIVE OpenSpec backlo
 
 openspec-manifest-check: ## Refuse a published OpenSpec image tag unless its manifest answers linux/arm64 AND linux/amd64 (issue #919) — host docker, like rebuild-decision; pass TAG=<exact published tag>
 	@python3 scripts/openspec_manifest_check.py --tag "$(TAG)"
+
+image-manifest-check: LABEL ?= image-manifest-check
+image-manifest-check: ## Refuse a published base/test image tag unless its manifest answers linux/arm64 AND linux/amd64 (issue #958) — the same both-paths gate as openspec-manifest-check, over the ONE verdict in scripts/image_manifest_check.py; pass TAG=<exact published tag> LABEL=<base|test>
+	@python3 scripts/image_manifest_check.py --tag "$(TAG)" --label "$(LABEL)"
 openspec-binding-check: python-env-image ## Fail when an ACTIVE change binds no Issue and declares no keeper exemption — caught before the PR, not at the record step (issue #952)
 	$(PYTHON_RUN) python3 scripts/openspec_binding_check.py
 

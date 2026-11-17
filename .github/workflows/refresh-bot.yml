@@ -106,7 +106,9 @@ jobs:
   build:
     needs: guard
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Multi-arch (amd64 + arm64 under QEMU) builds need more headroom than a
+    # single-arch build (issue #958; the openspec-image job allows 45).
+    timeout-minutes: 45
     outputs:
       built: ${{ steps.decide.outputs.built }}
       test_built: ${{ steps.decide.outputs.test_built }}
