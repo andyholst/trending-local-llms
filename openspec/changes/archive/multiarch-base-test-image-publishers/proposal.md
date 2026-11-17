@@ -1,6 +1,7 @@
 # Proposal: multiarch-base-test-image-publishers
 
 Issue: #958 — "The base and test image publishers are still amd64-only"
+PR: #1114
 
 **Capability:** `agent-image-publish`
 
