@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-11-15T08:29:53Z",
+  "as_of": "2026-11-17T08:25:02Z",
   "signature": [
     "missing:context_tokens",
     "missing:engine_min_version",
@@ -12,6 +12,7 @@
     "reask_estimate:system_ram_min",
     "reask_estimate:weight_gb",
     "refused:measurement-identity",
+    "starved_leg:amd",
     "unstructured:context_tokens",
     "unstructured:engine_min_version",
     "unstructured:storage_offload",
