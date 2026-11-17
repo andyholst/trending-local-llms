@@ -103,7 +103,11 @@ def run(argv: list[str] | None, label: str) -> int:
     parser.add_argument("--require", action="append", default=[],
                         help="required platform as os/arch (repeatable; "
                              "default linux/amd64 and linux/arm64)")
+    parser.add_argument("--label", default=label,
+                        help="report label for this seam (default: the seam's "
+                             "own name)")
     args = parser.parse_args(argv)
+    label = args.label or label
     if not args.tag:
         print(f"[{label}] REFUSED (undecidable): --tag is "
               "required — the check verifies ONE exact published tag")
