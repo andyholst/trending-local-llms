@@ -32,7 +32,9 @@
           "comments": 0
         }
       ],
-      "last_seen": "2026-11-17"
+      "last_seen": "2026-11-17",
+      "vram_tier": "24GB",
+      "vram_min": "24GB"
     }
   ],
   "generated_utc": "2026-11-17T08:25:25Z"
