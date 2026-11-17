@@ -774,6 +774,81 @@ def test_a_rediagnosed_row_is_never_re_fetched_and_dry_previews_without_writing(
         check("--dry writes NOTHING to the ledger", ledger.read_text() == before, "")
 
 
+def test_the_makefile_line_target_form_normalises_to_the_bare_target() -> None:
+    print("\nnormalise (#1054): Makefile:<line>: <name> becomes the bare target at extraction")
+    check("the bracketed file:line form normalises to the bare target",
+          F.failed_make_targets(["make: *** [Makefile:1384: sweep-alarm] Error 2"])
+          == ["sweep-alarm"], "")
+    check("the plain bracketed form is unchanged",
+          F.failed_make_targets(["make: *** [validate] Error 1"]) == ["validate"], "")
+    check("the two forms of one target dedupe to ONE name",
+          F.failed_make_targets(["make: *** [validate] Error 1",
+                                 "make: *** [Makefile:1231: validate] Error 2"])
+          == ["validate"], "")
+    check("normalize_target passes a bare name through",
+          F.normalize_target("live-smoke") == "live-smoke", "")
+    check("normalize_target strips the file:line decoration",
+          F.normalize_target("Makefile:1379: owed-rows-check") == "owed-rows-check", "")
+
+
+def test_a_sweep_normalises_stored_rows_and_leaves_a_uniform_ledger_untouched() -> None:
+    print("\nnormalise (#1054): a sweep converges stored rows; a uniform ledger is not rewritten")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, BASE_CANNED)
+        warped = dict(UNDIAG_ROW)
+        warped["run_id"] = 777
+        warped["undiagnosed"] = None
+        warped["targets"] = ["Makefile:1231: _implement-issue", "live-smoke"]
+        warped["job"] = "implement"
+        clean = dict(MARKER_MATCHED_ROW)
+        clean["targets"] = ["validate"]
+        ledger = _seed_ledger(tmp, [warped, clean, dict(UNDIAG_ROW)])
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the sweep names the normalisation", "targets normalised on" in proc.stdout,
+              proc.stdout)
+        data = json.loads(ledger.read_text())
+        rows = {e["run_id"]: e for e in data["failures"]}
+        check("every stored run id SURVIVES the normalisation (rule 3b: no row lost)",
+              set(rows) == {777, 104, 100}, str(sorted(rows)))
+        check("the warped row's targets are the bare parseable names",
+              rows[777]["targets"] == ["_implement-issue", "live-smoke"], str(rows[777]))
+        check("the raise re-normalises its own row's grown targets (100)",
+              rows[100]["targets"] == ["validate"], str(rows[100]))
+        check("a row that was already uniform is byte-identical",
+              {k: v for k, v in rows[104].items()} == {k: v for k, v in clean.items()},
+              str(rows[104]))
+        # Second sweep on the now-uniform ledger: the file is not rewritten again.
+        after = ledger.read_text()
+        ledger2 = _seed_ledger(tmp, json.loads(after)["failures"])
+        ledger2.write_text(after)
+        quiet_bytes = after
+        proc2 = run_filer(env, ledger2)
+        check("a uniform ledger stays untouched (no churn)", proc2.returncode == 0
+              and ledger2.read_text() == quiet_bytes
+              and "targets normalised on" not in proc2.stdout, proc2.stdout)
+        assert before != after  # the warped ledger really did change
+
+
+def test_a_raise_renormalises_the_row_s_existing_warped_targets() -> None:
+    print("\nnormalise (#1054): a raise outputs uniform targets even from a warped row")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, BASE_CANNED)
+        warped = dict(UNDIAG_ROW)  # run 100, undiagnosed, log readable in this scene
+        warped["targets"] = ["Makefile:1384: validate"]
+        ledger = _seed_ledger(tmp, [warped])
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        row = {e["run_id"]: e for e in json.loads(ledger.read_text())["failures"]}[100]
+        check("the raised row's targets are uniform bare names",
+              row.get("targets") == ["validate"], str(row))
+        check("the raise still happened (rediagnosed_utc stamped)",
+              bool(row.get("rediagnosed_utc")), str(row)[:200])
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -792,6 +867,9 @@ def main() -> int:
     test_read_failures_exit_2_never_a_fake_clean()
     test_dry_run_previews_without_writing_anything()
     test_pure_halves_extract_targets_dedupe_and_cap()
+    test_the_makefile_line_target_form_normalises_to_the_bare_target()
+    test_a_sweep_normalises_stored_rows_and_leaves_a_uniform_ledger_untouched()
+    test_a_raise_renormalises_the_row_s_existing_warped_targets()
     test_ledger_pr_body_is_generated_and_carries_no_closing_keyword()
     test_wiring_rulebook_and_registry()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")

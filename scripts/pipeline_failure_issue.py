@@ -260,18 +260,54 @@ def extract_error_block(log_text: str) -> list[str]:
     return out
 
 
+_MAKEFILE_LINE_TARGET = re.compile(r"^[^\s:]+:\d+:\s*(\S.*)$")
+
+
+def normalize_target(name: str) -> str:
+    """One spelling of a failing target: the bare Makefile target name (issue #1054).
+
+    A log's `make: *** [Makefile:1384: sweep-alarm]` line carries the Makefile's own
+    `file:<line>: ` decoration inside the brackets; stored raw it reads as a line
+    reference, not a reproduction command, and a `make Makefile:1384: sweep-alarm`
+    command the filer quotes is not runnable. Sibling rows (issues #820-#829) already
+    carry the bare name; this normaliser makes the ledger's `targets` uniformly the
+    parseable `make <target>` for every reader and every pass.
+    """
+    stripped = (name or "").strip()
+    m = _MAKEFILE_LINE_TARGET.match(stripped)
+    return (m.group(1).strip() if m else stripped)
+
+
+def normalize_ledger_targets(ledger: dict) -> int:
+    """Normalise every stored row's targets in place; returns how many rows changed."""
+    changed = 0
+    for entry in ledger.get("failures", []):
+        old = entry.get("targets") or []
+        new = []
+        for t in old:
+            n = normalize_target(str(t))
+            if n and n not in new:
+                new.append(n)
+        if new != old:
+            entry["targets"] = new
+            changed += 1
+    return changed
+
+
 def failed_make_targets(block: list[str]) -> list[str]:
     """The `make <target>` names the log itself shows as the failing commands (rule 6m: a gate
-    is reached through make, so the reproduction command is `make <target>`)."""
-    import re
+    is reached through make, so the reproduction command is `make <target>`) — each one normalised
+    through `normalize_target`, the `Makefile:<line>: ` form included (issue #1054)."""
     targets: list[str] = []
     for line in block:
         for m in re.finditer(r"\bmake ([a-z][a-z0-9-]+)", line):
-            if m.group(1) not in targets:
-                targets.append(m.group(1))
+            name = normalize_target(m.group(1))
+            if name and name not in targets:
+                targets.append(name)
         for m in re.finditer(r"make: \*\*\* \[([^\]]+)\]", line):
-            if m.group(1) not in targets:
-                targets.append(m.group(1))
+            name = normalize_target(m.group(1))
+            if name and name not in targets:
+                targets.append(name)
     return targets
 
 
@@ -555,10 +591,14 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
             lines.append(f"WOULD RAISE run {rid} (job {match.get('name')}): "
                          f"error_lines={len(block)} targets+={targets or '-'}")
             continue
-        grown = list(entry.get("targets") or [])
-        for t in targets:
-            if t not in grown:
-                grown.append(t)
+        # The raise re-normalises the row's WHOLE targets list, old entries included
+        # (issue #1054): a row that carried the `Makefile:<line>: ` form comes out of the
+        # raise uniform with its sibling rows, the bare parseable `make <target>`.
+        grown: list[str] = []
+        for t in list(entry.get("targets") or []) + targets:
+            n = normalize_target(str(t))
+            if n and n not in grown:
+                grown.append(n)
         # The ledger is the machine's memory; the issue thread is the human's. A raise that lands a
         # diagnosis must annotate the thread the row was filed on — ONE marker-deduplicated comment
         # per raised row, never per sweep (issue #987). The comment is posted BEFORE the row is
@@ -600,6 +640,15 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
     """
     lines: list[str] = []
     ledger = read_ledger(ledger_path)
+    # One convergence pass per sweep (issue #1054): rows filed by the old extractor kept the
+    # `Makefile:<line>: ` form; a sweep normalises the stored ledger to the uniform bare target,
+    # exactly the form every sibling row and every reproduction command already uses. A ledger
+    # that is already uniform is not rewritten — no churn, run ids untouched (rule 3b).
+    normalised = normalize_ledger_targets(ledger)
+    if normalised and not dry:
+        ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+        lines.append(f"targets normalised on {normalised} row(s): the `Makefile:<line>: ` form "
+                     "became the bare target (issue #1054)")
     known = ledger_run_ids(ledger)
     try:
         runs = main_pipeline_failures(repo, window_hours, now)
