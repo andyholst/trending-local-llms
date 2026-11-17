@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **351**
+Active changes: **2** · archived: **352**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `engine-min-version-detector-precision` | active | #1020 | — | [data-gap-analysis](openspec/changes/engine-min-version-detector-precision/specs/data-gap-analysis/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/engine-min-version-detector-precision/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -164,6 +163,7 @@ Active changes: **3** · archived: **351**
 | `engine-meta-capture-at-ingest` | archived | #334 | — | [engine-meta-capture](openspec/changes/archive/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/engine-meta-capture-at-ingest/proposal.md) |
 | `engine-meta-guard-agents-row` | archived | #745 | #906 | [rulebook](openspec/changes/archive/engine-meta-guard-agents-row/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/engine-meta-guard-agents-row/proposal.md) |
 | `engine-min-model-version-not-build` | archived | #1025 | #1037 | [data-gap-analysis](openspec/changes/archive/engine-min-model-version-not-build/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-model-version-not-build/proposal.md) |
+| `engine-min-version-detector-precision` | archived | #1020 | #1127 | [data-gap-analysis](openspec/changes/archive/engine-min-version-detector-precision/specs/data-gap-analysis/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/engine-min-version-detector-precision/proposal.md) |
 | `engine-min-version-ingest` | archived | #877 | #880 | [measurement-ingest](openspec/changes/archive/engine-min-version-ingest/specs/measurement-ingest/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-version-ingest/proposal.md) |
 | `engine-name-case-warn` | archived | #645 | #899 | [engine-name-case-warning](openspec/changes/archive/engine-name-case-warn/specs/engine-name-case-warning/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-name-case-warn/proposal.md) |
 | `ensure-image-corrupt-blob-fallback` | archived | #1118 — "ensure_image treats a published-but-undownloadable base tag as pullable" | #1119 | [agent-image-publish](openspec/changes/archive/ensure-image-corrupt-blob-fallback/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ensure-image-corrupt-blob-fallback/proposal.md) |
