@@ -408,7 +408,7 @@ openspec-invalid-change-repair-pr-body: ## Print the invalid-change keeper PR bo
 # `gh` (PR state is a GitHub fact); run on the host, where the token lives —
 # inside the agent container `gh` is absent, so it is NOT part of `openspec-check`
 # (which the fix loop runs in the container) but its own step in qa-validate.
-openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR, references a CLOSED issue with no recorded PR, or would be stranded by the PR being validated (PR=<n>) (rules 6f/#518/#779; host-side: needs gh)
+openspec-archive-check: ## Fail when an ACTIVE change names a MERGED PR, references a CLOSED issue with no recorded PR, would be stranded by the PR being validated (PR=<n>), or an issue that PR closes is named by NO change (rules 6f/#518/#779/#1109; host-side: needs gh)
 	python3 scripts/openspec_archive_check.py $(if $(PR),--pr $(PR),)
 
 # Recording half of the change lifecycle (issue #518): once the PR that will

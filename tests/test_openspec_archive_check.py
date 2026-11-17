@@ -78,6 +78,10 @@ if [ "${1:-}" = "api" ]; then
           var="FAKE_BODY_${n}"
           echo "${!var-}"
           ;;
+        .head.ref)
+          var="FAKE_HEAD_${n}"
+          echo "${!var-feature-$n}"
+          ;;
         *)
           echo "gh: unsupported jq for pull: $4" >&2
           exit 1
@@ -463,6 +467,92 @@ def test_an_unreadable_closing_pr_is_loud():
         check("names what could not be read", "cannot read PR/issue state" in out and "pull/781" in out, out)
 
 
+# ---------------------------------------------------------------------------
+# Change-required prong (issue #1109) — the MIRROR of the #779/#866 prong.
+# The gap is the missing check: every earlier openspec gate asks only the
+# reverse question (is an active change stranded / is an active change bound)
+# and NONE reads the PR's closes. Re-measured 2026-11-17 (issue #1109 comment):
+# every close in recent history IS tracked — PRs #1100/#1104/#1105 each carry
+# an archived change naming #1095/#934/#935 — so this prong is PREVENTIVE: it
+# fires red on an unbound close and passes every tracked close in history.
+# Rule 6f says work starts by creating the change, before any code: a closing
+# PR must carry one.
+# ---------------------------------------------------------------------------
+
+
+def test_a_closing_pr_with_no_openspec_change_is_refused():
+    """Rule 6f's mirror gate: a closed issue named by NO change is untracked work."""
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "unrelated-active-change", issue="#7000")
+        rc, out = _run(
+            root, _stub_gh(root),
+            {
+                "FAKE_BODY_6001": "feat(x): implement the thing\n\nCloses #5001",
+                "FAKE_HEAD_6001": "tech-debt-some-work-5001",
+            },
+            args=["--pr", "6001"],
+        )
+        check("exit 1: the PR closes #5001 with no change naming it", rc == 1, out)
+        check("names the orphaned issue", "CLOSE of #5001" in out, out)
+        check("names the remedy (openspec-new + binding)", "openspec-new" in out and "Issue: #5001" in out, out)
+        check("an unrelated change is not accepted as cover", "unrelated-active-change" not in out, out)
+
+
+def test_a_closing_pr_whose_issue_has_an_archived_change_passes():
+    """An ARCHIVED change naming the closed issue is the green shape — the mirror
+    prong asks only that a change EXISTS, whoever its author."""
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "tracked-and-archived", issue="#5001", pr="#5999", archived=True)
+        rc, out = _run(
+            root, _stub_gh(root),
+            {
+                "FAKE_BODY_6001": "feat(x): implement the thing\n\nCloses #5001",
+                "FAKE_HEAD_6001": "tech-debt-some-work-5001",
+            },
+            args=["--pr", "6001"],
+        )
+        check("exit 0: the closed issue IS named by a change", rc == 0, out)
+        check("the OK line reports the closing set", "--pr 6001 closes #5001" in out, out)
+
+
+def test_keeper_and_refresh_branches_are_exempt_from_the_change_required_prong():
+    """Keeper (ci/keeper-*, #872) and refresh (ci/trending-refresh-*) branches
+    implement no issue by their own rule (rule 6e) — they owe no change, the same
+    shape discrimination make pr-closure applies."""
+    for head in ("ci/keeper-index-repair-20261117", "ci/trending-refresh-20261118-0003"):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            rc, out = _run(
+                root, _stub_gh(root),
+                {
+                    "FAKE_BODY_6002": "chore(keeper): index refresh\n\nRefs #5001",
+                    "FAKE_HEAD_6002": head,
+                },
+                args=["--pr", "6002"],
+            )
+            check(f"exit 0: {head} owes no change", rc == 0, out)
+            check(f"{head}: the exemption is reported", "implements no issue" in out, out)
+
+
+def test_a_pr_closing_nothing_owes_no_change():
+    """The prong asserts only over issues the PR actually closes."""
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        _change(root, "some-active-change", issue="#7000")
+        rc, out = _run(
+            root, _stub_gh(root),
+            {
+                "FAKE_BODY_6003": "docs(x): clarify wording\n\nRefs #7000",
+                "FAKE_HEAD_6003": "tech-debt-docs-7000",
+            },
+            args=["--pr", "6003"],
+        )
+        check("exit 0: no closing keyword, nothing owed", rc == 0, out)
+        check("the OK line says it closes nothing", "closes nothing" in out, out)
+
+
 def test_the_workflow_passes_the_pull_request_number():
     """qa-validate forwards the event's PR number; the Makefile forwards it as --pr."""
     mk = MAKEFILE.read_text(encoding="utf-8")
@@ -487,6 +577,10 @@ def main() -> int:
         test_the_closing_pr_prong_passes_when_the_change_is_archived_by_the_pr,
         test_the_closing_pr_prong_ignores_changes_the_pr_does_not_close,
         test_an_unreadable_closing_pr_is_loud,
+        test_a_closing_pr_with_no_openspec_change_is_refused,
+        test_a_closing_pr_whose_issue_has_an_archived_change_passes,
+        test_keeper_and_refresh_branches_are_exempt_from_the_change_required_prong,
+        test_a_pr_closing_nothing_owes_no_change,
         test_the_workflow_passes_the_pull_request_number,
         test_a_gh_failure_is_loud,
         test_a_missing_gh_is_loud,
