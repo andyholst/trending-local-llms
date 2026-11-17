@@ -18,10 +18,15 @@ the filer — rule 6d) and then calls:
         COMMIT_MESSAGE="…" PR_TITLE="…" BODY_TARGET=openspec-index-repair-pr-body \
         BODY_ARGS="MASTER_SHA=… RUN_URL=…"
 
+FILE names the keeper's OWNED generated files: one file, or a space-separated
+set (issue #1081: the weekly architecture keeper regenerates ARCHITECTURE.md
+AND OPENSPEC.md, and one invocation must land both). A single file behaves
+exactly as the original single-file seam.
+
 The sequence, in order:
 
-  1. nothing changed for FILE (DRIFT=none landed silently)  -> exit 0, no PR;
-  2. the working tree changed more than FILE                 -> exit 1, refuse;
+  1. none of FILE's files changed (DRIFT=none landed silently) -> exit 0, no PR;
+  2. a tracked change falls OUTSIDE FILE                        -> exit 1, refuse;
   3. with DEDUPE: an OPEN keeper on BRANCH_PREFIX that CAN land suppresses a
      duplicate; a DIRTY/CONFLICTING keeper is named UNMERGEABLE and a fresh
      keeper is filed (issue #960: an unmergeable keeper lands nothing);
@@ -96,7 +101,7 @@ def keeper_dedupe(prefix: str, root: Path) -> tuple[int, int]:
 
 def land_keeper(
     root: Path,
-    file: str,
+    files: list[str],
     branch_prefix: str,
     commit_message: str,
     pr_title: str,
@@ -104,14 +109,19 @@ def land_keeper(
     body_args: list[str],
     dedupe: bool,
 ) -> int:
-    # 1. nothing this keeper owns changed: the healthy case, say so and stop.
+    owned = set(files)
     changed = changed_tracked_files(root)
-    if file not in changed:
-        print(f"[keeper-pr] {file} carries no change against the current tree — nothing to land.")
+    landed_files = [f for f in files if f in changed]
+    # 1. none of the files this keeper owns changed: the healthy case, say so and stop.
+    if not landed_files:
+        print(f"[keeper-pr] {' '.join(files)} carry no change against the current tree "
+              "— nothing to land.")
         return 0
-    # 2. refuse when the regeneration touched more than the file this keeper owns.
-    if changed != [file]:
-        print(f"[keeper-pr] REFUSED: more than {file} changed — the repair must land alone:")
+    # 2. refuse when a change falls outside the files this keeper owns.
+    stray = [f for f in changed if f not in owned]
+    if stray:
+        print(f"[keeper-pr] REFUSED: changes outside {' '.join(files)} — "
+              "the repair must land alone:")
         for f in changed:
             print(f"  changed: {f}")
         return 1
@@ -132,7 +142,7 @@ def land_keeper(
     _run(["git", "config", "user.name", AGENT_NAME], root)
     _run(["git", "config", "user.email", AGENT_EMAIL], root)
     _run(["git", "switch", "-c", branch], root)
-    _run(["git", "add", "--", file], root)
+    _run(["git", "add", "--"] + landed_files, root)
     _run(["git", "commit", "-m", commit_message], root)
     _run(["git", "push", "origin", f"HEAD:refs/heads/{branch}"], root)
     # 5. the body is the keeper's OWN target's output (no closing keyword by its contract).
@@ -149,14 +159,16 @@ def land_keeper(
             f"gh pr create failed (branch {branch} is already pushed; the PR must be retried):\n"
             f"{proc.stderr.strip()}"
         )
-    print(f"[keeper-pr] landed {file} as keeper PR on branch {branch}: {proc.stdout.strip()}")
+    print(f"[keeper-pr] landed {' '.join(landed_files)} as keeper PR on branch "
+          f"{branch}: {proc.stdout.strip()}")
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--root", default=".", help="the repository to land in")
-    ap.add_argument("--file", required=True, help="the single file this keeper lands")
+    ap.add_argument("--file", required=True,
+                    help="the file(s) this keeper lands: one path, or a space-separated set")
     ap.add_argument("--branch-prefix", required=True, help="keeper branch prefix")
     ap.add_argument("--commit-message", required=True)
     ap.add_argument("--pr-title", required=True)
@@ -171,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return land_keeper(
             root=Path(args.root).resolve(),
-            file=args.file,
+            files=args.file.split(),
             branch_prefix=args.branch_prefix,
             commit_message=args.commit_message,
             pr_title=args.pr_title,

@@ -293,8 +293,9 @@ def _git(repo: Path, *args: str, env: dict | None = None) -> str:
 def _fixture_repo(td: Path) -> tuple[Path, Path]:
     """A real git repo + a real bare remote, the repo's own Makefile and identity seam.
 
-    Nothing of the PRODUCT is faked: `make git-identity` is the shipped one
-    (`scripts/agent_identity.py`), `git` is the real one, and the "remote" is a real
+    Nothing of the PRODUCT is faked: the identity comes from the shipped
+    `scripts/agent_identity.py` inside the real `scripts/keeper_pr.py` seam
+    (issue #1081), `git` is the real one, and the "remote" is a real
     local repository. The single stand-in is a stub `gh` on PATH — the network
     boundary, which rule 6m allows when the test asserts on what the real code
     sends it.
@@ -309,6 +310,10 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
                       ("OPENSPEC.md", ROOT / "OPENSPEC.md"),
                       ("Makefile", ROOT / "Makefile"),
                       ("scripts/agent_identity.py", ROOT / "scripts" / "agent_identity.py"),
+                      # The land step is the shared keeper seam (issue #1081): the fixture needs
+                      # the REAL scripts/keeper_pr.py so the shipped `make keeper-pr` executes the
+                      # same landing sequence CI executes — branch, identity, commit, push, body.
+                      ("scripts/keeper_pr.py", ROOT / "scripts" / "keeper_pr.py"),
                       # The publish step COMPOSES its body through `make architecture-pr-body`
                       # (issue #542), so the fixture needs the real composer and the closure parser
                       # it imports — never a stub: the body's rule-6e shape is what this proves.
@@ -325,10 +330,13 @@ def _fixture_repo(td: Path) -> tuple[Path, Path]:
     _git(td, "init", "-q", "--bare", str(remote))
     _git(repo, "remote", "add", "origin", str(remote))
     _git(repo, "push", "-q", "origin", "master")
-    # The stub CLI records what it was asked and what arrived on stdin.
+    # The stub CLI records what it was asked and what arrived on stdin. The seam's
+    # #960 dedupe reads `gh pr list` first (issue #1081): it answers an empty open-keeper
+    # set so the landing sequence proceeds; `gh pr create` still carries the body on stdin.
     (repo / "bin" / "gh").write_text(
         "#!/usr/bin/env bash\n"
         "printf '%s\\n' \"$*\" >> \"$GH_LOG.args\"\n"
+        "if [ \"$1 $2\" = \"pr list\" ]; then echo '[]'; exit 0; fi\n"
         "cat >> \"$GH_LOG.body\"\n", encoding="utf-8")
     (repo / "bin" / "gh").chmod(0o755)
     return repo, remote
@@ -369,8 +377,16 @@ def test_the_keeper_regenerates_both_generated_documents():
           "diff --stat -- ARCHITECTURE.md OPENSPEC.md" in str(drift.get("run")), "")
 
     publish = next(s for s in refresh["steps"] if "Commit, push and open the PR" in str(s.get("name")))
-    check("index: the commit stages both files",
-          "git add ARCHITECTURE.md OPENSPEC.md" in str(publish.get("run")), "")
+    # The landing sequence is the seam (issue #1081): the step names BOTH generated files
+    # through FILE= and calls no git/gh of its own — rule 6d, one implementation.
+    check("index: the seam call names both generated files",
+          "make keeper-pr" in str(publish.get("run"))
+          and "FILE=\"ARCHITECTURE.md OPENSPEC.md\"" in str(publish.get("run")),
+          str(publish.get("run"))[:200])
+    check("index: the step spells no branch/commit/push sequence of its own",
+          not any(spelled in str(publish.get("run")) for spelled in
+                  ("git switch -c", "git push origin", "gh pr create", "status --porcelain")),
+          str(publish.get("run"))[:200])
     # The body is COMPOSED now (issue #542): the step pipes `make architecture-pr-body` instead of
     # spelling the text, so the two properties are read where they live — no closing keyword
     # anywhere near this bot, and the reference to the tracking issue kept in the composer.
@@ -441,8 +457,9 @@ def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
     A grep cannot see a `$GITHUB_OUTPUT` line `make`'s echo corrupts (#346), a
     branch stamp that lost its `Z` (and so reads as an issue reference to
     `pr_closure`), or a body that grew a closing keyword. So run the SHIPPED
-    steps: real `git`, a real bare remote, the repo's own `make git-identity`,
-    and a stub `gh` standing in only for the network.
+    steps: real `git`, a real bare remote, the repo's own `make keeper-pr` seam
+    (`scripts/keeper_pr.py`, issue #1081), and a stub `gh` standing in only for
+    the network.
     """
     try:
         import yaml
@@ -495,8 +512,8 @@ def test_the_shipped_steps_actually_commit_push_and_open_a_pr():
                  for h in _git(td, "ls-remote", "--heads", str(remote)).split("\n") if h.strip()]
         import re as _re
         branch = next((h for h in heads if h != "master"), "")
-        check("shipped: it pushes ONE branch named ci/architecture-<UTC>Z",
-              bool(_re.fullmatch(r"ci/architecture-\d{8}T\d{6}Z", branch)), str(heads))
+        check("shipped: it pushes ONE branch named ci/architecture-refresh-<UTC>Z",
+              bool(_re.fullmatch(r"ci/architecture-refresh-\d{8}T\d{6}Z", branch)), str(heads))
         # Ask the guard that would REFUSE the PR, not a re-spelling of its rule: a branch
         # whose name encodes an issue makes `pr-closure` demand a closing keyword for it.
         closure = importlib.util.module_from_spec(

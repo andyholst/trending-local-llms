@@ -119,9 +119,12 @@ jobs:
             git --no-pager diff --stat -- ARCHITECTURE.md OPENSPEC.md
           fi
 
-      # The branch name must not END in digits: `scripts/pr_closure.py` reads a trailing
-      # `-<n>` as "this branch implements issue n" and would refuse a body without a closing
-      # keyword for an issue that does not exist. The UTC stamp ends in `Z` on purpose.
+      # The landing sequence is the shared keeper seam (issue #1081): ONE `make
+      # keeper-pr` call owns the branch, the agent identity, the single commit, the
+      # push, the body from the keeper's own target and the #960 mergeable-only
+      # dedupe — this workflow spells none of it (rule 6d). The branch name must not
+      # END in digits: `scripts/pr_closure.py` reads a trailing `-<n>` as "this branch
+      # implements issue n". The UTC stamp ends in `Z` on purpose.
       - name: Commit, push and open the PR when the block changed
         if: steps.drift.outputs.changed == 'true'
         env:
@@ -129,23 +132,14 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -euo pipefail
-          branch="ci/architecture-$(date -u +%Y%m%dT%H%M%SZ)"
-          make git-identity
-          git switch -c "$branch"
-          git add ARCHITECTURE.md OPENSPEC.md
-          # One commit per artifact family; the message says which files it may contain, because
-          # `make check-commit-authorship` and the PR body both describe the SAME change.
-          git commit -m "docs(generated): refresh the architecture inventory and the OpenSpec index (refs #479, refs #526)"
-          git push origin "HEAD:refs/heads/$branch"
-          # The body arrives on stdin (`--body-file -`), so no scratch file exists for a later
-          # `git add -A` to commit. It carries NO closing keyword: this PR implements no issue,
-          # and `scripts/pr_closure.py` refuses a PR that closes an issue it does not implement.
-          # Composed by a target (issue #542), and it carries NO closing keyword by construction:
-          # this PR implements no issue, and `pr_closure` refuses a claim it cannot honour.
-          make architecture-pr-body RUN_URL="$RUN_URL" | gh pr create --base master --head "$branch" \
-            --title "docs(architecture): refresh the generated inventory" \
-            --body-file -
+          make keeper-pr \
+            FILE="ARCHITECTURE.md OPENSPEC.md" \
+            BRANCH_PREFIX=ci/architecture-refresh \
+            DEDUPE=1 \
+            COMMIT_MESSAGE="docs(generated): refresh the architecture inventory and the OpenSpec index (refs #479, refs #526)" \
+            PR_TITLE="docs(architecture): refresh the generated inventory" \
+            BODY_TARGET=architecture-pr-body \
+            BODY_ARGS="RUN_URL=$RUN_URL"
 
       - name: Report a no-op run
         if: steps.drift.outputs.changed != 'true'

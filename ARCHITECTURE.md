@@ -820,7 +820,7 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 
 - **when:** `workflow_dispatch`
 - **jobs:** `guard`, `refresh` (needs `guard`)
-- **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make openspec-index` — Regenerate the root OPENSPEC.md index from openspec/changes/**; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make git-identity`; `make check-commit-authorship` — CI: fail when a commit's author/committer identity or a crediting trailer is not an allowed one (issue #317); `make architecture-pr-body` — Print the ARCHITECTURE PR body (no closing keyword; issue #542)
+- **calls:** `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make architecture-refresh` — Regenerate ARCHITECTURE.md's inventory block from the tree (rule 6h, issue #479); `make openspec-index` — Regenerate the root OPENSPEC.md index from openspec/changes/**; `make architecture-check` — Fail when ARCHITECTURE.md misses a make target, a workflow or a script — or its generated inventory is stale (rule 6h); `make keeper-pr`
 
 #### `.github/workflows/bot-health.yml` — bot-health
 

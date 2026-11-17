@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""tests/test_keeper_pr.py — the ONE keeper-landing sequence (issue #869, rules 6d/6m).
+"""tests/test_keeper_pr.py — the ONE keeper-landing sequence (issues #869, #1081,
+rules 6d/6m).
 
 Drives the REAL scripts/keeper_pr.py through the REAL make keeper-pr target against
 a REAL local git remote (rule 6m: external systems are real; `gh` is a stub CLI on
-PATH — the sanctioned stand-in for the network). Pins the three refusal/suppression
-verdicts, the landed commit's identity and shape, the body coming from the keeper's
-own target, and — the Done-when of #869 — that no keeper job spells its own copy of
-the landing shell again.
+PATH — the sanctioned stand-in for the network). Pins the refusal/suppression
+verdicts, single- and multi-file landing (#1081), the landed commit's identity and
+shape, the body coming from the keeper's own target, and — the Done-when of #869
+extended by #1081 — that no keeper job spells its own copy of the landing shell.
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ KEEPER = ROOT / "scripts" / "keeper_pr.py"
 MAKEFILE = ROOT / "Makefile"
 QA_WF = ROOT / ".github" / "workflows" / "qa-validate.yml"
 QUEUE_WF = ROOT / ".github" / "workflows" / "queued-alarm.yml"
+ARCH_WF = ROOT / ".github" / "workflows" / "architecture-bot.yml"
 
 FAILURES: list[str] = []
 
@@ -177,6 +179,54 @@ def test_keeper_lands_one_commit_touching_only_its_file() -> None:
               and "chore(keeper): land the generated file" in log, log[:400])
 
 
+def test_multi_file_keeper_lands_one_commit_touching_both_files() -> None:
+    """Issue #1081: the weekly architecture keeper regenerates ARCHITECTURE.md AND
+    OPENSPEC.md; ONE seam invocation must land both files in one commit."""
+    print("\nissue #1081: a multi-file keeper lands one commit carrying both owned files")
+    with tempfile.TemporaryDirectory() as td:
+        work, env = make_scene(Path(td))
+        (work / "EXTRA.md").write_text("committed generation\n")
+        git("add", "-A", cwd=work)
+        git("commit", "-q", "-m", "seed extra", cwd=work)
+        git("push", "-q", "origin", "master", cwd=work)
+        (work / "GENERATED.md").write_text("regenerated\n")
+        (work / "EXTRA.md").write_text("regenerated too\n")
+        proc = run_keeper(work, env, "--file", "GENERATED.md EXTRA.md",
+                          "--branch-prefix", "ci/test-keeper",
+                          "--commit-message", "chore(keeper): land both generated files",
+                          "--pr-title", "chore(keeper): land both generated files",
+                          "--body-target", "keeper-body")
+        check("multi-file land exits 0", proc.returncode == 0, proc.stdout + proc.stderr)
+        check("the landing names BOTH files", "GENERATED.md EXTRA.md" in proc.stdout,
+              proc.stdout)
+        branch = re.search(r"ci/test-keeper-\d{8}T\d{6}Z", proc.stdout).group(0)
+        touched = git("show", "--name-only", "--format=", branch, cwd=work).splitlines()
+        check("ONE commit carries exactly both files",
+              touched == ["EXTRA.md", "GENERATED.md"], str(touched))
+
+
+def test_multi_file_keeper_lands_only_the_owned_file_that_changed() -> None:
+    print("\nissue #1081: with a set of owned files, the one that changed still lands alone")
+    with tempfile.TemporaryDirectory() as td:
+        work, env = make_scene(Path(td))
+        (work / "EXTRA.md").write_text("committed generation\n")
+        git("add", "-A", cwd=work)
+        git("commit", "-q", "-m", "seed extra", cwd=work)
+        git("push", "-q", "origin", "master", cwd=work)
+        (work / "GENERATED.md").write_text("regenerated\n")
+        proc = run_keeper(work, env, "--file", "GENERATED.md EXTRA.md",
+                          "--branch-prefix", "ci/test-keeper",
+                          "--commit-message", "chore(keeper): land the changed file",
+                          "--pr-title", "chore(keeper): land the changed file",
+                          "--body-target", "keeper-body")
+        check("partial-set drift lands exit 0", proc.returncode == 0,
+              proc.stdout + proc.stderr)
+        branch = re.search(r"ci/test-keeper-\d{8}T\d{6}Z", proc.stdout).group(0)
+        touched = git("show", "--name-only", "--format=", branch, cwd=work).splitlines()
+        check("the commit carries only the file that changed", touched == ["GENERATED.md"],
+              str(touched))
+
+
 def test_a_keeper_command_that_cannot_run_exits_two_loudly() -> None:
     print("\nloud failure: a failed gh read is exit 2, never a silent pass")
     with tempfile.TemporaryDirectory() as td:
@@ -192,8 +242,8 @@ def test_a_keeper_command_that_cannot_run_exits_two_loudly() -> None:
 
 
 def test_no_keeper_job_spells_the_landing_sequence_anymore() -> None:
-    print("\nDone-when (#869): the three keeper jobs land through make keeper-pr; "
-          "no keeper step re-spells the landing shell")
+    print("\nDone-when (#869, extended by #1081): the four keeper jobs land through "
+          "make keeper-pr; no keeper step re-spells the landing shell")
     makefile = MAKEFILE.read_text()
     check("Makefile defines the seam (public keeper-pr + internal _keeper-pr)",
           "keeper-pr:" in makefile and "_keeper-pr:" in makefile
@@ -201,7 +251,9 @@ def test_no_keeper_job_spells_the_landing_sequence_anymore() -> None:
     import yaml
     jobs = [("qa-validate.yml", QA_WF, "index-repair"),
             ("qa-validate.yml", QA_WF, "architecture-repair"),
-            ("queued-alarm.yml", QUEUE_WF, "alarm")]
+            ("queued-alarm.yml", QUEUE_WF, "alarm"),
+            # issue #1081: the weekly architecture keeper joined the seam.
+            ("architecture-bot.yml", ARCH_WF, "refresh")]
     for wf_name, wf_path, job_name in jobs:
         wf = yaml.safe_load(wf_path.read_text())
         job = wf["jobs"][job_name]
@@ -213,8 +265,8 @@ def test_no_keeper_job_spells_the_landing_sequence_anymore() -> None:
             check(f"{wf_name}:{job_name} does not re-spell {spelled!r}",
                   spelled not in text, text[:600])
     # #962's invalid-change-repair keeper lands a MULTI-PATH drift (the archive
-    # move + the regenerated index); keeper_pr lands exactly ONE generated file
-    # and REFUSES wider drift, so that job keeps its own shell — pinned inline
+    # move + the regenerated index); keeper_pr lands its owned files only and
+    # REFUSES wider drift, so that job keeps its own shell — pinned inline
     # by tests/test_workflows.py. The seam's no-second-copy guarantee covers the
     # keeper jobs the seam can actually land.
     qa_scoped = "\n".join(
@@ -227,7 +279,9 @@ def test_no_keeper_job_spells_the_landing_sequence_anymore() -> None:
           "separately by tests/test_workflows.py)",
           'git push origin "HEAD:refs/heads/' not in qa_scoped
           and "git switch -c" not in qa_scoped
-          and "git switch -c" not in QUEUE_WF.read_text(), "")
+          and "git switch -c" not in QUEUE_WF.read_text()
+          and 'git push origin "HEAD:refs/heads/' not in ARCH_WF.read_text()
+          and "git switch -c" not in ARCH_WF.read_text(), "")
 
 
 def test_reaches_ci_through_the_makefile_only() -> None:
@@ -251,6 +305,8 @@ def main() -> int:
               test_extra_changes_refuse_exit_1_and_land_nothing,
               test_mergeable_keeper_suppresses_and_dirty_keeper_does_not,
               test_keeper_lands_one_commit_touching_only_its_file,
+              test_multi_file_keeper_lands_one_commit_touching_both_files,
+              test_multi_file_keeper_lands_only_the_owned_file_that_changed,
               test_a_keeper_command_that_cannot_run_exits_two_loudly,
               test_no_keeper_job_spells_the_landing_sequence_anymore,
               test_reaches_ci_through_the_makefile_only):
