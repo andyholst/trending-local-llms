@@ -47,9 +47,13 @@ PLANT_PIN = "0.10.0"
 PLANT_CHANNEL_NEWER = "v0.11.0"
 PLANT_CHANNEL_OLDER = "v0.9.0"
 
-#: A planted Makefile + Dockerfile pair sharing one pin (the rule-6k shape).
+#: A planted Makefile + Dockerfile pair sharing one pin (the rule-6k shape), and
+#: the channel pin the check must READ from it (issue #1094 — the planted repo is
+#: deliberately NOT the vendor repo so a hard-coded channel cannot pass).
+PLANT_CHANNEL_REPO = "octo/planted-hermes-channel"
 PLANT_MAKEFILE = """# planted Makefile (test fixture)
 HERMES_VERSION ?= {pin}
+HERMES_CHANNEL_REPO ?= octo/planted-hermes-channel
 """
 PLANT_DOCKERFILE = """# planted Dockerfile (test fixture)
 ARG HERMES_VERSION="{pin}"
@@ -67,7 +71,7 @@ case "$1" in
     # The channel release endpoint: no planted payload means the channel is UNREADABLE —
     # the state that must produce exit 2, never a silent clean.
     case " $* " in
-      *" repos/NousResearch/hermes-agent/releases/latest "*)
+      *" repos/octo/planted-hermes-channel/releases/latest "*)
         if [ -f "$d/channel.json" ]; then cat "$d/channel.json"; exit 0; fi
         echo "gh: HTTP 404: Not Found (no releases)" >&2; exit 1 ;;
       *) echo "stub gh: unhandled api: $*" >&2; exit 1 ;;
@@ -177,6 +181,10 @@ def test_channel_newer_goes_red_files_one_tech_debt_issue_naming_the_remedy() ->
         proc = run_check(env, tmp)
         check("exit 1 (loud)", proc.returncode == 1, f"rc={proc.returncode}\n{proc.stdout}{proc.stderr}")
         check("stdout names the DRIFT verdict", "DRIFT" in proc.stdout, proc.stdout)
+        # issue #1094: the endpoint queried is the DERIVED Makefile channel, not a
+        # channel baked into the script (the stub serves ONLY the planted repo).
+        check("the gh api call names the planted Makefile channel",
+              f"repos/{PLANT_CHANNEL_REPO}/releases/latest" in gh_calls(tmp), gh_calls(tmp))
         issues = filed_issues(tmp)
         check("exactly ONE issue filed", len(issues) == 1, json.dumps(issues))
         if issues:
@@ -188,6 +196,8 @@ def test_channel_newer_goes_red_files_one_tech_debt_issue_naming_the_remedy() ->
                   "#218" in body and "HERMES_VERSION" in body, body)
             check("body carries the evidence pair (Makefile + Dockerfile lines)",
                   "Makefile:2" in body and 'ARG HERMES_VERSION="0.10.0"' in body, body)
+            check("body evidence names the DERIVED channel repo",
+                  f"repos/{PLANT_CHANNEL_REPO}/releases/latest" in body, body)
         # DRY=1 (the --dry-run preview): the drift reports but files nothing.
         proc2 = run_check(env, tmp, "--dry-run")
         check("--dry-run reports the drift but files nothing",
@@ -355,6 +365,48 @@ def test_the_drift_marker_is_registered_in_bot_markers() -> None:
           not spellings, f"{len(spellings)} literal re-spellings")
 
 
+def test_the_channel_repo_is_derived_from_the_makefile_pin_block() -> None:
+    print("\nchannel: the repo is READ from the Makefile install-pin block (issue #1094) — "
+          "the script carries no literal, a missing pin is a loud refusal, and a different "
+          "pin value changes the endpoint queried")
+    # 1. The script names the channel repo NOWHERE; the Makefile is the only spelling.
+    src = SCRIPT.read_text(encoding="utf-8")
+    check("the script carries no channel-repo literal",
+          "NousResearch/hermes-agent" not in src, "a baked channel spelling remains")
+    mk = MAKEFILE.read_text(encoding="utf-8")
+    check("the repository Makefile pins HERMES_CHANNEL_REPO exactly once",
+          mk.count("HERMES_CHANNEL_REPO ?=") == 1, f"count={mk.count('HERMES_CHANNEL_REPO ?=')}")
+    check("no other script spells the channel repo",
+          [p.name for p in (ROOT / "scripts").glob("*.py")
+           if "NousResearch/hermes-agent" in p.read_text(encoding="utf-8")] == [], "")
+    # 2. A planted Makefile WITHOUT the pin refuses loudly, before the channel is consulted.
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, {"tag_name": PLANT_CHANNEL_NEWER})
+        (tmp / "Makefile").write_text("# planted Makefile with no channel pin\n"
+                                      "HERMES_VERSION ?= 0.10.0\n")
+        proc = run_check(env, tmp)
+        check("exit 2 naming the missing pin",
+              proc.returncode == 2 and "HERMES_CHANNEL_REPO" in proc.stderr,
+              f"rc={proc.returncode}\n{proc.stderr}")
+        check("the channel was NEVER consulted", "api" not in gh_calls(tmp), gh_calls(tmp))
+        check("nothing was filed", len(filed_issues(tmp)) == 0, "")
+    # 3. The recipe passes the knob explicitly: `--channel-repo` is forwarded verbatim,
+    #    proof the Makefile's value — not a baked default — reaches `gh api`.
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, {"tag_name": PLANT_PIN})
+        proc = run_check(env, None, "--channel-repo", "octo/moved-channel")
+        check("the recipe shape passes the knob",
+              '--channel-repo "$(HERMES_CHANNEL_REPO)"' in MAKEFILE.read_text(encoding="utf-8"),
+              "hermes-pin-freshness recipe does not expand the knob")
+        check("the gh api call names the MOVED channel",
+              "repos/octo/moved-channel/releases/latest" in gh_calls(tmp), gh_calls(tmp))
+        check("a channel the stub does not serve is UNREADABLE (exit 2), never OK",
+              proc.returncode == 2 and "OK" not in proc.stdout,
+              f"rc={proc.returncode}\n{proc.stdout}")
+
+
 def main() -> int:
     print("hermes pin freshness: the pinned agent vs the upstream channel (issue #1091)")
     test_channel_equal_to_pin_prints_ok_and_exits_green()
@@ -364,6 +416,7 @@ def main() -> int:
     test_unreadable_channel_is_a_loud_exit_two_never_a_clean()
     test_pin_disagreement_between_makefile_and_dockerfile_refuses_before_the_channel_is_read()
     test_recorded_channel_payload_is_compared_against_the_real_pins()
+    test_the_channel_repo_is_derived_from_the_makefile_pin_block()
     test_queued_alarm_sweep_calls_the_target_and_a_makeless_step_is_refused()
     test_the_drift_marker_is_registered_in_bot_markers()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
