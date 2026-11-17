@@ -49,8 +49,13 @@ def run(root: Path, *args: str) -> subprocess.CompletedProcess:
 
 def _tree(td: Path, workflows: dict[str, str] | None = None,
           targets: tuple[str, ...] = ("search", "merge", "render-readme"),
-          doc_targets: bool = True) -> Path:
-    """A minimal repo: Makefile + workflows + a script + README + data artifacts."""
+          doc_targets: bool = True,
+          hermes_legs: dict[str, tuple[str, ...]] | None = None,
+          skills: tuple[str, ...] = ()) -> Path:
+    """A minimal repo: Makefile + workflows + a script + README + data artifacts.
+
+    `hermes_legs` adds `hermes -z` legs with their `-s` preload sets, and `skills`
+    plants `agents/skills/<name>/SKILL.md` contracts (issue #935)."""
     wf = td / ".github" / "workflows"
     wf.mkdir(parents=True, exist_ok=True)
     (td / "scripts").mkdir(parents=True, exist_ok=True)
@@ -61,11 +66,22 @@ def _tree(td: Path, workflows: dict[str, str] | None = None,
                                  encoding="utf-8")
     (td / "scripts" / "update_trending.py").write_text(
         '#!/usr/bin/env python3\n"""Fold raw snapshots into the store."""\n', encoding="utf-8")
+    leg_names = tuple(hermes_legs or {})
     (td / "Makefile").write_text(
-        ".PHONY: " + " ".join(targets) + "\n"
-        + "".join(f"{t}: ## {t} the thing\n\techo {t}\n" for t in targets),
+        ".PHONY: " + " ".join(targets + leg_names) + "\n"
+        + "".join(f"{t}: ## {t} the thing\n\techo {t}\n" for t in targets)
+        + "".join(f"{t}: ## {t} the agent leg\n"
+                  f"\t@hermes -z --yolo --accept-hooks -s {','.join(leg_skills)} \"go\"\n"
+                  for t, leg_skills in (hermes_legs or {}).items()),
         encoding="utf-8",
     )
+    for skill_name in skills:
+        skill_dir = td / "agents" / "skills" / skill_name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {skill_name}\ndescription: fixture skill\n---\n\n# {skill_name}\n",
+            encoding="utf-8",
+        )
     for name, text in (workflows or {"ci.yml": _workflow()}).items():
         (wf / name).write_text(text, encoding="utf-8")
     (td / "ARCHITECTURE.md").write_text(
@@ -567,6 +583,34 @@ def _makefile_targets() -> set[str]:
     return _bot().make_targets(ROOT)
 
 
+def test_agent_lanes_skill_contracts_and_bot_verbs_are_named():
+    """(issue #935, rule 6h) The block names the agent lanes: the skill contracts each
+    pipeline's legs preload, the marker verbs each pipeline announces (from the ONE bot
+    registry), and every skill on disk — an orphan skill is printed AS an orphan."""
+    with tempfile.TemporaryDirectory() as d:
+        root = _tree(
+            Path(d),
+            workflows={"issue-bot.yml": _workflow(targets=("implement-issue",)),
+                       "ci.yml": _workflow()},
+            # The planted Makefile must satisfy the bot's own flow-backing
+            # invariant: FLOW names `make search` and `make render-readme`, so a
+            # tree that lacks them is refused at WRITE before the lane renders.
+            targets=("merge", "search", "render-readme"),
+            hermes_legs={"implement-issue": ("issue-implement", "bot-unattended")},
+            skills=("issue-implement", "bot-unattended", "lonely-skill"),
+        )
+        r = run(root, "--write")
+        check("the bot writes the lane-aware block", r.returncode == 0, r.stderr)
+        text = (root / "ARCHITECTURE.md").read_text(encoding="utf-8")
+        check("a leg's preload is named as that pipeline's agent lane",
+              "`make implement-issue` preloads `issue-implement`, `bot-unattended`" in text)
+        check("the pipeline announces its registry's marker verbs", "issue-bot-start" in text)
+        check("every skill on disk is named, orphan included", "`lonely-skill`" in text)
+        check("an orphan skill is declared as an orphan", "no leg — orphan contract" in text)
+        c = run(root, "--check")
+        check("the regenerated tree passes --check", c.returncode == 0, c.stdout + c.stderr)
+
+
 def main() -> int:
     print("ARCHITECTURE.md's living inventory + its daily bot (scripts/architecture_bot.py)")
     test_block_is_derived_from_the_tree()
@@ -580,6 +624,7 @@ def main() -> int:
     test_the_keeper_regenerates_both_generated_documents()
     test_the_schedule_comment_names_the_cadence_it_pins()
     test_the_shipped_steps_actually_commit_push_and_open_a_pr()
+    test_agent_lanes_skill_contracts_and_bot_verbs_are_named()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
