@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
@@ -252,6 +253,19 @@ def regenerate_index(wt: Path) -> tuple[bool, str]:
     return True, " + OPENSPEC.md regenerated on the rebased tree"
 
 
+def pat_push_url(origin_url: str, pat: str) -> str | None:
+    """Rewrite a github.com HTTPS origin into an owner-PAT-authenticated push URL
+    (issue #1115). Returns None when the PAT is empty or the origin is not a
+    github.com HTTPS URL — a local fixture remote or an ssh remote is NEVER rewritten,
+    so the seam cannot silently redirect a push somewhere unverified."""
+    if not pat:
+        return None
+    m = re.match(r"^https://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", origin_url.strip(), re.I)
+    if not m:
+        return None
+    return f"https://oauth2:{pat}@github.com/{m.group(1)}/{m.group(2)}.git"
+
+
 def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
     """Rebase origin/<head> onto origin/master in a scratch worktree and push it back to
     the PR's own HEAD branch (rule 6r: push to the PR's head, which re-triggers its CI).
@@ -279,11 +293,34 @@ def rebase_and_push(cwd: Path, head: str) -> tuple[bool, str]:
             # --force-with-lease pinned to the remote tip THIS run just fetched. If anyone
             # moved the branch since the fetch, the lease fails and nothing is overwritten.
             lease = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
+            # (issue #1115) THE PUSH CARRIES THE OWNER PAT IDENTITY when the CI step provided
+            # one. Measured ghost runs (runs/43839409260, 43839409495, 44004650575): this push,
+            # done under the job-token checkout credential, left the resulting PR `pull_request`
+            # runs `action_required` with ZERO jobs — the owner sees `no checks reported`,
+            # auto-merge is UNSTABLE forever, and qa-validate never runs at all. When
+            # GIT_PUSH_PAT is set (the qa-validate auto-merge-rebase step and the pr-health
+            # sweep step both provide it), the github.com origin is pushed through an
+            # owner-PAT-authenticated URL — the credential class every landed rebase in this
+            # repo demonstrably used. A non-github origin (a local fixture remote) is never
+            # rewritten: the lease push stays on `origin`.
+            push_target, push_identity = "origin", "checkout-credential"
+            pat = (os.environ.get("GIT_PUSH_PAT") or "").strip()
+            if pat:
+                # The RAW configured URL, not `remote get-url`: git applies insteadOf rewrites
+                # to get-url's output, which would hide a github origin behind a transport alias.
+                origin_cfg = _git(cwd, "config", "--get", "remote.origin.url").stdout.strip()
+                rewritten = pat_push_url(origin_cfg, pat)
+                if rewritten:
+                    push_target, push_identity = rewritten, "owner-pat"
             push = _git(wt, "push", f"--force-with-lease=refs/heads/{head}:{lease}",
-                        "origin", f"HEAD:refs/heads/{head}")
+                        push_target, f"HEAD:refs/heads/{head}")
             if push.returncode != 0:
-                return False, f"push failed: {push.stderr.strip()[:120]}"
-            return True, "rebased onto origin/master and pushed to the PR head" + regen_note
+                err = push.stderr.strip()[:120]
+                if pat:
+                    err = err.replace(pat, "***")  # rule 3d: the token never reaches a log
+                return False, f"push failed: {err}"
+            return True, ("rebased onto origin/master and pushed to the PR head"
+                          + regen_note + f" (push identity: {push_identity})")
         finally:
             _git(cwd, "worktree", "remove", "--force", str(wt))
 

@@ -126,6 +126,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make master-alarm REPO="${{ github.repository }}"
+      # (issue #1115) A GHOST run is a `pull_request` qa-validate run that COMPLETED with ZERO
+      # jobs: the pipeline never failed, it never RAN — the PR sits at `no checks reported` with
+      # auto-merge UNSTABLE forever (measured on PRs #1100/#1114, runs 43839409260/43839409495/
+      # 44004650575). No existing alarm reads pull_request runs, so nothing could see this. The
+      # DECISION lives in scripts/ghost_run_alarm.py (rule 6d); read-only, default token, and it
+      # names the remedy (re-push the head with the owner-PAT identity) rather than fixing anything
+      # itself (rule 6g).
+      - name: Fail loudly when a pull_request qa-validate run completed with zero jobs (issue #1115)
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make ghost-run-alarm REPO="${{ github.repository }}"
       # A red main pipeline must become a TRACKED ISSUE, not just a red run page (issue #802).
       # After the alarms, this filer reads every concluded-bad main-pipeline run inside the
       # window that is not yet in `data/pipeline_failures.json`, fetches the failed job's log,

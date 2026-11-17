@@ -363,6 +363,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR_NUM: ${{ github.event.pull_request.number }}
+          # (issue #1115) the rebase push carries the OWNER PAT identity: the measured ghost runs
+          # (43839409260 / 43839409495 / 44004650575) followed this step's push done under the
+          # job-token checkout credential, and the PR's next pull_request runs were action_required
+          # with ZERO jobs. Reads stay on the default token; only the git push gets the PAT, through
+          # the scripts/pr_health.py rebaser seam, which never prints it (rule 3d).
+          GIT_PUSH_PAT: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
         run: |
           set -euo pipefail
           # rule 3f: this step commits the regenerated index — set the agent identity first.

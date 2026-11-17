@@ -1666,6 +1666,22 @@ master-alarm: ## Fail when the newest push-to-master qa-validate run is red, so 
 	@test -n "$(REPO)" || { echo "Usage: make master-alarm REPO=<owner/repo> [LIMIT=10]"; exit 1; }
 	@$(MAKE) --no-print-directory _master-alarm
 
+# The ghost-run alarm (issue #1115): a `pull_request` qa-validate run that COMPLETED with ZERO
+# jobs — never failed, never RAN — leaves the PR at `no checks reported` with auto-merge
+# UNSTABLE forever (measured on PRs #1100/#1114, runs 43839409260/43839409495/44004650575, after
+# a bot push under the wrong credential identity). No alarm read pull_request runs: master-alarm
+# reads pushes, queued-alarm reads queued runs, sweep-alarm reads issue-bot deliveries. The
+# DECISION lives in scripts/ghost_run_alarm.py (rule 6d); host-side, called by queued-alarm's
+# alarm job, never a PR gate.
+.PHONY: _ghost-run-alarm
+_ghost-run-alarm:
+	python3 scripts/ghost_run_alarm.py --repo "$(REPO)" $(if $(WINDOW_HOURS),--window-hours $(WINDOW_HOURS),) $(if $(LIMIT),--limit $(LIMIT),)
+
+.PHONY: ghost-run-alarm
+ghost-run-alarm: ## Fail when a pull_request qa-validate run completed with zero jobs (REPO=<owner/name>, WINDOW_HOURS=168; issue #1115)
+	@test -n "$(REPO)" || { echo "Usage: make ghost-run-alarm REPO=<owner/repo> [WINDOW_HOURS=168]"; exit 1; }
+	@$(MAKE) --no-print-directory _ghost-run-alarm
+
 # After a failure, KEEP TRACKING the main pipelines (issue #802). The alarms above SAY a run is
 # red; this filer READS it: for every concluded-bad main-pipeline run inside the window that is
 # not yet in the ledger `data/pipeline_failures.json`, it fetches the failed job's log (one

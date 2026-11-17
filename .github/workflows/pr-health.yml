@@ -95,4 +95,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          # (issue #1115) the rebaser's push (scripts/pr_health.py) carries the OWNER PAT identity;
+          # comments stay on the default token (rule 6b — the owner PAT cannot comment). A bot push
+          # under the checkout credential is the measured ghost-run trigger: the PR's next
+          # pull_request runs arrive action_required with ZERO jobs, invisible to every alarm until
+          # this sweep's own alarm half names them.
+          GIT_PUSH_PAT: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
         run: make pr-health REPO="$REPO" COMMENT=1 REBASE=1
