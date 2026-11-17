@@ -191,7 +191,7 @@ def _pr_json(*, head: str = HEAD_BRANCH, state: str = "open", draft: bool = Fals
             "mergeable": mergeable, "mergeStateStatus": state_status}
 
 
-def _run_seam(clone: Path, pr_obj: dict) -> tuple[subprocess.CompletedProcess, str]:
+def _run_seam(clone: Path, pr_obj: dict, extra_env: dict | None = None) -> tuple[subprocess.CompletedProcess, str]:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         (td / "gh").write_text(STUB_GH)
@@ -201,6 +201,7 @@ def _run_seam(clone: Path, pr_obj: dict) -> tuple[subprocess.CompletedProcess, s
         log.write_text("")
         env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
                "FAKE_PR": str(td / "pr.json"), "GH_LOG": str(log)}
+        env.update(extra_env or {})
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--pr", "77", "--repo", "o/r", "--dir", str(clone)],
             capture_output=True, text=True, env=env, cwd=str(clone))
@@ -473,6 +474,204 @@ def test_classification_is_pure_and_partitions():
           cls(status="UNKNOWN") == "behind-and-clean-bot")
 
 
+#: (issue #1115) a stub `gh` for the ghost-run alarm: `run list` answers from $FAKE_RUNS,
+#: `run view <id>` answers from $FAKE_JOBS_DIR/<id>.json; a `run list` that fails ($GH_FAIL=1)
+#: stands for a broken GitHub read. Every argv is recorded so the request construction is pinned.
+STUB_GH_RUNS = """#!/bin/sh
+echo "gh $*" >> "$GH_LOG"
+if [ -n "$GH_FAIL" ]; then echo "gh: could not read runs" >&2; exit 1; fi
+case "$1 $2" in
+  "run list") cat "$FAKE_RUNS" ;;
+  "run view") cat "$FAKE_JOBS_DIR/$3.json" ;;
+  *) echo "unexpected gh: $*" >&2; exit 3 ;;
+esac
+"""
+
+
+def _run_ghost_alarm(runs: list[dict], jobs: dict, *, window_hours: int | None = None,
+                     fail: bool = False) -> subprocess.CompletedProcess:
+    """Drive the REAL scripts/ghost_run_alarm.py against the stub gh (external system only,
+    rule 6m): planted run-list and per-run jobs payloads, no scripts/ symbol stubbed."""
+    import datetime as dtm
+    now = dtm.datetime.now(dtm.timezone.utc)
+
+    def ts(hours_ago: int) -> str:
+        return (now - dtm.timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    for i, r in enumerate(runs):
+        r.setdefault("workflowName", "qa-validate.yml")
+        r.setdefault("name", "qa-validate")
+        r.setdefault("createdAt", ts(1 + i))
+        r.setdefault("htmlUrl", f"https://github.com/o/r/actions/runs/{r['databaseId']}")
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        (td / "gh").write_text(STUB_GH_RUNS)
+        (td / "gh").chmod(0o755)
+        (td / "runs.json").write_text(json.dumps(runs))
+        jobs_dir = td / "jobs"
+        jobs_dir.mkdir()
+        for rid, payload in jobs.items():
+            (jobs_dir / f"{rid}.json").write_text(json.dumps(payload))
+        env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
+               "FAKE_RUNS": str(td / "runs.json"), "FAKE_JOBS_DIR": str(jobs_dir),
+               "GH_LOG": str(td / "gh.log")}
+        if fail:
+            env["GH_FAIL"] = "1"
+        cmd = [sys.executable, str(ROOT / "scripts" / "ghost_run_alarm.py"), "--repo", "o/r"]
+        if window_hours is not None:
+            cmd += ["--window-hours", str(window_hours)]
+        return subprocess.run(cmd, capture_output=True, text=True, env=env)
+
+
+def test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it():
+    """(issue #1115) The measured ghost runs followed a rebase push done under the job-token
+    checkout credential: the PR's next `pull_request` runs arrived `action_required` with ZERO
+    jobs. When the CI step provides GIT_PUSH_PAT, the shared rebaser pushes the github.com
+    origin through the owner-PAT URL. The fixture clone's origin is re-pointed at a github-shaped
+    URL and git's OWN `insteadOf` transport maps both URLs back to the local bare repo (rule 6m:
+    the real git, a real remote — the network is what is stood in for)."""
+    import pr_health as PH
+
+    check("pat_push_url: a github.com https origin is rewritten with the PAT identity",
+          PH.pat_push_url("https://github.com/o/r.git", "TESTPAT")
+          == "https://oauth2:TESTPAT@github.com/o/r.git", "")
+    check("pat_push_url: no PAT, no rewrite", PH.pat_push_url("https://github.com/o/r.git", "") is None, "")
+    check("pat_push_url: a non-github origin is NEVER rewritten (fixture remotes stay honest)",
+          PH.pat_push_url("https://example.com/o/r.git", "TESTPAT") is None, "")
+    check("pat_push_url: an ssh origin is never rewritten",
+          PH.pat_push_url("git@github.com:o/r.git", "TESTPAT") is None, "")
+
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        origin_url, _seed, clone = _fixture(td)
+        before = _git(origin_url, "rev-parse", f"refs/heads/{HEAD_BRANCH}").stdout.strip()
+        gh_url = "https://github.com/o/r.git"
+        _must(clone, "remote", "set-url", "origin", gh_url)
+        _must(clone, "config", f"url.{origin_url}.insteadOf", gh_url)
+        _must(clone, "config", "--add", f"url.{origin_url}.insteadOf",
+              "https://oauth2:TESTPAT@github.com/o/r.git")
+        proc, _log = _run_seam(clone, _pr_json(), extra_env={"GIT_PUSH_PAT": "TESTPAT"})
+        out = proc.stdout + proc.stderr
+        check("seam with GIT_PUSH_PAT lands the rebase and names the owner-pat push identity",
+              proc.returncode == 0 and "push identity: owner-pat" in out, out[:240])
+        check("rule 3d: the PAT value itself never reaches the printed output",
+              "TESTPAT" not in out, out[:240])
+        after = _git(origin_url, "rev-parse", f"refs/heads/{HEAD_BRANCH}").stdout.strip()
+        check("the PAT-authenticated push LANDED: the origin branch moved",
+              after and after != before, f"{before} -> {after}")
+        anc = _git(origin_url, "merge-base", "--is-ancestor", "master", f"refs/heads/{HEAD_BRANCH}")
+        check("the landed head carries the fetched master (a real rebase, not a stale push)",
+              anc.returncode == 0, anc.stderr[:200])
+
+        # Without GIT_PUSH_PAT the push stays on `origin` (host sweeps, local fixture remotes):
+        # the identity line says checkout-credential and nothing is rewritten.
+        with tempfile.TemporaryDirectory() as td2:
+            origin_url2, _seed2, clone2 = _fixture(Path(td2), head="ci/data-gap-78-x")
+            proc2, _log2 = _run_seam(clone2, _pr_json(head="ci/data-gap-78-x"))
+            check("seam without GIT_PUSH_PAT still rebases and pushes via origin (checkout identity)",
+                  proc2.returncode == 0 and "push identity: checkout-credential" in proc2.stdout,
+                  (proc2.stdout + proc2.stderr)[:240])
+
+
+def test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs():
+    """The planted ghost shapes (issue #1115): `action_required` with zero jobs, and `success`
+    with zero jobs, both go RED; a run with real jobs, a concurrency `skipped`, an in-flight run
+    (queued-alarm's own territory) and a ghost outside the window do NOT."""
+    import datetime as dtm
+    now = dtm.datetime.now(dtm.timezone.utc)
+    old_ts = (now - dtm.timedelta(hours=400)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    runs = [
+        {"databaseId": 1, "headBranch": "ci/a", "headSha": "a" * 40,
+         "status": "completed", "conclusion": "action_required"},
+        {"databaseId": 2, "headBranch": "ci/b", "headSha": "b" * 40,
+         "status": "completed", "conclusion": "success"},
+        {"databaseId": 3, "headBranch": "ci/c", "headSha": "c" * 40,
+         "status": "completed", "conclusion": "success"},
+        {"databaseId": 4, "headBranch": "ci/d", "headSha": "d" * 40,
+         "status": "completed", "conclusion": "skipped"},
+        {"databaseId": 5, "headBranch": "ci/e", "headSha": "e" * 40,
+         "status": "in_progress", "conclusion": ""},
+        {"databaseId": 6, "headBranch": "ci/f", "headSha": "f" * 40,
+         "status": "completed", "conclusion": "action_required", "createdAt": old_ts},
+    ]
+    jobs = {1: [], 2: [{"id": 90, "status": "completed", "conclusion": "success"}],
+            3: [], 4: [], 5: []}
+    proc = _run_ghost_alarm([dict(r) for r in runs], jobs)
+    out = proc.stdout + proc.stderr
+    check("ghost alarm exits 1 (the sweep goes RED, not quiet)", proc.returncode == 1, out[:300])
+    check("the action_required-with-zero-jobs ghost is flagged",
+          "runs/1 " in out or "runs/1\n" in out or "/1 " in out, out[:300])
+    check("the success-with-ZERO-jobs ghost is flagged (the pipeline never FAILED, it never RAN)",
+          "runs/3" in out, out[:300])
+    check("a run with real jobs is NOT a ghost", "runs/2" not in out, out[:300])
+    check("a concurrency-skipped run is NOT a ghost", "runs/4" not in out, out[:300])
+    check("an in-flight run belongs to queued-alarm, not here", "runs/5" not in out, out[:300])
+    check("a ghost outside the window is named by the window, not silently forever",
+          "runs/6" not in out, out[:300])
+    check("the remedy is named (owner-PAT re-push), the alarm fixes nothing itself",
+          "owner-PAT" in out or "owner PAT" in out or "REBASE=1" in out, out[-300:])
+
+    clean = _run_ghost_alarm([dict(runs[1])], jobs)
+    check("a green planted queue exits 0", clean.returncode == 0, clean.stdout[:200])
+    broken = _run_ghost_alarm([dict(runs[1])], jobs, fail=True)
+    check("a failed GitHub read is exit 2, never a silent clean",
+          broken.returncode == 2 and "READ FAILED" in broken.stdout, broken.stdout[:200])
+
+    check("ghost_verdict is pure (rule 6d): action_required + zero jobs is a ghost",
+          __import__("pr_health") and _ghost_verdict_check(), "")
+
+
+def _ghost_verdict_check() -> bool:
+    import ghost_run_alarm as GA
+    return (GA.ghost_verdict({"status": "completed", "conclusion": "action_required"}, []) is True
+            and GA.ghost_verdict({"status": "completed", "conclusion": "success"}, []) is True
+            and GA.ghost_verdict({"status": "completed", "conclusion": "success"}, [{"id": 1}]) is False
+            and GA.ghost_verdict({"status": "completed", "conclusion": "skipped"}, []) is False
+            and GA.ghost_verdict({"status": "in_progress", "conclusion": ""}, []) is False)
+
+
+def test_ghost_run_and_push_identity_wiring():
+    """Both halves are wired where CI runs them (rules 6d/6m): the qa-validate `auto-merge-rebase`
+    step and the pr-health sweep step carry GIT_PUSH_PAT; queued-alarm calls
+    `make ghost-run-alarm` with the DEFAULT token (a ghost is READ, not written); the Makefile
+    defines the target; and the rebaser seam reads the env it is given."""
+    qa = yaml.safe_load(WORKFLOW.read_text())
+    am_steps = qa["jobs"]["auto-merge"]["steps"]
+    rebase_step = next(s for s in am_steps if s.get("id") == "auto-merge-rebase")
+    check("qa-validate: the auto-merge-rebase step provides GIT_PUSH_PAT (owner PAT)",
+          "FIXBOT_DISPATCH_TOKEN" in str((rebase_step.get("env") or {}).get("GIT_PUSH_PAT", "")),
+          str(rebase_step.get("env")))
+    check("qa-validate: the rebase step keeps its READS on the default token",
+          "github.token" in str((rebase_step.get("env") or {}).get("GH_TOKEN", "")), "")
+
+    ph_wf = (ROOT / ".github" / "workflows" / "pr-health.yml").read_text()
+    check("pr-health: the sweep step provides GIT_PUSH_PAT to the rebaser",
+          "GIT_PUSH_PAT: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}" in ph_wf, ph_wf[:200])
+
+    qa_text = (ROOT / ".github" / "workflows" / "queued-alarm.yml").read_text()
+    check("queued-alarm: the ghost sweep is called through the Makefile (rule 6m)",
+          'make ghost-run-alarm REPO="${{ github.repository }}"' in qa_text, "")
+    ghost_step = qa_text[qa_text.index("completed with zero jobs (issue #1115)"):]
+    ghost_step = ghost_step[:ghost_step.index("A red main pipeline")]
+    check("queued-alarm: the ghost step is read-only with the DEFAULT token (no owner PAT)",
+          "GH_TOKEN: ${{ github.token }}" in ghost_step
+          and "FIXBOT_DISPATCH_TOKEN" not in ghost_step, ghost_step[:200])
+
+    mk = MAKEFILE.read_text()
+    check("Makefile: `make ghost-run-alarm` is defined and dispatches the internal recipe",
+          "ghost-run-alarm:" in mk and "_ghost-run-alarm:" in mk
+          and "scripts/ghost_run_alarm.py" in mk, "")
+
+    ph_src = PR_HEALTH.read_text()
+    check("the ONE rebaser reads GIT_PUSH_PAT and names the push identity it used",
+          "GIT_PUSH_PAT" in ph_src and "pat_push_url" in ph_src
+          and "push identity" in ph_src, "")
+    check("the ghost DECISION lives in the script, not in the workflow shell (rule 6d)",
+          "ghost_verdict" in (ROOT / "scripts" / "ghost_run_alarm.py").read_text()
+          and "ghost_verdict" not in qa_text, "")
+
+
 def main():
     tests = [
         test_behind_clean_bot_branch_is_rebased_with_a_current_index,
@@ -482,6 +681,10 @@ def main():
         test_regeneration_failure_keeps_the_branch_untouched,
         test_the_auto_merge_wiring_refuses_the_merge_as_is_flow,
         test_classification_is_pure_and_partitions,
+        # (issue #1115) the push-identity fix and the ghost-run alarm it pairs with.
+        test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it,
+        test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs,
+        test_ghost_run_and_push_identity_wiring,
     ]
     for t in tests:
         print(f"\n[{t.__name__}]")

@@ -142,7 +142,7 @@ def main() -> int:
             rebased = True
             new_oid = _git(cwd, "rev-parse", f"refs/remotes/origin/{head}").stdout.strip()
             print(f"[auto-merge-rebase] rebased {head} onto the fetched master "
-                  f"({new_oid[:12]}); OPENSPEC.md regenerated on the rebased tree. "
+                  f"({new_oid[:12]}); OPENSPEC.md regenerated on the rebased tree — {msg}. "
                   "This run will NOT merge (its event head is now stale); "
                   "CI on the new head will land it.")
             verdict = "rebased"
