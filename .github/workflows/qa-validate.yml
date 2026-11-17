@@ -237,7 +237,14 @@ jobs:
       - name: Architecture description (rule 6h)
         run: make architecture-check
 
+      # The suite probes api.github.com for engine-registry metadata (rule 5b);
+      # unauthenticated, the 60 req/h limit shared across NAT'd runner IPs reds
+      # every PR on one aged WARN's probe (issue #1095, measured run 43896135854).
+      # The job's own default token is forwarded BY NAME (rule 3e) — the value
+      # never touches a command line — and fetch_repo_meta sends it as Bearer.
       - name: Run unit tests (in container)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: make test
 
   live-smoke:
@@ -275,6 +282,12 @@ jobs:
       # (every refresh search leg: HTTP 401 with `FIRECRAWL_API_KEY: ***` set).
       # Real secrets, the bot image, Hermes's own terminal env (issue #359).
       - name: Agent shell sees every credential (_HERMES_FORCE_<NAME>)
+        env:
+          # GH_TOKEN is now in AGENT_SHELL_KEYS (issue #1095), and Actions does
+          # NOT auto-inject GH_TOKEN — a job that names the key must forward it
+          # BY NAME (rule 3e): the job's own default token, value never on a
+          # command line. The key-check then proves the container sees it.
+          GH_TOKEN: ${{ github.token }}
         run: make agent-shell-keys-check
 
       - name: Search returns data (real Firecrawl->lightbrd, --require-hits)

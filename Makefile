@@ -56,7 +56,7 @@ IMAGE := trending-local-llms:latest
 # NAME. Inside a container (`/.dockerenv`) nothing is re-exported, so
 # `make agent-shell-keys-check` proves what `docker run` forwarded, not what an inner
 # make re-created. `IN_CONTAINER` is overridable for the tests only.
-AGENT_SHELL_KEYS := NOUS_API_KEY FIRECRAWL_API_KEY HF_TOKEN $(NERVE_KEY_ENV)
+AGENT_SHELL_KEYS := NOUS_API_KEY FIRECRAWL_API_KEY HF_TOKEN GH_TOKEN $(NERVE_KEY_ENV)
 AGENT_FORCE_PREFIX := _HERMES_FORCE_
 IN_CONTAINER ?= $(if $(wildcard /.dockerenv),1,)
 ifeq ($(IN_CONTAINER),)
@@ -72,7 +72,7 @@ AGENT_SHELL_FORWARD := $(foreach k,$(AGENT_SHELL_KEYS),-e $(AGENT_FORCE_PREFIX)$
 # `make`-invoked script — flushes each line into the stream the redactor is already reading.
 DOCKER_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace \
 	-e PYTHONUNBUFFERED=1 \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e GH_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(IMAGE)
 
 # The TEST image layers the CURRENT requirements-test.txt on top of the base
 # image at build time, so unit/QA tests (which need markdown-it-py + tabulate
@@ -96,7 +96,7 @@ GIT_COMMON_DIR := $(shell cd "$$(git rev-parse --git-common-dir 2>/dev/null)" 2>
 # run and removes it when that client dies.
 TEST_RUN := bash scripts/docker_test_run.sh --rm -v "$$PWD":/workspace $(if $(GIT_COMMON_DIR),-v "$(GIT_COMMON_DIR):$(GIT_COMMON_DIR)",) -w /workspace \
 	-e PYTHONUNBUFFERED=1 \
-	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
+	-e NOUS_API_KEY -e FIRECRAWL_API_KEY -e HF_TOKEN -e GH_TOKEN -e $(NERVE_KEY_ENV) $(AGENT_SHELL_FORWARD) $(TEST_IMAGE)
 
 
 HERMES_MODEL := deepseek/deepseek-v4-flash-0731
