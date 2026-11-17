@@ -253,12 +253,13 @@ jobs:
       - name: Verify the test manifest answers both architectures (make image-manifest-check)
         # UNGATED, both paths, before any job pulls it (issue #958).
         run: make image-manifest-check TAG="${{ needs.build.outputs.test_tag }}" LABEL=test
-      - name: Prove the arm64 test image runs, not just exists (QEMU smoke)
+      - name: Prove the arm64 test image runs, not just exists (QEMU smoke, make test-image-smoke)
         # The test layer's libraries importing under arm64 QEMU is the run
-        # proof for this image (issue #958 Done-when).
-        run: |
-          docker run --rm --platform linux/arm64 "${{ needs.build.outputs.test_tag }}" \
-            python3 -c "import pytest, markdown_it, tabulate; print('test-image arm64 ok')"
+        # proof for this image (issue #958 Done-when). The docker run lives in
+        # the Makefile target — a workflow `run:` step may reach the product
+        # only through make (rule 6m; the raw inline interpreter probe here
+        # reded `make test`'s test_makefile_only guard on PR #1114).
+        run: make test-image-smoke TAG="${{ needs.build.outputs.test_tag }}"
 
   # The OpenSpec CLI image (openspec/Dockerfile) — the container `make openspec-*`
   # runs in. Published on the SAME rule as the other two: the tag names the

@@ -209,10 +209,13 @@ def test_the_arm64_run_proof_steps_exist():
     check("the base job runs hermes --version from the arm64 variant of the verified tag",
           "docker run --rm --platform linux/arm64 \"${{ steps.decide.outputs.base_tag }}\" hermes --version"
           in _job(wf, "build"), "")
-    check("the test-image job imports the test layer under arm64",
-          "docker run --rm --platform linux/arm64 \"${{ needs.build.outputs.test_tag }}\""
-          in _job(wf, "test-image")
-          and "import pytest" in _job(wf, "test-image"), "")
+    check("the test-image job runs the arm64 run-proof through make (rule 6m — a raw "
+          "python3 -c in a workflow step is the defect test_makefile_only refuses on #1114)",
+          "make test-image-smoke" in _job(wf, "test-image"), _job(wf, "test-image")[:200])
+    check("the arm64 docker run lives in the Makefile target, not the workflow",
+          "docker run --rm --platform linux/arm64 \"$(TAG)\"" in MAKEFILE.read_text(encoding="utf-8")
+          and "import pytest" in MAKEFILE.read_text(encoding="utf-8")
+          and "python3 -c" not in _job(wf, "test-image"), "")
     for job_name, verify_part, proof_part in (("build", "Verify the base manifest", "Prove the arm64 base"),
                                               ("test-image", "Verify the test manifest", "Prove the arm64 test")):
         steps = _steps(_job(wf, job_name))
@@ -241,6 +244,8 @@ def test_the_target_is_makefile_only_and_wired():
                       if line.startswith(".PHONY:") and "openspec-image " in line)
     check("image-manifest-check is a .PHONY target",
           "image-manifest-check" in phony_line, phony_line)
+    check("test-image-smoke is a .PHONY target (the arm64 run-proof the workflow calls)",
+          "test-image-smoke" in phony_line, phony_line)
     check("its recipe reaches the product through python3 scripts/image_manifest_check.py --tag",
           "python3 scripts/image_manifest_check.py --tag" in makefile, "")
     wf = WORKFLOW.read_text(encoding="utf-8")
