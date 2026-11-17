@@ -1,6 +1,7 @@
 # Proposal: the weekly architecture keeper lands through the keeper-pr seam (issue #1081)
 
 Issue: #1081 — "architecture-bot's keeper PR step is a fourth spelling of the
+PR: #1113
 keeper-landing shell #869 folded into scripts/keeper_pr.py"
 
 ## Why
