@@ -701,6 +701,55 @@ def test_the_real_store_splits_every_missing_dimension():
           all(acquisition), str(report["not_captured"]))
 
 
+def test_engine_min_version_candidates_are_engine_names_not_build_claims():
+    """Issue #1020: the seven `engine_min_version` ingest candidates the gap scan filed
+    were engine NAMES beside throughput figures ("same post: llama.cpp 306.9 tokens/s",
+    "llama.cpp 44.8 tokens/s", "llama.cpp 21.11 t/s"), a comparison sentence where the
+    rate sits on the ENGINE side ("345.9 vs llama.cpp's 306.9 tokens/s"), a toolchain
+    compound ("0.0.3 (C++/CUDA") and quant/model-name descriptions — none is a build
+    claim, and structuring one would fabricate a build requirement (rule 2). On the
+    repository's own store + snapshots NONE of the seven may sit in an ingest class;
+    the throughput sentences those rows actually carry claim NOTHING through the ONE
+    reader; and the set's only genuine build sentence — the PrismML fork carried by
+    `qwen3.8-27b-bonsai-2`'s engine-name identity — still claims."""
+
+    store = G._load_flat_store()
+    report = G.analyse(store, G.contract_keys(), raw_dir=G.RAW_DIR)
+    by_id = {m.get("id"): m for m in store["models"]}
+    reader = G.dim_claim(next(d for d in G.DIMENSIONS if d["key"] == "engine_min_version"))
+
+    # Then  none of the seven candidates is filed as prose-only ingest work …
+    for mid in ("qwen2.5-0.5b", "gemma-4-e4b", "minicpm-v-4.7", "qwen3.8-27b-ps5lm-native",
+                "bonsai-2-27b-mac-m4-max", "glm-5.3-flash", "qwen3.8-27b-awq-4bit"):
+        classes = [key for key in ("unstructured", "captured_prose", "untraceable")
+                   if mid in report[key]["engine_min_version"]]
+        check(f"real store: {mid} is no engine_min_version ingest candidate (#1020)",
+              classes == [], str(classes))
+
+    # … the throughput sentences the candidate rows really carry claim nothing through
+    #     the same reader analyse() used (the shipped #1020 texts, planted on their rows) …
+    for mid, sentence in (
+        ("qwen2.5-0.5b", "Tiny Qwen2.5 model used as the SonicBoom benchmark baseline: "
+                         "345.9 vs llama.cpp's 306.9 tokens/s on an RTX 3050 8GB."),
+        ("gemma-4-e4b", "SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) beats "
+                        "llama.cpp on a consumer RTX 3050 8GB: 53.6 vs 44.8 tokens/s."),
+        ("qwen2.5-0.5b", "same post: llama.cpp 306.9 tokens/s on the identical GGUF"),
+        ("gemma-4-e4b", "same post: llama.cpp 44.8 tokens/s on the identical GGUF"),
+        ("gemma-4-e4b", "llama.cpp 44.8 t/s on the identical GGUF"),
+    ):
+        check(f"reader: {mid}'s throughput sentence claims no build (#1020)",
+              reader(by_id[mid], sentence) is None, sentence[:56])
+
+    # … and the one genuine build claim of the set still claims, with the engine-name
+    #     identity the store already carries for it.
+    check("reader: the PrismML build sentence still claims (#1020)",
+          reader(by_id["qwen3.8-27b-bonsai-2"],
+                 "stock llama.cpp rejects the format so the PrismML fork ran it") is not None)
+    check("store: qwen3.8-27b-bonsai-2 carries llama.cpp (PrismML fork) as engine identity",
+          any("PrismML" in str(e.get("engine", ""))
+              for e in by_id["qwen3.8-27b-bonsai-2"].get("engines", [])))
+
+
 def test_the_report_and_issue_body_name_an_acquisition_gap():
     """The filed issue must say which kind of gap it is, or the next triage reads it as ingest
     work again (the re-filing loop this issue exists to end)."""
@@ -2977,6 +3026,7 @@ def main() -> int:
     test_a_capture_that_only_echoes_the_stores_prose_is_not_a_post_statement()
     test_an_acquisition_gap_is_not_an_ingest_gap()
     test_the_real_store_splits_every_missing_dimension()
+    test_engine_min_version_candidates_are_engine_names_not_build_claims()
     test_the_report_and_issue_body_name_an_acquisition_gap()
     test_a_stated_figure_no_post_supports_is_its_own_class()
     test_engine_min_version_detector_sees_the_build_phrases_posts_use()
