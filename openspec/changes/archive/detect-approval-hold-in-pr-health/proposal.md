@@ -1,6 +1,7 @@
 # Proposal: detect-approval-hold-in-pr-health
 
 Issue: #1123 (filed with a live measurement)
+PR: #1124
 
 ## Why
 
