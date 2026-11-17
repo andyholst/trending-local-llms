@@ -161,7 +161,14 @@ _STREAMING_ENGINES = ("strata",)
 # build-vs-speed branch below stops matching it while a real build (`llama.cpp build 2.1,
 # measured 306.9 tokens/s`) still does — the lookahead only bites when the very next word is a
 # rate.
-_TPUT_RATE = r"(?:tokens?|tok)\s*/\s*s\b|\btps\b"
+# A throughput figure is a rate in EVERY spelling the posts use (issue #1020): #998's
+# lookahead read only `tokens/s`/`tok/s`/`TPS`, so `llama.cpp 21.11 t/s` and the
+# `/sec(ond)` spelling still read a speed as a build. A bare `t` is safe to admit because
+# every alternative must still land on the `/s…` unit, and the lookbehind keeps it from
+# eating the tail of a word.
+_TPUT_RATE = (r"(?:tokens?|tok)s?\s*/\s*(?:s|secs?|seconds?)\b|\btps\b"
+              r"|\b(?:tokens?|tok)s?\s+per\s+sec(?:ond)?s?\b"
+              r"|(?<![\w.])ts?\s*/\s*(?:s|secs?|seconds?)\b")
 # a version immediately followed by a quant bit-width is a QUANT, not a build (#1025):
 # "MLX weights (~7GB), 1.72 bits/weight" states bits/weight, no engine build.
 _BIT_WIDTH = r"bits?\b|bpw\b"
@@ -171,12 +178,22 @@ _BIT_WIDTH = r"bits?\b|bpw\b"
 # collision this guard exists to refuse): `(?!\d)` forces the token to end where a real
 # version ends, so every backtracking prefix of "1.72" is refused too.
 _BUILD_VERSION = rf"\d+\.\d+(?:\.\d+)?(?!\d)(?!\s*(?:{_TPUT_RATE}|{_BIT_WIDTH}))"
+# A bare engine name beside a throughput figure is a SPEED, not a build side (issue #1020):
+# `345.9 vs llama.cpp's 306.9 tokens/s` puts the rate on the ENGINE side of the adjacency,
+# where the version-side #998 lookahead never bites, so the version→engine branch read the
+# comparison speed `345.9` as an engine build. When the engine name is immediately followed
+# by `'s <N> <rate>` / `<N> <rate>` the match is refused at the engine token; an engine name
+# followed by anything else (`llama.cpp build 2.1`, `llama.cpp (fast: 90 tokens/s)`) is not.
+_TPUT_AFTER_ENGINE = rf"(?!\s*(?:['’]s?)?\s*\d+(?:\.\d+)?\s*(?:{_TPUT_RATE}))"
+# `cuda` inside the toolchain compound `C++/CUDA` (or `C/CUDA`) names the implementation
+# LANGUAGE, not an engine the run used (#1020, `SonicBoom 0.0.3 (C++/CUDA, MLIR compiler…)`);
+# a `CUDA` after anything else (a space, `CUDA 12.4`) still matches.
 _ENGINE_BUILD_NAMES = (r"llama\.cpp|llama-cpp|llamacpp|ollama|vllm|sglang|exllam\w*|"
-                       r"koboldcpp|lmdeploy|mlx|tgi|ctranslate2|llama\.rb|cuda")
+                       r"koboldcpp|lmdeploy|mlx|tgi|ctranslate2|llama\.rb|(?<!C\+\+/)(?<!C/)cuda")
 _ENGINE_MIN_TEXT = re.compile(
     r"\bflag\b|\bn[-_]gpu[-_]layers\b|\b--\w"  # the old claims, kept
     rf"|\b(?:{_ENGINE_BUILD_NAMES})\b[^.\n]{{0,24}}?\b{_BUILD_VERSION}\b"
-    rf"|\b{_BUILD_VERSION}\b[^.\n]{{0,24}}?\b(?:{_ENGINE_BUILD_NAMES})\b"
+    rf"|\b{_BUILD_VERSION}\b[^.\n]{{0,24}}?\b(?:{_ENGINE_BUILD_NAMES})\b{_TPUT_AFTER_ENGINE}"
     r"|\b(?:llama\.cpp|llama-cpp|llamacpp)\b[^.\n]{0,12}?\bb\d{3,6}\b"
     r"|\bb\d{3,6}\b[^.\n]{0,12}?\b(?:llama\.cpp|llama-cpp|llamacpp)\b"
     r"|\b(?:untouched upstream|stock llama\.cpp|from source|built from source|source build"

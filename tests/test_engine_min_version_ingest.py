@@ -200,6 +200,73 @@ def test_bits_per_weight_is_not_a_build():
           re.search(G._BUILD_VERSION, "mlx 0.25.1") is not None)
 
 
+def test_bare_engine_names_beside_throughput_figures_never_claim():
+    """Issue #1020: the seven engine_min_version ingest candidates were engine NAMES
+    beside throughput figures (`llama.cpp 306.9 tokens/s`, `llama.cpp 21.11 t/s`), a
+    comparison sentence where the rate sits on the engine side (`345.9 vs llama.cpp's
+    306.9 tokens/s`), a toolchain compound (`0.0.3 (C++/CUDA`) and quant/model-name
+    descriptions (`ternary MLX weights`, `PS5LM, llama.cpp port`, `TensorFold vs vLLM`,
+    `ExLlamaV3 + Hermes Agent`). None of them is a build claim; structuring one stores
+    a speed or a name as an engine build (rule 2 fabrication). Every shape is planted
+    on the row it was observed on and must fill NOTHING through the real fill seam."""
+    fixtures = [
+        ("qwen2.5-0.5b", "Q4_K_M GGUF, median of three runs; same post: llama.cpp "
+                         "306.9 tokens/s on the identical GGUF"),
+        ("gemma-4-e4b", "Q3_K_M GGUF, median of three runs; same post: llama.cpp "
+                        "44.8 tokens/s on the identical GGUF (SonicBoom ~20% faster)"),
+        ("qwen2.5-0.5b", "Tiny Qwen2.5 model used as the SonicBoom benchmark baseline: "
+                         "345.9 vs llama.cpp's 306.9 tokens/s on an RTX 3050 8GB."),
+        ("gemma-4-e4b", "SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) beats "
+                        "llama.cpp on a consumer RTX 3050 8GB: 53.6 vs 44.8 tokens/s."),
+        ("minicpm-v-4.7", "ExLlamaV3 + Hermes Agent"),
+        ("qwen3.8-27b-ps5lm-native", "PS5LM, llama.cpp port"),
+        ("bonsai-2-27b-mac-m4-max", "ternary MLX weights"),
+        ("glm-5.3-flash", "TensorFold vs vLLM"),
+        ("qwen2.5-0.5b", "llama.cpp 21.11 t/s at 32K context on the same card"),
+        ("gemma-4-e4b", "llama.cpp 44.8 tokens per second on the identical GGUF"),
+        ("gemma-4-e4b", "llama.cpp 44.8 t/s on the identical GGUF"),
+    ]
+    for mid, phrase in fixtures:
+        filled = UT.fill_engine_min_version([model(mid, engines=[{
+            "engine": "llama.cpp", "tps": "44", "hardware": "RTX 3050 8GB",
+            "quant": phrase, "date": "2026-11-16", "likes": 1,
+            "source_post": "https://lightbrd.com/u/status/1020"}])])
+        check(f"#1020: {mid} — {phrase[:44]!r} fills NOTHING",
+              filled == 0, f"filled={filled}")
+    # The rate-on-the-engine-side refusal is a READER refusal, checked directly: the
+    # possessive comparison and the bare `t/s` spelling never claim, while the engine
+    # name followed by a build word still does.
+    check("#1020: the possessive comparison sentence claims nothing",
+          G.engine_min_claim(model("qwen2.5-0.5b"),
+                             "345.9 vs llama.cpp's 306.9 tokens/s") is None)
+    check("#1020: bare t/s beside an engine name claims nothing",
+          G.engine_min_claim(model("qwen2.5-0.5b"), "llama.cpp 21.11 t/s") is None)
+    check("#1020: an engine name followed by a build word still claims",
+          G.engine_min_claim(model("qwen2.5-0.5b"), "llama.cpp build 2.1") is not None)
+
+
+def test_explicit_build_phrases_still_claim():
+    """The #1020 tightening refuses throughput adjacency, never an explicit build
+    phrase: the one genuine build sentence of the seven-candidate set (the PrismML
+    fork that rejected the stock llama.cpp format) and versioned provenance phrasings
+    still claim through the ONE reader and fill through the real seam (rule 6d)."""
+    claims = [
+        "stock llama.cpp rejects the format so the PrismML fork ran it",
+        "llama.cpp b5310 or newer is required for PTQ1_0 weights",
+        "llama.cpp build 2.1, measured 306.9 tokens/s",
+        "CUDA 12.4 is the minimum build",
+    ]
+    for phrase in claims:
+        hit = G.engine_min_claim(model("qwen3.8-27b-bonsai-2"), phrase)
+        check(f"#1020: {phrase[:44]!r} still claims", hit is not None, phrase)
+    filled = UT.fill_engine_min_version([model("qwen3.8-27b-bonsai-2", engines=[{
+        "engine": "llama.cpp (PrismML fork)", "tps": "34", "hardware": "M4 Max 128GB",
+        "quant": claims[0], "date": "2026-11-16", "likes": 9,
+        "source_post": "https://lightbrd.com/u/status/1021"}])])
+    check("the genuine PrismML sentence fills through the real seam",
+          filled == 1, f"filled={filled}")
+
+
 def test_the_captured_class_closes_after_the_fill():
     """The report's own Done-when: a model the analysis named
     `captured:engine_min_version` (the post states it, the store does not — the
@@ -261,6 +328,8 @@ def main() -> int:
     test_the_build_detector_has_one_implementation()
     test_a_model_version_collision_never_fills()
     test_bits_per_weight_is_not_a_build()
+    test_bare_engine_names_beside_throughput_figures_never_claim()
+    test_explicit_build_phrases_still_claim()
     test_the_captured_class_closes_after_the_fill()
     test_model_why_prose_never_fills_a_value()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
