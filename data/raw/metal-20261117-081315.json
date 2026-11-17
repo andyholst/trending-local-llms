@@ -1,0 +1,41 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "type": "LLM",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "hf": "Qwen/Qwen3.8-27B",
+      "vram_tier": "16GB",
+      "vram_min": "12GB",
+      "backends": [
+        "CUDA",
+        "Metal",
+        "CPU",
+        "ROCm"
+      ],
+      "engines": [
+        {
+          "engine": "Inco Splash",
+          "tps": "216",
+          "hardware": "Mac Studio M5 Ultra 96GB",
+          "quant": "4-bit",
+          "date": "2026-11-16",
+          "source_post": "https://lightbrd.com/akiraxtwo/status/2122294771146219963",
+          "likes": 1,
+          "comments": 0,
+          "reshares": 301,
+          "views": 0,
+          "system_ram_min": "36GB (official recommends 48GB+)",
+          "weight_gb": "17.4GB",
+          "engine_min_version": "Splash 1.3.0, Apple Silicon native Metal (LM Studio)"
+        }
+      ],
+      "last_seen": "2026-11-16"
+    }
+  ],
+  "generated_utc": "2026-11-17T08:13:15Z"
+}

@@ -1,0 +1,42 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "type": "LLM",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "llama.cpp"
+      ],
+      "vram_min": "12GB",
+      "engines": [
+        {
+          "engine": "llama.cpp",
+          "tps": "40",
+          "hardware": "RTX 3060 12GB",
+          "quant": "~2.4-bit (Mirai S)",
+          "date": "2026-11-17",
+          "context_tokens": "262144",
+          "weight_gb": "11GB",
+          "system_ram_min": "16GB",
+          "engine_min_version": "llama-server --ngl 99 --cache-type-k/v q8_0 --kv-vram-cells 64000",
+          "source_post": "https://lightbrd.com/DogukanUrker/status/2122573626880774639",
+          "views": 723,
+          "likes": 17,
+          "reshares": 1,
+          "comments": 4
+        }
+      ],
+      "vram_tier": "12GB",
+      "last_seen": "2026-11-17"
+    }
+  ],
+  "generated_utc": "2026-11-17T08:25:25Z"
+}

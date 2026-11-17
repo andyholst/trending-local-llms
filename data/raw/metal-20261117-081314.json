@@ -1,0 +1,79 @@
+{
+  "backend": "metal",
+  "models": [
+    {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B",
+      "full_name": "Gemma 4 31B (dense, instruction-tuned)",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "31B",
+      "hf": "google/gemma-4-31B-it",
+      "vram_tier": "24GB",
+      "vram_min": "24GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "28",
+          "hardware": "Mac M5 Max 128GB",
+          "quant": "4-bit",
+          "date": "2026-11-14",
+          "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 104,
+          "views": 0
+        },
+        {
+          "engine": "llama.cpp",
+          "tps": "24",
+          "hardware": "Mac M5 Max 128GB",
+          "quant": "4-bit GGUF",
+          "date": "2026-11-14",
+          "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 104,
+          "views": 0
+        }
+      ],
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "full_name": "Gemma 4 E4B",
+      "type": "LLM",
+      "license": "Gemma",
+      "params": "E4B",
+      "hf": "google/gemma-4-E4B-it",
+      "vram_tier": "8GB",
+      "vram_min": "8GB",
+      "backends": [
+        "CUDA",
+        "Metal"
+      ],
+      "engines": [
+        {
+          "engine": "MLX",
+          "tps": "136",
+          "hardware": "Mac M5 Max 128GB",
+          "quant": "4-bit",
+          "date": "2026-11-14",
+          "source_post": "https://lightbrd.com/tayarndt/status/2121703741720051981",
+          "likes": 1,
+          "comments": 1,
+          "reshares": 104,
+          "views": 0,
+          "engine_min_version": "LM Studio / oMLX / Rapid-MLX nearly tied within ~2%"
+        }
+      ],
+      "last_seen": "2026-11-14"
+    }
+  ],
+  "generated_utc": "2026-11-17T08:13:14Z"
+}

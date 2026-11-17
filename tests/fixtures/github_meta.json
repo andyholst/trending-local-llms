@@ -219,6 +219,22 @@
         "speculative-decoding"
       ]
     },
+    "invergent-ai/surogate": {
+      "full_name": "invergent-ai/surogate",
+      "description": "Train and serve LLMs at extreme speed and massive throughput.",
+      "topics": [
+        "cuda",
+        "deep-learning",
+        "fine-tuning",
+        "generative-ai",
+        "llama",
+        "llm",
+        "llms",
+        "nvidia-gpu",
+        "qwen",
+        "sft"
+      ]
+    },
     "jakeatx/llamampere": {
       "description": "llama.cpp fork for significantly improved performance on Ampere (especially RTX 3090 / 3090 Ti): example: 95+ tok/s over a 100K-token generation at temperature 1 for qwen3.8, supporting full 262K ctx.",
       "full_name": "JakeATX/llamAmpere",
@@ -244,6 +260,11 @@
         "speculative-decoding",
         "turboquant"
       ]
+    },
+    "jesdga95/basalt": {
+      "full_name": "jesdga95/basalt",
+      "description": "Local inference engine optimized for NVIDIA Blackwell",
+      "topics": []
     },
     "jundot/omlx": {
       "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon — managed from the macOS menu bar",
@@ -588,6 +609,25 @@
         "tts"
       ]
     },
+    "tuan3w/qwen-warp": {
+      "full_name": "tuan3w/qwen-warp",
+      "description": "Fast Qwen3.8-27B for one RTX 3090. 200k context, 100+ tok/s. Custom CUDA decode engine, OpenAI-compatible API.",
+      "topics": [
+        "autoresearch",
+        "cuda",
+        "deltanet",
+        "int4",
+        "kv-cache",
+        "llm-inference",
+        "long-context",
+        "openai-compatible",
+        "quantization",
+        "qwen",
+        "rtx-3090",
+        "speculative-decoding",
+        "vllm"
+      ]
+    },
     "turboderp-org/exllamav3": {
       "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
       "full_name": "turboderp-org/exllamav3",
@@ -649,22 +689,6 @@
       "full_name": "z-lab/dflash",
       "description": "DFlash: Block Diffusion for Flash Speculative Decoding",
       "topics": []
-    },
-    "invergent-ai/surogate": {
-      "full_name": "invergent-ai/surogate",
-      "description": "Train and serve LLMs at extreme speed and massive throughput.",
-      "topics": [
-        "cuda",
-        "deep-learning",
-        "fine-tuning",
-        "generative-ai",
-        "llama",
-        "llm",
-        "llms",
-        "nvidia-gpu",
-        "qwen",
-        "sft"
-      ]
     }
   }
 }
