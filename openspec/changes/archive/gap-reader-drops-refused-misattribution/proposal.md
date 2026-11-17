@@ -1,6 +1,7 @@
 # Proposal: gap-reader-drops-refused-misattribution
 
 Issue: #1007
+PR: #1117
 
 ## Why
 
