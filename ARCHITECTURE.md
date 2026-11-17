@@ -592,7 +592,11 @@ implementer's next 3 sweeps all keep the body off-limits.
 The rule is the same for all three: **the tag names the content it was built
 from**, so a pipeline pulls the published tag for *this* revision and otherwise
 builds it — one code path via `scripts/ensure_image.py` (`ensure`,
-`ensure-base`, `ensure-test`, `ensure-openspec`, `tags`). A Dockerfile change is
+`ensure-base`, `ensure-test`, `ensure-openspec`, `tags`). A third state has a
+fallback too (issue #1118): when the registry serves the tag's manifest but not a
+blob it names (`could not fetch content descriptor … from remote: not found`), the
+pull is recognised and the seam builds this revision's Dockerfile instead of
+dying — every other pull failure stays loud (#235). A Dockerfile change is
 therefore inert only until its own hash tag is published, not until the next
 Sunday. The OpenSpec seam checks the **machine before the registry** (issue
 #767): when the exact `openspec-<sha12>` tag is already local it is tagged onto

@@ -160,9 +160,63 @@ def published(ref: str) -> bool:
     raise RegistryUnknown(f"cannot tell whether {ref} is published — docker said: {said[:200] or '(no output)'}")
 
 
+#: docker's wording when the registry SERVES the tag's manifest but cannot serve a
+#: blob it references — the tag exists and is undownloadable (issue #1118, measured
+#: on PR #1116's run 44020917206: `failed to copy: httpReadSeeker: failed open:
+#: could not fetch content descriptor sha256:… (application/vnd.oci.image.layer.v1.tar+gzip)
+#: from remote: not found`). ghcr GCs layer blobs; a PR head pinned to such a tag is
+#: otherwise unmergeable forever, because `published()` answers True and the pull dies.
+_BLOB_UNFETCHABLE_SIGNATURES = ("content descriptor", "blob unknown", "content blob")
+
+
+def _pull(ref: str) -> tuple[int, str]:
+    """`docker pull` with its output CAPTURED and echoed, returning (rc, said-text).
+
+    The capture exists so the caller can tell a missing-blob failure (#1118 — the
+    registry serves the manifest but not the blobs) from every other pull failure,
+    which must stay loud (#235: never rebuild on a hiccup). Docker's progress goes
+    to stderr; echoing both streams keeps the job log equivalent to the old
+    streaming `_run("docker", "pull", …)`.
+    """
+    print(f"  $ docker pull {ref}", flush=True)
+    out = subprocess.run(["docker", "pull", ref], cwd=ROOT, capture_output=True, text=True)
+    said = f"{out.stderr or ''}{out.stdout or ''}"
+    if said:
+        print(said, end="" if said.endswith("\n") else "\n", flush=True)
+    return out.returncode, said
+
+
+def _blobs_unfetchable(said: str) -> bool:
+    return any(sig in said.lower() for sig in _BLOB_UNFETCHABLE_SIGNATURES)
+
+
+def _pull_or_fail(ref: str) -> None:
+    """Pull a published ref. Success returns; a missing-blob failure raises
+    `BlobsUnfetchable` (the caller's fallback signal, #1118); every other pull
+    failure raises loudly (the #235 rule: a hiccup never triggers a rebuild)."""
+    rc, said = _pull(ref)
+    if rc == 0:
+        return
+    if _blobs_unfetchable(said):
+        raise BlobsUnfetchable(ref)
+    raise subprocess.CalledProcessError(rc, ["docker", "pull", ref])
+
+
+class BlobsUnfetchable(Exception):
+    """The registry serves the manifest but not the blobs the manifest names (#1118)."""
+
+
 def ensure_base() -> str:
     if published(base_tag()):
-        _run("docker", "pull", base_tag())
+        try:
+            _pull_or_fail(base_tag())
+        except BlobsUnfetchable:
+            # Published-but-corrupt (issue #1118): the manifest answers, the blobs
+            # do not. The only truthful image here is a build of THIS revision's
+            # Dockerfile — the same one the tag was hashed from.
+            _run("docker", "build", "-t", IMAGE, ".")
+            return (f"base: {base_tag()} is published but its blobs are not fetchable "
+                    f"— built {IMAGE} from this revision's Dockerfile")
         _run("docker", "tag", base_tag(), IMAGE)
         return f"base: pulled {base_tag()} -> {IMAGE}"
     _run("docker", "build", "-t", IMAGE, ".")
@@ -210,14 +264,24 @@ def ensure_openspec() -> str:
     if openspec_ready():
         _run("docker", "tag", tag, OPENSPEC_IMAGE)
         return f"openspec: {tag} is already here — tagged {OPENSPEC_IMAGE}, no pull"
+    corrupt = False
     if published(tag):
-        _run("docker", "pull", tag)
-        _run("docker", "tag", tag, OPENSPEC_IMAGE)
-        return f"openspec: pulled {tag} -> {OPENSPEC_IMAGE}"
+        try:
+            _pull_or_fail(tag)
+        except BlobsUnfetchable:
+            # Published-but-corrupt (#1118): fall through to the local build below,
+            # which tags BOTH the run name and the exact hash tag — the next run
+            # on this machine reuses it without touching the broken registry copy.
+            corrupt = True
+        else:
+            _run("docker", "tag", tag, OPENSPEC_IMAGE)
+            return f"openspec: pulled {tag} -> {OPENSPEC_IMAGE}"
     _run("docker", "build", "-f", "openspec/Dockerfile",
          "-t", OPENSPEC_IMAGE, "-t", tag, "openspec")
+    why = (f"{tag} is published but its blobs are not fetchable" if corrupt
+           else f"{tag} is not published")
     return (
-        f"openspec: {tag} is not published; built {OPENSPEC_IMAGE} and tagged {tag} "
+        f"openspec: {why}; built {OPENSPEC_IMAGE} and tagged {tag} "
         "from this revision's openspec/Dockerfile, so the next run reuses it"
     )
 
@@ -261,16 +325,25 @@ def ensure_python() -> str:
 
 
 def ensure_test() -> str:
+    corrupt = False
     if published(test_tag()):
-        _run("docker", "pull", test_tag())
-        _run("docker", "tag", test_tag(), TEST_IMAGE)
-        return f"test: pulled {test_tag()} -> {TEST_IMAGE}"
+        try:
+            _pull_or_fail(test_tag())
+        except BlobsUnfetchable:
+            # Published-but-corrupt (#1118): build the test image here instead —
+            # Dockerfile.test is the very file the tag was hashed from.
+            corrupt = True
+        else:
+            _run("docker", "tag", test_tag(), TEST_IMAGE)
+            return f"test: pulled {test_tag()} -> {TEST_IMAGE}"
     if not base_ready():
         note = ensure_base()
         print(f"  ({note})")
     _run("docker", "build", "-f", "Dockerfile.test",
          "--build-arg", f"BASE_IMAGE={IMAGE}", "-t", TEST_IMAGE, ".")
-    return f"test: {test_tag()} is not published; built {TEST_IMAGE} on {IMAGE}"
+    why = (f"{test_tag()} is published but its blobs are not fetchable" if corrupt
+           else f"{test_tag()} is not published")
+    return f"test: {why}; built {TEST_IMAGE} on {IMAGE}"
 
 
 def latest_tag() -> str:
