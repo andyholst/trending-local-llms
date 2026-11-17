@@ -123,6 +123,15 @@
         "swift"
       ]
     },
+    "edge0-ai/edge0": {
+      "full_name": "Edge0-AI/Edge0",
+      "description": "Device-native foundation models: 145B on a laptop, 35B on a phone. Latent MoE, SSD-streamed weights, a router that predicts loads a step ahead. Mac, iPhone, Android, Windows.",
+      "topics": [
+        "edge-ai",
+        "foundation-model",
+        "on-device-ai"
+      ]
+    },
     "flashml-org/freetoken": {
       "full_name": "FlashML-org/FreeToken",
       "description": "FreeToken brings datacenter-scale model serving to your desktop. Run massive models locally, fast and efficiently.",
@@ -207,6 +216,21 @@
       "description": "DeepSeek-V4.1-Flash expert streaming on a ~20 GB GPU: faster prefill for JigSawPT's dsv41-porte branch (fork of JigSawPT/llama.cpp). See README-dsv41.md.",
       "topics": []
     },
+    "hyperionaidev/smolmaxxing": {
+      "full_name": "hyperionaidev/smolmaxxing",
+      "description": "maxxing the ability to run different LLMs on the smallest devices possible",
+      "topics": [
+        "edge-ai",
+        "llama-cpp",
+        "llama-cpp-alternative",
+        "llm",
+        "local-llm",
+        "local-llm-support",
+        "on-device",
+        "quantization",
+        "quantization-algorithms"
+      ]
+    },
     "incoai/splash": {
       "full_name": "incoai/splash",
       "description": "A local inference engine for Apple silicon, built around the model.",
@@ -217,6 +241,22 @@
         "macos",
         "metal",
         "speculative-decoding"
+      ]
+    },
+    "invergent-ai/surogate": {
+      "full_name": "invergent-ai/surogate",
+      "description": "Train and serve LLMs at extreme speed and massive throughput.",
+      "topics": [
+        "cuda",
+        "deep-learning",
+        "fine-tuning",
+        "generative-ai",
+        "llama",
+        "llm",
+        "llms",
+        "nvidia-gpu",
+        "qwen",
+        "sft"
       ]
     },
     "jakeatx/llamampere": {
@@ -244,6 +284,11 @@
         "speculative-decoding",
         "turboquant"
       ]
+    },
+    "jesdga95/basalt": {
+      "full_name": "jesdga95/basalt",
+      "description": "Local inference engine optimized for NVIDIA Blackwell",
+      "topics": []
     },
     "jundot/omlx": {
       "description": "LLM inference server with continuous batching & SSD caching for Apple Silicon — managed from the macOS menu bar",
@@ -588,6 +633,25 @@
         "tts"
       ]
     },
+    "tuan3w/qwen-warp": {
+      "full_name": "tuan3w/qwen-warp",
+      "description": "Fast Qwen3.8-27B for one RTX 3090. 200k context, 100+ tok/s. Custom CUDA decode engine, OpenAI-compatible API.",
+      "topics": [
+        "autoresearch",
+        "cuda",
+        "deltanet",
+        "int4",
+        "kv-cache",
+        "llm-inference",
+        "long-context",
+        "openai-compatible",
+        "quantization",
+        "qwen",
+        "rtx-3090",
+        "speculative-decoding",
+        "vllm"
+      ]
+    },
     "turboderp-org/exllamav3": {
       "description": "An optimized quantization and inference library for running LLMs locally on modern consumer-class GPUs",
       "full_name": "turboderp-org/exllamav3",
@@ -649,22 +713,6 @@
       "full_name": "z-lab/dflash",
       "description": "DFlash: Block Diffusion for Flash Speculative Decoding",
       "topics": []
-    },
-    "invergent-ai/surogate": {
-      "full_name": "invergent-ai/surogate",
-      "description": "Train and serve LLMs at extreme speed and massive throughput.",
-      "topics": [
-        "cuda",
-        "deep-learning",
-        "fine-tuning",
-        "generative-ai",
-        "llama",
-        "llm",
-        "llms",
-        "nvidia-gpu",
-        "qwen",
-        "sft"
-      ]
     }
   }
 }

@@ -1,0 +1,41 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8-27B",
+      "full_name": "Qwen3.8-27B-Instruct",
+      "hf": "Qwen/Qwen3.8-27B",
+      "license": "Apache 2.0",
+      "params": "27B",
+      "type": "LLM",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "basalt"
+      ],
+      "engines": [
+        {
+          "engine": "basalt",
+          "engine_repo": "https://github.com/jesdga95/basalt",
+          "tps": "121",
+          "hardware": "RTX 5090 Laptop 24GB",
+          "quant": "NVFP4 (QUASAR), Basalt v0.4.1 + DFlash 2",
+          "date": "2026-11-17",
+          "context_tokens": "131072",
+          "engine_min_version": "Basalt v0.4.1",
+          "source_post": "https://lightbrd.com/uctive/status/2122526760516403410",
+          "views": 43,
+          "likes": 1,
+          "reshares": 0,
+          "comments": 0
+        }
+      ],
+      "last_seen": "2026-11-17",
+      "vram_tier": "24GB",
+      "vram_min": "24GB"
+    }
+  ],
+  "generated_utc": "2026-11-17T08:25:25Z"
+}

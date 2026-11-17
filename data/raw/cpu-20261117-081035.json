@@ -1,0 +1,39 @@
+{
+  "backend": "cpu",
+  "generated_utc": "2026-11-17T08:10:29Z",
+  "models": [
+    {
+      "id": "ling-mini-2.0",
+      "name": "Ling-mini-2.0",
+      "full_name": "Ling-mini-2.0 (Ling Mini 2.0)",
+      "type": "LLM",
+      "license": "MIT",
+      "params": "16B",
+      "hf": "inclusionAI/Ling-mini-2.0",
+      "vram_tier": "not stated",
+      "backends": [
+        "CPU"
+      ],
+      "supported_engines": [
+        "smolmaxxing"
+      ],
+      "engines": [
+        {
+          "engine": "smolmaxxing",
+          "engine_repo": "https://github.com/hyperionaidev/smolmaxxing",
+          "tps": "5.1",
+          "hardware": "Xiaomi TV box (CPU, ~1 GB usable RAM)",
+          "quant": "llama.cpp patch; repacked 1-bit lookup-table / 2-bit / ternary kernels, sparsity + flash storage",
+          "date": "2026-11-17",
+          "source_post": "https://lightbrd.com/0xpiyushvm/status/2122562781115568557",
+          "system_ram_min": "1GB",
+          "likes": 133,
+          "comments": 1,
+          "reshares": 5
+        }
+      ],
+      "last_seen": "2026-11-17",
+      "vram_min": "not stated"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "edge0-145b",
+      "name": "Edge0-145B",
+      "full_name": "Edge0-145B (Qwen3.8-Flash-Next base)",
+      "type": "LLM (MoE)",
+      "hf": "Edge0/Edge0-145B-q3k",
+      "license": "other",
+      "params": "145B",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "edge0"
+      ],
+      "vram_tier": "16GB",
+      "vram_min": "16GB",
+      "engines": [
+        {
+          "engine": "edge0",
+          "engine_repo": "https://github.com/Edge0-AI/edge0",
+          "tps": "12.9",
+          "hardware": "RTX 5060 Ti 16GB",
+          "quant": "Q3_K (3.44 bpw gate/up, IQ4_NL down)",
+          "date": "2026-11-16",
+          "source_post": "https://lightbrd.com/niklaslenz_ai/status/2122317542752674025",
+          "views": 340,
+          "likes": 5,
+          "reshares": 1,
+          "comments": 4
+        }
+      ],
+      "last_seen": "2026-11-17"
+    }
+  ],
+  "generated_utc": "2026-11-17T08:25:25Z"
+}

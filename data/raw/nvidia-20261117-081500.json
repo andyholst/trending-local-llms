@@ -1,0 +1,39 @@
+{
+  "backend": "nvidia",
+  "models": [
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek-V4-Flash",
+      "full_name": "DeepSeek-V4-Flash 284B",
+      "type": "LLM (MoE)",
+      "hf": "deepseek-ai/DeepSeek-V4-Flash",
+      "license": "MIT",
+      "params": "284B (MoE, 13B active)",
+      "backends": [
+        "CUDA"
+      ],
+      "supported_engines": [
+        "FreeToken"
+      ],
+      "vram_min": "system RAM holds the expert set (32GB GPU + system RAM)",
+      "engines": [
+        {
+          "engine": "FreeToken",
+          "tps": "25",
+          "hardware": "RTX 5090 32GB + 192GiB system RAM",
+          "quant": "MoE offload (CPU+GPU)",
+          "date": "2026-11-16",
+          "system_ram_min": "192GiB",
+          "source_post": "https://lightbrd.com/leocx66/status/2122227781291364853",
+          "views": 93,
+          "likes": 1,
+          "reshares": 2,
+          "comments": 2
+        }
+      ],
+      "vram_tier": "system RAM holds the expert set (32GB GPU + system RAM)",
+      "last_seen": "2026-11-17"
+    }
+  ],
+  "generated_utc": "2026-11-17T08:25:25Z"
+}
