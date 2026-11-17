@@ -1,6 +1,7 @@
 # Fix-loop fixtures pin their scratch branch
 
 **Issue:** #1090
+PR: #1112
 **Capability:** `test-fixture-determinism` (the scratch git fixtures in
 `tests/` decide their branch names from the fixture, never from the host's
 `init.defaultBranch`).
