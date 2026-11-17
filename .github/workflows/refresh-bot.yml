@@ -106,7 +106,9 @@ jobs:
   build:
     needs: guard
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Multi-arch (amd64 + arm64 under QEMU) builds need more headroom than a
+    # single-arch build (issue #958; the openspec-image job allows 45).
+    timeout-minutes: 45
     outputs:
       built: ${{ steps.decide.outputs.built }}
       test_built: ${{ steps.decide.outputs.test_built }}
@@ -165,6 +167,11 @@ jobs:
         with:
           context: .
           push: true
+          # BOTH architectures (issue #958, the pattern openspec-image proved
+          # in #919): an amd64-only manifest makes ensure_image's published()
+          # answer "pull it" on an arm64 host, where docker pull then dies
+          # "no matching manifest for linux/arm64/v8".
+          platforms: linux/amd64,linux/arm64
           # `latest` for consumers + the hash tag that records WHICH Dockerfile
           # this image was built from, so the next run can tell whether the
           # merged Dockerfile is already live. The tag comes from
@@ -178,6 +185,20 @@ jobs:
         if: steps.decide.outputs.built != 'yes'
         run: |
           echo "GHCR image exists and is built from this Dockerfile (hash tag published); reusing it."
+      - name: Verify the base manifest answers both architectures (make image-manifest-check)
+        # UNGATED, like the OpenSpec verify (issue #919): it checks the tag
+        # that was JUST published — or the existing one the skip-rebuild path
+        # reused — BEFORE any run pulls it. A legacy amd64-only tag for this
+        # revision goes red here, not silently forever (issue #958).
+        run: make image-manifest-check TAG="${{ steps.decide.outputs.base_tag }}" LABEL=base
+      - name: Prove the arm64 base runs, not just exists (QEMU smoke)
+        # Done-when for #958: "published multi-arch … and proven to install and
+        # run under both". --platform linux/arm64 forces the arm64 variant of
+        # the tag just verified; the build already ran the Hermes install seam
+        # under arm64 QEMU, this proves the published artifact starts.
+        run: |
+          docker run --rm --platform linux/arm64 "${{ steps.decide.outputs.base_tag }}" hermes --version
+          docker run --rm --platform linux/arm64 "${{ steps.decide.outputs.base_tag }}" cat /opt/hermes-version.txt
 
   # The TEST image is an image of its own: it layers the current
   # requirements-test.txt on the base and was previously built inline by every
@@ -188,10 +209,15 @@ jobs:
   test-image:
     needs: [guard, build]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Multi-arch (amd64 + arm64 under QEMU) builds need more headroom (issue #958).
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        # issue #552 guard: the `make test-image-smoke` step below matches the
+        # suite-caller regex, so this checkout carries the full history.
+        with:
+          fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - name: Log in to GHCR
@@ -216,6 +242,8 @@ jobs:
           context: .
           file: Dockerfile.test
           push: true
+          # BOTH architectures — same rule as the base build above (issue #958).
+          platforms: linux/amd64,linux/arm64
           build-args: BASE_IMAGE=${{ env.IMAGE }}
           tags: |
             ${{ env.TEST_IMAGE }}
@@ -226,6 +254,16 @@ jobs:
         if: needs.build.outputs.test_built != 'yes'
         run: |
           echo "The published test image is built from this revision's inputs; reusing it."
+      - name: Verify the test manifest answers both architectures (make image-manifest-check)
+        # UNGATED, both paths, before any job pulls it (issue #958).
+        run: make image-manifest-check TAG="${{ needs.build.outputs.test_tag }}" LABEL=test
+      - name: Prove the arm64 test image runs, not just exists (QEMU smoke, make test-image-smoke)
+        # The test layer's libraries importing under arm64 QEMU is the run
+        # proof for this image (issue #958 Done-when). The docker run lives in
+        # the Makefile target — a workflow `run:` step may reach the product
+        # only through make (rule 6m; the raw inline interpreter probe here
+        # reded `make test`'s test_makefile_only guard on PR #1114).
+        run: make test-image-smoke TAG="${{ needs.build.outputs.test_tag }}"
 
   # The OpenSpec CLI image (openspec/Dockerfile) — the container `make openspec-*`
   # runs in. Published on the SAME rule as the other two: the tag names the
