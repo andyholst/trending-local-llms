@@ -214,6 +214,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        # issue #552 guard: the `make test-image-smoke` step below matches the
+        # suite-caller regex, so this checkout carries the full history.
+        with:
+          fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - name: Log in to GHCR
