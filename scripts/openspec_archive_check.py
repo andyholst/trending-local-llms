@@ -33,12 +33,11 @@ tool the pipelines use for every GitHub fact):
     — in the tree (parsed with `openspec_index._refs`, the one parser). A closed
     issue named by NO change is a failure (exit 1): rule 6f says work starts by
     creating the change, before any code, and every earlier gate asked only the
-    reverse question — measured 2026-11-16, the branches for #1095/#934/#935
-    (PRs #1100/#1104/#1105) implemented with no change directory and passed every
-    openspec gate. Keeper branches (`ci/keeper-*`, #872) and refresh branches
-    (`ci/trending-refresh-*`) implement no issue by their own rule (rule 6e), so
-    they owe no change — the same branch-shape discrimination `make pr-closure`
-    applies, read from the PR's `headRefName`.
+    reverse question (the prong is preventive: every close in recent history is
+    tracked, it fires red on an unbound close). Keeper branches (`ci/keeper-*`,
+    #872) and refresh branches (`ci/trending-refresh-*`) implement no issue by
+    their own rule (rule 6e), so they owe no change — the same branch-shape
+    discrimination `make pr-closure` applies, read from the PR's `head.ref`.
 
 The second prong is what makes the guard NON-vacuous: before it, a change with
 no `PR:` line was invisible. A GitHub read that fails is LOUD (exit 2): a check

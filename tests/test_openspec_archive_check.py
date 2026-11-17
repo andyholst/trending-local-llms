@@ -469,15 +469,14 @@ def test_an_unreadable_closing_pr_is_loud():
 
 # ---------------------------------------------------------------------------
 # Change-required prong (issue #1109) — the MIRROR of the #779/#866 prong.
-# The measured gap: the weekly sweep's branches for #1095/#935 (PRs
-# #1100/#1105) implemented with NO change directory — `git grep` on
-# origin/master finds no proposal naming either issue — and every openspec
-# gate passed, because each one only asked the reverse question (is an active
-# change stranded / is an active change bound). Rule 6f says work starts by
-# creating the change, before any code: a closing PR must carry one.
-# Verified against the real PRs: PR=1100 and PR=1105 fail the new prong on
-# today's tree; PR=1104 (#934, archived `model-footprint-copy-traceability`)
-# passes it green.
+# The gap is the missing check: every earlier openspec gate asks only the
+# reverse question (is an active change stranded / is an active change bound)
+# and NONE reads the PR's closes. Re-measured 2026-11-17 (issue #1109 comment):
+# every close in recent history IS tracked — PRs #1100/#1104/#1105 each carry
+# an archived change naming #1095/#934/#935 — so this prong is PREVENTIVE: it
+# fires red on an unbound close and passes every tracked close in history.
+# Rule 6f says work starts by creating the change, before any code: a closing
+# PR must carry one.
 # ---------------------------------------------------------------------------
 
 

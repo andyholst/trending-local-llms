@@ -764,9 +764,9 @@ push; issue #866 removed the `PR:`-line exemption every later stranding took).
 The FOURTH prong asks the mirror question (issue #1109): every issue this PR
 CLOSES must be named by the `Issue:` line of at least one change — ACTIVE or
 ARCHIVED — in the PR head's tree, or the close is refused as untracked work
-(the branches for #1095 and #935, PRs #1100/#1105, implemented with no
-change directory and passed every earlier gate; #934/PR #1104 is the tracked
-control — its archived change names `Issue: #934`); `ci/keeper-*` and
+(preventive: every earlier gate asks only the reverse
+question and none reads the PR's closes; every close in recent history is
+tracked, so the prong is red only on an unbound close); `ci/keeper-*` and
 `ci/trending-refresh-*` heads implement no issue (rule 6e) and are exempt by
 shape.
 qa-validate's `validate` job runs it with `pull-requests:
