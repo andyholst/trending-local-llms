@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **343**
+Active changes: **2** · archived: **344**
 
 ## Active changes
 
@@ -175,6 +175,7 @@ Active changes: **2** · archived: **343**
 | `fix-bot-announces-its-window` | archived | #198 | — | [bot-coordination](openspec/changes/archive/fix-bot-announces-its-window/specs/bot-coordination/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/fix-bot-announces-its-window/proposal.md) |
 | `fix-bot-guard-own-job` | archived | #259 | — | [bot-dispatch-guards](openspec/changes/archive/fix-bot-guard-own-job/specs/bot-dispatch-guards/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/fix-bot-guard-own-job/proposal.md) |
 | `fix-bot-repairs-with-the-base` | archived | #383 | #384 | [fix-bot-repair-loop](openspec/changes/archive/fix-bot-repairs-with-the-base/specs/fix-bot-repair-loop/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/fix-bot-repairs-with-the-base/proposal.md) |
+| `fix-loop-fixture-pins-initial-branch` | archived | #1090 | #1112 | [test-fixture-determinism](openspec/changes/archive/fix-loop-fixture-pins-initial-branch/specs/test-fixture-determinism/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/fix-loop-fixture-pins-initial-branch/proposal.md) |
 | `fix-loop-notes-outside-tree` | archived | #390 — `tech-debt: the fix loop leaves qa-report.txt.notes in the repo tree and git add -A commits it` | — | [fix-loop-scratch](openspec/changes/archive/fix-loop-notes-outside-tree/specs/fix-loop-scratch/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/fix-loop-notes-outside-tree/proposal.md) |
 | `fix-publish-agent-image-push-check` | archived | #229 | — | [agent-image-publish](openspec/changes/archive/fix-publish-agent-image-push-check/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/fix-publish-agent-image-push-check/proposal.md) |
 | `fix-publish-latest-tag` | archived | #232 | — | [agent-image-publish](openspec/changes/archive/fix-publish-latest-tag/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fix-publish-latest-tag/proposal.md) |
