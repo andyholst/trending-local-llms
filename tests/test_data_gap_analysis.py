@@ -488,17 +488,22 @@ def test_the_real_store_reports_only_figures_it_can_point_at():
                                "qwen3-8-flash-next-125b",
                                "qwen3-8-flash-next-125b-mtplx-rd1-1"}
     check("real store: context_tokens prose claims are exactly the stated windows "
-          "(benchmark sweeps refused, #1017)",
-          set(report["unstructured"]["context_tokens"]) == {"qwen-3.6-27b"},
+          "(benchmark sweeps refused, #1017; the refused-post claim moved to "
+          "`untraceable`, #1007)",
+          set(report["unstructured"]["context_tokens"]) == set(),
           str(report["unstructured"]["context_tokens"]))
     check("real store: the dflash2 sweep model is MISSING now, not 'stated in prose' (#1017)",
           "qwen3.8-27b-strix-halo-dflash2" in report["missing"]["context_tokens"],
           str(report["missing"]["context_tokens"]))
-    # …and the ONE model whose sentence no captured post states is NOT an ingest claim: it
-    # is the untraceable class (issue #470), reported apart from the ingest work.
+    # …and the models whose sentence no CAPTURED post states are NOT ingest claims: they
+    # are the untraceable class (issue #470), reported apart from the ingest work.
+    # (issue #1007) `qwen-3.6-27b` joined this class: its only "80k context" sentence came
+    # from the post the #468 seam REFUSED as measuring `Qwen 3.5 35B`, and the guard test
+    # above proves the reader once flagged it from that refused post's prose.
     check("real store: an untraceable stated figure is its own class, not 'unstructured'",
-          report["untraceable"]["context_tokens"] == ["gemma-4-12b"]
-          and "gemma-4-12b" not in report["unstructured"]["context_tokens"],
+          report["untraceable"]["context_tokens"] == ["gemma-4-12b", "qwen-3.6-27b"]
+          and "gemma-4-12b" not in report["unstructured"]["context_tokens"]
+          and "qwen-3.6-27b" not in report["unstructured"]["context_tokens"],
           str(report["untraceable"]["context_tokens"]))
     check("real store: weight_gb prose claims are the stated footprints + models added since",
           set(report["unstructured"]["weight_gb"])
@@ -2422,6 +2427,121 @@ def test_a_measurement_captured_under_a_sibling_row_traces_to_the_row_that_owns_
               and len(parts) == len(set(parts)), parts)
 
 
+def test_a_capture_the_ledger_refused_as_misattributed_states_nothing_for_the_model():
+    """Issue #1007: the gap reader must not flag a model from a capture the #468 seam
+    already REFUSED for that exact (model, post).
+
+    The measured defect on the real store: the post `0xbelorix/status/2075607981027393583`
+    measures `Qwen 3.5 35B`; `refuse_misattributed_measurements` filed a refusal row
+    (model `qwen-3.6-27b`, that post), yet `data/raw/*.json` still carries the sentence
+    ("Qwen 3.5 35B … 80k context") under the refused row — and `_join_measurement_identity`
+    handed the same sentence BACK through the post-identity path. So `analyse()` flagged
+    `qwen-3.6-27b` `context_tokens` as "stated in prose only" from a sentence about
+    ANOTHER model. A refusal is proof: `captured_text` skips the refused (model, post)
+    from the row scan AND the join credits it through neither identity path.
+    RED against origin/master's script — both paths credit the text there.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        raw = Path(td) / "raw"
+        raw.mkdir()
+        p_scan = "https://lightbrd.com/0xbelorix/status/2075607981027393583"
+        p_join = "https://lightbrd.com/u/status/9"
+        victim = model("victim", engines=[
+            {"engine": "llama.cpp", "tps": "91", "hardware": "RTX 4090 24GB",
+             "quant": "Q4_K_M", "date": "2026-10-14",
+             "source_post": "https://lightbrd.com/u/status/1"},
+            {"engine": "vllm", "tps": "300", "hardware": "A100 SXM4",
+             "quant": "FP8", "date": "2026-10-14", "source_post": p_join}])
+        bystander = model("bystander")  # a capture with NO refusal: must stay captured
+        # The refusal seam's shape: the post sits under the refused model's own raw row.
+        (raw / "nvidia-20261114-000000.json").write_text(json.dumps({
+            "backend": "nvidia", "generated_utc": "2026-11-14T00:00:00Z",
+            "models": [
+                {"id": "victim", "name": "victim",
+                 "engines": [
+                     {"engine": "llama.cpp", "tps": "169", "hardware": "RTX 4090 24GB",
+                      "quant": "Qwen 3.5 35B 24GB, 80k context, 169 t/s",
+                      "source_post": p_scan}]},
+                {"id": "bystander", "name": "bystander",
+                 "engines": [
+                     {"engine": "llama.cpp", "tps": "77", "hardware": "RTX 3060 12GB",
+                      "quant": "Q4, 131072-token context",
+                      "source_post": "https://lightbrd.com/u/status/2"}]}]}))
+        # The join bypass's shape (the #411 sibling capture): the SAME measurement tuple
+        # recorded under another raw id, so the join re-credits its text onto `victim`.
+        (raw / "cpu-20261114-000001.json").write_text(json.dumps({
+            "backend": "cpu", "generated_utc": "2026-11-14T00:00:01Z",
+            "models": [
+                {"id": "sibling", "name": "sibling",
+                 "engines": [
+                     {"engine": "vllm", "tps": "300", "hardware": "A100 SXM4",
+                      "quant": "sibling echo, 128k context window",
+                      "source_post": p_join}]}]}))
+        # The ledger rows the #468 seam wrote. The join refusal names the post with a
+        # trailing slash and mixed case — pairing must not hinge on spelling.
+        refusals = [
+            {"model": "victim", "stage": G.MISATTRIBUTION_STAGE,
+             "engine": "llama.cpp", "source_post": p_scan,
+             "reason": "measures Qwen 3.5 35B, not this model"},
+            {"model": "victim", "stage": G.MISATTRIBUTION_STAGE,
+             "engine": "vllm", "source_post": p_join.upper() + "/",
+             "reason": "measures another model"},
+        ]
+        contract = contract_from(td, "context_tokens")
+        store = store_with([victim, bystander])
+        dim = next(d for d in G.DIMENSIONS if d["key"] == "context_tokens")
+
+        # When the capture is built with the ledger in hand …
+        capture = G.captured_text(store, raw, refusals=refusals)
+        texts = list(G.captured_dim_texts(capture, "victim", dim))
+
+        # Then NEITHER path hands the refused prose back: …
+        check("#1007 scan path: a refused capture is not the model's captured text",
+              not any("80k context" in t for t in texts), str(texts))
+        check("#1007 join path: the refused post credits nothing through the identity join",
+              not any("128k context" in t for t in texts), str(texts))
+        # … while a capture that was NOT refused still states its model's prose (a skip
+        # that swallowed everything is the opposite defect).
+        check("#1007: an unrefused capture still counts",
+              any("131072-token context" in t
+                  for t in G.captured_dim_texts(capture, "bystander", dim)),
+              str(capture.get("bystander")))
+
+        # And the classification follows: `victim` is an acquisition gap, never "stated
+        # in prose" from a sentence the pipeline declared belongs to another model.
+        # The ledger is read from a planted `G.REFUSALS` file — the same fixture shape
+        # `contract_from` uses — so `analyse`'s own default load is what runs (rule 6m).
+        rp = Path(td) / "refusals.json"
+        rp.write_text(json.dumps({"refusals": refusals}))   # the ledger's real shape
+        saved = G.REFUSALS
+        G.REFUSALS = rp
+        try:
+            report = G.analyse(store, contract, raw_dir=raw)
+        finally:
+            G.REFUSALS = saved
+        check("#1007: the refused model is an acquisition gap, not prose-stated",
+              "victim" in report["missing"]["context_tokens"]
+              and "victim" not in report["captured_prose"]["context_tokens"]
+              and "victim" not in report["unstructured"]["context_tokens"],
+              f"missing={report['missing']['context_tokens']} "
+              f"captured_prose={report['captured_prose']['context_tokens']} "
+              f"unstructured={report['unstructured']['context_tokens']}")
+        check("#1007: the unrefused bystander is still the ingest job its post proves",
+              "bystander" in report["captured_prose"]["context_tokens"],
+              str(report["captured_prose"]["context_tokens"]))
+
+
+def test_the_gap_reader_refusal_stage_is_the_seams_own_spelling():
+    """Issue #1007: the reader skips refusals by STAGE name, so the name has ONE
+    definition — `update_trending.REFUSAL_STAGES`, the seam's own registry (rule 6d).
+    A drift here silently reads zero refusals and every misattributed capture is
+    back as prose, with no error anywhere."""
+    check("#1007: MISATTRIBUTION_STAGE is registered by the seam that writes it",
+          G.MISATTRIBUTION_STAGE in UT.REFUSAL_STAGES
+          and G.MISATTRIBUTION_STAGE == "refuse_misattributed_measurements",
+          str(UT.REFUSAL_STAGES))
+
+
 def test_a_joint_or_unowned_measurement_text_is_never_traced_to_a_row():
     """The never-copy side of #411: text stays out of a row's capture when its tuple
     is carried by TWO store rows (joint — ownership is ambiguous) or by NO store row
@@ -2889,6 +3009,8 @@ def main() -> int:
     test_measurement_dimension_coverage_can_never_shrink()
     test_a_captured_measurement_footprint_is_never_lost_from_the_store()
     test_a_measurement_captured_under_a_sibling_row_traces_to_the_row_that_owns_the_tuple()
+    test_a_capture_the_ledger_refused_as_misattributed_states_nothing_for_the_model()
+    test_the_gap_reader_refusal_stage_is_the_seams_own_spelling()
     test_a_joint_or_unowned_measurement_text_is_never_traced_to_a_row()
     test_a_raised_tps_keeps_the_footprint_trace()
     test_an_unreconcilable_identity_is_reported_loudly()

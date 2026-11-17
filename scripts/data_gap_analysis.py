@@ -83,6 +83,13 @@ RAW_DIR = DATA / "raw"
 # measurement with its backend, model, engine, reason and source post. It is what
 # lets this analysis tell "refused at ingest" from "never captured".
 REFUSALS = DATA / "refusals.json"
+
+#: The identity-refusal that means "this post measures ANOTHER model" (the #468
+#: seam). Its stage name has ONE registry — `update_trending.REFUSAL_STAGES`;
+#: `tests/test_data_gap_analysis.py` fails if this spelling drifts from it.
+#: A capture refused for this stage states nothing for the model it was refused
+#: for (issue #1007) — the gap scan skips its text.
+MISATTRIBUTION_STAGE = "refuse_misattributed_measurements"
 DEFAULT_BASELINE = DATA / "gap_baseline.json"
 LABEL = issue_queue.QUEUE_LABELS[0]
 LABEL_COLOR = "5319e7"
@@ -512,6 +519,21 @@ def _tps_number(value) -> float | None:
         return None
 
 
+def _norm_citation(p) -> str:
+    """The ONE citation spelling used for refusal pairing (issue #1007).
+
+    The ledger's `source_post` and a raw capture's `source_post` describe the same
+    post; comparing them must not hinge on host, trailing slash, or casing —
+    `captured_text` and `_join_measurement_identity` skip refused captures through
+    this ONE normalization, never a private copy (rule 6d)."""
+    s = str(p or "").strip().lower()
+    if s.endswith("/"):
+        s = s[:-1]
+    if "x.com" in s:
+        s = s.replace("x.com", "lightbrd.com")
+    return s
+
+
 def _post_identity(e: dict) -> tuple[str, str, str]:
     """(engine, hardware, source_post) — the measured-run identity WITHOUT the t/s.
 
@@ -525,7 +547,8 @@ def _post_identity(e: dict) -> tuple[str, str, str]:
             str(e.get("source_post") or ""))
 
 
-def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> tuple[int, list[tuple]]:
+def _join_measurement_identity(store: dict, out: dict, raw_dir: Path,
+                               refused_pairs: set | None = None) -> tuple[int, list[tuple]]:
     """Trace captured text to the store row that UNIQUELY owns the measurement (issue #411).
 
     The measured defect: one post cited by two raw ids; its figure merged onto a variant
@@ -601,9 +624,18 @@ def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> tuple[i
                         continue
                 if len(carriers) != 1:
                     continue  # joint (two owners) or unowned: the text is copied to no row
+                mid = next(iter(carriers))
+                if refused_pairs and (mid, _norm_citation(e.get("source_post"))) in refused_pairs:
+                    # (issue #1007) a capture the #468 seam REFUSED for this exact
+                    # (model, post) is credited through NEITHER identity path: the join's
+                    # post-identity + rule-3b raise must not hand back prose the ingest
+                    # seam already declared belongs to a different model. This is the
+                    # bypass that let the refused 0xbelorix sentence state `80k context`
+                    # for `qwen-3.6-27b` after the scan itself skipped the row.
+                    continue
                 if via_raise:
                     repaired += 1
-                bucket = out.setdefault(next(iter(carriers)), {})
+                bucket = out.setdefault(mid, {})
                 for f in TEXT_FIELDS:
                     v = e.get(f)
                     if isinstance(v, str) and v.strip() and v not in bucket.setdefault(f, []):
@@ -611,7 +643,8 @@ def _join_measurement_identity(store: dict, out: dict, raw_dir: Path) -> tuple[i
     return repaired, missed
 
 
-def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, list[str]]]:
+def captured_text(store: dict, raw_dir: Path = RAW_DIR,
+                  refusals: list[dict] | None = None) -> dict[str, dict[str, list[str]]]:
     """Per STORE model id, the free text of every CAPTURED post, keyed by field.
 
     The record of what the search actually brought back (`data/raw/*.json`), keyed by the id
@@ -640,10 +673,25 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
     where a variant's cell read as un-captured while its own post's sentence sat under a
     sibling. A tuple carried by two store rows (joint) or by none is attributed to nobody.
     See `_join_measurement_identity`.
+    A capture the pipeline has already REFUSED for that model states NOTHING for it
+    (issue #1007). The ledger's `refuse_misattributed_measurements` rows (#468 seam)
+    name (model, post): the seam PROVED the post measures a different model than the
+    row — e.g. a `quant` field carrying "Qwen 3.5 35B … 80k context" recorded on the
+    `qwen-3.6-27b` row. Search captures posts, not proofs, so that text still sits in
+    the raw snapshot, and the gap scan read it as the model's CAPTURED prose —
+    flagging `context_tokens` "stated in prose only" from a sentence about another
+    model. A refused capture contributes no text: every source (the row or an engine
+    row) whose `source_post` the ledger refused for the resolved store id is skipped.
     """
     out: dict[str, dict[str, list[str]]] = {}
     if not raw_dir.exists():
         return out
+    misrefused: dict[str, set[str]] = {}
+    for r in refusals or []:
+        if str(r.get("stage") or "") == MISATTRIBUTION_STAGE:
+            post = _norm_citation(r.get("source_post"))
+            if post:
+                misrefused.setdefault(str(r.get("model")), set()).add(post)
     for path in sorted(raw_dir.glob("*.json")):
         data = load(path, {}) or {}
         for row in data.get("models", []) or []:
@@ -653,15 +701,21 @@ def captured_text(store: dict, raw_dir: Path = RAW_DIR) -> dict[str, dict[str, l
             if res.get("status") != "existing":
                 continue
             bucket = out.setdefault(str(res.get("id")), {})
+            refused_posts = misrefused.get(str(res.get("id"))) or set()
             sources = [row] + list(row.get("engines") or [])
             for source in sources:
+                if (isinstance(source, dict)
+                        and _norm_citation(source.get("source_post")) in refused_posts):
+                    continue
                 for f in TEXT_FIELDS:
                     if source is row and f in CAPTURE_ROW_SKIP_FIELDS:
                         continue
                     value = source.get(f) if isinstance(source, dict) else None
                     if isinstance(value, str) and value.strip():
                         bucket.setdefault(f, []).append(value)
-    repaired, missed = _join_measurement_identity(store, out, raw_dir)
+    repaired, missed = _join_measurement_identity(
+        store, out, raw_dir,
+        refused_pairs={(mid, p) for mid, posts in misrefused.items() for p in posts})
     if repaired or missed:
         print(f"  measurement-identity: {repaired} trace(s) joined through a rule-3b t/s "
               f"raise, {len(missed)} identity miss(es) credited to no row")
@@ -717,7 +771,9 @@ def stated_untraceable(store: dict, capture: dict | None = None,
     `check_untraceable_figures` imports it, so the report and CI cannot disagree (rule 6d).
     """
     if capture is None:
-        capture = captured_text(store, raw_dir)
+        # Same ledger-aware scan as `analyse` (rule 6d): a capture refused as
+        # misattributed is not a captured post here either (#1007).
+        capture = captured_text(store, raw_dir, refusals=load_refusals())
     out: dict[str, list[str]] = {}
     for dim in DIMENSIONS:
         ids = []
@@ -753,13 +809,18 @@ def unattributed_figures(store: dict) -> dict[str, list[str]]:
     return out
 
 
-def load_refusals(path: Path = REFUSALS) -> list[dict]:
+def load_refusals(path: Path | None = None) -> list[dict]:
     """The ledger of measurements the ingest seams REFUSED (issue #888), or [] when absent.
+
+    The path resolves at CALL time (issue #1007): `REFUSALS` is a module constant tests
+    rebind, and a def-time default argument would freeze the shipped path and silently
+    read the real ledger where a planted one was meant.
 
     Written by `update_trending.record_ingest_refusals` at every refusal seam. A missing
     ledger is normal (nothing has been refused yet); an unreadable one is reported loudly
     and read as no refusals — never as licence to rewrite it (rule 3b).
     """
+    path = REFUSALS if path is None else Path(path)
     if not path.exists():
         return []
     try:
@@ -798,16 +859,20 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
     # for them and a projection ships as advice forever.
     declared_estimates = declared_estimate.footprint_estimates(models)
 
+    # The refusal ledger is read FIRST: a capture the ingest seams already refused
+    # states nothing for the model it was refused for (#1007), so `captured_text`
+    # needs it before the scan classifies any prose.
+    refused_rows = load_refusals() if refusals is None else refusals
+
     # What the search actually brought back, per store id (the record of each real post).
     # One scan for every dimension: this is what tells an ACQUISITION gap from an INGEST gap.
-    capture = captured_text(store, raw_dir)
+    capture = captured_text(store, raw_dir, refusals=refused_rows)
 
     # "REFUSED at ingest" is a third class beside those two (issue #888): the search
     # DID capture the figure and a refusal seam (#458/#468/#702/#615) dropped it for a
     # named reason, citing the post. Reporting it as "not stated by any captured post"
     # would send a re-search after posts the pipeline already holds; the ledger names
     # which seam dropped which measurement, so the analysis says so instead.
-    refused_rows = load_refusals() if refusals is None else refusals
     refused_at_ingest: dict[str, list[dict]] = {}
     refused_dimensions: dict[str, list[str]] = {}
     for r in refused_rows:
