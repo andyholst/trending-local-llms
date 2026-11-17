@@ -329,8 +329,8 @@ def test_the_base_is_merged_before_any_llm_round():
     def git(*args, cwd):
         subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True)
 
-    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
-    subprocess.run(["git", "init", "-q", str(work)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "master", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", "master", str(work)], check=True)
     for c in ident:
         git(*c[1:], cwd=work)
     (work / "base.txt").write_text("base\n")
@@ -370,7 +370,7 @@ def test_a_round_that_changes_nothing_stops_the_loop():
         print("  SKIP no-progress: git not installed")
         return
     repo = Path(tempfile.mkdtemp())
-    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", "master", str(repo)], check=True)
     for c in (("user.email", "t@example.com"), ("user.name", "t")):
         subprocess.run(["git", "config", *c], cwd=str(repo), check=True)
     (repo / "f.txt").write_text("x\n")
@@ -402,8 +402,8 @@ def test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless()
     def git(*args, cwd):
         subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True)
 
-    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
-    subprocess.run(["git", "init", "-q", str(work)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "master", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", "master", str(work)], check=True)
     for c in ident:
         git("config", *c, cwd=work)
     (work / "same-line.txt").write_text("base\n")
@@ -465,8 +465,8 @@ def test_a_failed_merge_with_no_unmerged_path_says_what_git_said():
     def git(*args, cwd):
         subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True)
 
-    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
-    subprocess.run(["git", "init", "-q", str(work)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "master", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", "master", str(work)], check=True)
     for c in ident:
         git("config", *c, cwd=work)
     (work / "readme.txt").write_text("base\n")
@@ -509,6 +509,18 @@ def test_a_failed_merge_with_no_unmerged_path_says_what_git_said():
     check("merge-without-paths: nothing was merged or aborted behind the branch's back",
           "?? added-by-base.txt" in status and "UU" not in status, status)
     shutil.rmtree(root, ignore_errors=True)
+
+
+def test_the_scratch_fixtures_pin_their_initial_branch():
+    # #1090: a scratch `git init` that inherits the host's init.defaultBranch
+    # made the base-merge fixtures green on GitHub runners (default master) and
+    # red on a laptop (default main): the bare origin's dangling HEAD lands an
+    # empty clone. Every scratch init in this module names its branch outright.
+    src = Path(__file__).read_text().splitlines()
+    unpinned = [f"{i}: {line.strip()}" for i, line in enumerate(src, 1)
+                if '"init", "-q"' in line and '"-b"' not in line]
+    check("fixtures: every scratch git init pins its initial branch",
+          not unpinned, unpinned)
 
 
 def test_a_round_that_archives_its_own_change_is_refused_and_restored():
@@ -579,6 +591,7 @@ def main() -> int:
     test_a_conflicting_base_merge_is_handed_to_a_round_and_aborted_if_hopeless()
     test_a_failed_merge_with_no_unmerged_path_says_what_git_said()
     test_a_round_that_archives_its_own_change_is_refused_and_restored()
+    test_the_scratch_fixtures_pin_their_initial_branch()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
