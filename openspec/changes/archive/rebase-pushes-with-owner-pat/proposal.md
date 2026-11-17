@@ -1,6 +1,7 @@
 # Proposal: rebase-pushes-with-owner-pat
 
 Issue: #1115
+PR: #1116
 
 ## Why
 
