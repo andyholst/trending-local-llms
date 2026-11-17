@@ -1,6 +1,7 @@
 # Proposal: ensure-image-corrupt-blob-fallback
 
 Issue: #1118 — "ensure_image treats a published-but-undownloadable base tag as pullable"
+PR: #1119
 (filed by the findings chain from PR #1116's diagnosis, run 44020917206).
 
 ## Why
