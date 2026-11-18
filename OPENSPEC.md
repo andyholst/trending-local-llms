@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **353**
+Active changes: **2** · archived: **354**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `alarm-cadence-claims-match-tree` | active | #1032 | — | [architecture-description](openspec/changes/alarm-cadence-claims-match-tree/specs/architecture-description/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/alarm-cadence-claims-match-tree/proposal.md) |
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
@@ -98,6 +97,7 @@ Active changes: **3** · archived: **353**
 | `agents8-implement-stream-row-1062` | archived | #1062 | #1065 | [agents-guard-registry](openspec/changes/archive/agents8-implement-stream-row-1062/specs/agents-guard-registry/spec.md) | 2/5 | [proposal.md](openspec/changes/archive/agents8-implement-stream-row-1062/proposal.md) |
 | `agents8-owed-guard-rows-1005-998` | archived | #1005 · #998 | #1063 | [agents-guard-registry](openspec/changes/archive/agents8-owed-guard-rows-1005-998/specs/agents-guard-registry/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/agents8-owed-guard-rows-1005-998/proposal.md) |
 | `agents8-per-entry-dedup-row` | archived | #1001 | #1013 | [agents-guard-registry](openspec/changes/archive/agents8-per-entry-dedup-row/specs/agents-guard-registry/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/agents8-per-entry-dedup-row/proposal.md) |
+| `alarm-cadence-claims-match-tree` | archived | #1032 | #1132 | [architecture-description](openspec/changes/archive/alarm-cadence-claims-match-tree/specs/architecture-description/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/alarm-cadence-claims-match-tree/proposal.md) |
 | `alias-one-definition` | archived | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/archive/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/alias-one-definition/proposal.md) |
 | `all-quarantined-capture-is-an-alarm` | archived | #624 — tech-debt "A capture where EVERY row is quarantined still exits 0 and reports | #837 | [raw-capture-alarm](openspec/changes/archive/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | archived | #309 | — | [code-review-scan](openspec/changes/archive/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/an-unchecked-scan-is-not-clean/proposal.md) |
