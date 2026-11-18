@@ -51,9 +51,13 @@ from pathlib import Path
 #: `make_targets` (the full set the generator renders) are BOTH views of the one
 #: scan in `architecture_bot`, imported here — issue #512's two parsers became one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture_bot import (public_targets, makefile_lanes, target_at_line, workflow_crons,
-                              workflow_jobs, workflow_trigger_events)  # noqa: E402
+from architecture_bot import (public_targets, make_targets, makefile_lanes, target_at_line,
+                              workflow_crons, workflow_jobs, workflow_trigger_events,
+                              job_targets)  # noqa: E402
 import check_agent_skills as agent_skills  # noqa: E402  (SKILLS_DIR — the one skill home, issue #904)
+#: The targets that make a REAL model/agent call — ONE list, the one the redaction rule
+#: already owns (issue #1033, rule 6t/6d: never a second copy of "what runs the agent").
+from check_secret_output import AGENT_TARGETS_TO_SCRUB  # noqa: E402
 
 DOC_NAME = "ARCHITECTURE.md"
 VALIDATOR = "scripts/validate.py"
@@ -289,6 +293,37 @@ def stage_lists(makefile: Path) -> list[tuple[str, list[str]]]:
     return out
 
 
+def _wf_sections(doc: Path) -> list[tuple[str, list[str]]]:
+    """§4's per-workflow subsections: (workflow file, its lines) in document order.
+
+    ONE section walk feeds every §4 claim — the job-name claim (`described_jobs`) and
+    the job-behaviour claim (`described_job_rows`, issue #1033) — because two walks of
+    the same table is issue #512's two-parsers drift in a new costume.
+    """
+    if not doc.is_file():
+        return []
+    out: list[tuple[str, list[str]]] = []
+    current: str | None = None
+    rows: list[str] = []
+    for line in doc.read_text(encoding="utf-8").splitlines():
+        m = _WF_HEADING.match(line)
+        if m:
+            if current is not None:
+                out.append((current, rows))
+            current, rows = m.group(1), []
+            continue
+        if re.match(r"^#{2,3}\s", line):
+            if current is not None:
+                out.append((current, rows))
+            current, rows = None, []
+            continue
+        if current is not None:
+            rows.append(line)
+    if current is not None:
+        out.append((current, rows))
+    return out
+
+
 def described_jobs(doc: Path) -> dict[str, set[str]]:
     """The job names §4 claims, per workflow file (its `Job` tables + bold bullets).
 
@@ -297,15 +332,8 @@ def described_jobs(doc: Path) -> dict[str, set[str]]:
     `Job` contributes the backticked names in its first cells, and a bold bullet
     (`- **`guard`** — …`) contributes its name (issue #182).
     """
-    if not doc.is_file():
-        return {}
     out: dict[str, set[str]] = {}
-    current: str | None = None
-    rows: list[str] = []
-
-    def flush() -> None:
-        if current is None:
-            return
+    for current, rows in _wf_sections(doc):
         names = out.setdefault(current, set())
         block: list[str] = []
         for row in rows:
@@ -318,20 +346,97 @@ def described_jobs(doc: Path) -> dict[str, set[str]]:
             if m:
                 names.add(m.group(1))
         _table_jobs(block, names)
+    return out
 
-    for line in doc.read_text(encoding="utf-8").splitlines():
-        m = _WF_HEADING.match(line)
-        if m:
-            flush()
-            current, rows = m.group(1), []
+
+_SEPARATOR_ROW = re.compile(r"^\s*\|[\s:|-]+\|\s*$")
+
+
+def described_job_rows(doc: Path) -> dict[str, dict[str, str]]:
+    """§4's `| Job | Does |` rows as BEHAVIOUR CLAIMS: job -> what the row says it does.
+
+    The job NAME is already checked against the workflow's `jobs:` keys; this is the
+    other half of the same table (issue #1033): the text a reader trusts about what a
+    job actually runs.
+    """
+    out: dict[str, dict[str, str]] = {}
+    for current, rows in _wf_sections(doc):
+        in_job_table = False
+        for row in rows:
+            if not row.lstrip().startswith("|"):
+                continue
+            parts = row.split("|")
+            if len(parts) < 3:
+                continue
+            if "Job" in parts[1]:
+                in_job_table = True
+                continue
+            if not in_job_table or _SEPARATOR_ROW.match(row):
+                continue
+            names = _TICKED.findall(parts[1])
+            if not names:
+                continue
+            out.setdefault(current, {})[names[0]] = " | ".join(parts[2:])
+    return out
+
+
+#: A target that makes a REAL model/agent call, beyond the redaction list: the live
+#: Hermes pre-flight and the whole refresh leg (issue #1033).
+_MODEL_CALL_EXTRA = ("hermes-smoke", "refresh")
+
+#: Words that turn a mention into a DENIAL, not a claim (issue #1033): the description
+#: must be able to say a job runs NO model call without the guard red-ing its own
+#: sentence — the same exemption `_CADENCE_RETIRED` gives the cadence guard.
+_CALL_DENIED = re.compile(r"\b(no|not|none|never|without|removed|retired|no longer|"
+                          r"dropped|excluded|left out)\b", re.I)
+_CALL_CONTEXT = 90
+
+
+def model_call_targets() -> tuple[str, ...]:
+    """ONE view of "a target that runs the agent/model" (rule 6d, issue #1033)."""
+    return tuple(dict.fromkeys(tuple(AGENT_TARGETS_TO_SCRUB) + _MODEL_CALL_EXTRA))
+
+
+def _row_call_claims(desc: str, targets: set[str], model_calls: tuple[str, ...]) -> list[str]:
+    """The model-call targets a §4 row CLAIMS its job runs (denials skipped)."""
+    out: list[str] = []
+    for m in re.finditer(r"`([^`]+)`", desc):
+        token = m.group(1).strip()
+        if token.startswith("make "):
+            token = token[len("make "):].strip()
+        name = re.split(r"[\s$=({,:;]", token)[0].rstrip("-.,;")
+        if name not in model_calls or name not in targets:
             continue
-        if re.match(r"^#{2,3}\s", line):
-            flush()
-            current, rows = None, []
+        if _CALL_DENIED.search(desc[max(0, m.start() - _CALL_CONTEXT):m.start()]):
             continue
-        if current is not None:
-            rows.append(line)
-    flush()
+        out.append(name)
+    return list(dict.fromkeys(out))
+
+
+def job_call_findings(root: Path, doc: Path) -> list[str]:
+    """§4 job rows that claim a model call the job never makes (issue #1033, rule 6t).
+
+    `qa-validate`'s `live-smoke` row still named `make hermes-smoke` after #1029 removed
+    it, so the description told every reader — including whoever reads the
+    branch-protection context literally named `live-smoke` (rule 1) — that a real model
+    call gates a merge. A §4 row is a claim about the tree; the tree answers it.
+    """
+    targets = make_targets(root)
+    model_calls = model_call_targets()
+    out: list[str] = []
+    for w, jobs in described_job_rows(doc).items():
+        wf = root / ".github" / "workflows" / w
+        if not wf.is_file():
+            continue
+        wf_text = wf.read_text(encoding="utf-8")
+        for job, desc in sorted(jobs.items()):
+            ran = set(job_targets(wf_text, job, targets, root))
+            for name in _row_call_claims(desc, targets, model_calls):
+                if name in ran:
+                    continue
+                out.append(f"{DOC_NAME} §4 says `{w}` job `{job}` runs the real model/agent call "
+                           f"`{name}` (`make {name}`); that job's steps never call it (issue #1033, "
+                           f"rule 6t: no model call gates a merge) — fix the row or move the step")
     return out
 
 
@@ -551,6 +656,10 @@ def findings(root: Path) -> list[str]:
                 for j in sorted(claimed[w] - real)]
         out += [f"workflow `{w}`'s job `{j}` is not named in its {DOC_NAME} §4 section"
                 for j in sorted(real - claimed[w])]
+
+    # The same table's BEHAVIOUR claims (issue #1033, rule 6t): a §4 row that says a job
+    # runs a real model/agent call must name a target that job's own steps run.
+    out += job_call_findings(root, doc)
 
     # The agent lanes (issue #935, rule 6h): every project skill on disk and every skill
     # name a Makefile leg preloads must be NAMED in the description. Today a preload name
