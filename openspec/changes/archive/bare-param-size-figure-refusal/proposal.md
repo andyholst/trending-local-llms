@@ -1,6 +1,7 @@
 # bare-param-size-figure-refusal (issue #1018)
 
 Issue: #1018
+PR: #1131
 Related: #456/#468/#650/#651/#652 (the named-model attribution chain)
 
 ## Why
