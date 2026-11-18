@@ -1,6 +1,7 @@
 # a §4 job row may not claim a model call the job never makes (live-smoke is fetch-only)
 
 **Issue:** #1033
+PR: #1135
 **Capability:** `architecture-job-behaviour-claim` (the ARCHITECTURE.md §4 job-row
 guard in `scripts/architecture_check.py`, and the two §4/§6b rows it corrects).
 
