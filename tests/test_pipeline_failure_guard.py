@@ -504,10 +504,49 @@ def test_the_nov15_ledger_rows_are_classified_onto_their_landed_guards() -> None
           rc_old == 1 and all("CLOSED without a fix PR" in line for line in lines_old), str(lines_old))
 
 
+def test_a_closed_row_the_stamp_raised_with_fix_pr_and_guard_clears_the_gate() -> None:
+    print("\nstamp lands (#1099): the SAME closed row is red unstamped and green stamped")
+    # The state every closed ledger row sat in before the stamp pass existed: the fix merged,
+    # the issue closed, and fix_pr/guard still null — permanently red at this gate.
+    rc0, lines0 = verdict([entry(450, 931, None, None)], states([(450, 931, "CLOSED")]))
+    check("the unraised closed row is RED (the #1099 defect state)",
+          rc0 == 1 and any("CLOSED without a fix PR or a guard test" in line for line in lines0),
+          str(lines0))
+    # The exact row shape `make pipeline-failure-issue`'s stamp pass writes when the merged,
+    # guard-carrying PR that closed the issue is observed: fix_pr/guard raised additively.
+    raised = entry(450, 931, 940, "tests/test_pipeline_failure_guard.py")
+    raised["fix_pr_merged_utc"] = "2026-11-12T09:00:00Z"
+    raised["stamp_utc"] = "2026-11-17T06:00:00Z"
+    raised["stamp_note"] = ("fix_pr raised by make pipeline-failure-issue's stamp pass "
+                            "(issue #1099) from closed issue #931 closed by merged PR #940")
+    rc1, lines1 = verdict([raised], states([(450, 931, "CLOSED")]))
+    check("the same run's row after the stamp pass raised it is GREEN", rc1 == 0, str(lines1))
+    check("the added stamp keys never upset the gate's reader (additive, rule 3b)",
+          any("diagnosed" in line for line in lines1) or not lines1, str(lines1))
+
+
+def test_a_stamped_row_whose_named_guard_no_longer_exists_is_red() -> None:
+    print("\nstamp integrity (#1099): a raised guard naming no collected test never clears the gate")
+    # The stamp pass raises `guard` from the merged PR's tests/ diff; if that module is later
+    # deleted, the row must go RED again — the stamp satisfies the gate only while the named
+    # guard is a test the real runner collects.
+    raised = entry(452, 933, 942, "tests/test_the_removed_regression_guard.py")
+    raised["fix_pr_merged_utc"] = "2026-11-12T09:00:00Z"
+    raised["stamp_utc"] = "2026-11-17T06:00:00Z"
+    raised["stamp_note"] = "fix_pr raised by make pipeline-failure-issue's stamp pass (issue #1099)"
+    rc, lines = verdict([raised], states([(452, 933, "CLOSED")]))
+    check("fix_pr raised but the named guard file is absent -> refusal, exit 1",
+          rc == 1 and any("guard" in line for line in lines), str(lines))
+    check("the refusal names the missing guard module",
+          any("test_the_removed_regression_guard" in line for line in lines), str(lines))
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
     test_closed_with_landed_fix_and_guard_is_green()
+    test_a_closed_row_the_stamp_raised_with_fix_pr_and_guard_clears_the_gate()
+    test_a_stamped_row_whose_named_guard_no_longer_exists_is_red()
     test_run_41788683672_is_rediagnosed_with_its_landed_guard()
     test_run_41860616772_is_rediagnosed_with_its_landed_guard()
     test_run_41922211098_is_rediagnosed_with_its_landed_guard()

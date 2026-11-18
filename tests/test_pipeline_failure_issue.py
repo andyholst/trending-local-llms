@@ -136,9 +136,20 @@ case "$1" in
         printf '%s' "$body" > "$d/comment-$number-$m.txt"
         echo "https://github.com/octo/repo/issues/$number#issuecomment-${m}" ;;
       view)
-        if [ -f "$d/issue-state.json" ]; then cat "$d/issue-state.json"
+        if [ -f "$d/issue-view-$3.json" ]; then cat "$d/issue-view-$3.json"
+        elif [ -f "$d/issue-state.json" ]; then cat "$d/issue-state.json"
         else echo '{"labels": [{"name": "tech-debt"}]}'; fi ;;
       edit) exit 0 ;;
+      *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
+    esac ;;
+  pr)
+    case "$2" in
+      view)
+        # `gh pr view <n> --repo <repo> --json number,title,mergedAt,files` — the stamp pass
+        # (issue #1099) reads each closing PR's merged state and its diff through this.
+        f="$d/pr-$3.json"
+        if [ -f "$f" ]; then cat "$f"
+        else echo '{"number": '"$3"', "mergedAt": null, "files": []}'; fi ;;
       *) echo "stub gh: unhandled: $*" >&2; exit 1 ;;
     esac ;;
   api)
@@ -849,6 +860,349 @@ def test_a_raise_renormalises_the_row_s_existing_warped_targets() -> None:
               bool(row.get("rediagnosed_utc")), str(row)[:200])
 
 
+# ---------------------------------------------------------------------------
+# the stamp pass (issue #1099): a merged fix PR raises its ledger row
+# ---------------------------------------------------------------------------
+
+#: A planted row in the exact shape every closed row held before the stamp pass existed:
+#: filed, diagnosed, closed by a merged fix PR — and `fix_pr: null`, waiting for a manual
+#: keeper cycle. Run 150 is OUTSIDE the canned run list, so this sweep files and re-diagnoses
+#: nothing; the stamp pass is the only new behaviour the scene exercises.
+STAMP_TARGET = {
+    "run_id": 150, "workflow": "qa-validate.yml", "job": "validate",
+    "head_sha": "f" * 40, "run_url": "https://github.com/octo/repo/actions/runs/150",
+    "created_utc": "2026-11-10T06:10:00Z", "filed_utc": "2026-11-10T07:00:00Z",
+    "targets": ["validate"], "issue_number": "931",
+    "issue_url": "https://github.com/octo/repo/issues/931",
+    "fix_pr": None, "guard": None,
+    "rediagnosed_utc": "2026-11-10T07:30:00Z",
+    "error_excerpt": "make: *** [validate] Error 2",
+}
+
+#: The measured close link shape: the closed issue #833 answers closedByPullRequestsReferences
+#: [1057] (verified live 2026-11-17). The planted fixture mirrors it per issue number.
+def closed_refs(prs: list[int]) -> str:
+    return json.dumps({"state": "CLOSED", "closedByPullRequestsReferences":
+                       [{"number": p, "url": f"https://github.com/octo/repo/pull/{p}"}
+                        for p in prs]})
+
+
+def merged_pr(number: int, files: list[dict], title: str = "") -> str:
+    return json.dumps({"number": number, "mergedAt": "2026-11-12T09:00:00Z",
+                       "title": title or f"fix(ci): the planted fix #{number} (issue #931)",
+                       "files": files})
+
+
+def open_issue() -> str:
+    return json.dumps({"state": "OPEN", "closedByPullRequestsReferences": []})
+
+
+def _stamp_ledger(tmp: Path, target: dict) -> Path:
+    """Seed the run-list runs (100, 104) as KNOWN rows so the sweep files/rediagnoses nothing
+    and the stamp pass sees only planted rows."""
+    diagnosed_100 = dict(UNDIAG_ROW)
+    diagnosed_100.pop("undiagnosed")
+    diagnosed_100["rediagnosed_utc"] = "2026-11-11T21:30:00Z"
+    return _seed_ledger(tmp, [dict(MARKER_MATCHED_ROW), diagnosed_100, dict(target)])
+
+
+def _row_for(ledger: Path, run_id: int) -> dict:
+    return {e["run_id"]: e for e in json.loads(ledger.read_text())[
+        "failures"]}[run_id]
+
+
+def test_a_closed_row_is_stamped_from_the_merged_guard_carrying_pr_that_closed_it() -> None:
+    print("\nstamp (#1099): CLOSED + merged closing PR with a tests/ guard -> fix_pr raised")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-931.json"] = closed_refs([940])
+        canned["pr-940.json"] = merged_pr(940, [
+            {"path": "Makefile", "changeType": "MODIFIED"},
+            {"path": "tests/test_planted_guard.py", "changeType": "ADDED"},
+        ])
+        env = make_scene(tmp, canned)
+        ledger = _stamp_ledger(tmp, STAMP_TARGET)
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the pass names the raised row", "STAMPED run 150" in proc.stdout, proc.stdout)
+        row = _row_for(ledger, 150)
+        check("fix_pr raised to the closing PR", row.get("fix_pr") == 940, str(row))
+        check("guard named from the PR's ADDED tests/ module",
+              row.get("guard") == "tests/test_planted_guard.py", str(row))
+        check("merged_at recorded", row.get("fix_pr_merged_utc") == "2026-11-12T09:00:00Z",
+              str(row))
+        check("the stamp records WHEN and WHY",
+              bool(row.get("stamp_utc")) and "#1099" in row.get("stamp_note", "")
+              and "closed issue #931" in row.get("stamp_note", ""), str(row))
+        check("append-only (rule 3b): every filer field survives unchanged",
+              all(row.get(k) == v for k, v in STAMP_TARGET.items()
+                  if k not in ("fix_pr", "guard")), str(row)[:400])
+        check("a row the pass skipped keeps its nulls (run 104 cites no issue)",
+              _row_for(ledger, 104) == MARKER_MATCHED_ROW, str(_row_for(ledger, 104)))
+        check("the CLOSED issue gets its annotation on the thread",
+              any(p.name.startswith("comment-931-") for p in (tmp / "canned").glob("comment-*.txt"))
+              and any("<!-- pipeline-ledger-stamp:" in p.read_text()
+                      and "run=150" in p.read_text()
+                      and "issue #1099" in p.read_text()
+                      for p in (tmp / "canned").glob("comment-931-*.txt")),
+              ", ".join(p.name for p in (tmp / "canned").glob("comment-*.txt")))
+
+
+def test_the_stamp_prefers_the_guard_module_the_merged_pr_added() -> None:
+    print("\nstamp (#1099): an ADDED tests/ module outranks a modified one in the diff")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-931.json"] = closed_refs([940])
+        canned["pr-940.json"] = merged_pr(940, [
+            {"path": "tests/test_sibling.py", "changeType": "MODIFIED"},
+            {"path": "tests/test_planted_guard.py", "changeType": "ADDED"},
+        ])
+        env = make_scene(tmp, canned)
+        ledger = _stamp_ledger(tmp, STAMP_TARGET)
+        proc = run_filer(env, ledger)
+        check("the ADDED module is the guard", _row_for(ledger, 150).get("guard")
+              == "tests/test_planted_guard.py", proc.stdout)
+
+
+def test_a_merged_fix_pr_that_only_modified_its_guard_module_still_raises_the_row() -> None:
+    print("\nstamp (#1099): the measured #833 shape — PR #1057 MODIFIED tests/test_implement_stream.py")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-932.json"] = closed_refs([941])
+        canned["pr-941.json"] = merged_pr(941, [
+            {"path": "tests/test_implement_stream.py", "changeType": "MODIFIED"},
+            {"path": "docs/notes.md", "changeType": "ADDED"},
+        ])
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="932")
+        ledger = _stamp_ledger(tmp, target)
+        proc = run_filer(env, ledger)
+        check("a MODIFIED tests/ module still counts as the guard",
+              "STAMPED run 150" in proc.stdout
+              and _row_for(ledger, 150).get("guard") == "tests/test_implement_stream.py",
+              proc.stdout)
+
+
+def test_a_closed_issue_with_no_closing_pr_stays_the_keeper_s_act() -> None:
+    print("\nstamp (#1099): CLOSED with closedByPullRequestsReferences [] -> never stamped")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-933.json"] = closed_refs([])
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="933")
+        ledger = _stamp_ledger(tmp, target)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("the pass says the manual close stays the keeper's act",
+              "issue #933 CLOSED with no closing PR" in proc.stdout
+              and "keeper" in proc.stdout, proc.stdout)
+        check("no fix_pr was invented and nothing was written",
+              _row_for(ledger, 150).get("fix_pr") is None and ledger.read_text() == before,
+              str(_row_for(ledger, 150)))
+
+
+def test_an_open_issue_row_is_reported_as_a_fix_in_flight_never_stamped() -> None:
+    print("\nstamp (#1099): an OPEN issue row is a fix in flight, reported not stamped")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-934.json"] = open_issue()
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="934")
+        ledger = _stamp_ledger(tmp, target)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("the pass names it in flight", "issue #934 is OPEN — fix in flight" in proc.stdout,
+              proc.stdout)
+        check("the row keeps its nulls (the §6r in-flight report stays)",
+              _row_for(ledger, 150).get("fix_pr") is None and ledger.read_text() == before, "")
+
+
+def test_a_closing_pr_not_merged_yet_is_reported_and_retried_next_sweep() -> None:
+    print("\nstamp (#1099): a closing PR that is not merged yet is NOT merged evidence")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-935.json"] = closed_refs([944])
+        canned["pr-944.json"] = json.dumps({"number": 944, "mergedAt": None,
+                                            "title": "open fix", "files": [
+                                                {"path": "tests/test_planted_guard.py",
+                                                 "changeType": "ADDED"}]})
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="935")
+        ledger = _stamp_ledger(tmp, target)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("the pass names the unmerged PR and defers",
+              "PR(s) #944 not merged yet" in proc.stdout, proc.stdout)
+        check("exit 0 — the sweep survives for the other rows",
+              proc.returncode == 0 and ledger.read_text() == before, proc.stderr)
+
+
+def test_a_merged_close_whose_diff_carries_no_guard_test_is_refused_loudly() -> None:
+    print("\nstamp (#1099): merged close, no tests/ file in the diff -> loud refusal, no stamp")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-936.json"] = closed_refs([945])
+        canned["pr-945.json"] = merged_pr(945, [{"path": "scripts/fixer.py",
+                                                 "changeType": "MODIFIED"}])
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="936")
+        ledger = _stamp_ledger(tmp, target)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("the guardless merged close is reported as the §6r defect",
+              "diff carries NO tests/ guard" in proc.stdout
+              and "fix without its guard test is the defect" in proc.stdout, proc.stdout)
+        check("no fix_pr is stamped onto a guardless close",
+              _row_for(ledger, 150).get("fix_pr") is None and ledger.read_text() == before, "")
+
+
+def test_the_stamp_raises_the_merged_guarded_close_when_another_closing_pr_is_unmerged() -> None:
+    print("\nstamp (#1099): several closing PRs — the merged, guarded one is raised")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-937.json"] = closed_refs([946, 947])
+        canned["pr-946.json"] = json.dumps({"number": 946, "mergedAt": None,
+                                            "title": "still open", "files": []})
+        canned["pr-947.json"] = merged_pr(947, [{"path": "tests/test_planted_guard.py",
+                                                 "changeType": "ADDED"}])
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="937")
+        ledger = _stamp_ledger(tmp, target)
+        proc = run_filer(env, ledger)
+        row = _row_for(ledger, 150)
+        check("the MERGED guarded PR is the one raised",
+              "STAMPED run 150" in proc.stdout and row.get("fix_pr") == 947
+              and row.get("guard") == "tests/test_planted_guard.py", proc.stdout)
+
+
+def test_the_stamp_never_overwrites_a_guard_the_row_already_records() -> None:
+    print("\nstamp (#1099): a row that already names a guard keeps it (rule 3b)")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-938.json"] = closed_refs([948])
+        canned["pr-948.json"] = merged_pr(948, [{"path": "tests/test_other.py",
+                                                 "changeType": "ADDED"}])
+        env = make_scene(tmp, canned)
+        target = dict(STAMP_TARGET, issue_number="938",
+                      guard="tests/test_pipeline_failure_guard.py")
+        ledger = _stamp_ledger(tmp, target)
+        proc = run_filer(env, ledger)
+        row = _row_for(ledger, 150)
+        check("fix_pr is raised while the recorded guard survives",
+              row.get("fix_pr") == 948
+              and row.get("guard") == "tests/test_pipeline_failure_guard.py", str(row))
+        check("the note says the recorded guard was KEPT",
+              "KEPT" in row.get("stamp_note", ""), str(row))
+
+
+def test_the_stamp_pass_is_idempotent_across_sweeps() -> None:
+    print("\nstamp (#1099): a stamped row is never re-read, re-written or double-stamped")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-931.json"] = closed_refs([940])
+        canned["pr-940.json"] = merged_pr(940, [{"path": "tests/test_planted_guard.py",
+                                                 "changeType": "ADDED"}])
+        env = make_scene(tmp, canned)
+        ledger = _stamp_ledger(tmp, STAMP_TARGET)
+        first = run_filer(env, ledger)
+        check("first sweep stamps", "STAMPED run 150" in first.stdout, first.stdout)
+        before = ledger.read_text()
+        second = run_filer(env, ledger)
+        check("second sweep never re-stamps the row",
+              "run 150" not in second.stdout
+              and ledger.read_text() == before, second.stdout)
+
+
+def test_a_stamp_read_failure_is_loud_on_its_row_and_never_fatal_to_the_sweep() -> None:
+    print("\nstamp (#1099): a corrupt close-link read is a loud per-row retry, not a crash")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-931.json"] = "{corrupt json{{"  # unreadable close link
+        env = make_scene(tmp, canned)
+        ledger = _stamp_ledger(tmp, STAMP_TARGET)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("the failed read is named on its row",
+              "issue #931 read failed" in proc.stdout, proc.stdout)
+        check("the sweep still finishes (exit 0) and the row keeps its nulls",
+              proc.returncode == 0 and _row_for(ledger, 150).get("fix_pr") is None
+              and ledger.read_text() == before, proc.stderr)
+
+
+def test_a_row_citing_no_issue_is_reported_and_writes_nothing() -> None:
+    print("\nstamp (#1099): a row with no issue_number is reported, never guessed at")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, dict(BASE_CANNED))
+        target = dict(STAMP_TARGET, issue_number=None, issue_url=None)
+        ledger = _stamp_ledger(tmp, target)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger)
+        check("the pass names the row that cites no issue",
+              "cites no issue — nothing to stamp" in proc.stdout, proc.stdout)
+        check("nothing written", ledger.read_text() == before
+              and _row_for(ledger, 150).get("fix_pr") is None, "")
+
+
+def test_dry_mode_previews_the_stamp_and_writes_nothing() -> None:
+    print("\nstamp (#1099): --dry prints WOULD STAMP and leaves the ledger byte-identical")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["issue-view-931.json"] = closed_refs([940])
+        canned["pr-940.json"] = merged_pr(940, [{"path": "tests/test_planted_guard.py",
+                                                 "changeType": "ADDED"}])
+        env = make_scene(tmp, canned)
+        ledger = _stamp_ledger(tmp, STAMP_TARGET)
+        before = ledger.read_text()
+        proc = run_filer(env, ledger, "--dry")
+        check("the preview is named", "WOULD STAMP run 150" in proc.stdout, proc.stdout)
+        check("no STAMPED claim, no annotation, no write",
+              "STAMPED run 150" not in proc.stdout
+              and not list((tmp / "canned").glob("comment-931-*.txt"))
+              and ledger.read_text() == before, proc.stdout)
+
+
+def test_the_stamp_rides_the_filer_s_ledger_pr_landing_through_the_makefile() -> None:
+    print("\nstamp wiring (#1099): the pass lives in make pipeline-failure-issue, "
+          "landed by the ledger-PR keeper step")
+    src = FILER.read_text()
+    check("the sweep calls the stamp pass",
+          "stamp_merged_fix_prs" in src and "lines.extend(stamp_merged_fix_prs" in src, "")
+    check("the stamp annotation marker is REGISTERED (rule 6j) and written by the pass",
+          bm.LEDGER_STAMP_NAME == "pipeline-ledger-stamp"
+          and bm.marker_name("queued-alarm", "stamp") == bm.LEDGER_STAMP_NAME
+          and ("queued-alarm", "stamp") in bm.WRITTEN
+          and "ledger_stamp_marker" in src
+          and bm.parse_ledger_stamp_run(bm.ledger_stamp_marker(
+              dt.datetime(2026, 11, 17, 6, 0, tzinfo=dt.timezone.utc), 123)) == "123",
+          f"{bm.REGISTRY.get('queued-alarm')} / {bm.WRITTEN}")
+    makefile = MAKEFILE.read_text()
+    check("the Makefile documents the stamp pass on the filer target",
+          "stamp pass" in makefile and "#1099" in makefile, "")
+    queue = QUEUE_WF.read_text()
+    check("queued-alarm runs the filer (the stamp's host) through the Makefile",
+          "make pipeline-failure-issue" in queue, "")
+    check("a stamp rides the same landed append: the sweep's keeper-pr step lands the ledger",
+          "make keeper-pr" in queue
+          and "FILE=data/pipeline_failures.json" in queue
+          and "ci/pipeline-failure-ledger" in queue, "")
+    agents = (ROOT / "AGENTS.md").read_text()
+    check("the rulebook names the automatic raise (issue #1099)",
+          "stamp" in agents and "#1099" in agents, "")
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -870,6 +1224,20 @@ def main() -> int:
     test_the_makefile_line_target_form_normalises_to_the_bare_target()
     test_a_sweep_normalises_stored_rows_and_leaves_a_uniform_ledger_untouched()
     test_a_raise_renormalises_the_row_s_existing_warped_targets()
+    test_a_closed_row_is_stamped_from_the_merged_guard_carrying_pr_that_closed_it()
+    test_the_stamp_prefers_the_guard_module_the_merged_pr_added()
+    test_a_merged_fix_pr_that_only_modified_its_guard_module_still_raises_the_row()
+    test_a_closed_issue_with_no_closing_pr_stays_the_keeper_s_act()
+    test_an_open_issue_row_is_reported_as_a_fix_in_flight_never_stamped()
+    test_a_closing_pr_not_merged_yet_is_reported_and_retried_next_sweep()
+    test_a_merged_close_whose_diff_carries_no_guard_test_is_refused_loudly()
+    test_the_stamp_raises_the_merged_guarded_close_when_another_closing_pr_is_unmerged()
+    test_the_stamp_never_overwrites_a_guard_the_row_already_records()
+    test_the_stamp_pass_is_idempotent_across_sweeps()
+    test_a_stamp_read_failure_is_loud_on_its_row_and_never_fatal_to_the_sweep()
+    test_a_row_citing_no_issue_is_reported_and_writes_nothing()
+    test_dry_mode_previews_the_stamp_and_writes_nothing()
+    test_the_stamp_rides_the_filer_s_ledger_pr_landing_through_the_makefile()
     test_ledger_pr_body_is_generated_and_carries_no_closing_keyword()
     test_wiring_rulebook_and_registry()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")

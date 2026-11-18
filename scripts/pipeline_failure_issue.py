@@ -37,6 +37,16 @@ pending set) so a run whose log aged out of Actions retention drains the queue i
 retry noise for ever. This script never fixes anything and never merges anything
 (rule 6g: analysis files, a separate reviewed change fixes).
 
+A MERGED FIX PR must RAISE its row (issue #1099): a separate stamp pass reads every unraised
+row's issue close link — GitHub's OWN closing-keyword record (`closedByPullRequestsReferences`),
+never a text guess — and when the issue is CLOSED by a MERGED PR whose diff carries a `tests/`
+guard, raises `fix_pr` + `guard` onto the row. Append-only (rule 3b): keys are ADDED, a recorded
+`guard` is never overwritten, and the raise rides the same ledger-PR landing as the filer's
+append. An OPEN issue, an unmerged closing PR, a CLOSED issue closed with no closing PR and a
+guardless merged close are each REPORTED loudly, never stamped: the pass names the landed fix, it
+never launders the §6r requirement away. A failed read is loud per row and retried next sweep —
+never the sweep's own failure.
+
 Exit: 0 report-only (filing IS the action); 2 when the pipeline state itself could not be read
 (a silent clean over an unreadable API is the defect rule 6d refuses).
 
@@ -629,6 +639,203 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
 
 
 # ---------------------------------------------------------------------------
+# the stamp pass (issue #1099): a merged fix PR raises its ledger row
+# ---------------------------------------------------------------------------
+
+def issue_close_refs(repo: str, number: int) -> tuple[str | None, list[int]]:
+    """(issue state, PR numbers whose squash closed this issue).
+
+    `closedByPullRequestsReferences` is GitHub's OWN closing-keyword record — the
+    measured closed issue #833 answers [1057]; a hand-closed issue answers []. The
+    pass reads the link, never the prose: a close claim in a comment is not a fix.
+    """
+    proc = _gh("issue", "view", str(number), "--repo", repo,
+               "--json", "state,closedByPullRequestsReferences")
+    data = json.loads(proc.stdout)
+    refs = data.get("closedByPullRequestsReferences") or []
+    numbers = sorted({int(r["number"]) for r in refs if r.get("number")})
+    return data.get("state"), numbers
+
+
+def pr_close_view(repo: str, number: int) -> dict:
+    """The PR's own merged state and its diff (path + changeType per file)."""
+    proc = _gh("pr", "view", str(number), "--repo", repo,
+               "--json", "number,title,mergedAt,files")
+    return json.loads(proc.stdout)
+
+
+def diff_guard(files: list[dict]) -> str | None:
+    """The guard module the PR's own diff carries.
+
+    A fix that ADDS a `tests/test_*.py` module is the §6r shape and outranks a
+    modified one; the measured #833 fix (PR #1057) modified its guard module, so a
+    modified `tests/test_*.py` still counts. Anything outside `tests/` is not a guard.
+    """
+    touched: list[tuple[int, str]] = []
+    for f in files:
+        path = str(f.get("path") or "")
+        if path.startswith("tests/") and path.endswith(".py") and "/test_" in path:
+            touched.append((0 if f.get("changeType") == "ADDED" else 1, path))
+    return min(touched)[1] if touched else None
+
+
+def compose_stamp_comment(entry: dict, pr_number: int, guard: str, merged_utc: str,
+                         title: str, when: dt.datetime) -> str:
+    """The ONE comment posted on an issue whose ledger row the stamp pass raised.
+
+    Carries the registered `pipeline-ledger-stamp` marker (`run=<rid>` is the dedup key) and
+    names the merged PR, its guard module and the exact keys the row now carries — the thread
+    learns the fix landed without anyone re-reading the ledger by hand (issue #1099; the
+    annotation pattern is the one issue #987 established for re-diagnosis).
+    """
+    rid = entry.get("run_id") or 0
+    return (
+        "This issue's pipeline-failure ledger row was RAISED on the sweep: a merged fix PR "
+        f"closed the issue, so `make pipeline-failure-issue` stamped the row of run {rid} in "
+        "`data/pipeline_failures.json` (issue #1099; rule 6r: the fix PR raises its row).\n\n"
+        f"**Fix PR:** #{pr_number} — {title[:120]} (merged {merged_utc})\n\n"
+        f"**Guard test:** `{guard}` — named from the PR's own `tests/` diff"
+        + ("" if guard == (entry.get("guard") or guard)
+           else f" (the row's recorded guard `{entry.get('guard')}` was kept)")
+        + "\n\n"
+        f"`make pipeline-failure-guard-check` now reads this row as a landed fix; a closed "
+        "issue whose row names no fix PR stays RED at that gate.\n\n"
+        f"{bot_markers.ledger_stamp_marker(when, rid)}"
+    )
+
+
+def post_stamp_comment(repo: str, entry: dict, pr_number: int, guard: str,
+                       merged_utc: str, title: str, when: dt.datetime) -> int | None:
+    """Post ONE marker-deduplicated annotation on the issue whose row was just raised.
+
+    Reads the whole thread FIRST and skips when a `pipeline-ledger-stamp` marker for this run id
+    is already present — one annotation per raised row, never per sweep. Returns the issue
+    number annotated, or None when the row cites no issue. Written with the default
+    `github.token` (rule 6e: the owner PAT cannot comment — `queued-alarm.yml` passes it).
+    """
+    number = _issue_number(entry)
+    if number is None:
+        return None
+    thread = "\n".join(c.get("body") or "" for c in _issue_comments(repo, number))
+    rid = entry.get("run_id")
+    if rid is not None and str(rid) in bot_markers.parse_ledger_stamp_runs(thread):
+        return number  # this exact raise is already annotated — never a second comment for it
+    _gh("issue", "comment", str(number), "--repo", repo, "--body",
+        compose_stamp_comment(entry, pr_number, guard, merged_utc, title, when))
+    return number
+
+
+def stamp_merged_fix_prs(repo: str, ledger: dict, ledger_path: Path, dry: bool,
+                         now: dt.datetime) -> list[str]:
+    """Raise every unraised row whose issue a MERGED guard-carrying fix PR closed.
+
+    Rule 6r says the fix PR raises its ledger row with `fix_pr` + `guard`; until
+    issue #1099 NOTHING did it automatically — keepers did it by hand (#1067 and
+    the Nov-15 classification) and every unraised row held a red
+    `make pipeline-failure-guard-check` plus a full keeper cycle before its issue
+    could carry the #993 close-with-proof verdict. This pass: for each row whose
+    `fix_pr` is empty (and that is not the terminal `log_expired` shape), read the
+    row's issue; a CLOSED issue closed by a MERGED PR whose diff carries a
+    `tests/` guard gains the keys `fix_pr`, `fix_pr_merged_utc`, `guard` (only if
+    the row names none already — a recorded guard is never overwritten),
+    `stamp_utc` and `stamp_note`, in place of the nulls the filer wrote. An OPEN
+    issue is a fix in flight; a close with no closing PR is the keeper's act; a
+    merged close with no `tests/` diff is the exact defect §6r exists to refuse —
+    all three are REPORTED, never stamped. Idempotent: a stamped row is never
+    touched again. `--dry` prints WOULD STAMP and writes nothing. A failed read
+    is loud on the row and retried next sweep.
+    """
+    lines: list[str] = []
+    for entry in ledger["failures"]:
+        rid = int(entry.get("run_id", 0))
+        if entry.get("fix_pr"):
+            continue  # attributed — by a keeper or an earlier stamp; idempotent
+        if entry.get("log_expired"):
+            continue  # the terminal drain shape (#986) is not a fix raise
+        number = entry.get("issue_number")
+        if not number:
+            lines.append(f"stamp run {rid}: the row cites no issue — nothing to stamp")
+            continue
+        try:
+            state, pr_numbers = issue_close_refs(repo, int(number))
+        except (RuntimeError, ValueError) as exc:
+            lines.append(f"stamp run {rid}: issue #{number} read failed ({exc}) — "
+                         "retried next sweep")
+            continue
+        if state != "CLOSED":
+            lines.append(f"stamp run {rid}: issue #{number} is {state or 'INDETERMINATE'} "
+                         "— fix in flight, not stamped")
+            continue
+        if not pr_numbers:
+            lines.append(f"stamp run {rid}: issue #{number} CLOSED with no closing PR — "
+                         "a manual close stays the keeper's act (rule 6r)")
+            continue
+        chosen: tuple[int, str, str, str] | None = None
+        unmerged: list[int] = []
+        guardless: list[int] = []
+        for pr_number in pr_numbers:
+            try:
+                pr = pr_close_view(repo, pr_number)
+            except (RuntimeError, ValueError) as exc:
+                lines.append(f"stamp run {rid}: PR #{pr_number} read failed ({exc}) — "
+                             "retried next sweep")
+                continue
+            if not pr.get("mergedAt"):
+                unmerged.append(pr_number)
+                continue
+            guard = diff_guard(pr.get("files") or [])
+            if not guard:
+                guardless.append(pr_number)
+                continue
+            chosen = (pr_number, guard, str(pr.get("mergedAt") or ""), str(pr.get("title") or ""))
+            break
+        if chosen is None:
+            if unmerged:
+                lines.append(f"stamp run {rid}: closed by PR(s) "
+                             f"{', '.join(f'#{p}' for p in unmerged)} not merged yet — "
+                             "fix in flight, not stamped")
+            if guardless:
+                lines.append(f"STAMP run {rid}: closed by merged PR(s) "
+                             f"{', '.join(f'#{p}' for p in guardless)} whose diff carries NO "
+                             "tests/ guard — not stamped (rule 6r: a fix without its guard "
+                             "test is the defect)")
+            continue
+        pr_number, guard, merged_utc, title = chosen
+        kept_guard = entry.get("guard")
+        verb = "WOULD STAMP" if dry else "STAMPED"
+        lines.append(f"{verb} run {rid} (issue #{number}) -> fix_pr #{pr_number}, "
+                     f"guard {kept_guard or guard}{' (recorded guard kept)' if kept_guard else ''}"
+                     f", PR merged {merged_utc}")
+        if dry:
+            continue
+        entry["fix_pr"] = int(pr_number)
+        entry["fix_pr_merged_utc"] = merged_utc
+        if not kept_guard:
+            entry["guard"] = guard
+        entry["stamp_utc"] = now.isoformat()
+        entry["stamp_note"] = (
+            f"raised by make pipeline-failure-issue (issue #1099): merged PR #{pr_number} "
+            f"({title[:100]}) closed issue #{number}"
+            + (f"; guard {guard} named from its diff" if not kept_guard
+               else f"; the row's recorded guard {kept_guard} is KEPT (never overwritten, "
+                    "rule 3b)")
+        )
+        ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+        # The ledger row is the machine's memory; the thread is the human's. ONE marker-
+        # deduplicated annotation per raised row (the #987 pattern), posted AFTER the row is
+        # written so a comment failure never loses the raise.
+        try:
+            annotated = post_stamp_comment(repo, entry, pr_number, guard, merged_utc,
+                                           title, now)
+            if annotated is not None:
+                lines.append(f"stamp run {rid}: issue #{number} annotated with the raise")
+        except RuntimeError as exc:
+            lines.append(f"stamp run {rid}: ledger row raised, but the issue annotation "
+                         f"failed ({exc}) — the ledger carries it")
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # the sweep
 # ---------------------------------------------------------------------------
 
@@ -711,6 +918,12 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
     # THIS sweep — including a row filed UNDIAGNOSED moments ago above (the in-memory ledger
     # already holds it), so a transient log outage is repaired within the same sweep.
     lines.extend(rediagnose_undiagnosed(repo, ledger, ledger_path, dry, now))
+    # The stamp pass (issue #1099): every row a MERGED fix PR closed gets its
+    # `fix_pr` + `guard` raised append-only, so the §6r raise is a landed leg,
+    # not keeper prose — and `make pipeline-failure-guard-check` stops seeing
+    # stale nulls on closed issues. It runs AFTER re-diagnosis (a row repaired
+    # this same sweep is still un-attributed) and rides the same landing.
+    lines.extend(stamp_merged_fix_prs(repo, ledger, ledger_path, dry, now))
     lines.append(f"pipeline-failure-issue: window={window_hours}h failures={len(runs)} "
                  f"filed={filed} ledger={ledger_path.name}")
     return 0, lines

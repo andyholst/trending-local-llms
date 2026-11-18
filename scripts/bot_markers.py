@@ -33,6 +33,13 @@ import re
 #: spelling (rule 6j). Defined above REGISTRY because the registry names it.
 REDIAGNOSE_NAME = "pipeline-rediagnose"
 
+#: The ledger-stamp annotation marker's name (issue #1099): `<!-- pipeline-ledger-stamp: <ISO>
+#: run=<rid> -->`. REGISTERED in `REGISTRY["queued-alarm"]["stamp"]`; its SHAPE lives in
+#: `ledger_stamp_marker` / `parse_ledger_stamp_run` at the bottom of this module so the writer
+#: (the filer's stamp pass) and its dedup reader share ONE spelling (rule 6j). Defined above
+#: REGISTRY because the registry names it.
+LEDGER_STAMP_NAME = "pipeline-ledger-stamp"
+
 #: `<bot> -> {kind: marker name}`. The name is the literal inside `<!-- ... -->`, so a reader and a
 #: writer that both go through this module can never disagree about it.
 REGISTRY: dict[str, dict[str, str]] = {
@@ -60,7 +67,14 @@ REGISTRY: dict[str, dict[str, str]] = {
                          # machine's memory, the thread is the human's. Its §6j table row landed
                          # through an attended run (rule 3c sign-off), so it moved out of
                          # UNREGISTERED_OWED into the registry.
-                         "rediagnose": REDIAGNOSE_NAME},
+                         "rediagnose": REDIAGNOSE_NAME,
+                         # The ledger-stamp annotation (issue #1099): when the sweep's stamp pass
+                         # raises `fix_pr` + `guard` onto a row whose issue a merged, guard-carrying
+                         # fix PR closed, that issue's thread gets ONE marker-deduplicated comment
+                         # carrying this stamp — the ledger row is the machine's memory, the thread
+                         # is the human's. Shape lives in `ledger_stamp_marker` /
+                         # `parse_ledger_stamp_run` below (rule 6j); `run=<rid>` is the dedup key.
+                         "stamp": LEDGER_STAMP_NAME},
     # The silent-PR sweeper (issues #442/#814/#964): the `alarm` marker flags an open PR that
     # runs no checks at all; the `rebase_failed` marker announces a sweep round whose rebase
     # attempt git rejected. Its `run=<branch>_<oid>` stamps the failed (branch, head) pair, so
@@ -140,6 +154,7 @@ WRITTEN: frozenset = frozenset({
     # UNDIAGNOSED ledger row: one marker-deduplicated comment, so the thread stops claiming
     # "log unreadable" once the diagnosis landed in the ledger.
     ("queued-alarm", "rediagnose"),
+    ("queued-alarm", "stamp"),
     # Written by `scripts/pr_health.py`: the `alarm` comment flags a silent PR (issue #442);
     # the `rebase_failed` comment announces a sweep round whose rebase attempt failed (#964).
     ("pr-health", "alarm"),
@@ -236,6 +251,39 @@ def rediagnose_marker_run(text: str) -> str | None:
 def rediagnose_marker_runs(text: str) -> set[str]:
     """Every run id the `pipeline-rediagnose` markers in `text` carry (for a per-run dedup)."""
     return {m.group(2) for m in REDIAGNOSE_RE.finditer(text or "")}
+
+
+# ---------------------------------------------------------------------------
+# The ledger-stamp annotation marker (issue #1099): `<!-- pipeline-ledger-stamp: <ISO> run=<rid> -->`.
+#
+# Written by the failure filer's stamp pass when it raises `fix_pr` + `guard` onto a row whose
+# issue a merged, guard-carrying fix PR closed; read by the SAME pass as its dedup key — one
+# annotation per raised row, never per sweep. `run=<rid>` is the dedup key.
+# ---------------------------------------------------------------------------
+LEDGER_STAMP_RE = re.compile(
+    re.escape(f"<!-- {LEDGER_STAMP_NAME}: ") + r"(" + TS + r")\s+run=([A-Za-z0-9_-]+)\s*-->"
+)
+
+
+def ledger_stamp_marker(when: dt.datetime, run: str | int) -> str:
+    """Write a ledger-stamp annotation marker: `<!-- pipeline-ledger-stamp: <ISO> run=<rid> -->`."""
+    stamp = when.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return f"<!-- {LEDGER_STAMP_NAME}: {stamp} run={run} -->"
+
+
+def parse_ledger_stamp_run(text: str) -> str | None:
+    """The run id the NEWEST `pipeline-ledger-stamp` marker in `text` carries, or None.
+
+    The whole thread is scanned (never a first-page-only read — the #662 class); the stamp pass
+    dedups ONE annotation per raised run, so the reader needs this run's stamp, if any.
+    """
+    hits = [m.group(2) for m in LEDGER_STAMP_RE.finditer(text or "")]
+    return hits[-1] if hits else None
+
+
+def parse_ledger_stamp_runs(text: str) -> set[str]:
+    """Every run id the `pipeline-ledger-stamp` markers in `text` carry (the dedup key set)."""
+    return {m.group(2) for m in LEDGER_STAMP_RE.finditer(text or "")}
 
 
 def marker_name(bot: str, kind: str) -> str:
