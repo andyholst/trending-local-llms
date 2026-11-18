@@ -1689,14 +1689,16 @@ ghost-run-alarm: ## Fail when a pull_request qa-validate run completed with zero
 # files ONE `tech-debt` issue carrying the run, the scrubbed block and the exact `make`
 # reproduction command — deduped by the ledger run id and the registered `pipeline-run-failure`
 # marker. The DECISION lives in scripts/pipeline_failure_issue.py (rule 6d); the fix lands as its
-# OWN reviewed change (rule 6g) — this filer never fixes anything. Host-side, called by
-# queued-alarm's alarm job after the alarms.
+# OWN reviewed change (rule 6g) — this filer never fixes anything. The sweep's stamp pass (issue
+# #1099) then raises `fix_pr` + `guard` onto every row whose issue a MERGED, guard-carrying fix PR
+# closed, so the rule-6r raise lands through this same target instead of a manual keeper cycle.
+# Host-side, called by queued-alarm's alarm job after the alarms.
 .PHONY: _pipeline-failure-issue
 _pipeline-failure-issue:
 	python3 scripts/pipeline_failure_issue.py --repo "$(REPO)" --window-hours "$(if $(WINDOW_HOURS),$(WINDOW_HOURS),192)" $(if $(DRY),--dry,) $(if $(LEDGER),--ledger "$(LEDGER)",)
 
 .PHONY: pipeline-failure-issue
-pipeline-failure-issue: ## Diagnose each unfiled main-pipeline failure from its logs and file it as a tech-debt issue (REPO=<owner/name>, WINDOW_HOURS=192, DRY=1 previews; issue #802)
+pipeline-failure-issue: ## Diagnose each unfiled main-pipeline failure from its logs and file it as a tech-debt issue; stamp fix_pr+guard for rows a merged fix PR closed (REPO=<owner/name>, WINDOW_HOURS=192, DRY=1 previews; issues #802, #1099)
 	@test -n "$(REPO)" || { echo "Usage: make pipeline-failure-issue REPO=<owner/repo> [WINDOW_HOURS=192] [DRY=1]"; exit 1; }
 	@$(MAKE) --no-print-directory _pipeline-failure-issue
 
