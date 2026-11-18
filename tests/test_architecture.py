@@ -1035,6 +1035,11 @@ def main() -> int:
     test_the_rulebook_bullet_cadence_claim_is_reported_including_its_wrapped_line()
     test_a_dispatch_claim_for_a_workflow_without_a_dispatch_trigger_is_reported()
     test_the_shipped_documents_pass_the_cadence_guard()
+    test_a_row_claiming_a_model_call_the_job_never_runs_is_reported()
+    test_a_row_naming_a_model_call_the_job_really_runs_is_green()
+    test_saying_a_job_runs_NO_model_call_is_history_not_a_claim()
+    test_the_agent_target_list_is_one_list_not_a_second_copy()
+    test_the_shipped_documents_pass_the_model_call_guard()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

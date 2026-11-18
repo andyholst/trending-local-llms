@@ -24,6 +24,4 @@
 - [x] `make lint` + `make test` green on this branch (host suite; CI re-runs both)
 - [x] PR opened with the five-section message pattern and the single `closes #1033` claim
       (`make pr-message-check` OK locally), ready for review, never `--draft`, monitored to green
-- [~] Rename the required status context `live-smoke` → a fetch-accurate name — blocked:
-      rule 1 / owner repository-settings act (branch protection names the context; no agent or
-      workflow may rewrite it). Reported on issue #1033 instead.
+- [~] Rename the required status context `live-smoke` → a fetch-accurate name — blocked: rule 1, an owner repository-settings act (branch protection names the context literally; no agent or workflow may rewrite it). Reported on issue #1033 instead.

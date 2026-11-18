@@ -435,8 +435,8 @@ def job_call_findings(root: Path, doc: Path) -> list[str]:
                 if name in ran:
                     continue
                 out.append(f"{DOC_NAME} §4 says `{w}` job `{job}` runs the real model/agent call "
-                           f"`make {name}`; that job's steps never call it (issue #1033, rule 6t: "
-                           f"no model call gates a merge) — fix the row or move the step")
+                           f"`{name}` (`make {name}`); that job's steps never call it (issue #1033, "
+                           f"rule 6t: no model call gates a merge) — fix the row or move the step")
     return out
 
 
