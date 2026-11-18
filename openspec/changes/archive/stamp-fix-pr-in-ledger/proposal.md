@@ -1,6 +1,7 @@
 # Stamp `fix_pr` + `guard` into the pipeline-failure ledger when a fix PR merges (Issue: #1099)
 
 Issue: #1099
+PR: #1130
 
 ## Why
 
