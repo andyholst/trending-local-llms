@@ -83,17 +83,20 @@ never a silent pass.
 
 The `validate` job of `qa-validate.yml` SHALL capture `make image-ensure` and
 `make openspec-check` output and write only the allowlisted key
-`corrupt_fallback` into `GITHUB_OUTPUT` (rule 3f — never whole stdout), and a
-`pull_request`-only step gated on a non-empty captured value SHALL call
-`make announce-image-fallback` with the captured images. The announcement step
-uses the default `github.token` (the owner PAT cannot comment).
+`corrupt_fallback` into `GITHUB_OUTPUT` (rule 3f — never whole stdout), combine
+the two keys into ONE job output, and KEEP `issues: read` (the #779 lifecycle
+guard, issue #1126). The announcement itself SHALL run in its own
+`pull_request`-only job gated on a non-empty captured value, which holds
+`contents: read` + `issues: write` (a step cannot raise `GITHUB_TOKEN` scope)
+and calls `make announce-image-fallback` with the captured images using the
+default `github.token` (the owner PAT cannot comment).
 
 #### Scenario: The workflow announces only what the seam reported
 
 - **Given** the qa-validate workflow source
-- **When** `tests/test_workflows.py` parses the `validate` job
+- **When** `tests/test_workflows.py` parses the `validate` job and the announce job
 - **Then** the `image-ensure` and `openspec-check` steps write only
-  `corrupt_fallback=` into `$GITHUB_OUTPUT`, and a gated step runs exactly
-  `make announce-image-fallback` (a target the Makefile defines) with the
-  default token
+  `corrupt_fallback=` into `$GITHUB_OUTPUT`, `validate`'s permissions keep
+  `issues: read`, and exactly one gated job runs `make announce-image-fallback`
+  (a target the Makefile defines) with the default token
 - **Test:** tests/test_workflows.py::test_the_corrupt_tag_fallback_is_announced_on_the_pr

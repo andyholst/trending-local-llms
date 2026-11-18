@@ -12,7 +12,7 @@
 
 ## Pipeline wiring (no raw stream, no secret)
 
-- [x] `qa-validate.yml`: `image-ensure` and `openspec-check` steps write ONE allowlisted `corrupt_fallback` key from the report FILE (no stream capture — rule 3f/#351), and a `pull_request`-only gated step calls `make announce-image-fallback` when either captured a fallback
+- [x] `qa-validate.yml`: `image-ensure` and `openspec-check` steps write ONE allowlisted `corrupt_fallback` key from the report FILE (no stream capture — rule 3f/#351), `collect-fallback` combines them into ONE job output while `validate` keeps `issues: read` (#1126), and the new `pull_request`-only `announce-fallback` job (`contents: read` + `issues: write`) calls `make announce-image-fallback` when the output is non-empty
 - [x] `AGENTS.md` §8 carries the guard row naming what the tests catch (rules 6c/6h)
 - [x] `ARCHITECTURE.md` describes the new target and the new script (target table + §6 row), and the generated inventory block was regenerated
 

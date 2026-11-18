@@ -41,7 +41,8 @@ report and a PR announcement (#1120).
 - `scripts/ensure_image.py` — three fallback branches print the machine line.
 - `scripts/bot_markers.py` — one new registered marker; AGENTS.md §6j row.
 - `scripts/announce_image_fallback.py` (new), `make announce-image-fallback`
-  (new target), `qa-validate.yml` (capture + announce steps).
+  (new target), `qa-validate.yml` (capture steps + a `collect-fallback` job
+  output + the new `announce-fallback` job that owns `issues: write`).
 - `tests/test_ensure_image.py` extended; `tests/test_image_fallback_announce.py`
   new (PATH-stubbed `gh`, rule 6m); `tests/test_workflows.py` qa-validate pins
   updated; AGENTS.md §8 guard row.
@@ -49,6 +50,9 @@ report and a PR announcement (#1120).
 ## Not covered
 
 - Announcing on non-qa-validate pipelines (issue-bot/refresh-bot legs keep the
-  log-line state unchanged; only the PR-consuming pipeline announces).
+  log-line state unchanged; only the PR-consuming pipeline announces). The
+  `live-smoke` job's own `image-ensure` is not announced either: `validate` is
+  the job whose images the merge gate depends on, and its announcement names
+  the revision the PR was tested against.
 - Auto-merge behaviour: an announced fallback does not hold the merge — #1118
   made the fallback a deliberate green path; this change only makes it visible.

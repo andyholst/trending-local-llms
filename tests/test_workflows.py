@@ -3209,22 +3209,40 @@ def test_the_corrupt_tag_fallback_is_announced_on_the_pr():
               "corrupt_fallback" in body
               and body.count("GITHUB_OUTPUT") == 1
               and "printf '%s=%s\\n' corrupt_fallback" in body, body[-300:])
-    announce = [s for s in steps if "announce-image-fallback" in s.get("run", "")]
-    check("qa: exactly one step calls make announce-image-fallback",
-          len(announce) == 1, str(announce))
-    step = announce[0]
-    check("qa: the announce step is gated on a captured fallback and pull_request only",
-          "github.event_name == 'pull_request'" in step["if"]
-          and "steps.image-ensure.outputs.corrupt_fallback" in step["if"]
-          and "steps.openspec-check.outputs.corrupt_fallback" in step["if"],
-          step.get("if", ""))
+    check("qa: validate keeps `issues: read` (the #779 lifecycle guard) and exports the fallback",
+          wf["jobs"]["validate"]["permissions"].get("issues") == "read"
+          and wf["jobs"]["validate"].get("outputs", {}).get("corrupt_fallback")
+          == "${{ steps.collect-fallback.outputs.corrupt_fallback }}",
+          str(wf["jobs"]["validate"].get("permissions")))
+    collect = by_id.get("collect-fallback")
+    check("qa: ONE step combines the report keys into the job output (rule 3f: allowlisted key only)",
+          collect is not None and "corrupt_fallback" in collect["run"]
+          and collect["run"].count("GITHUB_OUTPUT") == 1
+          and "printf '%s=%s\\n' corrupt_fallback" in collect["run"],
+          (collect or {}).get("run", "missing"))
+    # A STEP cannot raise GITHUB_TOKEN scope, so the write must live in its own job.
+    announce_steps = [(jname, s) for jname, job in wf["jobs"].items()
+                      for s in job.get("steps", [])
+                      if "announce-image-fallback" in s.get("run", "")]
+    check("qa: exactly one step in the pipeline calls make announce-image-fallback",
+          len(announce_steps) == 1, str([j for j, _ in announce_steps]))
+    jname, step = announce_steps[0]
+    job = wf["jobs"][jname]
+    check("qa: the announcer is its OWN job, so `validate` never gains a write scope",
+          jname != "validate" and job["permissions"].get("issues") == "write"
+          and job["permissions"].get("contents") == "read", str(job["permissions"]))
+    check("qa: the announce job is gated on a captured fallback and pull_request only",
+          "github.event_name == 'pull_request'" in job["if"]
+          and "needs.validate.outputs.corrupt_fallback" in job["if"], job.get("if", ""))
+    check("qa: the announce job runs after validate (the only producer of its input)",
+          "validate" in (job.get("needs") or []), str(job.get("needs")))
     check("qa: the announce step runs exactly the Makefile target",
           step["run"].strip() == "make announce-image-fallback", step.get("run", ""))
     check("qa: the announcement uses the DEFAULT github.token (rule 6e: the owner PAT cannot comment)",
           (step.get("env") or {}).get("GH_TOKEN") == "${{ github.token }}", str(step.get("env")))
-    check("qa: the validate job may write the ONE comment it posts",
-          wf["jobs"]["validate"]["permissions"].get("issues") == "write",
-          str(wf["jobs"]["validate"]["permissions"]))
+    check("qa: the announcer's IMAGES come from the job output, never a captured stream",
+          (step.get("env") or {}).get("IMAGES") == "${{ needs.validate.outputs.corrupt_fallback }}",
+          str(step.get("env")))
     makefile = (ROOT / "Makefile").read_text()
     check("makefile: announce-image-fallback is a target running the ONE script (rules 6d/6m)",
           re.search(r"^announce-image-fallback:", makefile, re.M) is not None
