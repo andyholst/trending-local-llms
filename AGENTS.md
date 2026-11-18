@@ -25,7 +25,7 @@ retains 30 days of history.
    required status checks naming `validate` + `live-smoke`, and
    `enforce_admins` — so GitHub itself refuses a direct push and the squash is
    the only path in, and `make check-branch-protection`
-   (`scripts/check_branch_protection.py`, run by the weekly `queued-alarm`
+   (`scripts/check_branch_protection.py`, run by the owner-dispatched `queued-alarm`
    sweep) fails when that protection is missing or weakened. Applying or
    restoring the setting is an owner-approved repository-settings act; no
    workflow may write it.
@@ -504,7 +504,14 @@ issue that skips a section is refused.
    row in §6's table** (a name in the generated §10 block is not a role a reader can
    use — measured, 9 of 46 scripts were named there and absent from §6, issue #506),
    when the description's own target tables name something the Makefile no longer has,
-   or when it references a workflow/script that does not exist. It runs in `qa-validate`'s `validate`
+   or when it references a workflow/script that does not exist. **A CADENCE CLAIM IS A
+   CLAIM ABOUT THE TREE (issue #1032)**: every cron slot quoted for a pipeline, every
+   "weekly"/"scheduled"/"cron" word attached to one pipeline in a §4 heading or a §6b
+   rulebook bullet, every counted "N have a cron", and every dispatch claim is compared
+   with that workflow's own `on:` block — a sentence that calls an owner-dispatched alarm
+   "the weekly sweep", or credits a dispatched sweep with a cron slot GitHub no longer
+   owes it (the state issue #1029 left), is a red gate, not a typo; a line saying the
+   cadence was REMOVED is history, not a claim, and general prose is out of scope. It runs in `qa-validate`'s `validate`
    job, in the fix loop (before the network-bound `validate`) and, through
    `tests/test_architecture.py`, in `make test` — so an agent that adds a target
    either documents it or turns the pipeline red. **Its mechanical half is
@@ -513,7 +520,8 @@ issue that skips a section is refused.
    `README.md` sections a refresh rewrites — is derived from the tree by
    `scripts/architecture_bot.py` (`make architecture-refresh`), and
    `architecture-check` ALSO fails on a stale block — even a docstring-only edit under scripts/ is enough to stale the inventory block (issue #947, measured: `scripts/run_tests.sh`'s docstring gaining "(issues #176, #192 and #890)" reds `make architecture-check` with no behavior change), so any change touching a script docstring MUST ride `make architecture-refresh` in the same commit, and `tests/test_architecture_bot.py` pins the whole-tree staleness assertion. `architecture-bot.yml`
-   regenerates it weekly (Wednesday) and opens a PR only when the block changed, so prose that
+   regenerates it on owner dispatch (its weekly Wednesday slot was removed by issue
+   #1029) and opens a PR only when the block changed, so prose that
    stops matching the code is repaired instead of sitting until someone rereads
    it. A change that moves a workflow, a target, a script or a README section
    therefore regenerates the block in the SAME change (never by hand edits between
@@ -750,10 +758,10 @@ issue that skips a section is refused.
    the repo's `queued` AND `in_progress` runs (a run whose jobs are ALL queued
    reports `queued`, not `in_progress` — the exact state this exists for), flags
    every job queued longer than `MINUTES` (default 30), prints the runner label
-   and the age (the label decides WHICH machine is missing) and exits 1, so the
-   scheduled run goes RED instead of staying silent. It also posts ONE
+   and the age (the label decides WHICH machine is missing) and exits 1, so the dispatched
+   sweep goes RED instead of staying silent. It also posts ONE
    marker-deduplicated comment per affected run (`<!-- queued-run-alarm -->`), so
-   a twice-an-hour sweep never spams the thread. It is read-only apart from that
+   a sweep run twice in a row never spams the thread. It is read-only apart from that
    one comment, holds `contents: read`, `actions: read` and `issues: write`, and
    its comment uses the DEFAULT `github.token` (rule 6e: the owner PAT cannot
    comment). Its `guard` is the FIRST job (rule 6j, issue #238) and a `schedule`
@@ -852,7 +860,7 @@ issue that skips a section is refused.
    human opens a run page (measured: run 39625708799, red at the OpenSpec gate, tests never
    reached). `make master-alarm` (`scripts/master_alarm.py`, run by `queued-alarm.yml`) reads the
    NEWEST push-to-master qa-validate run and exits 1 naming the run URL and the failing jobs — the
-   scheduled sweep goes RED instead of staying quiet (the `queued-alarm` model). It never writes
+   dispatched sweep goes RED instead of staying quiet (the `queued-alarm` model). It never writes
    anything; the KEEPER half (architecture-bot's two generated files) is named in its registry —
    every deterministic gate of the `validate` job sits on the keeper list or the alarm list, and
    `tests/test_master_alarm.py` fails when a new gate lands on neither.
@@ -897,7 +905,7 @@ issue that skips a section is refused.
    change and stamps its proposal with the #952 `Binding-exempt:` line — it never writes the missing
    spec or task list (rule 2) — and the registry names all three (`openspec-check` → `qa-validate
    index-repair` for `index-drift` + `qa-validate invalid-change-repair` for `invalid-change` +
-   `architecture-bot` weekly).
+   `architecture-bot` on dispatch).
 
 6r. **A red main pipeline is DIAGNOSED and FILED as an issue, and the diagnosis lives in an
    append-only LEDGER that qa-validate guards (MANDATORY).** A red run of a main pipeline
@@ -992,7 +1000,7 @@ issue that skips a section is refused.
      arming a PR for auto-merge: "green when I pushed" is not a state, it is a
      moment; a PR is only armable while it is green AND mergeable at that moment.
    `make pr-health` is the mechanical half, and since issue #818 it is no longer
-   report-only: the weekly sweep runs `make pr-health REBASE=1`, which REBASES a
+   report-only: the dispatched sweep runs `make pr-health REBASE=1`, which REBASES a
    behind-and-clean bot-owned PR branch (the bot/agent shapes `ci/…`,
    `tech-debt-…`, `data-gap-…`, `issue-…`) onto the fetched base, **regenerating
    `OPENSPEC.md` on the rebased tree** (issue #1088 — the merge-time index gate must never see a
@@ -1835,7 +1843,8 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   is an owner-approved act).
 
 - **`code-review-bot.yml`** — the **tree and pipeline reviewer** (rules 6c/6m, issue
-  #313): weekly (Monday `23 7`) + owner dispatch, `concurrency: code-review-bot` (queued, never cancelled). `make code-review-scan` reads the real
+  #313): owner dispatch only — its `23 7 * * 1` cron slot was removed by issue #1029 —
+  with `concurrency: code-review-bot` (queued, never cancelled). `make code-review-scan` reads the real
   tree and workflows, and `make code-review-file` files ONE issue per NEW finding
   (marker dedup, capped per run). **No model anywhere**, so a scan is free and
   cannot invent a finding; it never edits code, opens a PR or comments on one.
@@ -2103,6 +2112,8 @@ actually happened.
 | `tests/test_architecture.py` — `test_a_lost_boundary_anchor_is_reported`, `test_restoring_the_anchor_turns_the_finding_green`, `test_an_anchor_with_no_section_is_reported`, `test_a_renumbered_section_still_reads_the_right_tables`, `test_the_real_documents_carry_every_anchor`, `test_the_fixture_uses_the_anchors_the_guard_reads` (rule 6h, issue #509) | a guard whose section boundary is **prose**: `scripts/architecture_check.py` read the script inventory as `## 6.` → `## 7.` and the rulebook pipeline list as `### 6b.` → `## 7.` (measured on `origin/master`: the §6 slice ended at `## 7. Regression guards` — not at the §7 the prose claims — and §7's Style text was read as part of §6). `#479` added §10 and renumbered every heading after §4, the exact edit that moves such a boundary unnoticed: the check reads a shifted or empty region and reports the wrong reason. Now every region is bounded by an HTML-comment anchor (the `arch:targets`, `arch:pipelines`, `arch:scripts`, `arch:guards`, `agents:rulebook` and `agents:style` markers), a missing anchor is a finding that NAMES the anchor, an anchor with no heading beside it is a finding, a renumber cannot repoint the guard, and the anchor spelling lives in one registry the guard, the fixture and the real documents all read |
 | `tests/test_architecture.py` (rule 6h, issues #178/#506) | an `ARCHITECTURE.md` that lost a public make target, a workflow or a script; **a script NAMED in the generated §10 block but with no row in §6's table** (measured: 9 of 46 scripts, every bot written that week among them, had no role a reader could use — the old check was satisfied by the block); a description still naming a target that was removed (its §3 tables are the claim, the Makefile the truth); a phantom `.github/workflows/*.yml` or `scripts/*` reference; the check not wired into `qa-validate`, the fix loop or `make test` (rule 6d); the implementer prompt no longer requiring the update |
 | `tests/test_architecture.py` — `test_a_pipeline_missing_from_the_rulebook_is_reported`, `test_a_rulebook_line_with_no_workflow_is_reported`, `test_a_missing_agents_doc_is_a_finding_not_a_skip`, `test_the_rulebook_points_at_the_canonical_pipeline_description`, `test_rule_6h_names_the_rulebook_obligation` (rule 6h, `rulebook-names-every-pipeline`) | the rulebook's pipeline list drifting from the tree: a workflow in `.github/workflows/` that `AGENTS.md` §6b never names (measured: §6b named 6 of the **12** workflows — `bot-health`, `code-review-bot`, `pr-closure`, `pr-health`, `publish-agent-image`, `queued-alarm` were described only in `ARCHITECTURE.md` §4, so "is it in the description?" could never notice, and a reader of the rulebook saw six bots where the repo runs twelve); §6b naming a `.yml` that is not a workflow; a MISSING `AGENTS.md` read as a clean pass, so deleting the rulebook silenced its own guard; a §6b heading claiming a pipeline COUNT (`Four pipelines` under a six-bullet list — the claim was wrong twice over); a bullet that does not name the rule its pipeline enforces; §6b dropping the pointer that `ARCHITECTURE.md` §4 is canonical for a pipeline's SHAPE; and rule 6h no longer stating that a new pipeline is named in §6b in the SAME change |
+| `tests/test_architecture.py` — `test_a_cron_claim_for_a_dispatch_only_pipeline_is_reported`, `test_a_weekly_word_attached_to_a_dispatch_only_pipeline_is_reported`, `test_a_cron_slot_the_pipeline_really_has_is_green`, `test_the_counted_cron_claim_is_verified_against_the_workflows`, `test_a_line_saying_the_cadence_was_removed_is_history_not_a_claim`, `test_the_rulebook_bullet_cadence_claim_is_reported_including_its_wrapped_line`, `test_a_dispatch_claim_for_a_workflow_without_a_dispatch_trigger_is_reported`, `test_the_shipped_documents_pass_the_cadence_guard` (rules 6h/6t, issue #1032) | the description promising a cadence the tree no longer has: a cron slot quoted for a pipeline that declares no `schedule:`, a "weekly"/"daily"/"cron"/"twice-an-hour" word attached to one pipeline in an `ARCHITECTURE.md` §4 heading or an `AGENTS.md` §6b bullet, a dispatch claim for a workflow with no `workflow_dispatch:`, and a counted "Eight have a cron" in a tree that schedules ONE pipeline (measured after the owner cadence directive of 2026-11-15, issue #1029: `architecture-bot` "weekly `13`", `pr-health` "weekly `53`", `bot-health` "weekly `23`", `queued-alarm` "schedule + dispatch", `issue-bot`/`issue-review-bot` "weekly sweep", `code-review-bot` "weekly (Monday `23 7`)" — seven pipelines described as cron-scheduled while they wait for an owner dispatch, so a reader waits for a run that never fires and a red alarm stays silent). Also the reverse error: the guard must stay green on a truthful claim (a slot the workflow declares), on the sentence that DOCUMENTS a removal, and on the shipped documents themselves; and a §6b bullet is ONE paragraph, so a claim continuing on the line after the pipeline's name is still read (measured: the `code-review-bot.yml` bullet hid its "weekly (Monday `23 7`)" on the following line, invisible to a line-by-line scan) |
+| `tests/test_architecture.py` — `test_agent_legs_run_in_the_test_image` + `tests/test_hermes_prompts.py` — `test_no_make_target_bakes_an_openai_api_key` + `tests/test_image_seams.py` — `test_agent_image_uses_our_test_image` (rules 6c/6k/6m, issue #1013) | the agent's own tools red while the product's checks pass: a `pip install` reached through `uv pip install` (the container has `uv` and no pip, and `$(DOCKER_RUN …) bash -lc '…'` starts in a login shell that re-exports `PATH=/usr/local/sbin:…:/usr/local/bin` — `/opt/hermes-venv/bin` is LAST and reappearing `PATH=$PATH` re-adds the system PATH ahead of it, so an install silently writes to the SYSTEM site-packages); a markdown-it dependency baked with `PIP_BREAK_SYSTEM_PACKAGES` in the BASE image, where the base's other consumers never use it and `make agent-image-bump-check` refuses a base bump on an unrelated host environment; a `pip install markdown-it-py` that never reaches the pinned venv — every later recipe runs `.venv/bin/python3` while the package sits in the system prefix; and a host `export OPENAI_API_KEY=…` baked into `make hermes-model`'s recipe (issue #769's rule, re-measured in the same recipe) |
 | `tests/test_architecture_bot.py` + `make architecture-refresh` (rule 6h, issue #479) | the description drifting from the code in its MECHANICAL half: an `ARCHITECTURE.md` §10 block that no longer names a pipeline's cron, its jobs or a `make` target a step actually calls; a `make` that only appears in a workflow COMMENT (or names no real target) reported as a call; a script with no line in the inventory; a README section or backend table missing from the list a refresh rewrites; a FLOW step whose target, script or artifact the tree no longer has (refused at write time too, so the generator never publishes a claim it could not back); a missing marker silently skipped instead of a loud failure; `architecture-check` no longer failing on a stale block; the dispatched `architecture-bot.yml` (dispatch-only since issue #1029, rule 6t) losing its guard, its `base-check`, its "PR only when changed" gate, or opening a PR that claims to close an issue it does not implement; the guard not registered in `tests/test_workflows.py` |
 | `tests/test_pr_health.py` — the rebaser tests + `make pr-health REBASE=1` (rules 6r/6c/6d/6m, issue #818) | the §6r sweep promising a repair it never performs: a behind-and-clean `ci/` bot PR branch left drifting until a human reads a comment (measured: PR #439 `CONFLICTING`, zero workflow runs, while §6r claimed "a bot PR is repaired by the sweep"). The suite drives the REAL script against a REAL local bare origin + clone (only `gh` is stubbed): a rebased branch must gain `origin/master` as an ancestor AND keep its own commit; a human-owned branch, a CONFLICTING bot branch, an already-current branch and `master` itself must stay byte-identical; the push must ride a `--force-with-lease` pinned to the fetched tip (an unleased force push could overwrite a branch someone else moved); the plan must classify drafts out of the plan entirely; and the wiring (workflow step `REBASE=1`, sweep job `contents: write`, `fetch-depth: 0`, Makefile `--rebase` forwarding) refuses a half that reports but cannot push; **and (issue #964) an attempted rebase that git refused leaving NO artifact on the PR thread**: the suite plants a behind `ci/` branch whose rebase git rejects while GitHub-side facts still say MERGEABLE/CLEAN — the round must post EXACTLY ONE comment on that PR's own thread carrying the registered `pr-health-rebase-failed` marker stamped with the failed (branch, head) pair and naming `make worktree-resume` / `make base-rebase` as the remedy, must NOT post again for the same failed round it can read back on the thread (shared `bot_markers` parser), must post NOTHING for a rebase that landed, and the failed branch stays byte-identical |
 | `tests/test_auto_merge_rebase.py` + qa-validate's `Rebase a behind-and-clean bot branch` step + `make auto-merge-rebase` (rules 6e/6s/6c/6d/6m, issue #1049) | the merge gate squashing a BEHIND branch with a stale `OPENSPEC.md`, or merging a head CI never validated (measured on PR #1071: qa-validate squashed a 3-commits-behind head whose stale index red-ed the push-to-master `openspec-index-check`, while the next PR red-d the pre-merge gate): the suite (PATH stub for `make openspec-index`, rule 6m) proves `rebase_and_regenerate` runs the index target ON the rebased tree before the leased push and the rebased branch carries its own commit with `origin/master` as ancestor; **auto-merge refuses the squash when `rebased=true` or when the branch head changed since the validated green head** (the merge lands only at the head CI validated), refuses a squash while the branch is behind, a conflict aborts the rebase keeping every commit (exit 3, no push), and only bot-owned branches are pushed — a human-owned branch stays byte-identical; the wiring refuses a qa-validate `auto-merge` without the gate step BEFORE `Merge the green PR` (rule 6m); **(issue #1115) the push-identity and ghost pins:** the fixture clone's CONFIGURED `remote.origin.url` is the GitHub URL with a `url.<base>.insteadOf` transport alias to a local bare remote (the CI shape, and the reason the seam must read `config --get remote.origin.url`, not the insteadOf-rewritten `remote get-url`); the seam with `GIT_PUSH_PAT` exits `rebased=true` naming `push identity: owner-pat` AND lands the commit on the origin branch; without the PAT it names `checkout-credential` and pushes via `origin`; the ghost alarm (stub-`gh`, rule 6m) exits 1 on `action_required`-with-0-jobs and on `success`-with-0-jobs, does NOT flag a run with real jobs, a `[skip]`-concurrency run, or a ghost outside the window, exits 2 on an unreadable read, and `ghost_verdict` is pure; the wiring refuses a qa-validate `auto-merge-rebase` or `pr-health` rebase step without `GIT_PUSH_PAT` (reads keep `github.token`), a `queued-alarm.yml` ghost step that reaches the script past the Makefile or carries an owner PAT (it is read-only), and a missing `make ghost-run-alarm` target |

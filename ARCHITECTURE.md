@@ -255,7 +255,7 @@ keep it honest (issue #207):
 | `issue-pick` | Print the ONE `key=value` line a sweep reads — `issue=<n>`, or `issue=` when nothing is takeable (`scripts/issue_queue.py --pick`). The producer names its own pick, so no workflow re-derives it with a `sed`/`awk` of the queue row; its reasoning goes to stderr (issues #547/#548) |
 | `issue-skip-note` | Say ON the held issue why the sweep skipped it (a FRESH reviewer verdict), one comment per review round — the `pick` job's response to an empty pick (issue #200) |
 | `issue-thread` (`ISSUE=` `REPO=`) | Print an issue's WHOLE thread for the implementer (issue #210): title, body, every comment oldest-first with author and ISO8601Z, then the decision instruction — the reviewer already read the whole thread; the implementer read only the body |
-| `sweep-alarm` (`REPO=` `MAX_AGE_HOURS=3`) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the newest `schedule` run of `issue-bot.yml` and exits 1 when it is older than `MAX_AGE_HOURS`, naming the age, the missed `:19` slots, the gaps and the last conclusion (2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
+| `sweep-alarm` (`REPO=` [`MAX_AGE_HOURS=`]) | The delivery alarm (issue #497): `scripts/sweep_alarm.py` reads the issue-bot deliveries and grades them — in **dispatch-only mode** (issue #1029: the sweep's cron was removed, and the mode is DERIVED from the workflow tree, never assumed) age alone is not a failure, a green delivery is OK and a FAILED or HUNG dispatch goes red; in scheduled mode it exits 1 when the newest weekly delivery is older than the window (default 168 h, decided ONCE in the script — issue #804), naming the age, the missed slots, the gaps and the last conclusion (exit 2 when GitHub cannot be read). A dropped cron has no run to look at, so `queued-alarm` cannot see it. Run by `queued-alarm.yml` |
 | `bot-health` (`REPO=` `LIMIT=`) | Fail when a cron pipeline's newest N **scheduled** runs all failed, naming the newest run URL (issue #488). The pipelines are DERIVED from the workflows (a `- cron:` line), so a pipeline added tomorrow is covered without editing the script; a window shorter than N is not a failure, `gh` failing is loud, and `--limit 0` is refused (`scripts/bot_health.py`) |
 | `freshness-alarm` (`REPO=` `MAX_AGE_HOURS=`) | Fail when the newest committed snapshot is older than the window (default 170 h — one missed weekly slot), naming the age, the newest scheduled refresh run and the remedy (issue #452). An alarm over the ARTIFACT: a cron GitHub DROPPED leaves no run row for any other alarm to read (`scripts/freshness_alarm.py`); `queued-alarm.yml` supplies no window literal — the twice-daily-era `MAX_AGE_HOURS=14` override was removed so the weekly default rules (issue #1031) |
 | `queued-alarm` (`REPO=` `MINUTES=30` `COMMENT=1`) | The stuck-run alarm (issue #252): `scripts/queued_run_alarm.py` lists the jobs still `queued` past the threshold and, with `COMMENT=1`, leaves ONE deduplicated note per affected run. Exit 1 when a job is stuck. Run by `queued-alarm.yml` |
@@ -287,7 +287,7 @@ keep it honest (issue #207):
 | Target | What it does |
 |---|---|
 | `architecture-check` | Fail when a public make target, a workflow file or a script is missing from this file, or when this file names something that no longer exists (`scripts/architecture_check.py`) — and when the generated inventory block (§10) no longer matches the tree (`scripts/architecture_bot.py --check`, issue #479). Two structural claims are checked too (issue #182): every `--only` stage list of the `validate*` targets against `scripts/validate.py`'s stage map (both directions), and every job §4 claims for a workflow against that workflow's real `jobs:` keys (both directions, plus "no §4 section"). Prose is NOT read — see the boundary at the top of this file |
-| `architecture-refresh` | Regenerate the inventory block in §10 from the tree itself: every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script from its own docstring, and the README sections a refresh rewrites (`scripts/architecture_bot.py --write`, issue #479). Host target, stdlib only; `architecture-bot.yml` runs it weekly and opens a PR only when the block changed |
+| `architecture-refresh` | Regenerate the inventory block in §10 from the tree itself: every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script from its own docstring, and the README sections a refresh rewrites (`scripts/architecture_bot.py --write`, issue #479). Host target, stdlib only; `architecture-bot.yml` runs it on owner dispatch (its weekly `13` slot was removed by issue #1029) and opens a PR only when the block changed |
 | `architecture-block-repair` | Classify a stale §10 inventory block against THIS tree and regenerate it when the drift is block-only; prints the one-line verdict `DRIFT=none|block-only` the keeper job acts on, exits 2 loudly on a missing document, a missing `BEGIN`/`END` marker pair or a tree the generator refuses — never a silent clean, never a rewrite that launders a broken tree (`scripts/architecture_block_repair.py`, issue #861) |
 | `architecture-block-repair-pr-body` (`MASTER_SHA=` `RUN_URL=`) | Compose the `architecture-repair` keeper PR body — records the drift, `refs` #861, carries NO closing keyword (rule 6e); host target, like `architecture-pr-body` (issue #861) |
 | `keeper-pr` (`FILE=` `BRANCH_PREFIX=` `COMMIT_MESSAGE=` `PR_TITLE=` `BODY_TARGET=` [`BODY_ARGS=`] [`DEDUPE=1`]) | THE keeper-PR landing sequence (issue #869, rule 6d): nothing changed → exit 0 lands nothing; tracked changes beyond `FILE` → refused exit 1; `DEDUPE=1` applies the #960 mergeable-only dedupe; else one agent-identity commit on a timestamped `<BRANCH_PREFIX>-<UTC>` branch (no issue number, #852), pushed, with the PR body produced by `make BODY_TARGET BODY_ARGS` and opened via `gh pr create` with no closing keyword; a keeper command that fails to run exits 2 (`scripts/keeper_pr.py`) |
@@ -391,21 +391,25 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 <!-- arch:pipelines -->
 ## 4. The pipelines
 
-Eleven workflows in `.github/workflows/`. Eight have a cron, each ONCE a week on
-Wednesday (owner cadence directive, `weekly-cadence` #670–#677): **`refresh-bot.yml`**
-(Wednesday `06:00`, same-day backup `17:43`), **`issue-bot.yml`** (Wednesday, `19` +
-backup `49`), **`issue-review-bot.yml`** (Wednesday, `41`), **`queued-alarm.yml`**
-(Wednesday, `37`), **`pr-health.yml`** (Wednesday, `53`),
-**`code-review-bot.yml`** (Wednesday `06:07`, its own slot),
-**`bot-health.yml`** (Wednesday, `23`) and
-**`architecture-bot.yml`** (Wednesday `13`, issue #479). Off the odd minute on one
-day a week, so a dropped top-of-hour run cannot take out the whole week: :07, :13, :19,
-:23, :37, :41, :49, :53, 17:43. The other three are event- or dispatch-driven:
-`qa-validate.yml` (`pull_request`/`push`/dispatch), `publish-agent-image.yml`
-(dispatch only) and `pr-closure.yml` (`pull_request`).
+Eleven workflows in `.github/workflows/`. **ONE carries a cron**: `refresh-bot.yml`
+(Wednesday `0 6 * * 3` + same-day backup `43 17 * * 3`) — the data gatherer is the only
+pipeline the owner left scheduled (owner cadence directive 2026-11-15, rule 6t, issue
+#1029; the `weekly-cadence` slots #670–#677 it replaced are gone). Every other sweep in
+this repository is **owner-dispatched**: `issue-bot.yml`, `issue-review-bot.yml`,
+`queued-alarm.yml`, `pr-health.yml`, `bot-health.yml`, `code-review-bot.yml` and
+`architecture-bot.yml` declare `workflow_dispatch` and NO `schedule:` — nothing runs on a
+cadence GitHub owes them, and a sweep happens when someone dispatches it. The remaining
+three are event- or dispatch-driven: `qa-validate.yml` (`pull_request`/`push`/dispatch),
+`publish-agent-image.yml` (dispatch only) and `pr-closure.yml` (`pull_request`/`issues`/
+`push`).
 (The twelfth, the fix-bot repairer, was retired by issue #814: its file no longer
 exists, and `tests/test_workflows.py` fails if a repairer dispatch or `workflow_run`
 trigger reappears anywhere.)
+**The cadence is checked, not asserted**: `make architecture-check` compares every
+cadence claim this file's §4 headings and `AGENTS.md` §6b bullets make — a cron slot, a
+"weekly"/"scheduled"/"cron" word, a dispatch trigger, a counted "N have a cron" — against
+the `on:` block of the workflow it names, so a sentence that calls an owner-dispatched
+alarm "the weekly sweep" is a red gate, not a typo (issue #1032).
 The rulebook entry for each of them — the rule it enforces — is `AGENTS.md` §6b,
 which must name every workflow here.
 
@@ -418,7 +422,7 @@ generated, not written by hand: §10 is derived from the tree by
 the prose that explains *why* each pipeline exists; §10 is the part that cannot
 drift.
 
-### `.github/workflows/architecture-bot.yml` — the generated documents' keeper (weekly `13` + dispatch)
+### `.github/workflows/architecture-bot.yml` — the generated documents' keeper (owner dispatch)
 
 `concurrency: architecture-bot` (queued, never cancelled). `ARCHITECTURE.md` is part of
 every change (rule 6h), but its mechanical half — which bot has which job, which `make`
@@ -500,7 +504,7 @@ Two jobs, seconds long, read-only (no push, no comment, no merge). Its own pipel
 adding `edited` to `qa-validate` would re-run the image builds, the unit suite and the
 30-minute network-bound `live-smoke` — a real Firecrawl spend — because a sentence changed.
 
-### `.github/workflows/pr-health.yml` — the silent-PR alarm (weekly, `53`)
+### `.github/workflows/pr-health.yml` — the silent-PR alarm (owner dispatch)
 
 A conflicting PR runs no workflows at all (issue #442), so `gh pr checks` answers "no checks
 reported" and nothing distinguishes it from a quiet queue.
@@ -512,9 +516,11 @@ reported" and nothing distinguishes it from a quiet queue.
   (the owner PAT — a job-token push is the measured #1115 ghost-run trigger, rule 6s).
   Exit 1 when a PR is silent, so the scheduled run goes red.
 
-### `.github/workflows/bot-health.yml` — the red-cron alarm (schedule + dispatch)
+### `.github/workflows/bot-health.yml` — the red-bot-run alarm (owner dispatch)
 
-Once a week (`23 * * * 3`, Wednesday, off the hour) plus an owner dispatch.
+Owner `workflow_dispatch` only — its `23 * * * 3` cron slot was removed by issue #1029
+(rule 6t), so this alarm runs when someone dispatches it or when a `queued-alarm` sweep
+calls the same target.
 
 - **`guard`** — the FIRST job (rule 6j); the scheduled run passes it by design.
 - **`health`** (`needs: guard`) — `actions/checkout`, then `make bot-health REPO=… LIMIT=…`. It
@@ -524,7 +530,7 @@ Once a week (`23 * * * 3`, Wednesday, off the hour) plus an owner dispatch.
   that cannot answer is a loud failure, never a clean bill of health. Read-only: `contents: read`
   and `actions: read` only — no comment, no dispatch.
 
-### `.github/workflows/queued-alarm.yml` — the stuck-run alarm (schedule + dispatch)
+### `.github/workflows/queued-alarm.yml` — the stuck-run + sweep + freshness alarm (owner dispatch)
 
 `concurrency: queued-alarm` (queued, never cancelled). A job whose runner label matches nothing
 does not fail — it stays `queued` forever, so the run never concludes and every PR's checks sit at
@@ -533,9 +539,9 @@ does not fail — it stays `queued` forever, so the run never concludes and ever
 | Job | Does |
 |---|---|
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
-| `alarm` | Its steps, no other job: `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`) — list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run; exit 1 when a job is stuck, so the scheduled run goes red — then `make sweep-alarm REPO=… MAX_AGE_HOURS=3`, so a sweep the cron never delivered is red here too (issue #497) — then `make freshness-alarm REPO=…` (issue #452) — then `make master-alarm REPO=…` (issue #527) — a deterministic gate that went red on a `push` to master has no repairer, so the newest push-to-master qa-validate run going red turns THIS sweep red, naming the run URL and its failing jobs — and `make ghost-run-alarm REPO=…` (issue #1115, rule 6s): a concluded `pull_request` main-pipeline run with ZERO jobs is a GHOST (the shape a job-token rebase push leaves behind — the pipeline never FAILED, it never RAN, so no job-watching alarm can see it), named loudly with exit 1; read-only with the default token — and `make owed-rows-check REPO=…`, the owed-row ledger (issue #523): every OPEN issue's `owed-row` markers reported as `LANDED`/`OUTSTANDING` against `AGENTS.md`; only an unreadable ledger or a malformed marker turns the job red. — and `make hermes-pin-freshness REPO=…` (issue #1091, rule 6k): the Makefile/Dockerfile Hermes pins (the #218 pair) compared with the upstream Hermes release channel — a newer channel files ONE marker-deduplicated `tech-debt` issue naming the pin-bump remedy and turns THIS sweep red; a pin disagreement refuses with exit 2 before the channel is even read; an unreadable channel is red, never a silent clean (default token: filing needs issues:write) Last sits `make check-branch-protection REPO=…` (issue #959, Rule 1): master's branch protection — `strict` required contexts `validate` + `live-smoke`, `enforce_admins` — must be present and unrelaxed, read with the owner PAT (the default `github.token` cannot read protection state); an absent or weakened protection turns THIS sweep red instead of restoring the unguarded state in silence. Between the master alarm and the owed-row ledger sits `make pipeline-failure-issue REPO=…` (issue #802, rule 6r): the main pipelines' own diagnosis sweep — every push-to-master/scheduled failing run in the window gets one `tech-debt` issue carrying its log's scrubbed error block, and the append-only ledger `data/pipeline_failures.json` records it; the sweep goes red when the state could not be read. When (and only when) the sweep appended, the SAME job lands the append as a reviewed PR through `make keeper-pr FILE=data/pipeline_failures.json BRANCH_PREFIX=ci/pipeline-failure-ledger BODY_TARGET=pipeline-failure-ledger-pr-body` (#869 — one commit, NO closing keyword, rule 6e, the owner PAT for the push) because a cross-job checkout would not carry the append. It never edits code and never opens a fix PR. The silent-PR sweep (`make pr-health`) is its own pipeline, `pr-health.yml`, below |
+| `alarm` | Its steps, no other job: `make queued-alarm REPO=… MINUTES=… COMMENT=1` (`scripts/queued_run_alarm.py`) — list the `queued`/`in_progress` runs, flag the jobs queued past the threshold (naming the runner label and the age), and comment ONE marker-deduplicated note per affected run; exit 1 when a job is stuck, so the dispatched sweep goes red — then `make sweep-alarm REPO=…` (no window override: the script's weekly default is the contract, issue #804), so a sweep the queue never delivered is red here too (issue #497) — then `make freshness-alarm REPO=…` (issue #452) — then `make master-alarm REPO=…` (issue #527) — a deterministic gate that went red on a `push` to master has no repairer, so the newest push-to-master qa-validate run going red turns THIS sweep red, naming the run URL and its failing jobs — and `make ghost-run-alarm REPO=…` (issue #1115, rule 6s): a concluded `pull_request` main-pipeline run with ZERO jobs is a GHOST (the shape a job-token rebase push leaves behind — the pipeline never FAILED, it never RAN, so no job-watching alarm can see it), named loudly with exit 1; read-only with the default token — and `make owed-rows-check REPO=…`, the owed-row ledger (issue #523): every OPEN issue's `owed-row` markers reported as `LANDED`/`OUTSTANDING` against `AGENTS.md`; only an unreadable ledger or a malformed marker turns the job red. — and `make hermes-pin-freshness REPO=…` (issue #1091, rule 6k): the Makefile/Dockerfile Hermes pins (the #218 pair) compared with the upstream Hermes release channel — a newer channel files ONE marker-deduplicated `tech-debt` issue naming the pin-bump remedy and turns THIS sweep red; a pin disagreement refuses with exit 2 before the channel is even read; an unreadable channel is red, never a silent clean (default token: filing needs issues:write) Last sits `make check-branch-protection REPO=…` (issue #959, Rule 1): master's branch protection — `strict` required contexts `validate` + `live-smoke`, `enforce_admins` — must be present and unrelaxed, read with the owner PAT (the default `github.token` cannot read protection state); an absent or weakened protection turns THIS sweep red instead of restoring the unguarded state in silence. Between the master alarm and the owed-row ledger sits `make pipeline-failure-issue REPO=…` (issue #802, rule 6r): the main pipelines' own diagnosis sweep — every push-to-master/scheduled failing run in the window gets one `tech-debt` issue carrying its log's scrubbed error block, and the append-only ledger `data/pipeline_failures.json` records it; the sweep goes red when the state could not be read. When (and only when) the sweep appended, the SAME job lands the append as a reviewed PR through `make keeper-pr FILE=data/pipeline_failures.json BRANCH_PREFIX=ci/pipeline-failure-ledger BODY_TARGET=pipeline-failure-ledger-pr-body` (#869 — one commit, NO closing keyword, rule 6e, the owner PAT for the push) because a cross-job checkout would not carry the append. It never edits code and never opens a fix PR. The silent-PR sweep (`make pr-health`) is its own pipeline, `pr-health.yml`, below |
 
-### `.github/workflows/code-review-bot.yml` — the tree/pipeline reviewer (weekly + dispatch)
+### `.github/workflows/code-review-bot.yml` — the tree/pipeline reviewer (owner dispatch)
 
 `concurrency: code-review-bot` (queued, never cancelled). It reads the TREE and the PIPELINES and
 files ONE issue per real finding (issue #253, mirrors llgenie's #269). **No model anywhere**: every
@@ -546,7 +552,7 @@ check is deterministic, so a scan is free and cannot invent a finding.
 | `guard` | The same owner/collaborator/bot guard as refresh-bot, plus the `schedule` bypass, before any secret |
 | `review` | `make code-review-scan` (the checks read the real tree + workflows; writes nothing) → `make code-review-file` (`scripts/code_review.py`: ONE issue per NEW finding, `<!-- code-review:<key> -->` marker dedup, capped per run). It never edits code, never opens a PR, never merges, never comments on anyone's PR |
 
-### `.github/workflows/issue-bot.yml` — the implementer (weekly sweep + owner dispatch)
+### `.github/workflows/issue-bot.yml` — the implementer (owner dispatch)
 
 `concurrency: issue-bot-<issue|sweep>` (a sweep and an `issues` event for the
 same issue queue instead of racing).
@@ -564,7 +570,7 @@ requests R/W) is used where a push or a dispatch must re-trigger CI; the default
 findings filing — the PAT cannot comment. No workflow pushes `master`; only
 `auto-merge` merges, and only through a green PR.
 
-### `.github/workflows/issue-review-bot.yml` — the reviewer (weekly sweep + owner dispatch)
+### `.github/workflows/issue-review-bot.yml` — the reviewer (owner dispatch)
 
 `concurrency: issue-review-bot` (whole runs queue) plus a per-issue group
 (`issue-review-issue-<n>`) so two reviews of one issue queue instead of racing.
@@ -694,7 +700,7 @@ for a reviewer to hold true.
 | `scripts/query_coverage.py` | CLI over the query-coverage rule: `--queries` prints the derived model queries the four search prompts append as `$(MODEL_QUERIES)`; the default run prints the coverage report and exits 1 when a top-N trending model is named by no query. The rule itself — which query names which model — has ONE implementation in `scripts/update_trending.py` (rule 6d), so the prompts, the guard and its tests can never disagree (issue #264) |
 | `scripts/smoke_search.py` | The per-query reachability smoke with its retry policy, and the yield audit: each answered query is labelled with what its page yielded (rate/model candidates, or SILENT), and a CPU leg whose answered pages capture nothing fails the run as a starved vocabulary (issue #858) |
 | `scripts/query_vocab.py` | The ONE home of each search leg's curated keyword vocabulary (`LEG_KEYWORDS`): the `Makefile` prompts receive it through `$(<BACKEND>_KEYWORDS)` indirections, `smoke_search.py` probes it, and the CPU fetch sampling in `update_trending.py` imports it — a drifted copy is caught by `tests/test_cpu_query_vocabulary.py` (issue #858) |
-| `scripts/architecture_bot.py` | The LIVING half of this document (issue #479, rule 6h): derives §10 from the tree — every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script, the `README.md` sections a refresh rewrites. `--write` regenerates between the markers, `--check` fails on a stale block, and a flow step the tree no longer backs is refused (never written). Reached only through `make architecture-refresh` / `architecture-check` (rules 6d/6m); the weekly `architecture-bot.yml` runs both |
+| `scripts/architecture_bot.py` | The LIVING half of this document (issue #479, rule 6h): derives §10 from the tree — every workflow's triggers/crons/jobs and the `make` targets each job calls, the product end to end, one line per script, the `README.md` sections a refresh rewrites. `--write` regenerates between the markers, `--check` fails on a stale block, and a flow step the tree no longer backs is refused (never written). Reached only through `make architecture-refresh` / `architecture-check` (rules 6d/6m); the owner-dispatched `architecture-bot.yml` runs both |
 | `scripts/openspec_invalid_change_repair.py` | The ONE verdict seam for a red OpenSpec gate on master (issue #962, the #304/#861 sibling): `--check` fails LOUDLY when an ACTIVE change is structurally incomplete — a `proposal.md` with no `specs/<capability>/spec.md` and/or no `tasks.md` — the shape `openspec validate --changes` refuses while the index is current, and it is a prerequisite of `make openspec-check`; `--classify-and-archive` classifies the red as `DRIFT=index-drift` (the `index-repair` keeper's shape — it prints `REPAIR=none` and lands nothing) or `DRIFT=invalid-change`, and for the invalid shape moves each incomplete change to `openspec/changes/archive/<UTC-date>-<name>/` (the `openspec_archive.py` convention), stamps the archived proposal with the #952 `Binding-exempt:` keeper exemption and regenerates `OPENSPEC.md` through `openspec_index.py`, then re-verifies the index; it writes NO spec and NO task list — an incomplete change is archived and declared, never completed by a keeper (rule 2) — and prints `REPAIR=none|archived` the `invalid-change-repair` job acts on; an unreadable tree is exit 2, never a silent clean. `--print-pr-body` composes the keeper PR body, which records the archive and `refs` #962 with NO closing keyword (rule 6e) |
 | `scripts/architecture_block_repair.py` | The event-driven keeper's classifier+repair for the §10 block (issue #861, the #304 sibling): `--classify-and-write` compares the committed block to the tree through the generator's own comparison and prints the one-line verdict `DRIFT=none|block-only` the `architecture-repair` job acts on (rule 6d — no second copy of the decision in shell), regenerating only the block between the markers and re-verifying after the write; a missing document, a missing marker pair, or a tree the generator refuses (`_flow_problems`/`_arch_calls_problems`) is exit 2, loud, and never rewritten. `--print-pr-body` composes the keeper PR body, which records the drift and `refs` #861 with NO closing keyword (rule 6e) |
 | `scripts/keeper_pr.py` | The keeper-PR landing sequence (issue #869, rule 6d): the dedupe (opt-in, #960 mergeable-only), the refuse-if-more-than-the-file guard, the timestamped branch, the agent identity (`agent_identity` constants), the one commit, the push, the body via the keeper's own `make` target, and the closing-keyword-free `gh pr create` — ONCE, for all three keeper jobs (`index-repair`, `architecture-repair`, the pipeline-failure ledger PR). Nothing-changed exits 0, wider drift exits 1, a failed keeper command exits 2 |
@@ -806,8 +812,9 @@ Filed, not fixed (each is its own issue, per rule 6g):
 ## 10. The living inventory (generated)
 
 The block below is **derived from the tree itself** by `scripts/architecture_bot.py` and
-rewritten by `make architecture-refresh` — the weekly `architecture-bot.yml` runs it and
-opens a PR only when the block actually changed. The same bot keeps `OPENSPEC.md` current
+rewritten by `make architecture-refresh` — the owner-dispatched `architecture-bot.yml`
+runs it and opens a PR only when the block actually changed. The same bot keeps
+`OPENSPEC.md` current
 (issue #526): a squash merge of two concurrent `openspec/changes/**` entries keeps one index
 file and leaves the other change's row out, which reds every `qa-validate` push run on master
 until something regenerates it, so the keeper gates on either file and commits both. It is the mechanical half of this
@@ -821,7 +828,7 @@ either regenerates this block or turns CI red.
 Do not edit between the markers by hand: change the code it describes, then run the target.
 
 <!-- architecture-bot:begin -->
-_Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it daily and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
+_Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
 ### Bots in the tree (11 pipelines, 223 make targets, 87 files in `scripts/`)
 
