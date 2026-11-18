@@ -491,6 +491,99 @@ def test_pipeline_job_names_match_the_workflow_job_keys():
                   for p in problems), problems)
 
 
+def _call_tree(td: Path, *, job_steps: dict[str, tuple[str, ...]], live_row: str):
+    """Fixture whose §4 `live-smoke` row says `live_row` and whose jobs run `job_steps`.
+
+    `hermes-smoke` / `implement-issue` are real fixture targets, so a claim about them is
+    a claim about a model/agent call and not a typo (issue #1033).
+    """
+    mod = _module()
+    root = _tree(td,
+                 targets=("build", "verify", "hermes-smoke", "implement-issue"),
+                 doc_targets=("build", "verify", "hermes-smoke", "implement-issue"),
+                 jobs=("validate", "live-smoke"), doc_jobs=("validate", "live-smoke"))
+    text = "name: ci\njobs:\n"
+    for job, runs in job_steps.items():
+        text += f"  {job}:\n    runs-on: ubuntu-latest\n    steps:\n"
+        text += "".join(f"      - run: {r}\n" for r in runs)
+    (root / ".github" / "workflows" / "ci.yml").write_text(text, encoding="utf-8")
+    doc = root / "ARCHITECTURE.md"
+    doc.write_text(
+        doc.read_text(encoding="utf-8").replace("| `live-smoke` | does it |",
+                                                f"| `live-smoke` | {live_row} |"),
+        encoding="utf-8")
+    return mod, root
+
+
+def test_a_row_claiming_a_model_call_the_job_never_runs_is_reported():
+    """issue #1033: §4 still told readers `live-smoke` ran `make hermes-smoke`."""
+
+    # Given a `live-smoke` job whose steps never call the model, described as if it did
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _call_tree(Path(td),
+                               job_steps={"validate": ("make build",),
+                                          "live-smoke": ("make verify",)},
+                               live_row="Real network: `search-smoke`, `hermes-smoke`, "
+                                        "`validate-fetch`")
+
+        # When  the behaviour-claim guard runs
+        problems = mod.job_call_findings(root, root / "ARCHITECTURE.md")
+
+        # Then  the job, the workflow and the target are named, and it lands in findings()
+        check("model call: a claim the job does not back is red",
+              any("`live-smoke`" in p and "`hermes-smoke`" in p and "`ci.yml`" in p
+                  for p in problems), problems)
+        check("model call: the finding reaches the gate's own findings()",
+              any("`hermes-smoke`" in p for p in mod.findings(root)), mod.findings(root))
+
+
+def test_a_row_naming_a_model_call_the_job_really_runs_is_green():
+    """The guard is not a ban on model calls — it is a ban on a claim the tree denies."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _call_tree(Path(td),
+                               job_steps={"validate": ("make build",),
+                                          "live-smoke": ("make verify", "make hermes-smoke")},
+                               live_row="Real network: `search-smoke`, `hermes-smoke`, "
+                                        "`validate-fetch`")
+        problems = mod.job_call_findings(root, root / "ARCHITECTURE.md")
+        check("model call: a claim the job backs is green", problems == [], problems)
+
+
+def test_saying_a_job_runs_NO_model_call_is_history_not_a_claim():
+    """The same exemption #1032 gave the cadence guard: a denial must not red itself."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _call_tree(Path(td),
+                               job_steps={"validate": ("make build",),
+                                          "live-smoke": ("make verify",)},
+                               live_row="fetch-only — no model or agent call gates a merge; "
+                                        "`hermes-smoke` was dropped from this job")
+        problems = mod.job_call_findings(root, root / "ARCHITECTURE.md")
+        check("model call: a denial sentence is not a claim", problems == [], problems)
+
+
+def test_the_agent_target_list_is_one_list_not_a_second_copy():
+    """rule 6d: 'what runs the agent' has ONE definition — the redaction rule's."""
+
+    from check_secret_output import AGENT_TARGETS_TO_SCRUB
+    mod = _module()
+    claimed = set(mod.model_call_targets())
+    check("targets: the redaction list is a subset, never a re-spelling",
+          set(AGENT_TARGETS_TO_SCRUB) <= claimed, sorted(claimed - set(AGENT_TARGETS_TO_SCRUB)))
+    check("targets: the live Hermes pre-flight and the refresh leg are in it",
+          {"hermes-smoke", "refresh"} <= claimed, sorted(claimed))
+
+
+def test_the_shipped_documents_pass_the_model_call_guard():
+    """issue #1033: every §4 job row of every pipeline matches what that job runs."""
+
+    mod = _module()
+    problems = mod.job_call_findings(ROOT, ROOT / "ARCHITECTURE.md")
+    check("shipped tree: no §4 job row claims a model call it never makes",
+          problems == [], problems)
+
+
 def test_doc_states_what_the_guard_does_not_prove():
     """#182: the boundary is part of the promise, in the doc and in the guard."""
 

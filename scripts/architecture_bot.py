@@ -395,6 +395,27 @@ def workflow_targets(text: str, targets: set[str], root: Path | None = None) -> 
     return seen
 
 
+def job_slice(text: str, job: str) -> str:
+    """One job's block of the workflow's `jobs:` section (issue #1033).
+
+    `workflow_targets` answers "what does this FILE call"; a §4 job row makes a claim
+    about ONE job, so the claim must be read against that job's own steps.
+    """
+    section = _jobs_section(text)
+    marks = [(m.start(), m.group(1)) for m in _JOB.finditer(section)]
+    for i, (pos, name) in enumerate(marks):
+        if name != job:
+            continue
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(section)
+        return section[pos:end]
+    return ""
+
+
+def job_targets(text: str, job: str, targets: set[str], root: Path | None = None) -> list[str]:
+    """The `make` targets ONE job of a workflow actually calls (issue #1033)."""
+    return workflow_targets(job_slice(text, job), targets, root)
+
+
 def script_lines(root: Path) -> list[str]:
     """One line per script, from the script's own docstring — no second prose."""
     out: list[str] = []
