@@ -245,6 +245,144 @@ def test_real_repo_description_is_current():
         check(f"real repo: {needle} is documented", needle in doc, "")
 
 
+def _cadence_tree(td, *, on_block, heading_extra="", agents_extra=""):
+    """Fixture tree whose ONE pipeline declares `on_block` and whose docs claim `heading_extra`."""
+    mod = _module()
+    root = _tree(td, workflows=("ci.yml",))
+    (root / ".github" / "workflows" / "ci.yml").write_text(
+        "name: ci\non:\n" + on_block + "jobs:\n  build:\n    runs-on: ubuntu-latest\n",
+        encoding="utf-8")
+    doc = root / "ARCHITECTURE.md"
+    doc.write_text(
+        doc.read_text(encoding="utf-8").replace(
+            "### `.github/workflows/ci.yml` — a pipeline",
+            f"### `.github/workflows/ci.yml` — a pipeline{heading_extra}"),
+        encoding="utf-8")
+    if agents_extra:
+        agents = root / "AGENTS.md"
+        agents.write_text(
+            agents.read_text(encoding="utf-8").replace(
+                "- **`ci.yml`** — a pipeline (rule 6c).", agents_extra),
+            encoding="utf-8")
+    return mod, root
+
+
+def test_a_cron_claim_for_a_dispatch_only_pipeline_is_reported():
+    """issue #1032: the docs promised a cron GitHub no longer owes the sweep."""
+
+    # Given a dispatch-only pipeline whose §4 heading quotes a cron slot for it
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(Path(td), on_block="  workflow_dispatch:\n",
+                                  heading_extra=" (weekly `13 * * * 3` + dispatch)")
+
+        # When  the cadence guard runs
+        problems = mod.cadence_findings(root)
+
+        # Then  the quoted slot is named, and the same finding lands in `findings`
+        check("cadence: a quoted slot for a pipeline with no schedule is red",
+              any("`ci.yml`" in p and "13 * * * 3" in p for p in problems), problems)
+        check("cadence: the finding reaches the gate's own findings()",
+              any("13 * * * 3" in p for p in mod.findings(root)), mod.findings(root))
+
+
+def test_a_weekly_word_attached_to_a_dispatch_only_pipeline_is_reported():
+    """The WORD is a claim, not only a cron expression: "the weekly sweep" fails too."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(Path(td), on_block="  workflow_dispatch:\n",
+                                  heading_extra=" (the weekly sweep)")
+        problems = mod.cadence_findings(root)
+        check("cadence: 'the weekly sweep' on a dispatched pipeline is red",
+              any("weekly" in p and "declares no `schedule:`" in p for p in problems), problems)
+
+
+def test_a_cron_slot_the_pipeline_really_has_is_green():
+    """The guard must not red a truthful claim (the scheduled refresh pipeline)."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(Path(td),
+                                  on_block="  schedule:\n    - cron: '30 5 * * 3'\n"
+                                           "  workflow_dispatch:\n",
+                                  heading_extra=" (weekly `30 5 * * 3` + dispatch)")
+        check("cadence: a slot the workflow declares is not a finding",
+              mod.cadence_findings(root) == [], mod.cadence_findings(root))
+
+
+def test_the_counted_cron_claim_is_verified_against_the_workflows():
+    """"Eight have a cron" is a claim about the tree; the tree may hold one."""
+
+    # Given docs that count eight cron pipelines in a tree where none has a cron
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(Path(td), on_block="  workflow_dispatch:\n")
+        doc = root / "ARCHITECTURE.md"
+        doc.write_text(
+            "Eight have a cron, each ONCE a week on Wednesday.\n" + doc.read_text(encoding="utf-8"),
+            encoding="utf-8")
+        problems = mod.cadence_findings(root)
+        check("cadence: a count that does not match the tree is red",
+              any("says 8 workflows have a cron" in p and "the tree has 0" in p
+                  for p in problems), problems)
+
+        # When  the sentence is corrected AND the tree gains the cron it names
+        (root / ".github" / "workflows" / "ci.yml").write_text(
+            "name: ci\non:\n  schedule:\n    - cron: '30 5 * * 3'\n  workflow_dispatch:\n"
+            "jobs:\n  build:\n    runs-on: ubuntu-latest\n", encoding="utf-8")
+        fixed = [ln for ln in doc.read_text(encoding="utf-8").splitlines()
+                 if "have a cron" not in ln]
+        doc.write_text("One has a cron.\n" + "\n".join(fixed) + "\n", encoding="utf-8")
+        check("cadence: a count that matches the tree is green",
+              mod.cadence_findings(root) == [], mod.cadence_findings(root))
+
+
+def test_a_line_saying_the_cadence_was_removed_is_history_not_a_claim():
+    """The sentence that documents the removal must not red the guard it documents."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(Path(td), on_block="  workflow_dispatch:\n")
+        doc = root / "ARCHITECTURE.md"
+        doc.write_text(
+            "Its `23 7 * * 1` cron slot was removed by issue #1029.\n"
+            + doc.read_text(encoding="utf-8"),
+            encoding="utf-8")
+        check("cadence: a retirement sentence is not a claim",
+              mod.cadence_findings(root) == [], mod.cadence_findings(root))
+
+
+def test_the_rulebook_bullet_cadence_claim_is_reported_including_its_wrapped_line():
+    """A §6b bullet's claim continues on the NEXT line — the measured blind spot (#1032)."""
+
+    # Given a dispatch-only pipeline whose §6b bullet claims a Monday cron, the slot
+    # wrapping onto the line after the pipeline's name
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(
+            Path(td), on_block="  workflow_dispatch:\n",
+            agents_extra="- **`ci.yml`** — the **tree reviewer** (issue\n"
+                         "  #313): weekly (Monday `23 7 * * 1`) + owner dispatch.")
+        problems = mod.cadence_findings(root)
+        check("cadence: a §6b bullet's cadence word is red",
+              any("AGENTS.md" in p and "claims a cadence for `ci.yml`" in p for p in problems),
+              problems)
+        check("cadence: the bullet's WRAPPED cron slot is still read",
+              any("23 7 * * 1" in p for p in problems), problems)
+
+
+def test_a_dispatch_claim_for_a_workflow_without_a_dispatch_trigger_is_reported():
+    """The mirror prong: a claim of owner dispatch requires `workflow_dispatch:`."""
+
+    with tempfile.TemporaryDirectory() as td:
+        mod, root = _cadence_tree(Path(td), on_block="  pull_request:\n  push:\n",
+                                  heading_extra=" (pull_request + owner dispatch)")
+        problems = mod.cadence_findings(root)
+        check("cadence: a dispatch claim with no dispatch trigger is red",
+              any("claims a dispatch trigger for `ci.yml`" in p for p in problems), problems)
+
+def test_the_shipped_documents_pass_the_cadence_guard():
+    """The guard must not red the description it governs (issue #1032's own rewrite)."""
+    mod = _module()
+    check("cadence: the real ARCHITECTURE.md + AGENTS.md match the real workflows",
+          mod.cadence_findings(ROOT) == [], mod.cadence_findings(ROOT))
+
+
 def test_wired_into_ci_the_loop_the_suite_and_the_prompt():
     """The check is reachable where it matters (rule 6d / rule 6h)."""
 
@@ -721,9 +859,17 @@ def test_public_targets_are_a_projection_of_the_full_set():
     check("views: architecture_check has no target-line regex of its own",
           "_TARGET_LINE" not in (ROOT / "scripts" / "architecture_check.py").read_text(),
           "")
+    # The import may be one line or a wrapped parenthesised list (issue #1032 adds
+    # `workflow_crons`/`workflow_trigger_events` to it); the CONTRACT is the NAME.
+    src = (ROOT / "scripts" / "architecture_check.py").read_text()
+    m = re.search(r"from architecture_bot import \(([^)]*)\)", src, re.S) \
+        or re.search(r"from architecture_bot import ([^\n]*)", src)
+    imported = {n.strip() for n in re.split(r"[,\s]+", (m.group(1) if m else "")) if n.strip()}
     check("views: architecture_check imports public_targets from architecture_bot",
-          "from architecture_bot import public_targets" in
-          (ROOT / "scripts" / "architecture_check.py").read_text(), "")
+          "public_targets" in imported, f"imported={sorted(imported)}")
+    check("views: the cadence guard reads the bot's ONE trigger reader, not its own cron parser",
+          "workflow_crons" in imported and "workflow_trigger_events" in imported,
+          f"imported={sorted(imported)}")
 
 
 def test_agent_skill_contracts_and_leg_preloads_must_be_named():
@@ -788,6 +934,14 @@ def main() -> int:
     test_public_targets_are_a_projection_of_the_full_set()
     test_agent_skill_contracts_and_leg_preloads_must_be_named()
     test_wired_into_ci_the_loop_the_suite_and_the_prompt()
+    test_a_cron_claim_for_a_dispatch_only_pipeline_is_reported()
+    test_a_weekly_word_attached_to_a_dispatch_only_pipeline_is_reported()
+    test_a_cron_slot_the_pipeline_really_has_is_green()
+    test_the_counted_cron_claim_is_verified_against_the_workflows()
+    test_a_line_saying_the_cadence_was_removed_is_history_not_a_claim()
+    test_the_rulebook_bullet_cadence_claim_is_reported_including_its_wrapped_line()
+    test_a_dispatch_claim_for_a_workflow_without_a_dispatch_trigger_is_reported()
+    test_the_shipped_documents_pass_the_cadence_guard()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

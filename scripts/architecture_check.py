@@ -51,7 +51,8 @@ from pathlib import Path
 #: `make_targets` (the full set the generator renders) are BOTH views of the one
 #: scan in `architecture_bot`, imported here — issue #512's two parsers became one.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture_bot import public_targets, makefile_lanes, target_at_line, workflow_jobs  # noqa: E402
+from architecture_bot import (public_targets, makefile_lanes, target_at_line, workflow_crons,
+                              workflow_jobs, workflow_trigger_events)  # noqa: E402
 import check_agent_skills as agent_skills  # noqa: E402  (SKILLS_DIR — the one skill home, issue #904)
 
 DOC_NAME = "ARCHITECTURE.md"
@@ -209,6 +210,42 @@ def rulebook_pipelines(agents: Path) -> set[str]:
     return set(_RULEBOOK_PIPELINE_CLAIM.findall(body))
 
 
+def rulebook_pipeline_claims(text: str) -> list[tuple[int, str, str]]:
+    """Each `AGENTS.md` §6b pipeline BULLET with its FULL paragraph (issue #1032).
+
+    `rulebook_pipelines` answers WHICH pipelines the rulebook names; this is the same
+    reader's second view — what the bullet CLAIMS about how that pipeline STARTS. A
+    bullet is one paragraph that wraps across lines, so a line-by-line scan misses the
+    claim on a wrapped line (measured: `- **`code-review-bot.yml`**` hid
+    "weekly (Monday `23 7`)" on the line AFTER its name). One line, one claim, with the
+    line number of the bullet's first line.
+    """
+    body = section(text, RULEBOOK_SECTION, RULEBOOK_NEXT_SECTION)
+    if not body:
+        return []
+    first_line = text[: text.find(body)].count("\n")
+    lines = body.splitlines()
+    out: list[tuple[int, str, str]] = []
+    i = 0
+    while i < len(lines):
+        m = _RULEBOOK_PIPELINE_CLAIM.match(lines[i])
+        if not m:
+            i += 1
+            continue
+        # The CLAIM is the bullet's INTRO — the first two lines, which is where the
+        # sentence naming how the pipeline starts lives (measured: the cadence wrapped
+        # onto line 2). The rest of a bullet describes what the pipeline DOES, where
+        # ARCHITECTURE.md §4 is canonical (rule 6h) and where narrative words like
+        # "a scheduled refresh" are prose about history, not a cadence claim.
+        block = [lines[i], *([lines[i + 1]] if i + 1 < len(lines) else [])]
+        out.append((first_line + i + 1, m.group(1), " ".join(block)))
+        j = i + 1
+        while j < len(lines) and lines[j].strip() and not _RULEBOOK_PIPELINE_CLAIM.match(lines[j]):
+            j += 1
+        i = j
+    return out
+
+
 def validate_stages(script: Path) -> set[str]:
     """Every stage `scripts/validate.py` registers, read from its own source.
 
@@ -309,6 +346,123 @@ def _table_jobs(block: list[str], names: set[str]) -> None:
         parts = row.split("|")
         if len(parts) >= 2:
             names.update(_TICKED.findall(parts[1]))
+
+
+#: A cron expression quoted in prose (`37 * * * 3`) — the shape of a schedule claim
+#: that can be checked against the workflow it names (issue #1032).
+_CRON_SLOT = re.compile(r"\b\d{1,2} \d{1,2} \* \* \d{1,2}\b|\b\d{1,2} \* \* \* \d{1,2}\b")
+#: A line that says the cadence was TAKEN AWAY is history, not a claim. Without this
+#: exemption the guard would red the sentence that documents its own removal.
+_CADENCE_RETIRED = re.compile(r"removed|retired|no longer|no cron|no schedule|dispatch-only|dispatch only", re.I)
+#: A cadence word is a claim ONLY where it is attached to one pipeline: a §4 heading's
+#: parenthetical or a §6b bullet (issue #1032). General prose is out of scope — this
+#: guard reads STRUCTURE, never prose (rule 6h's own boundary).
+_CADENCE_WORD = re.compile(r"weekly|daily|hourly|twice-an-hour|cron|schedule", re.I)
+_DISPATCH_WORD = re.compile(r"dispatch", re.I)
+#: `### \`.github/workflows/x.yml\` — label (weekly, \`13\` + dispatch)` — §4's heading
+#: IS the trigger claim for that pipeline.
+_WF_HEADING_CLAIM = re.compile(r"^###.*?\.github/workflows/([A-Za-z0-9_.\-]+\.yml)`?\s*[—–-]\s*(.+)$", re.M)
+#: "`Eight have a cron`" — a COUNT of scheduled pipelines, checkable against the tree.
+_CRON_COUNT = re.compile(r"\b([A-Za-z]+|\d+)\s+have a cron\b")
+_COUNT_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+                "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13}
+
+
+def cadence_findings(root: Path, workflows: list[str] | None = None,
+                     docs: dict[str, str] | None = None) -> list[str]:
+    """Every cadence CLAIM the documents make that the tree does not declare (issue #1032).
+
+    Owner directive 2026-11-15 (rule 6t, issue #1029) left `refresh-bot.yml` as the ONLY
+    scheduled pipeline; `queued-alarm`, `pr-health`, `bot-health`, `architecture-bot`,
+    `issue-bot` and `issue-review-bot` lost their crons in the same change, and the ALARM
+    prose kept saying "the weekly `queued-alarm` sweep", "the dispatched run of a
+    twice-an-hour sweep" and "Eight have a cron". An alarm that waits for an owner dispatch
+    is not a scheduled sweep, and a reader who believes the text waits for a cron that
+    never fires — the same "silent because nobody looks" class the alarms exist to catch.
+
+    `workflows` / `docs` default to the tree's own workflows and its two rulebook
+    documents, so a caller (or a test) can ask the question about a root alone.
+    """
+    if workflows is None:
+        workflows = sorted(p.name for p in (root / ".github" / "workflows").glob("*.yml"))
+    if docs is None:
+        docs = {}
+        for name in (DOC_NAME, AGENTS_DOC):
+            path = root / name
+            if path.is_file():
+                docs[name] = path.read_text(encoding="utf-8")
+    crons = {w: workflow_crons((root / ".github" / "workflows" / w).read_text(encoding="utf-8"))
+             for w in workflows}
+    events = {w: workflow_trigger_events((root / ".github" / "workflows" / w)
+                                         .read_text(encoding="utf-8"))
+              for w in workflows}
+    out: list[str] = []
+
+    # (1) A quoted cron slot must be a cron the pipeline it NAMES actually declares.
+    for doc_name, text in docs.items():
+        for i, line in enumerate(text.splitlines(), 1):
+            slots = _CRON_SLOT.findall(line)
+            if not slots or _CADENCE_RETIRED.search(line):
+                continue
+            named = {f"{m.group(1)}.yml" for m in _WF_REF.finditer(line)} & set(crons)
+            if not named:
+                continue
+            owned = {s for w in named for s in crons[w]}
+            for slot in slots:
+                if slot not in owned:
+                    out.append(f"{doc_name}:{i} quotes cron `{slot}` for "
+                               f"{'/'.join(sorted(named))}, which declares no such cron "
+                               f"(its own crons: "
+                               f"{', '.join(cron for w in sorted(named) for cron in crons[w]) or 'none'})")
+
+    # (2) A cadence word attached to ONE pipeline — §4's heading parenthetical or a
+    #     §6b rulebook bullet — requires the workflow to declare a schedule.
+    for doc_name, text in docs.items():
+        claims: list[tuple[int, str, str]] = []
+        for m in _WF_HEADING_CLAIM.finditer(text):
+            claims.append((text[:m.start()].count("\n") + 1, m.group(1), m.group(2)))
+        claims += rulebook_pipeline_claims(text)
+        for line_no, wf, claim in claims:
+            if wf not in crons:
+                continue
+            if _CADENCE_RETIRED.search(claim):
+                continue
+            if _CADENCE_WORD.search(claim) and not crons[wf]:
+                out.append(f"{doc_name}:{line_no} claims a cadence for `{wf}` "
+                           f"(\"{claim.strip()[:70]}…\") while that workflow declares no "
+                           f"`schedule:` — it is dispatch/event-only (rule 6t)")
+            # A §6b bullet names its pipeline as `` `x.yml` ``, not as a
+            # `.github/workflows/x.yml` path, so prong (1) cannot see a cron slot quoted
+            # INSIDE a bullet — the claim's own workflow is the subject here.
+            for slot in _CRON_SLOT.findall(claim):
+                if slot not in crons[wf]:
+                    out.append(f"{doc_name}:{line_no} attributes `{wf}` the cron slot "
+                               f"`{slot}`; that workflow declares "
+                               f"{', '.join(crons[wf]) or 'no `schedule:`'}")
+            if _DISPATCH_WORD.search(claim) and "workflow_dispatch" not in events[wf]:
+                out.append(f"{doc_name}:{line_no} claims a dispatch trigger for `{wf}`, "
+                           f"which declares {', '.join(events[wf]) or 'no `on:` events'}")
+
+    # (3) A counted claim about scheduling must match the tree's count.
+    scheduled = sorted(w for w in crons if crons[w])
+    for doc_name, text in docs.items():
+        for i, line in enumerate(text.splitlines(), 1):
+            m = _CRON_COUNT.search(line)
+            if not m:
+                continue
+            # A phrase inside a quotation is a REFERENCE to a claim (the §8 guard row
+            # quotes the wrong wording it exists to catch); only an unquoted sentence is
+            # the description's own claim.
+            if line[: m.start()].rfind('"') != -1 and '"' in line[m.end():]:
+                continue
+            raw = m.group(1).lower()
+            claimed = int(raw) if raw.isdigit() else _COUNT_WORDS.get(raw)
+            if claimed is not None and claimed != len(scheduled):
+                out.append(f"{doc_name}:{i} says {claimed} workflows have a cron; the tree "
+                           f"has {len(scheduled)} scheduled pipeline(s): "
+                           f"{', '.join(scheduled) or 'none'}")
+    return out
+
 
 
 def findings(root: Path) -> list[str]:
@@ -415,6 +569,12 @@ def findings(root: Path) -> list[str]:
     out += [f"Makefile leg preload `{s}` is not named in {DOC_NAME}'s description "
             f"(issue #935: a dropped `-s` pointer must fail the gate)"
             for s in sorted(lane_names) if s not in text]
+
+    # Cadence claims (issue #1032): what the documents SAY starts a pipeline must be
+    # what the workflow declares. Rule 6t (owner directive 2026-11-15) left ONE cron in
+    # the tree; the alarm prose still said "weekly"/"scheduled"/"twice-an-hour", so a
+    # reader waited for a cadence that no longer fires.
+    out += cadence_findings(root, workflows, {DOC_NAME: text, AGENTS_DOC: agents_text})
     return out
 
 

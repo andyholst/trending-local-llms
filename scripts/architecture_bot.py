@@ -215,10 +215,19 @@ def _on_block(text: str) -> list[str]:
     return [line for line in lines if line.startswith("on:")]
 
 
-def workflow_triggers(text: str) -> str:
-    """A human summary of a workflow's triggers, crons included."""
+def workflow_crons(text: str) -> list[str]:
+    """The cron expressions a workflow's `on.schedule` actually declares (issue #1032).
+
+    The machine view the cadence guard reads; `workflow_triggers` renders the SAME
+    facts for the inventory, so a document's cadence claim and the inventory row can
+    never be decided by two parsers (rule 6d).
+    """
+    return _CRON.findall(text)
+
+
+def workflow_trigger_events(text: str) -> list[str]:
+    """The `on:` event keys a workflow declares, in file order (issue #1032)."""
     body = _on_block(text)
-    crons = _CRON.findall(text)
     events: list[str] = []
     inline = next((l for l in body if l.startswith("on:")), "")
     if inline:
@@ -227,7 +236,13 @@ def workflow_triggers(text: str) -> str:
         m = re.match(r"^  ([a-z_]+):", line)
         if m and m.group(1) not in ("types",):
             events.append(m.group(1))
-    events = [e for e in dict.fromkeys(events) if e not in ("types",)]
+    return [e for e in dict.fromkeys(events) if e not in ("types",)]
+
+
+def workflow_triggers(text: str) -> str:
+    """A human summary of a workflow's triggers, crons included."""
+    crons = workflow_crons(text)
+    events = workflow_trigger_events(text)
     parts: list[str] = []
     if crons:
         parts.append("cron " + ", ".join(f"`{c}`" for c in crons))
@@ -508,8 +523,8 @@ def render(root: Path) -> str:
     lines: list[str] = [
         "_Generated from the tree itself by `scripts/architecture_bot.py` "
         "(`make architecture-refresh`); `.github/workflows/architecture-bot.yml` "
-        "regenerates it daily and opens a PR only when it changed. Do not edit this "
-        "block by hand — change the code it describes and run the target._",
+        "regenerates it on owner dispatch and opens a PR only when it changed. Do not "
+        "edit this block by hand — change the code it describes and run the target._",
         "",
         f"### Bots in the tree ({len(wfs)} pipelines, {len(targets)} make targets, "
         f"{len([p for p in (root / SCRIPTS_DIR).glob('*') if p.is_file()])} files in "
