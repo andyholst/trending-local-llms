@@ -13,7 +13,10 @@ The fix has two halves, both asserted here:
     than the row it would merge into (`refuse_misattributed_measurements`), or documents
     the real exception as DATA on the row's `measurement_model_aliases` key (issue #652
     replaced the old code-literal mapping; `check_measurement_alias_map` refuses a
-    counterpart that is not a store model id).
+    counterpart that is not a store model id). The proof is not only a family-named
+    mention (issue #1018): a figure stated at a parameter size the row is not — "30 tok/s
+    at 70B Q4" on a 27B row — is refused by the same seam with the same rescues
+    (`bare_param_size_figure_reason`).
   - `make validate` FAILS a measurement that relies on a placeholder `source_post` AND
     claims engagement counts (`check_post_signal`), while a low-signal static placeholder
     row stays allowed. The attribution scan itself is report-only for history.
@@ -471,6 +474,110 @@ def test_the_shipped_joint_figure_is_documented_as_data():
           out.getvalue()[:200])
 
 
+def test_a_bare_parameter_size_figure_is_refused():
+    """issue #1018: "30 tok/s at 70B Q4" on a 27B row names NO model at all.
+
+    The #468 proof needs a family+version+size mention; this sentence has only a size,
+    so `named_models_in_text` saw nothing and the seam was blind to it.
+    """
+    m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Q4_K_M (16.8GB weights), + flash-attention + kv-cache q4_0; 30 tok/s at 70B Q4",
+             post="https://lightbrd.com/u/status/101"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(m, {"models": [m]})
+    check("attribution: a bare 70B figure on a 27B row is REFUSED",
+          len(refused) == 1 and not kept, (kept, refused))
+    check("attribution: the bare-size refusal names both sizes and the data key",
+          refused and "70b" in refused[0][1] and "27b" in refused[0][1]
+          and "measurement_model_aliases" in refused[0][1], refused)
+    check("attribution: the bare-size refusal carries the source post",
+          refused and refused[0][2] == "https://lightbrd.com/u/status/101", refused)
+    m2 = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("serving at 70B dense with vLLM; 12 t/s", post="https://lightbrd.com/u/status/102"),
+    ])
+    kept2, refused2 = UT.refuse_misattributed_measurements(m2, {"models": [m2]})
+    check("attribution: a <sizeB model> spelling of a bare size is refused too",
+          len(refused2) == 1 and not kept2, (kept2, refused2))
+
+
+def test_a_bare_size_that_is_the_row_own_size_is_kept():
+    m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Q4_K_M (16.8GB weights), 128K context at 27B Q4; 28.99 t/s",
+             post="https://lightbrd.com/u/status/103"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(m, {"models": [m]})
+    check("attribution: a bare size that IS the row's own size is kept", not refused and kept,
+          refused)
+
+
+def test_a_size_inside_a_model_token_is_not_a_bare_size():
+    """"24B A2B MoE" states an active-parameter count, not a foreign model size."""
+    m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("the 24B A2B MoE variant ran at 40 t/s on the same card",
+             post="https://lightbrd.com/u/status/104"),
+        meas("LFM2.5-24B-A2B served by vLLM on the same box; 40 t/s",
+             post="https://lightbrd.com/u/status/105"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(m, {"models": [m]})
+    check("attribution: an A2B-style size inside a model token is not a bare size",
+          not refused and len(kept) == 2, refused)
+
+
+def test_a_memory_or_bandwidth_figure_is_not_a_param_size():
+    m = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Q4_K_M (16.8GB weights) on a 256GB unified-memory box; 1.58TB/s; 30 t/s",
+             post="https://lightbrd.com/u/status/106"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(m, {"models": [m]})
+    check("attribution: a GB/TB hardware figure is never read as a parameter size",
+          not refused and kept, refused)
+
+
+def test_the_bare_size_rescues_match_the_named_ones():
+    """Same rescues as the named-model proof: multi-model post, bake-off, joint figure."""
+    own_named = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("Qwen3.6-27B at Q4; the post also covers the 125B model; 41 t/s",
+             post="https://lightbrd.com/u/status/107"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(own_named, {"models": [own_named]})
+    check("attribution: a post naming this row AND another size is kept", not refused and kept,
+          refused)
+    bakeoff = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("70B at 30 t/s vs this 27B at 45 t/s", post="https://lightbrd.com/u/status/108"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(bakeoff, {"models": [bakeoff]})
+    check("attribution: a per-model bake-off with its own figures is kept", not refused and kept,
+          refused)
+    joint = row("qwen-3.6-27b", "Qwen 3.6 27B", "Qwen3.6-27B", engines=[
+        meas("27B vs 70B: 30 t/s", post="https://lightbrd.com/u/status/109"),
+    ])
+    kept, refused = UT.refuse_misattributed_measurements(joint, {"models": [joint]})
+    check("attribution: ONE figure across a 27B/70B comparison is a JOINT refusal",
+          len(refused) == 1 and "JOINT" in refused[0][1], (kept, refused))
+
+
+def test_the_shipped_capture_that_defines_issue_1018_is_refused():
+    """Real data, no fixture: data/raw/metal-20261014-210435.json's qwen3.6-27b row.
+
+    Two of its llama.cpp measurements read "...; 30 tok/s at 70B Q4" / "served at 70B Q4".
+    Before issue #1018 the seam read them as clean; the next refresh must refuse them.
+    """
+    raw = json.loads((ROOT / "data/raw/metal-20261014-210435.json").read_text())
+    store = json.loads((ROOT / "data/models.json").read_text())
+    models = {m["id"]: m for m in store["models"]}
+    rows = [m for m in raw["models"] if m.get("id") == "qwen3.6-27b"]
+    check("attribution #1018: the shipped capture carries the qwen3.6-27b row",
+          bool(rows), [m.get("id") for m in raw["models"]])
+    kept, refused = UT.refuse_misattributed_measurements(rows[0], models)
+    checks = [r for r in refused if "70b" in r[1]]
+    check("attribution #1018: both 70B sentences on the 27B row are now REFUSED at ingest",
+          len(checks) == 2, refused)
+    check("attribution #1018: each refusal carries a real status URL",
+          checks and all("status/" in r[2] for r in checks), [r[2] for r in checks])
+    check("attribution #1018: the kept measurements are untouched (no drive-by refusal)",
+          len(kept) == len(rows[0].get("engines") or []) - 2, (len(kept), len(refused)))
+
+
 def main() -> int:
     print("measurement attribution: a measurement naming another model (tech-debt #456/#468)")
     test_the_reported_measurement_is_refused()
@@ -491,6 +598,12 @@ def main() -> int:
     test_new_model_keeps_captured_exception()
     test_existing_row_gains_aliases_additively()
     test_the_shipped_joint_figure_is_documented_as_data()
+    test_a_bare_parameter_size_figure_is_refused()
+    test_a_bare_size_that_is_the_row_own_size_is_kept()
+    test_a_size_inside_a_model_token_is_not_a_bare_size()
+    test_a_memory_or_bandwidth_figure_is_not_a_param_size()
+    test_the_bare_size_rescues_match_the_named_ones()
+    test_the_shipped_capture_that_defines_issue_1018_is_refused()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

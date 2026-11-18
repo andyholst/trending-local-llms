@@ -2590,6 +2590,70 @@ def named_models_in_text(text: object) -> set[tuple[str, str, str]]:
     return out
 
 
+#: A parameter size stated with NO model attached to it — issue #1018. The measured
+# defect: a `Qwen 3.6 27B` row whose `quant` reads "Q4_K_M (16.8GB weights),
+# + flash-attention + kv-cache q4_0; 30 tok/s at 70B Q4" — the figure sits at a
+# 70B parameter size and the sentence names NO model, so `named_models_in_text`
+# (family + version + params) sees nothing and the #468 seam is blind to it.
+# The number must stand alone (a lookbehind refuses the `B` of `A2B` /
+# `LFM2.5-24B-A2B`) and must sit in a quant/throughput phrase, so "16.8GB weights",
+# "256GB", "1.58TB/s" and "RTX 5090" never match (measured over data/raw: the only
+# captures that trip it are the two 70B sentences on the 27B row).
+_BARE_PARAM_SIZE_RE = re.compile(
+    r"(?<![A-Za-z0-9.])(?:\b(?:at|on|for|in|with|vs\.?)\s+(\d{1,4}(?:\.\d+)?)\s*[Bb]\b"
+    r"|(\d{1,4}(?:\.\d+)?)\s*[Bb]\s+"
+    r"(?:Q\d|FP\d|IQ\d|GGUF|dense|MoE|models?|runs?|weights?|quant|served|serving|running)\b)",
+    re.I,
+)
+
+
+def bare_param_sizes_in_text(text: object, named_params: set[str] | None = None) -> set[str]:
+    """The parameter sizes a measurement's text states WITHOUT naming a model.
+
+    A size that is part of a family-named mention ("Qwen 3.5 35B") is NOT bare: the
+    #468 seam already governs it, and a second verdict on the same mention would
+    double-count one sentence (rule 6d: one proof per defect).
+    """
+    named = named_params or set()
+    out: set[str] = set()
+    for a, b in _BARE_PARAM_SIZE_RE.findall(str(text or "")):
+        digits = a or b
+        if digits:
+            out.add(digits.lower() + "b")
+    return {p for p in out if p not in named}
+
+
+def bare_param_size_figure_reason(
+    text: str, own: tuple[str, str, str], *, cue: bool, figures: int, own_named: bool,
+    named_params: set[str],
+) -> str | None:
+    """Why a measurement states a figure at a parameter size the row is not — or None.
+
+    The same rescues as the named-model proof apply, unchanged: a comparison cue with
+    exactly one t/s figure is a JOINT figure (issue #651), a cue with several figures is
+    a per-model bake-off, a text that names the row's own model too is a multi-model
+    post about this row, and a size equal to the row's own is the row's own figure.
+    """
+    sizes = bare_param_sizes_in_text(text, named_params)
+    if own[2] in sizes:
+        return None  # the bare size IS this row's size
+    foreign = sorted((p for p in sizes if p != own[2]), key=lambda p: -float(p.rstrip("b")))
+    if not foreign:
+        return None
+    if cue and figures == 1:
+        return (f"its text reports a JOINT figure: one t/s value at {foreign[0]} against "
+                f"{own[0]} {own[1] or ''} {own[2]} (a joint figure is not attributable to "
+                f"one row; record a documented exception in the row's "
+                f"measurement_model_aliases)").replace("  ", " ")
+    if cue or own_named:
+        return None  # a bake-off sentence, or a post that names this row too
+    return (f"its text states a figure at {foreign[0]} with no model named, but the row is "
+            f"{own[0]} {own[1] or ''} {own[2]} (a figure at another parameter size is not "
+            f"attributable to this row; name the model in the measurement text, or record "
+            f"a documented exception in the row's measurement_model_aliases)"
+            ).replace("  ", " ")
+
+
 def misattributed_measurement_reason(
     measurement: dict, model: dict, store: dict | None = None
 ) -> str | None:
@@ -2607,8 +2671,11 @@ def misattributed_measurement_reason(
     ONE t/s figure in the text is a JOINT figure — not attributable to one row —
     and is refused; two or more figures is a per-model bake-off and is kept. The
     remaining real exceptions are documented on the ROW as `measurement_model_aliases`
-    (issue #652). There is exactly ONE implementation (rule 6d): the ingest refusal
-    and the validator's report both call this.
+    (issue #652). A family-named mention is not the only proof (issue #1018): a size the
+    text states with NO model attached to it — "30 tok/s at 70B Q4" on a 27B row — is the
+    same defect, caught by `bare_param_size_figure_reason` with the same rescues. There is
+    exactly ONE implementation (rule 6d): the ingest refusal and the validator's report
+    both call this.
     """
     own = measurement_model_identity(
         model.get("name") or model.get("full_name") or model.get("id") or model.get("hf")
@@ -2639,7 +2706,13 @@ def misattributed_measurement_reason(
     others = [(family, ver, params) for family, ver, params in named_models_in_text(text)
               if family == own[0] and params != own[2] and (family, ver, params) not in allowed]
     if not others:
-        return None
+        # No family-named cross-size mention: ask the SECOND proof (issue #1018) — a
+        # parameter size the text states with no model attached to it at all.
+        return bare_param_size_figure_reason(
+            text, own, cue=cue, figures=figures, own_named=own_named,
+            named_params={params for _, _, params in named_models_in_text(text)}
+            | {params for _, _, params in allowed},
+        )
     family, ver, params = others[0]
     if cue and figures == 1:
         # issue #651: one figure for a comparison of two models is a JOINT figure —

@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **353**
+Active changes: **2** · archived: **354**
 
 ## Active changes
 
@@ -111,6 +111,7 @@ Active changes: **2** · archived: **353**
 | `auto-merge-carries-pr-message` | archived | #787 (measured: master run 43050329961, landed squash `d3d4116`, job 130625403397) | #790 | [qa-pipeline](openspec/changes/archive/auto-merge-carries-pr-message/specs/qa-pipeline/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/auto-merge-carries-pr-message/proposal.md) |
 | `auto-merge-index-at-merge-time` | archived | #1049 | #1085 | [auto-merge](openspec/changes/archive/auto-merge-index-at-merge-time/specs/auto-merge/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/auto-merge-index-at-merge-time/proposal.md) |
 | `ban-pytest-imports-in-tests` | archived | #768 (measured: qa-validate run 42800200326, PR #764 head 0db0462) | #778 | [test-runner](openspec/changes/archive/ban-pytest-imports-in-tests/specs/test-runner/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/ban-pytest-imports-in-tests/proposal.md) |
+| `bare-param-size-figure-refusal` | archived | #1018 | #1131 | [measurement-attribution](openspec/changes/archive/bare-param-size-figure-refusal/specs/measurement-attribution/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/bare-param-size-figure-refusal/proposal.md) |
 | `base-rebase-conflict-succeeds` | archived | #586 | — | [worktree-base](openspec/changes/archive/base-rebase-conflict-succeeds/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/base-rebase-conflict-succeeds/proposal.md) |
 | `baseline-age-visible` | archived | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/archive/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/baseline-age-visible/proposal.md) |
 | `blocked-task-is-visible` | archived | #409 | — | [openspec-task-gate](openspec/changes/archive/blocked-task-is-visible/specs/openspec-task-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/blocked-task-is-visible/proposal.md) |
