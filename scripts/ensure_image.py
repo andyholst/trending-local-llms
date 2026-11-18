@@ -206,6 +206,27 @@ class BlobsUnfetchable(Exception):
     """The registry serves the manifest but not the blobs the manifest names (#1118)."""
 
 
+def _report_fallback(name: str, tag: str) -> None:
+    """Machine-readable report of a corrupt-tag fallback (issue #1120).
+
+    `corrupt-tag-fallback=<image>=<tag>` is the ONE line the qa-validate steps parse
+    into their `GITHUB_OUTPUT` (rule 3f — an allowlisted key, never whole stdout), so
+    the PR can be told exactly which published tag was rebuilt without a pull. The
+    prose verdict stays for humans; this line is the machine channel, and it is
+    printed ONLY on the corrupt fallback: a healthy pull, an absent-tag build or a
+    local reuse prints no such line — the line means "built without a pull" and
+    nothing else.
+    """
+    print(f"corrupt-tag-fallback={name}={tag}", flush=True)
+    # The workflow step reads the report FILE (no shell capture of the stream —
+    # rule 3f keeps the step to an allowlisted key, and check_secret_output
+    # refuses a captured log without a redactor). One line per fallback.
+    report = os.environ.get("IMAGE_FALLBACK_REPORT")
+    if report:
+        with open(report, "a", encoding="utf-8") as fh:
+            fh.write(f"corrupt-tag-fallback={name}={tag}\n")
+
+
 def ensure_base() -> str:
     if published(base_tag()):
         try:
@@ -215,6 +236,7 @@ def ensure_base() -> str:
             # do not. The only truthful image here is a build of THIS revision's
             # Dockerfile — the same one the tag was hashed from.
             _run("docker", "build", "-t", IMAGE, ".")
+            _report_fallback("base", base_tag())  # the machine line the PR gate parses (#1120)
             return (f"base: {base_tag()} is published but its blobs are not fetchable "
                     f"— built {IMAGE} from this revision's Dockerfile")
         _run("docker", "tag", base_tag(), IMAGE)
@@ -278,6 +300,8 @@ def ensure_openspec() -> str:
             return f"openspec: pulled {tag} -> {OPENSPEC_IMAGE}"
     _run("docker", "build", "-f", "openspec/Dockerfile",
          "-t", OPENSPEC_IMAGE, "-t", tag, "openspec")
+    if corrupt:
+        _report_fallback("openspec", tag)  # the machine line the PR gate parses (#1120)
     why = (f"{tag} is published but its blobs are not fetchable" if corrupt
            else f"{tag} is not published")
     return (
@@ -341,6 +365,8 @@ def ensure_test() -> str:
         print(f"  ({note})")
     _run("docker", "build", "-f", "Dockerfile.test",
          "--build-arg", f"BASE_IMAGE={IMAGE}", "-t", TEST_IMAGE, ".")
+    if corrupt:
+        _report_fallback("test", test_tag())  # the machine line the PR gate parses (#1120)
     why = (f"{test_tag()} is published but its blobs are not fetchable" if corrupt
            else f"{test_tag()} is not published")
     return f"test: {why}; built {TEST_IMAGE} on {IMAGE}"

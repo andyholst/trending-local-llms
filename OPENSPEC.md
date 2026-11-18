@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **355**
+Active changes: **2** · archived: **356**
 
 ## Active changes
 
@@ -101,6 +101,7 @@ Active changes: **2** · archived: **355**
 | `alias-one-definition` | archived | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/archive/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/alias-one-definition/proposal.md) |
 | `all-quarantined-capture-is-an-alarm` | archived | #624 — tech-debt "A capture where EVERY row is quarantined still exits 0 and reports | #837 | [raw-capture-alarm](openspec/changes/archive/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | archived | #309 | — | [code-review-scan](openspec/changes/archive/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/an-unchecked-scan-is-not-clean/proposal.md) |
+| `announce-corrupt-tag-fallback-1120` | archived | #1120 | #1134 | [image-fallback-announcement](openspec/changes/archive/announce-corrupt-tag-fallback-1120/specs/image-fallback-announcement/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/announce-corrupt-tag-fallback-1120/proposal.md) |
 | `announce-the-decided-hold` | archived | #449 (the owner's ruling: the decided hold stays a HUMAN decision — it must be announced, never expired) | — | [bot-coordination](openspec/changes/archive/announce-the-decided-hold/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/announce-the-decided-hold/proposal.md) |
 | `arch-calls-from-a-script` | archived | #482 | — | [architecture-inventory](openspec/changes/archive/arch-calls-from-a-script/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/arch-calls-from-a-script/proposal.md) |
 | `architecture-block-repair-keeper` | archived | #861 | #868 | [architecture-inventory](openspec/changes/archive/architecture-block-repair-keeper/specs/architecture-inventory/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/architecture-block-repair-keeper/proposal.md) |

@@ -3178,8 +3178,75 @@ def main() -> int:
     test_python_env_seam_routes_migrated_recipes_through_the_container()
     test_a_new_change_with_an_unticked_box_never_opens_a_pr()
     test_the_tasks_gate_runs_only_for_implement_verdicts()
+    test_the_corrupt_tag_fallback_is_announced_on_the_pr()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
+
+
+def test_the_corrupt_tag_fallback_is_announced_on_the_pr():
+    """(Issue #1120) the validate job captures ONLY the allowlisted fallback key
+    and a gated, default-token step calls `make announce-image-fallback`.
+
+    The seam (scripts/ensure_image.py) prints one `corrupt-tag-fallback=<image>=<tag>`
+    line per rebuilt image AND appends it to `$IMAGE_FALLBACK_REPORT` when that env
+    is set — so the step never captures the command's stream through a shell log
+    (check_secret_output refuses a captured log without a redactor, issue #351);
+    it reads the report file into ONE allowlisted `corrupt_fallback` key (rule 3f,
+    never whole stdout) and a `pull_request`-only step announces it.
+    """
+    wf = load("qa-validate.yml")
+    steps = wf["jobs"]["validate"]["steps"]
+    by_id = {s.get("id"): s for s in steps if s.get("id")}
+    for sid in ("image-ensure", "openspec-check"):
+        step = by_id[sid]
+        check(f"qa: {sid} names the report file its seam writes",
+              "IMAGE_FALLBACK_REPORT" in (step.get("env") or {}), str(step.get("env")))
+        body = step["run"]
+        check(f"qa: {sid} runs the bare gate (no shell capture of its stream)",
+              f"make {sid.replace('-check', '-check') if sid == 'openspec-check' else 'image-ensure'}\n" in body
+              and "tee" not in body and "grep" not in body, body[-300:])
+        check(f"qa: {sid} writes only the allowlisted key into GITHUB_OUTPUT (rule 3f)",
+              "corrupt_fallback" in body
+              and body.count("GITHUB_OUTPUT") == 1
+              and "printf '%s=%s\\n' corrupt_fallback" in body, body[-300:])
+    check("qa: validate keeps `issues: read` (the #779 lifecycle guard) and exports the fallback",
+          wf["jobs"]["validate"]["permissions"].get("issues") == "read"
+          and wf["jobs"]["validate"].get("outputs", {}).get("corrupt_fallback")
+          == "${{ steps.collect-fallback.outputs.corrupt_fallback }}",
+          str(wf["jobs"]["validate"].get("permissions")))
+    collect = by_id.get("collect-fallback")
+    check("qa: ONE step combines the report keys into the job output (rule 3f: allowlisted key only)",
+          collect is not None and "corrupt_fallback" in collect["run"]
+          and collect["run"].count("GITHUB_OUTPUT") == 1
+          and "printf '%s=%s\\n' corrupt_fallback" in collect["run"],
+          (collect or {}).get("run", "missing"))
+    # A STEP cannot raise GITHUB_TOKEN scope, so the write must live in its own job.
+    announce_steps = [(jname, s) for jname, job in wf["jobs"].items()
+                      for s in job.get("steps", [])
+                      if "announce-image-fallback" in s.get("run", "")]
+    check("qa: exactly one step in the pipeline calls make announce-image-fallback",
+          len(announce_steps) == 1, str([j for j, _ in announce_steps]))
+    jname, step = announce_steps[0]
+    job = wf["jobs"][jname]
+    check("qa: the announcer is its OWN job, so `validate` never gains a write scope",
+          jname != "validate" and job["permissions"].get("issues") == "write"
+          and job["permissions"].get("contents") == "read", str(job["permissions"]))
+    check("qa: the announce job is gated on a captured fallback and pull_request only",
+          "github.event_name == 'pull_request'" in job["if"]
+          and "needs.validate.outputs.corrupt_fallback" in job["if"], job.get("if", ""))
+    check("qa: the announce job runs after validate (the only producer of its input)",
+          "validate" in (job.get("needs") or []), str(job.get("needs")))
+    check("qa: the announce step runs exactly the Makefile target",
+          step["run"].strip() == "make announce-image-fallback", step.get("run", ""))
+    check("qa: the announcement uses the DEFAULT github.token (rule 6e: the owner PAT cannot comment)",
+          (step.get("env") or {}).get("GH_TOKEN") == "${{ github.token }}", str(step.get("env")))
+    check("qa: the announcer's IMAGES come from the job output, never a captured stream",
+          (step.get("env") or {}).get("IMAGES") == "${{ needs.validate.outputs.corrupt_fallback }}",
+          str(step.get("env")))
+    makefile = (ROOT / "Makefile").read_text()
+    check("makefile: announce-image-fallback is a target running the ONE script (rules 6d/6m)",
+          re.search(r"^announce-image-fallback:", makefile, re.M) is not None
+          and "python3 scripts/announce_image_fallback.py" in makefile, "target missing")
 
 
 if __name__ == "__main__":

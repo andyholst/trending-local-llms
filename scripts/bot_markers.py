@@ -56,7 +56,13 @@ REGISTRY: dict[str, dict[str, str]] = {
                          "outcome": "issue-bot-outcome"},
     "issue-review-bot": {"start": "issue-review", "window": "issue-review: window"},
     "refresh-bot":      {"run": "refresh-bot-run"},
-    "qa-validate":      {"merge": "bot-merge"},
+    "qa-validate":      {"merge": "bot-merge",
+                         # The corrupt-tag fallback announcement (issue #1120): when a published
+                         # runner-image tag's blobs are unfetchable (#1118) and the PR's CI builds
+                         # the image locally, `scripts/announce_image_fallback.py` posts ONE
+                         # marker-deduplicated comment on the PR naming which images were built
+                         # without a pull. The stamp dates it, `run=<id>` dedups it per CI run.
+                         "image_fallback": "corrupt-tag-fallback"},
     # The failure filer (issue #802): `queued-alarm.yml` announces EACH main-pipeline failure it
     # diagnoses from a failed run's logs by filing an issue that carries this marker — the stamp
     # dates the filing, `run=<id>` dedups it (one run files once, ledger + marker agree).
@@ -88,7 +94,8 @@ ARTIFACTS: dict[str, str] = {
     "issue-bot": "the issue (before `make implement-issue`)",
     "issue-review-bot": "the issue (before its first write)",
     "refresh-bot": "the PR it opens (and the gap issue it files)",
-    "qa-validate": "the PR (immediately before the merge)",
+    "qa-validate": "the PR (immediately before the merge), and the PR whose published runner-image "
+                   "tag was corrupt and rebuilt locally (issue #1120)",
     "queued-alarm": "the issue it files for a diagnosed main-pipeline failure (issue #802), and "
                     "the issue thread of a ledger row its re-diagnosis pass raised (issue #987)",
     "pr-health": "the open PR it flags silent (issue #442), and the PR whose rebase attempt a "
@@ -159,6 +166,10 @@ WRITTEN: frozenset = frozenset({
     # the `rebase_failed` comment announces a sweep round whose rebase attempt failed (#964).
     ("pr-health", "alarm"),
     ("pr-health", "rebase_failed"),
+    # Written by `scripts/announce_image_fallback.py` (via `make announce-image-fallback`,
+    # issue #1120): ONE comment on the PR whose runner-image tag was corrupt (#1118's fallback),
+    # naming which images CI built without a pull.
+    ("qa-validate", "image_fallback"),
 })
 
 #: Registered but not yet written, with the issue that lands its writer. Declared here so a reader

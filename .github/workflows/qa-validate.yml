@@ -103,10 +103,19 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      # `issues: read` stays (the #779 lifecycle guard reads issue state); the
+      # corrupt-tag-fallback announcement (issue #1120) is the ONE step that
+      # raises `issues: write` at STEP level, so one marker comment never grants
+      # the whole 30-minute job a write scope it does not use.
       issues: read
     # 20 -> 30: when the revision's Dockerfile is not published yet this job
     # builds the base from source before the suite (issue #135).
     timeout-minutes: 30
+    outputs:
+      # (issue #1120) the `corrupt-tag-fallback=<image>=<tag>` lines the two image
+      # steps captured; `announce-fallback` is the only consumer, and it is the
+      # only job in this pipeline that can write an issue comment.
+      corrupt_fallback: ${{ steps.collect-fallback.outputs.corrupt_fallback }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -161,8 +170,21 @@ jobs:
       # assertion used to degrade to a note on a stale base).
       # ONE path for both images: pull each one when the tag naming this
       # revision's inputs is published, else build it here (issues #135/#141).
+      # (issue #1120) the corrupt-tag fallback (#1118) prints one
+      # `corrupt-tag-fallback=<image>=<tag>` line per rebuilt image; ONLY that
+      # allowlisted key is written to GITHUB_OUTPUT (rule 3f — never whole
+      # stdout), and the announce step below turns it into a PR comment.
       - name: Prepare runner images (published for this revision, else build)
-        run: make image-ensure
+        id: image-ensure
+        env:
+          IMAGE_FALLBACK_REPORT: ${{ runner.temp }}/image_fallback_report.txt
+        run: |
+          make image-ensure
+          if [ -s "$IMAGE_FALLBACK_REPORT" ]; then
+            FB=$(tr '\n' ' ' < "$IMAGE_FALLBACK_REPORT")
+            printf '%s=%s\n' corrupt_fallback "$FB" >> "$GITHUB_OUTPUT"
+            rm -f "$IMAGE_FALLBACK_REPORT"
+          fi
 
       # FIRST: no credential may reach the repo. A finding here turns the PR red
       # (the same any-round gate) — remove the value and rotate the key,
@@ -207,8 +229,32 @@ jobs:
       # checklist is fully ticked and OPENSPEC.md (the root index of every change)
       # is current. `make openspec-check` also ensures the CLI image — pulled by
       # this revision's openspec/Dockerfile hash, built here when unpublished.
+      # (issue #1120) same corrupt-tag capture as `image-ensure`: an openspec-CLI
+      # rebuild must be announced too.
       - name: OpenSpec gate (changes validate, tasks ticked, index current)
-        run: make openspec-check
+        id: openspec-check
+        env:
+          IMAGE_FALLBACK_REPORT: ${{ runner.temp }}/openspec_check_report.txt
+        run: |
+          make openspec-check
+          if [ -s "$IMAGE_FALLBACK_REPORT" ]; then
+            FB=$(tr '\n' ' ' < "$IMAGE_FALLBACK_REPORT")
+            printf '%s=%s\n' corrupt_fallback "$FB" >> "$GITHUB_OUTPUT"
+            rm -f "$IMAGE_FALLBACK_REPORT"
+          fi
+
+      # (issue #1120) combine the two captured report keys into ONE job output.
+      # The announcement itself lives in its OWN job (`announce-fallback` below):
+      # a STEP cannot raise `GITHUB_TOKEN` scope, so the only way to give the
+      # comment its `issues: write` without granting the whole 30-minute validate
+      # job a write scope it never uses is a job boundary. validate keeps
+      # `issues: read` for the #779 lifecycle guard (issue #1126).
+      - name: Collect corrupt-tag fallback lines (issue #1120)
+        id: collect-fallback
+        run: |
+          FB="${{ steps.image-ensure.outputs.corrupt_fallback }} ${{ steps.openspec-check.outputs.corrupt_fallback }}"
+          FB=$(printf '%s' "$FB" | sed -e 's/^ *//' -e 's/ *$//')
+          if [ -n "$FB" ]; then printf '%s=%s\n' corrupt_fallback "$FB" >> "$GITHUB_OUTPUT"; fi
 
       # The lifecycle's END (rule 6f, issue #183): a change whose PR is merged must
       # be archived in the PR that completes it, so an ACTIVE change naming a
@@ -246,6 +292,35 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make test
+
+  # (issue #1120) the corrupt-tag fallback (#1118) is green either way — but a
+  # reviewer must be able to tell whether CI pulled the published, content-hashed
+  # runner image or rebuilt it from the branch's own Dockerfile. This job is the
+  # ONLY writer of a comment in this pipeline: a step cannot raise token scope,
+  # so the write lives here and `validate` keeps `issues: read` (issue #1126).
+  # ONE marker-deduplicated comment (registered `corrupt-tag-fallback`, stamped
+  # `run=<id>`) names exactly which images were built without a pull, posted with
+  # the DEFAULT github.token (the owner PAT cannot comment, rule 6e), and only on
+  # a pull_request run that actually rebuilt something.
+  announce-fallback:
+    needs: [guard, validate]
+    if: github.event_name == 'pull_request' && needs.validate.outputs.corrupt_fallback != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Announce corrupt-tag fallback on the PR (issue #1120)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IMAGES: ${{ needs.validate.outputs.corrupt_fallback }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: make announce-image-fallback
 
   live-smoke:
     needs: guard
