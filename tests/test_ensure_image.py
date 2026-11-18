@@ -500,6 +500,75 @@ def test_a_published_tag_with_unfetchable_blobs_falls_back_to_a_local_build():
           in calls, str(calls))
 
 
+def test_the_corrupt_fallback_reports_its_image_machine_readably():
+    """Issue #1120 (scenario: A corrupt-tag fallback reports its image).
+
+    The fallback PROSE is for a human reading the log; the PR gate needs the
+    machine line. `corrupt-tag-fallback=<image>=<tag>` is what qa-validate's
+    `image-ensure` / `openspec-check` steps parse into their allowlisted
+    GITHUB_OUTPUT key (rule 3f — never whole stdout), and
+    `make announce-image-fallback` turns it into the supply-chain distinction
+    #1120 exists for. Each rebuilt image reports its OWN name and tag."""
+    base_tag = f"{IMAGE_REPO}:dockerfile-{_expected_hash(['Dockerfile', 'Dockerfile.test'])}"
+    corrupt = ("failed to copy: httpReadSeeker: failed open: could not fetch "
+               "content descriptor sha256:5da1ec363d9440e00535ca3434297e8c8cc0ae33a9ca9e81415f68fe62ec4a02 "
+               "(application/vnd.oci.image.layer.v1.tar+gzip) from remote: not found")
+
+    # Given the base tag is published but its blobs 404 on pull
+    rc, calls, out = _run(["ensure-base"], available=[base_tag],
+                          env_extra={"FAKE_DOCKER_PULL_ERROR": corrupt})
+    check("ensure-base (corrupt tag): reports corrupt-tag-fallback=base=<tag>",
+          rc == 0 and f"corrupt-tag-fallback=base={base_tag}" in out, out[-400:])
+
+    # Given the OpenSpec CLI tag is published but corrupt
+    ospec_tag = f"{IMAGE_REPO}-openspec:openspec-{_expected_hash(['openspec/Dockerfile'])}"
+    rc, calls, out = _run(["ensure-openspec"], available=[ospec_tag], images=[],
+                          env_extra={"FAKE_DOCKER_PULL_ERROR": corrupt})
+    check("ensure-openspec (corrupt tag): exit 0 with a local build",
+          rc == 0 and any(c[:1] == ["build"] for c in calls), str(calls))
+    check("ensure-openspec (corrupt tag): reports corrupt-tag-fallback=openspec=<tag>",
+          f"corrupt-tag-fallback=openspec={ospec_tag}" in out, out[-400:])
+
+    # The workflow step reads the REPORT FILE (never the shell-captured stream —
+    # rule 3f / issue #351): with IMAGE_FALLBACK_REPORT set, every fallback line
+    # lands in the file verbatim, one per line.
+    import tempfile
+    with tempfile.TemporaryDirectory() as tdir:
+        report = Path(tdir) / "image_fallback_report.txt"
+        rc, calls, out = _run(["ensure-base"], available=[base_tag],
+                              env_extra={"FAKE_DOCKER_PULL_ERROR": corrupt,
+                                         "IMAGE_FALLBACK_REPORT": str(report)})
+        written = report.read_text() if report.exists() else "<no report file>"
+        check("corrupt fallback appends its line to $IMAGE_FALLBACK_REPORT",
+              rc == 0 and written == f"corrupt-tag-fallback=base={base_tag}\n", written)
+
+
+def test_a_healthy_path_prints_no_fallback_report():
+    """Issue #1120 (scenario: The report line means exactly one thing).
+
+    A healthy pull, a not-published build and a local reuse are all GREEN paths
+    and print NOTHING. If any of them printed the line, the announce step would
+    tell a reviewer an image was built without a pull when it was not — the
+    line's ONLY meaning must be "built without a pull"."""
+    base_tag = f"{IMAGE_REPO}:dockerfile-{_expected_hash(['Dockerfile', 'Dockerfile.test'])}"
+
+    # Given the tag is published and the pull works
+    rc, calls, out = _run(["ensure-base"], available=[base_tag])
+    check("healthy pull: exit 0 and no corrupt-tag report line",
+          rc == 0 and "corrupt-tag-fallback=" not in out, out[-300:])
+
+    # Given the tag is not published (the ordinary build-here path)
+    rc, calls, out = _run(["ensure-base"], available=[])
+    check("not-published build: exit 0 and no corrupt-tag report line",
+          rc == 0 and "corrupt-tag-fallback=" not in out, out[-300:])
+
+    # Given the exact OpenSpec tag is already on THIS machine (issue #767 reuse)
+    ospec_tag = f"{IMAGE_REPO}-openspec:openspec-{_expected_hash(['openspec/Dockerfile'])}"
+    rc, calls, out = _run(["ensure-openspec"], available=[], images=[ospec_tag])
+    check("local reuse: exit 0 and no corrupt-tag report line",
+          rc == 0 and "corrupt-tag-fallback=" not in out, out[-300:])
+
+
 def test_wired_into_make_test():
     """The suite runs under `make test` (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -730,6 +799,8 @@ def main() -> int:
     test_ensure_base_builds_only_when_the_tag_is_not_published()
     test_ensure_test_pulls_or_builds_on_that_base()
     test_a_published_tag_with_unfetchable_blobs_falls_back_to_a_local_build()
+    test_the_corrupt_fallback_reports_its_image_machine_readably()
+    test_a_healthy_path_prints_no_fallback_report()
     test_wired_into_make_test()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

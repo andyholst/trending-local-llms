@@ -79,6 +79,13 @@ GATES: dict[str, tuple[str, str]] = {
     "check-commit-authorship": ("alarm", "master-alarm"),
     "pr-closure": ("alarm", "master-alarm"),
     "image-ensure": ("alarm", "master-alarm"),
+    # The corrupt-tag fallback ANNOUNCER (issue #1120): not a verifier — it posts the
+    # PR comment when image-ensure/openspec-check rebuilt an image without a pull. It
+    # is registered here because master_alarm derives "what the validate job runs"
+    # from the pipeline itself, and a make target the job runs that GATES does not
+    # name is the #527 defect; the master-alarm list covers it even though the step
+    # is pull_request-only and can never red a push.
+    "announce-image-fallback": ("alarm", "master-alarm"),
     "secret-scan": ("alarm", "master-alarm"),
     "secret-scan-self-test": ("alarm", "master-alarm"),
     "check-secret-output": ("alarm", "master-alarm"),

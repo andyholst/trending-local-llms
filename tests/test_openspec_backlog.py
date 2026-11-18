@@ -121,7 +121,9 @@ def test_the_cap_gates_the_merge_pipeline():
           "openspec-backlog-check" in re.search(r"\.PHONY:.*openspec", makefile).group(0))
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
     check("qa-validate gates on make openspec-check (where the cap bites)",
-          re.search(r"run:\s*make openspec-check\b", qa) is not None)
+          # (issue #1120) the step is a multi-line run: bare `make openspec-check`
+          # plus the fallback-report collection — the gate still runs, in a block.
+          re.search(r"make openspec-check\b", qa) is not None)
 
 
 def test_the_real_tree_is_under_the_cap():

@@ -235,7 +235,7 @@ docker-test-build:
 #   ghcr.io/<owner>/trending-local-llms-test:test-<sha12>        (test image)
 IMAGE_REPO ?= ghcr.io/andyholst/trending-local-llms
 
-.PHONY: image-tags image-ensure image-ensure-base image-ensure-test
+.PHONY: image-tags image-ensure image-ensure-base image-ensure-test announce-image-fallback
 image-tags:
 	python3 scripts/ensure_image.py tags
 
@@ -249,6 +249,14 @@ image-ensure-base:
 
 image-ensure-test:
 	python3 scripts/ensure_image.py ensure-test
+
+# (issue #1120) announce on the PR which runner images the corrupt-tag fallback
+# (#1118) built WITHOUT a pull. ONE marker-deduplicated comment through
+# `scripts/announce_image_fallback.py`; qa-validate's `validate` job calls it
+# when its image-ensure / openspec-check steps captured a fallback. Inputs are
+# PR=<n> IMAGES="<image>=<tag> …" RUN_URL=<run page> (env or make variables).
+announce-image-fallback: ## Announce on the PR which runner images were built without a pull (issue #1120)
+	PR="$(PR)" IMAGES="$(IMAGES)" RUN_URL="$(RUN_URL)" python3 scripts/announce_image_fallback.py --post
 
 # ---- the agent image: publishing is a deliberate, guarded act (issue #206) ----
 # The base image IS the agent image — it bakes the Hermes CLI and the pinned nerve
