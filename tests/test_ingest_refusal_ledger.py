@@ -24,6 +24,16 @@ with a real contract file. No stand-ins for the logic under test.
   - test_refusals_change_the_gap_signature           a new refusal is a new gap state
   - test_every_refusal_call_site_names_a_registered_stage  tree scan (rule 6d)
 
+Issue #1148 adds the FINDING-vs-RUN guards: `data/refusals.json` recorded 3 distinct
+refusals across 92 records because every validation pass appended a copy. A repeat of
+(stage, model, engine, reason, source_post) now raises `seen_count` and stamps
+`last_seen_utc` instead of appending, and the gap report totals OBSERVATIONS:
+
+  - test_a_repeat_of_a_finding_grows_seen_count_instead_of_appending  no copy, counters grow
+  - test_a_distinct_finding_still_appends_exactly_one_record          new finding = 1 record, seen_count 1
+  - test_a_second_validation_pass_changes_only_the_counters           re-validate changes only counters
+  - test_the_reported_total_counts_observations_never_copies          rule 3b: a total never shrinks
+
 Run:  python3 tests/test_ingest_refusal_ledger.py   or   make test
 """
 from __future__ import annotations
@@ -354,6 +364,134 @@ def test_every_refusal_call_site_names_a_registered_stage():
     check("no seam records an unregistered stage", set(sites) <= stages, sites)
 
 
+# ---------------------------------------------------------------------------
+# Issue #1148: the ledger records FINDINGS, not validation runs.
+# ---------------------------------------------------------------------------
+
+def _ledger_rows() -> list[dict]:
+    return json.loads((Path(os.environ["TRENDING_DATA_DIR"]) / "refusals.json").read_text())["refusals"]
+
+
+def _finding(rec: dict) -> tuple[str, str, str, str, str]:
+    return (str(rec["stage"]), str(rec["model"]), str(rec["engine"]),
+            str(rec["reason"]), str(rec["source_post"]))
+
+
+def _strip_counters(rows: list[dict]) -> list[dict]:
+    return [{k: v for k, v in r.items() if k not in ("seen_count", "last_seen_utc")} for r in rows]
+
+
+def test_a_repeat_of_a_finding_grows_seen_count_instead_of_appending():
+    with tempfile.TemporaryDirectory() as tmp:
+        ut = _fresh(Path(tmp))
+        _run_ingest_round(ut, _store(), _raw_round1())
+        first = _ledger_rows()
+        check("round 1 recorded the four seams (non-vacuous fixture)", len(first) >= 4, len(first))
+        landed_total = 0
+        with contextlib.redirect_stdout(io.StringIO()) as cap:
+            for rec in first:
+                landed = ut.record_ingest_refusals(
+                    {"id": rec["model"], "name": rec["model"]}, rec["stage"],
+                    [(rec["engine"], rec["reason"], rec["source_post"])], rec["backend"])
+                landed_total += landed
+        rows = _ledger_rows()
+        check("the repeat reported its refusals as recorded", landed_total == len(first), landed_total)
+        check("no copy was appended (the finding already exists)", len(rows) == len(first),
+              f"{len(first)} -> {len(rows)}")
+        check("every repeat raised seen_count to 2",
+              all(int(r.get("seen_count") or 0) == 2 for r in rows),
+              [r.get("seen_count") for r in rows])
+        check("every repeat stamped last_seen_utc", all("last_seen_utc" in r for r in rows))
+        check("the original utc (first sighting) never moved",
+              all(r["utc"] == old["utc"] for r, old in zip(rows, first)))
+        check("every non-counter field is byte-identical",
+              _strip_counters(rows) == _strip_counters(first))
+        check("the collapse is announced in the log", "repeat(s)" in cap.getvalue(),
+              cap.getvalue()[-160:])
+
+
+def test_a_distinct_finding_still_appends_exactly_one_record():
+    with tempfile.TemporaryDirectory() as tmp:
+        ut = _fresh(Path(tmp))
+        _run_ingest_round(ut, _store(), _raw_round1())
+        first = _ledger_rows()
+        new_finding = ("llama.cpp", "reason only ever seen once (#1148)", POST5)
+        ut.record_ingest_refusals({"id": "distinct-model", "name": "Distinct Model"},
+                                  "refuse_weight_gb_contradictions", [new_finding], "cpu")
+        rows = _ledger_rows()
+        check("a new finding appended exactly one record", len(rows) == len(first) + 1,
+              f"{len(first)} -> {len(rows)}")
+        added = [r for r in rows if _finding(r) == ("refuse_weight_gb_contradictions", "distinct-model",
+                                                   new_finding[0], new_finding[1], new_finding[2])]
+        check("the new record starts at seen_count 1",
+              len(added) == 1 and int(added[0]["seen_count"]) == 1, added)
+        # the SAME finding again: no second record, the counter grows.
+        ut.record_ingest_refusals({"id": "distinct-model", "name": "Distinct Model"},
+                                  "refuse_weight_gb_contradictions", [new_finding], "cpu")
+        rows2 = _ledger_rows()
+        check("the second arrival of the same finding appended nothing",
+              len(rows2) == len(first) + 1, len(rows2))
+        grown = [r for r in rows2 if _finding(r) == ("refuse_weight_gb_contradictions", "distinct-model",
+                                                     new_finding[0], new_finding[1], new_finding[2])]
+        check("its seen_count grew to 2 and last_seen_utc moved",
+              len(grown) == 1 and int(grown[0]["seen_count"]) == 2 and "last_seen_utc" in grown[0],
+              grown)
+        check("a different stage/model/reason/post is a DISTINCT finding (never merged)",
+              len({_finding(r) for r in rows2}) == len(rows2), len(rows2))
+
+
+def test_a_second_validation_pass_changes_only_the_counters():
+    """`make validate` twice on an unchanged tree: byte-identical apart from counters."""
+    with tempfile.TemporaryDirectory() as tmp:
+        ut = _fresh(Path(tmp))
+        store1, _ = _run_ingest_round(ut, _store(), _raw_round1())
+        first = _ledger_rows()
+        store2, _ = _run_ingest_round(ut, store1, _raw_round1())
+        second = _ledger_rows()
+        check("the second pass on the same raw added no record",
+              len(second) == len(first), f"{len(first)} -> {len(second)}")
+        check("every record's finding fields are byte-identical after a re-validate",
+              _strip_counters(second) == _strip_counters(first))
+        check("a counter is never absent (seen_count >= 1 on every record)",
+              all(int(r.get("seen_count") or 0) >= 1 for r in second))
+        # and a refusal that the second pass DID re-arrive at grows, never duplicates:
+        rec = first[0]
+        ut.record_ingest_refusals({"id": rec["model"], "name": rec["model"]}, rec["stage"],
+                                  [(rec["engine"], rec["reason"], rec["source_post"])],
+                                  rec["backend"])
+        rows = _ledger_rows()
+        check("the re-arrived refusal grew its counter instead of appending",
+              len(rows) == len(first) and int(rows[0]["seen_count"]) >= 2,
+              [r.get("seen_count") for r in rows][:3])
+
+
+def test_the_reported_total_counts_observations_never_copies():
+    """Rule 3b: collapsing repeats into a counter may never SHRINK a printed total."""
+    with tempfile.TemporaryDirectory() as tmp:
+        ut = _fresh(Path(tmp))
+        store, _ = _run_ingest_round(ut, _store(), _raw_round1())
+        rows = _ledger_rows()
+        import data_gap_analysis as dga
+        contract = dga.contract_keys()
+        # Counters high enough that the bounded render MUST print its total line.
+        base_rows = [{**r, "seen_count": 5} for r in rows]
+        grown = [{**r, "seen_count": 6} for r in rows]
+        base = dga.render(dga.analyse(store, contract, raw_dir=Path(tmp) / "raw",
+                                      refusals=base_rows))
+        after = dga.render(dga.analyse(store, contract, raw_dir=Path(tmp) / "raw", refusals=grown))
+        total_re = re.compile(r"recorded in full in data/refusals\.json \((\d+) total\)")
+        t1 = [int(m) for m in total_re.findall(base)]
+        t2 = [int(m) for m in total_re.findall(after)]
+        check("the bounded render prints an observations total", bool(t1) and bool(t2),
+              (base[-200:], after[-200:]))
+        check("the printed total is the SUM of seen_count (observations, not record copies)",
+              sum(t1) == sum(int(r["seen_count"]) for r in base_rows),
+              (t1, sum(int(r["seen_count"]) for r in base_rows)))
+        check("growing seen_count grows the printed total (rule 3b: never shrinks)",
+              all(b >= a for a, b in zip(t1, t2)) and sum(t2) > sum(t1), (t1, t2))
+        check("the ledger on disk is untouched by the render", _ledger_rows() == rows)
+
+
 def main() -> int:
     for t in (test_every_refusal_seam_records_to_the_ledger,
               test_the_refused_measurements_never_reach_the_store,
@@ -363,7 +501,11 @@ def main() -> int:
               test_record_refuses_an_unknown_stage,
               test_the_gap_analysis_distinguishes_refused_from_never_captured,
               test_refusals_change_the_gap_signature,
-              test_every_refusal_call_site_names_a_registered_stage):
+              test_every_refusal_call_site_names_a_registered_stage,
+              test_a_repeat_of_a_finding_grows_seen_count_instead_of_appending,
+              test_a_distinct_finding_still_appends_exactly_one_record,
+              test_a_second_validation_pass_changes_only_the_counters,
+              test_the_reported_total_counts_observations_never_copies):
         print(f"\n[{t.__name__}]")
         t()
     print(f"\n{ _PASS} passed, {_FAIL} failed")

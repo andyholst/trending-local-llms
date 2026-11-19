@@ -2336,7 +2336,7 @@ def record_ingest_refusals(
     backend: object,
     path: Path | None = None,
 ) -> int:
-    """Append every refused (engine, why, source_post) to the ledger; return how many landed.
+    """Record every refused (engine, why, source_post) in the ledger; return how many were recorded.
 
     The refusal seams (#458/#468/#702/#615) print their refusal loudly and drop the
     measurement from the row — but until issue #888 the drop left NO trace the gap
@@ -2346,6 +2346,9 @@ def record_ingest_refusals(
     reason, source post, stage, timestamp. Append-only (rule 3b): an unreadable or
     malformed ledger is reported loudly and NOT rewritten — a refusal still visible
     in the log beats a ledger silently replaced.
+    A finding already in the ledger — same (stage, model, engine, reason, source_post) —
+    is NOT copied again: its `seen_count` grows and `last_seen_utc` moves (issue #1148),
+    so the file holds one record per refusal a reader would act on, not one per run.
     """
     if not refused:
         return 0
@@ -2374,18 +2377,51 @@ def record_ingest_refusals(
         doc = loaded
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     mid = str(model.get("id") or model.get("name") or "unknown")
+    # Issue #1148: the ledger records a FINDING, not a run. One validation pass re-arrives
+    # at the same refusal, and the shipped file held 3 distinct findings across 92 records,
+    # so the finding a reader needs was buried under copies of it. A repeat of an existing
+    # finding — (stage, model, engine, reason, source_post) — now RAISES `seen_count` and
+    # stamps `last_seen_utc` on the record already there instead of appending a copy; the
+    # original `utc` never moves (rule 3b: a key may only be ADDED, a counter may only GROW,
+    # no recorded value is ever shrunk or removed). A finding not yet recorded still appends
+    # exactly ONE record, with `seen_count: 1`.
+    def _finding_key(stage_, model_, engine_, reason_, post_) -> tuple[str, str, str, str, str]:
+        return (str(stage_), str(model_), str(engine_), str(reason_), str(post_))
+
+    known: dict[tuple[str, str, str, str, str], dict] = {}
+    for rec in doc["refusals"]:
+        if isinstance(rec, dict):
+            known.setdefault(
+                _finding_key(rec.get("stage"), rec.get("model"), rec.get("engine"),
+                             rec.get("reason"), rec.get("source_post")), rec)
+    recorded_new = repeated = 0
     for engine, why, post in refused:
-        doc["refusals"].append({
-            "utc": now,
-            "stage": stage,
-            "backend": str(backend or "unknown"),
-            "model": mid,
-            "engine": str(engine),
-            "reason": str(why),
-            "source_post": str(post),
-        })
+        key = _finding_key(stage, mid, engine, why, post)
+        hit = known.get(key)
+        if hit is None:
+            record = {
+                "utc": now,
+                "stage": stage,
+                "backend": str(backend or "unknown"),
+                "model": mid,
+                "engine": str(engine),
+                "reason": str(why),
+                "source_post": str(post),
+                "seen_count": 1,
+            }
+            known[key] = record
+            doc["refusals"].append(record)
+            recorded_new += 1
+        else:
+            hit["seen_count"] = int(hit.get("seen_count") or 1) + 1
+            hit["last_seen_utc"] = now
+            repeated += 1
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+    if repeated:
+        print(f"[ingest] refusals ledger: {recorded_new} new record(s), {repeated} repeat(s) "
+              f"counted on the record already there (issue #1148 — the ledger records findings, "
+              f"not validation runs)")
     return len(refused)
 
 

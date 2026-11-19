@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **364**
+Active changes: **2** · archived: **365**
 
 ## Active changes
 
@@ -320,6 +320,7 @@ Active changes: **2** · archived: **364**
 | `refresh-run-block-uses-gh-api` | archived | #320 | — | [refresh-run-block](openspec/changes/archive/refresh-run-block-uses-gh-api/specs/refresh-run-block/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/refresh-run-block-uses-gh-api/proposal.md) |
 | `refresh-search-leg-hf-token` | archived | #363 | — | [bot-agent-run-safety](openspec/changes/archive/refresh-search-leg-hf-token/specs/bot-agent-run-safety/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/refresh-search-leg-hf-token/proposal.md) |
 | `refresh-sync-learns-ledger-stores` | archived | #997 — "`refresh_base.py`'s `GENERATED_PATHS` never learned the three ledger stores | #999 | [refresh-sync-guard](openspec/changes/archive/refresh-sync-learns-ledger-stores/specs/refresh-sync-guard/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/refresh-sync-learns-ledger-stores/proposal.md) |
+| `refusals-ledger-seen-count-idempotent` | archived | #1148 | #1152 | [data-refusal-ledger](openspec/changes/archive/refusals-ledger-seen-count-idempotent/specs/data-refusal-ledger/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/refusals-ledger-seen-count-idempotent/proposal.md) |
 | `refuse-fix-round-self-archive` | archived | #812 — `tech-debt: A fix round can archive an open PR's own OpenSpec change before its PR merges` | #901 | [fix-loop-self-archive](openspec/changes/archive/refuse-fix-round-self-archive/specs/fix-loop-self-archive/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/refuse-fix-round-self-archive/proposal.md) |
 | `registry-hiccup-is-not-absence` | archived | #235 — `tech-debt: \`published()\` reads a registry hiccup as "not published", so a transient outage rebuilds the toolchain` | — | [agent-image-publish](openspec/changes/archive/registry-hiccup-is-not-absence/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/registry-hiccup-is-not-absence/proposal.md) |
 | `remove-stray-qa-notes` | archived | #390 — `tech-debt: the fix loop leaves qa-report.txt.notes in the repo tree and git add -A commits it` | — | [fix-loop-scratch](openspec/changes/archive/remove-stray-qa-notes/specs/fix-loop-scratch/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/remove-stray-qa-notes/proposal.md) |

@@ -895,7 +895,8 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
     for r in refused_rows:
         rid = str(r.get("model") or "unknown")
         refused_at_ingest.setdefault(rid, []).append({
-            k: r.get(k) for k in ("utc", "stage", "backend", "engine", "reason", "source_post")
+            k: r.get(k) for k in ("utc", "stage", "backend", "engine", "reason", "source_post",
+                                  "seen_count")
         })
         dim = update_trending.REFUSAL_STAGE_DIMENSIONS.get(str(r.get("stage") or ""))
         if dim and rid not in refused_dimensions.setdefault(dim, []):
@@ -1218,7 +1219,16 @@ def render(report: dict) -> str:
         if len(rows) > 4:
             lines.append(f"- **{mid}** — {len(rows) - 4} more refusal(s) recorded in "
                          f"data/refusals.json")
-    total_refused = sum(len(v) for v in refused_map.values())
+    # Issue #1148: a record is a FINDING and `seen_count` is how many validation passes hit it.
+    # The total counts OBSERVATIONS (at least 1 per record), so collapsing a repeat into a
+    # counter can never SHRINK a number an earlier report printed (rule 3b).
+    def _observations(refusal: dict) -> int:
+        try:
+            return max(1, int(refusal.get("seen_count") or 1))
+        except (TypeError, ValueError):
+            return 1
+
+    total_refused = sum(_observations(r) for rows in refused_map.values() for r in rows)
     if total_refused > shown:
         lines.append(f"- … recorded in full in data/refusals.json ({total_refused} total)")
     if not refused_map:
