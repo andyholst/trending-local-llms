@@ -1,6 +1,7 @@
 # Hermes pin freshness rides the ONE scheduled pipeline
 
 Issue: #1093
+PR: #1150
 
 ## Why
 
