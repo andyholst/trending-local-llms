@@ -30,8 +30,11 @@ as a red alarm sweep (`queued-alarm.yml` → `make hermes-pin-freshness`) with n
   points Hermes at a temp home. Raising the pin to 0.23.2 made Hermes seed its own home
   (`cache/uv/**`, `installs/<hash>`, `cache/default-plugins.settled`) AFTER its CLI returned, so
   `tempfile.TemporaryDirectory`'s cleanup raced that pass and `make test` went RED in this PR's own
-  qa-validate run 44537216542 (`tests/test_agent_skills.py`, every assertion green). Fixing the
-  pipeline this change broke is part of this change (rule 6d), not a separate finding.
+  qa-validate run 44537216542 (`tests/test_agent_skills.py`, every assertion green). The defect is
+  the one issue #1137 filed from the host (`make test` red because the real `hermes` CLI keeps
+  writing into the test's temp home), and it is fixed HERE rather than in a separate change because
+  raising the pin is what made the race reachable — the change that broke the pipeline repairs it
+  (rule 6d), and its `hermes-temp-home-teardown` capability spec is #1137's contract.
 
 ## Impact
 
