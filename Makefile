@@ -703,7 +703,7 @@ check-working-files: ## Fail when a name in the bot's working-file list is not g
 	@$(MAKE) --no-print-directory _check-working-files
 
 .PHONY: lint lint-fix
-lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill
+lint: ## Fail when a tracked text file does not end with a newline, a tracked Python module raises a SyntaxWarning, or a bot leg lost its project skill or its model chain
 	python3 scripts/lint_linefeeds.py
 	python3 scripts/lint_syntax.py
 	$(MAKE) --no-print-directory check-agent-skills
@@ -712,6 +712,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-pytest-imports
 	$(MAKE) --no-print-directory check-makefile-knobs
 	$(MAKE) --no-print-directory check-workflow-guards
+	$(MAKE) --no-print-directory agent-model-chain-check
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
 	python3 scripts/lint_linefeeds.py --fix
@@ -1455,6 +1456,35 @@ self-archive-snapshot: ## Record the OpenSpec changes active now as the fix loop
 	python3 scripts/self_archive_guard.py snapshot
 self-archive-guard: ## Fail when a change active at the baseline is gone from the tree (issue #812); SELF_ARCHIVE_RESTORE=1 restores it first
 	python3 scripts/self_archive_guard.py check
+
+# ---- fleet model chain: ONE source, rendered lane configs, a gate (issue #1140) --
+# `agents/model_chain.json` is the ONE definition of the model chain every Hermes fleet
+# lane runs on: the free primary FIRST, the free fallbacks in list order, the pinned paid
+# model LAST as the last resort. `agent-profile-model-render` renders each lane's Hermes
+# profile config from it (the author-side mutation target, like `lint-fix`);
+# `agent-model-chain-check` is bundled into `make lint`, so `qa-validate`'s `validate` job
+# and `scripts/fix_loop.sh` both run it: it refuses a lane config that drifted from the
+# chain, a chain that lost its primary/fallback/last-resort shape, a last resort that is
+# not the Makefile's $(HERMES_MODEL) under $(HERMES_ALIAS), and any credential VALUE —
+# every entry names `key_env` only (rule 3e).
+.PHONY: _agent-profile-model-render agent-profile-model-render
+_agent-profile-model-render:
+	python3 scripts/agent_model_chain.py --write
+
+agent-profile-model-render: ## Render every fleet lane's Hermes profile config from agents/model_chain.json (issue #1140)
+	@$(MAKE) --no-print-directory _agent-profile-model-render
+
+.PHONY: _agent-model-chain-check agent-model-chain-check _agent-model-chain-report
+_agent-model-chain-check:
+	python3 scripts/agent_model_chain.py --check
+_agent-model-chain-report:
+	python3 scripts/agent_model_chain.py --report
+
+agent-model-chain-check: ## Fail when a lane config drifted from the chain, the chain lost its shape, or a credential value appeared (issue #1140)
+	@$(MAKE) --no-print-directory _agent-model-chain-check
+
+agent-model-chain-report: ## Print the fleet model chain in the order it is used (issue #1140)
+	@$(MAKE) --no-print-directory _agent-model-chain-report
 
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
