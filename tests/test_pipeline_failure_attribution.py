@@ -393,7 +393,7 @@ def test_evidence_citing_the_ledger_itself_is_refused_as_circular() -> None:
 
 
 def test_an_undiagnosed_row_refuses_an_attribution_claim() -> None:
-    print("\nrefusal: an UNDIAGNOSED row belongs to re-diagnosis, not to an attribution")
+    print("\nrefusal: a row with no error block belongs to re-diagnosis, not to an attribution")
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         row = dict(HELD_ROW)
@@ -402,7 +402,21 @@ def test_an_undiagnosed_row_refuses_an_attribution_claim() -> None:
         ledger = write_ledger(tmp, [row])
         refused("undiagnosed row", tmp, ledger,
                 ["--run", str(HELD_ROW["run_id"]), "--fix-pr", "1101", "--guard", GUARD,
-                 "--evidence", EVIDENCE], "still UNDIAGNOSED")
+                 "--evidence", EVIDENCE], "carries no diagnosis")
+
+
+def test_a_stamped_row_with_no_error_block_refuses_an_attribution_claim() -> None:
+    """Issue #1136: a row the stamp pass raised (fix_pr + guard, `undiagnosed` never set) has no
+    known error class either — attribution may not claim on it before re-diagnosis fetches it."""
+    print("\nrefusal (#1136): stamped + errorless is not attributable")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        row = dict(HELD_ROW)
+        del row["error_excerpt"]  # the measured shape: no key at all, no `undiagnosed` either
+        ledger = write_ledger(tmp, [row])
+        refused("stamped errorless row", tmp, ledger,
+                ["--run", str(HELD_ROW["run_id"]), "--fix-pr", "1101", "--guard", GUARD,
+                 "--evidence", EVIDENCE], "carries no diagnosis")
 
 
 def test_the_terminal_log_expired_drain_refuses_an_attribution() -> None:
@@ -605,6 +619,7 @@ def main() -> int:
     test_evidence_citing_a_path_that_does_not_exist_refuses()
     test_evidence_citing_the_ledger_itself_is_refused_as_circular()
     test_an_undiagnosed_row_refuses_an_attribution_claim()
+    test_a_stamped_row_with_no_error_block_refuses_an_attribution_claim()
     test_the_terminal_log_expired_drain_refuses_an_attribution()
     test_a_row_that_already_names_a_different_fix_pr_refuses_replacing_it()
     test_a_claim_missing_a_part_is_refused_before_anything_is_read()

@@ -45,10 +45,18 @@ def check(name: str, ok: bool, detail: str = "") -> None:
         print(f"  FAIL {name}" + (f"\n       {detail}" if detail else ""))
 
 
-def entry(run_id: int, issue, fix_pr, guard, undiagnosed: bool = False) -> dict:
+# The fixture helper carries its diagnosis (issue #1136, rule 6c's one-place fixture rule): a
+# stamped row is DIAGNOSED unless a test asks for the errorless shape with excerpt=None, which is
+# the five rows the filer's re-diagnosis pass now owes a log re-read.
+DEFAULT_EXCERPT = "make: *** [Makefile:1384: sweep-alarm] Error 2"
+
+
+def entry(run_id: int, issue, fix_pr, guard, undiagnosed: bool = False,
+          excerpt=DEFAULT_EXCERPT) -> dict:
     return {"run_id": run_id, "workflow": "qa-validate.yml", "job": "validate",
             "issue_number": issue, "fix_pr": fix_pr, "guard": guard,
-            "undiagnosed": undiagnosed, "filed_utc": "2026-11-11T21:00:00Z"}
+            "undiagnosed": undiagnosed, "filed_utc": "2026-11-11T21:00:00Z",
+            "error_excerpt": excerpt}
 
 
 def states(pairs: list[tuple[int, int, str]]) -> dict:
@@ -541,12 +549,71 @@ def test_a_stamped_row_whose_named_guard_no_longer_exists_is_red() -> None:
           any("test_the_removed_regression_guard" in line for line in lines), str(lines))
 
 
+def test_a_stamped_row_with_no_error_block_is_its_own_report_never_red() -> None:
+    """Issue #1136: attributed-without-a-diagnosis is a DISTINGUISHED report, never silence."""
+    print("\nstamp vs diagnosis (#1136): a fix PR + guard with no error block is its own class")
+    # A row the stamp pass raised (fix_pr + a collected guard) while carrying NO error block —
+    # the exact shape of the five rows issues #1039-#1043 observed.
+    stamped = entry(470, 1039, 1044, "tests/test_pipeline_failure_guard.py", excerpt=None)
+    stamped["stamp_utc"] = "2026-11-17T06:00:00Z"
+    rc, lines = verdict([stamped], states([(470, 1039, "CLOSED")]))
+    check("attributed-without-a-diagnosis is NEVER red (its guard did land)", rc == 0, str(lines))
+    check("it is reported as its OWN class naming the missing error block",
+          any("attributed" in line and "NO error block" in line for line in lines), str(lines))
+    check("the report names the seam that recovers the text",
+          any("rediagnose_pending" in line for line in lines), str(lines))
+    check("the summary counts it as attributed-without-a-diagnosis, not as diagnosed",
+          any(line.startswith("0 diagnosed failure")
+              and "1 attributed without a diagnosis" in line for line in lines), str(lines))
+    # The SAME row once the diagnosis has landed is the diagnosed class — counted, never reported.
+    full = entry(470, 1039, 1044, "tests/test_pipeline_failure_guard.py")
+    rc2, lines2 = verdict([full], states([(470, 1039, "CLOSED")]))
+    check("the diagnosed row is green with no pending-diagnosis report",
+          rc2 == 0 and not any("NO error block" in line for line in lines2), str(lines2))
+    check("the summary names it as 1 diagnosed failure closed with a fix PR + guard test",
+          any(line.startswith("1 diagnosed failure") for line in lines2), str(lines2))
+    # A row that claims a fix while its issue is still OPEN is the same class (never red).
+    rc3, lines3 = verdict([stamped], states([(470, 1039, "OPEN")]))
+    check("open issue + fix PR + no error block -> its own report, exit 0",
+          rc3 == 0 and any("NO error block" in line for line in lines3), str(lines3))
+    # The class NEVER hides the refusals the gate exists for.
+    rc4, lines4 = verdict([stamped, entry(471, 1040, 1045, "tests/test_never_landed.py")],
+                          states([(470, 1039, "CLOSED"), (471, 1040, "CLOSED")]))
+    check("a real refusal is still red beside the class report",
+          rc4 == 1 and any("never_landed" in line for line in lines4), str(lines4))
+
+
+def test_the_committed_ledger_classifies_its_five_errorless_rows() -> None:
+    """Issue #1136 on the shipped ledger: green, with the five rows named as their own class."""
+    print("\nstamp vs diagnosis (#1136): the shipped ledger's five rows are named, not silent")
+    data = json.loads(COMMITTED_LEDGER.read_text())
+    measured = {43147240875, 43716345030, 43716362366, 43718826142, 43725338063}
+    # Only the STAMPED rows get a state (the convention the committed-ledger tests already use):
+    # a row with no fix claim is a fix in flight — the gate reports it, it cannot be red on a
+    # fixture's guess about whether its issue happens to be open today (rule 6m: no live state in
+    # a fixture). The five measured rows ARE stamped, so they are exercised as CLOSED here.
+    states_map = {str(e["run_id"]): {"number": e.get("issue_number"), "state": "CLOSED"}
+                  for e in data["failures"] if e.get("fix_pr") and e.get("issue_number")}
+    rc, lines = G.verdict(data, None, states_map)
+    check("the shipped ledger clears the gate (rc 0)", rc == 0, "\n".join(lines)[:800])
+    named = {line for line in lines if "NO error block" in line}
+    check("exactly the five measured runs are named as attributed-without-a-diagnosis",
+          len(named) == 5 and all(any(str(rid) in line for line in named) for rid in measured),
+          "\n".join(sorted(named))[:800])
+    check("the summary counts 12 diagnosed and 5 attributed-without-a-diagnosis",
+          any(line.startswith("12 diagnosed failure")
+              and "5 attributed without a diagnosis" in line for line in lines),
+          "\n".join(lines)[-400:])
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
     test_closed_with_landed_fix_and_guard_is_green()
     test_a_closed_row_the_stamp_raised_with_fix_pr_and_guard_clears_the_gate()
     test_a_stamped_row_whose_named_guard_no_longer_exists_is_red()
+    test_a_stamped_row_with_no_error_block_is_its_own_report_never_red()
+    test_the_committed_ledger_classifies_its_five_errorless_rows()
     test_run_41788683672_is_rediagnosed_with_its_landed_guard()
     test_run_41860616772_is_rediagnosed_with_its_landed_guard()
     test_run_41922211098_is_rediagnosed_with_its_landed_guard()
