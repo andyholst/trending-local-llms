@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **365**
+Active changes: **2** · archived: **366**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `provision-fleet-profile-homes` | active | #1142 — "fleet: no seam provisions a rendered lane config into the Hermes profile home | (this change) | [fleet-profile-provision](openspec/changes/provision-fleet-profile-homes/specs/fleet-profile-provision/spec.md) | 6/10 | [proposal.md](openspec/changes/provision-fleet-profile-homes/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -290,6 +289,7 @@ Active changes: **3** · archived: **365**
 | `pr-exercises-every-pipeline` | archived | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/archive/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-exercises-every-pipeline/proposal.md) |
 | `pr-fix-names-the-openspec-gate` | archived | #560 | — | [pr-fix-openspec-gate](openspec/changes/archive/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-fix-names-the-openspec-gate/proposal.md) |
 | `pr-title-from-the-issue` | archived | #541 | — | [pr-body](openspec/changes/archive/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-title-from-the-issue/proposal.md) |
+| `provision-fleet-profile-homes` | archived | #1142 — "fleet: no seam provisions a rendered lane config into the Hermes profile home | #1153 | [fleet-profile-provision](openspec/changes/archive/provision-fleet-profile-homes/specs/fleet-profile-provision/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/provision-fleet-profile-homes/proposal.md) |
 | `prs-are-never-drafts` | archived | #276 | — | [pr-lifecycle](openspec/changes/archive/prs-are-never-drafts/specs/pr-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/prs-are-never-drafts/proposal.md) |
 | `publish-is-verified` | archived | #228 — `tech-debt: Nothing verifies what the registry serves after a publish` | — | [agent-image-publish](openspec/changes/archive/publish-is-verified/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/publish-is-verified/proposal.md) |
 | `qa-validate-carries-the-guard` | archived | #279 | — | [qa-validate-carries-the-guard](openspec/changes/archive/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/qa-validate-carries-the-guard/proposal.md) |

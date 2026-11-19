@@ -18,11 +18,19 @@
       seam against a scratch tree + scratch profile home (rule 6m): copy + backup, refuse-without-key
       writes nothing, refuse-drift, names-not-values, never-a-default + unknown lane + dry run,
       `--all` over the tree-derived fleet, wiring — all green
-- [ ] `ARCHITECTURE.md`: the `agent-profile-provision` target row and the
+- [x] `ARCHITECTURE.md`: the `agent-profile-provision` target row and the
       `scripts/agent_profile_provision.py` §6 row, then `make architecture-refresh` for the inventory
-      block and `make architecture-check` green (rules 6h/6c)
-- [ ] `make openspec-index` regenerated and `make openspec-check` green (backlog cap + binding included)
-- [ ] `make test`, `make lint`, `make secret-scan` + `make secret-scan-self-test` and
-      `make check-secret-output` green on this branch (rules 3d/6c/6m)
-- [ ] `AGENTS.md` §8 row for `tests/test_agent_profile_provision.py` (rule 6c) and `findings.md` in
-      this change (rule 6g)
+      block and `make architecture-check` green (rules 6h/6c) — rows at `ARCHITECTURE.md:172` (target)
+      and `ARCHITECTURE.md:702` (script); measured on this branch: `[architecture] OK ARCHITECTURE.md
+      describes every make target (165), workflow and script` and
+      `[architecture-bot] OK the inventory block matches the tree (216 lines)`
+- [x] `make openspec-index` regenerated and `make openspec-check` green (backlog cap + binding included)
+- [x] `make test`, `make lint`, `make secret-scan` + `make secret-scan-self-test` and
+      `make check-secret-output` green on this branch (rules 3d/6c/6m) — measured locally:
+      `lint` rc=0 (workflow guards + model chain OK), `secret-scan` "no leaks found",
+      `secret-scan-self-test` "detected 4 finding(s) … the gate stayed green", `check-secret-output`
+      "OK: 3035 file(s) scanned"; `make test` is green in qa-validate's `validate` job on this head
+      (every module verdict `PASSED … | FAILED 0`) and re-runs on every push
+- [x] `AGENTS.md` §8 row for `tests/test_agent_profile_provision.py` (rule 6c) and `findings.md` in
+      this change (rule 6g) — row at `AGENTS.md:2306`; root `findings.md` holds 2 findings and
+      `make findings-check` answers "OK findings.md: 2 finding(s), all well-formed"

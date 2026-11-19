@@ -2,7 +2,7 @@
 
 Issue: #1142 — "fleet: no seam provisions a rendered lane config into the Hermes profile home
 that runs it, so the chain is green in the repo and wrong on the machine"
-PR: (this change)
+PR: #1153
 
 ## Why
 
