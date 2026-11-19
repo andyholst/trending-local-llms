@@ -475,6 +475,51 @@ def test_the_section2_row_names_the_gap_filer_guard():
     check("§2: … in a guard sentence naming the measured defect and its PR",
           "#1002" in window and "#1003" in window, window[:120])
 
+def test_the_engine_min_version_bare_engine_name_row_is_written():
+    """#1128: the §8 row #1020 (PR #1127) owed.
+
+    #1020 measured that `engine_min_version` was mined from sentences naming an ENGINE beside a
+    THROUGHPUT figure (`"same post: llama.cpp 306.9 tokens/s"`, `"345.9 vs llama.cpp's 306.9
+    tokens/s"`, `"SonicBoom 0.0.3 (C++/CUDA"`, `"TensorFold vs vLLM"`), and PR #1127 shipped the
+    refusal as three guards green in `make test` — while `grep -n "test_bare_engine_names"
+    AGENTS.md` named nothing, so the rulebook could not tell a reader the drift class is guarded
+    at all. The row is pinned like #369's, and the three guards must remain real functions of the
+    modules the row names."""
+    sec = section8()
+    check("rows: §8 names the #1020 throughput-adjacency refusal",
+          "test_bare_engine_names_beside_throughput_figures_never_claim" in sec)
+    check("rows: §8 names the explicit-build-phrase half that must STILL claim",
+          "test_explicit_build_phrases_still_claim" in sec)
+    check("rows: §8 names the gap-scan candidate half",
+          "test_engine_min_version_candidates_are_engine_names_not_build_claims" in sec)
+    row = next((l for l in sec.splitlines()
+                if "test_bare_engine_names_beside_throughput_figures_never_claim" in l), "")
+    check("rows: the row names both modules its guards live in",
+          "`tests/test_engine_min_version_ingest.py`" in row
+          and "`tests/test_data_gap_analysis.py`" in row, row[:140])
+    check("rows: the row cites the issue and the merged PR that measured it",
+          "#1020" in row and "#1127" in row, row[:140])
+    check("rows: the row states the drift class (an engine name beside a throughput figure)",
+          "throughput" in row and "engine NAME" in row, row[:140])
+    check("rows: the row states the rule fabrication it refuses", "rule 2" in row, row[:140])
+    check("rows: it sits beside the existing engine_min_version rows (#163/#214/#1017)",
+          "test_engine_min_version_detector_sees_the_build_phrases_posts_use"
+          in sec.split("test_bare_engine_names_beside_throughput_figures_never_claim", 1)[0][-6000:],
+          "not near the #214 row")
+    # The guards the row cites are FUNCTIONS of the modules it names: rename or delete one and
+    # this pin goes RED instead of leaving a rulebook row that describes nothing.
+    for mod, guard in (
+        ("tests/test_engine_min_version_ingest.py",
+         "def test_bare_engine_names_beside_throughput_figures_never_claim("),
+        ("tests/test_engine_min_version_ingest.py",
+         "def test_explicit_build_phrases_still_claim("),
+        ("tests/test_data_gap_analysis.py",
+         "def test_engine_min_version_candidates_are_engine_names_not_build_claims("),
+    ):
+        check(f"rows: {guard.removeprefix('def ').split('(')[0]} lives in the module the row names",
+              guard in (ROOT / mod).read_text(), guard)
+
+
 def main() -> int:
     print("the owed §8 rows (issues #310/#391/#400/#369)")
     test_the_owed_rows_are_present()
@@ -491,6 +536,7 @@ def main() -> int:
     test_the_docstring_staleness_row_is_written()
     test_the_invalid_change_repair_rows_are_written()
     test_the_auto_merge_rebase_row_is_written()
+    test_the_engine_min_version_bare_engine_name_row_is_written()
     test_the_section2_row_names_the_gap_filer_guard()
     test_the_rows_name_modules_that_exist()
     test_the_section_still_parses_as_a_table()
