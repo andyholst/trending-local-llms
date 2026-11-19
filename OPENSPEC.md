@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **358**
+Active changes: **2** · archived: **359**
 
 ## Active changes
 
@@ -174,6 +174,7 @@ Active changes: **2** · archived: **358**
 | `env-int-empty-is-missing` | archived | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/archive/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/env-int-empty-is-missing/proposal.md) |
 | `fake-gh-marker-newline-contract` | archived | #1002 — "The fake-gh `issue create` stubs and the final-marker newline | #1003 | [fake-gh-marker-newline-contract](openspec/changes/archive/fake-gh-marker-newline-contract/specs/fake-gh-marker-newline-contract/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/fake-gh-marker-newline-contract/proposal.md) |
 | `fetch-base-before-any-work` | archived | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/archive/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fetch-base-before-any-work/proposal.md) |
+| `filer-error-block-names-the-failing-step` | archived | #1098 | #1139 | [alarms](openspec/changes/archive/filer-error-block-names-the-failing-step/specs/alarms/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/filer-error-block-names-the-failing-step/proposal.md) |
 | `filer-log-fetch-escape-retry` | archived | #923 (measured: all 12 issues #822–#833 filed UNDIAGNOSED on 2026-11-12 — every log fetch answered `the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway`) | #926 (PR #924 was closed unmerged: the closure check derives the implemented issue from the branch's trailing number) | [alarms](openspec/changes/archive/filer-log-fetch-escape-retry/specs/alarms/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/filer-log-fetch-escape-retry/proposal.md) |
 | `filer-rediagnosis-log-expiry-986` | archived | #986 | #1011 | [alarms](openspec/changes/archive/filer-rediagnosis-log-expiry-986/specs/alarms/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/filer-rediagnosis-log-expiry-986/proposal.md) |
 | `filer-rediagnosis-seam-969` | archived | #969 | #985 | [alarms](openspec/changes/archive/filer-rediagnosis-seam-969/specs/alarms/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/filer-rediagnosis-seam-969/proposal.md) |

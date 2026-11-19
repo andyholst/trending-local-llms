@@ -111,10 +111,29 @@ MAX_ERROR_LINES = 40
 #: re-reads a row is stamped TERMINAL `log_expired` (loud, once) and the pending queue drains.
 MAX_REDIAGNOSE_ATTEMPTS = 3
 
-_ERROR_SHAPES = (
-    "##[error]", "make: ***", "FAIL: ", "FAIL ", "FAILED", "Traceback (most recent call last)",
-    "refused:", "REFUSED",
+#: The shapes are TWO tiers (issue #1098). A STRONG shape is something only a failure prints —
+#: GitHub's own `##[error]` decoration, a `make` refusal, a traceback, a guard's `REFUSED`. A SOFT
+#: shape is a word a PASSING test also prints: `make test` echoes a planted fixture's `FAIL: m1:
+#: engines not ordered newest-date-first` and a `PASSED 199 | FAILED 0` verdict line from a module
+#: that SUCCEEDED, and the old flat scan let 43 of those fill the whole budget.
+_STRONG_SHAPES = (
+    "##[error]", "make: ***", "Traceback (most recent call last)", "refused:", "REFUSED",
 )
+_SOFT_SHAPES = ("FAIL: ", "FAIL ", "FAILED")
+_ERROR_SHAPES = _STRONG_SHAPES + _SOFT_SHAPES
+
+#: GitHub writes each step's output as a region — `##[group]<label>` … `##[endgroup]` — and writes
+#: its `##[error]` decoration INSIDE the region of the step that ended the job. The timestamp
+#: prefix is present in a real Actions log and absent in a recorded fixture.
+_GROUP_LINE = re.compile(r"^(?:\S+\s+)?##\[(group|endgroup)\](.*)$")
+#: The line `extract_error_block` appends when the cap forced it to leave lines out (issue #1098):
+#: a dropped diagnosis is announced, never silently swallowed (rule 2).
+ANCHORED_DROP_NOTE = ("[filer] {kept}/{want} error-shaped line(s) of the failing step region "
+                      "`{region}` are quoted; {dropped} further error-shaped line(s) printed by "
+                      "OTHER step regions were not quoted to stay within "
+                      "MAX_ERROR_LINES={cap} (issue #1098).")
+DROP_NOTE = ("[filer] {dropped} further error-shaped line(s) were not quoted "
+             "(cap MAX_ERROR_LINES={cap}); the failing step's own region was kept whole")
 
 
 def _gh(*args: str, check: bool = True, stdin: str | None = None) -> subprocess.CompletedProcess:
@@ -264,23 +283,135 @@ def fetch_log(repo: str, job_id: int) -> str:
     raise RuntimeError(f"log fetch for job {job_id} failed twice: {last_err}")
 
 
-def extract_error_block(log_text: str) -> list[str]:
-    """The bounded diagnosis: every error-shaped line, in order, capped (never the whole log)."""
-    lines = log_text.splitlines()
-    hits: list[str] = []
-    for line in lines:
-        if any(shape in line for shape in _ERROR_SHAPES):
-            hits.append(line.rstrip()[:500])
-    # De-duplicate while keeping order, then cap.
-    seen: set[str] = set()
-    out: list[str] = []
-    for h in hits:
-        if h in seen:
+def log_regions(log_text: str) -> list[dict]:
+    """The log split into GitHub's per-step regions: `{"label": str, "lines": [(idx, line)]}`.
+
+    Measured on job 132845951479 (qa-validate run 43725338063): the region headed
+    `##[group]Run make openspec-check` holds `[openspec-index] FAIL OPENSPEC.md is stale or missing
+    (2 active, 305 archived on disk)`, `make: *** [Makefile:367: openspec-index-check] Error 1` and
+    GitHub's own `##[error]Process completed with exit code 2.` — the REGION boundary, not a keyword
+    scan, is what tells a reader which step died. Text before the first marker (and a log carrying
+    no marker at all) is one unlabeled region with label `""`; a `##[group]`/`##[endgroup]` line is
+    structure and is never quoted as content.
+    """
+    regions: list[dict] = [{"label": "", "lines": []}]
+    current = regions[0]
+    for idx, raw in enumerate(log_text.splitlines()):
+        m = _GROUP_LINE.match(raw)
+        if m:
+            if m.group(1) == "group":
+                current = {"label": (m.group(2) or "").strip(), "lines": []}
+                regions.append(current)
             continue
-        seen.add(h)
-        out.append(h)
-        if len(out) >= MAX_ERROR_LINES:
-            break
+        current["lines"].append((idx, raw))
+    return [r for r in regions if r["lines"] or r["label"]]
+
+
+def failing_region(regions: list[dict]) -> dict | None:
+    """The LAST region carrying GitHub's `##[error]` decoration — the step that ended the job.
+
+    GitHub prints that decoration for the step it let the job fail on, inside that step's own
+    region, so the anchor is GitHub's assertion and not an inference from a line of test chatter.
+    `None` when the log carries no such decoration (a truncated log, a cancelled job): the caller
+    has no region to prefer and extraction falls back to shape alone rather than inventing a region.
+    """
+    found: dict | None = None
+    for region in regions:
+        if any(_STRONG_SHAPES[0] in raw for _idx, raw in region["lines"]):
+            found = region
+    return found
+
+
+def failing_step_names(job: dict) -> list[str]:
+    """GitHub's OWN names for this job's steps that concluded bad — never inferred.
+
+    `gh run view --json jobs` carries `steps: [{name, conclusion}]`: a step GitHub marked
+    `failure` or `cancelled` is named, `success`/`skipped` is not. An empty list when the payload
+    carries no steps — the log region then stands alone, and the issue says so instead of guessing
+    (issue #1098).
+    """
+    steps = job.get("steps")
+    if not isinstance(steps, list):
+        return []
+    return [s["name"] for s in steps
+            if isinstance(s, dict) and s.get("conclusion") in BAD_CONCLUSIONS and s.get("name")]
+
+
+def error_region(log_text: str) -> str:
+    """The label of the log region the diagnosis came from (`""` when the log names none).
+
+    The same `log_regions` + `failing_region` pair `extract_error_block` uses, so the region named
+    in the issue and in the ledger is the region the quoted lines were actually taken from — one
+    implementation, never a second view of the same log (rule 6d).
+    """
+    fail = failing_region(log_regions(log_text))
+    return fail["label"] if fail else ""
+
+
+def extract_error_block(log_text: str, job: dict | None = None) -> list[str]:
+    """The bounded diagnosis: every error-shaped line, in order, capped — anchored on the STEP that
+    ended the job (issue #1098).
+
+    The budget is filled in TIERS: (0) a strong shape inside the failing region, (1) a soft shape
+    there, (2) a strong shape anywhere else, (3) a soft shape anywhere else — which is what a
+    PASSING module prints (`FAIL: m1: engines not ordered newest-date-first`, `PASSED 199 | FAILED
+    0`), quoted only when room is left. Selection is by tier; presentation is log order; lines are
+    de-duped and each capped to 500 characters. When the cap forces lines out the block ENDS with a
+    `DROP_NOTE` line naming how many were left out, so a truncated diagnosis is loud (rule 2).
+    Measured before this existed: 43 chatter lines consumed the whole 40-line budget on job
+    132845951479 and the `openspec-index-check` refusal — hits #43-#45 — was never quoted, so the
+    filed issue carried no reproduction command.
+
+    `job` is accepted so a caller that also wants `failing_step_names(job)` extracts in the same
+    call; the extraction never depends on it and the one-argument call is unchanged. An empty block
+    still means "no error-shaped line at all" — the caller files UNDIAGNOSED rather than quoting an
+    arbitrary window.
+    """
+    regions = log_regions(log_text)
+    fail = failing_region(regions)
+    candidates: list[tuple[int, int, str]] = []
+    for region in regions:
+        in_failure = fail is not None and region is fail
+        for idx, raw in region["lines"]:
+            line = raw.rstrip()[:500]
+            strong = any(shape in line for shape in _STRONG_SHAPES)
+            soft = any(shape in line for shape in _SOFT_SHAPES)
+            if not (strong or soft):
+                continue
+            candidates.append(((0 if strong else 1) if in_failure
+                               else (2 if strong else 3), idx, line))
+    if not candidates:
+        return []
+    chatter = [c for c in candidates if c[0] == 3]
+    unique_all = len({c[2] for c in candidates})
+    in_fail_lines = {c[2] for c in candidates if c[0] in (0, 1)}
+    limit = MAX_ERROR_LINES - 1 if unique_all > MAX_ERROR_LINES else MAX_ERROR_LINES
+    seen: set[str] = set()
+    chosen: list[tuple[int, str]] = []
+    for tier in (0, 1, 2):
+        for cand_tier, idx, line in candidates:
+            if cand_tier != tier or line in seen:
+                continue
+            if len(chosen) >= limit:
+                break
+            seen.add(line)
+            chosen.append((idx, line))
+    for _cand_tier, idx, line in chatter:
+        if len(chosen) >= limit or line in seen:
+            continue
+        seen.add(line)
+        chosen.append((idx, line))
+    chosen.sort(key=lambda c: c[0])
+    out = [line for _idx, line in chosen]
+    dropped = unique_all - len(seen)
+    if dropped > 0:
+        if fail is not None:
+            kept = len(in_fail_lines & seen)
+            out.append(ANCHORED_DROP_NOTE.format(kept=kept, want=len(in_fail_lines),
+                                                 region=fail["label"], dropped=dropped,
+                                                 cap=MAX_ERROR_LINES))
+        else:
+            out.append(DROP_NOTE.format(dropped=dropped, cap=MAX_ERROR_LINES))
     return out
 
 
@@ -324,6 +455,10 @@ def failed_make_targets(block: list[str]) -> list[str]:
     through `normalize_target`, the `Makefile:<line>: ` form included (issue #1054)."""
     targets: list[str] = []
     for line in block:
+        # The drop note is the filer's own prose, not log evidence: a step-region label quoted
+        # inside it ("Run make openspec-check") must never become a reproduction command.
+        if line.startswith("[filer]"):
+            continue
         for m in re.finditer(r"\bmake ([a-z][a-z0-9-]+)", line):
             name = normalize_target(m.group(1))
             if name and name not in targets:
@@ -367,8 +502,30 @@ def open_failure_issue_runs(repo: str) -> set:
 # ## Technical Solution — rule #771; validated by `make issue-message-check`)
 # ---------------------------------------------------------------------------
 
+def step_provenance(job: dict, steps: list[str] | None, region: str | None) -> str:
+    """Name the failing step from the two sources GitHub itself gives, never from chatter.
+
+    `steps` are the names GitHub's job payload marked bad (`failing_step_names`); `region` is the
+    `##[group]` label of the log region the error block was taken from (the command that step ran).
+    When a block yields no `make` target but the step IS known, the reader gets the step instead of
+    a line of test chatter (issue #1098). When NEITHER is known the sentence says so plainly — a
+    missing diagnosis is reported, never papered over.
+    """
+    parts: list[str] = []
+    if steps:
+        parts.append("Failing step(s) per GitHub's own job steps: "
+                     + ", ".join(f"`{s}`" for s in steps) + ".")
+    if region:
+        parts.append(f"The error block was taken from the log region `{region}`.")
+    if not parts:
+        parts.append("GitHub's job payload names no failed step and the log carries no step region "
+                     "— the block is the whole capped tail (issue #1098).")
+    return " ".join(parts)
+
+
 def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
-                 log_error: str | None, when: dt.datetime) -> str:
+                 log_error: str | None, when: dt.datetime,
+                 steps: list[str] | None = None, region: str | None = None) -> str:
     marker = bot_markers.start_marker(
         "queued-alarm", when, run=run["databaseId"], kind="failure")
     repro = " ".join(f"make {t}" for t in targets[:3]) if targets else \
@@ -392,7 +549,8 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
         "## What",
         f"The job `{job.get('name')}` (conclusion `{job.get('conclusion')}`) failed. "
         + (f"Failing target(s) named by the log: {', '.join('`make ' + t + '`' for t in targets)}."
-           if targets else "The log names no `make` target — the job step itself is the unit."),
+           if targets else "The log names no `make` target — the job step itself is the unit.")
+        + " " + step_provenance(job, steps, region),
         "",
         "## How",
         "Reproduce on the base commit:\n\n"
@@ -427,11 +585,12 @@ def compose_body(run: dict, job: dict, block: list[str], targets: list[str],
 
 
 def file_issue(repo: str, run: dict, job: dict, block: list[str], targets: list[str],
-               log_error: str | None, when: dt.datetime) -> dict:
+               log_error: str | None, when: dt.datetime,
+               steps: list[str] | None = None, region: str | None = None) -> dict:
     title = (f"tech-debt: {run.get('workflowName')} / {job.get('name')} failed "
              f"(run {run['databaseId']}"
              + (f", {' + '.join(targets[:3])}" if targets else "") + ")")
-    body = compose_body(run, job, block, targets, log_error, when)
+    body = compose_body(run, job, block, targets, log_error, when, steps, region)
     out = _gh("issue", "create", "--repo", repo, "--title", title, "--body", body,
               "--label", LABEL)
     url = out.stdout.strip()
@@ -600,11 +759,14 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
                          f"(jobs: {[j.get('name') for j in jobs]}) — row stays UNDIAGNOSED")
             continue
         try:
-            block = extract_error_block(fetch_log(repo, match["databaseId"]))
+            log_text = fetch_log(repo, match["databaseId"])
+            block = extract_error_block(log_text, job=match)
+            region = error_region(log_text)
         except RuntimeError as exc:
             lines.extend(_still_unreadable(entry, rid, ledger, ledger_path, dry, now,
                                            f"log still unreadable: {exc}"))
             continue
+        steps = failing_step_names(match)
         if not block:
             lines.append(f"rediagnose run {rid}: log readable but names no error-shaped line "
                          "— row stays UNDIAGNOSED")
@@ -613,7 +775,8 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
         excerpt = redact("\n".join(block))[0]
         if dry:
             lines.append(f"WOULD RAISE run {rid} (job {match.get('name')}): "
-                         f"error_lines={len(block)} targets+={targets or '-'}")
+                         f"error_lines={len(block)} targets+={targets or '-'} "
+                         f"steps={steps or '-'} region={region or '-'}")
             continue
         # The raise re-normalises the row's WHOLE targets list, old entries included
         # (issue #1054): a row that carried the `Makefile:<line>: ` form comes out of the
@@ -646,9 +809,13 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
             f"re-read on this sweep from job {match['databaseId']} ({match.get('name')}) by "
             f"make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
         )
+        # Additive keys from the SAME seam the filing pass uses (issue #1098): a raised row names
+        # the step GitHub marked bad and the region the re-read block came from.
+        entry["failing_steps"] = steps
+        entry["error_region"] = region
         ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
         lines.append(f"REDIAGNOSED run {rid} (job {match.get('name')}): error block landed, "
-                     f"targets={grown or '-'} — {ann}")
+                     f"targets={grown or '-'} steps={steps or '-'} region={region or '-'} — {ann}")
     return lines
 
 
@@ -1184,18 +1351,26 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
         for job in jobs:
             block: list[str] = []
             log_error = None
+            region = ""
             try:
-                block = extract_error_block(fetch_log(repo, job["databaseId"]))
+                log_text = fetch_log(repo, job["databaseId"])
+                block = extract_error_block(log_text, job=job)
+                region = error_region(log_text)
             except RuntimeError as exc:
                 log_error = str(exc)
+            # GitHub's own verdict on WHICH step ended the job (issue #1098): quoted beside the
+            # block, and named on the issue when the block yields no `make` target.
+            steps = failing_step_names(job)
             targets = failed_make_targets(block)
             title_job = job.get("name") or "?"
             if dry:
                 lines.append(
                     f"WOULD FILE: run {rid} job {title_job} targets={targets or '-'} "
+                    f"steps={steps or '-'} region={region or '-'} "
                     f"error_lines={len(block) or log_error}")
                 continue
-            issue = file_issue(repo, run, job, block, targets, log_error, now)
+            issue = file_issue(repo, run, job, block, targets, log_error, now,
+                               steps=steps, region=region)
             append_ledger(ledger_path, ledger, {
                 "run_id": rid, "workflow": run.get("workflowName"),
                 "job": title_job, "head_sha": run.get("headSha"), "run_url": run.get("url"),
@@ -1203,11 +1378,15 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
                 "targets": targets, "issue_number": issue["number"],
                 "issue_url": issue["url"], "fix_pr": None, "guard": None,
                 "undiagnosed": log_error,
+                # Additive keys (rule 3b): the diagnosis names the step GitHub marked bad and the
+                # log region the quoted lines were taken from (issue #1098).
+                "failing_steps": steps, "error_region": region,
             })
             known.add(rid)
             filed += 1
             lines.append(f"FILED {issue['url']} (run {rid}, job {title_job}, "
-                         f"targets={targets or '-'}, log_error={log_error or 'no'})")
+                         f"targets={targets or '-'}, steps={steps or '-'}, "
+                         f"region={region or '-'}, log_error={log_error or 'no'})")
     # The re-diagnosis pass (issue #969): every still-undiagnosed row gets its log re-read on
     # THIS sweep — including a row filed UNDIAGNOSED moments ago above (the in-memory ledger
     # already holds it), so a transient log outage is repaired within the same sweep.
