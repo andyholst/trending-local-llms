@@ -365,6 +365,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: make agent-shell-keys-check
 
+      # Issue #1142: the rendered fleet chain must reach the profile home that RUNS a lane, and
+      # the seam that does it must be executed by the pipeline (rule 6m), not only by a human.
+      # NOUS_API_KEY is this workflow's own job env (name-level secret, rule 3e): the seam reads
+      # only whether it is SET, never its value, and refuses with exit 2 naming the variable when
+      # it is absent. $RUNNER_TEMP keeps a CI run out of any real profile home.
+      - name: Fleet lane configs provision into a profile home (refuses without the chain's credential)
+        run: make agent-profile-provision ALL=1 PROFILES_HOME="$RUNNER_TEMP/hermes-profiles"
+
       - name: Search returns data (real Firecrawl->lightbrd, --require-hits)
         run: make validate-fetch
 
