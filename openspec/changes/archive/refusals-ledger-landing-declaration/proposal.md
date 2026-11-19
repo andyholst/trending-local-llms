@@ -1,6 +1,7 @@
 # Proposal: refusals-ledger-landing-declaration
 
 **Issue:** [#1155](https://github.com/andyholst/trending-local-llms/issues/1155) — CI-only
+PR: #1157
 PRs dirty the refusals ledger. Capability: `data-refusal-ledger`.
 
 ## Why
