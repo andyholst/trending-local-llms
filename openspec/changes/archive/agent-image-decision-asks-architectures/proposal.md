@@ -1,6 +1,7 @@
 # Proposal: agent-image-decision-asks-architectures
 
 Issue: #1143 — "refresh-bot's publisher reuses the legacy amd64-only agent image tag, so `image-manifest-check` reds the build job and the refresh delivers nothing"
+PR: #1144
 
 **Capability:** `agent-image-publish`
 
