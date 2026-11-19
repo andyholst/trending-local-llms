@@ -1486,6 +1486,31 @@ agent-model-chain-check: ## Fail when a lane config drifted from the chain, the 
 agent-model-chain-report: ## Print the fleet model chain in the order it is used (issue #1140)
 	@$(MAKE) --no-print-directory _agent-model-chain-report
 
+# `agent-profile-model-render` renders the chain into the REPOSITORY (issue #1140). Issue #1142
+# measured the half nobody built: no target copied a rendered lane config into the Hermes profile
+# home that actually runs the lane, so `~/.hermes/profiles/tll-*/config.yaml` carried a different
+# provider/model than the chain the gate enforces ("green in the repo, wrong on the machine").
+# `agent-profile-provision` is that seam: it copies `agents/tll-<lane>/config.yaml` into
+# `<profiles-home>/tll-<lane>/config.yaml`, keeps whatever was there as a
+# `config.yaml.bak-<UTC>` backup (rule 3b: a stored file is never destroyed), REFUSES a lane whose
+# config drifted from the chain (a live home must never receive what `agent-model-chain-check`
+# would red), and REFUSES with exit 2 — naming the variable — when a `key_env` the chain names is
+# absent (`scripts/require_env.py`, issue #357), because a keyless lane fails inside a model call
+# instead of at a gate (rule 3e). Lanes and bytes come from `agent_model_chain` (rule 6d), never a
+# second renderer or a hand-kept lane list. qa-validate's `live-smoke` job runs it against a runner
+# temp home so the seam is executed by the pipeline, never only by a human (rule 6m).
+LANE ?=
+ALL ?=
+PROFILES_HOME ?=
+PROVISION_ARGS := $(if $(LANE),--lane $(LANE),)$(if $(ALL), --all,)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)
+
+.PHONY: _agent-profile-provision agent-profile-provision
+_agent-profile-provision:
+	python3 scripts/agent_profile_provision.py$(if $(PROVISION_ARGS), $(PROVISION_ARGS),)
+
+agent-profile-provision: ## Copy a fleet lane's rendered chain config into its Hermes profile home (backup kept); refuses without the credential the chain names (issue #1142)
+	@$(MAKE) --no-print-directory _agent-profile-provision
+
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
 # `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements
