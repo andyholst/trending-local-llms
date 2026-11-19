@@ -1,6 +1,7 @@
 # Proposal: rediagnose-selects-rows-missing-an-error-block
 
 Issue: #1136
+PR: #1149
 
 ## Why
 
