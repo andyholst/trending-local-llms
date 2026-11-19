@@ -54,10 +54,10 @@ REFUSALS_FILE = _DATA_DIR / "refusals.json"
 # it never observed. Rule 3b still holds (the delivery only appends or grows counters); the
 # refusal itself is still printed in full, and the run summary states the count it did NOT
 # land, so "refused N things and wrote nothing" is a loud line and never a silent skip.
+# 6d (no dead code): the count a non-declared pass refused is reported by the ingest
+# summaries themselves, so nothing here stores it.
 #: True only for a process that declared a landing stage (`declare_refusals_landing`).
 REFUSALS_LANDING_DECLARED = False
-#: Refusals a non-declared pass counted but was not allowed to land (issue #1155).
-REFUSALS_NOT_LANDED = 0
 
 
 def declare_refusals_landing(declared: bool) -> bool:
@@ -2381,12 +2381,11 @@ def record_ingest_refusals(
             f"record_ingest_refusals: unknown refusal stage {stage!r} — "
             f"the seams are {REFUSAL_STAGES}"
         )
-    global REFUSALS_NOT_LANDED
     if path is None and not REFUSALS_LANDING_DECLARED:
         # Issue #1155: no declared landing stage. The refusal stands in the log (the seam
-        # printed it before calling here) and the tracked ledger is NOT touched — only the
-        # refresh delivery, or a caller that names its own ledger path, lands a record.
-        REFUSALS_NOT_LANDED += len(refused)
+        # printed it before calling here, and the ingest summaries state the count the pass
+        # did NOT land) and the tracked ledger is NOT touched — only the refresh delivery, or
+        # a caller that names its own ledger path, lands a record.
         return len(refused)
     p = path or REFUSALS_FILE
     doc: dict = {"refusals": []}
