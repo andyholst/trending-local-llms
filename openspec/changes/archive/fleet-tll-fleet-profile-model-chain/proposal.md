@@ -1,6 +1,7 @@
 # Proposal: fleet-tll-fleet-profile-model-chain
 
 Issue: #1140 — "fleet: give every provisioned tll-* profile its own config.yaml with the
+PR: #1141
 free-model chain first and deepseek-v4-flash-0731 last"
 
 ## Why
