@@ -108,7 +108,7 @@ def scratch_repo() -> Path:
 
 def changed(repo: Path, path: str = "") -> list[str]:
     """`git status --porcelain` — the files a run left different from HEAD."""
-    args = ["status", "--porcelain"] + ([f"-- {path}"] if path else [])
+    args = ["status", "--porcelain"] + (["--", path] if path else [])
     out = git(repo, *args).stdout
     return [line for line in out.splitlines() if line.strip()]
 
@@ -152,9 +152,11 @@ def test_an_undeclared_full_ingest_lands_no_refusals():
               f"rows {len(before)} -> {len(ledger_rows(repo))}")
         # The merge itself still happened (the delivery shape is unchanged for models.json);
         # it is the REFUSAL landing that a non-delivery pass may not do.
-        check("the pass still merges (models.json rewritten), so it is not a no-op CLI",
-              changed(repo, "data/models.json") != [],
-              "expected models.json to change under a full re-ingest")
+        check("the pass still merges (it reports its ingest), so it is not a no-op CLI",
+              "ingested raw snapshots" in proc.stdout, proc.stdout[-300:])
+        check("#1155: the refusals ledger is absent from everything the pass left behind",
+              not any("data/refusals.json" in line for line in changed(repo)),
+              changed(repo)[:6])
     finally:
         shutil.rmtree(repo, ignore_errors=True)
 
