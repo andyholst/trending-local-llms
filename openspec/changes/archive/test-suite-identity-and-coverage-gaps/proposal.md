@@ -2,7 +2,7 @@
 
 Issue: #1147 — "The test container runs as the image's default uid while the
 suite assumes the invoking uid: assert the uid and REPORT the bypass"
-PR: (recorded by `make openspec-record-pr` when the PR opens)
+PR: #1156
 
 ## Why
 
