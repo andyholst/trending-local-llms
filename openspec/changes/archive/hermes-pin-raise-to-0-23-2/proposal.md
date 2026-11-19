@@ -1,6 +1,7 @@
 # Raise the Hermes agent pin to the current release channel (0.23.2)
 
 Issue: #1145
+PR: #1146
 Binding-exempt: none (implementation change)
 
 ## Why

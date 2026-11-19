@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **361**
+Active changes: **2** · archived: **362**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `hermes-pin-raise-to-0-23-2` | active | #1145 | — | [hermes-pin-freshness](openspec/changes/hermes-pin-raise-to-0-23-2/specs/hermes-pin-freshness/spec.md) | 4/4 | [proposal.md](openspec/changes/hermes-pin-raise-to-0-23-2/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -209,6 +208,7 @@ Active changes: **3** · archived: **361**
 | `hardware-is-not-an-engine` | archived | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/archive/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/hardware-is-not-an-engine/proposal.md) |
 | `heredoc-prose-is-not-a-call` | archived | #544 | — | [architecture-description](openspec/changes/archive/heredoc-prose-is-not-a-call/specs/architecture-description/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/heredoc-prose-is-not-a-call/proposal.md) |
 | `hermes-pin-freshness` | archived | #1091 | #1092 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-freshness/specs/hermes-pin-freshness/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/hermes-pin-freshness/proposal.md) |
+| `hermes-pin-raise-to-0-23-2` | archived | #1145 | #1146 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-raise-to-0-23-2/specs/hermes-pin-freshness/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/hermes-pin-raise-to-0-23-2/proposal.md) |
 | `host-fleet-souls` | archived | #682 | #688 | [host-fleet](openspec/changes/archive/host-fleet-souls/specs/host-fleet/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/host-fleet-souls/proposal.md) |
 | `host-suite-loud-skip-and-full-red-list` | archived | #890 | #945 | [test-harness](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/specs/test-harness/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/host-suite-loud-skip-and-full-red-list/proposal.md) |
 | `host-test-capture-guard` | archived | #911 | #929 | [testing](openspec/changes/archive/host-test-capture-guard/specs/testing/spec.md) | 6/8 | [proposal.md](openspec/changes/archive/host-test-capture-guard/proposal.md) |
