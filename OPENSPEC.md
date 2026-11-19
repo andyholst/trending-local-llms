@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **363**
+Active changes: **2** · archived: **364**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `agents-8-engine-min-version-detector-rows` | active | #1128 | — | [agents-guard-registry](openspec/changes/agents-8-engine-min-version-detector-rows/specs/agents-guard-registry/spec.md) | 7/7 | [proposal.md](openspec/changes/agents-8-engine-min-version-detector-rows/proposal.md) |
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
@@ -87,6 +86,7 @@ Active changes: **3** · archived: **363**
 | `agent-shell-keys` | archived | #359 | — | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-shell-keys/proposal.md) |
 | `agent-shell-keys-loud-skip-946` | archived | #946 | #948 | [bot-agent-run-safety](openspec/changes/archive/agent-shell-keys-loud-skip-946/specs/bot-agent-run-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-shell-keys-loud-skip-946/proposal.md) |
 | `agent-work-host-only` | archived | #1055 | #1056 | [fleet-cadence](openspec/changes/archive/agent-work-host-only/specs/fleet-cadence/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/archive/agent-work-host-only/proposal.md) |
+| `agents-8-engine-min-version-detector-rows` | archived | #1128 | #1151 | [agents-guard-registry](openspec/changes/archive/agents-8-engine-min-version-detector-rows/specs/agents-guard-registry/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/agents-8-engine-min-version-detector-rows/proposal.md) |
 | `agents-md-blocked-box-rule` | archived | #635 | #849 | [rulebook](openspec/changes/archive/agents-md-blocked-box-rule/specs/rulebook/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/agents-md-blocked-box-rule/proposal.md) |
 | `agents-md-footprint-dimensions` | archived | #375 | — | [agents-rulebook](openspec/changes/archive/agents-md-footprint-dimensions/specs/agents-rulebook/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agents-md-footprint-dimensions/proposal.md) |
 | `agents-md-rule-6h-boundary` | archived | #512 | — | [agents-rulebook](openspec/changes/archive/agents-md-rule-6h-boundary/specs/agents-rulebook/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/agents-md-rule-6h-boundary/proposal.md) |

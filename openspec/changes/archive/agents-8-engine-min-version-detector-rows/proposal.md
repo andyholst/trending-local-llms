@@ -1,6 +1,7 @@
 # The §8 rows the #1020 engine-build detector owed are WRITTEN
 
 **Issue:** [#1128](https://github.com/andyholst/trending-local-llms/issues/1128)
+PR: #1151
 **Capability:** `agents-guard-registry`
 
 ## Why
