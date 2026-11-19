@@ -21,10 +21,13 @@ Run standalone: python3 tests/test_agent_skills.py   or   make test
 """
 from __future__ import annotations
 
+import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -185,6 +188,17 @@ def test_the_gh_guard_refuses_instructions_and_keeps_forbiddances():
                   for p in sorted((ROOT / "agents" / "skills").glob("*/SKILL.md"))))
 
 
+# ── the temp Hermes home seam (issue #1145) ──────────────────────────────────────────────
+# Hermes 0.23.2 — the version this change pins — does not stop writing when its CLI exits: a
+# `hermes config set` seeds `cache/uv`, `installs/<hash>` and `cache/default-plugins.*` behind
+# itself, 4 s after the CLI returned (measured on the host). `tempfile.TemporaryDirectory`'s
+# cleanup raced that pass and died `OSError: [Errno 39] Directory not empty: '<tmp>/hermes/cache'`
+# — RED in CI's own `make test` (qa-validate run 44537216542) with every assertion green. The
+# teardown seam lives ONCE in `tests/hermes_home.py` (rule 6d) and is used by every test that
+# points Hermes at a temp home.
+from hermes_home import remove_hermes_home, temp_hermes_home  # noqa: E402  (issue #1145)
+
+
 def test_setup_registers_the_directory_and_reads_it_back():
     mk = (ROOT / "Makefile").read_text()
     setup = mk.split("\n_setup:\n", 1)[1].split("\n.PHONY", 1)[0] if "\n_setup:\n" in mk else ""
@@ -193,8 +207,8 @@ def test_setup_registers_the_directory_and_reads_it_back():
           "_hermes-skills-check" in setup, setup[-200:])
     # The real script, on a real temp home: register → --check passes; a fresh home fails.
     script = ROOT / "scripts" / "hermes_skills_register.py"
-    with tempfile.TemporaryDirectory() as td:
-        home = Path(td) / "hermes"
+    with temp_hermes_home() as td:
+        home = td / "hermes"
         p = subprocess.run([sys.executable, str(script), "--home", str(home), "--dir", str(SKILLS),
                             "--check"], capture_output=True, text=True)
         check("register: --check fails on an unregistered home (exit 1)", p.returncode == 1,
@@ -383,6 +397,93 @@ def test_data_search_skill_names_the_measurement_alias_key():
           "on the ROW" in skill)
 
 
+def test_the_temp_home_teardown_survives_a_writer_that_lands_after_the_caller_is_done():
+    """The measured 0.23.2 shape: seeding lands AFTER the CLI returned, while teardown runs."""
+    with temp_hermes_home() as td:
+        home = td / "hermes"
+        (home / "cache").mkdir(parents=True)
+        (home / "config.yaml").write_text("seeded\n")
+        import threading
+
+        def seed() -> None:
+            for i in range(20):
+                time.sleep(0.1)
+                try:
+                    (home / "cache" / "uv").mkdir(exist_ok=True)
+                    (home / "installs").mkdir(exist_ok=True)
+                    (home / "installs" / f"{i}").write_text("x")
+                    (home / "cache" / "default-plugins.settled").write_text("x")
+                except OSError:
+                    return
+
+        t = threading.Thread(target=seed, daemon=True)
+        t.start()
+        # The writer is deliberately NOT joined: teardown must remove a home that is still
+        # being seeded, exactly as the real CLI pass does.
+        check("teardown: the home exists while a background seeder is still landing files",
+              (home / "config.yaml").exists())
+    check("teardown: a home whose seeder outlived the caller was still removed",
+          not td.exists(), str(td))
+
+
+def test_a_temp_home_that_never_becomes_removable_is_a_loud_failure_not_an_ignored_one():
+    """The retry window must END in a loud failure, never in a swallowed one.
+
+    Two halves, because the container `make test` runs in is not the host:
+    `TEST_RUN` passes no `--user`, so the test container runs as the image's
+    default user (root), and Linux `DAC_OVERRIDE` walks straight through a
+    mode-0o000 directory — measured in CI: run 44551541279, where this plant was
+    removed cleanly and the guard's own cleanup died `FileNotFoundError` on the
+    path it had planted. So the ALWAYS-checked half uses a tree that never
+    becomes removable for a reason no privilege can override (it is not there),
+    and the permission half asserts only when the filesystem actually honours
+    the plant — reported LOUDLY as a skip when it does not, never silently.
+    """
+    # Half 1 — every uid, every platform: retries exhausted == AssertionError,
+    # and the bounded window returns instead of hanging.
+    absent = Path(tempfile.mkdtemp()) / "hermes" / "installs"
+    raised = False
+    detail = "no AssertionError raised"
+    try:
+        remove_hermes_home(absent, attempts=3, delay=0.01)
+    except AssertionError as exc:
+        raised = True
+        detail = str(exc)
+    finally:
+        shutil.rmtree(absent.parent.parent, ignore_errors=True)
+    check("teardown: retries exhausted raise instead of being ignored", raised, detail)
+
+    # Half 2 — a real stuck tree, when the filesystem honours the plant.
+    td = Path(tempfile.mkdtemp())
+    inner = td / "hermes" / "cache"
+    inner.mkdir(parents=True)
+    (inner / "locked").mkdir()
+    os.chmod(inner, 0o000)
+    try:
+        os.listdir(inner)
+        honored = False
+    except PermissionError:
+        honored = True
+    if not honored:
+        print(f"  SKIP teardown: permission plant bypassed (uid {os.getuid()} — "
+              f"TEST_RUN runs the container as the image's default user; "
+              f"DAC_OVERRIDE walks a mode-0o000 dir). Half 1 still locks the contract.")
+        remove_hermes_home(td, attempts=3, delay=0.01)
+        check("teardown: a privilege-bypassed plant is still removed", not td.exists(), str(td))
+        return
+    raised = False
+    detail = "no AssertionError raised"
+    try:
+        remove_hermes_home(td, attempts=3, delay=0.01)
+    except AssertionError as exc:
+        raised = True
+        detail = str(exc)
+    finally:
+        os.chmod(inner, 0o755) if inner.exists() else None
+        shutil.rmtree(td, ignore_errors=True)
+    check("teardown: a stuck tree raises instead of being ignored", raised, detail)
+
+
 def main() -> int:
     print("agent-leg skills (issue #549)")
     for fn in (test_the_real_legs_preload_a_real_skill,
@@ -390,6 +491,8 @@ def main() -> int:
                test_the_real_tree_passes_the_gate,
                test_the_gate_fails_each_defect,
                test_setup_registers_the_directory_and_reads_it_back,
+               test_the_temp_home_teardown_survives_a_writer_that_lands_after_the_caller_is_done,
+               test_a_temp_home_that_never_becomes_removable_is_a_loud_failure_not_an_ignored_one,
                test_the_workflows_name_rc_3_as_a_question,
                test_the_gate_is_wired_to_the_lint_target_and_the_suite,
                test_the_fixer_skill_names_the_openspec_failures,
