@@ -100,6 +100,34 @@ jobs:
           done
           echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
 
+  # Hermes pin freshness (issue #1091, rule 6k) — moved out of the dispatched
+  # `queued-alarm.yml` sweep by the owner's ruling on issue #1093 (2026-11-19): queued-alarm is
+  # dispatch-only (rule 6t), so a Hermes release newer than the pin waited for a dispatch and
+  # produced no signal. THIS is the repository's only scheduled pipeline (rule 6t), so the
+  # freshness check now runs on the cadence that actually arrives — the same weekly slot that
+  # rebuilds the images. The check reads BOTH pins (the Makefile's `HERMES_VERSION ?=` and the
+  # Dockerfile's `ARG HERMES_VERSION`, the #218 pair) — a silent disagreement refuses with exit 2
+  # before the channel is consulted — and compares the pin with the upstream release channel read
+  # from the Makefile's `HERMES_CHANNEL_REPO ?=` install pin (issue #1094): equal → OK green;
+  # channel NEWER → ONE marker-deduplicated `tech-debt` issue naming the remedy (raise BOTH pins
+  # together per #218) and this job goes RED; pin ahead → reported, green; unreadable channel →
+  # red (exit 2), never a silent clean. A job `permissions:` block REPLACES the workflow's, so
+  # this job reads the tree and writes the issue and touches no secret and no owner PAT.
+  pin-freshness:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Fail loudly when the Hermes agent pin lags the upstream release channel (make hermes-pin-freshness)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make hermes-pin-freshness REPO="${{ github.repository }}"
+
   # Build the image ONCE and push it to GHCR. The search + aggregate jobs PULL
   # this prebuilt image instead of rebuilding — so the Hermes install
   # (ADD install.sh + RUN) runs exactly once per run, not 6x.
