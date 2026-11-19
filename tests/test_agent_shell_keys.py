@@ -35,6 +35,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from hermes_home import temp_hermes_home  # noqa: E402  (issue #1145: Hermes seeds its home after the CLI exits)
 from wiring import wired  # noqa: E402  (issues #176/#192)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -170,8 +171,8 @@ def _run_check(env: dict, *extra) -> subprocess.CompletedProcess:
 
 def test_plain_names_leave_the_agent_shell_blind():
     """The measured defect, on the real Hermes: today's `-e NAME` only."""
-    with tempfile.TemporaryDirectory() as home:
-        env = _clean_env(HERMES_HOME=home, **{k: SENTINEL for k in _keys()})
+    with temp_hermes_home() as home:
+        env = _clean_env(HERMES_HOME=str(home), **{k: SENTINEL for k in _keys()})
         r = _run_check(env)
     out = r.stdout + r.stderr
     if probe_skipped(out):  # issue #946: the host class — loud skip, the guard fixtures decide both ways
@@ -184,8 +185,8 @@ def test_plain_names_leave_the_agent_shell_blind():
 
 
 def test_forced_names_make_every_key_visible():
-    with tempfile.TemporaryDirectory() as home:
-        env = _clean_env(HERMES_HOME=home, **{k: SENTINEL for k in _keys()},
+    with temp_hermes_home() as home:
+        env = _clean_env(HERMES_HOME=str(home), **{k: SENTINEL for k in _keys()},
                          **{FORCE + k: SENTINEL for k in _keys()})
         r = _run_check(env)
     out = r.stdout + r.stderr
