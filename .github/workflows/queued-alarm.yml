@@ -23,6 +23,26 @@ on:
         description: "report jobs queued longer than this many minutes"
         required: false
         default: "30"
+      # The attribution attestation (issue #1053, rule 6r): leave these empty and the sweep only
+      # REPORTS the diagnosed ledger rows that name no fix PR. Fill ALL FOUR to raise ONE row — the
+      # seam refuses (exit 2, nothing written) a claim whose PR is unmerged, whose guard `make test`
+      # does not collect or is not tied to that fix, or whose evidence names nothing the fix touched.
+      attribute_run:
+        description: "ledger run id to attribute (empty = report only)"
+        required: false
+        default: ""
+      attribute_fix_pr:
+        description: "the MERGED fix PR number that landed this error class's fix"
+        required: false
+        default: ""
+      attribute_guard:
+        description: "tests/test_<guard>.py[::<test>] the fix carries and `make test` collects"
+        required: false
+        default: ""
+      attribute_evidence:
+        description: "the checkable proof: a path:line, a repo file, or a make/python3/gh command"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -152,6 +172,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: make pipeline-failure-issue REPO="${{ github.repository }}"
+      # The attribution half of rule 6r (issue #1053). The stamp pass above raises a row only when a
+      # MERGED, guard-carrying fix PR CLOSED that row's issue. The measured exceptions are the rows
+      # whose issues are OPEN and held by an `agent:refined` verdict hold (#826 run 42976201014, #827
+      # run 42977708147, #828 run 43047130543 - rule 6j: a decided hold has no expiry), so a landed
+      # fix could never be recorded on them. This step REPORTS every diagnosed row that names no
+      # fix_pr - run, issue, targets and the reason read from GitHub, writes nothing - and when the
+      # dispatch inputs name all four parts it raises that ONE row through the seam's proof (a merged
+      # PR read live, a guard `make test` collects AND tied to that fix, EVIDENCE through the
+      # issue-verdict evidence gate). A refusal exits 2 with nothing written. It runs BEFORE the
+      # landing step below, so an attribution rides the same reviewed ledger PR as a new diagnosis.
+      - name: Report unattributed diagnosed rows; attribute one on a proven attestation (issue #1053)
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATTR_RUN: ${{ inputs.attribute_run }}
+          ATTR_FIX_PR: ${{ inputs.attribute_fix_pr }}
+          ATTR_GUARD: ${{ inputs.attribute_guard }}
+          ATTR_EVIDENCE: ${{ inputs.attribute_evidence }}
+        run: |
+          if [ -n "$ATTR_RUN" ] && [ -n "$ATTR_FIX_PR" ] && [ -n "$ATTR_GUARD" ] && [ -n "$ATTR_EVIDENCE" ]; then
+            make pipeline-failure-attribute REPO="${{ github.repository }}" \
+              RUN="$ATTR_RUN" FIX_PR="$ATTR_FIX_PR" GUARD="$ATTR_GUARD" EVIDENCE="$ATTR_EVIDENCE"
+          else
+            make pipeline-failure-attribute REPO="${{ github.repository }}"
+          fi
       # The ledger append is worthless if it dies with the runner (rule 6m: a target CI runs must
       # also LAND). Same pattern as architecture-bot's generated-file PR: branch, one commit, PR
       # opened with the owner PAT (it can push and open PRs; it cannot comment — the filer above

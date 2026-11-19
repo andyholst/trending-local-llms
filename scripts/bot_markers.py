@@ -40,6 +40,15 @@ REDIAGNOSE_NAME = "pipeline-rediagnose"
 #: REGISTRY because the registry names it.
 LEDGER_STAMP_NAME = "pipeline-ledger-stamp"
 
+#: The ledger-ATTRIBUTION annotation marker's name (issue #1053): `<!-- pipeline-attribution: <ISO>
+#: run=<rid> -->`. REGISTERED in `REGISTRY["queued-alarm"]["attribution"]`; its SHAPE lives in
+#: `attribution_marker` / `attribution_marker_runs` at the bottom of this module so the writer (the
+#: filer's attribution pass) and its dedup reader share ONE spelling (rule 6j). Written when a
+#: diagnosed row whose issue no merged PR closed — the measured `agent:refined` verdict holds
+#: #826/#827/#828 — is raised with `fix_pr` + `guard` + `attribution_evidence` on an owner's proven
+#: attestation. `run=<rid>` is the dedup key. Defined above REGISTRY because the registry names it.
+ATTRIBUTION_NAME = "pipeline-attribution"
+
 #: `<bot> -> {kind: marker name}`. The name is the literal inside `<!-- ... -->`, so a reader and a
 #: writer that both go through this module can never disagree about it.
 REGISTRY: dict[str, dict[str, str]] = {
@@ -80,7 +89,16 @@ REGISTRY: dict[str, dict[str, str]] = {
                          # carrying this stamp — the ledger row is the machine's memory, the thread
                          # is the human's. Shape lives in `ledger_stamp_marker` /
                          # `parse_ledger_stamp_run` below (rule 6j); `run=<rid>` is the dedup key.
-                         "stamp": LEDGER_STAMP_NAME},
+                         "stamp": LEDGER_STAMP_NAME,
+                         # The ledger-attribution annotation (issue #1053): when the filer's
+                         # attribution pass raises `fix_pr` + `guard` + `attribution_evidence` onto a
+                         # diagnosed row whose issue a merged PR did NOT close (the measured
+                         # `agent:refined` verdict holds #826/#827/#828 — rule 6j: a decided hold has
+                         # no expiry), that issue's thread gets ONE marker-deduplicated comment
+                         # carrying this stamp, naming the merged PR, the guard and the verdict hold.
+                         # Shape lives in `attribution_marker` / `attribution_marker_runs` below
+                         # (rule 6j); `run=<rid>` is the dedup key.
+                         "attribution": ATTRIBUTION_NAME},
     # The silent-PR sweeper (issues #442/#814/#964): the `alarm` marker flags an open PR that
     # runs no checks at all; the `rebase_failed` marker announces a sweep round whose rebase
     # attempt git rejected. Its `run=<branch>_<oid>` stamps the failed (branch, head) pair, so
@@ -295,6 +313,39 @@ def parse_ledger_stamp_run(text: str) -> str | None:
 def parse_ledger_stamp_runs(text: str) -> set[str]:
     """Every run id the `pipeline-ledger-stamp` markers in `text` carry (the dedup key set)."""
     return {m.group(2) for m in LEDGER_STAMP_RE.finditer(text or "")}
+
+
+# ---------------------------------------------------------------------------
+# The ledger-attribution annotation marker (issue #1053): `<!-- pipeline-attribution: <ISO> run=<rid> -->`.
+#
+# Written by the failure filer's attribution pass when it raises `fix_pr` + `guard` +
+# `attribution_evidence` onto a diagnosed row whose issue NO merged PR closed (the measured
+# `agent:refined` verdict holds #826/#827/#828); read by the SAME pass as its dedup key — one
+# annotation per attributed run, never per sweep. `run=<rid>` is the dedup key.
+# ---------------------------------------------------------------------------
+ATTRIBUTION_RE = re.compile(
+    re.escape(f"<!-- {ATTRIBUTION_NAME}: ") + r"(" + TS + r")\s+run=([A-Za-z0-9_-]+)\s*-->"
+)
+
+
+def attribution_marker(when: dt.datetime, run: str | int) -> str:
+    """Write a ledger-attribution annotation marker: `<!-- pipeline-attribution: <ISO> run=<rid> -->`."""
+    stamp = when.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return f"<!-- {ATTRIBUTION_NAME}: {stamp} run={run} -->"
+
+
+def attribution_marker_run(text: str) -> str | None:
+    """The run id the NEWEST `pipeline-attribution` marker in `text` carries, or None.
+
+    The whole thread is scanned (never a first-page-only read — the #662 class).
+    """
+    hits = [m.group(2) for m in ATTRIBUTION_RE.finditer(text or "")]
+    return hits[-1] if hits else None
+
+
+def attribution_marker_runs(text: str) -> set[str]:
+    """Every run id the `pipeline-attribution` markers in `text` carry (the dedup key set)."""
+    return {m.group(2) for m in ATTRIBUTION_RE.finditer(text or "")}
 
 
 def marker_name(bot: str, kind: str) -> str:

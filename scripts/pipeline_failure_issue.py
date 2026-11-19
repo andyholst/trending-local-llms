@@ -47,8 +47,22 @@ guardless merged close are each REPORTED loudly, never stamped: the pass names t
 never launders the §6r requirement away. A failed read is loud per row and retried next sweep —
 never the sweep's own failure.
 
+The ATTRIBUTION pass (issue #1053) is the shape that pass cannot reach. Measured on the fetched
+tip: the rows for runs 42976201014 / 42977708147 / 43047130543 (issues #826/#827/#828) carry a
+re-diagnosed error block yet `fix_pr: null`, because their issues are OPEN and held by a verdict
+label while the fix that actually landed was a DIFFERENT merged PR. `--attribute-report` prints
+every diagnosed row that names no fix PR, with the reason read from GitHub (never a guess) and the
+exact remedy command; `--attribute` raises ONE such row when a claim proves itself — the row exists
+and is diagnosed (not `log_expired`, not still-undiagnosed), the PR is MERGED on GitHub's own
+`mergedAt`, the guard is a `tests/test_*.py` module `make test` collects AND tied to that fix (its
+diff, or the row's own recorded guard), a named `::test` exists in it, and the EVIDENCE passes the
+issue-verdict evidence rule while naming something the fix touched. Every refusal is exit 2 with
+nothing written; a row already naming a DIFFERENT fix PR is a refusal, and the same landed-fix
+annotation (the registered `pipeline-ledger-stamp` marker) is posted once on the issue.
+
 Exit: 0 report-only (filing IS the action); 2 when the pipeline state itself could not be read
-(a silent clean over an unreadable API is the defect rule 6d refuses).
+(a silent clean over an unreadable API is the defect rule 6d refuses) or an attribution claim did
+not prove itself.
 
 Run: make pipeline-failure-issue REPO=<owner>/<repo> [WINDOW_HOURS=192] [DRY=1] [LEDGER=…]
 Run: make pipeline-failure-ledger-pr-body RUN_URL=… [LEDGER=…]  (the ledger PR body, no gh calls)
@@ -664,19 +678,27 @@ def pr_close_view(repo: str, number: int) -> dict:
     return json.loads(proc.stdout)
 
 
-def diff_guard(files: list[dict]) -> str | None:
-    """The guard module the PR's own diff carries.
+def diff_guard_modules(files: list[dict]) -> list[str]:
+    """Every `tests/test_*.py` module the PR's own diff touches, ADDED first.
 
     A fix that ADDS a `tests/test_*.py` module is the §6r shape and outranks a
     modified one; the measured #833 fix (PR #1057) modified its guard module, so a
     modified `tests/test_*.py` still counts. Anything outside `tests/` is not a guard.
+    One list for both readers (rule 6d): the stamp pass takes the FIRST (issue #1099),
+    the attribution pass requires a claim's guard to be IN the list (issue #1053).
     """
     touched: list[tuple[int, str]] = []
     for f in files:
         path = str(f.get("path") or "")
         if path.startswith("tests/") and path.endswith(".py") and "/test_" in path:
             touched.append((0 if f.get("changeType") == "ADDED" else 1, path))
-    return min(touched)[1] if touched else None
+    return [path for _, path in sorted(touched)]
+
+
+def diff_guard(files: list[dict]) -> str | None:
+    """The guard module the stamp pass stamps — the first of `diff_guard_modules`."""
+    modules = diff_guard_modules(files)
+    return modules[0] if modules else None
 
 
 def compose_stamp_comment(entry: dict, pr_number: int, guard: str, merged_utc: str,
@@ -836,6 +858,278 @@ def stamp_merged_fix_prs(repo: str, ledger: dict, ledger_path: Path, dry: bool,
 
 
 # ---------------------------------------------------------------------------
+# the attribution pass (issue #1053, rule 6r)
+# ---------------------------------------------------------------------------
+
+#: A REFUSED attribution: loud (exit 2), and NOTHING is written.
+ATTRIBUTION_REFUSED = 2
+
+
+class AttributionRefused(RuntimeError):
+    """An attribution claim that GitHub or the tree does not back — never applied."""
+
+
+def diagnosed_unattributed(ledger: dict) -> list[dict]:
+    """Rows that carry a diagnosis but name no fix PR — the #1053 report set.
+
+    The terminal `log_expired` drain (issue #986) and a still-undiagnosed row (re-diagnosis,
+    issue #969 owns it) are excluded: this pass attributes a KNOWN error class to a landed fix,
+    nothing else.
+    """
+    out: list[dict] = []
+    for entry in ledger.get("failures", []):
+        if entry.get("fix_pr") or entry.get("log_expired"):
+            continue
+        if not (entry.get("error_excerpt") or entry.get("rediagnosed_excerpt")):
+            continue
+        out.append(entry)
+    return out
+
+
+def why_stamp_cannot_reach(repo: str, entry: dict) -> str:
+    """WHY the automatic stamp pass cannot raise this row — read from GitHub, never guessed.
+
+    The stamp pass (`stamp_merged_fix_prs`, issue #1099) reaches ONLY a row whose issue a MERGED,
+    guard-carrying PR CLOSED. The measured rows issue #1053 is about (#826/#827/#828, runs
+    42976201014 / 42977708147 / 43047130543) sit outside that shape: their issues are OPEN and
+    held by a verdict label, while the fix that actually landed was a different merged PR. This
+    reports which of those shapes a row is in, through the SAME reads the stamp pass uses.
+    """
+    number = entry.get("issue_number")
+    if not number:
+        return "the row cites no issue — nothing to read"
+    try:
+        state, pr_numbers = issue_close_refs(repo, int(number))
+    except (RuntimeError, ValueError) as exc:
+        return f"issue #{number} read failed ({exc}) — retried next sweep"
+    if state != "CLOSED":
+        return (f"issue #{number} is {state or 'INDETERMINATE'} — open, or held by a verdict "
+                "label; the stamp pass stamps a CLOSED issue only")
+    if not pr_numbers:
+        return f"issue #{number} CLOSED with no closing PR — a manual close, the keeper's act"
+    for pr_number in pr_numbers:
+        try:
+            pr = pr_close_view(repo, pr_number)
+        except (RuntimeError, ValueError) as exc:
+            return f"closing PR #{pr_number} read failed ({exc}) — retried next sweep"
+        if not pr.get("mergedAt"):
+            return f"issue #{number} closed by PR #{pr_number} which is not merged"
+        if not diff_guard(pr.get("files") or []):
+            return (f"issue #{number} closed by merged PR #{pr_number} whose diff carries no "
+                    "tests/ guard — rule 6r refuses that fix")
+    return f"issue #{number} closed by a merged guard-carrying PR — the stamp pass should have " \
+           "raised it; re-run make pipeline-failure-issue"
+
+
+def report_unattributed(repo: str, ledger: dict) -> list[str]:
+    """Print every diagnosed row that names no fix PR, and the exact remedy (issue #1053).
+
+    Writes NOTHING: this is the half that makes the gap loud on the sweep instead of leaving the
+    rows as silent nulls that `make pipeline-failure-guard-check` only reads as a warning until a
+    human opens the ledger.
+    """
+    rows = diagnosed_unattributed(ledger)
+    lines: list[str] = []
+    for entry in sorted(rows, key=lambda e: int(e.get("run_id") or 0)):
+        rid = entry.get("run_id")
+        targets = ", ".join(entry.get("targets") or []) or "-"
+        lines.append(f"UNATTRIBUTED run {rid} ({entry.get('workflow')} / "
+                     f"{entry.get('job') or '?'}) targets={targets} | "
+                     f"{why_stamp_cannot_reach(repo, entry)}")
+        lines.append(f"  remedy (only if a MERGED fix PR with a real guard exists for this "
+                     f"error class): make pipeline-failure-attribute REPO={repo} "
+                     f"RUN={rid} FIX_PR=<merged PR#> GUARD=tests/test_<guard>.py::<test> "
+                     f"EVIDENCE=\"<path:line | make <target> that proves the class is fixed>\"")
+    lines.append(f"pipeline-failure-attribute: unattributed_diagnosed_rows={len(rows)} "
+                 "(a row with no fix PR is reported, never red; rule 6r)")
+    return lines
+
+
+def _guard_is_proven(guard: str, entry: dict, pr_modules: list[str]) -> str:
+    """The claimed guard must exist as a collected module AND be tied to the fix (issue #1053).
+
+    Tied means: it is a module the fix PR's own diff touches, OR the row already recorded it
+    (rule 3b: a recorded guard is never overwritten). `guard_test_exists` is the SAME seam the
+    ledger gate uses, so `fix_pr` + `guard` on the row means the same thing to both readers.
+    """
+    from pipeline_failure_guard_check import guard_test_exists  # the ONE seam (rule 6d)
+    module = guard.split("::", 1)[0]
+    if not guard_test_exists(module):
+        raise AttributionRefused(
+            f"guard {guard!r} is not a `tests/test_*.py` module `make test` collects")
+    if "::" in guard:
+        test = guard.partition("::")[2].strip()
+        try:
+            source = (ROOT / module).read_text(encoding="utf-8")
+        except OSError as exc:
+            raise AttributionRefused(f"guard module {module} unreadable: {exc}") from None
+        if f"def {test}" not in source:
+            raise AttributionRefused(
+                f"guard {guard!r}: {module} does not define `{test}` — a guard must name a "
+                "test that exists")
+    recorded = str(entry.get("guard") or "")
+    if recorded:
+        if recorded != module:
+            raise AttributionRefused(
+                f"the row already records guard {recorded!r}; an attribution may not replace it "
+                "(rule 3b) — claim that guard instead")
+        return recorded
+    if module not in pr_modules:
+        raise AttributionRefused(
+            f"guard {module} is not in the fix PR's own diff ({pr_modules or 'no tests/ file'} "
+            "and the row records no guard) — the guard must come from the fix")
+    return module
+
+
+def _evidence_is_checkable(evidence: str, touched_paths: list[str], guard_module: str) -> str:
+    """The evidence must name something a reviewer can re-run AND tie it to THIS fix."""
+    from issue_verdict import evidence_is_checkable  # the ONE evidence rule (issue #494, rule 6e)
+    text = (evidence or "").strip()
+    if not text:
+        raise AttributionRefused("an attribution owes EVIDENCE — a claim with no proof is prose")
+    if "pipeline_failures.json" in text:
+        raise AttributionRefused(
+            "the evidence cites the ledger this pass writes — circular: the row is unattributed "
+            "BECAUSE of the ledger's own state. Cite the tree (a path:line, a `make` target).")
+    if not evidence_is_checkable(text):
+        raise AttributionRefused(
+            f"EVIDENCE {text[:120]!r} names nothing checkable — it must cite a path:line, a file "
+            "under the repo, or a `make`/`python3`/`gh` command (issue #494)")
+    for path in re.findall(r"(?:scripts|tests|data|\.github|openspec)/[\w./-]+|Makefile|AGENTS\.md",
+                           text):
+        if not (ROOT / path).exists():
+            raise AttributionRefused(f"evidence cites {path!r}, which does not exist in the tree")
+    linked = any(p in text for p in touched_paths) or guard_module in text
+    if not linked:
+        raise AttributionRefused(
+            "the evidence names nothing this fix PR touched and does not name the guard module — "
+            f"fix PR touched {touched_paths[:8] or 'no files'}; an attribution must link the "
+            "claim to the fix it cites")
+    return text
+
+
+def compose_attribution_comment(entry: dict, pr_number: int, guard: str, merged_utc: str,
+                                title: str, evidence: str, when: dt.datetime) -> str:
+    """The ONE comment on an issue whose ledger row an ATTESTED attribution raised.
+
+    Its own registered marker (`pipeline-attribution`, rule 6j — the stamp pass writes
+    `pipeline-ledger-stamp`, so a thread says WHICH pass raised the row), `run=<rid>` is the dedup
+    key, and the same honesty: it says the automatic pass could NOT reach this row and the raise
+    therefore came from an attestation the seam verified.
+    """
+    rid = entry.get("run_id") or 0
+    return (
+        "This issue's pipeline-failure ledger row (run "
+        f"{rid}) was ATTRIBUTED by an attestation: `make pipeline-failure-attribute` raised "
+        "`fix_pr` + `guard` in `data/pipeline_failures.json` (issue #1053; rule 6r) because the "
+        "automatic stamp pass could not reach it — that pass raises only a row whose issue a "
+        "merged fix PR CLOSED.\n\n"
+        f"**Fix PR:** #{pr_number} — {title[:120]} (merged {merged_utc})\n\n"
+        f"**Guard test:** `{guard}` — proven collected by `make test` and tied to the fix PR\n\n"
+        f"**Evidence:** {evidence}\n\n"
+        "`make pipeline-failure-guard-check` now reads this row as a landed fix. An attribution "
+        "whose PR is unmerged, whose guard is uncollected, or whose evidence names nothing the "
+        "fix touched is REFUSED by the seam (exit 2) and never written.\n\n"
+        f"{bot_markers.attribution_marker(when, rid)}"
+    )
+
+
+def post_attribution_comment(repo: str, entry: dict, pr_number: int, guard: str,
+                             merged_utc: str, title: str, evidence: str,
+                             when: dt.datetime) -> int | None:
+    """Post ONE marker-deduplicated attribution annotation (the #987/#1099 pattern).
+
+    Skips when a `pipeline-attribution` marker for this run id already exists — one annotation
+    per raised row, never per sweep. Default `github.token` (rule 6e: the owner PAT cannot
+    comment). Returns the issue number annotated, or None when the row cites no issue.
+    """
+    number = _issue_number(entry)
+    if number is None:
+        return None
+    thread = "\n".join(c.get("body") or "" for c in _issue_comments(repo, number))
+    rid = entry.get("run_id")
+    if rid is not None and str(rid) in bot_markers.attribution_marker_runs(thread):
+        return number
+    _gh("issue", "comment", str(number), "--repo", repo, "--body",
+        compose_attribution_comment(entry, pr_number, guard, merged_utc, title, evidence, when))
+    return number
+
+
+def attribute_claim(repo: str, ledger: dict, ledger_path: Path, claim: dict,
+                    now: dt.datetime) -> list[str]:
+    """Raise ONE ledger row on an attested fix PR — only after the claim proves itself.
+
+    `claim` = {run, fix_pr, guard, evidence}. Proofs, in order (each refusal is loud and writes
+    nothing): the row EXISTS and is diagnosed (not `log_expired`, not still-undiagnosed); the PR
+    is MERGED (GitHub's `mergedAt`, never a text guess); the guard is a collected
+    `tests/test_*.py` module tied to the fix (its diff, or the row's own recorded guard) and a
+    named `::test` actually exists in it; the evidence is checkable and names the fix. A row that
+    already carries THIS fix_pr is an idempotent no-op; a row carrying a DIFFERENT one is a
+    refusal — one landed fix per row. Keys are added append-only (rule 3b) and the raise rides
+    the same ledger-PR landing as the filer's append.
+    """
+    rid = int(claim["run"])
+    entry = next((e for e in ledger["failures"] if int(e.get("run_id") or 0) == rid), None)
+    if entry is None:
+        raise AttributionRefused(f"no ledger row for run {rid} — nothing to attribute")
+    if entry.get("log_expired"):
+        raise AttributionRefused(
+            f"run {rid} is the terminal `log_expired` drain (issue #986) — its error class was "
+            "never known, so there is nothing to attribute")
+    if not (entry.get("error_excerpt") or entry.get("rediagnosed_excerpt")):
+        raise AttributionRefused(
+            f"run {rid} is still UNDIAGNOSED — re-diagnosis (issue #969/#986) owns it; an "
+            "attribution pins a KNOWN error class, not a guess")
+    claimed_pr = int(claim["fix_pr"])
+    existing = entry.get("fix_pr")
+    if existing:
+        if int(existing) == claimed_pr:
+            return [f"run {rid} already attributes fix PR #{claimed_pr} — no-op (idempotent)"]
+        raise AttributionRefused(
+            f"run {rid} already names fix PR #{existing}; a row carries ONE landed fix — an "
+            "attribution may not replace it (rule 3b)")
+
+    try:
+        pr = pr_close_view(repo, claimed_pr)
+    except (RuntimeError, ValueError) as exc:
+        raise AttributionRefused(f"fix PR #{claimed_pr} read failed: {exc}") from None
+    merged_utc = str(pr.get("mergedAt") or "")
+    if not merged_utc:
+        raise AttributionRefused(
+            f"fix PR #{claimed_pr} is NOT merged (mergedAt empty) — an unmerged PR is a fix in "
+            "flight, never an attribution")
+    files = pr.get("files") or []
+    modules = diff_guard_modules(files)
+    touched = [str(f.get("path") or "") for f in files if f.get("path")]
+    guard = _guard_is_proven(str(claim["guard"] or ""), entry, modules)
+    evidence = _evidence_is_checkable(str(claim["evidence"] or ""), touched, guard)
+    title = str(pr.get("title") or "")
+
+    entry["fix_pr"] = claimed_pr
+    entry["fix_pr_merged_utc"] = merged_utc
+    if not entry.get("guard"):
+        entry["guard"] = guard
+    entry["stamp_utc"] = now.isoformat()
+    entry["attribution_evidence"] = evidence
+    entry["stamp_note"] = (
+        f"attributed by `make pipeline-failure-attribute` (issue #1053): merged PR #{claimed_pr} "
+        f"({title[:100]}) is the landed fix for this error class; guard {guard}; evidence: "
+        f"{evidence[:200]}"
+    )
+    ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    lines = [f"ATTRIBUTED run {rid} -> fix_pr #{claimed_pr} (merged {merged_utc}), guard {guard}"]
+    try:
+        annotated = post_attribution_comment(repo, entry, claimed_pr, guard, merged_utc, title,
+                                            evidence, now)
+        if annotated is not None:
+            lines.append(f"run {rid}: issue #{annotated} annotated with the attribution")
+    except RuntimeError as exc:
+        lines.append(f"run {rid}: ledger row raised, but the issue annotation failed ({exc}) "
+                     "— the ledger carries it")
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # the sweep
 # ---------------------------------------------------------------------------
 
@@ -973,6 +1267,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--now", default=None, help="ISO8601Z override for the window (tests)")
     ap.add_argument("--print-pr-body", action="store_true",
                     help="print the ledger-update PR body from the ledger and exit (no gh calls)")
+    # The attribution half (issue #1053): report the diagnosed rows that name no fix PR, and raise
+    # ONE row on a claim that proves itself against GitHub and the tree.
+    ap.add_argument("--attribute-report", action="store_true",
+                    help="print every diagnosed row that names no fix PR, with why (no writes)")
+    ap.add_argument("--attribute", action="store_true",
+                    help="raise one ledger row on an attested fix PR (owes --run/--fix-pr/--guard/"
+                         "--evidence)")
+    ap.add_argument("--run", type=int, default=None, help="ledger run id to attribute")
+    ap.add_argument("--fix-pr", type=int, default=None, help="the MERGED fix PR number")
+    ap.add_argument("--guard", default="", help="tests/test_<guard>.py[::<test>]")
+    ap.add_argument("--evidence", default="",
+                    help="the checkable proof: a path:line, a file, or a make/python3/gh command")
     args = ap.parse_args(argv)
     if args.window_hours <= 0:
         print("pipeline-failure-issue: --window-hours must be > 0", file=sys.stderr)
@@ -991,6 +1297,37 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     now = (_ts(args.now) or dt.datetime.now(dt.timezone.utc)) if args.now \
         else dt.datetime.now(dt.timezone.utc)
+    # The attribution half (issue #1053) runs instead of the sweep when asked: it reports the
+    # diagnosed rows the stamp pass cannot reach, or raises ONE row on a proven claim.
+    if args.attribute_report:
+        try:
+            ledger = read_ledger(Path(args.ledger))
+        except RuntimeError as exc:
+            print(f"pipeline-failure-attribute: {exc}", file=sys.stderr)
+            return 2
+        for line in report_unattributed(args.repo, ledger):
+            print(line)
+        return 0
+    if args.attribute:
+        if not (args.run and args.fix_pr and args.guard and args.evidence):
+            print("pipeline-failure-attribute: --attribute owes --run <run-id> --fix-pr <merged "
+                  "PR#> --guard tests/test_<guard>.py[::<test>] --evidence \"<path:line | make "
+                  "target>\" — a claim with a missing part is never applied", file=sys.stderr)
+            return ATTRIBUTION_REFUSED
+        try:
+            ledger = read_ledger(Path(args.ledger))
+            lines = attribute_claim(args.repo, ledger, Path(args.ledger),
+                                    {"run": args.run, "fix_pr": args.fix_pr,
+                                     "guard": args.guard, "evidence": args.evidence}, now)
+        except AttributionRefused as exc:
+            print(f"pipeline-failure-attribute: REFUSED: {exc}", file=sys.stderr)
+            return ATTRIBUTION_REFUSED
+        except RuntimeError as exc:
+            print(f"pipeline-failure-attribute: {exc}", file=sys.stderr)
+            return 2
+        for line in lines:
+            print(line)
+        return 0
     rc, lines = sweep(args.repo, args.window_hours, Path(args.ledger), args.dry, now)
     for line in lines:
         print(line)

@@ -1731,6 +1731,27 @@ pipeline-failure-guard-check: ## Refuse a closed pipeline-failure issue with no 
 pipeline-failure-ledger-pr-body: ## Print the ledger-update PR body from data/pipeline_failures.json (no closing keyword; issue #802)
 	@python3 scripts/pipeline_failure_issue.py --print-pr-body $(if $(LEDGER),--ledger "$(LEDGER)",)
 
+# The attribution half of rule 6r (issue #1053): the stamp pass raises a row only when a MERGED,
+# guard-carrying fix PR CLOSED that row's issue, and the measured verdict-held rows (#826/#827/#828)
+# sit outside that shape forever (rule 6j: a decided hold never expires). Without them the ledger's
+# diagnosed-but-unattributed tail is invisible and a landed fix has no honest way to be recorded.
+# No RUN/FIX_PR/GUARD/EVIDENCE: REPORT every such row (reads GitHub, writes nothing, exit 0).
+# With all four: raise that ONE row, and the seam REFUSES (exit 2, nothing written) a claim whose PR
+# is unmerged, whose guard `make test` does not collect or is not tied to that fix, whose EVIDENCE
+# names nothing the fix touched, or whose row is not diagnosed. ONE implementation in
+# scripts/pipeline_failure_issue.py, reached only through this target (rules 6d/6m).
+.PHONY: pipeline-failure-attribute
+pipeline-failure-attribute: ## Report the diagnosed ledger rows that name no fix PR, or attribute ONE on a proven attestation (REPO=<owner/name>; RUN=<run-id> FIX_PR=<merged PR#> GUARD=tests/test_<g>.py[::<test>] EVIDENCE="<path:line | make target>" to stamp; issue #1053)
+	@test -n "$(REPO)" || { echo "Usage: make pipeline-failure-attribute REPO=<owner/repo> [RUN=<run-id> FIX_PR=<merged PR#> GUARD=tests/test_<g>.py[::<test>] EVIDENCE=\"<proof>\"]"; exit 1; }
+	@if [ -n "$(RUN)" ]; then \
+		python3 scripts/pipeline_failure_issue.py --repo "$(REPO)" --attribute --run "$(RUN)" \
+			--fix-pr "$(FIX_PR)" --guard "$(GUARD)" --evidence "$(EVIDENCE)" \
+			$(if $(LEDGER),--ledger "$(LEDGER)",); \
+	else \
+		python3 scripts/pipeline_failure_issue.py --repo "$(REPO)" --attribute-report \
+			$(if $(LEDGER),--ledger "$(LEDGER)",); \
+	fi
+
 # The code-review bot (issue #253): it reads the TREE and the PIPELINES and files what is
 # actually wrong. Every check in scripts/code_review.py is DETERMINISTIC (no model), so a scan
 # is free and cannot invent a finding; `file` writes ONE issue per NEW finding, marker-deduped

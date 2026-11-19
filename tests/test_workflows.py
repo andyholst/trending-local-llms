@@ -3179,6 +3179,8 @@ def main() -> int:
     test_a_new_change_with_an_unticked_box_never_opens_a_pr()
     test_the_tasks_gate_runs_only_for_implement_verdicts()
     test_the_corrupt_tag_fallback_is_announced_on_the_pr()
+    test_the_attribution_step_runs_before_the_ledger_landing_step()
+    test_a_workflow_that_drops_the_attribution_step_is_red()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
@@ -3247,6 +3249,120 @@ def test_the_corrupt_tag_fallback_is_announced_on_the_pr():
     check("makefile: announce-image-fallback is a target running the ONE script (rules 6d/6m)",
           re.search(r"^announce-image-fallback:", makefile, re.M) is not None
           and "python3 scripts/announce_image_fallback.py" in makefile, "target missing")
+
+
+ATTRIBUTION_TARGET = "pipeline-failure-attribute"
+ATTRIBUTION_STEP_HINT = "Report unattributed diagnosed rows"
+FILER_TARGET = "make pipeline-failure-issue"
+LEDGER_LANDING_HINT = "BODY_TARGET=pipeline-failure-ledger-pr-body"
+
+
+def _attribution_wiring_problems(doc: dict) -> list[str]:
+    """ONE view of `queued-alarm`'s attribution wiring (issue #1053, rules 6d/6m/6r).
+
+    Exactly ONE step calls `make pipeline-failure-attribute`; it runs AFTER the filer (so a
+    fresh diagnosis is attributed the same sweep it lands) and BEFORE the ledger-PR landing
+    (so a stamped row rides the same reviewed PR); its stamp mode is driven ONLY by the
+    owner's dispatch inputs, with the default `github.token` (rule 6e: the owner PAT cannot
+    comment) and a report-mode default when no attestation is supplied; and no step reaches
+    the ledger script past the Makefile (rule 6m).
+    """
+    problems: list[str] = []
+    steps = doc["jobs"]["alarm"]["steps"]
+    runs = [str(s.get("run", "")) for s in steps]
+    # The Makefile-only scan (rule 6m) runs FIRST: a step that reaches the ledger script directly is
+    # the defect even when it also means the `make` step has vanished — naming only the missing
+    # target would hide the bypass.
+    for j, r in enumerate(runs):
+        if "python3 scripts/pipeline_failure_issue.py" in r:
+            problems.append(f"step {j} reaches the ledger script without make (rule 6m)")
+    attr = [i for i, r in enumerate(runs) if f"make {ATTRIBUTION_TARGET}" in r]
+    if len(attr) != 1:
+        problems.append(f"expected exactly one step calling `make {ATTRIBUTION_TARGET}`, "
+                        f"found {len(attr)} at {attr}")
+        return problems
+    i = attr[0]
+    step = steps[i]
+    filer = [j for j, r in enumerate(runs) if FILER_TARGET in r]
+    if not filer:
+        problems.append(f"no step calls {FILER_TARGET} — attribution has no diagnosis to work on")
+    elif filer[0] > i:
+        problems.append("the attribution step runs BEFORE the filer step: a row diagnosed this "
+                        "sweep would not be reported until the next one")
+    landing = [j for j, r in enumerate(runs) if LEDGER_LANDING_HINT in r]
+    if not landing:
+        problems.append("no ledger-PR landing step exists — a stamped row would die with the runner")
+    elif landing[0] < i:
+        problems.append("the attribution step runs AFTER the ledger-PR landing step: the stamped "
+                        "row would never reach a reviewed PR")
+    env = step.get("env") or {}
+    if env.get("GH_TOKEN") != "${{ github.token }}":
+        problems.append("the attribution step must annotate with the DEFAULT github.token "
+                        "(rule 6e: the owner PAT cannot comment)")
+    for key in ("attribute_run", "attribute_fix_pr", "attribute_guard", "attribute_evidence"):
+        if key not in str(env):
+            problems.append(f"the step does not read the owner's dispatch input `{key}` — "
+                            "a stamp would arrive with no attestation to check")
+    body = str(step.get("run", ""))
+    if "else" not in body or f"make {ATTRIBUTION_TARGET}" not in body.split("else")[-1]:
+        problems.append("the step has no report-mode default: with no attestation it must still "
+                        "run the target so the unattributed tail is loud")
+    if "gh_pat" in body or "gh_pat" in str(env):
+        problems.append("the attribution step uses an owner PAT — it writes a comment, which the "
+                        "default token is for (rule 6e)")
+    return problems
+
+
+def test_the_attribution_step_runs_before_the_ledger_landing_step():
+    """(Issue #1053, rule 6r) `make pipeline-failure-attribute` is wired into the sweep that
+    can LAND a ledger change, in the order that makes a stamped row mergeable: after the filer,
+    before the ledger PR."""
+    doc = load("queued-alarm.yml")
+    problems = _attribution_wiring_problems(doc)
+    check("queued-alarm: the attribution wiring is in place (one step, filer → attribute → land)",
+          not problems, problems)
+    makefile = (ROOT / "Makefile").read_text()
+    check("makefile: pipeline-failure-attribute is a target (rules 6d/6m)",
+          re.search(rf"^{'pipeline-failure-attribute'}:", makefile, re.M) is not None
+          and ".PHONY: pipeline-failure-attribute" in makefile, "target missing")
+
+
+def test_a_workflow_that_drops_the_attribution_step_is_red():
+    """(Issue #1053, rule 6c) the wiring guard can fail: the pre-change workflow — `origin/master`
+    before this change carried NO attribution step — and a step moved AFTER the landing must both
+    go RED, naming what is missing."""
+    doc = load("queued-alarm.yml")
+    steps = doc["jobs"]["alarm"]["steps"]
+    runs = [str(s.get("run", "")) for s in steps]
+    i = next(k for k, r in enumerate(runs) if f"make {ATTRIBUTION_TARGET}" in r)
+    landed = next(k for k, r in enumerate(runs) if LEDGER_LANDING_HINT in r)
+
+    dropped = dict(doc)
+    dropped["jobs"] = {"alarm": dict(doc["jobs"]["alarm"],
+                                     steps=steps[:i] + steps[i + 1:])}
+    red = _attribution_wiring_problems(dropped)
+    check("a workflow with the attribution step removed is RED (the origin/master shape)",
+          bool(red) and any(ATTRIBUTION_TARGET in p for p in red), str(red))
+
+    after = dict(doc)
+    kept = steps[i]
+    rest = steps[:i] + steps[i + 1:]
+    rest_runs = [str(s.get("run", "")) for s in rest]
+    at_landing = next(k for k, r in enumerate(rest_runs) if LEDGER_LANDING_HINT in r)
+    after["jobs"] = {"alarm": dict(doc["jobs"]["alarm"],
+                                   steps=rest[:at_landing + 1] + [kept] + rest[at_landing + 1:])}
+    moved = _attribution_wiring_problems(after)
+    check("the same step moved AFTER the ledger landing is RED",
+          bool(moved) and any("AFTER the ledger-PR landing" in p for p in moved), str(moved))
+
+    silent = dict(doc)
+    bad_step = dict(steps[i])
+    bad_step["run"] = "python3 scripts/pipeline_failure_issue.py --attribute-report\n"
+    silent["jobs"] = {"alarm": dict(doc["jobs"]["alarm"],
+                                    steps=steps[:i] + [bad_step] + steps[i + 1:])}
+    bypassed = _attribution_wiring_problems(silent)
+    check("a step that reaches the script past the Makefile is RED (rule 6m)",
+          any("without make" in p for p in bypassed), str(bypassed))
 
 
 if __name__ == "__main__":
