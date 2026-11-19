@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **360**
+Active changes: **2** · archived: **361**
 
 ## Active changes
 
@@ -77,6 +77,7 @@ Active changes: **2** · archived: **360**
 | `adopt-takes-the-work-on-conflict` | archived | #583 | — | [worktree-base](openspec/changes/archive/adopt-takes-the-work-on-conflict/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/adopt-takes-the-work-on-conflict/proposal.md) |
 | `adopt-then-rebase-the-base` | archived | #500 (measured: run 39548077538 discarded a finished implementation because `master` moved | — | [bot-coordination](openspec/changes/archive/adopt-then-rebase-the-base/specs/bot-coordination/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/adopt-then-rebase-the-base/proposal.md) |
 | `agent-identity-one-definition` | archived | #325 — `tech-debt: The agent identity is a literal repeated in every committing workflow` | — | [agent-identity](openspec/changes/archive/agent-identity-one-definition/specs/agent-identity/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-identity-one-definition/proposal.md) |
+| `agent-image-decision-asks-architectures` | archived | #1143 — "refresh-bot's publisher reuses the legacy amd64-only agent image tag, so `image-manifest-check` reds the build job and the refresh delivers nothing" | #1144 | [agent-image-publish](openspec/changes/archive/agent-image-decision-asks-architectures/specs/agent-image-publish/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/agent-image-decision-asks-architectures/proposal.md) |
 | `agent-image-publish` | archived | #206 | — | [agent-image-publish](openspec/changes/archive/agent-image-publish/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-image-publish/proposal.md) |
 | `agent-install-seam` | archived | #207 | — | [agent-image](openspec/changes/archive/agent-install-seam/specs/agent-image/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/agent-install-seam/proposal.md) |
 | `agent-lanes-generated-architecture` | archived | #935 | #1105 | [architecture-inventory](openspec/changes/archive/agent-lanes-generated-architecture/specs/architecture-inventory/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/agent-lanes-generated-architecture/proposal.md) |

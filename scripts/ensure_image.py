@@ -67,6 +67,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_int import env_float, env_int  # noqa: E402  (empty means missing — issue #487)
+# The ONE manifest verdict in this repo (issue #958). The reuse decision and the
+# publisher's verify step share it, so they can never disagree about what a tag must
+# answer before it may be reused (issue #1143).
+from image_manifest_check import REQUIRED_PLATFORMS, arch_verdict  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -158,6 +162,35 @@ def published(ref: str) -> bool:
     if any(sig in said.lower() for sig in _ABSENT_SIGNATURES):
         return False
     raise RegistryUnknown(f"cannot tell whether {ref} is published — docker said: {said[:200] or '(no output)'}")
+
+
+def arch_flag(is_published: bool, ref: str) -> str:
+    """Which architectures a published tag actually answers, as a data value (issue #1143).
+
+    `published()` answers WHETHER the registry serves a tag. That is not "reusable":
+    the refresh publisher builds `linux/amd64,linux/arm64` (issue #958), and a tag
+    published BEFORE that change answers one architecture only. `decide` read such a
+    tag as "current", the build job skipped the rebuild, and the UNGATED
+    `make image-manifest-check` that runs on both paths refused the same tag — so the
+    job went red every run and nothing could repair it without a human dispatching the
+    privileged publisher (measured: refresh-bot runs 44330910573 and 44422028712,
+    issue #1143).
+
+    Returns `ok`, `missing <platforms>`, or `not-published` (an absent tag is already a
+    rebuild reason; no second registry call for it). The verdict comes from
+    `scripts/image_manifest_check.arch_verdict` — the repo's ONE manifest reader — so
+    the decision and the gate cannot drift (rule 6d). A manifest the reader cannot read
+    raises `RegistryUnknown`: #235's rule applies to the architecture question too, a
+    registry that fails to answer decides NOTHING and rebuilds NOTHING.
+    """
+    if not is_published:
+        return "not-published"
+    verdict, detail = arch_verdict(ref, REQUIRED_PLATFORMS)
+    if verdict == "undecidable":
+        raise RegistryUnknown(
+            f"cannot tell which architectures {ref} serves — {detail}; the reuse "
+            f"decision refuses to guess")
+    return "ok" if verdict == "ok" else detail
 
 
 #: docker's wording when the registry SERVES the tag's manifest but cannot serve a
@@ -540,6 +573,17 @@ def decide(force: bool, dow: int) -> dict:
               (#141).
       openspec — publish when its own hash tag is missing.
 
+      every ref — "the registry serves this tag" is NOT "this tag is reusable". A tag
+              that answers FEWER architectures than
+              `image_manifest_check.REQUIRED_PLATFORMS` is a rebuild reason
+              (`latest-tag-single-arch`, `base-tag-single-arch`,
+              `test-tag-single-arch`, `openspec-tag-single-arch`), because the
+              `make image-manifest-check` step the same job runs UNGATED on both
+              paths refuses that tag anyway: without this prong the decision says
+              "reuse" and the gate goes red forever (issue #1143). What each tag
+              answers is reported as data (`latest_arch`, `base_arch`, `test_arch`,
+              `openspec_arch`).
+
     python-env is deliberately NOT in this decision: Slice 1 of #712 has no
     publisher for it, so a token `manifest inspect` of a never-created package
     would read `denied` and fail this decision (issue #235). It is a LOCAL-BUILD
@@ -555,6 +599,24 @@ def decide(force: bool, dow: int) -> dict:
     openspec_ok = published(openspec_tag())
     sunday = dow == 7
 
+    # Issue #1143: published != reusable. Ask the architecture question through the
+    # same verdict the publisher's UNGATED `make image-manifest-check` step uses, so a
+    # legacy single-arch tag is a REBUILD reason here instead of a red gate there.
+    # Skipped when the rebuild is already owed (forced or the Sunday refresh): the
+    # question only decides whether a PUBLISHED tag may be reused.
+    if force or sunday:
+        latest_arch = base_arch = test_arch = openspec_arch = "not-checked"
+    else:
+        latest_arch = arch_flag(latest_ok, latest_tag())
+        base_arch = arch_flag(base_ok, base_tag())
+        test_arch = arch_flag(test_ok, test_tag())
+        openspec_arch = arch_flag(openspec_ok, openspec_tag())
+
+    def _single_arch(arch: str) -> bool:
+        """`missing …` is the ONLY value that means "cannot serve the other
+        architecture"; ok / not-published / not-checked never add a reason."""
+        return arch.startswith("missing")
+
     def _reasons(extra: list[str]) -> str:
         return ",".join(extra) or "current"
 
@@ -567,6 +629,10 @@ def decide(force: bool, dow: int) -> dict:
         base_reasons.append("latest-missing")
     if not base_ok:
         base_reasons.append("base-tag-missing")
+    if _single_arch(latest_arch):
+        base_reasons.append("latest-tag-single-arch")
+    if _single_arch(base_arch):
+        base_reasons.append("base-tag-single-arch")
 
     test_reasons = []
     if force:
@@ -575,10 +641,14 @@ def decide(force: bool, dow: int) -> dict:
         test_reasons.append("sunday")
     if not test_ok:
         test_reasons.append("test-tag-missing")
+    if _single_arch(test_arch):
+        test_reasons.append("test-tag-single-arch")
 
     openspec_reasons = []
     if not openspec_ok:
         openspec_reasons.append("openspec-tag-missing")
+    elif _single_arch(openspec_arch):
+        openspec_reasons.append("openspec-tag-single-arch")
 
     return {
         "built": "yes" if base_reasons else "no",
@@ -594,6 +664,12 @@ def decide(force: bool, dow: int) -> dict:
         "base_published": "yes" if base_ok else "no",
         "test_published": "yes" if test_ok else "no",
         "openspec_published": "yes" if openspec_ok else "no",
+        # Issue #1143: WHAT each published tag answers, so a rebuild reason is readable
+        # as data (`ok` / `missing linux/arm64` / `not-published`).
+        "latest_arch": latest_arch,
+        "base_arch": base_arch,
+        "test_arch": test_arch,
+        "openspec_arch": openspec_arch,
     }
 
 
