@@ -19,20 +19,28 @@ ever report it.
 
 ## What Changes
 
-- A new attribution seam, `make pipeline-failure-attribute` (`scripts/pipeline_failure_attribute.py`),
-  which raises `fix_pr`, `fix_pr_merged_utc`, `guard` (only when the row names none already),
-  `attributed_utc` and `attribution_note` onto a diagnosed ledger row **from an attestation, not
-  from a closing PR** — the path the merged-PR stamp cannot take for an issue held by a verdict.
-- Every stamp is proven mechanically before it is written: the fix PR is read live through the real
-  `gh` client and must be `merged` (its merge SHA recorded); the guard must pass the ONE
-  collected-guard seam `guard_test_exists` in `scripts/pipeline_failure_guard_check.py`; the
-  attestation's `EVIDENCE:` must pass the ONE evidence gate `evidence_is_checkable` in
-  `scripts/issue_verdict.py`; and the row must already carry a diagnosis (`error_excerpt`, not
-  `log_expired`) — an undisagnosed row cannot be attributed, because a value that cannot be traced
-  is invented (rule 2).
+- A new attribution pass inside the ledger's OWN script (`scripts/pipeline_failure_issue.py`, the
+  file that already files, re-diagnoses and stamps), reached through `make pipeline-failure-attribute`
+  and its `--attribute` seam. It raises `fix_pr`, `guard`, `attribution_evidence`, `stamp_utc` and
+  `stamp_note` onto a diagnosed ledger row **from an attestation, not from a closing PR** — the path
+  the merged-PR stamp cannot take for an issue held by a verdict (issue #1053's rows are held
+  OPEN, so no merged closer exists to read).
+- Every attribution is proven mechanically before it is written: the fix PR is read live through the
+  real `gh` client and must be MERGED (`mergedAt`, recorded); the guard must pass the ONE
+  collected-guard seam `guard_test_exists` in `scripts/pipeline_failure_guard_check.py` AND define
+  the named `::test`; the guard must be TIED to that fix (the fix PR's own `tests/` diff names it, or
+  the row already recorded it); the `EVIDENCE:` must pass the ONE evidence gate of
+  `scripts/issue_verdict.py` (issue #494) **and name a path the fix PR touched or its guard module**
+  — citing `data/pipeline_failures.json` itself is refused as circular; and the row must already
+  carry a diagnosis (`error_excerpt`, not `log_expired`) — an undiagnosed row cannot be attributed,
+  because a value that cannot be traced is invented (rule 2).
 - A report mode that prints every diagnosed-but-unattributed row with its run, issue, targets and
-  the reason no stamp is possible yet, so the ledger's unattributed tail is visible on the sweep
-  instead of silently waiting for a closing PR that will never come.
+  the reason read from GitHub (`issue #<n> is OPEN`, or CLOSED with no merged closing PR), plus the
+  exact remedy command, so the ledger's unattributed tail is visible on the sweep instead of silently
+  waiting for a closing PR that will never come.
+- One `pipeline-attribution` annotation on the row's issue, registered in `scripts/bot_markers.py`
+  (rule 6j) and marker-deduplicated, naming the fix PR, the guard and why the automatic pass could
+  not reach the row.
 - Append-only (rule 3b): keys are ADDED, a recorded `guard` is never overwritten, a row already
   naming a `fix_pr` is never re-pointed, and the diagnosis fields are never shrunk.
 - The seam is wired where a ledger change can land: `queued-alarm.yml` runs it (report mode each
@@ -41,13 +49,17 @@ ever report it.
 
 ## Impact
 
-- `scripts/pipeline_failure_attribute.py` (new) — the attribution decision (rule 6d: one
-  implementation, reached only through `make pipeline-failure-attribute`).
+- `scripts/pipeline_failure_issue.py` — the attribution pass (report + `--attribute`) beside the
+  filer, the re-diagnosis pass (#987) and the merged-PR stamp pass (#1099): one ledger script, one
+  implementation (rule 6d). `scripts/bot_markers.py` registers the `pipeline-attribution` marker.
 - `Makefile` — `pipeline-failure-attribute` target following the `pipeline-failure-*` pattern.
 - `.github/workflows/queued-alarm.yml` — the attribution step (report each sweep; stamp on owner
-  attestation), placed before the ledger-PR landing step.
-- `tests/test_pipeline_failure_attribute.py` (new) — drives the real script against recorded `gh`
-  fixtures and planted ledgers (rule 6m: external system only, no `scripts/` monkeypatching).
+  attestation), placed after the filer step and before the ledger-PR landing step.
+- `tests/test_pipeline_failure_attribution.py` (new) — drives the real script against the recorded
+  `gh` fixture IMPORTED from `tests/test_pipeline_failure_issue.py` (one fixture, rule 6d) and planted
+  ledgers (rule 6m: external system only, no `scripts/` monkeypatching).
+- `tests/test_workflows.py` — the wiring half: the step's order against the landing step, and the
+  pre-change / mis-ordered / Makefile-bypassing workflow shapes proven red (rule 6c).
 - `AGENTS.md` §6r gains the attribution seam in the chain description and §8 gains the guard row.
 
 ## Not covered
