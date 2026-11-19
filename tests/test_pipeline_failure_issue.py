@@ -275,6 +275,22 @@ def test_filing_diagnoses_every_failure_with_the_log_error_block() -> None:
               str(rows[100]))
         check("the scheduled cancellation is tracked like a failure",
               rows[104]["job"] == "alarm", str(rows[104]))
+        # Issue #1136: THE DIAGNOSIS IS RECORDED IN THE ROW. A filed row stored the error block
+        # only in the issue body, so the ledger could not tell whether the run had EVER been
+        # diagnosed — `rediagnose_pending` selected every freshly-filed row (it carries
+        # `undiagnosed: None`) and re-fetched and self-annotated it in the same sweep.
+        check("the filed row carries its own error block",
+              "make: *** [validate] Error 1" in (rows[100].get("error_excerpt") or ""),
+              str(rows[100])[:400])
+        check("the row's diagnosis is SCRUBBED (the ledger is a tracked file, rule 3f)",
+              FAKE_SECRET not in (rows[100].get("error_excerpt") or ""),
+              "SECRET LEAKED INTO THE LEDGER ROW")
+        check("a row diagnosed at filing is NOT re-fetched by the same sweep's re-diagnosis pass",
+              "REDIAGNOSED run 100" not in proc.stdout and "REDIAGNOSED run 104" not in proc.stdout,
+              proc.stdout)
+        check("no self-annotation comment was written for a freshly filed row",
+              not list((tmp / "canned").glob("comment-*.txt")),
+              str([q.name for q in (tmp / "canned").glob("comment-*.txt")]))
 
 
 def test_ledger_and_marker_dedup_file_one_run_once_ever() -> None:
@@ -328,6 +344,8 @@ def test_undiagnosed_filing_is_loud_never_a_skip() -> None:
         data = json.loads(ledger.read_text())
         check("ledger records every entry as undiagnosed",
               all(e["undiagnosed"] for e in data["failures"]), str(data["failures"]))
+        check("and names NO error block — the row stays in the re-diagnosis pending set (issue #1136)",
+              all(e.get("error_excerpt") is None for e in data["failures"]), str(data["failures"]))
 
 
 def test_an_escape_refused_log_is_diagnosed_on_the_flag_retry() -> None:
@@ -543,6 +561,25 @@ MARKER_MATCHED_ROW = {
     "targets": [], "issue_number": None, "issue_url": None,
     "fix_pr": None, "guard": None,
     "note": "filed before the ledger existed (marker-matched)",
+    # Issue #1136: the fixture states the diagnosis it really has — the shipped ledger's
+    # marker-matched row (run 43088760321) DOES carry an `error_excerpt`. A row with NO error
+    # block is `STAMPED_WITHOUT_DIAGNOSIS_ROW` below: the shape the old pending filter could not
+    # see at all, and the shape the re-diagnosis pass must now fetch.
+    "error_excerpt": "make: *** [Makefile:1384: sweep-alarm] Error 2",
+}
+
+# The measured shape of issue #1136, copied from data/pipeline_failures.json run 43147240875:
+# stamped with a landed `fix_pr` + `guard` by a ledger PR, `undiagnosed: None` (the filer's own
+# read SUCCEEDED, so the key stores null), and NO error block — so the old marker-key filter
+# selected nothing and no pass could ever name the failure this row attributes a fix to.
+STAMPED_WITHOUT_DIAGNOSIS_ROW = {
+    "run_id": 777, "workflow": "queued-alarm.yml", "job": "sweep",
+    "head_sha": "7" * 40, "run_url": "https://github.com/octo/repo/actions/runs/777",
+    "issue_url": "https://api.github.com/repos/octo/repo/issues/55", "issue_number": 55,
+    "created_utc": "2026-11-12T22:11:29Z", "filed_utc": "2026-11-12T22:11:29Z",
+    "targets": ["openspec-check"], "undiagnosed": None,
+    "stamp_utc": "2026-11-15T14:56:48Z", "stamp_note": "fix PR #922 merged 2026-11-14T19:49:37Z",
+    "fix_pr": 922, "guard": "tests/test_owed_rows.py",
 }
 
 
@@ -573,8 +610,10 @@ def test_rediagnose_pass_raises_a_still_undiagnosed_row_from_the_readable_log() 
         check("a note names the seam that raised it", "#969" in row.get("rediagnosis_note", ""),
               str(row))
         row104 = {e["run_id"]: e for e in data["failures"]}[104]
-        check("a row that was never UNDIAGNOSED is untouched",
-              "rediagnosed_utc" not in row104, str(row104))
+        # Issue #1136: the row is untouched because it ALREADY carries its diagnosis
+        # (`error_excerpt`), not because a marker key is missing from it.
+        check("a row that already carries its diagnosis is never re-fetched",
+              "rediagnosed_utc" not in row104 and row104.get("error_excerpt"), str(row104))
         # Re-run: nothing left pending, nothing rewritten.
         before = ledger.read_text()
         second = run_filer(env, ledger)
@@ -911,6 +950,77 @@ def _row_for(ledger: Path, run_id: int) -> dict:
         "failures"]}[run_id]
 
 
+def test_a_stamped_row_with_no_error_block_is_pending_and_gets_diagnosed() -> None:
+    """Issue #1136: the pending set is the ABSENCE of a diagnosis, not the `undiagnosed` key."""
+    print("\nrediagnose selection (#1136): a stamped row with no error block is fetched and raised")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        canned = dict(BASE_CANNED)
+        canned["jobs-777.json"] = {"jobs": [{"databaseId": 977, "name": "sweep",
+                                             "conclusion": "failure"}]}
+        env = make_scene(tmp, canned)
+        diagnosed_100 = dict(UNDIAG_ROW)
+        diagnosed_100.pop("undiagnosed")
+        diagnosed_100["rediagnosed_utc"] = "2026-11-11T21:30:00Z"
+        diagnosed_100["error_excerpt"] = "make: *** [validate] Error 1"
+        seeded = [dict(MARKER_MATCHED_ROW), diagnosed_100, dict(STAMPED_WITHOUT_DIAGNOSIS_ROW)]
+        ledger = _seed_ledger(tmp, seeded)
+        # The defect, proven on the ledger itself before the sweep runs: this is the PRE-#1136
+        # filter spelled here in the test (the product no longer carries it — rule 6d), and it
+        # selects nothing, because a row whose log read SUCCEEDED stores `undiagnosed: None`.
+        legacy_pending = [e["run_id"] for e in seeded
+                          if e.get("undiagnosed") and not e.get("log_expired")]
+        new_pending = [e["run_id"] for e in F.rediagnose_pending({"failures": seeded})]
+        check("the old marker-key filter selected NOTHING (the #1136 blind spot)",
+              legacy_pending == [], str(legacy_pending))
+        check("the diagnosis-absence filter selects the stamped errorless row",
+              new_pending == [777], str(new_pending))
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the sweep names the raise", "REDIAGNOSED run 777" in proc.stdout, proc.stdout)
+        rows = {e["run_id"]: e for e in json.loads(ledger.read_text())["failures"]}
+        row = rows[777]
+        check("the error block lands", "make: *** [validate] Error 1" in row.get("error_excerpt", ""),
+              str(row)[:400])
+        check("rediagnosed_utc stamped", bool(row.get("rediagnosed_utc")), str(row))
+        check("the stamp pass's keys are KEPT (rule 3b append-only)",
+              row.get("fix_pr") == STAMPED_WITHOUT_DIAGNOSIS_ROW["fix_pr"]
+              and row.get("guard") == STAMPED_WITHOUT_DIAGNOSIS_ROW["guard"]
+              and row.get("stamp_utc") == STAMPED_WITHOUT_DIAGNOSIS_ROW["stamp_utc"]
+              and row.get("stamp_note") == STAMPED_WITHOUT_DIAGNOSIS_ROW["stamp_note"], str(row))
+        check("the `undiagnosed` key is KEPT (null, never removed)",
+              "undiagnosed" in row and row["undiagnosed"] is None, str(row))
+        check("targets grown, never shrunk",
+              set(STAMPED_WITHOUT_DIAGNOSIS_ROW["targets"]) <= set(row.get("targets", [])),
+              str(row.get("targets")))
+        check("an already-diagnosed marker-matched row is byte-identical",
+              rows[104] == MARKER_MATCHED_ROW, str(rows[104])[:400])
+        check("an already-raised row is byte-identical", rows[100] == diagnosed_100, str(rows[100]))
+        before = ledger.read_text()
+        second = run_filer(env, ledger)
+        check("re-sweep: nothing pending, nothing rewritten",
+              second.returncode == 0 and "REDIAGNOSED" not in second.stdout
+              and ledger.read_text() == before, second.stdout)
+
+
+def test_the_committed_ledger_s_errorless_rows_are_exactly_the_pending_set() -> None:
+    """Issue #1136 on the SHIPPED data: five rows carry fix_pr + guard and no error block."""
+    print("\nrediagnose selection (#1136): the shipped ledger's five errorless rows are pending")
+    committed = json.loads(COMMITTED_LEDGER.read_text())
+    pending = {e["run_id"] for e in F.rediagnose_pending(committed)}
+    measured = {43147240875, 43716345030, 43716362366, 43718826142, 43725338063}
+    check("the five measured runs (issues #1039-#1043) are the pending set",
+          pending == measured, f"pending={sorted(pending)}")
+    errorless = {e["run_id"] for e in committed["failures"] if not F.row_is_diagnosed(e)
+                 and not e.get("log_expired")}
+    check("every errorless row (bar the terminal drain) is pending — no row is invisible",
+          errorless == pending, f"{sorted(errorless)} vs {sorted(pending)}")
+    check("every row that names a fix PR + guard IS diagnosed except the five",
+          {e["run_id"] for e in committed["failures"] if e.get("fix_pr")} - measured
+          == {e["run_id"] for e in committed["failures"]
+              if e.get("fix_pr") and F.row_is_diagnosed(e)}, "")
+
+
 def test_a_closed_row_is_stamped_from_the_merged_guard_carrying_pr_that_closed_it() -> None:
     print("\nstamp (#1099): CLOSED + merged closing PR with a tests/ guard -> fix_pr raised")
     with tempfile.TemporaryDirectory() as td:
@@ -1224,6 +1334,8 @@ def main() -> int:
     test_the_makefile_line_target_form_normalises_to_the_bare_target()
     test_a_sweep_normalises_stored_rows_and_leaves_a_uniform_ledger_untouched()
     test_a_raise_renormalises_the_row_s_existing_warped_targets()
+    test_a_stamped_row_with_no_error_block_is_pending_and_gets_diagnosed()
+    test_the_committed_ledger_s_errorless_rows_are_exactly_the_pending_set()
     test_a_closed_row_is_stamped_from_the_merged_guard_carrying_pr_that_closed_it()
     test_the_stamp_prefers_the_guard_module_the_merged_pr_added()
     test_a_merged_fix_pr_that_only_modified_its_guard_module_still_raises_the_row()

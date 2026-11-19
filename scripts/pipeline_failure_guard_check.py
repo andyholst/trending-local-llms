@@ -33,6 +33,7 @@ import sys
 from pathlib import Path
 
 import bot_markers
+from pipeline_failure_issue import row_is_diagnosed
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -131,7 +132,8 @@ def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None) -
     """The gate's decision over the whole ledger."""
     reports: list[str] = []
     reds: list[str] = []
-    guarded = 0
+    diagnosed_attributed = 0        # diagnosed row + landed fix PR + collected guard test
+    attributed_no_diagnosis = 0     # fix PR + guard test, but NO error block (issue #1136)
     ledger_runs = {str(entry.get("run_id")) for entry in ledger["failures"]}
     # A CLOSED marker issue with no ledger entry: the diagnosis landed, the record did not.
     for run_id, info in (marker_states or {}).items():
@@ -163,8 +165,20 @@ def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None) -
                 reds.append(f"{label}: fix PR {fix_pr} names guard {guard or 'NOTHING'} — "
                             "no guard test is collected by `make test`, so the error class "
                             "is unguarded (reintroduction would be silent)")
+            elif not row_is_diagnosed(entry):
+                # ATTRIBUTED WITHOUT A DIAGNOSIS (issue #1136): the row names a landed fix PR and a
+                # collected guard test while carrying NO error block, so the error class it claims to
+                # have fixed cannot be named from the ledger at all. Reported as its OWN shape — the
+                # selection fix in `rediagnose_pending` recovers the text on the next sweep; making
+                # this red would red every PR until that sweep ran, and the gate's red is reserved
+                # for a closed failure with no guard.
+                attributed_no_diagnosis += 1
+                reports.append(f"{label}: attributed (fix PR {fix_pr} + guard {guard}) but carries "
+                               "NO error block — the row claims a landed fix for a failure no reader "
+                               "can name (issue #1136); `rediagnose_pending` fetches its log on the "
+                               "next sweep (reported, never red)")
             else:
-                guarded += 1
+                diagnosed_attributed += 1
             continue
 
         # No fix PR yet: the state of the ISSUE decides.
@@ -184,7 +198,11 @@ def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None) -
 
     if reds:
         return 1, reds + reports
-    reports.append(f"{guarded} diagnosed failure(s) closed with a landed fix PR + guard test")
+    # THE SUMMARY DISTINGUISHES THE TWO CLASSES (issue #1136): a row whose diagnosis landed AND a
+    # fix PR + guard landed, versus a row that claims a fix with no error block to match it to.
+    reports.append(f"{diagnosed_attributed} diagnosed failure(s) closed with a landed fix PR + "
+                   f"guard test; {attributed_no_diagnosis} attributed without a diagnosis "
+                   "(re-diagnosis pending, issue #1136)")
     return 0, reports
 
 

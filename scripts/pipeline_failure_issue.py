@@ -719,9 +719,47 @@ def _still_unreadable(entry: dict, rid: int, ledger: dict, ledger_path: Path, dr
     return out
 
 
+def row_is_diagnosed(entry: dict) -> bool:
+    """Does this ledger row carry a diagnosis at all? The ONE predicate (issue #1136).
+
+    A row is diagnosed when EITHER reader landed an error block for it — the filer's own read or
+    the re-diagnosis pass's re-read (both raise it into `error_excerpt`; the legacy
+    `rediagnosed_excerpt` spelling is kept for rows written before #969's shape).
+
+    The `undiagnosed` KEY is NOT the predicate, and reading it as one is the defect this seam
+    exists to kill. The filer writes `"undiagnosed": log_error` (main(), the filing pass), so a
+    row whose log read SUCCEEDED stores `undiagnosed: None` — a FALSY marker on a row that has no
+    error block either. Measured in the shipped `data/pipeline_failures.json` (20 rows,
+    2026-11-19): five rows — runs 43147240875, 43716345030, 43716362366, 43718826142, 43725338063
+    (issues #1039–#1043) — carry `undiagnosed: None`, no `error_excerpt`, no
+    `rediagnosed_excerpt`, no `log_expired`, yet each already names a landed `fix_pr` + `guard`.
+    The marker-key filter answers `pending = []` for the WHOLE ledger, so no pass — and no future
+    sweep — can ever recover WHICH failure those rows attribute, while
+    `make pipeline-failure-guard-check` counted them as diagnosed. Every reader of the ledger now
+    asks THIS question, through this one function (rule 6d).
+    """
+    return bool(entry.get("error_excerpt") or entry.get("rediagnosed_excerpt"))
+
+
+def rediagnose_pending(ledger: dict) -> list[dict]:
+    """The rows the re-diagnosis pass must fetch (issue #1136: selected by the ABSENCE of a
+    diagnosis, never by the presence of an `undiagnosed` key).
+
+    A row is pending when it names NEITHER `error_excerpt` NOR `rediagnosed_excerpt` and is not
+    the terminal `log_expired` drain (issue #986) and has not already been raised this ledger's
+    life (`rediagnosed_utc`, which the raise stamps TOGETHER with its `error_excerpt` — never on
+    its own). Selection by the diagnosis itself therefore catches every shape a marker-key filter
+    hides: a row stamped with `fix_pr` + `guard` by a ledger PR but never diagnosed, a row matched
+    only by its issue marker, and the original still-UNDIAGNOSED filing.
+    """
+    return [e for e in ledger.get("failures", [])
+            if not row_is_diagnosed(e) and not e.get("rediagnosed_utc")
+            and not e.get("log_expired")]
+
+
 def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool,
                            now: dt.datetime) -> list[str]:
-    """Re-read the log of every still-UNDIAGNOSED ledger row and raise it APPEND-ONLY.
+    """Re-read the log of every ledger row that carries NO diagnosis and raise it APPEND-ONLY.
 
     The filer files UNDIAGNOSED when its own log fetch fails (a reader defect, a transient API
     outage). Without this pass those rows stay UNDIAGNOSED forever: the #923 reader fix landed,
@@ -739,11 +777,17 @@ def rediagnose_undiagnosed(repo: str, ledger: dict, ledger_path: Path, dry: bool
     stamped (loud, once) instead of retrying for ever. The row is then EXCLUDED from the pending
     set by `log_expired`, so the queue drains. The two structural branches (no failed job, a
     readable log with no error line) stay reported-and-retried per #969, not expired.
+
+    The PENDING SET is selected by `rediagnose_pending` — the ABSENCE of a diagnosis (issue
+    #1136), never by the presence of an `undiagnosed` key. The filer stores `"undiagnosed":
+    log_error`, so a row whose log it DID read carries `undiagnosed: None`: a row stamped with
+    `fix_pr` + `guard` and no error block was therefore selected by NO pass and stayed
+    undiagnosable for ever — five such rows sit in the shipped ledger (runs 43147240875 /
+    43716345030 / 43716362366 / 43718826142 / 43725338063, issues #1039–#1043). Selection by the
+    diagnosis itself fetches them on the next sweep.
     """
     lines: list[str] = []
-    pending = [e for e in ledger["failures"]
-               if e.get("undiagnosed") and not e.get("rediagnosed_utc")
-               and not e.get("log_expired")]
+    pending = rediagnose_pending(ledger)
     for entry in pending:
         rid = int(entry.get("run_id", 0))
         job_name = entry.get("job")
@@ -1047,7 +1091,7 @@ def diagnosed_unattributed(ledger: dict) -> list[dict]:
     for entry in ledger.get("failures", []):
         if entry.get("fix_pr") or entry.get("log_expired"):
             continue
-        if not (entry.get("error_excerpt") or entry.get("rediagnosed_excerpt")):
+        if not row_is_diagnosed(entry):
             continue
         out.append(entry)
     return out
@@ -1243,10 +1287,11 @@ def attribute_claim(repo: str, ledger: dict, ledger_path: Path, claim: dict,
         raise AttributionRefused(
             f"run {rid} is the terminal `log_expired` drain (issue #986) — its error class was "
             "never known, so there is nothing to attribute")
-    if not (entry.get("error_excerpt") or entry.get("rediagnosed_excerpt")):
+    if not row_is_diagnosed(entry):
         raise AttributionRefused(
-            f"run {rid} is still UNDIAGNOSED — re-diagnosis (issue #969/#986) owns it; an "
-            "attribution pins a KNOWN error class, not a guess")
+            f"run {rid} carries no diagnosis — re-diagnosis (issue #969/#986, selected by "
+            "`rediagnose_pending` per issue #1136) owns it; an attribution pins a KNOWN error "
+            "class, not a guess")
     claimed_pr = int(claim["fix_pr"])
     existing = entry.get("fix_pr")
     if existing:
@@ -1381,6 +1426,14 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
                 # Additive keys (rule 3b): the diagnosis names the step GitHub marked bad and the
                 # log region the quoted lines were taken from (issue #1098).
                 "failing_steps": steps, "error_region": region,
+                # THE DIAGNOSIS IS RECORDED IN THE ROW, not only in the issue body (issue #1136).
+                # A filed row whose log read succeeded stored `undiagnosed: None` and NO error
+                # block, so the ledger could not say whether ANY reader had ever diagnosed it:
+                # `rediagnose_pending` would re-fetch a row that was already diagnosed in this
+                # very sweep (and annotate its own issue), while a row stamped with `fix_pr` +
+                # `guard` and no block looked complete. Scrubbed through the SAME redactor as the
+                # issue body (rule 3f) — the ledger is a tracked file.
+                "error_excerpt": redact("\n".join(block))[0] if block else None,
             })
             known.add(rid)
             filed += 1
