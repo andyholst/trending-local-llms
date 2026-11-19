@@ -32,6 +32,15 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM HUP
 
-docker run --name "$name" "$@"
+# (issue #1147) Name the identity this container STARTS under, and forward it IN as a variable
+# NAME (never a value with meaning): this seam is how every TEST_RUN container is started and it
+# passes no `--user`, so the container runs as the image's default user — measured `id -u` = 0 in
+# tll-test-3965-16821 — while the uid on this line is whoever ran `make test`.
+# scripts/coverage_gap.py reads TLL_INVOKING_UID back INSIDE the container and prints both halves
+# on the suite identity line, so a green verdict states which identity executed it.
+invoking_uid="$(id -u):$(id -g)"
+echo "[harness] docker_test_run identity: invoking uid:gid=$invoking_uid; the container runs as the image default user unless --user is passed" >&2
+
+docker run --name "$name" -e "TLL_INVOKING_UID=$invoking_uid" "$@"
 rc=$?
 exit "$rc"

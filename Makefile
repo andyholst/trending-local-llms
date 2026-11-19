@@ -1924,7 +1924,12 @@ test:
 		rm -f "$$out"; exit 1; \
 	fi; \
 	n_ok=$$(grep -c '^\[test\] ok ' "$$out" || true); \
-	echo "[harness] captured $$n_ok per-module trace(s) and the verdict line (suite rc=$$rc)" >&2; \
+	if ! grep -q '^\[harness\] suite identity:' "$$out"; then \
+		echo "[harness] FAIL: 'make test' captured NO suite identity line (suite rc=$$rc) — the runner never named the uid it measured, so a green suite cannot be told from a run whose permission plants were walked through by the container's default uid (issue #1147)" >&2; \
+		rm -f "$$out"; exit 1; \
+	fi; \
+	n_gap=$$(grep -c '^\[harness\] coverage-gap ' "$$out" || true); \
+	echo "[harness] captured $$n_ok per-module trace(s), $$n_gap declared coverage-gap report(s) and the verdict line (suite rc=$$rc)" >&2; \
 	rm -f "$$out"; exit $$rc
 
 .PHONY: requirements generate-requirements

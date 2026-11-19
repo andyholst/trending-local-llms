@@ -134,6 +134,13 @@ def test_the_test_target_tees_and_verifies_its_capture():
     check("test: propagates the suite's real exit code", "exit $$rc" in recipe, recipe)
     check("test: counts the per-module traces it captured",
           "grep -c '^\\[test\\] ok '" in recipe, recipe)
+    # (issue #1147) the capture must also carry the suite's IDENTITY line: a green rc whose runner
+    # never named the uid it measured cannot tell a full suite from a permission-plant suite whose
+    # guards were walked through by the container's default uid.
+    check("test: refuses a capture with no suite identity line",
+          "grep -q '^\\[harness\\] suite identity:'" in recipe and "issue #1147" in recipe, recipe[:600])
+    check("test: counts the declared coverage-gap reports it captured",
+          "grep -c '^\\[harness\\] coverage-gap '" in recipe, recipe)
 
 
 # -------------------------------------- end-to-end via the real recipe ------
@@ -187,7 +194,10 @@ def test_a_green_capture_passes_and_counts_its_traces():
     with tempfile.TemporaryDirectory() as tmp:
         tmp_p = Path(tmp)
         stub = _stub(tmp_p, "stub_run.sh",
-                     ["[test] ok test_a.py", "[test] ok test_b.py", "[test] 2 module(s) passed"], 0)
+                     ["[test] ok test_a.py", "[test] ok test_b.py",
+                      "[harness] suite identity: container uid=0 gid=0 invoking uid=501:20 "
+                      "run-as=image default user, NOT the invoking uid",
+                      "[test] 2 module(s) passed"], 0)
         mk = _fixture_make(tmp_p, stub)
         r = _run_make(mk)
         check("a capture WITH verdict lines lets a green rc through",
@@ -202,7 +212,10 @@ def test_the_suite_exit_code_is_propagated():
     with tempfile.TemporaryDirectory() as tmp:
         tmp_p = Path(tmp)
         stub = _stub(tmp_p, "stub_run.sh",
-                     ["[test] ok test_a.py", "[test] 1 module(s) passed, test_b FAILED"], 7)
+                     ["[test] ok test_a.py",
+                      "[harness] suite identity: container uid=0 gid=0 invoking uid=501:20 "
+                      "run-as=image default user, NOT the invoking uid",
+                      "[test] 1 module(s) passed, test_b FAILED"], 7)
         mk = _fixture_make(tmp_p, stub)
         r = _run_make(mk)
         check("a red suite makes `make test` fail (make reports the recipe error)",

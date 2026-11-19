@@ -33,6 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import check_agent_skills as CAS  # noqa: E402
+import coverage_gap  # noqa: E402  (issue #1147: the ONE declared-coverage-gap seam)
 
 SKILLS = ROOT / "agents" / "skills"
 UNATTENDED = "never ask a question"
@@ -465,9 +466,15 @@ def test_a_temp_home_that_never_becomes_removable_is_a_loud_failure_not_an_ignor
     except PermissionError:
         honored = True
     if not honored:
-        print(f"  SKIP teardown: permission plant bypassed (uid {os.getuid()} — "
-              f"TEST_RUN runs the container as the image's default user; "
-              f"DAC_OVERRIDE walks a mode-0o000 dir). Half 1 still locks the contract.")
+        # (issue #1147) this line used to be a bare SKIP inside a module that exited 0: measured in
+        # qa-validate run 44551541279, a green suite over a plant the container's uid 0 walked
+        # straight through. A bypass now travels INSIDE the declared gap seam, so the runner names
+        # it in the verdict instead of losing it in a passing module's deleted output.
+        coverage_gap.declare_bypass_gap(
+            "teardown permission half",
+            "TEST_RUN runs the container as the image's default user; DAC_OVERRIDE walks a "
+            "mode-0o000 dir; half 1 (the tree that never becomes removable) still locks its contract",
+        )
         remove_hermes_home(td, attempts=3, delay=0.01)
         check("teardown: a privilege-bypassed plant is still removed", not td.exists(), str(td))
         return
