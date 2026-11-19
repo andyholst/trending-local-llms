@@ -210,7 +210,7 @@ def test_a_credential_value_or_api_key_field_is_refused_everywhere():
     with tempfile.TemporaryDirectory() as td:
         root = _scratch(Path(td))
         cfg = root / "agents" / "tll-tester" / "config.yaml"
-        cfg.write_text(cfg.read_text(encoding="utf-8") + "\n  api_key: sk-FAKE-0123456789abcdef\n",
+        cfg.write_text(cfg.read_text(encoding="utf-8") + "\n  api_key: not-a-credential-placeholder\n",
                        encoding="utf-8")
         res = run("--check", root=root)
         out = res.stdout + res.stderr
@@ -218,7 +218,7 @@ def test_a_credential_value_or_api_key_field_is_refused_everywhere():
         check("the refusal names the credential field", "api_key" in out, out[-300:])
 
         data = _chain_json(root)
-        data["chain"][0]["api_key"] = "sk-FAKE-0123456789abcdef"
+        data["chain"][0]["api_key"] = "not-a-credential-placeholder"
         _write_chain(root, data)
         res = run("--check", root=root)
         out = res.stdout + res.stderr
