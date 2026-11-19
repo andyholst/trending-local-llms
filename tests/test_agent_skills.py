@@ -427,11 +427,50 @@ def test_the_temp_home_teardown_survives_a_writer_that_lands_after_the_caller_is
 
 
 def test_a_temp_home_that_never_becomes_removable_is_a_loud_failure_not_an_ignored_one():
+    """The retry window must END in a loud failure, never in a swallowed one.
+
+    Two halves, because the container `make test` runs in is not the host:
+    `TEST_RUN` passes no `--user`, so the test container runs as the image's
+    default user (root), and Linux `DAC_OVERRIDE` walks straight through a
+    mode-0o000 directory — measured in CI: run 44551541279, where this plant was
+    removed cleanly and the guard's own cleanup died `FileNotFoundError` on the
+    path it had planted. So the ALWAYS-checked half uses a tree that never
+    becomes removable for a reason no privilege can override (it is not there),
+    and the permission half asserts only when the filesystem actually honours
+    the plant — reported LOUDLY as a skip when it does not, never silently.
+    """
+    # Half 1 — every uid, every platform: retries exhausted == AssertionError,
+    # and the bounded window returns instead of hanging.
+    absent = Path(tempfile.mkdtemp()) / "hermes" / "installs"
+    raised = False
+    detail = "no AssertionError raised"
+    try:
+        remove_hermes_home(absent, attempts=3, delay=0.01)
+    except AssertionError as exc:
+        raised = True
+        detail = str(exc)
+    finally:
+        shutil.rmtree(absent.parent.parent, ignore_errors=True)
+    check("teardown: retries exhausted raise instead of being ignored", raised, detail)
+
+    # Half 2 — a real stuck tree, when the filesystem honours the plant.
     td = Path(tempfile.mkdtemp())
     inner = td / "hermes" / "cache"
     inner.mkdir(parents=True)
     (inner / "locked").mkdir()
-    os.chmod(inner, 0o000)  # rmtree can never descend: every attempt fails
+    os.chmod(inner, 0o000)
+    try:
+        os.listdir(inner)
+        honored = False
+    except PermissionError:
+        honored = True
+    if not honored:
+        print(f"  SKIP teardown: permission plant bypassed (uid {os.getuid()} — "
+              f"TEST_RUN runs the container as the image's default user; "
+              f"DAC_OVERRIDE walks a mode-0o000 dir). Half 1 still locks the contract.")
+        remove_hermes_home(td, attempts=3, delay=0.01)
+        check("teardown: a privilege-bypassed plant is still removed", not td.exists(), str(td))
+        return
     raised = False
     detail = "no AssertionError raised"
     try:
@@ -440,7 +479,7 @@ def test_a_temp_home_that_never_becomes_removable_is_a_loud_failure_not_an_ignor
         raised = True
         detail = str(exc)
     finally:
-        os.chmod(inner, 0o755)
+        os.chmod(inner, 0o755) if inner.exists() else None
         shutil.rmtree(td, ignore_errors=True)
     check("teardown: a stuck tree raises instead of being ignored", raised, detail)
 
