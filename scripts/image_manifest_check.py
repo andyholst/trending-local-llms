@@ -62,6 +62,32 @@ def _platforms(doc: dict) -> list[tuple[str, str]]:
     return seen
 
 
+def arch_verdict(tag: str,
+                 required: tuple[tuple[str, str], ...] = REQUIRED_PLATFORMS) -> tuple[str, str]:
+    """(verdict, detail) for one tag: 'ok', 'single-arch', or 'undecidable'.
+
+    The SAME read+parse primitives `check` uses — this repo has ONE manifest reader
+    and this is a data-shaped view of it, not a second verdict (rule 6d). `check`
+    exists to gate a job (exit 1/2); `arch_verdict` exists so the PUBLISH/REUSE
+    decision in `scripts/ensure_image.py decide` can ask the same question BEFORE it
+    decides to skip a rebuild (issue #1143).
+
+    'single-arch' detail names the platforms the tag is missing; 'ok' names the
+    platforms it answers; 'undecidable' carries docker's own failure and its cause —
+    'manifest unknown' and 'printed no document' stay DIFFERENT words (issue #228).
+    """
+    doc, err = _read_manifest(tag)
+    if doc is None:
+        return "undecidable", err
+    present = _platforms(doc)
+    missing = [p for p in required if p not in present]
+    if not present or missing:
+        gone = missing if missing else required
+        return ("single-arch",
+                "missing " + ", ".join(f"{os_}/{arch}" for os_, arch in gone))
+    return ("ok", "answers " + ", ".join(f"{os_}/{arch}" for os_, arch in present))
+
+
 def check(tag: str, required: tuple[tuple[str, str], ...] = REQUIRED_PLATFORMS,
           label: str = "image-manifest-check") -> int:
     doc, err = _read_manifest(tag)

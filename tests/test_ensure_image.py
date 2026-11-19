@@ -59,7 +59,29 @@ case "$1" in
           if grep -qxF "$3" "$FAKE_DOCKER_IMAGES"; then exit 0
           else echo "locally absent: $3" >&2; exit 1; fi
         fi
-        if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then exit 0
+        if grep -qxF "$3" "$FAKE_DOCKER_AVAILABLE"; then
+          # Issue #1143: answer with a real manifest-list DOCUMENT, so the seam can ask
+          # WHICH architectures the tag serves and not merely that it exists. Default is
+          # both (what the multi-arch publisher pushes since #958); FAKE_DOCKER_ARCHES
+          # seeds a per-ref override as "<ref>\t<os/arch>,<os/arch>". The unknown/unknown
+          # child is what a real ghcr multi-arch tag also carries (attestation).
+          arches="linux/amd64,linux/arm64"
+          if [ -n "$FAKE_DOCKER_ARCHES" ] && [ -f "$FAKE_DOCKER_ARCHES" ]; then
+            while read -r ref plats; do
+              [ "$ref" = "$3" ] && arches="$plats"
+            done < "$FAKE_DOCKER_ARCHES"
+          fi
+          # Issue #1143 with #235: a registry that REFUSES the manifest question (an
+          # HTTP 500, not a 404) must never be read as "single-arch" or as "absent".
+          if [ "$arches" = "unreadable" ]; then
+            echo "error pulling manifest configuration: HTTP 500" >&2; exit 1
+          fi
+          printf '%s' '{"schemaVersion":2,"mediaType":"application/vnd.oci.image.index.v1+json","manifests":[{"digest":"sha256:attestation","platform":{"os":"unknown","architecture":"unknown"}}'
+          printf '%s\n' "$arches" | tr ',' '\n' | while read -r a; do
+            printf ',{"digest":"sha256:%s","platform":{"os":"%s","architecture":"%s"}}' "$a" "${a%%/*}" "${a##*/}"
+          done
+          printf ']}\n'
+          exit 0
         else echo "manifest unknown: $3" >&2; exit 1; fi ;;
     esac ;;
   pull)
@@ -90,7 +112,7 @@ def check(name, cond, detail=""):
         print(f"  FAIL {name}" + (f"  [{detail}]" if detail else ""))
 
 
-def _run(args, available=(), env_extra=None, images=None):
+def _run(args, available=(), env_extra=None, images=None, arches=None):
     """Run the real script with the docker CLI faked; return (rc, calls, out).
 
     `env_extra` lets a caller add the seams a mode needs (issue #206's push probe
@@ -125,6 +147,13 @@ def _run(args, available=(), env_extra=None, images=None):
             imgs = td / "images.txt"
             imgs.write_text("\n".join(images) + "\n")
             env["FAKE_DOCKER_IMAGES"] = str(imgs)
+        if arches is not None:
+            # Issue #1143: which ARCHITECTURES a published tag answers is a separate
+            # fact from whether it is published; seed it per ref.
+            arch_file = td / "arches.txt"
+            arch_file.write_text("".join(f"{ref}\t{','.join(plats)}\n"
+                                         for ref, plats in arches.items()))
+            env["FAKE_DOCKER_ARCHES"] = str(arch_file)
         proc = subprocess.run([sys.executable, str(SCRIPT), *args],
                               cwd=ROOT, capture_output=True, text=True, env=env)
         calls = [l.split() for l in log.read_text().splitlines() if l.strip()]
@@ -569,6 +598,113 @@ def test_a_healthy_path_prints_no_fallback_report():
           rc == 0 and "corrupt-tag-fallback=" not in out, out[-300:])
 
 
+def test_a_published_single_arch_tag_is_not_reused():
+    """Issue #1143: `published()` asks only WHETHER ghcr serves a tag.
+
+    Measured on refresh-bot runs 44330910573 (schedule) and 44422028712 (dispatch):
+    ghcr serves `…-base:dockerfile-5b44520adc6c` with an amd64 manifest ONLY (the tag
+    predates the multi-arch publisher of issue #958 — its arm64 child is a placeholder
+    that `docker buildx imagetools inspect` reports as `unknown/unknown`). So decide
+    answered `built=no reason=current`, the build job skipped the rebuild, and the
+    UNGATED `make image-manifest-check TAG=<tag>` step the same job runs on BOTH paths
+    refused that same tag: the build job died on every delivery, and the only repair
+    was a human dispatching the privileged publisher. A tag that cannot serve a job on
+    the other architecture is not current: it is a rebuild reason.
+    """
+    all_refs = [_base_tag(), _test_tag(), _openspec_tag(), f"{IMAGE_REPO}:latest"]
+    # The legacy state: base + :latest amd64-only; test + openspec multi-arch.
+    seeds = {_base_tag(): _AMD64_ONLY, f"{IMAGE_REPO}:latest": _AMD64_ONLY}
+
+    rc, out, raw = _decide(all_refs, dow="1", arches=seeds)
+
+    check("single-arch: decide still exits 0 (it decides, it does not gate)",
+          rc == 0, raw)
+    check("single-arch: the base image IS rebuilt", out.get("built") == "yes", raw)
+    check("single-arch: the reason is the architecture, not a missing tag",
+          "base-tag-single-arch" in out.get("reason", "")
+          and "latest-tag-single-arch" in out.get("reason", "")
+          and "base-tag-missing" not in out.get("reason", ""), raw)
+    check("single-arch: the data names the missing platform",
+          "missing linux/arm64" in out.get("base_arch", "")
+          and "missing linux/arm64" in out.get("latest_arch", ""), raw)
+    check("single-arch: the tag is still reported published (the gap is the arch)",
+          out.get("base_published") == "yes", raw)
+    check("single-arch: a multi-arch test tag is NOT dragged into a rebuild",
+          out.get("test_built") == "no" and out.get("test_reason") == "current", raw)
+
+
+def test_a_multi_arch_published_tag_is_still_reused():
+    """The #958 publisher's own output must stay green — the new question is not a
+    reason to rebuild a tag that answers both architectures."""
+    all_refs = [_base_tag(), _test_tag(), _openspec_tag(), f"{IMAGE_REPO}:latest"]
+
+    rc, out, raw = _decide(all_refs, dow="1")
+
+    check("multi-arch: nothing rebuilds", rc == 0 and out.get("built") == "no"
+          and out.get("test_built") == "no" and out.get("publish_openspec") == "no", raw)
+    check("multi-arch: every reason is current",
+          out.get("reason") == "current" and out.get("test_reason") == "current"
+          and out.get("openspec_reason") == "current", raw)
+    check("multi-arch: the data answers ok for every ref",
+          out.get("base_arch") == "ok" and out.get("test_arch") == "ok"
+          and out.get("openspec_arch") == "ok" and out.get("latest_arch") == "ok", raw)
+
+
+def test_a_single_arch_openspec_tag_is_republished():
+    """Issue #1143: the OpenSpec publisher has the same gate on both paths
+    (`make openspec-manifest-check`), so its decision asks the same question."""
+    all_refs = [_base_tag(), _test_tag(), _openspec_tag(), f"{IMAGE_REPO}:latest"]
+    seeds = {r: _AMD64_ONLY for r in all_refs}
+
+    rc, out, raw = _decide(all_refs, dow="1", arches=seeds)
+
+    check("openspec single-arch: republish owed",
+          out.get("publish_openspec") == "yes", raw)
+    check("openspec single-arch: the reason names the architecture",
+          "openspec-tag-single-arch" in out.get("openspec_reason", ""), raw)
+    check("openspec single-arch: the data names the missing platform",
+          "missing linux/arm64" in out.get("openspec_arch", ""), raw)
+
+
+def test_an_unreadable_manifest_never_triggers_a_rebuild():
+    """Issue #1143 with #235: a manifest the registry refuses to DESCRIBE is a loud
+    failure, never a rebuild reason and never a silent "current".
+
+    The tag IS published (the availability seed says so); only its manifest read
+    fails. `decide` must exit non-zero naming that ref and print no `built=` line:
+    the alternative is an agent rebuilding and publishing images over a registry
+    that was merely having a bad minute.
+    """
+    all_refs = [_base_tag(), _test_tag(), _openspec_tag(), f"{IMAGE_REPO}:latest"]
+    seeds = {r: ("linux/amd64", "linux/arm64") for r in all_refs}
+    seeds[_base_tag()] = ("unreadable",)
+
+    rc, out, raw = _decide(all_refs, dow="1", arches=seeds)
+
+    check("unreadable manifest: the decision fails loudly", rc == 1, raw)
+    check("unreadable manifest: it names the ref it could not read",
+          _base_tag() in raw and "FAIL" in raw, raw)
+    check("unreadable manifest: no rebuild is announced", "built=" not in raw, raw)
+    check("unreadable manifest: it is not read as an absent tag",
+          "not published" not in raw and "single-arch" not in raw, raw)
+
+
+def test_the_architecture_question_is_the_manifest_gate_verdict():
+    """Issue #1143 (rule 6d): the decision must ASK the question the gate ANSWERS.
+
+    A second copy of the platform list, or a second manifest parser, is the #512
+    two-parser drift class: the publisher could satisfy its gate while the seam's
+    decision read something else. So the seam imports the ONE verdict and adds no
+    platform vocabulary of its own.
+    """
+    seam = SCRIPT.read_text()
+    check("the seam reads the one manifest verdict",
+          "from image_manifest_check import" in seam
+          and "arch_verdict" in seam and "REQUIRED_PLATFORMS" in seam, "")
+    check("the seam hard-codes no platform vocabulary",
+          '"amd64"' not in seam and '"arm64"' not in seam, "")
+
+
 def test_wired_into_make_test():
     """The suite runs under `make test` (rule 6d)."""
     mk = (ROOT / "Makefile").read_text()
@@ -585,6 +721,14 @@ def test_wired_into_make_test():
 
 
 # ------------------------------------------------- the rebuild decision (#208) --
+
+#: What a tag published by the SINGLE-architecture publisher that predates issue #958
+#: looks like on ghcr: the amd64 image plus the attestation child ghcr labels
+#: `unknown/unknown` — and no arm64 image. This is the exact manifest
+#: `docker buildx imagetools inspect` reported for
+#: `…-base:dockerfile-5b44520adc6c` (issue #1143).
+_AMD64_ONLY = ("linux/amd64", "unknown/unknown")
+
 
 def _base_tag():
     rc, _, out = _run(["tags"])
@@ -688,8 +832,9 @@ def test_python_env_image_is_built_locally_and_does_not_probe_the_registry():
           not any(c[:2] == ["manifest", "inspect"] for c in calls), str(calls))
 
 
-def _decide(available, dow="1", force="false"):
-    rc, _, out = _run(["decide", "--dow", str(dow), "--force", str(force)], available=available)
+def _decide(available, dow="1", force="false", arches=None):
+    rc, _, out = _run(["decide", "--dow", str(dow), "--force", str(force)],
+                      available=available, arches=arches)
     return rc, dict(l.split("=", 1) for l in out.splitlines() if "=" in l), out
 
 
@@ -789,6 +934,11 @@ def main() -> int:
     print("runner-image decision (scripts/ensure_image.py)")
     test_tags_are_the_hash_of_this_revisions_inputs()
     test_the_rebuild_decision_is_data_not_workflow_shell()
+    test_a_published_single_arch_tag_is_not_reused()
+    test_a_multi_arch_published_tag_is_still_reused()
+    test_a_single_arch_openspec_tag_is_republished()
+    test_an_unreadable_manifest_never_triggers_a_rebuild()
+    test_the_architecture_question_is_the_manifest_gate_verdict()
     test_force_is_parsed_strictly_so_zero_means_off()
     test_a_registry_hiccup_is_a_loud_failure_not_a_rebuild()
     test_a_publish_is_not_done_until_the_registry_serves_it()
