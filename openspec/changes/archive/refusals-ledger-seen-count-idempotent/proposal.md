@@ -1,6 +1,7 @@
 # Proposal: refusals-ledger-seen-count-idempotent
 
 Issue: #1148
+PR: #1152
 
 ## Why
 
