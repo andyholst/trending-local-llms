@@ -171,10 +171,17 @@ def _raw_round2() -> dict:
 
 
 def _fresh(data_dir: Path):
-    """Import update_trending through the real data-dir seam, like the make targets."""
+    """Import update_trending through the real data-dir seam, like the make targets.
+
+    Issue #1155: the ledger lands only from a stage that DECLARES it, so a fixture pass
+    here DECLARES — it is standing in for `make merge`, the refresh delivery recipe that
+    carries `--land-refusals`. A pass that declares nothing is a different pass, and the
+    guard for it is tests/test_refusals_land_declaration.py.
+    """
     os.environ["TRENDING_DATA_DIR"] = str(data_dir)
     import update_trending as ut
     importlib.reload(ut)
+    ut.declare_refusals_landing(True)
     return ut
 
 

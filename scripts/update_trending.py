@@ -46,6 +46,30 @@ RAW_DIR = _DATA_DIR / "raw"
 # captured". Rule 3b: entries are only ever APPENDED; the file is never rewritten or
 # truncated, and an unreadable ledger is never overwritten.
 REFUSALS_FILE = _DATA_DIR / "refusals.json"
+# Issue #1155: the ledger is DATA, and only a pass that DECLARES a landing may write it.
+# `--land-refusals` is that declaration (the Makefile's delivery recipes `_merge`,
+# `_merge-fetch` and the `_fix` merge carry it); a validator, a `--dry-run`, a test module
+# or an implementation leg that never declares one leaves data/refusals.json BYTE-IDENTICAL,
+# so a CI-only PR carries only what its issue implements instead of grown counters on findings
+# it never observed. Rule 3b still holds (the delivery only appends or grows counters); the
+# refusal itself is still printed in full, and the run summary states the count it did NOT
+# land, so "refused N things and wrote nothing" is a loud line and never a silent skip.
+#: True only for a process that declared a landing stage (`declare_refusals_landing`).
+REFUSALS_LANDING_DECLARED = False
+#: Refusals a non-declared pass counted but was not allowed to land (issue #1155).
+REFUSALS_NOT_LANDED = 0
+
+
+def declare_refusals_landing(declared: bool) -> bool:
+    """Declare that THIS process may land the refusals ledger (a delivery stage)."""
+    global REFUSALS_LANDING_DECLARED
+    REFUSALS_LANDING_DECLARED = bool(declared)
+    return REFUSALS_LANDING_DECLARED
+
+
+def refusals_landing_declared() -> bool:
+    """Whether this pass may write the refusals ledger (issue #1155)."""
+    return REFUSALS_LANDING_DECLARED
 
 # --- normalised store split (issue #689) -----------------------------------
 # The store persisted as THREE files so the measurement volume grows with post
@@ -2357,6 +2381,13 @@ def record_ingest_refusals(
             f"record_ingest_refusals: unknown refusal stage {stage!r} — "
             f"the seams are {REFUSAL_STAGES}"
         )
+    global REFUSALS_NOT_LANDED
+    if path is None and not REFUSALS_LANDING_DECLARED:
+        # Issue #1155: no declared landing stage. The refusal stands in the log (the seam
+        # printed it before calling here) and the tracked ledger is NOT touched — only the
+        # refresh delivery, or a caller that names its own ledger path, lands a record.
+        REFUSALS_NOT_LANDED += len(refused)
+        return len(refused)
     p = path or REFUSALS_FILE
     doc: dict = {"refusals": []}
     if p.exists():
@@ -3125,9 +3156,18 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
         if file_refusals:
             refused_total += len(file_refusals)
             shown = file_refusals[:8]
-            print(
+            # The summary says what actually happened to the record (issue #1155): a
+            # declared stage lands it, a validation pass reports it and writes nothing.
+            head = (
                 f"[ingest] {path.name}: {len(file_refusals)} refusal(s) recorded in the "
                 f"refusals ledger — "
+                if refusals_landing_declared() else
+                f"[ingest] {path.name}: {len(file_refusals)} refusal(s) NOT landed in the "
+                f"refusals ledger (no declared landing stage — issue #1155; "
+                f"`--land-refusals` is the delivery stage's declaration) — "
+            )
+            print(
+                head
                 + "; ".join(f"{b}: {mid}/{eng} post {post}" for b, mid, eng, post in shown)
                 + (f"; +{len(file_refusals) - len(shown)} more (ledger data/refusals.json)"
                    if len(file_refusals) > len(shown) else "")
@@ -3246,11 +3286,21 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
             f"{seen['tail']}{times}"
         )
     if refused_total:
-        print(
-            f"[ingest] {refused_total} measurement(s) refused at ingest this run — every "
-            f"one recorded in data/refusals.json (issue #888); make data-gaps reads that "
-            f"ledger to tell 'refused at ingest' from 'never captured'"
-        )
+        if refusals_landing_declared():
+            print(
+                f"[ingest] {refused_total} measurement(s) refused at ingest this run — every "
+                f"one recorded in data/refusals.json (issue #888); make data-gaps reads that "
+                f"ledger to tell 'refused at ingest' from 'never captured'"
+            )
+        else:
+            # Issue #1155: reported, not landed. The count line keeps its exact shape (the
+            # grouping guard #882 reads it); only the record's fate is stated differently.
+            print(
+                f"[ingest] {refused_total} measurement(s) refused at ingest this run — every "
+                f"one printed here and NONE landed in data/refusals.json (no declared "
+                f"landing stage — issue #1155; `--land-refusals` is the delivery stage's "
+                f"declaration); make data-gaps reads the ledger as the delivery left it"
+            )
     return added, updated
 
 def resolve_model_mapping(raw_model: dict, store: dict) -> dict:
@@ -3763,7 +3813,22 @@ def main() -> int:
     ap.add_argument("--since", metavar="UTC",
                     help="merge raw snapshots newer than this YYYY-MM-DDTHH:MM:SSZ stamp "
                          "instead of the store's own generated_utc (issue #175)")
+    ap.add_argument("--land-refusals", action="store_true",
+                    help="declare THIS run a delivery stage that may land ingest refusals in "
+                         "data/refusals.json (issue #1155); without it a pass reports refusals "
+                         "and leaves the ledger byte-identical. Never combinable with --dry-run")
     args = ap.parse_args()
+
+    if args.dry_run and args.land_refusals:
+        # A dry-run writes nothing (its own help says so); a landing declaration claims it
+        # may. Refuse the contradiction loudly instead of picking one silently (#1155).
+        print("[error] --dry-run lands nothing; it cannot also declare --land-refusals "
+              "(issue #1155: only a delivery stage declares a landing)", file=sys.stderr)
+        return 2
+    declare_refusals_landing(args.land_refusals)
+    if args.land_refusals:
+        print("[refusals] landing declared (delivery stage, issue #1155): ingest refusals "
+              "will be recorded in data/refusals.json")
 
     if args.write_raw:
         import sys as _sys

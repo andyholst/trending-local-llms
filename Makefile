@@ -953,7 +953,9 @@ _update-hermes:
 _fix:
 	timeout $(HERMES_FIX_TIMEOUT) hermes -z "Follow the preloaded skill pr-fix. Inputs: qa-report.txt at the repo root (the failing checks' own output) and AGENTS.md. Repair the cause, run the gates the skill names, and do not push or merge." \
 		-m $(HERMES_ALIAS) --reasoning $(HERMES_FIX_REASONING) $(HERMES_NONINTERACTIVE) -s pr-fix,bot-unattended
-	python3 scripts/update_trending.py  # merge corrected raw -> models.json
+	# A repair round IS a delivery stage: it re-merges the raw the run gathered, so it
+	# declares the refusal landing (issue #1155) instead of leaving the count unlanded.
+	python3 scripts/update_trending.py --land-refusals  # merge corrected raw -> models.json
 	python3 scripts/validate.py --only links  # fail-fast: confirm the fix actually resolved the links
 
 .PHONY: _merge
@@ -961,12 +963,17 @@ _fix:
 # that re-derives its store on a moved base (issue #177) passes the oldest capture stamp it
 # gathered: the base's own `generated_utc` can be NEWER than that snapshot, and the derived
 # boundary would then skip the very data the run collected (issue #175).
+# `--land-refusals` (issue #1155): the merge is the DELIVERY stage that folds the raw the
+# refresh captured into the store, so it is the stage that declares a refusal landing.
+# Every other pass over the tree — a validator, `--dry-run`, a test module, an
+# implementation leg — reports refusals and leaves data/refusals.json byte-identical.
 _merge:
-	python3 scripts/update_trending.py $(if $(SINCE),--since "$(SINCE)",)
+	python3 scripts/update_trending.py --land-refusals $(if $(SINCE),--since "$(SINCE)",)
 
 .PHONY: _merge-fetch
+# A `--fetch` merge is a delivery too — it matched live engagement and ingests raw (#1155).
 _merge-fetch:
-	python3 scripts/update_trending.py --fetch
+	python3 scripts/update_trending.py --fetch --land-refusals
 
 .PHONY: _validate
 _validate:
