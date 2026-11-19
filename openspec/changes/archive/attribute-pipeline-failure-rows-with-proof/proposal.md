@@ -1,6 +1,7 @@
 # Proposal: attribute-pipeline-failure-rows-with-proof
 
 Issue: #1053
+PR: #1138
 
 ## Why
 
