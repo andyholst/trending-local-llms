@@ -78,6 +78,24 @@ def declare_bypass_gap(guard: str, why: str) -> str:
     )
 
 
+def external_binary_gap(guard: str, binary: str, why: str) -> str:
+    """A guard whose half needs an EXTERNAL binary this identity does not have (issue #1154).
+
+    The owner directive of 2026-11-15 moved agent work onto the host, so a host `make test` is
+    the only local verification an implementation run has — and a module that drives a real
+    CLI (the `hermes` skills register, a smoke) went RED with the CLI's own "not on PATH"
+    message, a failure the pipeline would never report and one an agent then spends its repair
+    budget on. The half is declared here: the runner prints `[harness] coverage-gap N declared`
+    naming the guard that did not run, the module stays green, and a module that merely prints
+    "SKIP" without this seam is still a refusal (the `BYPASS_PHRASE` travels inside the line).
+    """
+    return declare_gap(
+        guard,
+        f"the `{binary}` CLI is not on PATH ({why}); {BYPASS_PHRASE}: this half did not run in "
+        f"this identity, and the container run — where the binary exists — still locks it",
+    )
+
+
 def scan_module_output(lines) -> tuple[list[str], list[str]]:
     """Split one module's output into (declared gaps, undeclared bypass lines)."""
     declared: list[str] = []

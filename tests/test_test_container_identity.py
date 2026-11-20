@@ -346,6 +346,46 @@ def test_the_permission_half_guard_reports_through_the_seam_not_as_a_bare_skip()
           "still locks its contract" in src, src[:400])
 
 
+def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
+    """Issue #1154: a guard whose half needs a CLI this identity lacks declares the gap."""
+    line = coverage_gap.external_binary_gap(
+        "hermes-skills register half", "hermes", "a host `make test` has no agent CLI")
+    check("binary gap: the line travels inside the declared-gap seam",
+          line.startswith(coverage_gap.GAP_PREFIX + " ") and coverage_gap.BYPASS_PHRASE in line, line)
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "test_a_ok.py").write_text(_green_module())
+        planted = (
+            "import sys\n"
+            f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
+            "import coverage_gap\n"
+            "coverage_gap.external_binary_gap('hermes-skills register half', 'hermes',\n"
+            "                                 'a host `make test` has no agent CLI')\n"
+            "print('ok planted')\n"
+        )
+        (d / "test_b_binary_gap.py").write_text(planted)
+        rc, out = _run_runner(d)
+    check("binary gap: the module stays green (a declared half is honest, not a failure)",
+          rc == 0, out[:500])
+    check("binary gap: the runner counts it and names the guard that did not run",
+          "[harness] coverage-gap 1 declared" in out and "hermes-skills register half" in out,
+          out[:600])
+    src = (ROOT / "tests" / "test_agent_skills.py").read_text(encoding="utf-8")
+    check("binary gap: the skills module declares the register half instead of failing on it",
+          "coverage_gap.external_binary_gap(" in src and 'shutil.which("hermes")' in src, src[:400])
+    # The REAL module, driven with the CLI's directory stripped from PATH (rule 6m: the guard
+    # runs the real code, not a stand-in): it must stay green and declare the half.
+    keep = [p for p in os.environ.get("PATH", "").split(os.pathsep)
+            if p and not (Path(p) / "hermes").exists()]
+    env = {**os.environ, "PATH": os.pathsep.join(keep)}
+    proc = subprocess.run([sys.executable, str(ROOT / "tests" / "test_agent_skills.py")],
+                          capture_output=True, text=True, timeout=300, env=env)
+    check("binary gap: the real module stays green with the CLI absent and declares the half",
+          proc.returncode == 0 and coverage_gap.GAP_PREFIX in proc.stdout
+          and "hermes-skills register half" in proc.stdout,
+          proc.stdout[-400:] + proc.stderr[-200:])
+
+
 def main() -> int:
     print("test suite identity + coverage-gap seam (#1147) — real runner, real wrapper, real make recipe")
     test_the_runner_names_the_identity_it_measured()
@@ -353,6 +393,7 @@ def main() -> int:
     test_a_declared_gap_in_a_GREEN_module_reaches_the_verdict()
     test_a_bypass_that_never_declared_its_gap_turns_the_runner_red()
     test_a_declared_and_an_undeclared_line_in_one_module_are_separated()
+    test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted()
     test_the_runner_reads_the_phrases_from_the_seam_and_never_spells_them()
     test_the_runner_refuses_loudly_when_the_seam_script_is_gone()
     test_the_container_wrapper_names_and_forwards_the_invoking_identity()
