@@ -10,8 +10,9 @@ leaves the tracked file byte-identical.
 
 #### Scenario: An undeclared full ingest pass lands no refusal
 
-- **Given** a real git checkout of HEAD (`git archive` + `git init` + one seed commit) holding
-  the shipped `data/refusals.json` and the shipped `data/raw` snapshots
+- **Given** a real git checkout of HEAD (the tracked tree copied out with `.git` excluded +
+  `git init` + one seed commit) holding the shipped `data/refusals.json` and the shipped
+  `data/raw` snapshots
 - **When** `python3 scripts/update_trending.py --since 2000-01-01T00:00:00Z` runs with no
   landing declaration
 - **Then** the run exits 0, `git status --porcelain -- data/refusals.json` is empty, and the
@@ -91,3 +92,25 @@ under the rule and leave a scratch checkout of HEAD clean.
   `tests/test_measurement_attribution.py` are each run the way `make test` runs them
 - **Then** every module exits 0 and `git status --porcelain` for the whole tree is empty
 - **Test:** tests/test_refusals_land_declaration.py::test_the_measured_suite_modules_leave_the_tree_clean
+
+### Requirement: The guard's scratch checkout is built without asking git about the checkout the suite runs in
+
+The module that locks this contract runs the product inside a scratch checkout it creates. It
+SHALL NOT ask the `git` CLI anything about the checkout it happens to be running in, because in
+the test container that checkout is owned by a different uid than the user running the suite and
+git refuses every such command (`fatal: detected dubious ownership in repository at '/workspace'`,
+exit 128 — measured on qa-validate run 44660030227, job `validate`, step `Run unit tests
+(in container)`, where this module was the suite's only red module). The scratch tree SHALL still
+be a real work tree carrying the shipped data store, and the guard SHALL prove it is not vacuous
+by going red on the shape it shipped with.
+
+#### Scenario: The scratch builder names no git call rooted at the checkout under test
+
+- **Given** the source of `scratch_repo` in `tests/test_refusals_land_declaration.py`, and the
+  shipped shape (`subprocess.run(["git", "-C", str(ROOT), "archive", "HEAD"], …)`) planted as text
+- **When** the calls in each are read on the SYNTAX (an AST walk, so a docstring that merely
+  mentions the call cannot raise a false red)
+- **Then** `scratch_repo` contains no call that hands `git` the `ROOT` of the running checkout,
+  the planted shipped shape yields exactly one offender, and the tree the builder produces is a
+  git work tree whose tracked files include `data/refusals.json` and the `data/` store
+- **Test:** tests/test_refusals_land_declaration.py::test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in

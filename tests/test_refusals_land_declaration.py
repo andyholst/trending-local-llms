@@ -19,10 +19,12 @@ one line naming the count it did NOT land, and leaves the tracked file byte-iden
 `--dry-run --land-refusals` is a contradiction (a dry-run writes nothing) and exits 2.
 
 Driven through the REAL CLI over a REAL git checkout the real `git` reports on (rule 6m): the
-scratch tree is `git archive HEAD` + `git init` + one seed commit, so the verdict is
-`git status --porcelain` — exactly what a PR diff is — never an in-memory guess. No stand-in
-replaces the product: the same `update_trending.py`, the same Makefile text, the same three
-test modules that measured the churn.
+scratch tree is a copy of the checkout (minus `.git`) + `git init` + one seed commit, so the
+verdict is `git status --porcelain` — exactly what a PR diff is — never an in-memory guess. No
+stand-in replaces the product: the same `update_trending.py`, the same Makefile text, the same
+three test modules that measured the churn. `git` is run ONLY inside that scratch tree, never
+aimed at the checkout the suite happens to run in (see `scratch_repo` for the container-uid
+refusal that made this a rule).
 
   - test_an_undeclared_full_ingest_lands_no_refusals      the measured churn is gone
   - test_an_undeclared_pass_still_reports_every_refusal   loud log, a NOT-landed line
@@ -31,11 +33,14 @@ test modules that measured the churn.
   - test_a_dry_run_cannot_declare_a_landing               exit 2, tree untouched
   - test_the_measured_suite_modules_leave_the_tree_clean  #1148's three dirty modules
   - test_the_makefile_delivery_recipes_declare_the_landing  wired, and no validator does
+  - test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in  container-safe tree
 
 Run:  python3 tests/test_refusals_land_declaration.py   or   make test
 """
 from __future__ import annotations
 
+import ast
+import inspect
 import json
 import shutil
 import subprocess
@@ -49,6 +54,12 @@ MAKEFILE = ROOT / "Makefile"
 
 # The modules issue #1148 measured: they ingest over the SHIPPED data dir, which is how the
 # shipped ledger accumulated 92 records for 3 findings.
+# HOST CAVEAT (measured 2026-11-20): each of these modules also carries the #972 shipped
+# engine-check alarm, whose GitHub reachability probe is UNAUTHENTICATED. When this host's
+# 60/hr anonymous quota is spent (`api.github.com` -> 403, `remaining: 0`) the probe reports
+# 'repo not found / unreachable' and that check goes red here while CI (authenticated, other
+# IP) stays green — the host/container split rule 6c names. CI is the authority on those two
+# sub-checks; everything this module owns about #1155 is host-verifiable and green here.
 MEASURED_MODULES = (
     "tests/test_engine_registry.py",
     "tests/test_engine_aliases.py",
@@ -78,19 +89,36 @@ def git(repo: Path, *args) -> subprocess.CompletedProcess:
                           text=True, timeout=600)
 
 
+IGNORED_COPY_DIRS = (".git", "__pycache__", ".pytest_cache", ".mypy_cache",
+                     "node_modules", ".venv", "venv", ".hermes", ".local")
+
+
 def scratch_repo() -> Path:
-    """A real git checkout of HEAD: `git archive` + `git init` + one seed commit.
+    """The tree under test, as a real git checkout: copy the checkout, `git init`, one seed commit.
 
     The `git status --porcelain` of this tree answers the question the issue asks: what a run
-    leaves in the working tree that a commit could carry into a PR.
+    leaves in the working tree that a commit could carry into a PR. `.gitignore` rides along in
+    the copy, so the seed commit ignores exactly what the repository ignores.
+
+    NOT `git -C <ROOT> archive HEAD` (the shape this module shipped with): in the test container
+    the checkout at `/workspace` is OWNED BY ANOTHER UID than the user running the suite, and git
+    refuses EVERY command aimed at it —
+    `fatal: detected dubious ownership in repository at '/workspace'` → exit 128. Measured on
+    qa-validate run 44660030227 (job `validate`, step `Run unit tests (in container)`), where
+    this was the suite's only red module out of 138 while every module that shells git only in
+    ITS OWN scratch directory passed. So the scratch tree is built git-free (a copy of the
+    checkout minus the VCS directory), and git is then run only inside the scratch tree, which
+    this process created and therefore owns.
     """
     tmp = Path(tempfile.mkdtemp(prefix="refusals-land-"))
-    with open(tmp / "tree.tar", "wb") as tar_file:
-        subprocess.run(["git", "-C", str(ROOT), "archive", "HEAD"],
-                       stdout=tar_file, check=True, timeout=600)
-    subprocess.run(["tar", "-xf", str(tmp / "tree.tar"), "-C", str(tmp)],
-                   check=True, timeout=600)
-    (tmp / "tree.tar").unlink()
+    shutil.copytree(ROOT, tmp / "tree", symlinks=True,
+                    ignore=shutil.ignore_patterns(*IGNORED_COPY_DIRS),
+                    ignore_dangling_symlinks=True)
+    tree = tmp / "tree"
+    written = sum(1 for _ in tree.rglob("*") if _.is_file())
+    if written < 200:
+        raise RuntimeError(f"the scratch checkout has only {written} file(s); the seed tree is not the repo")
+    tmp = tree
     r = git(tmp, "init", "-q")
     if r.returncode:
         raise RuntimeError(f"git init failed: {r.stderr}")
@@ -307,6 +335,65 @@ def test_the_makefile_delivery_recipes_declare_the_landing():
     check("no validation stage declares a landing", not offenders, offenders)
 
 
+def git_at_root_offenders(src: str) -> list[str]:
+    """Every call in `src` that asks git about the checkout the suite happens to run in.
+
+    Detected on the SYNTAX (not the text), so a docstring that merely MENTIONS the forbidden
+    call cannot raise a false red: a call to the `git` helper whose arguments mention `ROOT`, or
+    a subprocess/`git` call carrying the literal "git" alongside `ROOT`.
+    """
+    out = []
+    for node in ast.walk(ast.parse(src)):
+        if not isinstance(node, ast.Call):
+            continue
+        called = node.func.id if isinstance(node.func, ast.Name) else getattr(node.func, "attr", "")
+        names = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+        strings = {n.value for n in ast.walk(node)
+                   if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+        if ("git" in strings or called == "git") and "ROOT" in names:
+            out.append(ast.get_source_segment(src, node) or called)
+    return out
+
+
+OLD_SCRATCH_SHAPE = '''
+def _scratch_repo_shipped_before_1157():
+    tmp = Path(tempfile.mkdtemp(prefix="refusals-land-"))
+    with open(tmp / "tree.tar", "wb") as tar_file:
+        subprocess.run(["git", "-C", str(ROOT), "archive", "HEAD"],
+                       stdout=tar_file, check=True, timeout=600)
+'''
+
+
+def test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in():
+    """The container refusal this module actually hit (qa-validate run 44660030227).
+
+    In the test container the checkout at `/workspace` belongs to a DIFFERENT uid than the user
+    running the suite, so every `git -C <ROOT> …` exits 128 with `fatal: detected dubious
+    ownership in repository at '/workspace'`. A scratch tree built by asking git about the
+    checkout is therefore green on a host and red in CI — the host/container split this repo has
+    measured before (rule 6c) — so the scratch tree is built git-free and `git` is run only
+    inside the tree this process created. The tree must still be a REAL work tree carrying the
+    data store the product ingests, or the guard proves nothing.
+    """
+    src = inspect.getsource(scratch_repo)
+    offenders = git_at_root_offenders(src)
+    check("scratch_repo asks git NOTHING about the checkout the suite runs in",
+          not offenders, "; ".join(offenders))
+    # The guard is not vacuous: the shape this module SHIPPED with must trip it.
+    planted = git_at_root_offenders(OLD_SCRATCH_SHAPE)
+    check("the guard goes red on the shipped shape (git -C ROOT archive HEAD)",
+          len(planted) == 1, planted)
+    repo = scratch_repo()
+    st = git(repo, "rev-parse", "--is-inside-work-tree")
+    check("the scratch tree is a real git work tree the real git reports on",
+          st.stdout.strip() == "true", st.stderr)
+    tracked = git(repo, "ls-files", "data/refusals.json").stdout.strip()
+    check("the scratch tree carries the data store the product ingests", bool(tracked), tracked)
+    data_files = git(repo, "ls-files", "data").stdout.splitlines()
+    check("the scratch tree carries the repo's tracked files in full (a partial copy is not a checkout)",
+          len(data_files) >= 5, f"data files: {len(data_files)}")
+
+
 def main() -> int:
     for fn in (
         test_an_undeclared_full_ingest_lands_no_refusals,
@@ -316,6 +403,7 @@ def main() -> int:
         test_a_dry_run_cannot_declare_a_landing,
         test_the_measured_suite_modules_leave_the_tree_clean,
         test_the_makefile_delivery_recipes_declare_the_landing,
+        test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in,
     ):
         print(f"\n== {fn.__name__}")
         fn()
