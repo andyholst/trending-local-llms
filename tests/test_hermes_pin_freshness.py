@@ -338,43 +338,87 @@ def test_the_shipped_pins_and_the_recorded_payload_name_one_release() -> None:
               not one_release_problems(raised_mk, raised_df, agreeing), "")
 
 
-def _alarm_problems(text: str) -> list:
-    """The wiring guard (rule 6m): the sweep must call `make hermes-pin-freshness`, and no
-    workflow may reach the script past the Makefile."""
+def _pin_problems(refresh_text: str, queued_text: str) -> list:
+    """The wiring guard (rule 6m, issue #1093): the ONE scheduled pipeline must call
+    `make hermes-pin-freshness` in a job gated by `guard` that can file the issue, the dispatched
+    sweep must NOT own it any more, and no workflow may reach the script past the Makefile."""
     problems = []
-    doc = yaml.safe_load(text)
-    steps = doc["jobs"]["alarm"]["steps"]
+    doc = yaml.safe_load(refresh_text)
+    job = (doc.get("jobs") or {}).get("pin-freshness")
+    if not job:
+        problems.append("refresh-bot.yml has no pin-freshness job")
+        return problems
+    if "guard" not in (job.get("needs") or []):
+        problems.append("the pin-freshness job does not need the guard (rule 6j)")
+    perms = job.get("permissions") or {}
+    if str(perms.get("issues", "")).lower() != "write":
+        problems.append("the pin-freshness job cannot file the drift issue (permissions: issues: write)")
+    if str(perms.get("contents", "")).lower() != "read":
+        problems.append("the pin-freshness job does not name its contents scope")
+    steps = job.get("steps") or []
     pin_steps = [s for s in steps if "hermes-pin-freshness" in str(s.get("run", ""))]
-    if not pin_steps:
-        problems.append("the queued-alarm sweep has no hermes-pin-freshness step")
+    if len(pin_steps) != 1:
+        problems.append(f"the pin-freshness job runs the target {len(pin_steps)} times, expected exactly 1")
     for s in steps:
         run = str(s.get("run", ""))
-        if "hermes-pin-freshness" in run and "make hermes-pin-freshness" not in run:
-            problems.append(f"step {s.get('name')!r} reaches hermes-pin-freshness without make")
+        if "hermes_pin_freshness" in run and "make hermes-pin-freshness" not in run:
+            problems.append(f"step {s.get('name')!r} reaches the script without make")
     for s in pin_steps:
         env = s.get("env") or {}
         if "github.token" not in str(env.get("GH_TOKEN", "")):
             problems.append(f"step {s.get('name')!r} does not file with the default token")
         if "FIXBOT_DISPATCH_TOKEN" in str(env):
             problems.append(f"step {s.get('name')!r} reaches the owner PAT")
+    # The cadence home is decided (issue #1093): the dispatch-only sweep may not re-adopt it.
+    queued = yaml.safe_load(queued_text)
+    for name, j in (queued.get("jobs") or {}).items():
+        for s in j.get("steps") or []:
+            if "hermes-pin-freshness" in str(s.get("run", "")):
+                problems.append(f"queued-alarm.yml job {name!r} still runs the step the owner moved "
+                                "to the scheduled pipeline")
     return problems
 
 
-def test_queued_alarm_sweep_calls_the_target_and_a_makeless_step_is_refused() -> None:
-    print("\nwiring: queued-alarm calls `make hermes-pin-freshness`; a missing step or a "
-          "script-past-the-Makefile step is REFUSED (rule 6m)")
-    text = QUEUE_WF.read_text(encoding="utf-8")
-    problems = _alarm_problems(text)
-    check("queued-alarm.yml carries the make-wired step", problems == [], problems)
+def test_the_scheduled_pipeline_calls_the_target_and_a_makeless_step_is_refused() -> None:
+    print("\nwiring: refresh-bot.yml (the one scheduled pipeline, rule 6t) calls "
+          "`make hermes-pin-freshness` (issue #1093); a missing step, an ungated job, a job that "
+          "cannot file the issue, a cadence creeping back into the dispatch-only sweep, or a "
+          "script-past-the-Makefile step is REFUSED (rules 6j/6m)")
+    refresh = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text(encoding="utf-8")
+    queued = QUEUE_WF.read_text(encoding="utf-8")
+    problems = _pin_problems(refresh, queued)
+    check("refresh-bot.yml carries the make-wired pin-freshness job", problems == [], problems)
     # The guard must be able to fail: the same scan RED on a step that skips `make`…
-    makeless = text.replace("run: make hermes-pin-freshness REPO=", "run: python3 scripts/hermes_pin_freshness.py --repo ")
-    planted = _alarm_problems(makeless)
+    makeless = refresh.replace("run: make hermes-pin-freshness REPO=",
+                               "run: python3 scripts/hermes_pin_freshness.py --repo ")
+    planted = _pin_problems(makeless, queued)
     check("a step reaching the script without make is REFUSED", bool(planted), planted)
-    # …and RED on a sweep that dropped the step entirely.
-    dropped = re.sub(r"      - name: Fail loudly when the Hermes agent pin.*?repository \}\}\"\n",
-                     "", text, flags=re.S)
-    planted = _alarm_problems(dropped)
-    check("a sweep without the step is REFUSED", bool(planted) and "no hermes-pin-freshness step" in " ".join(planted), planted)
+    # …RED on a pipeline that dropped the job entirely…
+    dropped = re.sub(r"  pin-freshness:\n.*?repository \}\}\"\n\n", "", refresh, flags=re.S)
+    planted = _pin_problems(dropped, queued)
+    check("a scheduled pipeline without the job is REFUSED",
+          bool(planted) and "no pin-freshness job" in " ".join(planted), planted)
+    # …RED when the job skips the guard…
+    ungated = refresh.replace("  pin-freshness:\n    needs: guard", "  pin-freshness:")
+    planted = _pin_problems(ungated, queued)
+    check("a pin-freshness job that skips the guard is REFUSED",
+          bool(planted) and "does not need the guard" in " ".join(planted), planted)
+    # …RED when it cannot file the issue it exists to file…
+    unfileable = refresh.replace("    permissions:\n      contents: read\n      issues: write\n",
+                                 "    permissions:\n      contents: read\n")
+    planted = _pin_problems(unfileable, queued)
+    check("a pin-freshness job that cannot write the issue is REFUSED",
+          bool(planted) and "cannot file the drift issue" in " ".join(planted), planted)
+    # …and RED when the cadence creeps back into the dispatch-only sweep (issue #1093).
+    crept = queued.replace(
+        "      - name: Fail loudly when master's branch protection is missing or weakened",
+        "      - name: Fail loudly when the Hermes agent pin lags (issue #1091)\n"
+        "        env:\n          GH_TOKEN: ${{ github.token }}\n"
+        "        run: make hermes-pin-freshness REPO=\"${{ github.repository }}\"\n"
+        "      - name: Fail loudly when master's branch protection is missing or weakened")
+    planted = _pin_problems(refresh, crept)
+    check("the step re-adopted by the dispatch-only sweep is REFUSED",
+          bool(planted) and "moved to the scheduled pipeline" in " ".join(planted), planted)
     # No workflow anywhere may name the script directly (rule 6m).
     direct = []
     for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
@@ -468,7 +512,7 @@ def main() -> int:
     test_recorded_channel_payload_is_compared_against_the_real_pins()
     test_the_shipped_pins_and_the_recorded_payload_name_one_release()
     test_the_channel_repo_is_derived_from_the_makefile_pin_block()
-    test_queued_alarm_sweep_calls_the_target_and_a_makeless_step_is_refused()
+    test_the_scheduled_pipeline_calls_the_target_and_a_makeless_step_is_refused()
     test_the_drift_marker_is_registered_in_bot_markers()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
