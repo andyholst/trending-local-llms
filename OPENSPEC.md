@@ -16,7 +16,7 @@ Active changes: **3** · archived: **366**
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `hermes-pin-raise-to-0-23-3` | active | #1161 | — | [hermes-pin-freshness](openspec/changes/hermes-pin-raise-to-0-23-3/specs/hermes-pin-freshness/spec.md) | 4/7 | [proposal.md](openspec/changes/hermes-pin-raise-to-0-23-3/proposal.md) |
+| `hermes-pin-raise-to-0-23-3` | active | #1161 | — | [hermes-pin-freshness](openspec/changes/hermes-pin-raise-to-0-23-3/specs/hermes-pin-freshness/spec.md) | 7/7 | [proposal.md](openspec/changes/hermes-pin-raise-to-0-23-3/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
