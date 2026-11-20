@@ -34,6 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import bot_markers as bm  # noqa: E402  (rule 6j: the marker table, imported never re-spelled)
+import hermes_pin_freshness as hpf  # noqa: E402  (rule 6d: the pin readers, imported never re-spelled)
 
 SCRIPT = ROOT / "scripts" / "hermes_pin_freshness.py"
 QUEUE_WF = ROOT / ".github" / "workflows" / "queued-alarm.yml"
@@ -288,6 +289,55 @@ def test_recorded_channel_payload_is_compared_against_the_real_pins() -> None:
         check("--from-file never calls gh api", "api" not in gh_calls(tmp), gh_calls(tmp))
 
 
+def one_release_problems(makefile: Path, dockerfile: Path, payload: Path) -> list[str]:
+    """The agreement the shipped tree must satisfy, read through the gate's OWN parsers (rule 6d).
+
+    `hermes_pin_freshness.read_pins` is the only reader of the two pin spellings and
+    `channel_tag` the only reader of a recorded payload, so this guard can never drift from
+    what `make hermes-pin-freshness` itself compares (issue #1161).
+    """
+    mk_pin, mk_line, df_pin, df_line = hpf.read_pins(makefile, dockerfile)
+    recorded = hpf.channel_tag(str(payload), "unused/planted-channel")
+    if hpf.compare(mk_pin, df_pin) == 0 and hpf.compare(mk_pin, recorded) == 0:
+        return []
+    return [
+        "the release spellings disagree: "
+        f"{makefile.name}:{mk_line} `HERMES_VERSION ?= {mk_pin}` vs "
+        f"{dockerfile.name}:{df_line} `ARG HERMES_VERSION=\"{df_pin}\"` vs "
+        f"{payload.name} `tag_name: {recorded}` — a pin raise and its recorded channel payload "
+        "land in ONE change (rule 6b, issue #218)"
+    ]
+
+
+def test_the_shipped_pins_and_the_recorded_payload_name_one_release() -> None:
+    print("\nagreement: the REAL pins and the REAL recorded payload name ONE release (issue #1161)")
+    shipped = one_release_problems(MAKEFILE, DOCKERFILE, RECORDED_CHANNEL)
+    check("the shipped Makefile pin, Dockerfile ARG and recorded payload name one release",
+          not shipped, "; ".join(shipped))
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        raised_mk = tmp / "Makefile"
+        raised_df = tmp / "Dockerfile"
+        raised_mk.write_text(PLANT_MAKEFILE.format(pin="0.23.3"))
+        raised_df.write_text(PLANT_DOCKERFILE.format(pin="0.23.3"))
+        lagging = tmp / "hermes_releases_latest.json"
+        lagging.write_text(json.dumps({"tag_name": "v0.23.2"}))
+        problems = one_release_problems(raised_mk, raised_df, lagging)
+        check("a payload the pin raise left behind is refused naming all three spellings",
+              len(problems) == 1 and "0.23.3" in problems[0] and "v0.23.2" in problems[0],
+              str(problems))
+        ahead = tmp / "ahead.json"
+        ahead.write_text(json.dumps({"tag_name": "v0.23.4"}))
+        ahead_problems = one_release_problems(raised_mk, raised_df, ahead)
+        check("a payload ahead of the pins is refused too (the guard is arithmetic, not a snapshot)",
+              len(ahead_problems) == 1 and "v0.23.4" in ahead_problems[0], str(ahead_problems))
+        agreeing = tmp / "agree.json"
+        agreeing.write_text(json.dumps({"tag_name": "v0.23.3"}))
+        check("a planted pin+payload that name one release is green",
+              not one_release_problems(raised_mk, raised_df, agreeing), "")
+
+
 def _alarm_problems(text: str) -> list:
     """The wiring guard (rule 6m): the sweep must call `make hermes-pin-freshness`, and no
     workflow may reach the script past the Makefile."""
@@ -416,6 +466,7 @@ def main() -> int:
     test_unreadable_channel_is_a_loud_exit_two_never_a_clean()
     test_pin_disagreement_between_makefile_and_dockerfile_refuses_before_the_channel_is_read()
     test_recorded_channel_payload_is_compared_against_the_real_pins()
+    test_the_shipped_pins_and_the_recorded_payload_name_one_release()
     test_the_channel_repo_is_derived_from_the_makefile_pin_block()
     test_queued_alarm_sweep_calls_the_target_and_a_makeless_step_is_refused()
     test_the_drift_marker_is_registered_in_bot_markers()

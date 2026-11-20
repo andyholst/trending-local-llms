@@ -49,7 +49,7 @@ ARG HERMES_PACKAGE="hermes-agent"
 # it, then bakes the verified version to /opt/hermes-version.txt — the version
 # this content-hash tag (issue #135) can vouch for. Must equal the Makefile's
 # HERMES_VERSION ?= (tests/test_install_hermes_ci.py).
-ARG HERMES_VERSION="0.23.2"
+ARG HERMES_VERSION="0.23.3"
 COPY scripts/install_hermes_ci.sh /usr/local/bin/install_hermes_ci.sh
 ENV HERMES_INSTALL_URL=${HERMES_INSTALL_URL} HERMES_PACKAGE=${HERMES_PACKAGE} HERMES_VERSION=${HERMES_VERSION}
 RUN chmod +x /usr/local/bin/install_hermes_ci.sh \
