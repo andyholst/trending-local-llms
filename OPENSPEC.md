@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **372**
+Active changes: **2** · archived: **373**
 
 ## Active changes
 
@@ -209,6 +209,7 @@ Active changes: **2** · archived: **372**
 | `guard-registry-derived` | archived | #313 | — | [bot-guards](openspec/changes/archive/guard-registry-derived/specs/bot-guards/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/guard-registry-derived/proposal.md) |
 | `hardware-is-not-an-engine` | archived | #458 (the same issue; this is the second measured shape, recorded in a comment) | — | [engine-fabrication](openspec/changes/archive/hardware-is-not-an-engine/specs/engine-fabrication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/hardware-is-not-an-engine/proposal.md) |
 | `heredoc-prose-is-not-a-call` | archived | #544 | — | [architecture-description](openspec/changes/archive/heredoc-prose-is-not-a-call/specs/architecture-description/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/heredoc-prose-is-not-a-call/proposal.md) |
+| `hermes-pin-channel-record` | archived | #1163 | #1166 | [hermes-pin-channel-record](openspec/changes/archive/hermes-pin-channel-record/specs/hermes-pin-channel-record/spec.md) | 17/17 | [proposal.md](openspec/changes/archive/hermes-pin-channel-record/proposal.md) |
 | `hermes-pin-freshness` | archived | #1091 | #1092 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-freshness/specs/hermes-pin-freshness/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/hermes-pin-freshness/proposal.md) |
 | `hermes-pin-raise-to-0-23-2` | archived | #1145 | #1146 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-raise-to-0-23-2/specs/hermes-pin-freshness/spec.md)<br>[hermes-temp-home-teardown](openspec/changes/archive/hermes-pin-raise-to-0-23-2/specs/hermes-temp-home-teardown/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/hermes-pin-raise-to-0-23-2/proposal.md) |
 | `hermes-pin-raise-to-0-23-3` | archived | #1161 | #1162 | [hermes-pin-freshness](openspec/changes/archive/hermes-pin-raise-to-0-23-3/specs/hermes-pin-freshness/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/hermes-pin-raise-to-0-23-3/proposal.md) |

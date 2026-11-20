@@ -501,6 +501,104 @@ def test_the_channel_repo_is_derived_from_the_makefile_pin_block() -> None:
               f"rc={proc.returncode}\n{proc.stdout}")
 
 
+def run_record(env: dict, to: Path, *extra: str) -> subprocess.CompletedProcess:
+    """Drive the recorder (issue #1163): `--record TO --channel-repo <Makefile pin>`."""
+    argv = [sys.executable, str(SCRIPT), "--record", str(to),
+            "--channel-repo", PLANT_CHANNEL_REPO]
+    return subprocess.run(argv + list(extra), capture_output=True, text=True, timeout=120, env=env)
+
+
+def test_the_recorder_writes_the_live_payload_through_the_one_seam() -> None:
+    print("\nrecord: `make hermes-pin-channel-record` writes the payload the ONE seam reads")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        payload = {"tag_name": "v0.11.0", "published_at": "2026-11-20T00:34:38Z",
+                   "name": "Hermes Agent"}
+        env = make_scene(tmp, payload)
+        out = tmp / "recorded.json"
+        proc = run_record(env, out)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("stdout names the written tag and published_at",
+              "tag=v0.11.0" in proc.stdout and "published_at=2026-11-20T00:34:38Z" in proc.stdout,
+              proc.stdout)
+        written = json.loads(out.read_text())
+        check("the written payload carries the channel's tag_name",
+              written.get("tag_name") == "v0.11.0", out.read_text()[:120])
+        check("the written payload carries the channel's published_at",
+              written.get("published_at") == "2026-11-20T00:34:38Z", out.read_text()[:120])
+        check("the bytes written are EXACTLY what gh served — never an authored document",
+              out.read_text() == json.dumps(payload) + "\n", out.read_text()[:160])
+        check("the gh api call names the channel the Makefile pin derives",
+              f"repos/{PLANT_CHANNEL_REPO}/releases/latest" in gh_calls(tmp), gh_calls(tmp))
+        # The seam is the SAME one the freshness check reads: a payload the check would
+        # refuse (no tag_name) must be refused by the recorder too.
+        env2 = make_scene(tmp, {"name": "no tag here"})
+        proc2 = run_record(env2, out)
+        check("a payload with no tag_name is refused (the ONE seam), nothing written",
+              proc2.returncode == 2 and "no `tag_name`" in proc2.stderr
+              and json.loads(out.read_text()).get("tag_name") == "v0.11.0", proc2.stderr)
+
+
+def test_a_failed_read_leaves_the_old_fixture_byte_identical() -> None:
+    print("\nrecord-failure: no gh / no network -> exit 2 BEFORE any write, the old fixture untouched")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, None)  # the stub refuses `gh api` — the unreadable-channel state
+        out = tmp / "recorded.json"
+        out.write_text('{"tag_name":"v0.10.0"}\n')
+        before = out.read_bytes()
+        proc = run_record(env, out)
+        check("exit 2", proc.returncode == 2, f"rc={proc.returncode}")
+        check("stderr says the read failed and that nothing was written",
+              "could not be read" in proc.stderr and "nothing written" in proc.stderr, proc.stderr)
+        check("the old fixture is byte-identical", out.read_bytes() == before, "")
+        check("no .tmp litter is left behind", not (tmp / "recorded.json.tmp").exists(), "")
+        # A missing channel PIN in the Makefile is refused before gh is consulted.
+        (tmp / "Makefile").write_text("HERMES_VERSION ?= 0.10.0\n")
+        proc2 = subprocess.run(
+            [sys.executable, str(SCRIPT), "--record", str(out), "--makefile", str(tmp / "Makefile")],
+            capture_output=True, text=True, timeout=120, env=env)
+        check("a Makefile with no channel pin refuses loudly (exit 2), still nothing written",
+              proc2.returncode == 2 and "HERMES_CHANNEL_REPO" in proc2.stderr
+              and out.read_bytes() == before, proc2.stderr)
+
+
+def test_the_recorder_is_wired_into_the_refresh_pipeline_and_the_makefile() -> None:
+    print("\nrecord-wiring: the target is Makefile-only and a CI job runs it (rule 6m, issue #1163)")
+    mk = MAKEFILE.read_text(encoding="utf-8")
+    check("the Makefile defines the public target and the internal recipe",
+          "\nhermes-pin-channel-record:" in mk and "_hermes-pin-channel-record:" in mk, "")
+    check("the internal recipe is the only thing naming --record",
+          "_hermes-pin-channel-record:\n\tpython3 scripts/hermes_pin_freshness.py --record" in mk, "")
+    r = subprocess.run(["make", "-n", "hermes-pin-channel-record",
+                        "TO=tests/fixtures/hermes_releases_latest.json"], cwd=ROOT,
+                       capture_output=True, text=True, timeout=60)
+    check("make -n runs the script with --record and the Makefile's channel pin",
+          r.returncode == 0
+          and '--record "tests/fixtures/hermes_releases_latest.json"' in r.stdout
+          and '--channel-repo "' in r.stdout and '--channel-repo ""' not in r.stdout, r.stdout)
+    check("make refuses a missing TO before any recipe runs", subprocess.run(
+        ["make", "hermes-pin-channel-record"], cwd=ROOT,
+        capture_output=True, text=True, timeout=60).returncode != 0, "")
+    refresh = (ROOT / ".github" / "workflows" / "refresh-bot.yml").read_text(encoding="utf-8")
+    check("refresh-bot.yml runs make hermes-pin-channel-record",
+          "make hermes-pin-channel-record TO=tests/fixtures/hermes_releases_latest.json" in refresh,
+          "")
+    check("no workflow reaches the recorder past the Makefile",
+          [wf.name for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+           if "hermes_pin_freshness.py" in wf.read_text(encoding="utf-8")] == [], "")
+    # The guard must be able to fail: a pipeline that dropped the recorder step is refused.
+    dropped = refresh.replace(
+        "          make hermes-pin-channel-record TO=tests/fixtures/hermes_releases_latest.json\n", "")
+    check("a refresh pipeline without the recorder step is REFUSED",
+          "make hermes-pin-channel-record TO=tests/fixtures/hermes_releases_latest.json"
+          not in dropped and dropped != refresh, "")
+    # The refresh PR's commit must carry the fixture, or the recorded payload never lands.
+    add_line = [ln for ln in refresh.splitlines() if ln.strip().startswith("git add ")][0]
+    check("the refresh PR's git add carries the recorded payload fixture",
+          "tests/fixtures/hermes_releases_latest.json" in add_line, add_line)
+
+
 def main() -> int:
     print("hermes pin freshness: the pinned agent vs the upstream channel (issue #1091)")
     test_channel_equal_to_pin_prints_ok_and_exits_green()
@@ -514,6 +612,9 @@ def main() -> int:
     test_the_channel_repo_is_derived_from_the_makefile_pin_block()
     test_the_scheduled_pipeline_calls_the_target_and_a_makeless_step_is_refused()
     test_the_drift_marker_is_registered_in_bot_markers()
+    test_the_recorder_writes_the_live_payload_through_the_one_seam()
+    test_a_failed_read_leaves_the_old_fixture_byte_identical()
+    test_the_recorder_is_wired_into_the_refresh_pipeline_and_the_makefile()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
