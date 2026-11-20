@@ -1,6 +1,7 @@
 # hermes-pin-channel-record — a wired recorder for the release-channel fixture
 
 Issue: #1163
+PR: #1166
 
 ## Why
 
