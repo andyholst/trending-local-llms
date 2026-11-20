@@ -1,6 +1,7 @@
 # gh-json-field-surface — record every gh `--json` field set and scan every call site
 
 Issue: #1160
+PR: #1167
 
 ## Why
 

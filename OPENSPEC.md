@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **372**
+Active changes: **2** · archived: **373**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `gh-json-field-surface` | active | #1160 | — | [gh-json-field-surface](openspec/changes/gh-json-field-surface/specs/gh-json-field-surface/spec.md) | 15/15 | [proposal.md](openspec/changes/gh-json-field-surface/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -203,6 +202,7 @@ Active changes: **3** · archived: **372**
 | `freshness-alarm-window-follows-cadence` | archived | #1031 | #1034 | [alarms](openspec/changes/archive/freshness-alarm-window-follows-cadence/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/freshness-alarm-window-follows-cadence/proposal.md) |
 | `gap-files-once-per-dimension` | archived | #472 (the measured re-file loop) | — | [data-gap-baseline](openspec/changes/archive/gap-files-once-per-dimension/specs/data-gap-baseline/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/gap-files-once-per-dimension/proposal.md) |
 | `gap-reader-drops-refused-misattribution` | archived | #1007 | #1117 | [data-gap-analysis](openspec/changes/archive/gap-reader-drops-refused-misattribution/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/gap-reader-drops-refused-misattribution/proposal.md) |
+| `gh-json-field-surface` | archived | #1160 | #1167 | [gh-json-field-surface](openspec/changes/archive/gh-json-field-surface/specs/gh-json-field-surface/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/gh-json-field-surface/proposal.md) |
 | `ghost-alarm-gh-field-contract` | archived | #1158 | #1159 | [gh-json-field-contract](openspec/changes/archive/ghost-alarm-gh-field-contract/specs/gh-json-field-contract/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ghost-alarm-gh-field-contract/proposal.md) |
 | `git-out-vs-git-raw` | archived | #504 | — | [worktree-base](openspec/changes/archive/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/git-out-vs-git-raw/proposal.md) |
 | `green-when-the-issue-closed-while-in-flight` | archived | #520 (measured: run 39612330011 went RED over work PR #517 had already landed) | — | [bot-coordination](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/proposal.md) |
