@@ -513,6 +513,13 @@ jobs:
           # metadata into the offline test fixture straight away, so this PR is
           # not red on `make test` for an engine it just gained (issue #334).
           make engine-meta-capture
+          # Record the Hermes release-channel payload through the ONE seam (issue #1163):
+          # tests/fixtures/hermes_releases_latest.json is what `make test`'s offline half
+          # asserts against, and nothing wrote it — a pin raise hand-copied
+          # `gh api …/releases/latest` into it, the step that silently goes stale. A failed
+          # read refuses loudly (exit 2) and writes nothing, so a network blip never
+          # truncates the fixture.
+          make hermes-pin-channel-record TO=tests/fixtures/hermes_releases_latest.json
           # Self-correct raw snapshots FIRST (prune extra keys, fill last_seen)
           # so _validate sees contract-conforming data. Previously validate ran
           # before self_correct_raw (only in validate-search) and the aggregate
@@ -612,7 +619,7 @@ jobs:
             make qa-report
             sudo chown -R "$(id -u):$(id -g)" .
             git checkout -b "$BRANCH"
-            git add README.md data/models.json data/snapshots data/raw data/gap_baseline.json data/measurements.json data/posts.json tests/fixtures/github_meta.json
+            git add README.md data/models.json data/snapshots data/raw data/gap_baseline.json data/measurements.json data/posts.json tests/fixtures/github_meta.json tests/fixtures/hermes_releases_latest.json
             # The re-derivation can legitimately produce nothing (the base already
             # carries this data). Then there is no PR to open — say so, don't fail.
             if git diff --cached --quiet; then

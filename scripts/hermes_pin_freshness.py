@@ -23,6 +23,15 @@ The channel is compared through the real recorded payload: a live ``gh api`` on 
 host, or ``--from-file`` with a recorded payload (the ``check_branch_protection.py``
 FROM_FILE seam, issue #959) — no version-parsing mocks. The dedup marker lives in
 ``scripts/bot_markers.py`` (rule 6j); this module imports it and never re-spells it.
+
+Issue #1163: the SAME read is also the ONE way the recorded fixture is REFRESHED. The
+fixture ``tests/fixtures/hermes_releases_latest.json`` is what ``make test``'s offline
+half asserts against, and until now nothing wrote it — a pin raise had to hand-copy
+``gh api …/releases/latest`` into the fixture, the step that silently goes stale. The
+``--record PATH`` mode writes the payload this seam READS (never an authored one),
+refuses loudly (exit 2, the old file untouched) when gh or the network fails, and is
+wired into the refresh pipeline beside ``make engine-meta-capture`` (issue #334's
+recorder), which commits it into the refresh PR.
 """
 from __future__ import annotations
 
@@ -131,6 +140,38 @@ def read_channel_repo(makefile: Path) -> str:
     return m.group(1)
 
 
+def read_channel(from_file: str | None, channel_repo: str) -> tuple[dict, str]:
+    """(payload, raw text) of the upstream release — the ONE read (issue #1163).
+
+    ``channel_repo`` is derived from the Makefile pin (``read_channel_repo``).
+    ``from_file`` names a recorded payload (the FROM_FILE seam); without it this runs
+    ``gh api repos/<channel_repo>/releases/latest``. Any failure — gh missing, network,
+    a payload that is not a JSON object — is UNREADABLE (exit 2), never "fresh". The
+    raw text is returned beside the parsed payload so ``--record`` can write EXACTLY
+    what the channel served, never a re-authored document.
+    """
+    if from_file:
+        try:
+            text = Path(from_file).read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ChannelUnreadable(f"recorded channel payload {from_file!r} unreadable: {exc}") from exc
+    else:
+        proc = subprocess.run(["gh", "api", f"repos/{channel_repo}/releases/latest"],
+                              capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise ChannelUnreadable(
+                f"`gh api repos/{channel_repo}/releases/latest` failed "
+                f"(rc={proc.returncode}): {proc.stderr.strip()[:300] or 'no stderr'}")
+        text = proc.stdout
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ChannelUnreadable(f"the channel payload is not JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ChannelUnreadable("the channel payload is not a JSON object")
+    return payload, text
+
+
 def channel_tag(from_file: str | None, channel_repo: str) -> str:
     """The upstream channel's release tag, read from the REAL payload.
 
@@ -140,24 +181,7 @@ def channel_tag(from_file: str | None, channel_repo: str) -> str:
     gh missing, network, a payload with no ``tag_name`` — as UNREADABLE (exit 2), never
     as "fresh".
     """
-    if from_file:
-        try:
-            payload = json.loads(Path(from_file).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            raise ChannelUnreadable(f"recorded channel payload {from_file!r} unreadable: {exc}") from exc
-    else:
-        proc = subprocess.run(["gh", "api", f"repos/{channel_repo}/releases/latest"],
-                              capture_output=True, text=True)
-        if proc.returncode != 0:
-            raise ChannelUnreadable(
-                f"`gh api repos/{channel_repo}/releases/latest` failed "
-                f"(rc={proc.returncode}): {proc.stderr.strip()[:300] or 'no stderr'}")
-        try:
-            payload = json.loads(proc.stdout)
-        except json.JSONDecodeError as exc:
-            raise ChannelUnreadable(f"the channel payload is not JSON: {exc}") from exc
-    if not isinstance(payload, dict):
-        raise ChannelUnreadable("the channel payload is not a JSON object")
+    payload, _text = read_channel(from_file, channel_repo)
     tag = str(payload.get("tag_name") or "").strip()
     if not tag:
         raise ChannelUnreadable("the channel payload carries no `tag_name`")
@@ -166,6 +190,33 @@ def channel_tag(from_file: str | None, channel_repo: str) -> str:
     except VersionError as exc:
         raise ChannelUnreadable(f"the channel tag {tag!r} is not a version: {exc}") from exc
     return tag
+
+
+def record_channel_payload(path: Path, from_file: str | None,
+                           channel_repo: str) -> tuple[str, str]:
+    """Write the channel payload to ``path`` through the ONE seam (issue #1163).
+
+    Returns ``(tag, published_at)``. The bytes written are the payload the seam READ
+    (the live ``gh api`` stdout, or the recorded file's own text) — never an authored
+    document — so a refresh that changes nothing rewrites nothing. A failed read raises
+    BEFORE any write, so the old fixture stays byte-identical.
+    """
+    payload, text = read_channel(from_file, channel_repo)
+    tag = str(payload.get("tag_name") or "").strip()
+    if not tag:
+        raise ChannelUnreadable("the channel payload carries no `tag_name`")
+    try:
+        version_tuple(tag)
+    except VersionError as exc:
+        raise ChannelUnreadable(f"the channel tag {tag!r} is not a version: {exc}") from exc
+    published = str(payload.get("published_at") or "").strip()
+    if not published:
+        raise ChannelUnreadable("the channel payload carries no `published_at`")
+    body = text if text.endswith("\n") else text + "\n"
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(body, encoding="utf-8")
+    tmp.replace(path)
+    return tag, published
 
 
 def drift_signature(channel: str) -> str:
@@ -240,8 +291,12 @@ def file_drift_issue(repo: str, pin: str, mk_line: int, df_line: int, channel: s
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--repo", required=True, help="owner/name — the repo the drift issue is filed on")
+    ap.add_argument("--repo", help="owner/name — the repo the drift issue is filed on "
+                                   "(required unless --record is given)")
     ap.add_argument("--from-file", help="a recorded channel payload (the FROM_FILE seam) instead of `gh api`")
+    ap.add_argument("--record", metavar="PATH",
+                    help="write the channel payload to PATH through the ONE seam (issue #1163) — "
+                         "the refresh fixture's recorder; never writes an authored document")
     ap.add_argument("--channel-repo", help="the release channel repo the recipe passes from the "
                                            "Makefile's `HERMES_CHANNEL_REPO ?=` knob; without it "
                                            "the same line is read from --makefile (issue #1094)")
@@ -250,6 +305,27 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="report the drift without filing")
     args = ap.parse_args(argv)
 
+    if args.record:
+        # The recorder needs the channel pin, never the drift issue's repo (issue #1163).
+        try:
+            channel_repo = args.channel_repo or read_channel_repo(Path(args.makefile))
+        except ChannelUnreadable as exc:
+            print(f"[hermes-pin-channel-record] FAIL — the channel pin is missing: {exc}",
+                  file=sys.stderr)
+            return 2
+        try:
+            tag, published = record_channel_payload(Path(args.record), args.from_file, channel_repo)
+        except ChannelUnreadable as exc:
+            print(f"[hermes-pin-channel-record] FAIL — the channel payload could not be read: {exc}"
+                  f" (nothing written; {args.record} is untouched)", file=sys.stderr)
+            return 2
+        print(f"[hermes-pin-channel-record] wrote {args.record} tag={tag} published_at={published}")
+        return 0
+
+    if not args.repo:
+        print("[hermes-pin-freshness] --repo is required unless --record PATH is given",
+              file=sys.stderr)
+        return 2
     if "/" not in args.repo or args.repo.count("/") != 1:
         print("[hermes-pin-freshness] --repo must be owner/name", file=sys.stderr)
         return 2

@@ -1724,6 +1724,23 @@ hermes-pin-freshness: ## Compare the pinned Hermes agent version against the ups
 	@test -n "$(REPO)" || { echo "Usage: make hermes-pin-freshness REPO=<owner/repo> [FROM_FILE=<recorded.json>] [DRY=1]"; exit 1; }
 	@$(MAKE) --no-print-directory _hermes-pin-freshness
 
+# The RECORDER half (issue #1163): `tests/fixtures/hermes_releases_latest.json` is what
+# `make test`'s offline half asserts against, and nothing wrote it — a pin raise had to
+# hand-copy `gh api …/releases/latest` into the fixture, the step that silently goes stale
+# or wrong (a stale fixture makes the offline gate assert against a release this repository
+# no longer ships). This target writes the payload the ONE `read_channel` seam READS (the
+# live `gh api` stdout — never an authored document), and a failed read (no gh, no network,
+# a payload with no `tag_name`/`published_at`) refuses loudly with exit 2 BEFORE any write,
+# so the old fixture stays byte-identical. Host-side like the other gh-bound recorders.
+.PHONY: _hermes-pin-channel-record
+_hermes-pin-channel-record:
+	python3 scripts/hermes_pin_freshness.py --record "$(TO)" --channel-repo "$(HERMES_CHANNEL_REPO)" $(if $(FROM_FILE),--from-file "$(FROM_FILE)",)
+
+.PHONY: hermes-pin-channel-record
+hermes-pin-channel-record: ## Write the recorded Hermes release-channel payload through the ONE seam (TO=<path>, default tests/fixtures/hermes_releases_latest.json; FROM_FILE=<recorded.json> for offline; issue #1163)
+	@test -n "$(TO)" || { echo "Usage: make hermes-pin-channel-record TO=<path> [FROM_FILE=<recorded.json>]"; exit 1; }
+	@$(MAKE) --no-print-directory _hermes-pin-channel-record
+
 .PHONY: queued-alarm
 sweep-alarm: ## Fail loudly when the WEEKLY issue sweep has not been DELIVERED (REPO=<owner/name>; the window is the script's weekly default unless MAX_AGE_HOURS is supplied — issue #804)
 	@test -n "$(REPO)" || { echo "Usage: make sweep-alarm REPO=<owner/repo> [MAX_AGE_HOURS=<hours>]"; exit 1; }
