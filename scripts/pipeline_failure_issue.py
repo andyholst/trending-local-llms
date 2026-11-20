@@ -71,6 +71,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -222,6 +223,186 @@ def _ts(value: str | None) -> dt.datetime | None:
             return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             return None
+
+
+# ---------------------------------------------------------------------------
+# the PR-blockage pass (issue #1164)
+# ---------------------------------------------------------------------------
+
+#: A `pull_request`-triggered main-pipeline failure is recorded only when the SAME failure shape
+#: blocks at least this many OPEN pull requests. One red PR is that PR author's own noise; two is
+#: a fleet-wide blockage (a stale pin, a broken image) that no single PR can fix and that the
+#: master/schedule window of `main_pipeline_failures` never sees (issue #1164).
+PR_BLOCK_MIN_PRS = 2
+
+#: A recorded PR-blocking row whose fix has not landed after this many hours is RED at
+#: `make pipeline-failure-guard-check`. "Whose fix never lands" is only decidable against a
+#: clock: the row is filed the moment two PRs are blocked, and a stale pin blocks EVERY open PR's
+#: `auto-merge` until it is fixed — a larger outage than one red scheduled sweep.
+PR_BLOCK_GRACE_HOURS = 24
+
+
+def failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str:
+    """The normalised signature deciding whether two failed runs are the SAME failure.
+
+    Run ids, SHAs, timestamps and counts differ between two PRs hitting one defect, so the shape
+    keeps only the stable skeleton: the failing step names, the `make` targets the log names, and
+    the error block with every run-specific token collapsed. Two runs with the same shape are one
+    error class, which is what makes "the SAME failure shape on two open PRs" decidable (issue
+    #1164).
+    """
+    skeleton: list[str] = []
+    for line in block:
+        s = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
+        if not s:
+            continue
+        s = re.sub(r"\b[0-9a-f]{7,40}\b", "<sha>", s)
+        s = re.sub(r"\b\d[\d,]*\b", "<n>", s)
+        skeleton.append(s)
+    key = "|".join([*(steps or []), *(targets or []), *skeleton[:8]])
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+
+
+def open_pr_branches(repo: str) -> set:
+    """The head branches of the repo's OPEN pull requests (the PRs a blockage can be said to block).
+
+    A non-list answer (gh missing, a transport error) is an empty set: the grouping then records
+    nothing rather than claiming a blockage it could not see (the same indeterminate rule the link
+    check uses for 429/5xx).
+    """
+    out = _gh_json(["pr", "list", "--repo", repo, "--state", "open", "--limit", "100",
+                    "--json", "headRefName"])
+    if not isinstance(out, list):
+        return set()
+    return {p.get("headRefName") for p in out if p.get("headRefName")}
+
+
+def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime) -> list[dict]:
+    """Concluded-bad `pull_request` runs of the main pipelines inside the window (issue #1164).
+
+    Each item carries its failed job, the scrubbed error block, the `make` targets the log names,
+    the failing steps, the log region and the normalised `shape`. A still-running or queued run
+    belongs to the queued alarm, exactly as in `main_pipeline_failures`.
+    """
+    cutoff = now - dt.timedelta(hours=window_hours)
+    out: list[dict] = []
+    for wf in MAIN_PIPELINES:
+        runs = _gh_json([
+            "run", "list", "--repo", repo, "--workflow", wf, "--event", "pull_request",
+            "--limit", "30", "--json",
+            "databaseId,workflowName,name,headBranch,headSha,event,createdAt,"
+            "conclusion,status,url",
+        ])
+        if not isinstance(runs, list):
+            raise RuntimeError(f"run list for {wf} returned {type(runs).__name__}, not a list")
+        for r in runs:
+            if r.get("conclusion") not in BAD_CONCLUSIONS:
+                continue
+            created = _ts(r.get("createdAt"))
+            if created is None or created < cutoff:
+                continue
+            try:
+                jobs = failed_jobs(repo, int(r["databaseId"]))
+            except (RuntimeError, ValueError, KeyError):
+                continue
+            for job in jobs:
+                block, region, log_error = job_failure(repo, job)
+                targets = failed_make_targets(block)
+                steps = failing_step_names(job)
+                out.append({"run": r, "job": job, "block": block, "targets": targets,
+                            "steps": steps, "region": region, "log_error": log_error,
+                            "shape": failure_shape(block, targets, steps)})
+    return out
+
+
+def job_failure(repo: str, job: dict) -> tuple[list[str], str, str | None]:
+    """The scrubbed error block, the log region and a read error for ONE failed job.
+
+    The ONE extraction view (issue #1098, rule 6d): every pass that needs a failing job's log —
+    the master/schedule filer and the PR-blockage pass (#1164) — comes through this seam, so
+    `fetch_log` is reached exactly once and always with the job it belongs to. A second site
+    reading the log a different way is what the wiring test refuses.
+    """
+    block: list[str] = []
+    region = ""
+    log_error = None
+    try:
+        log_text = fetch_log(repo, job["databaseId"])
+        block = extract_error_block(log_text, job=job)
+        region = error_region(log_text)
+    except RuntimeError as exc:
+        log_error = str(exc)
+    return block, region, log_error
+
+
+def group_pr_blockages(items: list[dict], open_branches: set) -> list[dict]:
+    """Group PR-triggered failures by shape; keep a shape blocking >= PR_BLOCK_MIN_PRS OPEN PRs.
+
+    A run whose head branch is NOT an open PR is dropped: a merged or closed branch is no longer
+    blocked, and counting it would report a blockage that has already cleared.
+    """
+    groups: dict[str, list[dict]] = {}
+    for it in items:
+        branch = it["run"].get("headBranch")
+        if branch not in open_branches:
+            continue
+        groups.setdefault(it["shape"], []).append(it)
+    out: list[dict] = []
+    for shape, members in groups.items():
+        branches = sorted({m["run"]["headBranch"] for m in members})
+        if len(branches) >= PR_BLOCK_MIN_PRS:
+            out.append({"shape": shape,
+                        "members": sorted(members, key=lambda m: m["run"]["databaseId"]),
+                        "branches": branches})
+    return out
+
+
+def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path: Path,
+                        dry: bool, now: dt.datetime, known: set, already: set) -> list[str]:
+    """File ONE issue per PR-blocking failure shape, and append its ledger row (issue #1164).
+
+    The shape is the dedup key: a blockage already recorded (its earliest run in `known`, or a
+    run an open issue already carries a marker for, in `already`) is skipped, so a long-running
+    pin files once and is then tracked by `make pipeline-failure-guard-check` instead of being
+    re-filed every sweep.
+    """
+    lines: list[str] = []
+    try:
+        open_branches = open_pr_branches(repo)
+        items = pr_triggered_failures(repo, window_hours, now)
+    except RuntimeError as exc:
+        return [f"pr-blockage: READ FAILED: {exc}"]
+    for group in group_pr_blockages(items, open_branches):
+        first = group["members"][0]
+        rid = int(first["run"]["databaseId"])
+        if rid in known or rid in already:
+            lines.append(f"skip pr-blockage shape {group['shape']}: run {rid} already recorded")
+            continue
+        if dry:
+            lines.append(f"WOULD FILE pr-blockage shape {group['shape']} on "
+                         f"{len(group['branches'])} open PR(s): {', '.join(group['branches'])} "
+                         f"(run {rid})")
+            continue
+        issue = file_issue(repo, first["run"], first["job"], first["block"], first["targets"],
+                           first["log_error"], now, steps=first["steps"], region=first["region"])
+        append_ledger(ledger_path, ledger, {
+            "run_id": rid, "workflow": first["run"].get("workflowName"),
+            "job": first["job"].get("name"), "head_sha": first["run"].get("headSha"),
+            "run_url": first["run"].get("url"), "created_utc": first["run"].get("createdAt"),
+            "filed_utc": now.isoformat(), "targets": first["targets"],
+            "issue_number": issue["number"], "issue_url": issue["url"],
+            "fix_pr": None, "guard": None, "undiagnosed": first["log_error"],
+            "failing_steps": first["steps"], "error_region": first["region"],
+            "error_excerpt": redact("\n".join(first["block"]))[0] if first["block"] else None,
+            # The PR-blockage half's OWN keys (rule 3b: additive — every key above is the filer's
+            # existing shape, these four are ADDED).
+            "trigger": "pull_request", "failure_shape": group["shape"],
+            "blocked_prs": group["branches"], "pr_count": len(group["branches"]),
+        })
+        known.add(rid)
+        lines.append(f"FILED {issue['url']} (pr-blockage shape {group['shape']}, "
+                     f"{len(group['branches'])} open PR(s): {', '.join(group['branches'])})")
+    return lines
 
 
 def failed_jobs(repo: str, run_id: int) -> list[dict]:
@@ -1394,15 +1575,7 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
             lines.append(f"run {rid}: jobs unreadable: {exc}")
             continue
         for job in jobs:
-            block: list[str] = []
-            log_error = None
-            region = ""
-            try:
-                log_text = fetch_log(repo, job["databaseId"])
-                block = extract_error_block(log_text, job=job)
-                region = error_region(log_text)
-            except RuntimeError as exc:
-                log_error = str(exc)
+            block, region, log_error = job_failure(repo, job)
             # GitHub's own verdict on WHICH step ended the job (issue #1098): quoted beside the
             # block, and named on the issue when the block yields no `make` target.
             steps = failing_step_names(job)
@@ -1450,6 +1623,17 @@ def sweep(repo: str, window_hours: int, ledger_path: Path, dry: bool,
     # stale nulls on closed issues. It runs AFTER re-diagnosis (a row repaired
     # this same sweep is still un-attributed) and rides the same landing.
     lines.extend(stamp_merged_fix_prs(repo, ledger, ledger_path, dry, now))
+    # The PR-blockage pass (issue #1164): a `pull_request`-triggered run is invisible to the
+    # master/schedule window above, yet a stale pin blocks EVERY open PR at the same step — a
+    # larger outage than one red sweep. It files once per failure SHAPE shared by two or more
+    # open PRs, then the guard tracks the row until a fix lands.
+    if not already:
+        try:
+            already = open_failure_issue_runs(repo)
+        except RuntimeError as exc:
+            lines.append(f"pr-blockage: marker scan unreadable: {exc}")
+    lines.extend(record_pr_blockages(repo, window_hours, ledger, ledger_path, dry, now,
+                                     known, already))
     lines.append(f"pipeline-failure-issue: window={window_hours}h failures={len(runs)} "
                  f"filed={filed} ledger={ledger_path.name}")
     return 0, lines

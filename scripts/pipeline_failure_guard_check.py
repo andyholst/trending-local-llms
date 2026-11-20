@@ -8,7 +8,10 @@ it runs in qa-validate's `validate` job on every PR and push, and it REFUSES:
   * a ledger entry whose issue is CLOSED while the entry names NO fix PR and NO guard test —
     the error class was closed away without anything that fails if it is reintroduced;
   * a ledger entry that names a fix PR but whose `guard` test does not exist as a collected
-    module under `tests/` — a guard that was promised and never landed.
+    module under `tests/` — a guard that was promised and never landed;
+  * a PR-blockage entry (issue #1164, `trigger: pull_request`) whose fix has not landed within
+    `PR_BLOCK_GRACE_HOURS` — a stale pin blocks EVERY open PR's `auto-merge`, so a recorded
+    blockage that outlives its grace is red, not a report.
 
 An entry whose fix is still IN FLIGHT (open issue, no fix PR yet) is REPORTED, never red — the
 gate enforces the closing move, not the opening one. A ledger row stamped `log_expired` (issue
@@ -27,13 +30,14 @@ Run: make pipeline-failure-guard-check [REPO=<owner>/<repo>] [LEDGER=…]
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 import bot_markers
-from pipeline_failure_issue import row_is_diagnosed
+from pipeline_failure_issue import PR_BLOCK_GRACE_HOURS, row_is_diagnosed
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -87,6 +91,16 @@ def read_ledger(path: Path) -> dict:
     return data
 
 
+def _ts(value) -> dt.datetime | None:
+    """Parse an ISO8601Z timestamp (the ledger's own `filed_utc` spelling), or None."""
+    if not value:
+        return None
+    try:
+        return dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 def guard_test_exists(guard: str) -> bool:
     """The guard must be a module `make test` collects: a tests/test_*.py file on disk
     (the runner auto-discovers exactly that shape)."""
@@ -128,8 +142,14 @@ def marker_issue_states(repo: str) -> dict:
     return out
 
 
-def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None) -> tuple[int, list[str]]:
-    """The gate's decision over the whole ledger."""
+def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None,
+            now: dt.datetime | None = None) -> tuple[int, list[str]]:
+    """The gate's decision over the whole ledger.
+
+    `now` is injectable so a test can place a row on the far side of the PR-blockage grace
+    (issue #1164) without sleeping; production reads the clock.
+    """
+    now = now or dt.datetime.now(dt.timezone.utc)
     reports: list[str] = []
     reds: list[str] = []
     diagnosed_attributed = 0        # diagnosed row + landed fix PR + collected guard test
@@ -158,6 +178,30 @@ def verdict(ledger: dict, repo: str | None, marker_states: dict | None = None) -
             reports.append(f"{label}: log_expired — the run's log aged out of Actions retention "
                            f"after {entry.get('rediagnose_attempts')} still-unreadable re-reads; "
                            "re-diagnosis is TERMINAL (reported as a drain, never red)")
+            continue
+
+        # PR-BLOCKAGE (issue #1164): a `pull_request`-triggered failure the filer recorded
+        # because the SAME shape blocked two or more OPEN PRs. A stale pin blocks every open
+        # PR's `auto-merge`, so "whose fix never lands" is a red, not a report: after the grace
+        # the row names an outage with no fix in flight, and every PR stays red until one lands.
+        # A row with a fix PR already named falls through to the normal attribution path below.
+        if entry.get("trigger") == "pull_request" and not fix_pr:
+            filed = _ts(entry.get("filed_utc"))
+            age_h = (now - filed).total_seconds() / 3600 if filed else 0.0
+            if age_h >= PR_BLOCK_GRACE_HOURS:
+                reds.append(f"{label}: PR-blocking failure recorded {age_h:.0f}h ago "
+                            f"(shape {entry.get('failure_shape') or '?'}, "
+                            f"{entry.get('pr_count') or '?'} open PR(s) blocked: "
+                            f"{', '.join(entry.get('blocked_prs') or []) or '?'}) and NO fix PR has "
+                            "landed — the blockage outlives its grace; land the fix PR + guard "
+                            "test the row names (issue #1164)")
+            else:
+                reports.append(f"{label}: PR-blocking failure recorded {age_h:.0f}h ago "
+                               f"(shape {entry.get('failure_shape') or '?'}, "
+                               f"{entry.get('pr_count') or '?'} open PR(s) blocked: "
+                               f"{', '.join(entry.get('blocked_prs') or []) or '?'}), fix not "
+                               "landed yet (reported inside the grace, red after "
+                               f"{PR_BLOCK_GRACE_HOURS}h — issue #1164)")
             continue
 
         if fix_pr:
