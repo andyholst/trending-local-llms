@@ -1,6 +1,7 @@
 # pr-triggered-failure-ledger — a PR-blocking pipeline failure is recorded, and its fix is gated
 
 Issue: #1164
+PR: #1170
 
 ## Why
 
