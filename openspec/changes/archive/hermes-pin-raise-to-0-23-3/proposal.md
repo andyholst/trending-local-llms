@@ -1,6 +1,7 @@
 # Raise the Hermes agent pin to the current release channel (0.23.3)
 
 Issue: #1161
+PR: #1162
 
 ## Why
 
