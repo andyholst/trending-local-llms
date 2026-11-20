@@ -19,6 +19,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import datetime as dt
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,8 +65,9 @@ def states(pairs: list[tuple[int, int, str]]) -> dict:
     return {str(run): {"number": num, "state": state} for run, num, state in pairs}
 
 
-def verdict(ledger_entries: list[dict], marker_states: dict, repo: str | None = "octo/repo"):
-    return G.verdict({"failures": ledger_entries}, repo, marker_states)
+def verdict(ledger_entries: list[dict], marker_states: dict, repo: str | None = "octo/repo",
+            now=None):
+    return G.verdict({"failures": ledger_entries}, repo, marker_states, now=now)
 
 
 def test_closed_without_guard_is_red() -> None:
@@ -606,6 +608,45 @@ def test_the_committed_ledger_classifies_its_five_errorless_rows() -> None:
           "\n".join(lines)[-400:])
 
 
+def test_a_recorded_pr_blockage_whose_fix_never_lands_is_red_after_its_grace() -> None:
+    """Issue #1164: a PR-blocking failure with no fix is a report inside the grace, RED after it."""
+    print("\nPR-blockage (#1164): a recorded blockage whose fix never lands outlives its grace -> red")
+    base = entry(480, 1164, None, None)
+    base.update({
+        "trigger": "pull_request", "failure_shape": "deadbeef1234",
+        "blocked_prs": ["ci/a", "ci/b"], "pr_count": 2,
+    })
+    now = dt.datetime(2026, 11, 20, 12, 0, 0, tzinfo=dt.timezone.utc)
+    fresh = dict(base, filed_utc="2026-11-20T06:00:00+00:00")     # 6 h old
+    aged = dict(base, filed_utc="2026-11-19T06:00:00+00:00")      # 30 h old
+    rc, lines = verdict([fresh], states([(480, 1164, "OPEN")]), now=now)
+    check("inside the grace: reported, exit 0", rc == 0, str(lines))
+    check("the report names the grace and the blocked PRs",
+          any("PR-blocking failure recorded" in line and "ci/a" in line for line in lines), str(lines))
+    rc2, lines2 = verdict([aged], states([(480, 1164, "OPEN")]), now=now)
+    check("past the grace: exit 1", rc2 == 1, str(lines2))
+    check("the refusal names the shape, the blocked PRs and the missing fix",
+          any("PR-blocking failure recorded" in line and "deadbeef1234" in line
+              and "ci/a" in line and "NO fix PR" in line for line in lines2), str(lines2))
+    # The row the filer actually writes names `filed_utc` in ISO8601Z; the gate must read THAT
+    # spelling too (a Z-suffix parse that silently answered None would make every row fresh).
+    z = dict(base, filed_utc="2026-11-19T06:00:00Z")
+    rc3, lines3 = verdict([z], states([(480, 1164, "OPEN")]), now=now)
+    check("an ISO8601Z filed_utc is aged correctly (not silently fresh)", rc3 == 1, str(lines3))
+    # A landed fix clears the blockage red through the normal attribution path.
+    fixed = entry(480, 1164, 1200, "tests/test_pipeline_failure_guard.py")
+    fixed.update({"trigger": "pull_request", "failure_shape": "deadbeef1234",
+                  "blocked_prs": ["ci/a", "ci/b"], "pr_count": 2,
+                  "filed_utc": "2026-11-19T06:00:00Z"})
+    rc4, lines4 = verdict([fixed], states([(480, 1164, "CLOSED")]), now=now)
+    check("a PR-blockage row with a landed fix PR + guard is GREEN", rc4 == 0, str(lines4))
+    # A row the filer never stamped `trigger` on is untouched by the new class.
+    plain = entry(481, 59, None, None)
+    rc5, lines5 = verdict([plain], states([(481, 59, "OPEN")]), now=now)
+    check("a master/schedule row is still the plain in-flight report", rc5 == 0
+          and any("fix in flight" in line for line in lines5), str(lines5))
+
+
 def main() -> int:
     print("pipeline failure guard: closing a diagnosed failure without a test is RED (issue #802)")
     test_closed_without_guard_is_red()
@@ -633,6 +674,7 @@ def main() -> int:
     test_guard_test_lookup_is_the_shape_make_test_collects()
     test_unreadable_ledger_exits_2_end_to_end()
     test_gate_is_wired_into_qa_validate_and_the_gate_registry()
+    test_a_recorded_pr_blockage_whose_fix_never_lands_is_red_after_its_grace()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 

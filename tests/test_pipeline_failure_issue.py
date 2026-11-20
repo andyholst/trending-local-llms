@@ -100,9 +100,16 @@ case "$1" in
     case "$2" in
       list)
         if [ -e "$d/runlist-fail" ]; then echo "stub gh: run list refused (502)" >&2; exit 1; fi
-        wf=""; prev=""
-        for a in "$@"; do [ "$prev" = "--workflow" ] && wf="$a"; prev="$a"; done
+        wf=""; ev=""; prev=""
+        for a in "$@"; do
+          [ "$prev" = "--workflow" ] && wf="$a"
+          [ "$prev" = "--event" ] && ev="$a"
+          prev="$a"
+        done
+        # An event-filtered read (the PR-blockage pass, issue #1164) has its OWN fixture: the
+        # master/schedule fixture must never be mistaken for a `pull_request`-triggered run list.
         f="$d/runs-${wf//./_}.json"
+        [ -n "$ev" ] && f="$d/runs-${wf//./_}-${ev}.json"
         if [ -f "$f" ]; then cat "$f"; else echo "[]"; fi ;;
       view)
         f="$d/jobs-$3.json"
@@ -144,6 +151,10 @@ case "$1" in
     esac ;;
   pr)
     case "$2" in
+      list)
+        # `gh pr list --state open --json headRefName` — the open PRs a blockage can block
+        # (issue #1164). Absent fixture = no open PRs, so nothing is recorded.
+        if [ -f "$d/open-prs.json" ]; then cat "$d/open-prs.json"; else echo "[]"; fi ;;
       view)
         # `gh pr view <n> --repo <repo> --json number,title,mergedAt,files` — the stamp pass
         # (issue #1099) reads each closing PR's merged state and its diff through this.
@@ -1313,6 +1324,166 @@ def test_the_stamp_rides_the_filer_s_ledger_pr_landing_through_the_makefile() ->
           "stamp" in agents and "#1099" in agents, "")
 
 
+def test_failure_shape_groups_the_same_defect_and_separates_others() -> None:
+    print("\nshape (#1164): two PRs hitting one defect share a shape; a different step does not")
+    block = ["##[error]The process '/usr/bin/make' failed with exit code 2",
+             "make: *** [validate] Error 1",
+             "run 44651246625 died at sha " + "a" * 40]
+    other = ["##[error]Process completed with exit code 1", "make: *** [lint] Error 1"]
+    a = F.failure_shape(block, ["validate"], ["Prepare runner images"])
+    b = F.failure_shape(block, ["validate"], ["Prepare runner images"])
+    check("the same failure block + steps + targets is ONE shape", a == b, f"{a} vs {b}")
+    # Run-specific tokens (a sha, a count) must NOT split one defect into two shapes.
+    c = F.failure_shape(["##[error]The process '/usr/bin/make' failed with exit code 2",
+                         "make: *** [validate] Error 1",
+                         "run 999999999999 died at sha " + "b" * 40],
+                        ["validate"], ["Prepare runner images"])
+    check("a different run id / sha is the SAME shape (normalised)", a == c, f"{a} vs {c}")
+    d = F.failure_shape(block, ["validate"], ["Run tests"])
+    check("a different failing step is a DIFFERENT shape", a != d, f"{a} vs {d}")
+    e = F.failure_shape(other, ["lint"], ["Prepare runner images"])
+    check("a different error block is a DIFFERENT shape", a != e, f"{a} vs {e}")
+    check("the shape is a stable short digest", len(a) == 12, a)
+
+
+def test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches() -> None:
+    print("\ngrouping (#1164): a shape blocking two OPEN PRs is kept; one PR or a merged branch is not")
+    def item(run_id, branch, shape):
+        return {"run": {"databaseId": run_id, "headBranch": branch}, "shape": shape}
+    open_branches = {"ci/a", "ci/b", "ci/c"}
+    groups = F.group_pr_blockages(
+        [item(1, "ci/a", "s1"), item(2, "ci/b", "s1"),      # one defect, two open PRs -> kept
+         item(3, "ci/c", "s2"),                              # a lone PR -> dropped
+         item(4, "ci/merged", "s1")],                        # branch no longer open -> dropped
+        open_branches)
+    check("exactly one group survives", len(groups) == 1, str(groups))
+    g = groups[0]
+    check("the group is the shared shape", g["shape"] == "s1", g["shape"])
+    check("the group names both blocked open PRs", g["branches"] == ["ci/a", "ci/b"], str(g["branches"]))
+    check("the group's members are the two runs, oldest first",
+          [m["run"]["databaseId"] for m in g["members"]] == [1, 2], str(g["members"]))
+    # An unreadable open-PR list (gh missing / a transport error) is an EMPTY set: nothing is
+    # recorded rather than a blockage claimed from an unread state.
+    check("no open PRs readable -> nothing grouped",
+          F.group_pr_blockages([item(1, "ci/a", "s1"), item(2, "ci/b", "s1")], set()) == [], "")
+    check("one open PR is that author's own noise, never a blockage",
+          F.group_pr_blockages([item(1, "ci/a", "s1")], {"ci/a"}) == [], "")
+
+
+PR_RUNS = [
+    {"databaseId": 700, "workflowName": "qa-validate.yml", "name": "validate",
+     "headBranch": "ci/a", "headSha": "d" * 40, "event": "pull_request",
+     "createdAt": "2026-11-11T21:00:00Z", "conclusion": "failure", "status": "completed",
+     "url": "https://github.com/octo/repo/actions/runs/700"},
+    {"databaseId": 701, "workflowName": "qa-validate.yml", "name": "validate",
+     "headBranch": "ci/b", "headSha": "e" * 40, "event": "pull_request",
+     "createdAt": "2026-11-11T21:10:00Z", "conclusion": "failure", "status": "completed",
+     "url": "https://github.com/octo/repo/actions/runs/701"},
+    # A merged branch: no longer blocked, so it must not count toward the two-PR threshold.
+    {"databaseId": 702, "workflowName": "qa-validate.yml", "name": "validate",
+     "headBranch": "ci/merged", "headSha": "f" * 40, "event": "pull_request",
+     "createdAt": "2026-11-11T21:20:00Z", "conclusion": "failure", "status": "completed",
+     "url": "https://github.com/octo/repo/actions/runs/702"},
+    # A DIFFERENT failure shape on a third open PR: one PR, never recorded.
+    {"databaseId": 703, "workflowName": "qa-validate.yml", "name": "validate",
+     "headBranch": "ci/c", "headSha": "0" * 40, "event": "pull_request",
+     "createdAt": "2026-11-11T21:30:00Z", "conclusion": "failure", "status": "completed",
+     "url": "https://github.com/octo/repo/actions/runs/703"},
+]
+
+PR_JOBS_IMAGE = {"jobs": [
+    {"databaseId": 910, "name": "validate", "conclusion": "failure",
+     "steps": [{"name": "Prepare runner images", "conclusion": "failure"}]}]}
+PR_JOBS_OTHER = {"jobs": [
+    {"databaseId": 913, "name": "validate", "conclusion": "failure",
+     "steps": [{"name": "Run tests", "conclusion": "failure"}]}]}
+
+
+def test_pr_blockage_pass_records_a_shared_failure_shape_once() -> None:
+    print("\nPR-blockage (#1164): a shape shared by two OPEN PRs files ONE issue + ledger row")
+    canned = dict(BASE_CANNED)
+    canned["runs-qa-validate_yml-pull_request.json"] = PR_RUNS
+    canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"},
+                               {"headRefName": "ci/c"}]
+    canned["jobs-700.json"] = PR_JOBS_IMAGE
+    canned["jobs-701.json"] = PR_JOBS_IMAGE
+    canned["jobs-702.json"] = PR_JOBS_IMAGE
+    canned["jobs-703.json"] = PR_JOBS_OTHER
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger)
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        count = int((tmp / "canned" / "create-count").read_text().strip())
+        check("three issues filed: the two master/schedule runs plus ONE PR-blockage",
+              count == 3, f"create-count={count}\n{proc.stdout}")
+        bodies = {p.name: p.read_text() for p in (tmp / "canned").glob("body-*.txt")}
+        pr_body_txt = next((b for b in bodies.values() if "run=700" in b), None)
+        check("the PR-blockage body carries the run-700 marker", pr_body_txt is not None,
+              str(list(bodies)))
+        if pr_body_txt:
+            check("the PR-blockage body carries the scrubbed error block",
+                  "make: *** [validate] Error 1" in pr_body_txt, pr_body_txt[-400:])
+            check("the planted secret never reaches the PR-blockage body",
+                  FAKE_SECRET not in pr_body_txt, pr_body_txt[-400:])
+            check("the PR-blockage body declares the message pattern (rule 6j)",
+                  all(s in pr_body_txt for s in
+                      ("## Why", "## What", "## How", "## Benefits", "## Technical Solution")),
+                  pr_body_txt[:400])
+        data = json.loads(ledger.read_text())
+        rows = [e for e in data["failures"] if e.get("trigger") == "pull_request"]
+        check("exactly one PR-blockage ledger row", len(rows) == 1, str(rows))
+        if rows:
+            row = rows[0]
+            check("the row names the two blocked OPEN PRs, not the merged branch",
+                  row.get("blocked_prs") == ["ci/a", "ci/b"], str(row.get("blocked_prs")))
+            check("the row's pr_count is 2", row.get("pr_count") == 2, str(row.get("pr_count")))
+            check("the row carries a failure shape",
+                  isinstance(row.get("failure_shape"), str) and row["failure_shape"], "")
+            check("the row names the issue it filed", row.get("issue_number") is not None, "")
+            check("the row's own run is the earliest of the group", row.get("run_id") == 700,
+                  str(row.get("run_id")))
+            check("the row keeps the filer's existing keys (append-only, rule 3b)",
+                  all(k in row for k in ("targets", "error_excerpt", "filed_utc", "undiagnosed")),
+                  str(sorted(row)))
+        # IDEMPOTENT: a second sweep must not re-file the same blockage.
+        proc2 = run_filer(env, ledger)
+        count2 = int((tmp / "canned" / "create-count").read_text().strip())
+        check("a second sweep files nothing more", proc2.returncode == 0 and count2 == count,
+              f"count {count} -> {count2}\n{proc2.stdout}")
+        rows2 = [e for e in json.loads(ledger.read_text())["failures"]
+                 if e.get("trigger") == "pull_request"]
+        check("the ledger still holds exactly one PR-blockage row", len(rows2) == 1, str(rows2))
+
+
+def test_pr_blockage_dry_run_previews_without_writing() -> None:
+    print("\nPR-blockage (#1164): --dry previews the filing and writes nothing")
+    canned = dict(BASE_CANNED)
+    canned["runs-qa-validate_yml-pull_request.json"] = PR_RUNS
+    canned["open-prs.json"] = [{"headRefName": "ci/a"}, {"headRefName": "ci/b"}]
+    canned["jobs-700.json"] = PR_JOBS_IMAGE
+    canned["jobs-701.json"] = PR_JOBS_IMAGE
+    canned["jobs-702.json"] = PR_JOBS_IMAGE
+    canned["jobs-703.json"] = PR_JOBS_OTHER
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        env = make_scene(tmp, canned)
+        ledger = tmp / "ledger.json"
+        proc = run_filer(env, ledger, "--dry")
+        check("exit 0", proc.returncode == 0, proc.stderr)
+        check("the preview names the shape and both PRs",
+              "WOULD FILE pr-blockage" in proc.stdout and "ci/a" in proc.stdout
+              and "ci/b" in proc.stdout, proc.stdout)
+        check("--dry files no PR-blockage issue",
+              not any("run=700" in p.read_text()
+                      for p in (tmp / "canned").glob("body-*.txt")), "")
+        # --dry writes nothing at all, so the ledger may not even exist — read it as empty.
+        written = ledger.exists() and json.loads(ledger.read_text())["failures"] or []
+        check("--dry appends no PR-blockage row",
+              [e for e in written if e.get("trigger") == "pull_request"] == [], str(written))
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -1352,6 +1523,10 @@ def main() -> int:
     test_the_stamp_rides_the_filer_s_ledger_pr_landing_through_the_makefile()
     test_ledger_pr_body_is_generated_and_carries_no_closing_keyword()
     test_wiring_rulebook_and_registry()
+    test_failure_shape_groups_the_same_defect_and_separates_others()
+    test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches()
+    test_pr_blockage_pass_records_a_shared_failure_shape_once()
+    test_pr_blockage_dry_run_previews_without_writing()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
