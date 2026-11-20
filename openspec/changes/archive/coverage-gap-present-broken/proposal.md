@@ -1,6 +1,7 @@
 # coverage-gap-present-broken — a present-but-broken CLI is a real failure, not a gap
 
 Issue: #1172
+PR: #1180
 
 ## Why
 
