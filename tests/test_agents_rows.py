@@ -295,6 +295,24 @@ def test_the_auto_merge_rebase_row_is_written():
           and (ROOT / "tests/test_auto_merge_rebase.py").exists())
 
 
+def test_the_human_owned_index_ruling_is_recorded():
+    """#1089: §6s records the RULED DECISION that a human-owned branch stays report-only.
+
+    `classify` returning `human-owned` was an accident of the verdict order, and #1049's
+    Done-when named the open question as "a human decision" with no issue tracking the
+    ruling. The ruling now lives in the rulebook beside the partition it governs, and this
+    pins its exact phrases so a later edit cannot drop it silently.
+    """
+    s6s = rule_section("6s")
+    flat = " ".join(s6s.split())
+    check("rows: §6s records the #1089 ruling on the human-owned partition",
+          "issue #1089" in flat and "RULED DECISION" in flat, s6s[:200])
+    check("rows: §6s states a human-owned branch is never rewritten",
+          "never a rebase of a branch only its author can resolve conflicts in" in flat, s6s[:200])
+    check("rows: §6s names the index keeper as the declared repair",
+          "index keeper of §6q" in flat, s6s[:200])
+
+
 def test_the_rows_name_modules_that_exist():
     sec = section8()
     for mod in ("tests/test_ci_wiring.py", "tests/test_code_review.py", "tests/test_fix_loop.py",
@@ -536,6 +554,7 @@ def main() -> int:
     test_the_docstring_staleness_row_is_written()
     test_the_invalid_change_repair_rows_are_written()
     test_the_auto_merge_rebase_row_is_written()
+    test_the_human_owned_index_ruling_is_recorded()
     test_the_engine_min_version_bare_engine_name_row_is_written()
     test_the_section2_row_names_the_gap_filer_guard()
     test_the_rows_name_modules_that_exist()
