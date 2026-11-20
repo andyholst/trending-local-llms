@@ -678,6 +678,19 @@ _check-workflow-guards:
 check-workflow-guards: ## Fail when a workflow .yml lacks its guard, gates a start on a human, or its guard misdecides a caller class (issue #816)
 	@$(MAKE) --no-print-directory _check-workflow-guards
 
+# The gh --json field contract (issue #1158): every `gh run list` request in scripts/ is READ and
+# every field it asks for is checked against the set the REAL CLI answers. `make ghost-run-alarm`
+# died on `htmlUrl` — a field gh has never had — while its test stub answered any request, so the
+# alarm that exists to name 0-job ghost runs never named one. Bundled into lint, the FIRST gate of
+# qa-validate's validate job and of scripts/fix_loop.sh.
+.PHONY: _check-gh-json-fields
+_check-gh-json-fields:
+	python3 scripts/gh_json_fields.py --scan
+
+.PHONY: check-gh-json-fields
+check-gh-json-fields: ## Fail when a `gh … --json` request asks for a field gh cannot answer (issue #1158)
+	@$(MAKE) --no-print-directory _check-gh-json-fields
+
 # The bot's working files, in ONE list (issue #543). They are gitignored, but both bots unstage
 # them explicitly before `git add -A` because a name written before the ignore entry lands — or
 # created in another checkout — can be staged anyway, and a committed `issue.md` publishes
@@ -712,6 +725,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-pytest-imports
 	$(MAKE) --no-print-directory check-makefile-knobs
 	$(MAKE) --no-print-directory check-workflow-guards
+	$(MAKE) --no-print-directory check-gh-json-fields
 	$(MAKE) --no-print-directory agent-model-chain-check
 
 lint-fix: ## Append the missing final newline to every tracked text file that lacks one
