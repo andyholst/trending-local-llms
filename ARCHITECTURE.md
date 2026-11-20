@@ -1007,7 +1007,7 @@ One line each, taken from the script's own docstring.
 - `scripts/file_findings.py` — File ONE GitHub issue per finding an implementation run recorded.
 - `scripts/fix_loop.sh` — fix_loop.sh — the implementer's repair loop (runs on the CI runner / host; since issue
 - `scripts/freshness_alarm.py` — An alarm over the ARTIFACT, not over the run (issue #452).
-- `scripts/gh_json_fields.py` — ONE contract for the fields `gh … --json` can answer (issue #1158).
+- `scripts/gh_json_fields.py` — ONE contract for the fields `gh … --json` can answer (issues #1158, #1160).
 - `scripts/ghost_run_alarm.py` — Flag every GHOST qa-validate run — a `pull_request` pipeline that COMPLETED with ZERO jobs
 - `scripts/hermes_pin_freshness.py` — hermes-pin-freshness — the pinned Hermes agent version vs the upstream release channel.
 - `scripts/hermes_skills_register.py` — Register the checkout's `agents/skills` with Hermes, so `hermes -s <name>` resolves (issue #549).

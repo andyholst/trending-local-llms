@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ONE contract for the fields `gh … --json` can answer (issue #1158).
+"""ONE contract for the fields `gh … --json` can answer (issues #1158, #1160).
 
 `gh <cmd> --json <fields>` REFUSES a field that command cannot answer. Measured on
 this repository's CLI (2026-11-20):
@@ -15,7 +15,7 @@ this repository's CLI (2026-11-20):
 alarm that watches `pull_request` runs carrying ZERO jobs (issue #1115) — died on its own
 read (`exit 2`, "Unknown JSON field") and never once named a ghost, while the test stub that
 answered ANY requested field kept `make test` green. A request the real CLI refuses must not
-be able to pass the suite, so the field set lives HERE, once (rule 6d), and is used three
+be able to pass the suite, so the field sets live HERE, once (rule 6d), and are used three
 ways:
 
   * `request(command, fields)` — the seam a script builds its `--json` list through: an
@@ -23,9 +23,15 @@ ways:
   * `check_argv(argv)` — the seam a test stub `gh` validates a REQUEST through, so a stub
     can no longer answer a query the real CLI would refuse (rule 6m: the stub is an external
     system, not a contract-free echo).
-  * `scan_scripts(root)` — the tree-wide scan `make lint` runs: every `gh run list` call in
-    `scripts/` is read and every field it asks for is checked against this set, so a second
-    call site cannot drift silently.
+  * `scan_scripts(root)` — the tree-wide scan `make lint` runs: EVERY `gh … --json …` call
+    in `scripts/` is read and every field it asks for is checked against that command's set,
+    so a second call site cannot drift silently. Issue #1158 covered `run list` only, which
+    left 50 other reads failing at RUN time — the exact shape that hid for the whole life of
+    the ghost alarm (issue #1160).
+
+Every set below is transcribed from the real CLI's own `Available fields:` answer for that
+subcommand (recorded 2026-11-20); none is invented. A command with no recorded set gets NO
+opinion (`unknown_fields` returns `[]`) — adding one means recording the CLI's answer first.
 
 Exit codes: 0 = no problem, 1 = a field gh cannot answer (or an unreadable `--json`
 expression), 2 = the scan itself could not read the tree (never a silent clean).
@@ -38,8 +44,8 @@ import shlex
 import sys
 from pathlib import Path
 
-# Recorded from the real CLI's own `Available fields:` answer (see the module docstring).
-# `url` is gh's field for a run's HTML link; `htmlUrl` has NEVER existed.
+# --------------------------------------------------------------------------- recorded sets
+# `gh run list` — `url` is gh's field for a run's HTML link; `htmlUrl` has NEVER existed.
 RUN_LIST_FIELDS = frozenset({
     "attempt",
     "conclusion",
@@ -59,9 +65,202 @@ RUN_LIST_FIELDS = frozenset({
     "workflowName",
 })
 
-# The commands this repo asks fields of. A command not listed here gets NO opinion —
-# adding one means recording its own `Available fields:` answer from the real CLI first.
-SUPPORTED_BY_COMMAND: dict[str, frozenset[str]] = {"run list": RUN_LIST_FIELDS}
+# `gh run view` — the same surface PLUS `jobs`, which only the single-run read answers.
+RUN_VIEW_FIELDS = frozenset(RUN_LIST_FIELDS | {"jobs"})
+
+# `gh pr list` and `gh pr view` answer the same field set.
+PR_FIELDS = frozenset({
+    "additions",
+    "assignees",
+    "author",
+    "autoMergeRequest",
+    "baseRefName",
+    "baseRefOid",
+    "body",
+    "changedFiles",
+    "closed",
+    "closedAt",
+    "closingIssuesReferences",
+    "comments",
+    "commits",
+    "createdAt",
+    "deletions",
+    "files",
+    "fullDatabaseId",
+    "headRefName",
+    "headRefOid",
+    "headRepository",
+    "headRepositoryOwner",
+    "id",
+    "isCrossRepository",
+    "isDraft",
+    "labels",
+    "latestReviews",
+    "maintainerCanModify",
+    "mergeCommit",
+    "mergeStateStatus",
+    "mergeable",
+    "mergedAt",
+    "mergedBy",
+    "milestone",
+    "number",
+    "potentialMergeCommit",
+    "projectCards",
+    "projectItems",
+    "reactionGroups",
+    "reviewDecision",
+    "reviewRequests",
+    "reviews",
+    "state",
+    "statusCheckRollup",
+    "title",
+    "updatedAt",
+    "url",
+})
+
+# `gh issue list` and `gh issue view` answer the same field set.
+ISSUE_FIELDS = frozenset({
+    "assignees",
+    "author",
+    "blockedBy",
+    "blocking",
+    "body",
+    "closed",
+    "closedAt",
+    "closedByPullRequestsReferences",
+    "comments",
+    "createdAt",
+    "id",
+    "isPinned",
+    "issueType",
+    "labels",
+    "milestone",
+    "number",
+    "parent",
+    "projectCards",
+    "projectItems",
+    "reactionGroups",
+    "state",
+    "stateReason",
+    "subIssues",
+    "subIssuesSummary",
+    "title",
+    "updatedAt",
+    "url",
+})
+
+LABEL_LIST_FIELDS = frozenset({
+    "color",
+    "createdAt",
+    "description",
+    "id",
+    "isDefault",
+    "name",
+    "updatedAt",
+    "url",
+})
+
+SECRET_LIST_FIELDS = frozenset({
+    "name",
+    "numSelectedRepos",
+    "selectedReposURL",
+    "updatedAt",
+    "visibility",
+})
+
+WORKFLOW_LIST_FIELDS = frozenset({
+    "id",
+    "name",
+    "path",
+    "state",
+})
+
+REPO_VIEW_FIELDS = frozenset({
+    "archivedAt",
+    "assignableUsers",
+    "codeOfConduct",
+    "contactLinks",
+    "createdAt",
+    "defaultBranchRef",
+    "deleteBranchOnMerge",
+    "description",
+    "diskUsage",
+    "forkCount",
+    "fundingLinks",
+    "hasDiscussionsEnabled",
+    "hasIssuesEnabled",
+    "hasProjectsEnabled",
+    "hasWikiEnabled",
+    "homepageUrl",
+    "id",
+    "isArchived",
+    "isBlankIssuesEnabled",
+    "isEmpty",
+    "isFork",
+    "isInOrganization",
+    "isMirror",
+    "isPrivate",
+    "isSecurityPolicyEnabled",
+    "isTemplate",
+    "isUserConfigurationRepository",
+    "issueTemplates",
+    "issues",
+    "labels",
+    "languages",
+    "latestRelease",
+    "licenseInfo",
+    "mentionableUsers",
+    "mergeCommitAllowed",
+    "milestones",
+    "mirrorUrl",
+    "name",
+    "nameWithOwner",
+    "openGraphImageUrl",
+    "owner",
+    "parent",
+    "primaryLanguage",
+    "projects",
+    "projectsV2",
+    "pullRequestTemplates",
+    "pullRequests",
+    "pushedAt",
+    "rebaseMergeAllowed",
+    "repositoryTopics",
+    "securityPolicyUrl",
+    "squashMergeAllowed",
+    "sshUrl",
+    "stargazerCount",
+    "templateRepository",
+    "updatedAt",
+    "url",
+    "usesCustomOpenGraphImage",
+    "viewerCanAdminister",
+    "viewerDefaultCommitEmail",
+    "viewerDefaultMergeMethod",
+    "viewerHasStarred",
+    "viewerPermission",
+    "viewerPossibleCommitEmails",
+    "viewerSubscription",
+    "visibility",
+    "watchers",
+})
+
+#: Every gh subcommand this repo asks fields of, and the fields gh answers for it.
+FIELD_SETS: dict[str, frozenset[str]] = {
+    "run list": RUN_LIST_FIELDS,
+    "run view": RUN_VIEW_FIELDS,
+    "pr list": PR_FIELDS,
+    "pr view": PR_FIELDS,
+    "issue list": ISSUE_FIELDS,
+    "issue view": ISSUE_FIELDS,
+    "label list": LABEL_LIST_FIELDS,
+    "secret list": SECRET_LIST_FIELDS,
+    "workflow list": WORKFLOW_LIST_FIELDS,
+    "repo view": REPO_VIEW_FIELDS,
+}
+
+#: The name the #1158 tests and scripts already import (rule 6d: one table, many readers).
+SUPPORTED_BY_COMMAND = FIELD_SETS
 
 
 def parse_fields(text: str) -> list[str]:
@@ -94,15 +293,24 @@ def request(command: str, fields: str) -> str:
     return fields
 
 
-def command_path(argv) -> str:
-    """The gh command path of an argv list: the leading non-flag tokens (`run list`)."""
+def command_path(argv) -> str | None:
+    """The recorded gh command an argv list names, or None when it names none.
+
+    The leading non-flag tokens are matched against the recorded table, so a positional
+    argument after the subcommand (`gh run view 123 --json jobs`) does not become part of
+    the command.
+    """
     parts = []
     for token in argv:
         token = str(token)
         if token.startswith("-"):
             break
         parts.append(token)
-    return " ".join(parts)
+    for command in sorted(FIELD_SETS, key=lambda c: -len(c.split())):
+        head = command.split()
+        if parts[:len(head)] == head:
+            return command
+    return None
 
 
 def check_argv(argv) -> list[str]:
@@ -117,6 +325,9 @@ def check_argv(argv) -> list[str]:
             continue
         if i + 1 >= len(argv):
             problems.append("--json with no field list")
+            continue
+        if cmd is None:
+            problems.append(f"--json {argv[i + 1]!r} for a command this contract does not name")
             continue
         problems.extend(f"--json {cmd}: unknown field {field!r}"
                         for field in unknown_fields(cmd, [argv[i + 1]]))
@@ -146,7 +357,7 @@ def _request_call_literal(node) -> str | None:
 
 def _module_constants(tree: ast.Module) -> dict[str, str]:
     """Module-level `NAME = "…"` string constants (adjacent literals are one Constant),
-    including a `NAME = gh_json_fields.request("run list", "…")` built through this seam."""
+    including a `NAME = gh_json_fields.request("<cmd>", "<fields>")` built through this seam."""
     constants: dict[str, str] = {}
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
@@ -172,34 +383,46 @@ def _token_lists(tree: ast.Module):
         yield node, tokens
 
 
-def run_list_requests(tree: ast.Module) -> list[tuple[int, str]]:
-    """(lineno, field-list-text) for every `gh run list` call in the module.
+UNRESOLVED = "<unresolved --json field list>"
 
-    A `--json` whose value is not a literal or a known module constant is reported as
-    UNRESOLVED so the scan can never be satisfied by a dynamic field list.
+
+def command_before(tokens, end: int) -> str | None:
+    """The recorded gh command a token sequence names BEFORE index `end`.
+
+    Both parts must be string LITERALS: a helper that forwards a variable (`_gh_json(repo,
+    "run", "list", …)`) still names its command literally, while a flag value that happens to
+    equal a subcommand word cannot be mistaken for one.
+    """
+    for i in range(max(0, end - 1)):
+        a, b = tokens[i], tokens[i + 1]
+        if isinstance(a, str) and isinstance(b, str) and f"{a} {b}" in FIELD_SETS:
+            return f"{a} {b}"
+    return None
+
+
+def gh_requests(tree: ast.Module) -> list[tuple[int, str | None, str]]:
+    """(lineno, command-or-None, field-list-text) for every `gh … --json …` call in the module.
+
+    A `--json` with no following token is an argparse flag, not a gh request. A `--json`
+    whose field list is not a literal or a known module constant is reported as UNRESOLVED so
+    the scan can never be satisfied by a dynamic field list.
     """
     constants = _module_constants(tree)
     found = []
-    for _node, tokens in _token_lists(tree):
-        for i in range(len(tokens) - 1):
-            if tokens[i] != "run" or tokens[i + 1] != "list":
+    for node, tokens in _token_lists(tree):
+        for i, token in enumerate(tokens):
+            if token != "--json" or i + 1 >= len(tokens):
                 continue
-            for j in range(i + 2, len(tokens)):
-                if tokens[j] != "--json":
-                    continue
-                if j + 1 >= len(tokens):
-                    found.append((getattr(_node, "lineno", 0), UNRESOLVED))
-                elif tokens[j + 1] in constants:
-                    found.append((getattr(_node, "lineno", 0), constants[tokens[j + 1]]))
-                else:
-                    found.append((getattr(_node, "lineno", 0),
-                                  tokens[j + 1] if tokens[j + 1] is not None else UNRESOLVED))
-                break
-            break
+            cmd = command_before(tokens, i)
+            value = tokens[i + 1]
+            if value in constants:
+                fields = constants[value]
+            elif value is None:
+                fields = UNRESOLVED
+            else:
+                fields = value
+            found.append((getattr(node, "lineno", 0), cmd, fields))
     return found
-
-
-UNRESOLVED = "<unresolved --json field list>"
 
 
 def scan_file(path: Path) -> list[str]:
@@ -208,15 +431,20 @@ def scan_file(path: Path) -> list[str]:
     except (OSError, SyntaxError) as exc:
         return [f"{path}: UNREADABLE ({exc})"]
     problems = []
-    for lineno, fields in run_list_requests(tree):
+    for lineno, cmd, fields in gh_requests(tree):
         if fields == UNRESOLVED:
-            problems.append(f"{path}:{lineno}: a `gh run list --json` field list this scan "
-                            "cannot read — build it through gh_json_fields.request()")
+            problems.append(f"{path}:{lineno}: a `gh … --json` field list this scan cannot "
+                            "read — build it through gh_json_fields.request()")
             continue
-        for field in unknown_fields("run list", [fields]):
-            problems.append(f"{path}:{lineno}: `gh run list --json` asks for {field!r}, "
+        if cmd is None:
+            problems.append(f"{path}:{lineno}: a `gh … --json {fields}` request whose command "
+                            "this contract does not name — record the command's "
+                            "`Available fields:` answer first")
+            continue
+        for field in unknown_fields(cmd, [fields]):
+            problems.append(f"{path}:{lineno}: `gh {cmd} --json` asks for {field!r}, "
                             f"which gh cannot answer (supported: "
-                            f"{', '.join(sorted(RUN_LIST_FIELDS))})")
+                            f"{', '.join(sorted(FIELD_SETS[cmd]))})")
     return problems
 
 
@@ -232,17 +460,18 @@ def scan_scripts(root: Path) -> list[str]:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="the one gh --json field contract")
-    ap.add_argument("--fields", action="store_true", help="print the recorded field set")
+    ap.add_argument("--fields", action="store_true", help="print the recorded field sets")
     ap.add_argument("--check-command", metavar="CMD", help="command path to opine on")
     ap.add_argument("--check-fields", metavar="FIELDS", help="a --json field list to validate")
     ap.add_argument("--check-argv", default=None, metavar="GH-COMMAND",
                     help="a whole `gh …` command line (quoted) to validate; the stub gh calls this")
-    ap.add_argument("--scan", action="store_true", help="scan scripts/ for gh run list fields")
+    ap.add_argument("--scan", action="store_true", help="scan scripts/ for gh --json fields")
     ap.add_argument("--root", default=None, help="repository root for --scan")
     args = ap.parse_args(argv)
 
     if args.fields:
-        print("run list: " + ", ".join(sorted(RUN_LIST_FIELDS)))
+        for command in sorted(FIELD_SETS):
+            print(f"{command}: " + ", ".join(sorted(FIELD_SETS[command])))
         return 0
     if args.check_command is not None or args.check_fields is not None:
         if args.check_command is None or args.check_fields is None:
@@ -274,8 +503,8 @@ def main(argv=None) -> int:
             for problem in problems:
                 print(f"  {problem}")
             return 1
-        print("[gh-json-fields] OK every `gh run list --json` request in scripts/ asks only "
-              "for fields gh can answer")
+        print(f"[gh-json-fields] OK every `gh … --json` request in scripts/ asks only "
+              f"for fields gh can answer ({len(FIELD_SETS)} commands recorded)")
         return 0
     ap.print_help()
     return 2
