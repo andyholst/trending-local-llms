@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -1344,6 +1345,31 @@ def test_failure_shape_groups_the_same_defect_and_separates_others() -> None:
     e = F.failure_shape(other, ["lint"], ["Prepare runner images"])
     check("a different error block is a DIFFERENT shape", a != e, f"{a} vs {e}")
     check("the shape is a stable short digest", len(a) == 12, a)
+    # Issue #1175: the digest covers the WHOLE bounded block, not an 8-line prefix. Two defects
+    # that share GitHub's boilerplate and differ only LATER are two shapes, never one — the
+    # planted blocks are longer than the old 8-line window and identical inside it.
+    prefix = ["##[error]The process '/usr/bin/make' failed with exit code 2",
+              "make: *** [validate] Error 1"] + [f"  common boilerplate line {i}" for i in range(9)]
+    tail_a = ["Traceback (most recent call last):",
+              '  File "scripts/ensure_image.py", line 1, in <module>',
+              "AssertionError: the installed agent is NOT the pinned version"]
+    tail_b = ["Traceback (most recent call last):",
+              '  File "scripts/run_tests.sh", line 9, in <module>',
+              "AssertionError: the suite captured no [test] line"]
+    sa = F.failure_shape([*prefix, *tail_a], ["validate"], ["Run tests"])
+    sb = F.failure_shape([*prefix, *tail_b], ["validate"], ["Run tests"])
+    check("#1175: two failures sharing a prefix but differing later are DIFFERENT shapes",
+          sa != sb, f"{sa} vs {sb}")
+    check("#1175: the same full block is still ONE shape",
+          sa == F.failure_shape([*prefix, *tail_a], ["validate"], ["Run tests"]), sa)
+    # RED on the old shape: the pair is byte-identical inside the pre-change 8-line window, so
+    # `skeleton[:8]` digested the same key for both and recorded ONE blockage for two defects.
+    norm_a = [re.sub(r"\x1b\[[0-9;]*m", "", l).strip() for l in [*prefix, *tail_a]]
+    norm_b = [re.sub(r"\x1b\[[0-9;]*m", "", l).strip() for l in [*prefix, *tail_b]]
+    check("#1175: the pair is identical inside the OLD 8-line window (the pre-change digest collided)",
+          norm_a[:8] == norm_b[:8], f"{norm_a[:8]} vs {norm_b[:8]}")
+    src = (ROOT / "scripts" / "pipeline_failure_issue.py").read_text(encoding="utf-8")
+    check("#1175: the prefix slice is gone from the seam", "skeleton[:8]" not in src, src[:200])
 
 
 def test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches() -> None:
