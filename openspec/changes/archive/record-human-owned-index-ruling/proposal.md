@@ -1,6 +1,7 @@
 # Record the human-owned index ruling (#1089)
 
 **Issue:** [#1089](https://github.com/andyholst/trending-local-llms/issues/1089)
+PR: #1165
 **Capability:** `auto-merge-index-partition`
 
 ## Why
