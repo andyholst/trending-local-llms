@@ -211,12 +211,13 @@ def test_setup_registers_the_directory_and_reads_it_back():
     # does not have (no agent may dispatch a pipeline). That half is declared through the
     # coverage-gap seam — the runner names it in the verdict and the module stays green —
     # instead of going red with the CLI's own "not on PATH" message and a FileNotFoundError.
-    if shutil.which("hermes") is None:
-        coverage_gap.external_binary_gap(
-            "hermes-skills register half",
-            "hermes",
-            "a host `make test` has no agent CLI; the container run drives the real one",
-        )
+    # The seam PROBES (issue #1171): it prints and returns the line only when `hermes` is
+    # absent, so this module keeps no `which` of its own and the declaration is one place.
+    if coverage_gap.external_binary_gap(
+        "hermes-skills register half",
+        "hermes",
+        "a host `make test` has no agent CLI; the container run drives the real one",
+    ):
         return
     script = ROOT / "scripts" / "hermes_skills_register.py"
     with temp_hermes_home() as td:

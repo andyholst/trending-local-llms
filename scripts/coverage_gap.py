@@ -29,7 +29,9 @@ strings here and never re-spell them):
 from __future__ import annotations
 
 import os
+import shutil
 import sys
+from collections.abc import Sequence
 
 GAP_PREFIX = "[coverage-gap]"
 IDENTITY_PREFIX = "[harness] suite identity:"
@@ -78,7 +80,7 @@ def declare_bypass_gap(guard: str, why: str) -> str:
     )
 
 
-def external_binary_gap(guard: str, binary: str, why: str) -> str:
+def external_binary_gap(guard: str, binary: str | Sequence[str], why: str) -> str:
     """A guard whose half needs an EXTERNAL binary this identity does not have (issue #1154).
 
     The owner directive of 2026-11-15 moved agent work onto the host, so a host `make test` is
@@ -88,10 +90,21 @@ def external_binary_gap(guard: str, binary: str, why: str) -> str:
     budget on. The half is declared here: the runner prints `[harness] coverage-gap N declared`
     naming the guard that did not run, the module stays green, and a module that merely prints
     "SKIP" without this seam is still a refusal (the `BYPASS_PHRASE` travels inside the line).
+
+    `binary` is ONE name or a SEQUENCE of them (issue #1171): a module that drives several CLIs
+    declares them in ONE line, naming only the ones THIS identity lacks. The seam probes, so a
+    module may call it unconditionally — when every binary is present it prints nothing and
+    returns `""`, and the guard's own half runs.
     """
+    names = [binary] if isinstance(binary, str) else list(binary)
+    missing = [b for b in names if shutil.which(b) is None]
+    if not missing:
+        return ""
+    listed = ", ".join(f"`{b}`" for b in missing)
+    verb = "s are" if len(missing) > 1 else " is"
     return declare_gap(
         guard,
-        f"the `{binary}` CLI is not on PATH ({why}); {BYPASS_PHRASE}: this half did not run in "
+        f"the {listed} CLI{verb} not on PATH ({why}); {BYPASS_PHRASE}: this half did not run in "
         f"this identity, and the container run — where the binary exists — still locks it",
     )
 
