@@ -1,6 +1,7 @@
 # coverage-gap-multi-binary — the seam declares N external CLIs in one line
 
 Issue: #1171
+PR: #1178
 
 ## Why
 

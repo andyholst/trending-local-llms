@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **376**
+Active changes: **2** · archived: **377**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `coverage-gap-multi-binary` | active | #1171 | — | [coverage-gap-multi-binary](openspec/changes/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/coverage-gap-multi-binary/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -145,6 +144,7 @@ Active changes: **3** · archived: **376**
 | `context-benchmark-points-not-windows` | archived | #1017 | #1075 | [data-gap-analysis](openspec/changes/archive/context-benchmark-points-not-windows/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/context-benchmark-points-not-windows/proposal.md) |
 | `context-tokens-ingest-traceable` | archived | #991 — "data-gap: context_tokens (69 models) (2026-11-15)" | #1012 | [context-tokens-ingest](openspec/changes/archive/context-tokens-ingest-traceable/specs/context-tokens-ingest/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/context-tokens-ingest-traceable/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | archived | #382 | — | [raw-snapshot-quarantine](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/proposal.md) |
+| `coverage-gap-multi-binary` | archived | #1171 | #1178 | [coverage-gap-multi-binary](openspec/changes/archive/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/coverage-gap-multi-binary/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
 | `cross-model-ingest-date-identity` | archived | #971 — "The ingest-time duplicate refusal still keys on hardware, not date" | #1009 | [cross-model-duplicate-identity](openspec/changes/archive/cross-model-ingest-date-identity/specs/cross-model-duplicate-identity/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-ingest-date-identity/proposal.md) |
 | `cross-model-ingest-refusal` | archived | #702 | — | [cross-model-ingest-refusal](openspec/changes/archive/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/cross-model-ingest-refusal/proposal.md) |
