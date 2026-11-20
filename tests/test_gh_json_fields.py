@@ -71,8 +71,7 @@ def test_the_field_set_is_the_real_cli_answer():
     check("gh's run link field is `url` and `htmlUrl` is NOT in the contract",
           "url" in contract.RUN_LIST_FIELDS and "htmlUrl" not in contract.RUN_LIST_FIELDS, "")
     check("a command this module has not recorded gets NO opinion (never a false red)",
-          contract.unknown_fields("run view", ["jobs"]) == []
-          and contract.unknown_fields("some future command", ["whatever"]) == [], "")
+          contract.unknown_fields("some future command", ["whatever"]) == [], "")
 
 
 def test_the_seam_refuses_a_field_gh_cannot_answer():
@@ -109,6 +108,116 @@ def test_the_ghost_alarm_builds_its_request_through_the_seam():
           "gh_json_fields.check_argv(" in src, "")
     check("the rendered ghost line prints the `url` gh answered",
           "g.get('url')" in src and "htmlUrl" not in src, "")
+
+
+#: Recorded from the REAL CLI on this repository (2026-11-20) by asking each subcommand for a
+#: field it cannot answer and reading its own `Available fields:` answer. Issue #1160: the
+#: contract covered `run list` only, so the other 50 reads failed at RUN time.
+RECORDED_GH_FIELDS: dict[str, str] = {
+    "run list": ("attempt, conclusion, createdAt, databaseId, displayTitle, event, "
+                 "headBranch, headSha, name, number, startedAt, status, updatedAt, url, "
+                 "workflowDatabaseId, workflowName"),
+    "run view": ("attempt, conclusion, createdAt, databaseId, displayTitle, event, "
+                 "headBranch, headSha, jobs, name, number, startedAt, status, updatedAt, "
+                 "url, workflowDatabaseId, workflowName"),
+    "pr list": ("additions, assignees, author, autoMergeRequest, baseRefName, baseRefOid, "
+                "body, changedFiles, closed, closedAt, closingIssuesReferences, comments, "
+                "commits, createdAt, deletions, files, fullDatabaseId, headRefName, "
+                "headRefOid, headRepository, headRepositoryOwner, id, isCrossRepository, "
+                "isDraft, labels, latestReviews, maintainerCanModify, mergeCommit, "
+                "mergeStateStatus, mergeable, mergedAt, mergedBy, milestone, number, "
+                "potentialMergeCommit, projectCards, projectItems, reactionGroups, "
+                "reviewDecision, reviewRequests, reviews, state, statusCheckRollup, title, "
+                "updatedAt, url"),
+    "pr view": ("additions, assignees, author, autoMergeRequest, baseRefName, baseRefOid, "
+                "body, changedFiles, closed, closedAt, closingIssuesReferences, comments, "
+                "commits, createdAt, deletions, files, fullDatabaseId, headRefName, "
+                "headRefOid, headRepository, headRepositoryOwner, id, isCrossRepository, "
+                "isDraft, labels, latestReviews, maintainerCanModify, mergeCommit, "
+                "mergeStateStatus, mergeable, mergedAt, mergedBy, milestone, number, "
+                "potentialMergeCommit, projectCards, projectItems, reactionGroups, "
+                "reviewDecision, reviewRequests, reviews, state, statusCheckRollup, title, "
+                "updatedAt, url"),
+    "issue list": ("assignees, author, blockedBy, blocking, body, closed, closedAt, "
+                   "closedByPullRequestsReferences, comments, createdAt, id, isPinned, "
+                   "issueType, labels, milestone, number, parent, projectCards, "
+                   "projectItems, reactionGroups, state, stateReason, subIssues, "
+                   "subIssuesSummary, title, updatedAt, url"),
+    "issue view": ("assignees, author, blockedBy, blocking, body, closed, closedAt, "
+                   "closedByPullRequestsReferences, comments, createdAt, id, isPinned, "
+                   "issueType, labels, milestone, number, parent, projectCards, "
+                   "projectItems, reactionGroups, state, stateReason, subIssues, "
+                   "subIssuesSummary, title, updatedAt, url"),
+    "label list": "color, createdAt, description, id, isDefault, name, updatedAt, url",
+    "secret list": "name, numSelectedRepos, selectedReposURL, updatedAt, visibility",
+    "workflow list": "id, name, path, state",
+    "repo view": ("archivedAt, assignableUsers, codeOfConduct, contactLinks, createdAt, "
+                  "defaultBranchRef, deleteBranchOnMerge, description, diskUsage, forkCount, "
+                  "fundingLinks, hasDiscussionsEnabled, hasIssuesEnabled, hasProjectsEnabled, "
+                  "hasWikiEnabled, homepageUrl, id, isArchived, isBlankIssuesEnabled, "
+                  "isEmpty, isFork, isInOrganization, isMirror, isPrivate, "
+                  "isSecurityPolicyEnabled, isTemplate, isUserConfigurationRepository, "
+                  "issueTemplates, issues, labels, languages, latestRelease, licenseInfo, "
+                  "mentionableUsers, mergeCommitAllowed, milestones, mirrorUrl, name, "
+                  "nameWithOwner, openGraphImageUrl, owner, parent, primaryLanguage, "
+                  "projects, projectsV2, pullRequestTemplates, pullRequests, pushedAt, "
+                  "rebaseMergeAllowed, repositoryTopics, securityPolicyUrl, "
+                  "squashMergeAllowed, sshUrl, stargazerCount, templateRepository, "
+                  "updatedAt, url, usesCustomOpenGraphImage, viewerCanAdminister, "
+                  "viewerDefaultCommitEmail, viewerDefaultMergeMethod, viewerHasStarred, "
+                  "viewerPermission, viewerPossibleCommitEmails, viewerSubscription, "
+                  "visibility, watchers"),
+}
+
+
+def test_every_recorded_field_set_is_the_real_cli_answer():
+    """Issue #1160: the contract is only worth its keep if EVERY set is the CLI's own answer."""
+    check("FIELD_SETS records exactly the commands the fixture transcribed",
+          set(contract.FIELD_SETS) == set(RECORDED_GH_FIELDS),
+          f"script-only: {sorted(set(contract.FIELD_SETS) - set(RECORDED_GH_FIELDS))}; "
+          f"fixture-only: {sorted(set(RECORDED_GH_FIELDS) - set(contract.FIELD_SETS))}")
+    for command, recorded in sorted(RECORDED_GH_FIELDS.items()):
+        answer = {f.strip() for f in recorded.split(",") if f.strip()}
+        check(f"{command}: the recorded set is exactly gh's Available-fields answer",
+              contract.FIELD_SETS[command] == answer,
+              f"script-only: {sorted(contract.FIELD_SETS[command] - answer)}; "
+              f"cli-only: {sorted(answer - contract.FIELD_SETS[command])}")
+    check("`run view` answers `jobs`, which `run list` does NOT",
+          "jobs" in contract.FIELD_SETS["run view"] and "jobs" not in contract.FIELD_SETS["run list"],
+          "")
+    check("an UNRECORDED command still gets no opinion (never a false red)",
+          contract.unknown_fields("some future command", ["whatever"]) == [], "")
+
+
+#: One planted caller per subcommand: the command literally named, a field gh cannot answer.
+def _planted_caller(command: str, field: str) -> str:
+    return (f'import subprocess\nsubprocess.run(["gh", "{command.split()[0]}", '
+            f'"{command.split()[1]}", "--json", "{field}"], capture_output=True)\n')
+
+
+def test_the_scan_reads_every_subcommand_not_only_run_list():
+    """Issue #1160's whole point: a drift in any of the 50 other reads must go RED."""
+    for command in sorted(RECORDED_GH_FIELDS):
+        td = Path(tempfile.mkdtemp())
+        (td / "scripts").mkdir()
+        (td / "scripts" / "caller.py").write_text(_planted_caller(command, "htmlUrl"))
+        red = contract.scan_scripts(td)
+        check(f"a planted unknown field in `gh {command} --json` is caught",
+              len(red) == 1 and "caller.py" in red[0] and "htmlUrl" in red[0]
+              and f"gh {command}" in red[0], red)
+    # a supported field in a second subcommand stays green (the scan is not a blanket red)
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    (td / "scripts" / "caller.py").write_text(_planted_caller("pr list", "number,title"))
+    check("a supported `gh pr list --json` request is green (the scan opines per command)",
+          contract.scan_scripts(td) == [], contract.scan_scripts(td))
+    # an argparse `--json` flag is NOT a gh request and must not be read as one
+    td = Path(tempfile.mkdtemp())
+    (td / "scripts").mkdir()
+    (td / "scripts" / "argparse.py").write_text(
+        "import argparse\np = argparse.ArgumentParser()\np.add_argument('--json', action='store_true')\n")
+    check("an argparse `--json` flag is not mistaken for a gh request",
+          contract.scan_scripts(td) == [], contract.scan_scripts(td))
 
 
 def _scratch_scripts_tree(field_list: str, extra: str = "") -> Path:
@@ -221,7 +330,7 @@ def test_the_ghost_stub_cannot_answer_a_query_the_real_gh_refuses():
               answered.stderr[:200])
         jobs = subprocess.run(["gh", "run", "view", "7", "--json", "jobs", "--repo", "o/r"],
                               capture_output=True, text=True, env=env)
-        check("a command the contract has not recorded is left alone (run view --json jobs)",
+        check("`run view --json jobs` is a RECORDED request and is admitted (issue #1160)",
               jobs.returncode == 0, jobs.stderr[:200])
 
 
@@ -264,9 +373,11 @@ def test_the_scan_is_wired_where_ci_runs_it():
 
 def main() -> int:
     test_the_field_set_is_the_real_cli_answer()
+    test_every_recorded_field_set_is_the_real_cli_answer()
     test_the_seam_refuses_a_field_gh_cannot_answer()
     test_the_ghost_alarm_builds_its_request_through_the_seam()
     test_the_tree_scan_is_green_here_and_red_on_the_old_shape()
+    test_the_scan_reads_every_subcommand_not_only_run_list()
     test_the_cli_modes_decide_loudly()
     test_the_ghost_stub_cannot_answer_a_query_the_real_gh_refuses()
     test_the_scan_is_wired_where_ci_runs_it()
