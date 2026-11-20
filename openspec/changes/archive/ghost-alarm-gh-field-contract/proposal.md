@@ -1,6 +1,7 @@
 # Proposal: ghost-alarm-gh-field-contract
 
 Issue: #1158
+PR: #1159
 
 ## Why
 
