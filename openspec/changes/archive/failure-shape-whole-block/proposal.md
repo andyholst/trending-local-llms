@@ -1,6 +1,7 @@
 # failure-shape-whole-block — the shape digest covers the whole bounded block
 
 Issue: #1175
+PR: #1179
 
 ## Why
 

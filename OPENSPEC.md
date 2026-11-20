@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **3** · archived: **377**
+Active changes: **2** · archived: **378**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `failure-shape-whole-block` | active | #1175 | — | [failure-shape-whole-block](openspec/changes/failure-shape-whole-block/specs/failure-shape-whole-block/spec.md) | 12/12 | [proposal.md](openspec/changes/failure-shape-whole-block/proposal.md) |
 | `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
@@ -177,6 +176,7 @@ Active changes: **3** · archived: **377**
 | `engine-name-case-warn` | archived | #645 | #899 | [engine-name-case-warning](openspec/changes/archive/engine-name-case-warn/specs/engine-name-case-warning/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-name-case-warn/proposal.md) |
 | `ensure-image-corrupt-blob-fallback` | archived | #1118 — "ensure_image treats a published-but-undownloadable base tag as pullable" | #1119 | [agent-image-publish](openspec/changes/archive/ensure-image-corrupt-blob-fallback/specs/agent-image-publish/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ensure-image-corrupt-blob-fallback/proposal.md) |
 | `env-int-empty-is-missing` | archived | #487 — pr-health: the sweep is red on every run | — | [env-settings](openspec/changes/archive/env-int-empty-is-missing/specs/env-settings/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/env-int-empty-is-missing/proposal.md) |
+| `failure-shape-whole-block` | archived | #1175 | #1179 | [failure-shape-whole-block](openspec/changes/archive/failure-shape-whole-block/specs/failure-shape-whole-block/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/failure-shape-whole-block/proposal.md) |
 | `fake-gh-marker-newline-contract` | archived | #1002 — "The fake-gh `issue create` stubs and the final-marker newline | #1003 | [fake-gh-marker-newline-contract](openspec/changes/archive/fake-gh-marker-newline-contract/specs/fake-gh-marker-newline-contract/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/fake-gh-marker-newline-contract/proposal.md) |
 | `fetch-base-before-any-work` | archived | #440 (filed first, with the rule-3c declaration) | — | [working-copy](openspec/changes/archive/fetch-base-before-any-work/specs/working-copy/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/fetch-base-before-any-work/proposal.md) |
 | `filer-error-block-names-the-failing-step` | archived | #1098 | #1139 | [alarms](openspec/changes/archive/filer-error-block-names-the-failing-step/specs/alarms/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/filer-error-block-names-the-failing-step/proposal.md) |
