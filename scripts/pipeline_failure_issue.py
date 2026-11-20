@@ -250,6 +250,17 @@ def failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str
     the error block with every run-specific token collapsed. Two runs with the same shape are one
     error class, which is what makes "the SAME failure shape on two open PRs" decidable (issue
     #1164).
+
+    The WHOLE bounded block is digested, not its first lines (issue #1175): `block` arrives from
+    `extract_error_block`, already capped at `MAX_ERROR_LINES`, so the cap bounds the digest's
+    input and the shape answers "the same failure" rather than "the same opening". A prefix
+    digest merged two defects that share GitHub's boilerplate (`##[error]…`, `make: *** …`)
+    and differ only later — the threshold is then met by two PRs blocked by different things,
+    which is the one error this pass exists to avoid.
+
+    The digest is ORDER-SENSITIVE on purpose: the skeleton is joined in the block's own order, so
+    the same lines in a different order are two shapes. A set would hide a re-ordered traceback,
+    and the digest stays deliberately cheap.
     """
     skeleton: list[str] = []
     for line in block:
@@ -259,7 +270,7 @@ def failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str
         s = re.sub(r"\b[0-9a-f]{7,40}\b", "<sha>", s)
         s = re.sub(r"\b\d[\d,]*\b", "<n>", s)
         skeleton.append(s)
-    key = "|".join([*(steps or []), *(targets or []), *skeleton[:8]])
+    key = "|".join([*(steps or []), *(targets or []), *skeleton])
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
 
