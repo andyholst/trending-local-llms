@@ -442,6 +442,58 @@ def test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them
           "EMPTY=''" in out and "SECOND_ADDED=''" in out, out[-500:])
 
 
+def test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap() -> None:
+    """Issue #1172: presence is PRESUMED usability — a broken CLI is a REAL failure, never a gap.
+
+    The two states a guard must not confuse: `hermes` ABSENT (a coverage gap the seam declares,
+    the module stays green) and `hermes` PRESENT but failing (a defect in the half that drives it
+    — the module goes red with the CLI's own error, which is the honest signal).
+    """
+    src = (ROOT / "scripts" / "coverage_gap.py").read_text(encoding="utf-8")
+    check("#1172: the boundary is named in the seam, not left to a reader",
+          "PRESENCE_IS_PRESUMED_USABLE = True" in src and "def external_binary_usable(" in src,
+          src[:300])
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        stub = d / "hermes"
+        stub.write_text("#!/bin/sh\necho 'HTTP 401: Your API key is invalid' >&2\nexit 1\n",
+                        encoding="utf-8")
+        stub.chmod(0o755)
+        skills = d / "skills"
+        skills.mkdir()
+        (skills / "demo").mkdir()
+        env = {**os.environ, "PATH": str(d) + os.pathsep + os.environ.get("PATH", "")}
+        # (a) the REAL seam, in a subprocess with the broken CLI on PATH (rule 6m).
+        prog = (
+            "import sys; sys.path.insert(0, %r)\n"
+            "import coverage_gap, io, contextlib\n"
+            "buf = io.StringIO()\n"
+            "with contextlib.redirect_stdout(buf):\n"
+            "    line = coverage_gap.external_binary_gap('register half', 'hermes', 'why')\n"
+            "print('LINE=' + repr(line))\n"
+            "print('PRINTED=' + repr(buf.getvalue()))\n"
+            "print('USABLE=' + repr(coverage_gap.external_binary_usable('hermes')))\n"
+        ) % str(ROOT / "scripts")
+        p = subprocess.run([sys.executable, "-c", prog], capture_output=True, text=True,
+                           timeout=120, env=env)
+        out = p.stdout + p.stderr
+        # (b) the REAL register script driven by that same broken CLI.
+        home = d / "home"
+        home.mkdir()
+        reg = subprocess.run([sys.executable, str(ROOT / "scripts" / "hermes_skills_register.py"),
+                              "--home", str(home), "--dir", str(skills)],
+                             capture_output=True, text=True, timeout=120, env=env)
+    check("#1172: the seam declares NOTHING for a present-but-broken CLI",
+          "LINE=''" in out and "PRINTED=''" in out, out[-400:])
+    check("#1172: presence is reported usable — the seam probes presence, not health",
+          "USABLE=True" in out, out[-400:])
+    check("#1172: the real register half goes RED on the broken CLI (a real failure)",
+          reg.returncode == 2 and "failed" in (reg.stderr + reg.stdout).lower(),
+          f"rc={reg.returncode} {reg.stderr[-300:]}")
+    check("#1172: and it prints NO declared-gap line (a gap would launder the failure)",
+          coverage_gap.GAP_PREFIX not in (reg.stdout + reg.stderr), reg.stdout[-200:])
+
+
 def main() -> int:
     print("test suite identity + coverage-gap seam (#1147) — real runner, real wrapper, real make recipe")
     test_the_runner_names_the_identity_it_measured()
@@ -451,6 +503,7 @@ def main() -> int:
     test_a_declared_and_an_undeclared_line_in_one_module_are_separated()
     test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted()
     test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them()
+    test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap()
     test_the_runner_reads_the_phrases_from_the_seam_and_never_spells_them()
     test_the_runner_refuses_loudly_when_the_seam_script_is_gone()
     test_the_container_wrapper_names_and_forwards_the_invoking_identity()

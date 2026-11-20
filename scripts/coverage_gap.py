@@ -80,6 +80,26 @@ def declare_bypass_gap(guard: str, why: str) -> str:
     )
 
 
+def external_binary_usable(binary: str) -> bool:
+    """Is `binary` on PATH? Presence is PRESUMED usability (issue #1172) — the seam never runs it.
+
+    The boundary this names: `external_binary_gap` declares a half ONLY when the binary is
+    ABSENT. A binary that is PRESENT but broken — a stale install, a broken venv, a version
+    mismatch — is NOT declared: the module runs its real half and goes red with the CLI's own
+    error, which is the honest signal. A broken tool is a defect in the half that drives it, not
+    a coverage gap the verdict should absorb, and a green suite must not be able to hide one.
+
+    The probe deliberately does not EXECUTE the binary either: running an arbitrary CLI to decide
+    coverage is a side effect at import time, and it would move a real failure into the gap class
+    this seam exists to keep separate.
+    """
+    return shutil.which(binary) is not None
+
+
+#: The boundary as a named constant, so a guard can pin it rather than restate it.
+PRESENCE_IS_PRESUMED_USABLE = True
+
+
 def external_binary_gap(guard: str, binary: str | Sequence[str], why: str) -> str:
     """A guard whose half needs an EXTERNAL binary this identity does not have (issue #1154).
 
@@ -95,9 +115,12 @@ def external_binary_gap(guard: str, binary: str | Sequence[str], why: str) -> st
     declares them in ONE line, naming only the ones THIS identity lacks. The seam probes, so a
     module may call it unconditionally — when every binary is present it prints nothing and
     returns `""`, and the guard's own half runs.
+
+    PRESENCE is the only thing probed (issue #1172): a binary that IS on PATH but fails is a REAL
+    failure of the half that drives it, never a declared gap. See `external_binary_usable`.
     """
     names = [binary] if isinstance(binary, str) else list(binary)
-    missing = [b for b in names if shutil.which(b) is None]
+    missing = [b for b in names if not external_binary_usable(b)]
     if not missing:
         return ""
     listed = ", ".join(f"`{b}`" for b in missing)
