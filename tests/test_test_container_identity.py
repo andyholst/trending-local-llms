@@ -28,6 +28,8 @@ Run:  python3 tests/test_test_container_identity.py   or   make test
 
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import shutil
 import stat
@@ -347,9 +349,22 @@ def test_the_permission_half_guard_reports_through_the_seam_not_as_a_bare_skip()
 
 
 def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
-    """Issue #1154: a guard whose half needs a CLI this identity lacks declares the gap."""
-    line = coverage_gap.external_binary_gap(
-        "hermes-skills register half", "hermes", "a host `make test` has no agent CLI")
+    """Issue #1154: a guard whose half needs a CLI this identity lacks declares the gap.
+
+    The probe binary is one GUARANTEED absent (`tll-absent-cli-1171` ships nowhere): the test
+    container HAS a real `hermes`, so probing `hermes` here made this guard green on the host
+    and red in the container — an environment-dependent assertion, the very trap the seam
+    exists to remove (measured on issue #1171's branch, both checks failed in the container
+    while passing on the host). The real-`hermes` half is still driven below with `PATH` cut.
+    """
+    probe = "tll-absent-cli-1171"
+    guard = "absent-CLI half (issue #1154)"
+    # The demo call is captured: it prints a declared-gap line, and a line a guard test itself
+    # prints must NOT be counted as a gap the suite declared (issue #1173's phantom-gap class).
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        line = coverage_gap.external_binary_gap(
+            guard, probe, "a host `make test` has no agent CLI")
     check("binary gap: the line travels inside the declared-gap seam",
           line.startswith(coverage_gap.GAP_PREFIX + " ") and coverage_gap.BYPASS_PHRASE in line, line)
     with tempfile.TemporaryDirectory() as td:
@@ -359,7 +374,7 @@ def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
             "import sys\n"
             f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
             "import coverage_gap\n"
-            "coverage_gap.external_binary_gap('hermes-skills register half', 'hermes',\n"
+            f"coverage_gap.external_binary_gap({guard!r}, {probe!r},\n"
             "                                 'a host `make test` has no agent CLI')\n"
             "print('ok planted')\n"
         )
@@ -368,11 +383,11 @@ def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
     check("binary gap: the module stays green (a declared half is honest, not a failure)",
           rc == 0, out[:500])
     check("binary gap: the runner counts it and names the guard that did not run",
-          "[harness] coverage-gap 1 declared" in out and "hermes-skills register half" in out,
+          "[harness] coverage-gap 1 declared" in out and guard in out,
           out[:600])
     src = (ROOT / "tests" / "test_agent_skills.py").read_text(encoding="utf-8")
-    check("binary gap: the skills module declares the register half instead of failing on it",
-          "coverage_gap.external_binary_gap(" in src and 'shutil.which("hermes")' in src, src[:400])
+    check("binary gap: the skills module declares the register half through the seam, probing itself",
+          "coverage_gap.external_binary_gap(" in src and 'shutil.which("hermes")' not in src, src[:400])
     # The REAL module, driven with the CLI's directory stripped from PATH (rule 6m: the guard
     # runs the real code, not a stand-in): it must stay green and declare the half.
     keep = [p for p in os.environ.get("PATH", "").split(os.pathsep)
@@ -386,6 +401,47 @@ def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
           proc.stdout[-400:] + proc.stderr[-200:])
 
 
+def test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them() -> None:
+    """Issue #1171: a module driving N CLIs declares them in ONE line, naming only the missing."""
+    src = (ROOT / "scripts" / "coverage_gap.py").read_text(encoding="utf-8")
+    check("multi-binary: the seam accepts a sequence, not one name",
+          "binary: str | Sequence[str]" in src and "isinstance(binary, str)" in src, src[:300])
+    with tempfile.TemporaryDirectory() as td:
+        stub = Path(td) / "present-cli"
+        stub.write_text("#!/bin/sh\n", encoding="utf-8")
+        stub.chmod(0o755)
+        env = {**os.environ, "PATH": td + os.pathsep + os.environ.get("PATH", "")}
+        # Drive the REAL seam in a subprocess with a stub on PATH (rule 6m: the guard runs the
+        # real code, not a stand-in) — `present-cli` exists, `absent-cli` does not.
+        prog = (
+            "import sys; sys.path.insert(0, %r)\n"
+            "import coverage_gap, io, contextlib\n"
+            "buf = io.StringIO()\n"
+            "with contextlib.redirect_stdout(buf):\n"
+            "    line = coverage_gap.external_binary_gap('two-CLI half', "
+            "('present-cli', 'absent-cli'), 'a host run lacks one of them')\n"
+            "    after_first = buf.getvalue()\n"
+            "    empty = coverage_gap.external_binary_gap('all-present half', "
+            "('present-cli',), 'never declared')\n"
+            "    added = buf.getvalue()[len(after_first):]\n"
+            "print('LINE=' + line)\n"
+            "print('EMPTY=' + repr(empty))\n"
+            "print('SECOND_ADDED=' + repr(added))\n"
+        ) % str(ROOT / "scripts")
+        proc = subprocess.run([sys.executable, "-c", prog], capture_output=True, text=True,
+                              timeout=120, env=env)
+        out = proc.stdout + proc.stderr
+    check("multi-binary: one line names ONLY the missing CLI", 
+          "LINE=" in out and "`absent-cli`" in out and "`present-cli`" not in out
+          and "two-CLI half" in out, out[-500:])
+    check("multi-binary: the line travels inside the declared-gap seam",
+          coverage_gap.GAP_PREFIX in out and coverage_gap.BYPASS_PHRASE in out, out[-500:])
+    check("multi-binary: a single missing CLI keeps the singular wording",
+          "CLI is not on PATH" in out or "CLIs are not on PATH" in out, out[-500:])
+    check("multi-binary: every binary present declares NOTHING and returns ''",
+          "EMPTY=''" in out and "SECOND_ADDED=''" in out, out[-500:])
+
+
 def main() -> int:
     print("test suite identity + coverage-gap seam (#1147) — real runner, real wrapper, real make recipe")
     test_the_runner_names_the_identity_it_measured()
@@ -394,6 +450,7 @@ def main() -> int:
     test_a_bypass_that_never_declared_its_gap_turns_the_runner_red()
     test_a_declared_and_an_undeclared_line_in_one_module_are_separated()
     test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted()
+    test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them()
     test_the_runner_reads_the_phrases_from_the_seam_and_never_spells_them()
     test_the_runner_refuses_loudly_when_the_seam_script_is_gone()
     test_the_container_wrapper_names_and_forwards_the_invoking_identity()
