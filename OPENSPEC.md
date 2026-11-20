@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **371**
+Active changes: **2** · archived: **372**
 
 ## Active changes
 
@@ -308,6 +308,7 @@ Active changes: **2** · archived: **371**
 | `rebaser-failures-announced-on-pr-thread` | archived | #964 | #1076 | [pr-health-rebase-announcements](openspec/changes/archive/rebaser-failures-announced-on-pr-thread/specs/pr-health-rebase-announcements/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/rebaser-failures-announced-on-pr-thread/proposal.md) |
 | `rebuild-decision` | archived | #208 | — | [rebuild-decision](openspec/changes/archive/rebuild-decision/specs/rebuild-decision/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/rebuild-decision/proposal.md) |
 | `recheck-before-the-agent` | archived | #522 | — | [issue-implementer](openspec/changes/archive/recheck-before-the-agent/specs/issue-implementer/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/recheck-before-the-agent/proposal.md) |
+| `record-human-owned-index-ruling` | archived | #1089 | #1165 | [auto-merge-index-partition](openspec/changes/archive/record-human-owned-index-ruling/specs/auto-merge-index-partition/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/record-human-owned-index-ruling/proposal.md) |
 | `record-the-pr-on-a-change` | archived | #518 — `tech-debt: Most active OpenSpec changes carry no PR reference, so the lifecycle guard cannot see them` | #753 | [change-lifecycle](openspec/changes/archive/record-the-pr-on-a-change/specs/change-lifecycle/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/record-the-pr-on-a-change/proposal.md) |
 | `red-run-and-repair-path` | archived | #558 | — | [red-run-and-repair-path](openspec/changes/archive/red-run-and-repair-path/specs/red-run-and-repair-path/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/red-run-and-repair-path/proposal.md) |
 | `rediagnose-aggregate-cancel-823` | archived | #823 | #983 | [alarms](openspec/changes/archive/rediagnose-aggregate-cancel-823/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rediagnose-aggregate-cancel-823/proposal.md) |

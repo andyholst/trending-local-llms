@@ -1059,7 +1059,16 @@ issue that skips a section is refused.
      RED by definition (issue #476).
    - **A bot PR is repaired by the sweep — rebase and push (issue #818); a
      human's branch is only reported** (comment, never pushed to) — the same
-     ownership partition `pr_health` has always kept.
+     ownership partition `pr_health` has always kept. **The partition is a RULED
+     DECISION, not an accident (issue #1089, ruled 2026-11-20): it STAYS.**
+     `make auto-merge-rebase` therefore keeps returning `human-owned` report-only
+     for a behind human branch, the squash carries that branch's cut-time
+     `OPENSPEC.md`, and the DECLARED REPAIR for the residual stale index is the
+     event-driven index keeper of §6q (`qa-validate index-repair` +
+     `architecture-bot`) — never a rebase of a branch only its author can resolve
+     conflicts in. The alternative (regenerating the index for human-owned
+     branches too, rewriting a human's branch) was considered and refused: it
+     would force-push a branch only its author can resolve conflicts in.
    - The sweep runs at the START of an implementation run AND again before
      arming a PR for auto-merge: "green when I pushed" is not a state, it is a
      moment; a PR is only armable while it is green AND mergeable at that moment.
