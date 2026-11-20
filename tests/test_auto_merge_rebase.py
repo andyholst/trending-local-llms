@@ -477,15 +477,30 @@ def test_classification_is_pure_and_partitions():
 #: (issue #1115) a stub `gh` for the ghost-run alarm: `run list` answers from $FAKE_RUNS,
 #: `run view <id>` answers from $FAKE_JOBS_DIR/<id>.json; a `run list` that fails ($GH_FAIL=1)
 #: stands for a broken GitHub read. Every argv is recorded so the request construction is pinned.
+#: (issue #1158) every `--json` REQUEST is validated through the REAL field contract
+#: (scripts/gh_json_fields.py): the stub can no longer answer a query the real gh would refuse,
+#: which is exactly how `htmlUrl` stayed green for the whole life of the alarm.
 STUB_GH_RUNS = """#!/bin/sh
 echo "gh $*" >> "$GH_LOG"
 if [ -n "$GH_FAIL" ]; then echo "gh: could not read runs" >&2; exit 1; fi
+for arg in "$@"; do
+  case "$prev" in
+    --json) "$PYTHON" "$GH_FIELD_CONTRACT" --check-argv "gh $*" >/dev/null || {
+      echo "Unknown JSON field: $arg (stub gh refuses what the real gh refuses)" >&2
+      exit 1
+    } ;;
+  esac
+  prev="$arg"
+done
 case "$1 $2" in
   "run list") cat "$FAKE_RUNS" ;;
   "run view") cat "$FAKE_JOBS_DIR/$3.json" ;;
   *) echo "unexpected gh: $*" >&2; exit 3 ;;
 esac
 """
+
+
+GHOST_GH_LOGS: list[str] = []
 
 
 def _run_ghost_alarm(runs: list[dict], jobs: dict, *, window_hours: int | None = None,
@@ -502,7 +517,7 @@ def _run_ghost_alarm(runs: list[dict], jobs: dict, *, window_hours: int | None =
         r.setdefault("workflowName", "qa-validate.yml")
         r.setdefault("name", "qa-validate")
         r.setdefault("createdAt", ts(1 + i))
-        r.setdefault("htmlUrl", f"https://github.com/o/r/actions/runs/{r['databaseId']}")
+        r.setdefault("url", f"https://github.com/o/r/actions/runs/{r['databaseId']}")
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         (td / "gh").write_text(STUB_GH_RUNS)
@@ -514,13 +529,23 @@ def _run_ghost_alarm(runs: list[dict], jobs: dict, *, window_hours: int | None =
             (jobs_dir / f"{rid}.json").write_text(json.dumps(payload))
         env = {**GIT_ENV, "PATH": f"{td}:{os.environ['PATH']}",
                "FAKE_RUNS": str(td / "runs.json"), "FAKE_JOBS_DIR": str(jobs_dir),
-               "GH_LOG": str(td / "gh.log")}
+               "GH_LOG": str(td / "gh.log"),
+               # (issue #1158) the stub validates each --json request through the real seam.
+               "PYTHON": sys.executable,
+               "GH_FIELD_CONTRACT": str(ROOT / "scripts" / "gh_json_fields.py")}
         if fail:
             env["GH_FAIL"] = "1"
         cmd = [sys.executable, str(ROOT / "scripts" / "ghost_run_alarm.py"), "--repo", "o/r"]
         if window_hours is not None:
             cmd += ["--window-hours", str(window_hours)]
-        return subprocess.run(cmd, capture_output=True, text=True, env=env)
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        # (issue #1158) the argv the alarm ACTUALLY built is part of the evidence: every stub
+        # call from this run is appended for the test to read (the temp dir is gone by then).
+        try:
+            GHOST_GH_LOGS.append((td / "gh.log").read_text())
+        except OSError:
+            GHOST_GH_LOGS.append("")
+        return proc
 
 
 def test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it():
@@ -595,8 +620,12 @@ def test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs():
         {"databaseId": 6, "headBranch": "ci/f", "headSha": "f" * 40,
          "status": "completed", "conclusion": "action_required", "createdAt": old_ts},
     ]
-    jobs = {1: [], 2: [{"id": 90, "status": "completed", "conclusion": "success"}],
-            3: [], 4: [], 5: []}
+    # (issue #1158) gh's OWN answer shapes are planted: `run list --json` is an ARRAY,
+    # `run view --json jobs` is the OBJECT {"jobs": […]}. A seam that read either as `[]`
+    # made every completed run look like a ghost (measured live: 50 false ghosts in 168h).
+    jobs = {1: {"jobs": []},
+            2: {"jobs": [{"id": 90, "status": "completed", "conclusion": "success"}]},
+            3: {"jobs": []}, 4: {"jobs": []}, 5: {"jobs": []}}
     proc = _run_ghost_alarm([dict(r) for r in runs], jobs)
     out = proc.stdout + proc.stderr
     check("ghost alarm exits 1 (the sweep goes RED, not quiet)", proc.returncode == 1, out[:300])
@@ -611,6 +640,12 @@ def test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs():
           "runs/6" not in out, out[:300])
     check("the remedy is named (owner-PAT re-push), the alarm fixes nothing itself",
           "owner-PAT" in out or "owner PAT" in out or "REBASE=1" in out, out[-300:])
+    asked = GHOST_GH_LOGS[-1] if GHOST_GH_LOGS else ""
+    check("(issue #1158) the request the alarm ACTUALLY built asks for `url`, never `htmlUrl`",
+          "--json databaseId,workflowName,name,headBranch,headSha,status,conclusion,createdAt,url"
+          in asked and "htmlUrl" not in asked, asked[:300])
+    check("(issue #1158) the ghost line prints the url gh answered",
+          "https://github.com/o/r/actions/runs/1" in out, out[:300])
 
     clean = _run_ghost_alarm([dict(runs[1])], jobs)
     check("a green planted queue exits 0", clean.returncode == 0, clean.stdout[:200])
@@ -620,6 +655,56 @@ def test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs():
 
     check("ghost_verdict is pure (rule 6d): action_required + zero jobs is a ghost",
           __import__("pr_health") and _ghost_verdict_check(), "")
+
+
+def test_the_ghost_alarm_refuses_a_gh_answer_of_the_wrong_shape():
+    """(issue #1158, measured live) the jobs read is a CONTRACT, not a best-effort parse: gh
+    answers `run view --json jobs` with the OBJECT {"jobs": […]}. A seam that answered `[]` for
+    anything it did not recognise made EVERY completed run look like a ghost — the fixed alarm
+    printed 50 false ghosts on this repository before its own answer-shape check landed. A wrong
+    shape must be a loud exit 2, never a verdict."""
+    ghost_run = {"databaseId": 11, "headBranch": "ci/g", "headSha": "g" * 40,
+                 "status": "completed", "conclusion": "success"}
+    no_jobs_key = _run_ghost_alarm([dict(ghost_run)], {11: {"workflows": []}})
+    out1 = no_jobs_key.stdout + no_jobs_key.stderr
+    check("a jobs answer with no 'jobs' array is a READ FAILED exit 2, not a ghost verdict",
+          no_jobs_key.returncode == 2 and "READ FAILED" in out1 and "jobs" in out1, out1[:240])
+    check("that run is NOT reported as a ghost", "runs/11 " not in out1, out1[:240])
+
+    array_answer = _run_ghost_alarm([dict(ghost_run, databaseId=12)], {12: []})
+    out2 = array_answer.stdout + array_answer.stderr
+    check("an ARRAY where gh answers an OBJECT is also a loud exit 2",
+          array_answer.returncode == 2 and "READ FAILED" in out2, out2[:240])
+
+    honest = _run_ghost_alarm([dict(ghost_run, databaseId=13)], {13: {"jobs": []}})
+    check("a REAL zero-jobs answer is still flagged as the ghost it is",
+          honest.returncode == 1 and "runs/13" in honest.stdout and "jobs=0" in honest.stdout,
+          honest.stdout[:240])
+
+
+def test_a_missing_gh_is_a_loud_read_failure_not_a_traceback():
+    """(issue #1158, measured on a host whose PATH lacked /opt/homebrew/bin) the alarm calls
+    `gh` through subprocess; when gh is not runnable the sweep must get the loud
+    `READ FAILED (exit 2)` line, not a Python traceback it cannot grade."""
+    import shutil
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        bindir = td / "bin"
+        bindir.mkdir()
+        link = bindir / "python3"
+        link.symlink_to(shutil.which("python3"))
+        env = {**GIT_ENV, "PATH": str(bindir),
+               "FAKE_RUNS": str(td / "runs.json"), "FAKE_JOBS_DIR": str(td),
+               "GH_FIELD_CONTRACT": str(ROOT / "scripts" / "gh_json_fields.py"),
+               "PYTHON": str(link)}
+        (td / "runs.json").write_text("[]")
+        proc = subprocess.run(
+            [str(link), str(ROOT / "scripts" / "ghost_run_alarm.py"), "--repo", "o/r"],
+            capture_output=True, text=True, env=env)
+        out = proc.stdout + proc.stderr
+        check("no gh on PATH -> exit 2 with the READ FAILED line (no traceback)",
+              proc.returncode == 2 and "READ FAILED" in out and "Traceback" not in out,
+              out[:300])
 
 
 def _ghost_verdict_check() -> bool:
@@ -684,6 +769,8 @@ def main():
         # (issue #1115) the push-identity fix and the ghost-run alarm it pairs with.
         test_rebase_push_carries_the_owner_pat_identity_when_the_step_provides_it,
         test_ghost_alarm_flags_completed_pr_runs_with_zero_jobs,
+        test_the_ghost_alarm_refuses_a_gh_answer_of_the_wrong_shape,
+        test_a_missing_gh_is_a_loud_read_failure_not_a_traceback,
         test_ghost_run_and_push_identity_wiring,
     ]
     for t in tests:

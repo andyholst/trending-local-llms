@@ -26,21 +26,53 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gh_json_fields  # noqa: E402  (the ONE gh --json field contract — rule 6d)
+
 WORKFLOW = "qa-validate.yml"
 WINDOW_HOURS_DEFAULT = 168  # a week: every open PR's newest run stays visible to the sweep
-RUNS_JSON = ("databaseId,workflowName,name,headBranch,headSha,status,conclusion,"
-             "createdAt,htmlUrl")
+# Built through the ONE gh field contract (issue #1158): gh's run link field is `url`, and a
+# field gh cannot answer here refuses the BUILD of this alarm instead of its read.
+RUNS_JSON = gh_json_fields.request(
+    "run list",
+    "databaseId,workflowName,name,headBranch,headSha,status,conclusion,createdAt,url",
+)
 
 
-def _gh_json(repo: str, *args: str) -> list:
-    r = subprocess.run(["gh", *args, "--repo", repo], capture_output=True, text=True)
+def _gh_json(repo: str, *args: str, expect: str = "array") -> list:
+    """One seam for the alarm's gh reads (rule 6d): the argv is validated against the field
+    contract BEFORE gh is called (issue #1158), and the ANSWER's shape is checked too. gh answers
+    `run list --json …` with an ARRAY and `run view --json jobs` with an OBJECT `{"jobs": […]}`;
+    an answer that is neither is a loud failure, never a silent `[]` that makes every run look
+    like a ghost."""
+    problems = gh_json_fields.check_argv(list(args))
+    if problems:
+        raise RuntimeError("gh --json asks for a field gh cannot answer: "
+                           + "; ".join(problems) + " (scripts/gh_json_fields.py, issue #1158)")
+    try:
+        r = subprocess.run(["gh", *args, "--repo", repo], capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        # A missing `gh` is a failed READ (exit 2, READ FAILED), never a traceback on the sweep.
+        raise RuntimeError(f"gh is not runnable: {exc}") from exc
     if r.returncode != 0:
         raise RuntimeError(f"gh {' '.join(args[:3])} failed: {r.stderr.strip()[:200]}")
     data = json.loads(r.stdout)
-    return data if isinstance(data, list) else []
+    if not isinstance(data, (list, dict)):
+        raise RuntimeError(f"gh {' '.join(args[:2])} answered "
+                           f"{type(data).__name__}, not JSON the alarm can read")
+    if expect == "array":
+        if isinstance(data, list):
+            return data
+        raise RuntimeError(f"gh {' '.join(args[:2])} answered a "
+                           f"{type(data).__name__}, not the array the alarm reads")
+    if isinstance(data, dict) and isinstance(data.get(expect), list):
+        return data[expect]
+    raise RuntimeError(f"gh {' '.join(args[:2])} answered no '{expect}' array "
+                       f"(got {type(data).__name__})")
 
 
 def recent_pr_runs(repo: str, workflow: str = WORKFLOW, limit: int = 50) -> list[dict]:
@@ -49,7 +81,7 @@ def recent_pr_runs(repo: str, workflow: str = WORKFLOW, limit: int = 50) -> list
 
 
 def jobs_of(repo: str, run_id) -> list[dict]:
-    return _gh_json(repo, "run", "view", str(run_id), "--json", "jobs")
+    return _gh_json(repo, "run", "view", str(run_id), "--json", "jobs", expect="jobs")
 
 
 def ghost_verdict(run: dict, jobs: list) -> bool:
@@ -90,7 +122,7 @@ def render(rows: list[dict], repo: str, window_hours: int) -> str:
     lines = [f"[ghost-run-alarm] FAIL {repo}: {len(rows)} GHOST {WORKFLOW} run(s) — "
              f"a pull_request pipeline that never ran a single job:"]
     for g in rows:
-        lines.append(f"  {g.get('htmlUrl')} conclusion={g.get('conclusion')} jobs={g['jobs']} "
+        lines.append(f"  {g.get('url')} conclusion={g.get('conclusion')} jobs={g['jobs']} "
                      f"head={g.get('headBranch')} age={g['age_hours']}h")
     lines.append("  A ghost means `gh pr checks` says `no checks reported` and auto-merge is "
                  "UNSTABLE: the PR's validation can never arrive. Remedy (issue #1115): re-push "
