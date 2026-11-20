@@ -1,6 +1,7 @@
 # declared-coverage-external-binary — a module declares the half that needs a CLI this identity lacks
 
 Issue: #1154
+PR: #1168
 
 ## Why
 
