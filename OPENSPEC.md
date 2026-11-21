@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **388**
+Active changes: **1** · archived: **388**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `fleet-lifecycle-divergence-gate` | active | #1209 — "fleet: the issue owns the PR→reviewer handover, and host lane behaviour is checked against fetched master (CI too)" | — | [fleet-lifecycle](openspec/changes/fleet-lifecycle-divergence-gate/specs/fleet-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/fleet-lifecycle-divergence-gate/proposal.md) |
 
 ## Archived changes
 

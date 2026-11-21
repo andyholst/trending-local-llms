@@ -1571,6 +1571,21 @@ _free-model-refresh-pr-body:
 free-model-refresh-pr-body: ## Print the free-model-refresh keeper PR body — no closing keyword, it records the read (RUN_URL=…; issue #1195)
 	@$(MAKE) --no-print-directory _free-model-refresh-pr-body RUN_URL="$(RUN_URL)"
 
+# ---- fleet lifecycle / fetched-base divergence gate (issue #1209) -----------
+# The issue thread is the ONE shared board. After fetching upstream master, every
+# host proves its lane bytes and the AGENTS.md lifecycle rules still match that
+# FETCHED base before taking an issue. BASE defaults to origin/master; CI passes
+# BASE=HEAD with PROFILES_HOME=agents (the repo tree), which exercises the same
+# seam without needing a host profile home.
+FLEET_SYNC_ARGS := $(if $(BASE),--base $(BASE),--base origin/master)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)$(if $(EXPECT_REF), --expect-ref $(EXPECT_REF),)
+
+.PHONY: _fleet-host-sync-check fleet-host-sync-check
+_fleet-host-sync-check:
+	python3 scripts/fleet_host_sync_check.py$(if $(FLEET_SYNC_ARGS), $(FLEET_SYNC_ARGS),)
+
+fleet-host-sync-check: ## Refuse a host fleet whose lane bytes / AGENTS.md lifecycle rules drift from the fetched base (BASE=origin/master, PROFILES_HOME=..., issue #1209)
+	@$(MAKE) --no-print-directory _fleet-host-sync-check
+
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
 # `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements
