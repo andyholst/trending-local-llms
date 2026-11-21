@@ -24,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 GUIDE_HEADING = "## ⚙️ Inference engine / server guide"
+MATRIX_HEADING = "## 🧭 Which inference engine runs what"
 ROW = re.compile(r"^\|\s*\[([^\]]+)\]\(([^)]*)\)\s*\|", re.MULTILINE)
 
 
@@ -37,6 +38,23 @@ def guide_engines(readme: str) -> list[str]:
     return [m.group(1).strip() for m in ROW.finditer(section)]
 
 
+def matrix_engines(readme: str) -> list[str]:
+    """Engine columns of the `🧭 Which inference engine runs what` matrix — the
+    second reader-facing server list, built from the same measured engines."""
+    i = readme.find(MATRIX_HEADING)
+    if i < 0:
+        return []
+    j = readme.find("\n## ", i + len(MATRIX_HEADING))
+    section = readme[i:j if j > 0 else len(readme)]
+    header = next((l for l in section.splitlines() if l.startswith("| Model |")), "")
+    out = []
+    for cell in header.split("|")[2:-1]:
+        m = re.match(r"\s*\[([^\]]+)\]", cell)
+        if m:
+            out.append(m.group(1).strip())
+    return out
+
+
 def measured_engines(measurements: dict) -> set[str]:
     """Engines that actually carry a t/s figure: {model_id: [measurement, ...]}."""
     used = set()
@@ -47,7 +65,8 @@ def measured_engines(measurements: dict) -> set[str]:
     return used
 
 
-def problems(guide: list[str], registry: dict, measured: set[str]) -> list[str]:
+def problems(guide: list[str], registry: dict, measured: set[str],
+             matrix: list[str] | None = None) -> list[str]:
     """Named, actionable drift findings. Empty means the guide is current."""
     out = []
     reg = set(registry or {})
@@ -62,6 +81,14 @@ def problems(guide: list[str], registry: dict, measured: set[str]) -> list[str]:
         out.append(f"engine {name!r} has measurements but is NOT registered in the store")
     for name in sorted(measured - listed):
         out.append(f"engine {name!r} is measured but MISSING from the README guide")
+    if matrix is not None:
+        if not matrix:
+            out.append("the README has no engine matrix (render it with --render-only)")
+        cols = set(matrix)
+        for name in sorted(measured - cols):
+            out.append(f"engine {name!r} is measured but MISSING from the README engine matrix")
+        for name in sorted(cols - measured):
+            out.append(f"engine {name!r} is a stale column in the README engine matrix")
     return out
 
 
@@ -72,11 +99,13 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     data = Path(a.data)
     readme = Path(a.readme)
+    readme_text = readme.read_text()
     store = json.loads((data / "models.json").read_text())
-    guide = guide_engines(readme.read_text())
+    guide = guide_engines(readme_text)
+    matrix = matrix_engines(readme_text)
     measurements = json.loads((data / "measurements.json").read_text()) \
         if (data / "measurements.json").exists() else {}
-    found = problems(guide, store.get("engines") or {}, measured_engines(measurements))
+    found = problems(guide, store.get("engines") or {}, measured_engines(measurements), matrix)
     if found:
         print(f"[engine-guide-check] FAIL {len(found)} drift finding(s):")
         for line in found:
@@ -84,8 +113,9 @@ def main(argv: list[str] | None = None) -> int:
         print("  Fix: python3 scripts/update_trending.py --render-only (then commit README.md)")
         return 1
     print(f"[engine-guide-check] OK: {len(guide)} guide row(s) match "
-          f"{len(store.get('engines') or {})} registry engine(s) and "
-          f"{len(measured_engines(measurements))} measured engine(s)")
+          f"{len(store.get('engines') or {})} registry engine(s), "
+          f"{len(measured_engines(measurements))} measured engine(s) and "
+          f"{len(matrix)} engine-matrix column(s)")
     return 0
 
 
