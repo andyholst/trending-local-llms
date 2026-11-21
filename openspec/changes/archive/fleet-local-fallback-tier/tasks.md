@@ -16,4 +16,4 @@
 - [~] Full suite (`make test`) green on the PR head — blocked: qa-validate runs it after push; on the host the two affected modules are green (84 + 55 checks, 0 failures) and every new refusal was proved red on the pre-change seam
 - [x] `make openspec-check` green (index regenerated, binding, backlog)
 - [x] Provision every host home from the rendered chain: `make agent-profile-provision ALL=1 PROFILE=<22 non-lane homes>,default` with `NOUS_API_KEY` exported by NAME — 7 lanes + 23 merges, 30 backups kept; read-back verified all 30 homes carry the rendered `model:`/`model_aliases:`/`fallback_providers:` blocks byte-for-byte with the free primary as default
-- [ ] PR opened (five-section body, single `closes #1192`), `make pr-message-check` green, `make openspec-record-pr ISSUE=1192 PR=<n>` so the archive sits at the PR head
+- [x] PR opened (#1197, five-section body, single `closes #1192`), `make pr-message-check` green, `make openspec-record-pr ISSUE=1192 PR=1197` so the archive sits at the PR head
