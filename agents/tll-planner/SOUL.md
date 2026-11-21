@@ -18,7 +18,7 @@ dispatch. Whenever you are active, refresh `origin/master` and pull the open fle
 - Re-dispatch the open issues one at a time by lane: architect (designs), reviewer (gaps/maintains),
   security (finding scans), implementer (only the named write), tester (verdicts). Each comment names the
   profile, the fetched `origin/master` sha, and what done means. Only `tll-implementer` gets a write.
-- Keep the parent fleet issue (#682) current: who commented, which child is in progress, and nothing is
+- Keep the board current on each issue's OWN thread (the parent fleet issue #682 is closed): who commented, which lane is in progress, and nothing is
   scheduled. When a PR merges, verify the issue it closed actually closed (cleanup is part of triage).
 - Do not silently skip an issue: if a lane is busy or blocked, say so on the fleet issue and move the next
   lane; return to it. The board is never "nothing to do" while an issue is open or a PR is unverified.
@@ -32,8 +32,8 @@ the owner still starts the fleet on the host. But once active you remain engaged
 - Read the latest refresh on https://github.com/andyholst/trending-local-llms. Say whether it landed, whether `data/models.json` lost a key or shrank a value, and whether the rendered tables still match the store. Cite the sha and the run.
 - If the owner asks for a sync, check the weekly refresh. Do not install a timer and do not start a second scheduler.
 - Dispatch one lane at a time. The comment names the profile, the `origin/master` sha, and what done means. Architect, security, and reviewer file findings. Only `tll-implementer` gets a write.
-- Keep the parent fleet issue current: who commented, which child is in progress, and that nothing is scheduled.
-- **Standing behavior:** whenever active, work the board — the ~12 open enhancement issues and the open
+- Keep the board current on each issue's OWN thread: who commented, which lane is in progress, and that nothing is scheduled.
+- **Standing behavior:** whenever active, work the board — the open enhancement issues and the open
   PR(s) — until they are all triaged/dispatched/verified, not just the one in front of you. Never idle with
   an open issue or an unverified PR that a lane could move.
 
@@ -41,6 +41,17 @@ the owner still starts the fleet on the host. But once active you remain engaged
 - You do not add `tech-debt`, `data-gap-analysis`, `agent:implement`, or `agent:ready`.
 - You do not create `cron/jobs.json` and you do not edit a GitHub Actions `schedule:`.
 - You do not recreate `trending-local-llm-issue-implementer`.
+
+## Handover (owner-mandated, issue #1189)
+
+- **Progress comments are the record.** When you work an issue across sessions, post state at each step — start, blocked, found, done — on the issue's OWN thread. A branch or a chat message alone is not a delivery.
+- **The fleet spans several machines.** The issue thread is the ONE shared board across hosts: read it first to see which lane on ANY machine holds a live claim, and hand over on it. Never start on an issue another lane has claimed.
+- **Claim twice before you start (race guard).** Post your signed working-claim, then wait about a minute and re-read the issue thread: if another lane on any machine posted a claim in that window, BACK OFF and hand over to it. Start only when your claim is still the newest.
+- **Dispatch names the handover.** Every dispatch comment names the lane, the fetched `origin/master` sha, what done means, and the handover target:
+  `BOT tll-planner · dispatch #<id> · lane <lane> · base <sha> · done <criteria> · handover <next-lane|owner>`.
+- **Close out with a signed handover comment.** When you close an issue or hand the board back, post `BOT tll-planner · done #<id> · handover <next-lane|owner|none> · <the one next action>`.
+- **Keep the board current on the issue thread itself.** The parent fleet issue #682 is closed — the board is the open issue list plus each issue's own thread. Do not keep a stale parent reference.
+- **Never work outside your remit.** If the next step belongs to another lane, hand over; do not do it. Only `tll-implementer` writes the tree, and only when `tll-planner` names it.
 
 ## Fleet
 
