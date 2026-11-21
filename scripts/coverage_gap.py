@@ -21,8 +21,11 @@ strings here and never re-spell them):
 
 * `IDENTITY_PREFIX` / `identity_line()` — the line `scripts/run_tests.sh` prints, naming the uid
   the suite actually measured and the uid that invoked `make test`.
-* `GAP_PREFIX` — the line a guard prints when a filesystem state it planted is NOT honoured, so
-  the verdict names the half that ran and the half that could not.
+* `GAP_PREFIX` / `announce()` — the line a guard announces when a half could not run, so the
+  verdict names the half that ran and the half that could not. The builders BUILD and RETURN the
+  line; `announce` is the seam's ONLY print of it (issue #1173: a builder that prints makes every
+  call site — including a guard test's own demo — leak a phantom gap into the runner's count,
+  measured as `coverage-gap 2 declared` in a container that legitimately declared zero).
 * `BYPASS_PHRASE` — the phrase the runner hunts for in a module's output: a bypass reported WITHOUT
   the `GAP_PREFIX` seam is a refusal, because a silent half-coverage is the defect.
 """
@@ -60,10 +63,23 @@ def identity_line() -> str:
 
 
 def declare_gap(guard: str, reason: str) -> str:
-    """Print the ONE declared-coverage-gap line and return it."""
-    line = f"{GAP_PREFIX} {guard}: {reason}"
+    """Build the ONE declared-coverage-gap line and RETURN it — printing nothing (issue #1173).
+
+    A builder that prints makes every call site print, including a guard test's own demonstration
+    (issue #1173's phantom: `coverage-gap 2 declared` from two demo calls, in a container whose
+    real halves declared nothing). Announce the returned line when the gap is REAL:
+    `announce(declare_gap(...))`.
+    """
+    return f"{GAP_PREFIX} {guard}: {reason}"
+
+
+def announce(line: str) -> None:
+    """The seam's ONLY print of a gap line — the only path onto the runner's stream (issue #1173).
+
+    A guard whose half did not run announces; a call that merely builds is invisible to the
+    verdict. This is what makes `coverage-gap N declared` mean exactly N real declarations.
+    """
     print(line)
-    return line
 
 
 def declare_bypass_gap(guard: str, why: str) -> str:
@@ -71,7 +87,8 @@ def declare_bypass_gap(guard: str, why: str) -> str:
 
     The `BYPASS_PHRASE` travels INSIDE the declared line on purpose: the runner can then tell a
     bypass that named its coverage gap (green, reported) from a bypass that only printed a SKIP
-    (red), because the difference is the GAP_PREFIX on the line, not the wording.
+    (red), because the difference is the GAP_PREFIX on the line, not the wording. The line is
+    RETURNED quietly — the guard announces it when the bypass is REAL (issue #1173).
     """
     return declare_gap(
         guard,
@@ -113,8 +130,9 @@ def external_binary_gap(guard: str, binary: str | Sequence[str], why: str) -> st
 
     `binary` is ONE name or a SEQUENCE of them (issue #1171): a module that drives several CLIs
     declares them in ONE line, naming only the ones THIS identity lacks. The seam probes, so a
-    module may call it unconditionally — when every binary is present it prints nothing and
-    returns `""`, and the guard's own half runs.
+    module may call it unconditionally — when every binary is present it returns `""`, and the
+    guard's own half runs. When a binary IS missing the guard ANNOUNCES the returned line
+    (issue #1173): the builder itself prints nothing.
 
     PRESENCE is the only thing probed (issue #1172): a binary that IS on PATH but fails is a REAL
     failure of the half that drives it, never a declared gap. See `external_binary_usable`.

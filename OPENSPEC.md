@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **379**
+Active changes: **1** · archived: **381**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
-| `weekly-security-scan` | active | #715 | — | [weekly-security-scan](openspec/changes/weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/weekly-security-scan/proposal.md) |
 
 ## Archived changes
 
@@ -63,6 +62,7 @@ Active changes: **2** · archived: **379**
 | `2026-11-14-rulebook-names-every-pipeline` | archived | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/proposal.md) |
 | `2026-11-14-storage-offload-needs-a-medium` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/proposal.md) |
 | `2026-11-14-weekly-cadence-wednesday` | archived | — | — | [fleet-cadence](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/proposal.md) |
+| `2026-11-21-weekly-security-scan` | archived | #715 | — | [weekly-security-scan](openspec/changes/archive/2026-11-21-weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/archive/2026-11-21-weekly-security-scan/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
 | `a-judged-dimension-stays-closed` | archived | #491 | — | [data-gap-analysis](openspec/changes/archive/a-judged-dimension-stays-closed/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/a-judged-dimension-stays-closed/proposal.md) |
@@ -144,6 +144,7 @@ Active changes: **2** · archived: **379**
 | `context-benchmark-points-not-windows` | archived | #1017 | #1075 | [data-gap-analysis](openspec/changes/archive/context-benchmark-points-not-windows/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/context-benchmark-points-not-windows/proposal.md) |
 | `context-tokens-ingest-traceable` | archived | #991 — "data-gap: context_tokens (69 models) (2026-11-15)" | #1012 | [context-tokens-ingest](openspec/changes/archive/context-tokens-ingest-traceable/specs/context-tokens-ingest/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/context-tokens-ingest-traceable/proposal.md) |
 | `correct-raw-diagnoses-a-missing-hf` | archived | #382 | — | [raw-snapshot-quarantine](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/specs/raw-snapshot-quarantine/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/correct-raw-diagnoses-a-missing-hf/proposal.md) |
+| `coverage-gap-builders-announce` | archived | #1173 | #1187 | [coverage-gap-announce](openspec/changes/archive/coverage-gap-builders-announce/specs/coverage-gap-announce/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/coverage-gap-builders-announce/proposal.md) |
 | `coverage-gap-multi-binary` | archived | #1171 | #1178 | [coverage-gap-multi-binary](openspec/changes/archive/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/coverage-gap-multi-binary/proposal.md) |
 | `coverage-gap-present-broken` | archived | #1172 | #1180 | [coverage-gap-present-broken](openspec/changes/archive/coverage-gap-present-broken/specs/coverage-gap-present-broken/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/coverage-gap-present-broken/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |

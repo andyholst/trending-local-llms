@@ -3,6 +3,8 @@
 **Issue:** [#715](https://github.com/andyholst/trending-local-llms/issues/715) · holder **#741** (#715 Slice 1)
 **Capability:** `weekly-security-scan`
 
+Binding-exempt: keeper — archive repair named by `make openspec-archive-check` on every open PR: issue #715 closed with no `PR:` line ever recorded, so this ACTIVE change reds the lifecycle gate repo-wide until it is archived (rules 6f/#513/#779); the archive moves no code and closes no issue.
+
 ## Why
 
 The repo runs many third-party tools as pinned container images (gitleaks, and

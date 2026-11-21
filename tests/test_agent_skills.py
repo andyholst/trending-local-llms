@@ -211,13 +211,16 @@ def test_setup_registers_the_directory_and_reads_it_back():
     # does not have (no agent may dispatch a pipeline). That half is declared through the
     # coverage-gap seam — the runner names it in the verdict and the module stays green —
     # instead of going red with the CLI's own "not on PATH" message and a FileNotFoundError.
-    # The seam PROBES (issue #1171): it prints and returns the line only when `hermes` is
-    # absent, so this module keeps no `which` of its own and the declaration is one place.
-    if coverage_gap.external_binary_gap(
+    # The seam PROBES (issue #1171): it returns the line only when `hermes` is absent, so this
+    # module keeps no `which` of its own and the declaration is one place. The builders are
+    # QUIET (issue #1173): this half announces the line because the half really did not run.
+    gap_line = coverage_gap.external_binary_gap(
         "hermes-skills register half",
         "hermes",
         "a host `make test` has no agent CLI; the container run drives the real one",
-    ):
+    )
+    if gap_line:
+        coverage_gap.announce(gap_line)
         return
     script = ROOT / "scripts" / "hermes_skills_register.py"
     with temp_hermes_home() as td:
@@ -481,12 +484,13 @@ def test_a_temp_home_that_never_becomes_removable_is_a_loud_failure_not_an_ignor
         # (issue #1147) this line used to be a bare SKIP inside a module that exited 0: measured in
         # qa-validate run 44551541279, a green suite over a plant the container's uid 0 walked
         # straight through. A bypass now travels INSIDE the declared gap seam, so the runner names
-        # it in the verdict instead of losing it in a passing module's deleted output.
-        coverage_gap.declare_bypass_gap(
+        # it in the verdict instead of losing it in a passing module's deleted output. The builder
+        # returns quietly (issue #1173); this half announces because the bypass is REAL here.
+        coverage_gap.announce(coverage_gap.declare_bypass_gap(
             "teardown permission half",
             "TEST_RUN runs the container as the image's default user; DAC_OVERRIDE walks a "
             "mode-0o000 dir; half 1 (the tree that never becomes removable) still locks its contract",
-        )
+        ))
         remove_hermes_home(td, attempts=3, delay=0.01)
         check("teardown: a privilege-bypassed plant is still removed", not td.exists(), str(td))
         return

@@ -14,6 +14,14 @@ Two measured states this change exists for:
    cleanly by uid 0 and the guard then died on its own cleanup `chmod`. A green run carried a
    half-covered guard and the verdict said nothing about it.
 
+3. (issue #1173) the builders BUILD and RETURN the gap line; `coverage_gap.announce` is the seam's
+   ONLY print of it. Measured in the test container: the real container has `hermes` on PATH, so
+   `tests/test_agent_skills.py` declared nothing legitimately, yet `make test` answered
+   `coverage-gap 2 declared` — two PHANTOM gaps printed by the builders themselves at demo call
+   sites. A builder that prints makes every call site — including a guard test's own demonstration
+   — leak a gap into the runner's count, so the phantom class is removed AT THE SEAM: a call that
+   never announced declares nothing, and a real half must announce to be counted.
+
 The contract now: `scripts/coverage_gap.py` defines the identity line, the declared-gap prefix and
 the bypass phrase ONCE (rule 6d); the runner reads them from the seam, prints the identity, scans
 EVERY module's output (including a passing one, whose output used to be deleted unread), refuses a
@@ -28,7 +36,9 @@ Run:  python3 tests/test_test_container_identity.py   or   make test
 
 from __future__ import annotations
 
+import ast
 import contextlib
+import json
 import io
 import os
 import shutil
@@ -131,7 +141,7 @@ def test_a_declared_gap_in_a_GREEN_module_reaches_the_verdict() -> None:
             "import sys\n"
             f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
             "import coverage_gap\n"
-            "coverage_gap.declare_bypass_gap('planted permission half', 'the filesystem did not honour the plant')\n"
+            "coverage_gap.announce(coverage_gap.declare_bypass_gap('planted permission half', 'the filesystem did not honour the plant'))\n"
             "print('ok planted')\n"
         )
         (d / "test_b_declares.py").write_text(planted)
@@ -171,7 +181,7 @@ def test_a_declared_and_an_undeclared_line_in_one_module_are_separated() -> None
             "import sys\n"
             f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
             "import coverage_gap\n"
-            "coverage_gap.declare_gap('planted declared half', 'reported inside the seam')\n"
+            "coverage_gap.announce(coverage_gap.declare_gap('planted declared half', 'reported inside the seam'))\n"
             f"print('  SKIP another guard: {phrase}')\n"
             "print('ok planted')\n"
         )
@@ -341,7 +351,7 @@ def test_make_test_reports_declared_coverage_gaps_in_its_own_verdict() -> None:
 def test_the_permission_half_guard_reports_through_the_seam_not_as_a_bare_skip() -> None:
     src = (ROOT / "tests" / "test_agent_skills.py").read_text(encoding="utf-8")
     check("guard: the teardown permission half declares its gap through the seam",
-          "coverage_gap.declare_bypass_gap(" in src, src[:300])
+          "coverage_gap.announce(coverage_gap.declare_bypass_gap(" in src, src[:300])
     check("guard: the bare SKIP print of the bypass is gone from the tree",
           'print(f"  SKIP teardown' not in src and coverage_gap.BYPASS_PHRASE not in src, src[:400])
     check("guard: the always-checked half is still named as the contract it keeps",
@@ -359,12 +369,12 @@ def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
     """
     probe = "tll-absent-cli-1171"
     guard = "absent-CLI half (issue #1154)"
-    # The demo call is captured: it prints a declared-gap line, and a line a guard test itself
-    # prints must NOT be counted as a gap the suite declared (issue #1173's phantom-gap class).
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        line = coverage_gap.external_binary_gap(
-            guard, probe, "a host `make test` has no agent CLI")
+    # The builder is QUIET (issue #1173): a guard test's own demonstration call cannot leak a
+    # phantom gap into the verdict any more — the old shape printed this line into the module's
+    # stream and the runner counted it (`coverage-gap 2 declared` in a container that declared
+    # nothing). Only the real halves announce.
+    line = coverage_gap.external_binary_gap(
+        guard, probe, "a host `make test` has no agent CLI")
     check("binary gap: the line travels inside the declared-gap seam",
           line.startswith(coverage_gap.GAP_PREFIX + " ") and coverage_gap.BYPASS_PHRASE in line, line)
     with tempfile.TemporaryDirectory() as td:
@@ -374,8 +384,8 @@ def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
             "import sys\n"
             f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
             "import coverage_gap\n"
-            f"coverage_gap.external_binary_gap({guard!r}, {probe!r},\n"
-            "                                 'a host `make test` has no agent CLI')\n"
+            f"coverage_gap.announce(coverage_gap.external_binary_gap({guard!r}, {probe!r},\n"
+            "                                       'a host `make test` has no agent CLI'))\n"
             "print('ok planted')\n"
         )
         (d / "test_b_binary_gap.py").write_text(planted)
@@ -386,8 +396,9 @@ def test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted() -> None:
           "[harness] coverage-gap 1 declared" in out and guard in out,
           out[:600])
     src = (ROOT / "tests" / "test_agent_skills.py").read_text(encoding="utf-8")
-    check("binary gap: the skills module declares the register half through the seam, probing itself",
-          "coverage_gap.external_binary_gap(" in src and 'shutil.which("hermes")' not in src, src[:400])
+    check("binary gap: the skills module declares the register half through the seam, announcing it",
+          "coverage_gap.external_binary_gap(" in src and "coverage_gap.announce(gap_line)" in src
+          and 'shutil.which("hermes")' not in src, src[:400])
     # The REAL module, driven with the CLI's directory stripped from PATH (rule 6m: the guard
     # runs the real code, not a stand-in): it must stay green and declare the half.
     keep = [p for p in os.environ.get("PATH", "").split(os.pathsep)
@@ -412,26 +423,24 @@ def test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them
         stub.chmod(0o755)
         env = {**os.environ, "PATH": td + os.pathsep + os.environ.get("PATH", "")}
         # Drive the REAL seam in a subprocess with a stub on PATH (rule 6m: the guard runs the
-        # real code, not a stand-in) — `present-cli` exists, `absent-cli` does not.
+        # real code, not a stand-in) — `present-cli` exists, `absent-cli` does not. The builders
+        # are QUIET (issue #1173): the missing half is visible only through announce().
         prog = (
             "import sys; sys.path.insert(0, %r)\n"
-            "import coverage_gap, io, contextlib\n"
-            "buf = io.StringIO()\n"
-            "with contextlib.redirect_stdout(buf):\n"
-            "    line = coverage_gap.external_binary_gap('two-CLI half', "
+            "import coverage_gap\n"
+            "line = coverage_gap.external_binary_gap('two-CLI half', "
             "('present-cli', 'absent-cli'), 'a host run lacks one of them')\n"
-            "    after_first = buf.getvalue()\n"
-            "    empty = coverage_gap.external_binary_gap('all-present half', "
+            "coverage_gap.announce(line)\n"
+            "print('LINE=' + repr(line))\n"
+            "empty = coverage_gap.external_binary_gap('all-present half', "
             "('present-cli',), 'never declared')\n"
-            "    added = buf.getvalue()[len(after_first):]\n"
-            "print('LINE=' + line)\n"
+            "coverage_gap.announce(empty)\n"
             "print('EMPTY=' + repr(empty))\n"
-            "print('SECOND_ADDED=' + repr(added))\n"
         ) % str(ROOT / "scripts")
         proc = subprocess.run([sys.executable, "-c", prog], capture_output=True, text=True,
                               timeout=120, env=env)
         out = proc.stdout + proc.stderr
-    check("multi-binary: one line names ONLY the missing CLI", 
+    check("multi-binary: one line names ONLY the missing CLI",
           "LINE=" in out and "`absent-cli`" in out and "`present-cli`" not in out
           and "two-CLI half" in out, out[-500:])
     check("multi-binary: the line travels inside the declared-gap seam",
@@ -439,7 +448,9 @@ def test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them
     check("multi-binary: a single missing CLI keeps the singular wording",
           "CLI is not on PATH" in out or "CLIs are not on PATH" in out, out[-500:])
     check("multi-binary: every binary present declares NOTHING and returns ''",
-          "EMPTY=''" in out and "SECOND_ADDED=''" in out, out[-500:])
+          "EMPTY=''" in out
+          and sum(1 for l in out.splitlines() if l.startswith(coverage_gap.GAP_PREFIX)) == 1,
+          out[-500:])
 
 
 def test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap() -> None:
@@ -463,15 +474,14 @@ def test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap() -> None
         skills.mkdir()
         (skills / "demo").mkdir()
         env = {**os.environ, "PATH": str(d) + os.pathsep + os.environ.get("PATH", "")}
-        # (a) the REAL seam, in a subprocess with the broken CLI on PATH (rule 6m).
+        # (a) the REAL seam, in a subprocess with the broken CLI on PATH (rule 6m). The builder
+        # is quiet (issue #1173); what matters here is that a PRESENT CLI declares nothing.
         prog = (
             "import sys; sys.path.insert(0, %r)\n"
-            "import coverage_gap, io, contextlib\n"
-            "buf = io.StringIO()\n"
-            "with contextlib.redirect_stdout(buf):\n"
-            "    line = coverage_gap.external_binary_gap('register half', 'hermes', 'why')\n"
+            "import coverage_gap\n"
+            "line = coverage_gap.external_binary_gap('register half', 'hermes', 'why')\n"
+            "coverage_gap.announce(line)\n"
             "print('LINE=' + repr(line))\n"
-            "print('PRINTED=' + repr(buf.getvalue()))\n"
             "print('USABLE=' + repr(coverage_gap.external_binary_usable('hermes')))\n"
         ) % str(ROOT / "scripts")
         p = subprocess.run([sys.executable, "-c", prog], capture_output=True, text=True,
@@ -484,7 +494,7 @@ def test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap() -> None
                               "--home", str(home), "--dir", str(skills)],
                              capture_output=True, text=True, timeout=120, env=env)
     check("#1172: the seam declares NOTHING for a present-but-broken CLI",
-          "LINE=''" in out and "PRINTED=''" in out, out[-400:])
+          "LINE=''" in out and coverage_gap.GAP_PREFIX not in out, out[-400:])
     check("#1172: presence is reported usable — the seam probes presence, not health",
           "USABLE=True" in out, out[-400:])
     check("#1172: the real register half goes RED on the broken CLI (a real failure)",
@@ -492,6 +502,186 @@ def test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap() -> None
           f"rc={reg.returncode} {reg.stderr[-300:]}")
     check("#1172: and it prints NO declared-gap line (a gap would launder the failure)",
           coverage_gap.GAP_PREFIX not in (reg.stdout + reg.stderr), reg.stdout[-200:])
+
+
+def test_the_gap_builders_return_quietly_and_only_announce_prints() -> None:
+    """The builders BUILD and RETURN; they print NOTHING (issue #1173). `announce` is the seam's
+    only print of a gap line — the phantom-gap class is removed at the seam, not at a call site
+    (issue #1178's redirect_stdout left the builder printing, so the next demo leaked again).
+
+    Drives the REAL seam in a subprocess whose PATH lacks `tll-absent-cli-1173`: the builders are
+    called WITHOUT any redirect, their returns are named in repr, and the subprocess's own stream
+    must carry no GAP_PREFIX line until announce runs. RED on the old seam, whose builders printed.
+    """
+    prog = (
+        "import sys, json; sys.path.insert(0, %r)\n"
+        "import coverage_gap\n"
+        "a = coverage_gap.declare_gap('built not announced', 'a builder must not print')\n"
+        "b = coverage_gap.declare_bypass_gap('bypass not announced', 'quiet by contract')\n"
+        "c = coverage_gap.external_binary_gap('binary half', 'tll-absent-cli-1173', 'absent')\n"
+        "print('RET ' + json.dumps([a, b, c]))\n"
+        "coverage_gap.announce(c)\n"
+    ) % str(ROOT / "scripts")
+    p = subprocess.run([sys.executable, "-c", prog], capture_output=True, text=True, timeout=120)
+    out = p.stdout + p.stderr
+    rets = [l for l in out.splitlines() if l.startswith("RET ")]
+    built = json.loads(rets[0][4:]) if len(rets) == 1 else None
+    check("#1173: the three builders RETURN three lines carrying the seam's prefix",
+          built is not None
+          and len(built) == 3
+          and all(isinstance(x, str) and coverage_gap.GAP_PREFIX in x for x in built),
+          out[-500:])
+    pre = out.split("RET ", 1)[0]
+    check("#1173: the builders printed NOTHING into the stream (the phantom class at the seam)",
+          not any(l.startswith(coverage_gap.GAP_PREFIX) for l in pre.splitlines()), pre[:400])
+    post = out.split("RET ", 1)[1]
+    check("#1173: announce is what puts the gap on the stream — exactly once",
+          sum(1 for l in post.splitlines() if l.startswith(coverage_gap.GAP_PREFIX)) == 1
+          and "binary half" in post and coverage_gap.BYPASS_PHRASE in post, post[:400])
+
+
+def test_a_call_that_never_announced_declares_nothing_to_the_runner() -> None:
+    """The phantom class ITSELF against the REAL runner (issue #1173: `coverage-gap 2 declared` in
+    a container whose real halves declared nothing). A planted module calls the builders for an
+    absent CLI — exactly the demo shape the guards used — keeps the returns, and never announces:
+    the module stays green and the runner names NO gap. A sibling module announces once and is
+    counted exactly once. RED on the old seam: the un-announced calls printed, and the runner
+    counted their prints.
+    """
+    quiet = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
+        "import coverage_gap\n"
+        "a = coverage_gap.declare_gap('demo half one', 'a demonstration')\n"
+        "b = coverage_gap.declare_gap('demo half two', 'another demonstration')\n"
+        "c = coverage_gap.external_binary_gap('demo absent CLI', 'tll-absent-cli-1173q',\n"
+        "                                     'a host `make test` has no such CLI')\n"
+        "print('KEPT=' + repr(bool(a and b and c)))\n"
+        "print('ok quiet')\n"
+    )
+    announced = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
+        "import coverage_gap\n"
+        "coverage_gap.announce(coverage_gap.external_binary_gap(\n"
+        "    'announced half', 'tll-absent-cli-1173a', 'the half really did not run'))\n"
+        "print('ok announced')\n"
+    )
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "test_a_quiet_calls.py").write_text(quiet)
+        rc_q, out_q = _run_runner(d)
+    check("#1173: a module whose calls never announced stays green",
+          rc_q == 0, out_q[:500])
+    check("#1173: and the runner names NO declared gap for it — the phantom is impossible",
+          coverage_gap.GAP_PREFIX not in out_q and "[harness] coverage-gap" not in out_q,
+          out_q[:600])
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "test_a_announced.py").write_text(announced)
+        rc_a, out_a = _run_runner(d)
+    check("#1173: an announced gap is still counted — exactly once, naming its guard",
+          rc_a == 0 and "[harness] coverage-gap 1 declared" in out_a and "announced half" in out_a,
+          out_a[:600])
+
+
+def test_the_seam_prints_gap_lines_only_through_announce_and_the_real_halves_announce() -> None:
+    """Source half (rule 6d): the seam's ONLY build-time print of a string carrying GAP_PREFIX is
+    inside `announce`, the GAP_PREFIX constant is assigned exactly once, and every real declaration
+    site — both halves in tests/test_agent_skills.py — reads as `announce(declare_…(...))`. RED on
+    the old seam: `declare_gap` printed the line itself, and the real halves called the printing
+    builder directly.
+    """
+    tree = ast.parse((ROOT / "scripts" / "coverage_gap.py").read_text(encoding="utf-8"))
+    gap_names = {"declare_gap", "declare_bypass_gap", "external_binary_gap"}
+    prefix = str(next(c.value.value for c in ast.walk(tree)
+                      if isinstance(c, ast.Assign) and isinstance(c.targets[0], ast.Name)
+                      and c.targets[0].id == "GAP_PREFIX" and isinstance(c.value, ast.Constant)))
+
+    def gap_emitter(func: ast.AST) -> bool:
+        """True if a print inside `func` can emit a gap line: it prints a constant carrying the
+        prefix, or prints a name the function built from a gap expression — an f-string starting
+        with GAP_PREFIX or a call of one of the builders (the OLD declare_gap shape) — or prints a
+        PARAMETER (the new announce(line) shape: the gap line arrives through the signature, and
+        this is the seam's one permitted print path)."""
+        argnode = getattr(func, "args", None)
+        params = {a.arg for a in (getattr(argnode, "args", []) or [])} | {
+            a.arg for a in (getattr(argnode, "posonlyargs", []) or [])}
+        gap_bound = set()
+        for node in ast.walk(func):
+            if (isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                    and isinstance(node.value, ast.Call)
+                    and isinstance(node.value.func, ast.Name)
+                    and node.value.func.id in gap_names):
+                gap_bound.add(node.targets[0].id)
+            if (isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                    and isinstance(node.value, ast.JoinedStr) and node.value.values
+                    and isinstance(node.value.values[0], ast.FormattedValue)
+                    and isinstance(node.value.values[0].value, ast.Name)
+                    and node.value.values[0].value.id == "GAP_PREFIX"):
+                gap_bound.add(node.targets[0].id)
+        for call in ast.walk(func):
+            if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                    and call.func.id == "print"):
+                continue
+            for arg in call.args:
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str) \
+                        and prefix in arg.value:
+                    return True
+                if isinstance(arg, ast.Name) and (arg.id in gap_bound or arg.id in params):
+                    return True
+        return False
+
+    emitters = [n.name for n in tree.body
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and gap_emitter(n)]
+    check("#1173: the ONLY seam function that can print a gap line is announce()",
+          emitters == ["announce"], str(emitters))
+
+    src = (ROOT / "tests" / "test_agent_skills.py").read_text(encoding="utf-8")
+    skills_tree = ast.parse(src)
+    skills_announced = []   # builder names announced directly: announce(coverage_gap.declare_…(…))
+    announced_lines = set()
+    for call in ast.walk(skills_tree):
+        if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "announce"
+                and call.args and isinstance(call.args[0], ast.Call)
+                and isinstance(call.args[0].func, ast.Attribute)
+                and call.args[0].func.attr in gap_names):
+            skills_announced.append(call.args[0].func.attr)
+            announced_lines.add(call.lineno)
+            announced_lines.add(call.args[0].lineno)
+    # the QUIET-builder contract (issue #1173): a declaration site may hold a builder's return in
+    # a name and announce it on a later line — every builder call line must be an announce line
+    # (directly, or via announce(<name>) of the name that holds the builder's return).
+    name_from_builder: dict[str, set[int]] = {}
+    for node in ast.walk(skills_tree):
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Attribute)
+                and node.value.func.attr in gap_names
+                and node.targets and isinstance(node.targets[0], ast.Name)):
+            name_from_builder[node.targets[0].id] = set(
+                range(node.value.lineno, getattr(node.value, "end_lineno", node.value.lineno) + 1))
+    for call in ast.walk(skills_tree):
+        if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "announce" and call.args
+                and isinstance(call.args[0], ast.Name)
+                and call.args[0].id in name_from_builder):
+            announced_lines |= name_from_builder[call.args[0].id]
+            announced_lines.add(call.lineno)
+    bare = []
+    for call in ast.walk(skills_tree):
+        if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr in gap_names):
+            continue
+        lines = set(range(call.lineno, getattr(call, "end_lineno", call.lineno) + 1))
+        if not (lines & announced_lines):
+            bare.append((call.func.attr, call.lineno))
+    check("#1173: the real halves announce through the seam (the CLI half announces only when "
+          "the CLI is absent — the strip-PATH run in this suite locks the declared shape)",
+          set(skills_announced) <= gap_names and "coverage_gap.announce(gap_line)" in src,
+          str(skills_announced))
+    check("#1173: no real declaration site calls a builder without announcing it",
+          not bare, str(bare))
 
 
 def main() -> int:
@@ -504,6 +694,9 @@ def main() -> int:
     test_an_external_binary_gap_keeps_a_host_run_green_and_is_counted()
     test_the_seam_declares_several_external_binaries_in_one_line_and_probes_them()
     test_a_present_but_broken_cli_is_a_real_failure_not_a_declared_gap()
+    test_the_gap_builders_return_quietly_and_only_announce_prints()
+    test_a_call_that_never_announced_declares_nothing_to_the_runner()
+    test_the_seam_prints_gap_lines_only_through_announce_and_the_real_halves_announce()
     test_the_runner_reads_the_phrases_from_the_seam_and_never_spells_them()
     test_the_runner_refuses_loudly_when_the_seam_script_is_gone()
     test_the_container_wrapper_names_and_forwards_the_invoking_identity()
