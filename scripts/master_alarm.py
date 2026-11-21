@@ -75,6 +75,7 @@ GATES: dict[str, tuple[str, str]] = {
     # prints it per shape).
     "openspec-check": ("keeper", "qa-validate index-repair + architecture-bot"),
     # -- ALARM — the master-alarm makes a red push-to-master run visible.
+    "fleet-host-sync-check": ("alarm", "master-alarm"),
     "lint": ("alarm", "master-alarm"),
     "check-commit-authorship": ("alarm", "master-alarm"),
     "pr-closure": ("alarm", "master-alarm"),

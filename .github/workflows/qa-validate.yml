@@ -143,6 +143,15 @@ jobs:
       - name: Lint (every tracked text file ends with a newline)
         run: make lint
 
+      # (issue #1209) The issue thread is the shared board across machines. CI
+      # cannot see a host's profile home, but it can exercise the SAME seam the
+      # host runs against ~/.hermes/profiles: here it proves the repo's lane bytes
+      # and the AGENTS.md lifecycle rules match the checked-out commit. The
+      # host half (BASE=origin/master, real profile home) is mandatory locally
+      # after every fetch/pull; the test module covers the failure shapes.
+      - name: Fleet lane behaviour matches the checked-out base (issue #1209)
+        run: make fleet-host-sync-check BASE=HEAD PROFILES_HOME=agents
+
       # The only identities on this repo are Andy Holst and Asimov Agent. Nothing
       # read a commit's MESSAGE or a commit's IDENTITY, so a
       # `Co-authored-by: Hermes Agent <hermes@nousresearch.com>` trailer landed on
