@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **388**
+Active changes: **1** · archived: **388**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `nous-provider-chain` | active | #1203 — "fleet: the chain's custom + NOUS_API_KEY path cannot run inference — the provider must be nous" | — | [fleet-model-chain](openspec/changes/nous-provider-chain/specs/fleet-model-chain/spec.md) | 7/7 | [proposal.md](openspec/changes/nous-provider-chain/proposal.md) |
 
 ## Archived changes
 
