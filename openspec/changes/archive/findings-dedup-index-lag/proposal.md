@@ -1,6 +1,7 @@
 # Proposal: findings-dedup-index-lag
 
 Issue: #185 — "`make file-findings` can file a finding twice — the dedup list is eventually consistent"
+PR: #1193
 
 ## Why
 
