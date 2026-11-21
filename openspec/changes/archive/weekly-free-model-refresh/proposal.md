@@ -1,6 +1,7 @@
 # Proposal: weekly-free-model-refresh
 
 Issue: #1195
+PR: #1205
 
 ## Why
 

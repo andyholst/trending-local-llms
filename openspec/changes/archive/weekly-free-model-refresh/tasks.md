@@ -9,8 +9,8 @@
 - [x] ARCHITECTURE.md: §2 target rows, §4 refresh-bot job row, §6 script row, base-check prose corrected; `make architecture-refresh` for §10
 - [x] AGENTS.md §8 row added (rule 3c attended sign-off, comment on #1195)
 - [x] OpenSpec change: proposal, capability spec with Test lines, this checklist
-- [ ] `findings.md` written, `make findings-check` green, findings filed (`make file-findings`)
-- [ ] `make lint` + `make architecture-check` green
-- [ ] `make openspec-check` green (index regenerated, binding, backlog)
+- [x] `findings.md` written, `make findings-check` green, findings filed (`make file-findings` → #1204 host re-provisioning gap)
+- [x] `make lint` + `make architecture-check` green
+- [x] `make openspec-check` green (index regenerated, binding, backlog)
 - [~] Full suite (`make test`) green on the PR head — blocked: qa-validate runs it after push; on the host the new module (36) + test_workflows (1190) + test_makefile_only (25) are green
-- [ ] PR opened (five-section body, single `closes #1195`), `make pr-message-check` green, `make openspec-record-pr ISSUE=1195 PR=<n>` so the archive sits at the PR head
+- [x] PR opened (#1205, five-section body, single `closes #1195`), `make pr-message-check` green, `make openspec-record-pr ISSUE=1195 PR=1205` so the archive sits at the PR head
