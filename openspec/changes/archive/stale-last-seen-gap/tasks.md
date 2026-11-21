@@ -4,4 +4,4 @@
 - [x] T2: analyse() report key + ONE `stale_last_seen` signature entry; issue BODY section with per-row evidence; existing per-entry dedup marker applies.
 - [x] T3: tests/test_stale_last_seen_gap.py (17 checks, including the shipped store and RED on the pre-change analysis).
 - [x] T4: regressions — data_gap_analysis 330/330, validate --only data QA PASSED, lint green.
-- [ ] T5: PR opened, `make pr-message-check`, `make openspec-record-pr ISSUE=1183 PR=<pr>` at the PR head.
+- [x] T5: PR opened, `make pr-message-check`, `make openspec-record-pr ISSUE=1183 PR=#1216` at the PR head.

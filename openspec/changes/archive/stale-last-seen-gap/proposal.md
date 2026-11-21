@@ -1,7 +1,7 @@
 # Proposal: stale-last-seen-gap
 
 Issue: #1183
-PR: (unset until opened)
+PR: #1216
 
 ## Why
 
