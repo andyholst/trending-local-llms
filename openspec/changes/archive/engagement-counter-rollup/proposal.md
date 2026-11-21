@@ -1,7 +1,7 @@
 # Proposal: engagement-counter-rollup
 
 Issue: #1182
-PR: (unset until opened)
+PR: #1218
 
 ## Why
 
