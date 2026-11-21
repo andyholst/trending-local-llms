@@ -285,6 +285,24 @@ Every lane hands over on the issue thread, so the board can be followed without 
 - **A lane never works outside its remit** — it files or comments and hands over.
 - **The board is the issue thread itself.** The parent fleet issue #682 is closed; do not keep a stale parent reference. Keep each open issue's thread current: who commented, which lane is in progress, what is next.
 
+### Read the comments to delegate (owner-mandated, issue #1209)
+
+- **Comment on the issue BEFORE you do the work.** Every lane — including this one — posts its signed comment on the issue thread before opening a branch, starting a review, giving a verdict or rebasing a PR. The planner orchestrates from those comments; there is no gap between lanes.
+- **Read before you dispatch.** Before naming a lane, re-read the issue's own comments
+  and take the NEWEST signed handover as the state. Dispatch from that comment, not
+  from the issue body: `BOT tll-planner · dispatch #<id> · lane <lane> · base <sha> ·
+  done <criteria> · handover <next> · answering <comment-id>`. Naming the comment you
+  answered is what lets the next machine follow the chain without re-reading it.
+- **A PR is never the handover.** When an implementer opens a PR it posts on the ISSUE:
+  `BOT <lane> · pr #<id> · PR #<n> · base <sha> · handover tll-reviewer · <next>`.
+  A PR comment alone is not a record — the planner reads the issue, not the PR.
+- **The reviewer answers on that same issue:** `BOT <lane> · reviewing #<id> · PR #<n> ·
+  handover <tll-implementer|owner>` then a signed `done #<id> · handover <...>` comment.
+  A red check hands back to `tll-implementer`; a human decision hands to `owner`.
+- **Always follow up on the issue.** Every fix, verdict, re-dispatch and closure gets a
+  comment on the issue's own thread; the bots read and update that thread at each
+  handover. The issue stays open as the follow-up until `handover none` is posted.
+
 ## Fleet state (active issues)
 
 - **#689** move the per-engine measurement store out of `data/models.json` — **landed**. Store is now
