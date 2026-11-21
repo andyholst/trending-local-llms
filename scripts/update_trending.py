@@ -881,6 +881,12 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
             stored = max(0, int(float(eng.get(counter) or 0)))
         except (TypeError, ValueError):
             stored = 0
+        # Never introduce a brand-new ZERO key: the contract declares these counters
+        # OPTIONAL, and an ingest that invents empty fields breaks the golden fixtures
+        # (rule 2 — no invented data). A positive sourced value on a row that lacked
+        # the key is real data and is still written; an existing counter is raised.
+        if counter not in eng and sourced == 0:
+            continue
         eng[counter] = max(stored, sourced)
     eng["last_7d_likes"] = len(recent)
     # last_seen = the newest DATA date (measurement or post), never the time

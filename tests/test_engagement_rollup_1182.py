@@ -129,6 +129,20 @@ def test_stored_counters_equal_the_rollup_output():
           not disagree, str(disagree[:3]))
 
 
+def test_an_absent_optional_counter_is_not_invented():
+    """Golden fixtures omit `reshares` on rows with no reshare data — the rollup
+    must not introduce an empty key (rule 2; the CI failure this fixed)."""
+    m = _row()
+    m["engagement"].pop("reshares", None)
+    for p in m["engagement"]["seen_posts"]:
+        p.pop("reshares", None)
+    UT.recompute_7d_engagement(m, TODAY)
+    check("an absent optional counter stays absent when no post carries it",
+          "reshares" not in m["engagement"], str(m["engagement"]))
+    check("the other counters still roll up",
+          m["engagement"]["likes"] == 197, str(m["engagement"]["likes"]))
+
+
 def test_the_guard_is_red_on_the_pre_change_seam():
     out = subprocess.run("git show origin/master:scripts/update_trending.py",
                          shell=True, cwd=ROOT, capture_output=True, text=True).stdout
@@ -150,6 +164,7 @@ def main() -> int:
     test_a_row_with_no_posts_keeps_zeros()
     test_the_shipped_store_carries_the_repair()
     test_stored_counters_equal_the_rollup_output()
+    test_an_absent_optional_counter_is_not_invented()
     test_the_guard_is_red_on_the_pre_change_seam()
     test_wiring()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
