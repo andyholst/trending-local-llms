@@ -292,6 +292,17 @@ def main(probe_fn=None) -> int:
                 f"{len(BACKEND_KEYWORDS[b])} queries state NO generation rate and name "
                 f"NO model. The mirror is reachable; the queries capture nothing "
                 f"(issue #858). Fix the WORDS in scripts/query_vocab.py.")
+        # Every query of THIS leg missed: probe a canary from another leg before
+        # calling the source dead. qa-validate runs one process per backend
+        # (`BACKEND=<leg>`), so cross-leg state cannot be observed in-process;
+        # the canary is the SAME mirror URL shape and answers "is the source
+        # reachable?" directly. A dead mirror fails the canary too (issue #1224).
+        if total and missed == total:
+            canary = BACKEND_KEYWORDS["nvidia"][0]
+            if canary not in BACKEND_KEYWORDS[b]:
+                res = probe_fn(canary, args.key, args.budget, args.retries, args.retry_wait)
+                if res["label"] == "OK":
+                    proved += 1
         legs.append({"leg": b, "total": total, "missed": missed,
                      "answered": answered, "silent": silent, "proved": proved})
 

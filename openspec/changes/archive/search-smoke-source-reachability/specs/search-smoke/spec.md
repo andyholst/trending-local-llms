@@ -16,6 +16,13 @@ reachable. A run in which NO leg proved reachability SHALL still fail with the
 - **Then** it exits 0, prints `QUERY-STARVED` naming cpu, and prints no `leg(s) failed` line
 - **Test:** tests/test_smoke_search.py::test_one_query_starved_leg_is_not_a_source_outage
 
+#### Scenario: A per-backend invocation proves the source with a canary
+
+- **Given** `main()` is invoked with `--backend cpu` (as qa-validate does — one process per leg) and every cpu query misses
+- **When** the nvidia canary query answers HTTP 200 from the same mirror
+- **Then** cpu exits 0 with a `QUERY-STARVED` note, while a canary that also misses leaves the #258 block in force
+- **Test:** tests/test_smoke_search.py::test_a_single_backend_invocation_uses_the_canary
+
 #### Scenario: A mirror that answers nothing still blocks
 
 - **Given** a scripted transport where every query of every leg times out

@@ -16,9 +16,10 @@ PR for one leg's query-level cache stall is the same misleading signal as the
 
 - `scripts/smoke_search.py::main` collects each leg's outcome and then decides:
   a leg whose EVERY query misses is reported as `QUERY-STARVED` (non-blocking)
-  when another leg proved the mirror reachable with a real HTTP 200 in the SAME
-  run; a dead mirror that answers NO leg still blocks with the #258 majority
-  verdict.
+  when another leg proved the mirror reachable in the SAME run, or when a canary
+  query from another leg proves it in a single-backend invocation (qa-validate
+  runs one process per leg). A dead mirror that answers NO leg still blocks with
+  the #258 majority verdict.
 - A pytest-collectable guard proves both halves and is red on the old script.
 
 ## Impact

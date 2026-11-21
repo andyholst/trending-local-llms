@@ -177,8 +177,13 @@ def test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S: dict):
     def run(slow_count: int):
         calls = {"n": 0}
 
-        def probe_fn(*_a, **_kw):
+        def probe_fn(keyword, *_a, **_kw):
             calls["n"] += 1
+            # A dead-source simulation must also starve the canary; otherwise the
+            # canary correctly proves the mirror alive and this is a QUERY-STARVED
+            # note, not an outage (issue #1224).
+            if slow_count >= len(cpu):
+                return dict(slow)
             return dict(slow if calls["n"] <= slow_count else good)
 
         out = io.StringIO()
@@ -207,11 +212,14 @@ def test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S: dict):
           "MAJORITY" in text and "not a flake" in text, text[-300:])
 
 
-def _run_whole_smoke(probe_fn):
-    """Drive the REAL main() over all four legs with a scripted transport."""
+def _run_whole_smoke(probe_fn, backend=None):
+    """Drive the REAL main() with a scripted transport (one or all four legs)."""
     _load_smoke_backends()
     saved = sys.argv
-    sys.argv = ["smoke_search.py", "--key", "k", "--budget", "90", "--retries", "0"]
+    argv = ["smoke_search.py", "--key", "k", "--budget", "90", "--retries", "0"]
+    if backend:
+        argv += ["--backend", backend]
+    sys.argv = argv
     try:
         with contextlib.redirect_stdout(io.StringIO()) as out:
             rc = SEARCH_NS["main"](probe_fn)
@@ -241,6 +249,23 @@ def test_one_query_starved_leg_is_not_a_source_outage():
     assert rc == 0, out
     assert "QUERY-STARVED" in out, out
     assert "[smoke] " in out and "leg(s) failed" not in out, out
+
+
+def test_a_single_backend_invocation_uses_the_canary():
+    """qa-validate runs one process per backend; the canary must work alone."""
+    smoke = _load_smoke_backends()
+    canary = smoke["nvidia"][0]
+
+    def probe_fn(keyword, key, budget, retries=1, retry_wait=2.0):
+        if keyword == canary:
+            return {"status": 200, "ok": True, "upstream": 200, "elapsed": 0.1,
+                    "attempts": 1, "rate_hits": 0, "model_hits": 0, "label": "OK"}
+        return {"status": 0, "ok": None, "upstream": None, "elapsed": 90.0,
+                "attempts": 2, "rate_hits": 0, "model_hits": 0, "label": "TIMEOUT"}
+
+    rc, out = _run_whole_smoke(probe_fn, backend="cpu")
+    assert rc == 0, out
+    assert "QUERY-STARVED" in out, out
 
 
 def test_a_full_outage_still_blocks_every_leg():
@@ -383,6 +408,8 @@ def main() -> int:
     for name, fn in (
         ("ci: one query-starved leg is not a source outage (pytest path)",
          test_one_query_starved_leg_is_not_a_source_outage),
+        ("ci: a per-backend invocation proves the source with a canary",
+         test_a_single_backend_invocation_uses_the_canary),
         ("ci: a full outage still blocks every leg (pytest path)",
          test_a_full_outage_still_blocks_every_leg),
         ("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
