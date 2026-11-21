@@ -373,6 +373,36 @@ jobs:
       - name: Fleet lane configs provision into a profile home (refuses without the chain's credential)
         run: make agent-profile-provision ALL=1 PROFILES_HOME="$RUNNER_TEMP/hermes-profiles"
 
+      # Issue #1198: the chain's local-tier id must ALSO reach the auxiliary blocks the
+      # provision seam does not own (custom_providers[strata] + moa presets). A stale
+      # non-lane home is planted under $RUNNER_TEMP (never a real profile home), synced,
+      # and --check must then read clean — the seam is executed by the pipeline (rule 6m).
+      # No credential is needed: the seam writes only credential-less local-tier references.
+      - name: Auxiliary blocks take the chain's local-tier id (sync, then check reads clean)
+        run: |
+          mkdir -p "$RUNNER_TEMP/hermes-profiles/aux-smoke"
+          printf '%s\n' \
+            'model:' \
+            '  provider: custom' \
+            '  default: meituan/longcat-2.5:free' \
+            'custom_providers:' \
+            '  - name: strata' \
+            '    base_url: http://127.0.0.1:8080/v1' \
+            '    model: qwen3.8-flash-next-q2_0' \
+            '    models:' \
+            '      qwen3.8-flash-next-q2_0:' \
+            '        context_length: 131072' \
+            'moa:' \
+            '  presets:' \
+            '    default:' \
+            '      aggregator:' \
+            '        model: qwen3.8-flash-next-q2_0' \
+            '        provider: strata' \
+            '        base_url: http://127.0.0.1:8080/v1' \
+            > "$RUNNER_TEMP/hermes-profiles/aux-smoke/config.yaml"
+          make agent-aux-local-sync PROFILE=aux-smoke PROFILES_HOME="$RUNNER_TEMP/hermes-profiles"
+          make agent-aux-local-sync PROFILE=aux-smoke CHECK=1 PROFILES_HOME="$RUNNER_TEMP/hermes-profiles"
+
       - name: Search returns data (real Firecrawl->lightbrd, --require-hits)
         run: make validate-fetch
 

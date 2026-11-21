@@ -1538,6 +1538,19 @@ _agent-profile-provision:
 agent-profile-provision: ## Copy a fleet lane's rendered chain config into its Hermes profile home (backup kept); refuses without the credential the chain names (issue #1142)
 	@$(MAKE) --no-print-directory _agent-profile-provision
 
+# ---- fleet: the local tier's id reaches the host's AUXILIARY blocks (issue #1198) ----
+# provision owns model/model_aliases/fallback_providers; custom_providers[strata] and the moa
+# presets ALSO name the local model, and the chain's local_fallback id must reach them too.
+# No credential: the seam writes only credential-less local-tier references (rule 3e).
+AUX_SYNC_ARGS := $(if $(PROFILE), $(foreach p,$(subst $(comma), ,$(PROFILE)),--profile $(p)),)$(if $(ALL_PROFILES), --all-profiles,)$(if $(CHECK), --check,)$(if $(DRY_RUN), --dry-run,)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)
+
+.PHONY: _agent-aux-local-sync agent-aux-local-sync
+_agent-aux-local-sync:
+	python3 scripts/agent_aux_local_sync.py$(if $(AUX_SYNC_ARGS), $(AUX_SYNC_ARGS),)
+
+agent-aux-local-sync: ## Sync the chain's local-tier model id into custom_providers[strata] + moa presets (PROFILE=<name>[,...] incl. `default`, or ALL_PROFILES=1; CHECK=1 reports drift; backup kept; issue #1198)
+	@$(MAKE) --no-print-directory _agent-aux-local-sync
+
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
 # `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements
