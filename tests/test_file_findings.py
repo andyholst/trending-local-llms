@@ -31,18 +31,64 @@ SCRIPT = ROOT / "scripts" / "file_findings.py"
 _PASS = 0
 _FAIL = 0
 
-# The gh stub: records every call, answers the reads the script makes, and
-# captures the issue body written through `--body-file -` (stdin).
-_GH_STUB = """#!/bin/sh
-echo "$@" >> "$FAKE_GH_LOG"
-case "$1 $2" in
-  "label list")   cat "$FAKE_GH_LABELS" ;;
-  "issue list")   cat "$FAKE_GH_ISSUES" ;;
-  "issue view")   cat "$FAKE_GH_LABELS_ON" ;;
-  "issue create") cat > "$FAKE_GH_BODY"; echo "https://github.com/andyholst/trending-local-llms/issues/999" ;;
-esac
-exit 0
-"""
+# The gh stub: records every call, answers the reads the script makes, and captures the
+# issue body written through `--body-file -` (stdin). It is PYTHON because it models
+# GitHub's eventually-consistent issue list (issue #185): an issue created by `issue create`
+# is PENDING and becomes visible to `issue list` only once it is older than FAKE_GH_LAG
+# seconds. The default lag is 0 — visible immediately, the already-indexed case.
+_GH_STUB = '''#!/usr/bin/env python3
+import json
+import os
+import sys
+import time
+
+args = sys.argv[1:]
+with open(os.environ["FAKE_GH_LOG"], "a", encoding="utf-8") as fh:
+    fh.write(" ".join(args) + "\\n")
+
+
+def read(path, default):
+    return open(path, encoding="utf-8").read() if os.path.exists(path) else default
+
+
+def publish_if_due():
+    pending = os.environ["FAKE_GH_PENDING"]
+    stamp = os.environ["FAKE_GH_PENDING_TS"]
+    visible = os.environ["FAKE_GH_VISIBLE"]
+    if not (os.path.exists(pending) and os.path.exists(stamp)):
+        return
+    age = time.time() - float(read(stamp, "0") or 0)
+    if age < float(os.environ.get("FAKE_GH_LAG", "0") or 0):
+        return
+    items = json.loads(read(visible, "[]") or "[]")
+    items.append({
+        "number": 999,
+        "url": "https://github.com/andyholst/trending-local-llms/issues/999",
+        "body": read(pending, ""),
+    })
+    with open(visible, "w", encoding="utf-8") as fh:
+        json.dump(items, fh)
+    os.remove(pending)
+    os.remove(stamp)
+
+
+if args[:2] == ["issue", "list"]:
+    publish_if_due()
+    sys.stdout.write(read(os.environ["FAKE_GH_VISIBLE"], "[]"))
+elif args[:2] == ["issue", "create"]:
+    body_text = sys.stdin.read()
+    with open(os.environ["FAKE_GH_BODY"], "w", encoding="utf-8") as fh:
+        fh.write(body_text)
+    with open(os.environ["FAKE_GH_PENDING"], "w", encoding="utf-8") as fh:
+        fh.write(body_text)
+    with open(os.environ["FAKE_GH_PENDING_TS"], "w", encoding="utf-8") as fh:
+        fh.write(str(time.time()))
+    sys.stdout.write("https://github.com/andyholst/trending-local-llms/issues/999\\n")
+elif args[:2] == ["label", "list"]:
+    sys.stdout.write(read(os.environ["FAKE_GH_LABELS"], "[]"))
+elif args[:2] == ["issue", "view"]:
+    sys.stdout.write(read(os.environ["FAKE_GH_LABELS_ON"], "{}"))
+'''
 
 _ONE_FINDING = """# Findings
 
@@ -73,8 +119,13 @@ def _module():
     return mod
 
 
-def _stub_env(td: Path, *, issues: str = "[]", label_on: str = '{"labels":[{"name":"tech-debt"}]}'):
-    """A PATH with the gh stub in front, plus the control files it reads."""
+def _stub_env(td: Path, *, issues: str = "[]", label_on: str = '{"labels":[{"name":"tech-debt"}]}',
+              lag: float = 0.0):
+    """A PATH with the gh stub in front, plus the control files it reads.
+
+    `lag` is how many seconds a created issue stays invisible to `issue list` — the
+    eventually-consistent index of issue #185 (0 = visible immediately).
+    """
     (td / "bin").mkdir(exist_ok=True)
     gh = td / "bin" / "gh"
     gh.write_text(_GH_STUB, encoding="utf-8")
@@ -91,8 +142,12 @@ def _stub_env(td: Path, *, issues: str = "[]", label_on: str = '{"labels":[{"nam
         "FAKE_GH_LOG": str(log),
         "FAKE_GH_LABELS": str(td / "labels.json"),
         "FAKE_GH_ISSUES": str(td / "issues.json"),
+        "FAKE_GH_VISIBLE": str(td / "issues.json"),
         "FAKE_GH_LABELS_ON": str(td / "label_on.json"),
         "FAKE_GH_BODY": str(body),
+        "FAKE_GH_PENDING": str(td / "pending.json"),
+        "FAKE_GH_PENDING_TS": str(td / "pending-ts.txt"),
+        "FAKE_GH_LAG": str(lag),
     }
     return env, log, body
 
@@ -268,6 +323,68 @@ def test_already_filed_finding_is_skipped():
           "issues/900" in proc.stdout, proc.stdout)
 
 
+def test_two_immediate_invocations_file_exactly_one_issue():
+    """Issue #185: a second `make file-findings` ~10 s after the first filed #184 as a
+    duplicate of #182 — the first run exited before GitHub's list index caught up with its
+    own create.
+
+    Given a gh whose `issue list` lags a create by LAG seconds, when the tool runs TWICE in
+    immediate succession, then exactly ONE issue is created: the first run waits for its
+    issue to become discoverable before exiting, so the second run's pre-check finds it.
+    """
+
+    # Given the lagging stub and one finding
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        path = td / "findings.md"
+        path.write_text(_ONE_FINDING, encoding="utf-8")
+        env, log, _ = _stub_env(td, lag=1.0)
+
+        # When  the findings are filed twice in immediate succession
+        proc = None
+        for _ in range(2):
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "--file", "--path", str(path), "--issue", "185"],
+                cwd=ROOT, capture_output=True, text=True, env=env,
+            )
+        calls = [ln for ln in log.read_text().splitlines() if ln.strip()]
+        created = [c for c in calls if c.startswith("issue create")]
+        lists = [c for c in calls if c.startswith("issue list")]
+
+    # Then  both runs are green and exactly one issue exists
+    check("dedup: the second invocation exits 0", proc.returncode == 0, proc.stdout + proc.stderr)
+    check("dedup: exactly one `issue create` across two invocations",
+          len(created) == 1, str(calls))
+    check("dedup: the first run re-read the list until its issue was discoverable",
+          len(lists) >= 3, str(calls))
+
+
+def test_a_create_that_never_becomes_discoverable_fails_loudly():
+    """Issue #185: the discoverability wait must not report a false success — a create that
+    never appears in the label list is a loud failure, not a green run."""
+
+    # Given a gh whose index never catches up inside the window
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        path = td / "findings.md"
+        path.write_text(_ONE_FINDING, encoding="utf-8")
+        env, log, _ = _stub_env(td, lag=3600.0)
+
+        # When  the findings are filed
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--file", "--path", str(path), "--issue", "185"],
+            cwd=ROOT, capture_output=True, text=True, env=env,
+        )
+        calls = [ln for ln in log.read_text().splitlines() if ln.strip()]
+
+    # Then  the run refuses to report success and names the duplicate risk
+    check("loud: the run exits non-zero", proc.returncode != 0, str(proc.returncode))
+    check("loud: the failure names the duplicate risk",
+          "NOT discoverable" in proc.stderr and "duplicate" in proc.stderr, proc.stderr)
+    check("loud: the issue was still created exactly once",
+          len([c for c in calls if c.startswith("issue create")]) == 1, str(calls))
+
+
 def test_parse_helpers_are_the_scripts_own():
     """The parse keeps every field and defaults the signature to the title slug."""
 
@@ -395,6 +512,8 @@ def main() -> int:
     test_none_is_a_valid_empty_analysis()
     test_finding_is_filed_once_with_evidence_and_origin()
     test_already_filed_finding_is_skipped()
+    test_two_immediate_invocations_file_exactly_one_issue()
+    test_a_create_that_never_becomes_discoverable_fails_loudly()
     test_parse_helpers_are_the_scripts_own()
     test_an_owed_row_finding_files_the_registered_marker()
     test_an_owed_row_field_that_declares_nothing_fails_loudly()

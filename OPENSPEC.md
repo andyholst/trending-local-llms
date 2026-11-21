@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **382**
+Active changes: **2** · archived: **382**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
+| `findings-dedup-index-lag` | active | #185 — "`make file-findings` can file a finding twice — the dedup list is eventually consistent" | — | [findings-dedup](openspec/changes/findings-dedup-index-lag/specs/findings-dedup/spec.md) | 5/5 | [proposal.md](openspec/changes/findings-dedup-index-lag/proposal.md) |
 
 ## Archived changes
 
