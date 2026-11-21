@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **393**
+Active changes: **1** · archived: **393**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `engagement-counter-rollup` | active | #1182 | (unset until opened) | [post-signal](openspec/changes/engagement-counter-rollup/specs/post-signal/spec.md) | 4/5 | [proposal.md](openspec/changes/engagement-counter-rollup/proposal.md) |
 
 ## Archived changes
 
