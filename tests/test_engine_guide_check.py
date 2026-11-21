@@ -42,10 +42,15 @@ def test_guide_parsing_and_shipped_store():
     store = json.loads((ROOT / "data" / "models.json").read_text())
     reg = store.get("engines") or {}
     meas = json.loads((ROOT / "data" / "measurements.json").read_text())
+    matrix = GC.matrix_engines(readme)
+    used = GC.measured_engines(meas)
     check("the shipped guide table is parsed", len(guide) >= 40, str(len(guide)))
-    check("the shipped guide matches the registry and measurements",
-          not GC.problems(guide, reg, GC.measured_engines(meas)),
-          str(GC.problems(guide, reg, GC.measured_engines(meas))[:3]))
+    check("the shipped engine matrix columns are parsed", len(matrix) >= 40, str(len(matrix)))
+    check("the shipped guide and matrix match the registry and measurements",
+          not GC.problems(guide, reg, used, matrix),
+          str(GC.problems(guide, reg, used, matrix)[:3]))
+    check("a missing matrix is a finding, not a silent pass",
+          any("no engine matrix" in p for p in GC.problems(guide, reg, used, [])))
     check("a missing heading is a finding, not a silent pass",
           any("no engine guide table" in p for p in GC.problems([], reg, set())))
 
@@ -63,6 +68,12 @@ def test_planted_drift_is_named():
     unregistered = GC.problems(guide, reg, {"Strata"})
     check("a measured but unregistered engine is named",
           any("Strata" in p and "NOT registered" in p for p in unregistered), str(unregistered))
+    stale_matrix = GC.problems(guide, reg, {"llama.cpp", "vLLM"}, ["llama.cpp", "GhostEngine"])
+    check("a stale engine-matrix column is named",
+          any("GhostEngine" in p and "engine matrix" in p for p in stale_matrix), str(stale_matrix))
+    missing_matrix = GC.problems(guide, reg, {"MLX"}, ["llama.cpp"])
+    check("a measured engine missing from the matrix is named",
+          any("MLX" in p and "engine matrix" in p for p in missing_matrix), str(missing_matrix))
 
 
 def test_the_check_runs_in_ci():
