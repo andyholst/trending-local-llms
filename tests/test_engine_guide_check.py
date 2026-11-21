@@ -80,7 +80,7 @@ def test_planted_drift_is_named():
     check("a stale Quick pick is named",
           any("GhostEngine" in p and "Quick picks" in p for p in stale_quick), str(stale_quick))
     variant_reg = dict(reg) | {"MLX-fast (Bonsai 2)": {}}
-    variant_ok = GC.problems(guide, variant_reg, set(), None,
+    variant_ok = GC.problems(guide + ["MLX-fast (Bonsai 2)"], variant_reg, set(), None,
                              ["llama.cpp CPU", "MLX-fast", "vLLM"])
     check("known backend variants of registered engines pass", not variant_ok, str(variant_ok))
 
