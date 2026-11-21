@@ -1409,21 +1409,21 @@ SYFT_IMAGE := ghcr.io/anchore/syft:v1.26.0@sha256:de078f51704a213906970b1475edd6
 SYFT_RUN := docker run --rm -v "$$PWD":/workspace -w /workspace $(SYFT_IMAGE)
 
 .PHONY: trivy-scan containerfile-scan grype-scan syft-sbom
-trivy-scan: ## Trivy container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding)
+trivy-scan: ## Trivy container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding; run by security-scan.yml, issue #1185)
 	$(TRIVY_RUN) fs --scanners vuln --quiet --no-progress --exit-code 1 $(if $(DIR),$(DIR),/workspace)
 
-containerfile-scan: ## Containerfile/Dockerfile linter (hadolint) over the repo's Dockerfiles (exit 1 on a violation)
+containerfile-scan: ## Containerfile/Dockerfile linter (hadolint) over the repo's Dockerfiles (exit 1 on a violation; run by security-scan.yml, issue #1185)
 	$(CONTAINERFILE_RUN) /workspace/Dockerfile /workspace/Dockerfile.test /workspace/Dockerfile.python-env
 
-grype-scan: ## Grype container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding)
+grype-scan: ## Grype container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding; run by security-scan.yml, issue #1185)
 	$(GRYPE_RUN) dir:$(if $(DIR),$(DIR),/workspace) --quiet
 
-syft-sbom: ## Syft software-bill-of-materials of the working tree (DIR=<scan dir>; writes the SBOM to stdout)
+syft-sbom: ## Syft software-bill-of-materials of the working tree (DIR=<scan dir>; writes the SBOM to stdout; run by security-scan.yml, issue #1185)
 	@test -n "$(OUT)" || { echo "Usage: make syft-sbom OUT=<sbom.json> [DIR=<scan dir>]"; exit 1; }
 	$(SYFT_RUN) dir:$(if $(DIR),$(DIR),/workspace) -o syft-json --quiet > $(OUT)
 
 .PHONY: security-scan-self-test
-security-scan-self-test: ## Prove the scanners are not a false green: a planted known-CVE fixture MUST fail trivy+grype, a clean one pass (issue #715)
+security-scan-self-test: ## Prove the scanners are not a false green: a planted known-CVE fixture MUST fail trivy+grype, a clean one pass (issue #715; run by security-scan.yml, issue #1185)
 	python3 scripts/security_scan_self_test.py
 
 # The gate's file set is what git could commit (issue #836): gitleaks dir mode

@@ -894,6 +894,7 @@ BOT_GUARDS = (
     ("pr-closure.yml", "guard"),
     ("architecture-bot.yml", "guard"),
     ("bot-health.yml", "guard"),
+    ("security-scan.yml", "guard"),  # issue #1185: the supply-chain scan sweep
 )
 
 #: Events a guard must admit WITHOUT asking who called, because GitHub starts
@@ -2572,6 +2573,7 @@ DISPATCH_ONLY_COVERAGE = {
     "publish-agent-image.yml": "tests/test_publish_agent_image.py",  # the publish decision
     "refresh-bot.yml": "tests/test_refresh_run_block.py",  # the window block it composes
     "architecture-bot.yml": "tests/test_architecture_bot.py",  # the block it regenerates, its guard
+    "security-scan.yml": "tests/test_workflows.py",  # issue #1185: guard, the five make targets, dispatch-only
 }
 
 #: Events that mean "a pull request runs this pipeline".
@@ -3371,3 +3373,170 @@ def test_a_workflow_that_drops_the_attribution_step_is_red():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# ---------------------------------------------------------------------------
+# security-scan pipeline (issue #1185): the five pinned scan targets (issue #1175)
+# get their dispatch-only pipeline, and the failure filer (rule 6r) watches it.
+# ---------------------------------------------------------------------------
+
+SECURITY_SCAN_WF = "security-scan.yml"
+SECURITY_SCAN_TARGETS = (
+    "containerfile-scan",
+    "trivy-scan",
+    "grype-scan",
+    "syft-sbom",
+    "security-scan-self-test",
+)
+
+
+def _security_scan_problems(doc: dict) -> list:
+    """The wiring contract of the security-scan pipeline, ONE function so the
+    mutation proofs below reuse it (rule 6m: the workflow reaches the scans only
+    through `make <target>`; rule 6j: the guard is its own first job)."""
+    problems: list = []
+    jobs = doc.get("jobs") or {}
+    if "guard" not in jobs:
+        problems.append("no guard job (rule 6j)")
+        return problems
+    gsteps = steps(jobs["guard"])
+    if not any("guard" in str(st.get("name", "")).lower() for st in gsteps):
+        problems.append("the guard job carries no guard step")
+    if "secrets." in str(jobs["guard"].get("env", {})) + str(gsteps):
+        problems.append("the guard job touches a secret")
+    on = doc.get("on") or doc.get(True) or {}
+    if not isinstance(on, dict) or "workflow_dispatch" not in on:
+        problems.append("pipeline is not workflow_dispatch")
+    if "schedule" in on:
+        problems.append("security-scan carries a schedule (rule 6t, #1029)")
+    if "pull_request" in on or "push" in on:
+        problems.append("security-scan must not trigger on pull_request/push (issue #1185)")
+    perms = doc.get("permissions") or {}
+    if str(perms.get("contents")) != "read":
+        problems.append(f"pipeline permissions are {perms!r}, not contents: read")
+    scan = jobs.get("scan")
+    if not scan:
+        problems.append("no scan job")
+        return problems
+    if "guard" not in _deps(jobs, "scan"):
+        problems.append("the scan job does not need the guard")
+    if "secrets." in str(scan.get("env", {})) + str(steps(scan)):
+        problems.append("the scan job touches a secret (the scans need none)")
+    run_lines = [str(st.get("run", "")) for st in steps(scan)]
+    called: set = set()
+    for line in run_lines:
+        if "scripts/" in line:
+            problems.append(f"scan step reaches a script without make: {line.strip()[:80]}")
+        if re.search(r"\b(trivy|grype|syft|hadolint)\b", line.replace("scan_dir", "")):
+            problems.append(f"scan step spells a scanner instead of its make target: {line.strip()[:80]}")
+        for m in re.finditer(r"\bmake (_?[a-z][a-z0-9-]*)", line):
+            called.add(m.group(1))
+    missing = sorted(t for t in SECURITY_SCAN_TARGETS if t not in called)
+    if missing:
+        problems.append(f"targets the scan job never calls: {missing}")
+    stray = sorted(t for t in called if t not in SECURITY_SCAN_TARGETS)
+    if stray:
+        problems.append(f"targets outside the five scan targets: {stray}")
+    if not run_lines or not all(f"make {t}" in " ".join(run_lines) for t in SECURITY_SCAN_TARGETS):
+        problems.append("a scan target is not run through make")
+    # Every scan gate step runs even after a sibling went red (`if: ${{ !cancelled() }}`):
+    # a round must REPORT every scanner's finding, not hide the rest behind the first.
+    gate_steps = [st for st in steps(scan)
+                  if any(f"make {t}" in str(st.get("run", "")) for t in SECURITY_SCAN_TARGETS)]
+    unguarded = [str(st.get("name", "")) for st in gate_steps if "cancelled" not in str(st.get("if", ""))]
+    if unguarded:
+        problems.append(f"scan steps that hide later findings when an earlier one goes red: {unguarded}")
+    # The SBOM is an artifact: it must be uploaded, and actions must be SHA-pinned.
+    uses = [str(st.get("uses", "")) for st in steps(scan)]
+    if not any(st.startswith("actions/upload-artifact@") for st in uses):
+        problems.append("the syft SBOM is never uploaded as an artifact")
+    unhashed = [u for u in uses if "@" not in u.split("/")[-1] or not re.search(r"@[0-9a-f]{7,40}$", u)]
+    if unhashed:
+        problems.append(f"actions not pinned to a commit SHA: {unhashed}")
+    return problems
+
+
+def test_security_scan_pipeline_is_guarded_dispatch_only_and_runs_the_five_targets():
+    """Issue #1185: `make containerfile-scan`, `trivy-scan`, `grype-scan`, `syft-sbom` and
+    `security-scan-self-test` (shipped by issue #1175) are called by a dispatch-only pipeline —
+    guard as its own first job, `permissions: contents: read`, NO schedule (rule 6t) and no
+    pull_request/push trigger, every target reached only through `make` (rule 6m), every scan
+    gate step `if: ${{ !cancelled() }}`, and the SBOM uploaded. Mutation-proves the contract by
+    dropping a target and by moving a scanner call past the Makefile."""
+    doc = load(SECURITY_SCAN_WF)
+    problems = _security_scan_problems(doc)
+    check("security-scan: guard + dispatch-only + the five targets through make",
+          not problems, problems)
+
+    drop = {"jobs": {"guard": doc["jobs"]["guard"],
+                     "scan": dict(doc["jobs"]["scan"],
+                                  steps=[st for st in steps(doc["jobs"]["scan"])
+                                         if "make security-scan-self-test" not in str(st.get("run", ""))])}}
+    red = _security_scan_problems(drop)
+    check("a pipeline missing the self-test step is RED (the #1061 shape it exists to prevent)",
+          any("security-scan-self-test" in p for p in red), str(red))
+
+    bypassed = {"jobs": {"guard": doc["jobs"]["guard"],
+                         "scan": dict(doc["jobs"]["scan"],
+                                      steps=[dict(steps(doc["jobs"]["scan"])[0],
+                                                  run="python3 scripts/security_scan_self_test.py\n")]
+                                      + steps(doc["jobs"]["scan"])[1:])}}
+    red2 = _security_scan_problems(bypassed)
+    check("a scan step that reaches the script past the Makefile is RED (rule 6m)",
+          any("without make" in p for p in red2), str(red2))
+
+
+def test_security_scan_is_dispatch_only_with_named_coverage():
+    """Rule 6t (issue #1029): the gatherer is the ONLY cron-scheduled pipeline; security-scan is
+    `workflow_dispatch` only, so it must name its test coverage (issue #231) — and a pipeline that
+    regains a cron goes RED through the cadence test that walks the whole tree."""
+    doc = load(SECURITY_SCAN_WF)
+    events = workflow_triggers(doc)
+    check("security-scan triggers on workflow_dispatch only", events == {"workflow_dispatch"}, events)
+    check("security-scan names its coverage module in DISPATCH_ONLY_COVERAGE",
+          DISPATCH_ONLY_COVERAGE.get(SECURITY_SCAN_WF) == "tests/test_workflows.py",
+          DISPATCH_ONLY_COVERAGE.get(SECURITY_SCAN_WF))
+    problems = coverage_problems({SECURITY_SCAN_WF: events}, {})
+    check("security-scan without a coverage entry FAILS the coverage guard", bool(problems), problems)
+
+
+def test_the_failure_filer_watches_the_security_scan_pipeline():
+    """Rule 6r: a red security-scan run must become a tracked issue carrying its own scrubbed
+    error block. security-scan joins MAIN_PIPELINES, and — because it has no push and no schedule —
+    its DISPATCH-ONLY dispatched runs are tracked as its only delivery (the #1029 partition keeps a
+    manual dispatch of a cron/push pipeline untracked). Mutation-proven: remove the pipeline from
+    the list and a red dispatched scan run is NO LONGER selected."""
+    import pipeline_failure_issue as pfi
+
+    check("security-scan.yml is a MAIN pipeline (the filer walks it)",
+          SECURITY_SCAN_WF in pfi.MAIN_PIPELINES, pfi.MAIN_PIPELINES)
+    check("security-scan.yml is declared dispatch-only in the filer",
+          pfi.DISPATCH_ONLY_PIPELINES == (SECURITY_SCAN_WF,), pfi.DISPATCH_ONLY_PIPELINES)
+
+    runs = [
+        {"id": 1, "name": SECURITY_SCAN_WF, "event": "workflow_dispatch",
+         "headBranch": "master", "status": "completed", "conclusion": "failure",
+         "created_at": "2026-11-21T03:00:00Z"},
+        {"id": 2, "name": "queued-alarm.yml", "event": "workflow_dispatch",
+         "headBranch": "master", "status": "completed", "conclusion": "failure",
+         "created_at": "2026-11-21T03:00:00Z"},
+        {"id": 3, "name": SECURITY_SCAN_WF, "event": "workflow_dispatch",
+         "headBranch": "ci/keeper", "status": "completed", "conclusion": "success",
+         "created_at": "2026-11-21T03:00:00Z"},
+    ]
+    selected = {r["id"] for r in pfi.main_pipeline_failures(runs)}
+    check("a red dispatched security-scan run is SELECTED for filing",
+          selected == {1}, selected)
+    check("a red dispatched run of a pipeline that has its own alarms stays untracked (the #1029 partition)",
+          2 not in selected, selected)
+
+    original = pfi.MAIN_PIPELINES
+    without = tuple(w for w in original if w != SECURITY_SCAN_WF)
+    try:
+        pfi.MAIN_PIPELINES = without
+        selected2 = {r["id"] for r in pfi.main_pipeline_failures(runs)}
+    finally:
+        pfi.MAIN_PIPELINES = original
+        assert pfi.MAIN_PIPELINES == original, "the mutation restored the real tuple"
+    check("removing security-scan from MAIN_PIPELINES makes the filer miss a red scan run (RED on the pre-#1185 script)",
+          1 not in selected2, selected2)
