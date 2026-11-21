@@ -1,6 +1,7 @@
 # Proposal: search-smoke-source-reachability
 
 Issue: #1224
+PR: #1225
 
 ## Why
 
