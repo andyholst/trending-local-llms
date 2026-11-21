@@ -1550,6 +1550,26 @@ _agent-aux-local-sync:
 
 agent-aux-local-sync: ## Sync the chain's local-tier model id into custom_providers[strata] + moa presets (PROFILE=<name>[,...] incl. `default`, or ALL_PROFILES=1; CHECK=1 reports drift; backup kept; issue #1198)
 	@$(MAKE) --no-print-directory _agent-aux-local-sync
+# ---- weekly free-tier refresh: the chain's free models are a LIVE truth (issue #1195) ----
+# The free set moves between reads (413 -> 415 models in two days while `:free` stayed at 5),
+# and a remembered list silently rots. `free-model-refresh` re-reads GET <chain.base_url>/models
+# with the credential by NAME, updates ONLY the free steps of agents/model_chain.json (survivors
+# keep order/aliases, new ids append, retired ids drop, contexts follow the read), NEVER touches
+# the local_fallback tier or the paid pin, and writes nothing when the set is unchanged. It rides
+# refresh-bot's Wednesday cron as a deterministic job (rule 6t: the ONLY scheduled pipeline) and
+# lands any change through the shared `keeper-pr` seam — never a direct push, never a model call.
+.PHONY: _free-model-refresh free-model-refresh _free-model-refresh-pr-body free-model-refresh-pr-body
+_free-model-refresh:
+	python3 scripts/free_model_refresh.py --write
+
+free-model-refresh: ## Refresh the chain's free tier from the live Nous catalogue; a no-op when unchanged (issue #1195)
+	@$(MAKE) --no-print-directory _free-model-refresh
+
+_free-model-refresh-pr-body:
+	RUN_URL="$(RUN_URL)" python3 scripts/free_model_refresh.py --pr-body
+
+free-model-refresh-pr-body: ## Print the free-model-refresh keeper PR body — no closing keyword, it records the read (RUN_URL=…; issue #1195)
+	@$(MAKE) --no-print-directory _free-model-refresh-pr-body RUN_URL="$(RUN_URL)"
 
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
