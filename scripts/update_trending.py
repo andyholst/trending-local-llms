@@ -2766,6 +2766,8 @@ def misattributed_measurement_reason(
     for mid in alias_ids:
         other = next((x for x in (store or {}).get("models", []) if x.get("id") == mid), None)
         if other is not None:
+            if cross_identity_alias_reason(model, other) and not alias_pending_ruling(model.get("id"), mid):
+                continue  # a cross-identity alias is INERT: it can never legitimize a misattribution (#1207)
             ident = measurement_model_identity(other.get("name") or other.get("id"))
             if ident:
                 allowed.add(ident)
@@ -3224,7 +3226,7 @@ def ingest_raw_snapshots(store: dict, since: datetime | None = None,
                 # A CAPTURED attribution exception lands here too (issue #884):
                 # the search contract declares the key, so a snapshot may record
                 # it; the store row gains the counterparts as a union.
-                new_aliases = merge_measurement_aliases(existing, m)
+                new_aliases = merge_measurement_aliases(existing, m, store)
                 if new_aliases:
                     print(f"[ingest] {mid}: measurement_model_aliases gained "
                           f"{new_aliases} from {path.name} (issue #884) — union, "
@@ -3658,7 +3660,60 @@ def coerce_additive(v):
     return v
 
 
-def merge_measurement_aliases(existing: dict, incoming: dict) -> list[str]:
+def params_identity(params: object) -> str | None:
+    """The leading parameter-size token of a row's `params` field ('125B (MoE)' -> '125b',
+    '35B (MoE, 3B active)' -> '35b', '0.8B' -> '0.8b') — or None when unknown.
+
+    The STORE field, not the name: `measurement_model_identity` parses names and fails
+    open on variant names ('Qwen3.8-Flash-Next 125B' puts words between the version and
+    the size), so the identity gate reads the declared params instead (issue #1207)."""
+    m = re.match(r"\s*(\d+(?:\.\d+)?)\s*[Bb]\b", str(params or ""))
+    return m.group(1).lower() + "b" if m else None
+
+
+def cross_identity_alias_reason(model: dict, other: dict) -> str | None:
+    """Why `other` may NOT be a `measurement_model_aliases` counterpart of `model` — or None.
+
+    An attribution exception (issue #652) lets a measurement naming the counterpart's
+    model land on this row. That is legitimate only for the SAME model identity: a
+    quantization or phone variant keeps the params figure (bonsai = ternary Qwen3.8-27B,
+    both 27B). A counterpart whose declared params DIFFER is a different model size —
+    never a measurement alias; honoring it attributes one model's t/s to another through
+    the exception path, bypassing the misattribution refusal. Measured in the shipped
+    store (issue #1207): reciprocal qwen3.8-flash-next-125b <-> qwen3.8-27b aliases
+    (125B MoE vs 27B dense), qwen3.5-0.8b on the 27B row, and 35B/180B rows on the 125B
+    row. Fails open when either params is unknown — the gate never guesses a refusal."""
+    a, b = params_identity(model.get("params")), params_identity(other.get("params"))
+    if a and b and a != b:
+        return (f"alias counterpart '{other.get('id')}' declares params {other.get('params')!r} "
+                f"but the row declares {model.get('params')!r} — a different model size is "
+                f"never a measurement alias (issue #1207); same-identity variants only")
+    return None
+
+
+#: Cross-identity alias pairs that are KNOWN-BAD but LOAD-BEARING: they justify cross-row
+#: measurement pairs whose true attribution needs an OWNER RULING (rule 3b — an agent may
+#: not remove a shipped measurement, the #652/#1016 exception path). The store gate REPORTS
+#: these but does not fail until the ruling lands; the ingest merge still refuses NEW
+#: cross-identity aliases unconditionally, and a capture can never widen this set.
+#: Evidence (issue #1207, owner-ruling issue #1210): the yume_arasaki Apple Silicon bake-off
+#: post 2108359576966094952 stores 157.7 t/s (oMLX) and 90 t/s (mlx-serve) under BOTH
+#: qwen3.8-27b and qwen3.8-flash-next-125b; the 27B row's MLX 44.6 entry even reads
+#: "Qwen3.8 Flash stock serve". Which model the post measured (or whether it is a joint
+#: bake-off for CROSS_MODEL_ALLOW_LIST) is the owner's call.
+CROSS_IDENTITY_ALIAS_PENDING_RULING: set[tuple[str, str]] = {
+    ("qwen3.8-flash-next-125b", "qwen3.8-27b"),
+    ("qwen3.8-27b", "qwen3.8-flash-next-125b"),
+}
+
+
+def alias_pending_ruling(row_id: object, counterpart_id: object) -> bool:
+    """True when this cross-identity pair is a documented load-bearing exception awaiting
+    the owner's attribution ruling (issue #1207/#1210) — reported, not failed, not inert."""
+    return (str(row_id or "").lower(), str(counterpart_id or "").lower()) in CROSS_IDENTITY_ALIAS_PENDING_RULING
+
+
+def merge_measurement_aliases(existing: dict, incoming: dict, store: dict | None = None) -> list[str]:
     """A captured attribution exception joins the row it belongs to (issue #884).
 
     The search contract now lets a raw snapshot RECORD the exception (the same
@@ -3668,7 +3723,13 @@ def merge_measurement_aliases(existing: dict, incoming: dict) -> list[str]:
     (case-insensitive dedup). Keys are unioned, never replaced, never shrunk
     (AGENTS.md §2.3b). The union is stored sorted for reviewability — content, not
     insertion order, is what a reviewer reads. Returns the counterparts newly added.
-    """
+
+    With `store`, a counterpart whose declared params identity DIFFERS from the row's
+    is REFUSED and never added (issue #1207) — the exception path may not attribute a
+    different model size's measurements to this row. Without `store` the union is
+    unconditional; the hard check on the shipped store is validate's
+    `check_measurement_alias_map`, which reads the same `cross_identity_alias_reason`
+    (rule 6d: ONE implementation)."""
     raw_in = incoming.get("measurement_model_aliases")
     if not isinstance(raw_in, list) or not raw_in:
         return []
@@ -3679,6 +3740,14 @@ def merge_measurement_aliases(existing: dict, incoming: dict) -> list[str]:
     for mid in raw_in:
         key = str(mid or "").strip().lower()
         if key and key not in seen:
+            other = next((x for x in (store or {}).get("models", [])
+                          if str(x.get("id") or "").lower() == key), None)
+            if other is not None:
+                reason = cross_identity_alias_reason(existing, other)
+                if reason:
+                    print(f"[ingest] REFUSED measurement_model_aliases '{mid}' on "
+                          f"{existing.get('id')}: {reason}")
+                    continue
             seen.add(key)
             current.append(str(mid).strip())
             added.append(str(mid).strip())

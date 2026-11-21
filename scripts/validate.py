@@ -618,6 +618,7 @@ def check_measurement_alias_map(store: dict, raw_dir: Path | None = None) -> Non
     `raw_dir=None` is the store-only mode the #652 tests lock — it never reads the
     repository's own raw files behind a fixture store."""
     ids = {str(m.get("id") or "").lower() for m in store.get("models", [])}
+    by_id = {str(m.get("id") or "").lower(): m for m in store.get("models", [])}
     bad = 0
     seen = 0
     for m in store.get("models", []):
@@ -632,6 +633,20 @@ def check_measurement_alias_map(store: dict, raw_dir: Path | None = None) -> Non
                 bad += 1
                 fail(f"{m.get('id','?')}: measurement_model_aliases counterpart "
                      f"'{mid}' is not a model id in the store (dangling exception)")
+            else:
+                # issue #1207: a counterpart whose declared params identity DIFFERS is a
+                # different model size — never a measurement alias. ONE implementation
+                # (rule 6d): the same reason the ingest merge REFUSES at write time. The
+                # shipped store's historical pairs are LOAD-BEARING (they justify cross-row
+                # measurements awaiting owner rulings, #1210) — report them, never red every
+                # PR for history an agent cannot repair (the #650/#458/#459 precedent). The
+                # hard write-time refusal is the ingest merge; this is the visible ledger.
+                import update_trending as ut
+                other = by_id.get(str(mid).strip().lower())
+                reason = ut.cross_identity_alias_reason(m, other) if other else None
+                if reason:
+                    print(f"  REPORT: {m.get('id','?')}: cross-identity alias '{mid}' "
+                          f"needs owner review (issues #1207/#1210) — {reason}")
     if raw_dir is not None and raw_dir.exists():
         for p in sorted(raw_dir.glob("*.json")):
             try:

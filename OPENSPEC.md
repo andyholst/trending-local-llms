@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **386**
+Active changes: **0** · archived: **388**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
+| _(none)_ | — | — | — | — | — | — |
 
 ## Archived changes
 
@@ -62,6 +62,7 @@ Active changes: **1** · archived: **386**
 | `2026-11-14-rulebook-names-every-pipeline` | archived | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/proposal.md) |
 | `2026-11-14-storage-offload-needs-a-medium` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/proposal.md) |
 | `2026-11-14-weekly-cadence-wednesday` | archived | — | — | [fleet-cadence](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/proposal.md) |
+| `2026-11-21-attribution-joint-figure-alias` | archived | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/archive/2026-11-21-attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-21-attribution-joint-figure-alias/proposal.md) |
 | `2026-11-21-weekly-security-scan` | archived | #715 | — | [weekly-security-scan](openspec/changes/archive/2026-11-21-weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/archive/2026-11-21-weekly-security-scan/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
@@ -100,6 +101,7 @@ Active changes: **1** · archived: **386**
 | `agents8-owed-guard-rows-1005-998` | archived | #1005 · #998 | #1063 | [agents-guard-registry](openspec/changes/archive/agents8-owed-guard-rows-1005-998/specs/agents-guard-registry/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/agents8-owed-guard-rows-1005-998/proposal.md) |
 | `agents8-per-entry-dedup-row` | archived | #1001 | #1013 | [agents-guard-registry](openspec/changes/archive/agents8-per-entry-dedup-row/specs/agents-guard-registry/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/agents8-per-entry-dedup-row/proposal.md) |
 | `alarm-cadence-claims-match-tree` | archived | #1032 | #1132 | [architecture-description](openspec/changes/archive/alarm-cadence-claims-match-tree/specs/architecture-description/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/alarm-cadence-claims-match-tree/proposal.md) |
+| `alias-identity-gate` | archived | #1207 | #1215 | [measurement-attribution](openspec/changes/archive/alias-identity-gate/specs/measurement-attribution/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/alias-identity-gate/proposal.md) |
 | `alias-one-definition` | archived | #221 — `tech-debt: The alias name has one definition for the config and many literals for the calls` | — | [agent-alias](openspec/changes/archive/alias-one-definition/specs/agent-alias/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/alias-one-definition/proposal.md) |
 | `all-quarantined-capture-is-an-alarm` | archived | #624 — tech-debt "A capture where EVERY row is quarantined still exits 0 and reports | #837 | [raw-capture-alarm](openspec/changes/archive/all-quarantined-capture-is-an-alarm/specs/raw-capture-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/all-quarantined-capture-is-an-alarm/proposal.md) |
 | `an-unchecked-scan-is-not-clean` | archived | #309 | — | [code-review-scan](openspec/changes/archive/an-unchecked-scan-is-not-clean/specs/code-review-scan/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/an-unchecked-scan-is-not-clean/proposal.md) |

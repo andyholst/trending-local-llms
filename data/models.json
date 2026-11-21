@@ -1329,7 +1329,6 @@
       "measurement_model_aliases": [
         "bonsai-2-27b",
         "qwen3-8-27b",
-        "qwen3.5-0.8b",
         "qwen3.8-flash-next-125b",
         "thinkingcap-27b"
       ]
@@ -2476,7 +2475,7 @@
       "supported_engines": [
         "Strata"
       ],
-      "why": "Qwen3.8-Flash-Next-125B — see source posts.",
+      "why": "Qwen3.8-Flash-Next-125B — see source posts. Official HF card (huggingface.co/Qwen/Qwen3.8-Flash-Next, read 2026-11-21): 125B MoE with 6B activated; the ~180B safetensors total adds the 51B n-gram embedding and 4B MTP modules — 125B is the official naming (issue #1207).",
       "formats": [
         {
           "name": "Qwen3.8-Flash-Next 125B",
@@ -3066,10 +3065,8 @@
       "storage_offload": "MoE experts across GPU/RAM/SSD (~80GB free disk)",
       "engine_min_version": "Rapid-MLX 0.15.7; mlx-serve 26.9.5; TensorFold 0.15.7",
       "measurement_model_aliases": [
-        "cyber-frost-3.8-mlx",
         "qwen3-8-flash-next-125b",
-        "qwen3.8-27b",
-        "qwopus3.6-35b-a3b-coder-mtp"
+        "qwen3.8-27b"
       ]
     },
     {
