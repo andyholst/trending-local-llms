@@ -6,4 +6,4 @@
 - [x] T4: validate `check_measurement_alias_map` REPORTS shipped cross-identity pairs (#650 precedent); dangling hard-fail unchanged.
 - [x] T5: data cleanup (3 non-load-bearing contaminants) + official params note; README re-rendered.
 - [x] T6: tests/test_alias_identity_gate.py 23/23; regressions cross-model 98/0, measurement-attribution 60/0, engine-figure-alignment 32/0; `validate --only data` QA PASSED.
-- [ ] T7: PR opened, `make pr-message-check`, `make openspec-record-pr ISSUE=1207 PR=<pr>` at the PR head.
+- [x] T7: PR opened, `make pr-message-check`, `make openspec-record-pr ISSUE=1207 PR=#1215` at the PR head.

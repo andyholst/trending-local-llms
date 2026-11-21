@@ -1,7 +1,7 @@
 # Proposal: alias-identity-gate
 
 Issue: #1207
-PR: (unset until opened)
+PR: #1215
 
 ## Why
 
