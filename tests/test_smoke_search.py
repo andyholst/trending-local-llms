@@ -205,6 +205,32 @@ def test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S: dict):
           "MAJORITY" in text and "not a flake" in text, text[-300:])
 
 
+def test_ci_search_smoke_budget_is_realistic():
+    """The probe budget is Makefile-owned and both pipelines pass it explicitly.
+
+    A 3s budget measured the CLIENT alarm, not the source: smoke_search.py's own
+    docstring says 1-3s is expected to time out before any 200. On qa-validate
+    run 44920165690 all four cpu queries died at exactly 3.0s with http=0 and the
+    majority rule (#258) correctly red the leg — while the source was reachable.
+    At 90s a genuinely dead source still misses EVERY query and fails loudly.
+    """
+    text = MAKEFILE.read_text(encoding="utf-8")
+    m = re.search(r"^SEARCH_SMOKE_BUDGET\s*\?=\s*(\d+)\s*$", text, re.M)
+    assert m, "Makefile must own SEARCH_SMOKE_BUDGET (one value, rule 6d)"
+    budget = int(m.group(1))
+    assert budget >= 30, f"a scrape budget below 30s measures the client alarm, not the source: {budget}"
+    assert re.search(
+        r"^_search-smoke:\s*\n\s+python3 scripts/smoke_search\.py --budget "
+        r"\$\(SEARCH_SMOKE_BUDGET\)", text, re.M), "_search-smoke must use the Makefile budget"
+    assert "make _search-smoke SEARCH_SMOKE_BUDGET=$(SEARCH_SMOKE_BUDGET)" in text, (
+        "the public recipe must forward the budget into the container"
+    )
+    for name in ("qa-validate.yml", "refresh-bot.yml"):
+        wf = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        assert "within 3s" not in wf, f"{name} still advertises the 3s probe"
+        assert "SEARCH_SMOKE_BUDGET=90" in wf, f"{name} must pass the budget explicitly"
+
+
 def main() -> int:
     print("smoke_search: Makefile keywords match the bounded smoke (same params)")
     smoke = _load_smoke_backends()
@@ -303,6 +329,13 @@ def main() -> int:
         check("outage: an upstream error page is its own OUTAGE label, never retried (pytest path)", True)
     except AssertionError as e:
         check("outage: an upstream error page is its own OUTAGE label, never retried (pytest path)",
+              False, str(e))
+
+    try:
+        test_ci_search_smoke_budget_is_realistic()
+        check("ci: the reachability budget is Makefile-owned and realistic (both pipelines)", True)
+    except AssertionError as e:
+        check("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
               False, str(e))
 
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")

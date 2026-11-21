@@ -434,9 +434,9 @@ jobs:
       - name: Prepare the base image (published for this revision, else build)
         run: make image-ensure-base
 
-      - name: Reachability smoke (${{ matrix.backend }}) — HTTP 200 within 3s
+      - name: Reachability smoke (${{ matrix.backend }}) — HTTP 200 within 90s
         run: |
-          make _search-smoke BACKEND=${{ matrix.backend }}
+          make _search-smoke BACKEND=${{ matrix.backend }} SEARCH_SMOKE_BUDGET=90
 
       # One real Hermes call through the search alias before the 20-minute
       # search: a dead key / broken alias / provider mis-route fails here in

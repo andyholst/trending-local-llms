@@ -911,9 +911,16 @@ _search:
 	@echo "== running 4 searches in parallel (each writes its own data/raw/<backend>-<UTC>.json) =="
 	@make -j4 _search-nvidia _search-metal _search-cpu _search-amd
 
+# A Firecrawl scrape of the lightbrd mirror genuinely takes tens of seconds on a
+# cache miss (scripts/smoke_search.py's own docstring), so a 3s probe measured the
+# CLIENT alarm, not the source: four/four queries died at exactly 3.0s with
+# http=0 on qa-validate run 44920165690 while the mirror was fine. The budget is
+# owned here (one value, rule 6d) and both pipelines pass it explicitly; a real
+# dead source still misses EVERY query at 90s and reds the run (issue #1224).
+SEARCH_SMOKE_BUDGET ?= 90
 .PHONY: _search-smoke
 _search-smoke:
-	python3 scripts/smoke_search.py --budget 3 $(if $(BACKEND),--backend $(BACKEND),)
+	python3 scripts/smoke_search.py --budget $(SEARCH_SMOKE_BUDGET) $(if $(BACKEND),--backend $(BACKEND),)
 
 # Live Hermes routing smoke: ONE tiny real call through the exact alias the
 # search/fix recipes use, with every provider key the pipeline passes (incl.
@@ -1173,7 +1180,7 @@ _search-preflight:
 
 .PHONY: search-smoke
 search-smoke:
-	$(DOCKER_RUN) make _search-smoke $(if $(BACKEND),BACKEND=$(BACKEND),)
+	$(DOCKER_RUN) make _search-smoke SEARCH_SMOKE_BUDGET=$(SEARCH_SMOKE_BUDGET) $(if $(BACKEND),BACKEND=$(BACKEND),)
 
 .PHONY: model-caps
 model-caps:
