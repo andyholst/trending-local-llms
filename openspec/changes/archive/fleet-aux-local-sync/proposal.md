@@ -1,7 +1,7 @@
 # Proposal: fleet-aux-local-sync
 
 Issue: #1198
-PR: (unset until opened)
+PR: #1200
 
 ## Why
 
