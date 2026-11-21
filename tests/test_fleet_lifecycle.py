@@ -109,12 +109,37 @@ def test_reviewer_shapes_are_in_the_rulebook() -> int:
     return failed
 
 
+def scratch_repo(dest: Path) -> Path:
+    """A REAL local git repo built from the tree — CI's checkout has no git objects."""
+    repo = dest / "repo"
+    repo.mkdir(parents=True)
+    for lane in LANES:
+        src = ROOT / "agents" / lane
+        (repo / "agents" / lane / "skills" / lane).mkdir(parents=True)
+        shutil.copyfile(src / "SOUL.md", repo / "agents" / lane / "SOUL.md")
+        shutil.copyfile(src / "config.yaml", repo / "agents" / lane / "config.yaml")
+        shutil.copyfile(
+            src / "skills" / lane / "SKILL.md",
+            repo / "agents" / lane / "skills" / lane / "SKILL.md",
+        )
+    shutil.copyfile(ROOT / "AGENTS.md", repo / "AGENTS.md")
+    for argv in (
+        ["git", "init", "-q"],
+        ["git", "add", "-A"],
+        ["git", "-c", "user.name=fleet-test", "-c", "user.email=fleet@example.invalid",
+         "commit", "-q", "-m", "base"],
+    ):
+        subprocess.run(argv, cwd=repo, check=True, capture_output=True)
+    return repo
+
+
 def test_real_seam_accepts_a_synced_home() -> int:
     with tempfile.TemporaryDirectory() as tmp:
+        root = scratch_repo(Path(tmp))
         home = Path(tmp) / "profiles"
         home.mkdir()
         scratch_home(home)
-        got = run_seam("--base", "HEAD", "--root", str(ROOT), "--profiles-home", str(home))
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
         ok = check(got.returncode == 0, "real seam accepts a home synced at HEAD")
         print("      " + (got.stdout or got.stderr).strip().splitlines()[-1])
         return ok
@@ -122,12 +147,13 @@ def test_real_seam_accepts_a_synced_home() -> int:
 
 def test_real_seam_refuses_a_diverged_soul() -> int:
     with tempfile.TemporaryDirectory() as tmp:
+        root = scratch_repo(Path(tmp))
         home = Path(tmp) / "profiles"
         home.mkdir()
         scratch_home(home)
         victim = home / "tll-tester" / "SOUL.md"
         victim.write_bytes(victim.read_bytes()[:-1])  # one byte short
-        got = run_seam("--base", "HEAD", "--root", str(ROOT), "--profiles-home", str(home))
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
         failed = check(got.returncode == 1, "a one-byte drift is refused")
         failed += check(
             "tll-tester/SOUL.md" in got.stdout and "diverges from" in got.stdout,
