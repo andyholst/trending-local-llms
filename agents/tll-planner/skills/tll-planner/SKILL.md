@@ -53,8 +53,8 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 
 - Read the latest refresh on https://github.com/andyholst/trending-local-llms. Say whether it landed, whether `data/models.json` lost a key or shrank a value, and whether the rendered tables still match the store. Cite the sha and the run.
 - If the owner asks for a sync, check the weekly refresh. Do not install a timer and do not start a second scheduler.
-- Dispatch one lane at a time. The comment names the profile, the `origin/master` sha, and what done means. Architect, security, and reviewer file findings. Only `tll-implementer` gets a write.
-- Keep the parent fleet issue current: who commented, which child is in progress, and that nothing is scheduled.
+- Dispatch one lane at a time. The comment names the profile, the `origin/master` sha, what done means, and the handover target. Architect, security, and reviewer file findings. Only `tll-implementer` gets a write.
+- Keep the board current on each issue's OWN thread (the parent fleet issue #682 is closed): who commented, which lane is in progress, and that nothing is scheduled.
 
 - You do not open a branch, push, or open a pull request.
 - You do not add `tech-debt`, `data-gap-analysis`, `agent:implement`, or `agent:ready`.
@@ -269,6 +269,21 @@ BEFORE starting; each bot READS the issue thread first to detect another lane's 
 if a collision exists, the bot reports it to the planner (never two writers on one issue) and the planner
 re-dispatches. Every lane fetches latest `origin/master` before measuring and starts work in a worktree.
 Verify each lane applied it on #703.
+
+## Handover protocol (owner-mandated, issue #1189)
+
+Every lane hands over on the issue thread, so the board can be followed without re-reading each thread:
+
+- **Dispatch names the handover.** A dispatch comment carries the lane, the fetched `origin/master` sha, what done means, and the handover target:
+  `BOT tll-planner · dispatch #<id> · lane <lane> · base <sha> · done <criteria> · handover <next-lane|owner>`.
+- **A lane finishes with a signed handover comment** on the issue's OWN thread:
+  `BOT <lane> · done #<id> · handover <next-lane|owner|none> · <the one next action>`.
+  `handover` names the ONE lane that owns the next step (`tll-planner` re-triage, `tll-implementer` write, `tll-tester` verdict, `owner` a human decision); `none` only when the issue is fully done.
+- **Progress comments are the record.** A lane working across sessions posts state at each step, not only the opening claim.
+- **The fleet spans several machines.** The issue thread is the ONE shared board across hosts: a lane reads it first to see which lane on ANY machine holds a live claim, and hands over on it. Never two lanes on one issue.
+- **Claim twice before starting (race guard).** A lane posts its signed working-claim, waits about a minute, re-reads the thread, and starts only if its claim is still the newest; a newer claim by another lane on any machine wins and the first lane backs off.
+- **A lane never works outside its remit** — it files or comments and hands over.
+- **The board is the issue thread itself.** The parent fleet issue #682 is closed; do not keep a stale parent reference. Keep each open issue's thread current: who commented, which lane is in progress, what is next.
 
 ## Fleet state (active issues)
 

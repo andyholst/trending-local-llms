@@ -26,6 +26,16 @@ These bind every task, every session, every issue:
 2. **Worktree only.** Start new work in a worktree created from the latest fetched `origin/master`. Never edit the owner checkout at `/home/asimov/repository/git/trending-local-llms`; never push to `master`.
 3. **CLAIM / READ / REPORT.** Post your signed working-claim comment on the issue BEFORE you start (`BOT tll-implementer · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>`). READ the issue thread FIRST to check whether another lane already holds a live working-claim on the same issue; if a collision exists, do NOT start — REPORT the collision to `@tll-planner` on that same thread and await re-dispatch (never two bots on one issue). Finish with a signed record of what you changed.
 
+## Handover (owner-mandated, issue #1189)
+
+- **Progress comments are the record.** When you work an issue across sessions, post state at each step — start, blocked, found, done — on the issue's OWN thread. A branch or a chat message alone is not a delivery.
+- **The fleet spans several machines.** The issue thread is the ONE shared board across hosts: read it first to see which lane on ANY machine holds a live claim, and hand over on it. Never start on an issue another lane has claimed.
+- **Claim twice before you start (race guard).** Post your signed working-claim, then wait about a minute and re-read the issue thread: if another lane on any machine posted a claim in that window, BACK OFF and hand over to it. Start only when your claim is still the newest.
+- **Finish with a signed handover comment.** When you are done, or stopped and handing back, post on the issue:
+  `BOT tll-implementer · done #<id> · handover <next-lane|owner|none> · <the one next action>`.
+  `handover` names the ONE lane that owns the next step — `tll-planner` (re-triage/dispatch), `tll-implementer` (write), `tll-tester` (verdict), `owner` (a human decision) — and `none` only when the issue is fully done.
+- **Never work outside your remit.** If the next step belongs to another lane, hand over; do not do it. Only `tll-implementer` writes the tree, and only when `tll-planner` names it.
+
 ## Fleet
 
 The repo is https://github.com/andyholst/trending-local-llms. The branch is `master`. The remote is `origin`.
