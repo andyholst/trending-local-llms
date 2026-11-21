@@ -854,12 +854,70 @@ def load_refusals(path: Path | None = None) -> list[dict]:
     return [r for r in rows if isinstance(r, dict)]
 
 
+def stale_last_seen(store: dict) -> list[dict]:
+    """Rows whose newest captured post aged out of the trending window while a SIBLING
+    built on the SAME base has newer captured evidence (issue #1183).
+
+    The store-wide newest `last_seen` is the clock — never the wall clock (rule 2: no
+    invented date). A sibling is another row whose name/full_name names this row's base
+    family stem (the stale `qwen3.8-flash-next-125b` stem `qwen3.8-flash-next` appears
+    in `Edge0-145B (Qwen3.8-Flash-Next base)`) with a newer `last_seen`. The threshold
+    is update_trending.TRENDING_WINDOW_DAYS (7) — the SAME window the rank uses, so a
+    row absent from the trending tables is exactly the row whose capture aged out.
+    Additive: this only REPORTS; it never shrinks a row or re-sorts history (rule 3b)."""
+    models = store.get("models") or []
+    dated = [(m, str(m.get("last_seen") or "")) for m in models]
+    newest = max((d for _, d in dated if d), default="")
+    if not newest:
+        return []
+    try:
+        newest_dt = datetime.strptime(newest, "%Y-%m-%d").date()
+    except ValueError:
+        return []
+    cutoff = (newest_dt - timedelta(days=update_trending.TRENDING_WINDOW_DAYS)).isoformat()
+
+    def stem(mid: object) -> str:
+        s = re.sub(r"[^a-z0-9]+", "-", str(mid or "").lower()).strip("-")
+        return re.split(r"-(?:\d+(?:\.\d+)?[bm]|[a-z]+\d+b)", s)[0]
+
+    def blurb(m: dict) -> str:
+        return re.sub(r"[^a-z0-9]+", " ", " ".join(
+            str(m.get(k) or "") for k in ("id", "name", "full_name")).lower())
+
+    stale: list[dict] = []
+    for m, d in dated:
+        if not d or d >= cutoff:
+            continue
+        try:
+            lag = (newest_dt - datetime.strptime(d, "%Y-%m-%d").date()).days
+        except ValueError:
+            continue
+        base = stem(m.get("id"))
+        if len(base) < 5:
+            continue
+        needle = base.replace("-", " ")
+        siblings = [o for o in models
+                    if o is not m and needle in blurb(o)
+                    and str(o.get("last_seen") or "") > d]
+        if not siblings:
+            continue
+        best = max(siblings, key=lambda o: str(o.get("last_seen") or ""))
+        stale.append({"id": m.get("id"), "last_seen": d, "newest_in_store": newest,
+                      "lag_days": lag, "sibling": best.get("id"),
+                      "sibling_last_seen": str(best.get("last_seen"))})
+    return sorted(stale, key=lambda x: str(x["id"]))
+
+
 def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
             refusals: list[dict] | None = None) -> dict:
     """The gap report: per-dimension coverage, free-text-only mentions, and the
     store/maintenance gaps the refresh cannot see."""
     models = store.get("models") or []
     declared_model = contract["model"] | contract["search_model"]
+    # issue #1183: a row with no recent capture while a SIBLING on the same base is
+    # current is a declared acquisition gap — the pipeline cannot tell "no post exists"
+    # from "we stopped finding it" without this signal.
+    stale_capture = stale_last_seen(store)
     declared_measurement = contract["measurement"]
     gaps: list[str] = []          # volatile-ish findings, reported but not signatured
     missing: dict[str, list[str]] = {}   # dimension -> model ids with no structured value
@@ -1070,6 +1128,9 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
         # (issue #936) one entry per FIELD that carries a declared estimate — never one
         # per model, for the same #472 reason: the per-model detail lives in the report
         # and the issue BODY, and the signature stays stable while the class persists.
+        # issue #1183: ONE class entry (never one per model — the #472 churn lesson);
+        # the per-row evidence lives in the report + issue BODY.
+        + (["stale_last_seen"] if stale_capture else [])
         + [f"reask_estimate:{k}" for k in declared_estimates if declared_estimates[k]]
     )
     return {
@@ -1097,6 +1158,7 @@ def analyse(store: dict, contract: dict, raw_dir: Path = RAW_DIR,
         "maintenance": {"stale": stale, "thin_measurements": thin,
                         "estimated": estimated, "empty_raw_legs": empty_legs,
                         "starved_legs": starved_legs},
+        "stale_last_seen": stale_capture,
         "findings": gaps,
         "informational": informational,
         "signature": signature,
@@ -1458,6 +1520,22 @@ def issue_body(report: dict, previous: dict | None, entries: list[str] | None = 
         "## Ranked gaps",
         "",
     ]
+    if report.get("stale_last_seen"):
+        body += [
+            "## Stale `last_seen` (capture hole)",
+            "",
+            "These rows have no captured post inside the 7-day trending window while a",
+            "sibling built on the SAME base has newer captured evidence. The list is not",
+            "dropping them for a ranking bug — the capture is missing. Fix with a targeted",
+            "search, never by inventing a value (rule 2); the gap is additive (rule 3b).",
+            "",
+        ]
+        for s in report["stale_last_seen"]:
+            body.append(
+                f"- `{s['id']}`: last seen {s['last_seen']} ({s['lag_days']}d behind the "
+                f"store's newest {s['newest_in_store']}); sibling `{s['sibling']}` seen "
+                f"{s['sibling_last_seen']}")
+        body.append("")
     body += [f"- **{k}** — {n} model(s)" + _gap_kind(report, k) for k, n in ranked] or ["- none"]
     acquisition = {k: v for k, v in (report.get("not_captured") or {}).items() if v}
     if acquisition:
