@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **383**
+Active changes: **2** · archived: **383**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
+| `nous-provider-chain` | active | #1199 — "fleet: run the lanes on the Nous provider — qwen4-free primary, longcat fallback, a local Strata step, deepseek last" | — | [fleet-model-chain](openspec/changes/nous-provider-chain/specs/fleet-model-chain/spec.md) | 7/7 | [proposal.md](openspec/changes/nous-provider-chain/proposal.md) |
 
 ## Archived changes
 

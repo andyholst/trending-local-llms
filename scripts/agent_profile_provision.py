@@ -13,12 +13,13 @@ the repo, wrong on the machine" is the defect this seam closes.
 
 Three rules shape it (AGENTS.md):
 
-- Rule 3e — a credential is a NAME. The chain names `key_env`; this seam reads only whether the
+- Rule 3e — a credential is a NAME. When the chain names a `key_env`, this seam reads only whether the
   named variable is SET (through `scripts/require_env.py`, the one pre-flight, issue #357) and
   REFUSES (exit 2, naming the variable) before it writes anything. A lane configured with a chain
   whose key is absent is a keyless lane that fails inside a model call, which is exactly the
   measured 401/403 story of §3e/§6k — so the gate speaks first. No value is read, printed or
-  measured for length.
+  measured for length. A chain on the `nous` provider names NO key_env (the Portal session
+  authenticates it, issue #1199), so the pre-flight has nothing to check and is skipped.
 - Rule 3b — additive only. A home's existing `config.yaml` is never destroyed: it is copied to
   `config.yaml.bak-<UTC>` and the new file lands beside the backup. Restoring is a human act.
 - Rule 6d — one implementation. Lanes come from `agent_model_chain.fleet_lanes` (the tree, never
@@ -162,15 +163,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[profile-provision] UNDECIDABLE: {line}", file=sys.stderr)
         return EXIT_UNDECIDABLE
 
-    # Rule 3e / issue #357: the credential is checked BY NAME before anything is written.
+    # Rule 3e / issue #357: the credential is checked BY NAME before anything is written. A chain
+    # on the `nous` provider authenticates through the Portal session and names NO key_env (issue
+    # #1199), so there is nothing to pre-flight and the check is skipped; a chain that DOES name a
+    # key is checked before a byte is written.
     names = required_key_names(chain)
-    rc = require_env_main(names + ["--why",
-                                   "a provisioned fleet lane must be able to authenticate the chain "
-                                   "it names, or it will fail inside a model call instead of at this gate"])
-    if rc != 0:
-        print(f"[profile-provision] REFUSED: nothing was written to {profiles_home(args.profiles_home)} "
-              f"— the chain names {', '.join(names)} and that credential is absent", file=sys.stderr)
-        return EXIT_UNDECIDABLE
+    if names:
+        rc = require_env_main(names + ["--why",
+                                       "a provisioned fleet lane must be able to authenticate the chain "
+                                       "it names, or it will fail inside a model call instead of at this gate"])
+        if rc != 0:
+            print(f"[profile-provision] REFUSED: nothing was written to {profiles_home(args.profiles_home)} "
+                  f"— the chain names {', '.join(names)} and that credential is absent", file=sys.stderr)
+            return EXIT_UNDECIDABLE
 
     home = profiles_home(args.profiles_home)
     rendered = AMC.render_text(chain)

@@ -1,34 +1,40 @@
 {
   "schema_version": 1,
-  "issue": 1140,
-  "comment": "The fleet model chain's ONE source (issue #1140). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. A credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value.",
+  "issue": 1199,
+  "comment": "The fleet model chain's ONE source (issue #1199; shape introduced by #1140). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. The provider is the built-in `nous` provider (the Nous Portal session; the same https://inference-api.nousresearch.com/v1 endpoint) — a credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value. An entry MAY override `provider`/`base_url` per step, which is how the LOCAL Strata engine step (a non-Nous endpoint) rides in the same chain; a `nous` step carries ONLY `provider: nous` (adding `base_url`/`key_env` re-routes it to `custom` and 401s — measured on issue #1199).",
   "measured": {
-    "at": "2026-11-19",
+    "at": "2026-11-21",
     "endpoint": "https://inference-api.nousresearch.com/v1",
-    "how": "GET /v1/models with the Nous agent key: 413 models, exactly 5 carrying the `:free` pricing suffix, and every `model` id below is present in that payload with the `context_length` quoted below.",
-    "issue": "filed by the owner directive of 2026-11-19 (free model first, the paid DeepSeek last); the live read was re-run when this file was authored"
+    "how": "GET /v1/models with the Nous agent key: 415 models, exactly 5 carrying the `:free` pricing suffix, and every `model` id below is present in that payload with the `context_length` quoted below. The provider was then PROVEN end to end on this host: a scratch profile with `model: {provider: nous, default: meituan/longcat-2.5:free}` answered a real turn, and an alias `free-qwen4: {model: qwen/qwen4-max:free, provider: nous}` answered a real turn; the previous `custom` + `key_env: NOUS_API_KEY` shape answered HTTP 401 (invalid/blocked/out of funds).",
+    "issue": "owner directive of 2026-11-21 (provider nous, qwen4-free primary, longcat fallback, a local Strata step, deepseek last); the live read was re-run when this file was authored"
   },
-  "provider": "custom",
-  "base_url": "https://inference-api.nousresearch.com/v1",
-  "key_env": "NOUS_API_KEY",
+  "provider": "nous",
   "chain": [
+    {
+      "alias": "free-qwen4",
+      "model": "qwen/qwen4-max:free",
+      "role": "primary",
+      "context_window": 1000000
+    },
     {
       "alias": "free-longcat",
       "model": "meituan/longcat-2.5:free",
-      "role": "primary",
+      "role": "fallback",
       "context_window": 1048576
+    },
+    {
+      "alias": "strata-local",
+      "model": "qwen3.8-flash-next-q2_0",
+      "role": "fallback",
+      "provider": "custom",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "context_window": 262144
     },
     {
       "alias": "free-hy4",
       "model": "tencent/hy4-flash:free",
       "role": "fallback",
       "context_window": 1048576
-    },
-    {
-      "alias": "free-qwen4",
-      "model": "qwen/qwen4-max:free",
-      "role": "fallback",
-      "context_window": 1000000
     },
     {
       "alias": "free-solar",

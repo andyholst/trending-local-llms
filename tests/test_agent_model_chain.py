@@ -102,12 +102,12 @@ def test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green():
     check("the OK line counts every fleet lane", f"{len(LANES)} lane config(s)" in out,
           f"lanes={LANES} out={out[-200:]}")
     check("the chain order is reported primary-first, last-resort last",
-          "in order free-longcat -> free-hy4 -> free-qwen4 -> free-solar -> free-step -> nous-deepseek" in out,
+          "in order free-qwen4 -> free-longcat -> strata-local -> free-hy4 -> free-solar -> free-step -> nous-deepseek" in out,
           out[-200:])
 
 
 def test_every_free_step_comes_before_the_paid_last_resort():
-    """The chain itself: a free primary, free fallbacks, the pinned paid model LAST."""
+    """The chain itself: a free primary, free fallbacks, a local engine step, the pinned paid model LAST."""
     data = _chain_json(ROOT)
     chain = data["chain"]
     roles = [e["role"] for e in chain]
@@ -116,10 +116,22 @@ def test_every_free_step_comes_before_the_paid_last_resort():
           and roles.count("fallback") >= 1,          str(roles))
     check("the last_resort is the LAST entry", roles[-1] == "last_resort",          str(roles))
     check("the primary is the FIRST entry", roles[0] == "primary",          str(roles))
-    free = [e for e in chain if e["role"] != "last_resort"]
-    check("every primary/fallback step is a `:free` model",
+    # The free-tier rule binds the steps on the CHAIN's provider; a step carrying its OWN
+    # `provider` is a DIFFERENT endpoint (the local Strata engine, issue #1199) and is exempt.
+    free = [e for e in chain if e["role"] != "last_resort" and "provider" not in e]
+    check("every primary/fallback step on the chain provider is a `:free` model",
           all(e["model"].endswith(":free") for e in free),
           str([e["model"] for e in free if not e["model"].endswith(":free")]))
+    check("the chain provider is the built-in `nous` provider (issue #1199)",
+          data["provider"] == "nous", str(data.get("provider")))
+    check("a `nous` step carries NO base_url/key_env (they re-route it to `custom` and 401)",
+          all("base_url" not in e and "key_env" not in e
+              for e in chain if "provider" not in e),
+          str([e["alias"] for e in chain if "base_url" in e or "key_env" in e]))
+    check("the local Strata step carries its OWN provider + base_url",
+          any(e.get("provider") == "custom" and e.get("base_url", "").startswith("http://127.0.0.1")
+              and e["role"] == "fallback" for e in chain),
+          str([e for e in chain if "provider" in e]))
     mk = (ROOT / "Makefile").read_text()
     pinned_model = [line.split(":=", 1)[1].strip() for line in mk.splitlines()
                     if line.startswith("HERMES_MODEL :=")][0]
@@ -130,10 +142,8 @@ def test_every_free_step_comes_before_the_paid_last_resort():
           f"{last['model']} vs {pinned_model}")
     check("the last resort alias is the Makefile's pinned alias", last["alias"] == pinned_alias,
           f"{last['alias']} vs {pinned_alias}")
-    check("the chain names its key_env and no key value", data["key_env"] == "NOUS_API_KEY",
-          str(data.get("key_env")))
     check("no chain entry carries a credential field",
-          not any(k in e for e in chain for k in ("api_key", "apikey", "token", "secret")))
+          not any(k in e for e in chain for k in ("api_key", "apikey", "token", "secret")), "")
     check("every chain step names a context_window it was measured with",
           all(isinstance(e.get("context_window"), int) and e["context_window"] > 0 for e in chain))
     check("the chain states how its model ids were measured (rule 2)",
@@ -147,8 +157,8 @@ def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
         cfg = root / "agents" / "tll-tester" / "config.yaml"
         text = cfg.read_text(encoding="utf-8")
         edited_line = next(i for i, line in enumerate(text.splitlines(), start=1)
-                           if "default: meituan/longcat-2.5:free" in line)
-        cfg.write_text(text.replace("default: meituan/longcat-2.5:free",
+                           if "default: qwen/qwen4-max:free" in line)
+        cfg.write_text(text.replace("default: qwen/qwen4-max:free",
                                     "default: deepseek/deepseek-v4-flash-0731"), encoding="utf-8")
         res = run("--check", root=root)
         out = res.stdout + res.stderr
@@ -157,7 +167,7 @@ def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
               "agents/tll-tester/config.yaml" in out, out[-300:])
         check("the failure names the line and both spellings",
               f"line {edited_line}:" in out and "deepseek/deepseek-v4-flash-0731" in out
-              and "meituan/longcat-2.5:free" in out, out[-400:])
+              and "qwen/qwen4-max:free" in out, out[-400:])
         check("the other lane is reported as clean (only the drifted one fails)",
               "tll-reviewer" not in out, out[-300:])
         check("the refusal tells the author to re-render rather than hand-edit",
@@ -185,6 +195,46 @@ def test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort():
             check(f"chain with {name} is refused", res.returncode == 1, out[-160:])
             check(f"the refusal for {name} is stated in words",
                   "[model-chain] FAIL" in out and "chain" in out, out[-160:])
+
+
+def test_a_nous_step_carrying_base_url_or_key_env_is_refused():
+    """Issue #1199: a `nous` alias carrying `base_url`/`key_env` is re-routed to `custom` and 401s
+    (measured on this host), so the gate refuses the shape rather than rendering it."""
+    for field, value in (("base_url", "https://inference-api.nousresearch.com/v1"),
+                         ("key_env", "NOUS_API_KEY")):
+        with tempfile.TemporaryDirectory() as td:
+            root = _scratch(Path(td))
+            data = _chain_json(root)
+            data["chain"][0][field] = value          # the PRIMARY, a `nous` step
+            _write_chain(root, data)
+            res = run("--check", root=root)
+            out = res.stdout + res.stderr
+            check(f"a nous step carrying {field} is refused", res.returncode == 1, out[-200:])
+            check(f"the {field} refusal names the measured 401", "401" in out, out[-300:])
+
+
+def test_a_local_step_is_exempt_from_the_free_rule_but_needs_its_endpoint():
+    """Issue #1199: the local Strata step is a fallback that is NOT a `:free` model (it is not on
+    the Nous endpoint at all), and it must carry its own `provider`/`base_url`."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        data = _chain_json(root)
+        local = next(e for e in data["chain"] if e["alias"] == "strata-local")
+        # Given the shipped local step, the gate is green
+        res = run("--check", root=root)
+        check("the shipped local Strata step passes the gate", res.returncode == 0,
+              (res.stdout + res.stderr)[-200:])
+        # When  its endpoint is stripped, it becomes a `nous` step with a non-free model
+        stripped = dict(local)
+        stripped.pop("provider")
+        stripped.pop("base_url")
+        data["chain"] = [stripped if e["alias"] == "strata-local" else e for e in data["chain"]]
+        _write_chain(root, data)
+        res = run("--check", root=root)
+        out = res.stdout + res.stderr
+        check("a local step that lost its provider/base_url is refused (a non-free fallback on "
+              "the chain provider)", res.returncode == 1, out[-200:])
+        check("the refusal names the free-tier rule", "free model" in out, out[-300:])
 
 
 def test_the_last_resort_must_be_the_model_the_makefile_pins():
@@ -230,8 +280,11 @@ def test_a_credential_value_or_api_key_field_is_refused_everywhere():
     check("no shipped chain or lane config ASSIGNS a credential field (prose may name one)",
           not bad, str(bad))
     check("every shipped config names key_env as an environment NAME, never a value",
-          all(key_env_names(t) and set(key_env_names(t)) == {"NOUS_API_KEY"} for t in texts.values()),
+          all(set(key_env_names(t)) <= {"NOUS_API_KEY"} for t in texts.values()),
           str({n: key_env_names(t) for n, t in texts.items()}))
+    check("the shipped `nous` configs name NO key_env at all (it re-routes to `custom`)",
+          all(not key_env_names(t) for n, t in texts.items() if n.endswith("config.yaml")),
+          str({n: key_env_names(t) for n, t in texts.items() if n.endswith("config.yaml")}))
 
 
 def test_an_unreadable_chain_is_exit_2_never_a_silent_clean():
@@ -320,6 +373,8 @@ def main() -> int:
     test_every_free_step_comes_before_the_paid_last_resort()
     test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line()
     test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort()
+    test_a_nous_step_carrying_base_url_or_key_env_is_refused()
+    test_a_local_step_is_exempt_from_the_free_rule_but_needs_its_endpoint()
     test_the_last_resort_must_be_the_model_the_makefile_pins()
     test_a_credential_value_or_api_key_field_is_refused_everywhere()
     test_an_unreadable_chain_is_exit_2_never_a_silent_clean()
