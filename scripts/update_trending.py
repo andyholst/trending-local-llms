@@ -863,6 +863,31 @@ def recompute_7d_engagement(m: dict, today: datetime) -> None:
     eng["score_7d"] = buzz  # back-compat alias of buzz_7d
     eng["speed_bonus"] = speed
     eng["trend_score"] = round(buzz + speed, 1)
+    # Issue #1182: raise the LEGACY cumulative counters from their OWN source posts.
+    # Measured: 56/120 rows carried likes=0 while their seen_posts summed real likes
+    # (flash-next: 0 vs 19,516) — a counter that may only grow sitting at 0 while its
+    # sources carry values is invisible corruption. MAX, never assignment: an
+    # ingest-provided higher value is never lowered (rule 3b). These fields are NOT
+    # in any sort key — the rank above uses trend_score/posts_7d — so this repairs
+    # the stored data WITHOUT changing the ranking or last_7d_likes semantics.
+    for counter in ("likes", "comments", "reshares", "views"):
+        sourced = 0
+        for p in posts:
+            try:
+                sourced += max(0, int(float(p.get(counter) or 0)))
+            except (TypeError, ValueError):
+                continue
+        try:
+            stored = max(0, int(float(eng.get(counter) or 0)))
+        except (TypeError, ValueError):
+            stored = 0
+        # Never introduce a brand-new ZERO key: the contract declares these counters
+        # OPTIONAL, and an ingest that invents empty fields breaks the golden fixtures
+        # (rule 2 — no invented data). A positive sourced value on a row that lacked
+        # the key is real data and is still written; an existing counter is raised.
+        if counter not in eng and sourced == 0:
+            continue
+        eng[counter] = max(stored, sourced)
     eng["last_7d_likes"] = len(recent)
     # last_seen = the newest DATA date (measurement or post), never the time
     # the merge ran: re-ingesting an old raw snapshot used to stamp today and
