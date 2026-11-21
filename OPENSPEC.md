@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **386**
+Active changes: **0** · archived: **388**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `attribution-joint-figure-alias` | active | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/attribution-joint-figure-alias/proposal.md) |
+| _(none)_ | — | — | — | — | — | — |
 
 ## Archived changes
 
@@ -62,6 +62,7 @@ Active changes: **1** · archived: **386**
 | `2026-11-14-rulebook-names-every-pipeline` | archived | the `tech-debt` issue `agents-md-6b-enumerates-five-of-the-eleven-pipelines` | — | [rulebook-pipeline-list](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/specs/rulebook-pipeline-list/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/2026-11-14-rulebook-names-every-pipeline/proposal.md) |
 | `2026-11-14-storage-offload-needs-a-medium` | archived | — | — | [data-gap-analysis](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/2026-11-14-storage-offload-needs-a-medium/proposal.md) |
 | `2026-11-14-weekly-cadence-wednesday` | archived | — | — | [fleet-cadence](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/specs/fleet-cadence/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/2026-11-14-weekly-cadence-wednesday/proposal.md) |
+| `2026-11-21-attribution-joint-figure-alias` | archived | #650 — "Ranked dimensions are gaps in what we CAPTURE, not in what people | — | [measurement-attribution](openspec/changes/archive/2026-11-21-attribution-joint-figure-alias/specs/measurement-attribution/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/2026-11-21-attribution-joint-figure-alias/proposal.md) |
 | `2026-11-21-weekly-security-scan` | archived | #715 | — | [weekly-security-scan](openspec/changes/archive/2026-11-21-weekly-security-scan/specs/weekly-security-scan/spec.md) | 16/16 | [proposal.md](openspec/changes/archive/2026-11-21-weekly-security-scan/proposal.md) |
 | `a-footprint-is-only-ever-raised` | archived | #530 (measured: PR #529 red — `captured ['5.95GB']` missing while the store said `5.93GB`) | — | [ingest](openspec/changes/archive/a-footprint-is-only-ever-raised/specs/ingest/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/a-footprint-is-only-ever-raised/proposal.md) |
 | `a-fresh-red-sweep-is-loud` | archived | #498 | — | [sweep-delivery-alarm](openspec/changes/archive/a-fresh-red-sweep-is-loud/specs/sweep-delivery-alarm/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/a-fresh-red-sweep-is-loud/proposal.md) |
@@ -170,6 +171,7 @@ Active changes: **1** · archived: **386**
 | `engine-build-refuses-throughput` | archived | #1006 — "The gap reader over-matches throughput as `engine_min_version`" | #1010 | [engine-min-version-detection](openspec/changes/archive/engine-build-refuses-throughput/specs/engine-min-version-detection/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-build-refuses-throughput/proposal.md) |
 | `engine-check-repeat-warn` | archived | #972 | #1070 | [engine-check-repeat-warn](openspec/changes/archive/engine-check-repeat-warn/specs/engine-check-repeat-warn/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/engine-check-repeat-warn/proposal.md) |
 | `engine-figure-alignment-795` | archived | #795 — "the highest t/s per inference engine must stay an aligned, tested | #970 | [engine-figure-alignment](openspec/changes/archive/engine-figure-alignment-795/specs/engine-figure-alignment/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/engine-figure-alignment-795/proposal.md) |
+| `engine-guide-sync` | archived | #1220 | #1222 | [readme-render](openspec/changes/archive/engine-guide-sync/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/engine-guide-sync/proposal.md) |
 | `engine-meta-capture-at-ingest` | archived | #334 | — | [engine-meta-capture](openspec/changes/archive/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/engine-meta-capture-at-ingest/proposal.md) |
 | `engine-meta-guard-agents-row` | archived | #745 | #906 | [rulebook](openspec/changes/archive/engine-meta-guard-agents-row/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/engine-meta-guard-agents-row/proposal.md) |
 | `engine-min-model-version-not-build` | archived | #1025 | #1037 | [data-gap-analysis](openspec/changes/archive/engine-min-model-version-not-build/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-model-version-not-build/proposal.md) |
