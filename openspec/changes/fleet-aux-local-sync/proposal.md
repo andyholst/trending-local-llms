@@ -29,6 +29,7 @@ tool and the strata provider entry would call a retired id.
 
 - Affected specs: `fleet-model-chain` (ADDED requirement: the local tier's id
   reaches the host's auxiliary blocks).
-- Affected code: new script + test, Makefile target, agents/README.md row.
+- Affected code: new script + test, Makefile target, ARCHITECTURE.md rows (target + script
+  tables), a `qa-validate` live-smoke leg that plants a stale home and proves sync + check.
 - Depends on #1192 / PR #1197 (the `local_fallback` tier); stacked on its head,
   rebases onto master once it lands.
