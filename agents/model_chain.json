@@ -2,11 +2,11 @@
   "schema_version": 1,
   "issue": 1140,
   "amended_by_issue": 1192,
-  "comment": "The fleet model chain's ONE source (issue #1140). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, an optional credential-less role=local_fallback tier after the free steps and before the paid pin (issue #1192), exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. A credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value; the local tier carries NO key_env — its box needs none.",
+  "comment": "The fleet model chain's ONE source (issue #1140; local tier #1192; provider `nous` #1203). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, an optional credential-less role=local_fallback tier after the free steps and before the paid pin (issue #1192), exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. The provider is the built-in `nous` provider — the Nous Portal session, the same https://inference-api.nousresearch.com/v1 endpoint — so the remote steps carry NO base_url/key_env (measured #1203: adding them re-routes the alias to `custom` and answers HTTP 401 on inference). A credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value; the local tier carries none — its box needs none.",
   "measured": {
     "at": "2026-11-21",
     "endpoint": "https://inference-api.nousresearch.com/v1",
-    "how": "GET /v1/models with the Nous bearer credential passed by NAME in the environment (read 2026-11-21T12:26:21Z): 415 models, exactly 5 carrying the `:free` pricing suffix, and every remote `model` id below is present in that payload with the `context_length` quoted below. The free set is unchanged from the 2026-11-19 read.",
+    "how": "GET /v1/models with the Nous bearer credential passed by NAME in the environment (read 2026-11-21T12:26:21Z): 415 models, exactly 5 carrying the `:free` pricing suffix, and every remote `model` id below is present in that payload with the `context_length` quoted below. The free set is unchanged from the 2026-11-19 read. Issue #1203 then proved the PROVIDER end to end on this host: `hermes -p <lane> -m free-longcat` on the old `custom` + `NOUS_API_KEY` shape answers HTTP 401 on /v1/chat/completions (the key is model-list-only — GET /v1/models answers 200), while a scratch profile on the built-in `nous` provider answered a real turn.",
     "issue": "filed by the owner directive of 2026-11-19 (free model first, the paid DeepSeek last); the local strata tier between them by the owner directive of 2026-11-21 (issue #1192); the live read was re-run when this file was amended",
     "previous_read": {
       "at": "2026-11-19",
@@ -18,9 +18,7 @@
       "chat_probe": "POST /v1/chat/completions (max_tokens 10) timed out at 45s and 120s with no response on 2026-11-21 — an endpoint finding filed with this change (rule 6g), not a reason to drop the owner-directed tier: the fallback activates when the box serves."
     }
   },
-  "provider": "custom",
-  "base_url": "https://inference-api.nousresearch.com/v1",
-  "key_env": "NOUS_API_KEY",
+  "provider": "nous",
   "chain": [
     {
       "alias": "free-longcat",

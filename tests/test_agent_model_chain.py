@@ -130,7 +130,7 @@ def test_every_free_step_comes_before_the_paid_last_resort():
               all(i < li for i, e in enumerate(chain) if e["role"] in ("primary", "fallback"))
               and li == len(chain) - 2, str([e["role"] for e in chain]))
         check("the local tier names its OWN provider/base_url, not the chain's remote endpoint",
-              loc.get("provider") and loc.get("base_url") and loc["base_url"] != data["base_url"],
+              loc.get("provider") and loc.get("base_url") and loc["base_url"] != data.get("base_url"),
               str(loc))
         check("the local tier is credential-less (no key_env) and names a BARE server model id",
               "key_env" not in loc and "/" not in loc["model"], str(loc))
@@ -144,8 +144,10 @@ def test_every_free_step_comes_before_the_paid_last_resort():
           f"{last['model']} vs {pinned_model}")
     check("the last resort alias is the Makefile's pinned alias", last["alias"] == pinned_alias,
           f"{last['alias']} vs {pinned_alias}")
-    check("the chain names its key_env and no key value", data["key_env"] == "NOUS_API_KEY",
-          str(data.get("key_env")))
+    check("the chain provider is the built-in `nous` provider (issue #1203)",
+          data["provider"] == "nous", str(data.get("provider")))
+    check("the `nous` chain names NO key_env (the Portal session authenticates it)",
+          not data.get("key_env"), str(data.get("key_env")))
     check("no chain entry carries a credential field",
           not any(k in e for e in chain for k in ("api_key", "apikey", "token", "secret")))
     check("every chain step names a context_window it was measured with",
@@ -167,7 +169,7 @@ def test_the_local_tier_is_guarded_like_every_other_tier():
         "a local tier before the free fallbacks": lambda d: d["chain"].insert(1, d["chain"].pop(-2)),
         "a local tier after the last resort": lambda d: d["chain"].append(d["chain"].pop(-2)),
         "a local tier carrying key_env": lambda d: _local(d).update({"key_env": "NOUS_API_KEY"}),
-        "a local tier naming the chain's remote endpoint": lambda d: _local(d).update({"base_url": d["base_url"]}),
+        "a local tier naming the chain's remote endpoint": lambda d: _local(d).update({"base_url": "https://inference-api.nousresearch.com/v1"}),
         "a local tier with no provider of its own": lambda d: _local(d).pop("provider"),
         "a local tier with no base_url of its own": lambda d: _local(d).pop("base_url"),
         "a local tier naming a provider/model id instead of a bare server id": lambda d: _local(d).update({"model": "strata/qwen3.8-flash-next-iq3_xxs"}),
@@ -184,6 +186,22 @@ def test_the_local_tier_is_guarded_like_every_other_tier():
             check(f"chain with {name} is refused", res.returncode == 1, out[-200:])
             check(f"the refusal for {name} is stated in words",
                   "[model-chain] FAIL" in out, out[-200:])
+
+
+def test_a_nous_step_carrying_base_url_or_key_env_is_refused():
+    """Issue #1203: a `nous` alias carrying `base_url`/`key_env` is re-routed to `custom` and
+    answers HTTP 401 on inference (measured on this host), so the gate refuses the shape."""
+    for field, value in (("base_url", "https://inference-api.nousresearch.com/v1"),
+                         ("key_env", "NOUS_API_KEY")):
+        with tempfile.TemporaryDirectory() as td:
+            root = _scratch(Path(td))
+            data = _chain_json(root)
+            data["chain"][0][field] = value          # the PRIMARY, a `nous` step
+            _write_chain(root, data)
+            res = run("--check", root=root)
+            out = res.stdout + res.stderr
+            check(f"a nous step carrying {field} is refused", res.returncode == 1, out[-200:])
+            check(f"the {field} refusal names the measured 401", "401" in out, out[-300:])
 
 
 def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias():
@@ -205,8 +223,8 @@ def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential
           and "base_url: http://127.0.0.1:8080/v1" in local_entries[0]
           and "provider: strata" in local_entries[0], str(local_entries))
     remote_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" not in e]
-    check("every remote fallback entry names key_env NOUS_API_KEY",
-          remote_entries and all("key_env: NOUS_API_KEY" in e for e in remote_entries),
+    check("every remote fallback entry is a `nous` step with NO key_env (issue #1203)",
+          remote_entries and all("key_env" not in e and "provider: nous" in e for e in remote_entries),
           str(remote_entries))
     alias_block = text.split("  local-strata:", 1)[1].split("\n  nous-deepseek:", 1)[0]
     check("the local alias block carries its own provider/base_url and NO key_env",
@@ -304,8 +322,11 @@ def test_a_credential_value_or_api_key_field_is_refused_everywhere():
     check("no shipped chain or lane config ASSIGNS a credential field (prose may name one)",
           not bad, str(bad))
     check("every shipped config names key_env as an environment NAME, never a value",
-          all(key_env_names(t) and set(key_env_names(t)) == {"NOUS_API_KEY"} for t in texts.values()),
+          all(set(key_env_names(t)) <= {"NOUS_API_KEY"} for t in texts.values()),
           str({n: key_env_names(t) for n, t in texts.items()}))
+    check("the shipped `nous` configs name NO key_env at all (it re-routes to `custom`)",
+          all(not key_env_names(t) for n, t in texts.items() if n.endswith("config.yaml")),
+          str({n: key_env_names(t) for n, t in texts.items() if n.endswith("config.yaml")}))
 
 
 def test_an_unreadable_chain_is_exit_2_never_a_silent_clean():
@@ -393,6 +414,7 @@ def main() -> int:
     test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green()
     test_every_free_step_comes_before_the_paid_last_resort()
     test_the_local_tier_is_guarded_like_every_other_tier()
+    test_a_nous_step_carrying_base_url_or_key_env_is_refused()
     test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias()
     test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line()
     test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort()
