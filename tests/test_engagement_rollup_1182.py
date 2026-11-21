@@ -110,6 +110,25 @@ def test_the_shipped_store_carries_the_repair():
           zero_with_posts == 0, str(zero_with_posts))
 
 
+def test_stored_counters_equal_the_rollup_output():
+    """The store and the render seam must agree — otherwise the README shows counters
+    that data/models.json does not hold, and the next refresh silently rewrites them."""
+    store = UT.load_store()
+    gen = json.loads((ROOT / "data" / "models.json").read_text()).get("generated_utc")
+    as_of = UT.parse_utc_stamp(gen)
+    disagree = []
+    for m in store["models"]:
+        eng = m.get("engagement") or {}
+        before = {k: int(eng.get(k) or 0) for k in ("likes", "comments", "reshares", "views")}
+        UT.recompute_7d_engagement(m, as_of)
+        after = {k: int(m["engagement"].get(k) or 0)
+                 for k in ("likes", "comments", "reshares", "views")}
+        if before != after:
+            disagree.append((m["id"], before, after))
+    check("every stored counter equals what the render seam computes",
+          not disagree, str(disagree[:3]))
+
+
 def test_the_guard_is_red_on_the_pre_change_seam():
     out = subprocess.run("git show origin/master:scripts/update_trending.py",
                          shell=True, cwd=ROOT, capture_output=True, text=True).stdout
@@ -130,6 +149,7 @@ def main() -> int:
     test_an_existing_higher_value_is_never_lowered()
     test_a_row_with_no_posts_keeps_zeros()
     test_the_shipped_store_carries_the_repair()
+    test_stored_counters_equal_the_rollup_output()
     test_the_guard_is_red_on_the_pre_change_seam()
     test_wiring()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
