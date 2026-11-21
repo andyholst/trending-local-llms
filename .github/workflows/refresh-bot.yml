@@ -128,6 +128,57 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: make hermes-pin-freshness REPO="${{ github.repository }}"
 
+  # The weekly free-tier refresh (issue #1195): the chain's free models are a LIVE truth, and a
+  # remembered list silently rots — a new free model (the next Qwen) can only enter the chain
+  # when someone re-reads the catalogue. This job is that re-read on the cadence that actually
+  # arrives: rule 6t leaves refresh-bot as the ONLY scheduled pipeline, so the refresh rides its
+  # Wednesday cron as a DETERMINISTIC job (no model anywhere — a read cannot fabricate a model).
+  # It updates ONLY the free steps (the local_fallback tier and the paid pin are byte-untouched),
+  # renders the lanes, and lands any change through the shared `make keeper-pr` seam: a reviewed
+  # PR, never a direct push. A no-op (the healthy case) opens nothing.
+  free-model-refresh:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The owner PAT, not the default token: a GITHUB_TOKEN push starts no workflows and a
+      # GITHUB_TOKEN PR waits for an approval click (rule 6b), so the keeper PR would never merge.
+      - name: Checkout master
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: master
+          token: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+
+      # Rule 6n: prove the checkout IS the freshly fetched base before the keeper cuts a branch.
+      - name: Assert the base is the freshly fetched origin/master
+        run: make base-check
+
+      - name: Refresh the chain's free tier from the live catalogue
+        env:
+          NOUS_API_KEY: ${{ secrets.NOUS_PORTAL_API_TOKEN }}
+        run: make free-model-refresh
+
+      - name: Render the lane configs from the refreshed chain
+        run: make agent-profile-model-render
+
+      # The landing sequence is the shared keeper seam (issue #1081): ONE `make keeper-pr` call
+      # owns the branch, the identity, the commit, the push, the body and the #960 dedupe. The
+      # lane file list is DERIVED from the tree (rule 6d), never hand-kept; the branch prefix's
+      # UTC stamp ends in Z so pr_closure reads no trailing issue number (a keeper implements none).
+      - name: Commit, push and open the PR when the free tier moved
+        env:
+          GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          make keeper-pr \
+            FILE="agents/model_chain.json $(ls agents/tll-*/config.yaml | tr '\n' ' ')" \
+            BRANCH_PREFIX=ci/free-model-refresh \
+            DEDUPE=1 \
+            COMMIT_MESSAGE="feat(fleet): refresh the chain's free tier from the live Nous catalogue (refs #1195)" \
+            PR_TITLE="feat(fleet): weekly free-tier refresh from the live Nous catalogue" \
+            BODY_TARGET=free-model-refresh-pr-body \
+            BODY_ARGS="RUN_URL=$RUN_URL"
+
   # Build the image ONCE and push it to GHCR. The search + aggregate jobs PULL
   # this prebuilt image instead of rebuilding — so the Hermes install
   # (ADD install.sh + RUN) runs exactly once per run, not 6x.
