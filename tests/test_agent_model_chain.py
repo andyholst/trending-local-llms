@@ -101,8 +101,8 @@ def test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green():
     check("the shipped tree passes `--check`", res.returncode == 0, out[-300:])
     check("the OK line counts every fleet lane", f"{len(LANES)} lane config(s)" in out,
           f"lanes={LANES} out={out[-200:]}")
-    check("the chain order is reported primary-first, last-resort last",
-          "in order free-longcat -> free-hy4 -> free-qwen4 -> free-solar -> free-step -> nous-deepseek" in out,
+    check("the chain order is reported primary-first, local tier before the paid pin, last-resort last",
+          "in order free-longcat -> free-hy4 -> free-qwen4 -> free-solar -> free-step -> local-strata -> nous-deepseek" in out,
           out[-200:])
 
 
@@ -116,10 +116,24 @@ def test_every_free_step_comes_before_the_paid_last_resort():
           and roles.count("fallback") >= 1,          str(roles))
     check("the last_resort is the LAST entry", roles[-1] == "last_resort",          str(roles))
     check("the primary is the FIRST entry", roles[0] == "primary",          str(roles))
-    free = [e for e in chain if e["role"] != "last_resort"]
+    free = [e for e in chain if e["role"] in ("primary", "fallback")]
     check("every primary/fallback step is a `:free` model",
           all(e["model"].endswith(":free") for e in free),
           str([e["model"] for e in free if not e["model"].endswith(":free")]))
+    # The local tier (issue #1192): credential-less, its OWN endpoint, after free, before the pin.
+    locals_ = [e for e in chain if e["role"] == "local_fallback"]
+    check("the chain carries exactly one local_fallback tier", len(locals_) == 1, str(locals_))
+    if locals_:
+        loc = locals_[0]
+        li = chain.index(loc)
+        check("the local tier sits AFTER every free step and BEFORE the last resort",
+              all(i < li for i, e in enumerate(chain) if e["role"] in ("primary", "fallback"))
+              and li == len(chain) - 2, str([e["role"] for e in chain]))
+        check("the local tier names its OWN provider/base_url, not the chain's remote endpoint",
+              loc.get("provider") and loc.get("base_url") and loc["base_url"] != data["base_url"],
+              str(loc))
+        check("the local tier is credential-less (no key_env) and names a BARE server model id",
+              "key_env" not in loc and "/" not in loc["model"], str(loc))
     mk = (ROOT / "Makefile").read_text()
     pinned_model = [line.split(":=", 1)[1].strip() for line in mk.splitlines()
                     if line.startswith("HERMES_MODEL :=")][0]
@@ -138,6 +152,66 @@ def test_every_free_step_comes_before_the_paid_last_resort():
           all(isinstance(e.get("context_window"), int) and e["context_window"] > 0 for e in chain))
     check("the chain states how its model ids were measured (rule 2)",
           bool(data.get("measured", {}).get("how")), str(data.get("measured")))
+
+
+def test_the_local_tier_is_guarded_like_every_other_tier():
+    """Issue #1192: every way the credential-less local tier can break its contract is refused.
+
+    Each case is RED on the pre-change seam (which knew no local_fallback role at all).
+    """
+    def _local(d):
+        return next(e for e in d["chain"] if e["role"] == "local_fallback")
+
+    cases = {
+        "two local tiers": lambda d: d["chain"].insert(-1, dict(_local(d), alias="local-copy")),
+        "a local tier before the free fallbacks": lambda d: d["chain"].insert(1, d["chain"].pop(-2)),
+        "a local tier after the last resort": lambda d: d["chain"].append(d["chain"].pop(-2)),
+        "a local tier carrying key_env": lambda d: _local(d).update({"key_env": "NOUS_API_KEY"}),
+        "a local tier naming the chain's remote endpoint": lambda d: _local(d).update({"base_url": d["base_url"]}),
+        "a local tier with no provider of its own": lambda d: _local(d).pop("provider"),
+        "a local tier with no base_url of its own": lambda d: _local(d).pop("base_url"),
+        "a local tier naming a provider/model id instead of a bare server id": lambda d: _local(d).update({"model": "strata/qwen3.8-flash-next-iq3_xxs"}),
+        "a local tier carrying an api_key value": lambda d: _local(d).update({"api_key": "not-a-credential-placeholder"}),
+    }
+    for name, mutate in cases.items():
+        with tempfile.TemporaryDirectory() as td:
+            root = _scratch(Path(td))
+            data = _chain_json(root)
+            mutate(data)
+            _write_chain(root, data)
+            res = run("--check", root=root)
+            out = res.stdout + res.stderr
+            check(f"chain with {name} is refused", res.returncode == 1, out[-200:])
+            check(f"the refusal for {name} is stated in words",
+                  "[model-chain] FAIL" in out, out[-200:])
+
+
+def test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias():
+    """The rendered lane config is the RUNTIME order: fallback_providers walks free -> local -> paid."""
+    rendered = run("--report")  # proves the chain reads; the bytes come from the shipped config
+    text = (ROOT / "agents" / LANES[0] / "config.yaml").read_text(encoding="utf-8")
+    check("the report runs green on the shipped chain", rendered.returncode == 0,
+          rendered.stdout + rendered.stderr)
+    fb = text.split("fallback_providers:", 1)[1] if "fallback_providers:" in text else ""
+    models = re.findall(r"(?m)^    model: (\S+)", fb)
+    check("fallback_providers lists every non-primary step in chain order",
+          models == ["tencent/hy4-flash:free", "qwen/qwen4-max:free", "upstage/solar-mini4:free",
+                     "stepfun/step-3.7-flash:free", "qwen3.8-flash-next-iq3_xxs",
+                     "deepseek/deepseek-v4-flash-0731"], str(models))
+    entries = re.split(r"(?m)^  - ", fb)[1:]
+    local_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" in e]
+    check("the local fallback entry is credential-less (no key_env) and names its own endpoint",
+          len(local_entries) == 1 and "key_env" not in local_entries[0]
+          and "base_url: http://127.0.0.1:8080/v1" in local_entries[0]
+          and "provider: strata" in local_entries[0], str(local_entries))
+    remote_entries = [e for e in entries if "qwen3.8-flash-next-iq3_xxs" not in e]
+    check("every remote fallback entry names key_env NOUS_API_KEY",
+          remote_entries and all("key_env: NOUS_API_KEY" in e for e in remote_entries),
+          str(remote_entries))
+    alias_block = text.split("  local-strata:", 1)[1].split("\n  nous-deepseek:", 1)[0]
+    check("the local alias block carries its own provider/base_url and NO key_env",
+          "provider: strata" in alias_block and "base_url: http://127.0.0.1:8080/v1" in alias_block
+          and "key_env" not in alias_block, alias_block)
 
 
 def test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line():
@@ -318,6 +392,8 @@ def main() -> int:
           f"{', '.join(LANES)}")
     test_the_shipped_chain_renders_every_lane_config_and_the_gate_is_green()
     test_every_free_step_comes_before_the_paid_last_resort()
+    test_the_local_tier_is_guarded_like_every_other_tier()
+    test_the_rendered_config_carries_the_runtime_fallback_order_and_a_credential_less_local_alias()
     test_a_hand_edited_lane_config_is_refused_and_names_the_lane_and_line()
     test_the_chain_shape_is_the_contract_primary_fallbacks_then_last_resort()
     test_the_last_resort_must_be_the_model_the_makefile_pins()

@@ -1,12 +1,22 @@
 {
   "schema_version": 1,
   "issue": 1140,
-  "comment": "The fleet model chain's ONE source (issue #1140). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. A credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value.",
+  "amended_by_issue": 1192,
+  "comment": "The fleet model chain's ONE source (issue #1140). ORDER IS THE CONTRACT: exactly one role=primary first, one or more role=fallback entries in list order, an optional credential-less role=local_fallback tier after the free steps and before the paid pin (issue #1192), exactly one role=last_resort LAST. `make agent-profile-model-render` renders every lane's profile config from this file; `make agent-model-chain-check` refuses drift. A credential is a NAME only (AGENTS.md rule 3e): `key_env`, never a value; the local tier carries NO key_env — its box needs none.",
   "measured": {
-    "at": "2026-11-19",
+    "at": "2026-11-21",
     "endpoint": "https://inference-api.nousresearch.com/v1",
-    "how": "GET /v1/models with the Nous agent key: 413 models, exactly 5 carrying the `:free` pricing suffix, and every `model` id below is present in that payload with the `context_length` quoted below.",
-    "issue": "filed by the owner directive of 2026-11-19 (free model first, the paid DeepSeek last); the live read was re-run when this file was authored"
+    "how": "GET /v1/models with the Nous bearer credential passed by NAME in the environment (read 2026-11-21T12:26:21Z): 415 models, exactly 5 carrying the `:free` pricing suffix, and every remote `model` id below is present in that payload with the `context_length` quoted below. The free set is unchanged from the 2026-11-19 read.",
+    "issue": "filed by the owner directive of 2026-11-19 (free model first, the paid DeepSeek last); the local strata tier between them by the owner directive of 2026-11-21 (issue #1192); the live read was re-run when this file was amended",
+    "previous_read": {
+      "at": "2026-11-19",
+      "how": "GET /v1/models with the Nous agent key: 413 models, exactly 5 carrying the `:free` pricing suffix, and every `model` id below is present in that payload with the `context_length` quoted below."
+    },
+    "local": {
+      "endpoint": "http://127.0.0.1:8080/v1",
+      "how": "GET /v1/models on 2026-11-21 answers one loaded model: id qwen3.8-flash-next-iq3_xxs, context_length 131072 — the id and window quoted below are that read, not a remembered name (the prior configs' qwen3.8-flash-next-q2_0 is no longer served).",
+      "chat_probe": "POST /v1/chat/completions (max_tokens 10) timed out at 45s and 120s with no response on 2026-11-21 — an endpoint finding filed with this change (rule 6g), not a reason to drop the owner-directed tier: the fallback activates when the box serves."
+    }
   },
   "provider": "custom",
   "base_url": "https://inference-api.nousresearch.com/v1",
@@ -41,6 +51,14 @@
       "model": "stepfun/step-3.7-flash:free",
       "role": "fallback",
       "context_window": 262144
+    },
+    {
+      "alias": "local-strata",
+      "model": "qwen3.8-flash-next-iq3_xxs",
+      "role": "local_fallback",
+      "provider": "strata",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "context_window": 131072
     },
     {
       "alias": "nous-deepseek",
