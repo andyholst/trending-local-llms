@@ -337,6 +337,69 @@ def test_default_names_the_hermes_homes_own_config_and_a_lane_via_profile_is_ref
               PLACEHOLDER not in out + lane.stdout + lane.stderr + missing.stdout + missing.stderr, "")
 
 
+def test_check_names_every_stale_home_writes_nothing_and_needs_no_credential():
+    """Issue #1204: the read-only drift report names stale homes loudly — the post-refresh state."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        # A stale LANE home (whole copy drifted), a stale MERGE home (one owned block drifted),
+        # and a clean merge home.
+        (home / "tll-tester").mkdir(parents=True)
+        (home / "tll-tester" / AMC.CONFIG_REL).write_text("model:\n  provider: strata\n  default: old\n",
+                                                          encoding="utf-8")
+        stale_dev = home / "developer"
+        stale_dev.mkdir(parents=True)
+        (stale_dev / AMC.CONFIG_REL).write_text(
+            "model:\n  provider: strata\n  default: qwen3.8-flash-next-q2_0\n"
+            "terminal:\n  backend: local\n", encoding="utf-8")
+        rendered = AMC.render_text(AMC.read_chain(root)[0])
+        # The second scratch lane, CLEAN (a whole copy) — proves a clean lane is not named.
+        (home / "tll-reviewer").mkdir(parents=True)
+        (home / "tll-reviewer" / AMC.CONFIG_REL).write_text(rendered, encoding="utf-8")
+        clean = home / "cleanprofile"
+        clean.mkdir(parents=True)
+        APP = __import__("agent_profile_provision")
+        merged, problems = APP.merge_rendered("terminal:\n  backend: local\n", rendered)
+        assert not problems, problems
+        (clean / AMC.CONFIG_REL).write_text(merged, encoding="utf-8")
+
+        before = {p: p.read_bytes() for p in home.rglob("*.yaml")}
+        proc = run_provision("--check", "--all", "--profile", "developer", "--profile", "cleanprofile",
+                             "--profiles-home", str(home), root=root, key=None)
+        out = proc.stdout + proc.stderr
+        check("drift over stale homes exits 1 (a loud report, never a silent pass)",
+              proc.returncode == 1, f"rc={proc.returncode} {out[-300:]}")
+        check("the report names the stale LANE and its whole-copy drift",
+              "STALE lane=tll-tester" in out, out[-400:])
+        check("the report names the stale MERGE home and the drifted owned block",
+              "STALE profile=developer" in out and "`model:`" in out, out[-400:])
+        check("the clean home is not named as stale", "profile=cleanprofile" not in out, out[-400:])
+        check("the report needs NO credential (it runs with the key absent)",
+              proc.returncode == 1 and "REFUSED" not in out, out[-300:])
+        check("the check writes NOTHING — no file changed, no backup created",
+              all(p.read_bytes() == b for p, b in before.items())
+              and not list(home.rglob("*.bak-*")), "")
+        check("the summary names the remedy (re-provision without CHECK=1)",
+              "agent-profile-provision" in out and "CHECK=1" in out, out[-300:])
+
+
+def test_check_is_green_after_provisioning_and_a_missing_home_is_exit_2():
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        prov = run_provision("--all", "--profile", "default", "--profiles-home", str(home), root=root)
+        check("provisioning the lanes + default succeeds first", prov.returncode == 0, prov.stderr[-200:])
+        proc = run_provision("--check", "--all", "--profile", "default",
+                             "--profiles-home", str(home), root=root, key=None)
+        out = proc.stdout + proc.stderr
+        check("the check is GREEN once every home matches the chain",
+              proc.returncode == 0 and "CLEAN" in out, out[-300:])
+        missing = run_provision("--check", "--profile", "no-such-home",
+                                "--profiles-home", str(home), root=root, key=None)
+        check("a missing home in a check is exit 2 UNDECIDABLE, never a clean pass",
+              missing.returncode == 2 and "does not exist" in missing.stderr, missing.stderr[-200:])
+
+
 def test_the_target_is_wired_to_the_makefile_and_a_pipeline_job():
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("the Makefile defines the internal recipe (the seam, not a second copy)",
@@ -350,6 +413,8 @@ def test_the_target_is_wired_to_the_makefile_and_a_pipeline_job():
     check("the target takes the non-lane PROFILE= comma list (issue #1192), expanded per name",
           "PROFILE ?=" in mk and "comma := ," in mk
           and "$(foreach p,$(subst $(comma), ,$(PROFILE)),--profile $(p))" in mk, "")
+    check("the target takes CHECK=1 for the read-only drift report (issue #1204)",
+          "CHECK ?=" in mk and "$(if $(CHECK), --check,)" in mk, "")
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
     check("qa-validate RUNS the seam (rule 6m: a target CI runs, never only a human)",
           "make agent-profile-provision" in qa, "")
@@ -374,6 +439,8 @@ def main() -> int:
     test_all_provisions_every_fleet_lane_in_the_tree()
     test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_byte()
     test_default_names_the_hermes_homes_own_config_and_a_lane_via_profile_is_refused()
+    test_check_names_every_stale_home_writes_nothing_and_needs_no_credential()
+    test_check_is_green_after_provisioning_and_a_missing_home_is_exit_2()
     test_the_target_is_wired_to_the_makefile_and_a_pipeline_job()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
