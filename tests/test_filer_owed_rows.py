@@ -53,16 +53,36 @@ _AGENTS_FIXTURE = """# Fixture rulebook
 ## 9. Style
 """
 
-_FF_GH_STUB = """#!/bin/sh
-echo "$@" >> "$FAKE_GH_LOG"
-case "$1 $2" in
-  "label list")   cat "$FAKE_GH_LABELS" ;;
-  "issue list")   echo "[]" ;;
-  "issue view")   echo '{"labels": [{"name": "tech-debt"}]}' ;;
-  "issue create") cat > "$FAKE_GH_BODY"; echo "https://github.com/o/r/issues/999" ;;
-esac
-exit 0
-"""
+_FF_GH_STUB = '''#!/usr/bin/env python3
+import json
+import os
+import sys
+
+args = sys.argv[1:]
+with open(os.environ["FAKE_GH_LOG"], "a", encoding="utf-8") as fh:
+    fh.write(" ".join(args) + "\\n")
+
+
+def read(path, default):
+    return open(path, encoding="utf-8").read() if os.path.exists(path) else default
+
+
+if args[:2] == ["issue", "list"]:
+    sys.stdout.write(read(os.environ["FAKE_GH_VISIBLE"], "[]"))
+elif args[:2] == ["issue", "create"]:
+    body = sys.stdin.read()
+    with open(os.environ["FAKE_GH_BODY"], "w", encoding="utf-8") as fh:
+        fh.write(body)
+    items = json.loads(read(os.environ["FAKE_GH_VISIBLE"], "[]") or "[]")
+    items.append({"number": 999, "url": "https://github.com/o/r/issues/999", "body": body})
+    with open(os.environ["FAKE_GH_VISIBLE"], "w", encoding="utf-8") as fh:
+        json.dump(items, fh)
+    sys.stdout.write("https://github.com/o/r/issues/999\\n")
+elif args[:2] == ["label", "list"]:
+    sys.stdout.write(read(os.environ["FAKE_GH_LABELS"], ""))
+elif args[:2] == ["issue", "view"]:
+    sys.stdout.write("{\\"labels\\": [{\\"name\\": \\"tech-debt\\"}]}")
+'''
 
 
 def _load(name: str):
@@ -84,8 +104,10 @@ def _stub_ff_env(tmp_path: Path) -> tuple[dict, Path, Path]:
     env = dict(os.environ,
                PATH=f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
                FAKE_GH_LOG=str(log), FAKE_GH_BODY=str(body),
-               FAKE_GH_LABELS=str(tmp_path / "labels"))
+               FAKE_GH_LABELS=str(tmp_path / "labels"),
+               FAKE_GH_VISIBLE=str(tmp_path / "visible"))
     (tmp_path / "labels").write_text("", encoding="utf-8")
+    (tmp_path / "visible").write_text("[]", encoding="utf-8")
     return env, log, body
 
 

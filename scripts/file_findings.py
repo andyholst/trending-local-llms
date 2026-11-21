@@ -46,6 +46,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +57,15 @@ import owed_row_derive  # noqa: E402  # the ONE Done-when derivation (rule 6d, i
 FINDINGS = ROOT / "findings.md"
 LABEL = "tech-debt"
 LABEL_DESCRIPTION = "Real gap / technical debt surfaced by an implementation run"
+
+#: GitHub's `issue list` is served from an eventually-consistent index: an issue created
+#: seconds earlier can be ABSENT from the list. Measured on this repo (issue #185): a second
+#: `make file-findings` ~10 s after the first filed #184 as a duplicate of #182, because the
+#: first run exited before the index caught up. A read that may follow a create therefore
+#: retries with a pause until the index catches up, so a run that exits green has left an
+#: issue the NEXT run can find.
+DISCOVER_ATTEMPTS = 5
+DISCOVER_DELAY_S = 2.0
 
 _SECTION = re.compile(r"^##\s+(?P<title>.+?)\s*$", re.MULTILINE)
 # A FIELD is its marker line AND the lines under it, until the next marker, the next
@@ -229,22 +239,32 @@ def ensure_label_on(issue: str) -> None:
         )
 
 
-def already_filed(signature: str) -> str | None:
-    """The URL of the existing issue with this marker, if any (open or closed)."""
-    out = _gh(
-        "issue", "list", "--state", "all", "--label", LABEL, "--limit", "200",
-        "--json", "number,body,url", check=False,
-    )
-    if out.returncode != 0:
-        return None
-    try:
-        items = json.loads(out.stdout or "[]")
-    except json.JSONDecodeError:
-        return None
+def already_filed(signature: str, *, attempts: int = 1,
+                  delay: float = DISCOVER_DELAY_S) -> str | None:
+    """The URL of the existing issue with this marker, if any (open or closed).
+
+    `attempts > 1` re-reads the list with a pause between tries. The label list is served
+    from an eventually-consistent index, so an issue created moments ago can be missing on
+    the first read (issue #185); a caller that has just created the issue passes
+    `attempts=DISCOVER_ATTEMPTS` and the read waits for the index to catch up.
+    """
     marker = f"tech-debt-signature: {signature} -->"
-    for item in items:
-        if marker in (item.get("body") or ""):
-            return str(item.get("url") or item.get("number"))
+    for attempt in range(max(1, attempts)):
+        if attempt:
+            time.sleep(delay)
+        out = _gh(
+            "issue", "list", "--state", "all", "--label", LABEL, "--limit", "200",
+            "--json", "number,body,url", check=False,
+        )
+        if out.returncode != 0:
+            return None
+        try:
+            items = json.loads(out.stdout or "[]")
+        except json.JSONDecodeError:
+            return None
+        for item in items:
+            if marker in (item.get("body") or ""):
+                return str(item.get("url") or item.get("number"))
     return None
 
 
@@ -282,6 +302,16 @@ def file_findings(findings: list[dict], pr: str | None, issue: str | None) -> in
         # `--label` can exit 0 having applied nothing (#161): verify, re-apply, or
         # fail loudly — an unlabelled issue is invisible to the bot chain.
         ensure_label_on(url)
+        # The create can return before the issue is discoverable in the label list (GitHub's
+        # index is eventually consistent, issue #185). Wait for it before reporting success:
+        # a run that exits green must have left an issue the NEXT run can find, or the next
+        # run files a duplicate.
+        if already_filed(f["signature"], attempts=DISCOVER_ATTEMPTS) is None:
+            raise SystemExit(
+                f"[findings] {url} was created but is NOT discoverable in the `{LABEL}` list "
+                f"after {DISCOVER_ATTEMPTS} tries — GitHub's index has not caught up, so a "
+                f"re-run would file a duplicate (issue #185); refusing to report success"
+            )
         print(f"[findings] filed {url}")
         filed += 1
     return filed
