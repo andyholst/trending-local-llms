@@ -307,15 +307,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[profile-provision] UNDECIDABLE: {line}", file=sys.stderr)
         return EXIT_UNDECIDABLE
 
-    # Rule 3e / issue #357: the credential is checked BY NAME before anything is written.
+    # Rule 3e / issue #357: the credential is checked BY NAME before anything is written. A chain
+    # on the `nous` provider authenticates through the Portal session and names NO key_env (issue
+    # #1203), so there is nothing to pre-flight and the check is skipped; a chain that DOES name a
+    # key is checked before a byte is written.
     names = required_key_names(chain)
-    rc = require_env_main(names + ["--why",
-                                   "a provisioned fleet lane must be able to authenticate the chain "
-                                   "it names, or it will fail inside a model call instead of at this gate"])
-    if rc != 0:
-        print(f"[profile-provision] REFUSED: nothing was written to {profiles_home(args.profiles_home)} "
-              f"— the chain names {', '.join(names)} and that credential is absent", file=sys.stderr)
-        return EXIT_UNDECIDABLE
+    if names:
+        rc = require_env_main(names + ["--why",
+                                       "a provisioned fleet lane must be able to authenticate the chain "
+                                       "it names, or it will fail inside a model call instead of at this gate"])
+        if rc != 0:
+            print(f"[profile-provision] REFUSED: nothing was written to {profiles_home(args.profiles_home)} "
+                  f"— the chain names {', '.join(names)} and that credential is absent", file=sys.stderr)
+            return EXIT_UNDECIDABLE
 
     home = profiles_home(args.profiles_home)
     rendered = AMC.render_text(chain)

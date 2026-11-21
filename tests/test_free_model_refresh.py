@@ -284,11 +284,17 @@ def test_a_dry_run_plans_without_writing_and_the_refreshed_chain_passes_the_real
                   and (root / "agents" / "model_chain.json").read_bytes() == before, out[-200:])
 
             run_refresh("--write", root=root)
-            # Restore the shipped remote endpoint: the refreshed chain must satisfy the REAL
-            # offline gate (shape, pins, credential NAMES) — the stub was only the transport.
+            # Restore the shipped chain's OWN read fields when it names them: the
+            # refreshed chain must satisfy the REAL offline gate (shape, pins,
+            # credential NAMES). A `nous` chain names neither — the stub was only
+            # the transport (issue #1203), so leave those fields absent.
             data = chain_of(root)
             shipped = json.loads(CHAIN.read_text(encoding="utf-8"))
-            data["base_url"] = shipped["base_url"]
+            for field in ("base_url", "key_env"):
+                if field in shipped:
+                    data[field] = shipped[field]
+                else:
+                    data.pop(field, None)  # the stub's transport is not part of the shipped chain
             (root / "agents" / "model_chain.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
             sys.path.insert(0, str(root / "scripts"))
             import importlib
