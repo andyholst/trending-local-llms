@@ -1534,15 +1534,16 @@ agent-model-chain-report: ## Print the fleet model chain in the order it is used
 LANE ?=
 ALL ?=
 PROFILE ?=
+CHECK ?=
 PROFILES_HOME ?=
 comma := ,
-PROVISION_ARGS := $(if $(LANE),--lane $(LANE),)$(if $(ALL), --all,)$(if $(PROFILE), $(foreach p,$(subst $(comma), ,$(PROFILE)),--profile $(p)),)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)
+PROVISION_ARGS := $(if $(LANE),--lane $(LANE),)$(if $(ALL), --all,)$(if $(PROFILE), $(foreach p,$(subst $(comma), ,$(PROFILE)),--profile $(p)),)$(if $(CHECK), --check,)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)
 
 .PHONY: _agent-profile-provision agent-profile-provision
 _agent-profile-provision:
 	python3 scripts/agent_profile_provision.py$(if $(PROVISION_ARGS), $(PROVISION_ARGS),)
 
-agent-profile-provision: ## Copy a fleet lane's rendered chain config into its Hermes profile home (backup kept); refuses without the credential the chain names (issue #1142)
+agent-profile-provision: ## Copy a fleet lane's rendered chain config into its Hermes profile home (backup kept); refuses without the credential the chain names; CHECK=1 reports host drift read-only (issues #1142/#1204)
 	@$(MAKE) --no-print-directory _agent-profile-provision
 
 # ---- fleet: the local tier's id reaches the host's AUXILIARY blocks (issue #1198) ----
