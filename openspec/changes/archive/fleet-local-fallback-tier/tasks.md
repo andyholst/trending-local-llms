@@ -13,7 +13,7 @@
 - [x] `findings.md` written and `make findings-check` green; findings filed (`make file-findings` → #1194 strata chat hang, #1195 weekly free-model refresh pipeline, #1196 durable NOUS_API_KEY)
 - [x] ARCHITECTURE.md §6 rows true + `make architecture-refresh` (§10 docstring staleness); AGENTS.md §8 row updated (rule 3c attended sign-off, comment on #1192)
 - [x] `make lint` green (chain check, architecture check, workflow guards, linefeeds)
-- [~] Full suite (`make test`) green on the PR head — blocked: qa-validate runs it after push; on the host the two affected modules are green (84 + 55 checks, 0 failures) and every new refusal was proved red on the pre-change seam
+- [x] Full suite (`make test`) green on the PR head — VERIFIED: qa-validate run 44906093926 on head 1dcdb727 completed `validate` + `live-smoke` success (2026-11-21T13:16Z), auto-merge squashed as 7c53efef; on the host the two affected modules were green (84 + 55 checks, 0 failures) and every new refusal was proved red on the pre-change seam
 - [x] `make openspec-check` green (index regenerated, binding, backlog)
 - [x] Provision every host home from the rendered chain: `make agent-profile-provision ALL=1 PROFILE=<22 non-lane homes>,default` with `NOUS_API_KEY` exported by NAME — 7 lanes + 23 merges, 30 backups kept; read-back verified all 30 homes carry the rendered `model:`/`model_aliases:`/`fallback_providers:` blocks byte-for-byte with the free primary as default
 - [x] PR opened (#1197, five-section body, single `closes #1192`), `make pr-message-check` green, `make openspec-record-pr ISSUE=1192 PR=1197` so the archive sits at the PR head
