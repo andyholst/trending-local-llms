@@ -1,6 +1,7 @@
 # Proposal: security-scan-dispatch-pipeline
 
 Issue: #1185
+PR: #1188
 
 ## Why
 
