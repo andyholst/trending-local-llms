@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **390**
+Active changes: **1** · archived: **390**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `search-smoke-source-reachability` | active | #1224 | — | [search-smoke](openspec/changes/search-smoke-source-reachability/specs/search-smoke/spec.md) | 6/6 | [proposal.md](openspec/changes/search-smoke-source-reachability/proposal.md) |
 
 ## Archived changes
 

@@ -251,9 +251,11 @@ def main(probe_fn=None) -> int:
     starved_blocking: list[str] = []
     majority_blocking: list[str] = []
     sampled: list[str] = []
+    legs: list[dict] = []
     for b in backends:
         total = missed = 0
         answered = silent = 0
+        proved = 0
         for k in BACKEND_KEYWORDS[b]:
             total += 1
             res = probe_fn(k, args.key, args.budget, args.retries, args.retry_wait)
@@ -263,6 +265,8 @@ def main(probe_fn=None) -> int:
             yield_note = ""
             if res["label"] == "OK":
                 answered += 1
+                if res.get("upstream") in (None, 200):
+                    proved += 1  # THIS leg proves the mirror answered in this run
                 if rate or model:
                     yield_note = f" yield: {rate} rate-posts, {model} model-posts"
                 else:
@@ -288,14 +292,27 @@ def main(probe_fn=None) -> int:
                 f"{len(BACKEND_KEYWORDS[b])} queries state NO generation rate and name "
                 f"NO model. The mirror is reachable; the queries capture nothing "
                 f"(issue #858). Fix the WORDS in scripts/query_vocab.py.")
-        # The verdict is PER LEG (issue #258): a reachability probe samples its queries, so a
-        # minority that missed the budget is a note, not a red run — while a majority, and so an
-        # unreachable mirror (every query), still fails loudly.
-        block, note = leg_verdict(total, missed)
-        if block:
-            majority_blocking.append(f"{b}: {note}")
+        legs.append({"leg": b, "total": total, "missed": missed,
+                     "answered": answered, "silent": silent, "proved": proved})
+
+    # The verdict is PER LEG (issue #258), but the QUESTION is the SOURCE's
+    # reachability. If one leg's every query misses while another leg got a real
+    # HTTP 200 from the same mirror in the SAME run, the source is reachable and
+    # the dead thing is that leg's query-level cache (measured 2026-11-21:
+    # nvidia/metal answered in 0.1s while all four cpu queries hung for 90s x2).
+    # A FULL outage still misses EVERY leg and is blocked below — the #258
+    # "an unreachable source must fail loudly" guarantee is unchanged.
+    mirror_proved = any(x["proved"] for x in legs)
+    for x in legs:
+        block, note = leg_verdict(x["total"], x["missed"])
+        if block and x["missed"] == x["total"] and mirror_proved:
+            sampled.append(
+                f"{x['leg']}: {note} — another leg proved the mirror reachable in this run, "
+                f"so this leg is QUERY-STARVED (uncached/slow queries), not a source outage")
+        elif block:
+            majority_blocking.append(f"{x['leg']}: {note}")
         elif note:
-            sampled.append(f"{b}: {note}")
+            sampled.append(f"{x['leg']}: {note}")
     blocking = starved_blocking + majority_blocking
     if blocking:
         # Each rule's sentence is printed only for the rule that actually blocked

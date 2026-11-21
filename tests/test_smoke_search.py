@@ -17,6 +17,8 @@ Rules these enforce (all offline):
 
 Run standalone: python3 tests/test_smoke_search.py
 """
+import contextlib
+import io
 import math
 import re
 import sys
@@ -205,6 +207,53 @@ def test_the_run_summary_distinguishes_a_flake_from_a_dead_source(S: dict):
           "MAJORITY" in text and "not a flake" in text, text[-300:])
 
 
+def _run_whole_smoke(probe_fn):
+    """Drive the REAL main() over all four legs with a scripted transport."""
+    _load_smoke_backends()
+    saved = sys.argv
+    sys.argv = ["smoke_search.py", "--key", "k", "--budget", "90", "--retries", "0"]
+    try:
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            rc = SEARCH_NS["main"](probe_fn)
+        return rc, out.getvalue()
+    finally:
+        sys.argv = saved
+
+
+def test_one_query_starved_leg_is_not_a_source_outage():
+    """A leg whose every query misses is QUERY-STARVED when another leg got 200.
+
+    The gate answers "is the mirror reachable?", not "is every query cached?".
+    Measured 2026-11-21: nvidia/metal answered in 0.1s while all four cpu queries
+    hung for 90s x2; a full outage still misses EVERY leg and must stay red.
+    """
+    smoke = _load_smoke_backends()
+    cpu = set(smoke["cpu"])
+
+    def probe_fn(keyword, key, budget, retries=1, retry_wait=2.0):
+        if keyword in cpu:
+            return {"status": 0, "ok": None, "upstream": None, "elapsed": 90.0,
+                    "attempts": 2, "rate_hits": 0, "model_hits": 0, "label": "TIMEOUT"}
+        return {"status": 200, "ok": True, "upstream": 200, "elapsed": 0.1,
+                "attempts": 1, "rate_hits": 0, "model_hits": 0, "label": "OK"}
+
+    rc, out = _run_whole_smoke(probe_fn)
+    assert rc == 0, out
+    assert "QUERY-STARVED" in out, out
+    assert "[smoke] " in out and "leg(s) failed" not in out, out
+
+
+def test_a_full_outage_still_blocks_every_leg():
+    """The #258 guarantee survives: a mirror that answers NOTHING still reds the run."""
+    def probe_fn(keyword, key, budget, retries=1, retry_wait=2.0):
+        return {"status": 0, "ok": None, "upstream": None, "elapsed": 90.0,
+                "attempts": 2, "rate_hits": 0, "model_hits": 0, "label": "TIMEOUT"}
+
+    rc, out = _run_whole_smoke(probe_fn)
+    assert rc == 2, out
+    assert "a MAJORITY of budget-missed queries is a dead or unreachable source" in out, out
+
+
 def test_ci_search_smoke_budget_is_realistic():
     """The probe budget is Makefile-owned and both pipelines pass it explicitly.
 
@@ -331,12 +380,19 @@ def main() -> int:
         check("outage: an upstream error page is its own OUTAGE label, never retried (pytest path)",
               False, str(e))
 
-    try:
-        test_ci_search_smoke_budget_is_realistic()
-        check("ci: the reachability budget is Makefile-owned and realistic (both pipelines)", True)
-    except AssertionError as e:
-        check("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
-              False, str(e))
+    for name, fn in (
+        ("ci: one query-starved leg is not a source outage (pytest path)",
+         test_one_query_starved_leg_is_not_a_source_outage),
+        ("ci: a full outage still blocks every leg (pytest path)",
+         test_a_full_outage_still_blocks_every_leg),
+        ("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
+         test_ci_search_smoke_budget_is_realistic),
+    ):
+        try:
+            fn()
+            check(name, True)
+        except AssertionError as e:
+            check(name, False, str(e)[:180])
 
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 0 if _FAIL == 0 else 1
