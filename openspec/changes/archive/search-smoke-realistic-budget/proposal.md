@@ -1,6 +1,7 @@
 # Proposal: search-smoke-realistic-budget
 
 Issue: #1224
+PR: #1225
 
 ## Why
 
