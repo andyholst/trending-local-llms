@@ -1,0 +1,107 @@
+# Supply-chain security scan (issue #1185).
+#
+# Issue #1175 shipped the five scan targets — containerfile-scan, trivy-scan, grype-scan,
+# syft-sbom, security-scan-self-test — but NO workflow called any of them: rule 6m says a
+# verification target nothing runs is a defect, not a spare part. This pipeline runs all five,
+# weekly by owner dispatch, and a finding reds the run so the failure filer (rule 6r) turns it
+# into a tracked `tech-debt` issue carrying the run's own scrubbed error block.
+#
+# Cadence (owner directive 2026-11-15, issue #1029, rule 6t): this pipeline carries NO cron.
+# Only refresh-bot — the data-trend gatherer — keeps a schedule. This pipeline runs on
+# workflow_dispatch alone; re-adding a `schedule:` block here turns tests/test_workflows.py red
+# on purpose.
+#
+# No conditional business logic anywhere: each step is one `make <target>` (rule 6m — the target
+# owns the decision), and `if: ${{ !cancelled() }}` on the scan steps is the queued-alarm shape
+# so every scanner REPORTS in one round instead of the first finding hiding the rest.
+name: security-scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      scan_dir:
+        description: "limit the filesystem scan to this directory (empty = the whole checkout)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan
+  cancel-in-progress: false
+
+jobs:
+  # Before anything runs: owner, a write+ collaborator, or the bot itself; anything else —
+  # including an API error — is refused (rule 6j, issue #314). This pipeline has no schedule,
+  # so the guard admits only dispatched runs; the schedule branch is the shared fleet shape.
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Owner / collaborator trigger guard
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGER: ${{ github.triggering_actor }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT" = "schedule" ]; then
+            echo "Scheduled run - allowed."
+            exit 0
+          fi
+          # Owner, the bot itself (github-actions[bot], a bot-to-bot dispatch), or a collaborator
+          # with write/maintain/admin, for BOTH the actor and the triggering actor (covers
+          # re-runs). Anything else - including an API error - is refused.
+          for u in "$ACTOR" "$TRIGGER"; do
+            if [ "$u" = "$OWNER" ]; then continue; fi
+            if [ "$u" = "github-actions[bot]" ]; then echo "The bot itself ($u) - allowed."; continue; fi
+            perm=$(gh api "repos/$REPO/collaborators/$u/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) echo "Collaborator $u has $perm - allowed." ;;
+              *) echo "Refused: $u is not the owner, the bot, or a collaborator with write access (permission: ${perm:-none})."; exit 1 ;;
+            esac
+          done
+          echo "Allowed: actor=$ACTOR triggering_actor=$TRIGGER"
+
+  scan:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Dockerfile lint — hadolint over every tracked Dockerfile (issue #1175)
+        if: ${{ !cancelled() }}
+        run: make containerfile-scan
+
+      - name: CVE + license scan — trivy fs over the checkout (issue #1175)
+        if: ${{ !cancelled() }}
+        run: make trivy-scan DIR="${{ github.workspace }}${{ inputs.scan_dir && format('/{0}', inputs.scan_dir) || '' }}"
+
+      - name: Vulnerability scan against the OS vulnerability DB — grype (issue #1175)
+        if: ${{ !cancelled() }}
+        run: make grype-scan DIR="${{ github.workspace }}${{ inputs.scan_dir && format('/{0}', inputs.scan_dir) || '' }}"
+
+      # The SBOM artifact: `make syft-sbom OUT=…` writes the CycloneDX JSON and this step uploads
+      # it, so the supply chain of the pinned images is recorded with the run that produced it.
+      - name: Generate the SBOM — syft (issue #1175)
+        if: ${{ !cancelled() }}
+        run: make syft-sbom OUT="${{ runner.temp }}/sbom-cyclonedx.json"
+
+      - name: Upload the SBOM as a build artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-scan-sbom
+          path: ${{ runner.temp }}/sbom-cyclonedx.json
+          if-no-files-found: error
+
+      # The scanners must PROVE they catch something: this plants a known-vulnerable fixture and
+      # requires trivy AND grype to flag it (and a clean tree to pass) — a scanner that silently
+      # does nothing fails here instead of reporting a false green (issue #1175, the #1061 model).
+      - name: Self-test — a planted vulnerable fixture MUST be flagged (issue #1175)
+        if: ${{ !cancelled() }}
+        run: make security-scan-self-test
