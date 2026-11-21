@@ -43,12 +43,14 @@ def test_guide_parsing_and_shipped_store():
     reg = store.get("engines") or {}
     meas = json.loads((ROOT / "data" / "measurements.json").read_text())
     matrix = GC.matrix_engines(readme)
+    quick = GC.quick_picks(readme)
     used = GC.measured_engines(meas)
     check("the shipped guide table is parsed", len(guide) >= 40, str(len(guide)))
     check("the shipped engine matrix columns are parsed", len(matrix) >= 40, str(len(matrix)))
-    check("the shipped guide and matrix match the registry and measurements",
-          not GC.problems(guide, reg, used, matrix),
-          str(GC.problems(guide, reg, used, matrix)[:3]))
+    check("the shipped Quick picks names are parsed", len(quick) >= 8, str(quick[:5]))
+    check("the shipped guide, matrix and quick picks match the registry and measurements",
+          not GC.problems(guide, reg, used, matrix, quick),
+          str(GC.problems(guide, reg, used, matrix, quick)[:3]))
     check("a missing matrix is a finding, not a silent pass",
           any("no engine matrix" in p for p in GC.problems(guide, reg, used, [])))
     check("a missing heading is a finding, not a silent pass",
@@ -74,6 +76,13 @@ def test_planted_drift_is_named():
     missing_matrix = GC.problems(guide, reg, {"MLX"}, ["llama.cpp"])
     check("a measured engine missing from the matrix is named",
           any("MLX" in p and "engine matrix" in p for p in missing_matrix), str(missing_matrix))
+    stale_quick = GC.problems(guide, reg, set(), None, ["GhostEngine"])
+    check("a stale Quick pick is named",
+          any("GhostEngine" in p and "Quick picks" in p for p in stale_quick), str(stale_quick))
+    variant_reg = dict(reg) | {"MLX-fast (Bonsai 2)": {}}
+    variant_ok = GC.problems(guide, variant_reg, set(), None,
+                             ["llama.cpp CPU", "MLX-fast", "vLLM"])
+    check("known backend variants of registered engines pass", not variant_ok, str(variant_ok))
 
 
 def test_the_check_runs_in_ci():
