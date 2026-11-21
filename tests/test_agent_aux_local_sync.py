@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -345,6 +346,41 @@ def test_no_credential_is_required_and_none_is_ever_read():
               "NOUS_API_KEY" not in proc.stdout, proc.stdout[-200:])
 
 
+def test_the_ci_live_smoke_legs_planted_shape_syncs_and_checks_clean():
+    """Lock the EXACT fixture the qa-validate live-smoke leg plants (rule 6m): the test reads
+    the workflow's OWN printf payload — the ONE source of the CI fixture — so the leg and this
+    guard cannot drift, and the seam is proved against the shape CI actually plants."""
+    wf = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+    i = wf.find("Auxiliary blocks take the chain's local-tier id")
+    check("the qa-validate live-smoke leg exists", i >= 0, "")
+    if i < 0:
+        return
+    step = wf[i:]
+    j = step.find("printf '%s\\n'")
+    k = step.find('> "$RUNNER_TEMP/hermes-profiles/aux-smoke/config.yaml"')
+    check("the leg plants its fixture with printf before syncing", 0 <= j < k, step[:200])
+    if not (0 <= j < k):
+        return
+    quoted = re.findall(r"'([^']*)'", step[j:k])
+    fixture = "\n".join(quoted[1:]) + "\n"  # quoted[0] is the printf FORMAT string
+    check("the planted fixture names the retired local id in BOTH auxiliary surfaces",
+          fixture.count(STALE) >= 3 and "custom_providers:" in fixture and "moa:" in fixture,
+          fixture[:150])
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        dest = _plant(home, "aux-smoke", fixture)
+        proc = run_sync("--profile", "aux-smoke", "--profiles-home", str(home), root=root)
+        check("the CI leg's planted home syncs green", proc.returncode == 0,
+              proc.stdout[-200:] + proc.stderr[-200:])
+        merged = dest.read_text(encoding="utf-8")
+        check("the planted stale id is replaced by the chain's local id in both surfaces",
+              STALE not in merged and merged.count(NEW_ID) >= 3, merged[:200])
+        clean = run_sync("--profile", "aux-smoke", "--check", "--profiles-home", str(home), root=root)
+        check("the CI leg's CHECK=1 reads clean (exit 0) after the sync", clean.returncode == 0,
+              clean.stdout[-200:] + clean.stderr[-200:])
+
+
 def test_the_target_is_wired_to_the_makefile_architecture_and_a_pipeline_job():
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("the Makefile carries the agent-aux-local-sync target (rule 6d)",
@@ -370,6 +406,7 @@ def main() -> int:
     test_a_lane_shaped_home_without_the_auxiliary_blocks_is_skipped_not_rewritten()
     test_no_target_and_a_missing_home_are_refusals()
     test_no_credential_is_required_and_none_is_ever_read()
+    test_the_ci_live_smoke_legs_planted_shape_syncs_and_checks_clean()
     test_the_target_is_wired_to_the_makefile_architecture_and_a_pipeline_job()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
