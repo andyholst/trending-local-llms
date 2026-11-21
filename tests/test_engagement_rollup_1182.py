@@ -13,8 +13,11 @@ This suite locks the repair in the ONE rollup seam (`recompute_7d_engagement`):
   3. the rank semantics are UNCHANGED: last_7d_likes stays posts_7d, and trend_score is
      computed from 7-day post buzz only — these legacy counters never dominate the tables
      (the correction posted on #1182);
-  4. the shipped store carries the repaired counters;
-  5. the guard is RED on the pre-change seam (git show origin/master:...);
+  4. the shipped store carries the repaired counters, and the stored values equal the
+     render seam's output (the store/render invariant);
+  5. an optional counter absent from a row is NOT invented as an empty key — the exact-match
+     golden ingest fixtures broke on `reshares: 0` in CI (rule 2, no invented data);
+  6. the guard is RED on the pre-change seam (git show origin/master:...).
 
 The guards call the REAL update_trending module; the only external system is the filesystem.
 """
