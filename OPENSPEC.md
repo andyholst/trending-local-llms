@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **388**
+Active changes: **0** · archived: **389**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `nous-provider-chain` | active | #1203 — "fleet: the chain's custom + NOUS_API_KEY path cannot run inference — the provider must be nous" | — | [fleet-model-chain](openspec/changes/nous-provider-chain/specs/fleet-model-chain/spec.md) | 7/7 | [proposal.md](openspec/changes/nous-provider-chain/proposal.md) |
+| _(none)_ | — | — | — | — | — | — |
 
 ## Archived changes
 
@@ -270,6 +270,7 @@ Active changes: **1** · archived: **388**
 | `no-fabricated-engine-at-ingest` | archived | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/archive/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/no-fabricated-engine-at-ingest/proposal.md) |
 | `no-marker-reaches-the-tree` | archived | #588 | — | [bot-commit-safety](openspec/changes/archive/no-marker-reaches-the-tree/specs/bot-commit-safety/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/no-marker-reaches-the-tree/proposal.md) |
 | `normalise-ledger-target-form-1054` | archived | #1054 | #1122 | [alarms](openspec/changes/archive/normalise-ledger-target-form-1054/specs/alarms/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/normalise-ledger-target-form-1054/proposal.md) |
+| `nous-provider-chain` | archived | #1203 — "fleet: the chain's custom + NOUS_API_KEY path cannot run inference — the provider must be nous" | #1206 | [fleet-model-chain](openspec/changes/archive/nous-provider-chain/specs/fleet-model-chain/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/nous-provider-chain/proposal.md) |
 | `one-make-target-definition` | archived | #512 — `tech-debt: "What is a make target" has two parsers` | — | [make-target-parser](openspec/changes/archive/one-make-target-definition/specs/make-target-parser/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/one-make-target-definition/proposal.md) |
 | `one-path-through-the-makefile` | archived | #262 | — | [one-path](openspec/changes/archive/one-path-through-the-makefile/specs/one-path/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/one-path-through-the-makefile/proposal.md) |
 | `one-person-one-identity` | archived | #445 (filed first, with the measurement) | — | [commit-authorship](openspec/changes/archive/one-person-one-identity/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/one-person-one-identity/proposal.md) |

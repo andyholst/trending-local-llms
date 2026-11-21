@@ -1,6 +1,7 @@
 # Proposal: nous-provider-chain
 
 Issue: #1203 — "fleet: the chain's custom + NOUS_API_KEY path cannot run inference — the provider must be nous"
+PR: #1206
 
 ## Why
 
