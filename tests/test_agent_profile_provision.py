@@ -130,10 +130,14 @@ def test_a_lane_config_copies_into_the_profile_home_and_the_prior_file_is_kept()
         dest = lane_home / AMC.CONFIG_REL
         check("the profile home's config is BYTE-IDENTICAL to what the chain renders",
               dest.read_text(encoding="utf-8") == lane_config(root, "tll-tester"), "")
-        check("the chain's free-primary config replaced the measured strata/local shape in the live home",
+        check("the chain's free-primary config replaced the measured strata-first shape in the live home",
               "provider: custom" in dest.read_text(encoding="utf-8")
-              and "provider: strata" not in dest.read_text(encoding="utf-8")
+              and "default: meituan/longcat-2.5:free" in dest.read_text(encoding="utf-8")
               and "qwen3.8-flash-next-q2_0" not in dest.read_text(encoding="utf-8"),
+              dest.read_text()[:200])
+        check("the local tier survives ONLY as the credential-less local_fallback step (issue #1192)",
+              "model: qwen3.8-flash-next-iq3_xxs" in dest.read_text(encoding="utf-8")
+              and "default: qwen3.8-flash-next-iq3_xxs" not in dest.read_text(encoding="utf-8"),
               dest.read_text()[:200])
         backups = sorted(p.name for p in lane_home.iterdir()
                          if p.name.startswith(f"{AMC.CONFIG_REL}{'.bak-'}"))
@@ -245,6 +249,94 @@ def test_all_provisions_every_fleet_lane_in_the_tree():
               proc.stdout[-300:])
 
 
+def test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_byte():
+    """Issue #1192: PROFILE= merges model/model_aliases/fallback_providers; the rest is untouched."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        pdir = home / "developer"
+        pdir.mkdir(parents=True)
+        kept_tail = ("terminal:\n  backend: local\n  cwd: /tmp\n"
+                     "auxiliary:\n  vision:\n    provider: auto\n")
+        stale = ("# a hand-written home config\nmodel:\n  provider: strata\n"
+                 "  default: qwen3.8-flash-next-q2_0\n  base_url: http://127.0.0.1:8080/v1\n"
+                 "custom_providers:\n  - name: strata\n    base_url: http://127.0.0.1:8080/v1\n"
+                 + kept_tail)
+        (pdir / AMC.CONFIG_REL).write_text(stale, encoding="utf-8")
+        rendered = AMC.render_text(AMC.read_chain(root)[0])
+
+        proc = run_provision("--profile", "developer", "--profiles-home", str(home), root=root)
+        out = proc.stdout + proc.stderr
+        check("merging a named non-lane profile exits green", proc.returncode == 0, out[-300:])
+        merged = (pdir / AMC.CONFIG_REL).read_text(encoding="utf-8")
+        check("the stale strata-first model block is gone; the free primary is the default",
+              "default: meituan/longcat-2.5:free" in merged
+              and "qwen3.8-flash-next-q2_0" not in merged, merged[:200])
+        check("every non-owned top-level block survives BYTE-FOR-BYTE (custom_providers, terminal, auxiliary)",
+              kept_tail in merged and "custom_providers:\n  - name: strata\n    base_url: http://127.0.0.1:8080/v1\n" in merged
+              and "# a hand-written home config\n" in merged, merged[-300:])
+        for block in ("model", "model_aliases", "fallback_providers"):
+            rchunk = next(c for n, c in __import__("agent_profile_provision")._top_blocks(rendered) if n == block)
+            mchunk = next((c for n, c in __import__("agent_profile_provision")._top_blocks(merged) if n == block), None)
+            check(f"the merged `{block}:` block IS the rendered chain's block", mchunk == rchunk, block)
+        backups = sorted(p.name for p in pdir.iterdir() if p.name.startswith(f"{AMC.CONFIG_REL}.bak-"))
+        check("the prior home config is KEPT as a backup (rule 3b)",
+              len(backups) == 1 and (pdir / backups[0]).read_text(encoding="utf-8") == stale, str(backups))
+        check("the seam names the profile and the destination", "profile=developer" in out and str(pdir) in out,
+              out[-200:])
+
+        again = run_provision("--profile", "developer", "--profiles-home", str(home), root=root)
+        check("the merge is IDEMPOTENT (a second provision changes no byte)",
+              again.returncode == 0
+              and (pdir / AMC.CONFIG_REL).read_text(encoding="utf-8") == merged, again.stderr[-200:])
+
+        # The measured live-home shape (architect, 2026-11-21): a NON-owned block immediately
+        # before the first owned one, and no model_aliases block at all. A header inserted
+        # BETWEEN blocks would ride with the previous block's bytes and change it — refused.
+        pdir2 = home / "reviewer"
+        pdir2.mkdir(parents=True)
+        stale2 = ("display:\n  turn_completion_explainer: true\n"
+                  "fallback_providers:\n  - provider: strata\n    model: old-local\n"
+                  "model:\n  provider: strata\n  default: qwen3.8-flash-next-q2_0\n"
+                  "terminal:\n  backend: local\n")
+        (pdir2 / AMC.CONFIG_REL).write_text(stale2, encoding="utf-8")
+        proc2 = run_provision("--profile", "reviewer", "--profiles-home", str(home), root=root)
+        merged2 = (pdir2 / AMC.CONFIG_REL).read_text(encoding="utf-8")
+        names2 = [n for n, _ in __import__("agent_profile_provision")._top_blocks(merged2)]
+        check("a non-owned block directly before the first owned block survives byte-for-byte",
+              proc2.returncode == 0
+              and "display:\n  turn_completion_explainer: true\n" in merged2
+              and "terminal:\n  backend: local\n" in merged2
+              and names2 == ["", "display", "fallback_providers", "model", "terminal", "model_aliases"],
+              proc2.stderr[-200:] + str(names2))
+
+
+def test_default_names_the_hermes_homes_own_config_and_a_lane_via_profile_is_refused():
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        home.mkdir(parents=True)
+        (home.parent / AMC.CONFIG_REL).write_text("model:\n  provider: strata\n  default: old\n",
+                                                  encoding="utf-8")
+        proc = run_provision("--profile", "default", "--profiles-home", str(home), root=root)
+        out = proc.stdout + proc.stderr
+        check("--profile default writes the Hermes home's OWN config.yaml (beside the profiles root)",
+              proc.returncode == 0
+              and "default: meituan/longcat-2.5:free" in (home.parent / AMC.CONFIG_REL).read_text(encoding="utf-8"),
+              out[-300:])
+        check("a prior default config is kept as a backup",
+              any(p.name.startswith(f"{AMC.CONFIG_REL}.bak-") for p in home.parent.iterdir()), "")
+
+        lane = run_provision("--profile", "tll-tester", "--profiles-home", str(home), root=root)
+        check("a fleet lane named via PROFILE= is refused (lanes are whole copies via LANE=)",
+              lane.returncode == 2 and "LANE=" in lane.stderr, lane.stderr[-200:])
+        missing = run_provision("--profile", "no-such-home", "--profiles-home", str(home), root=root)
+        check("a profile home that does not exist is refused — provisioning never creates a profile",
+              missing.returncode == 2 and "does not exist" in missing.stderr, missing.stderr[-200:])
+        check("no credential VALUE reaches any written file or the seam's output",
+              PLACEHOLDER not in out + lane.stdout + lane.stderr + missing.stdout + missing.stderr, "")
+
+
 def test_the_target_is_wired_to_the_makefile_and_a_pipeline_job():
     mk = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("the Makefile defines the internal recipe (the seam, not a second copy)",
@@ -255,6 +347,9 @@ def test_the_target_is_wired_to_the_makefile_and_a_pipeline_job():
     check("the target takes the lane and profiles-home the issue names (LANE= / ALL= / PROFILES_HOME=)",
           "LANE ?=" in mk and "ALL ?=" in mk and "PROFILES_HOME ?=" in mk
           and "--profiles-home $(PROFILES_HOME)" in mk, "")
+    check("the target takes the non-lane PROFILE= comma list (issue #1192), expanded per name",
+          "PROFILE ?=" in mk and "comma := ," in mk
+          and "$(foreach p,$(subst $(comma), ,$(PROFILE)),--profile $(p))" in mk, "")
     qa = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
     check("qa-validate RUNS the seam (rule 6m: a target CI runs, never only a human)",
           "make agent-profile-provision" in qa, "")
@@ -277,6 +372,8 @@ def main() -> int:
     test_the_provisioned_config_carries_key_env_NAMES_and_never_a_credential_value()
     test_writing_a_profile_home_is_never_the_default_and_an_unknown_lane_is_refused()
     test_all_provisions_every_fleet_lane_in_the_tree()
+    test_a_non_lane_profile_merges_only_the_owned_blocks_and_keeps_every_other_byte()
+    test_default_names_the_hermes_homes_own_config_and_a_lane_via_profile_is_refused()
     test_the_target_is_wired_to_the_makefile_and_a_pipeline_job()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

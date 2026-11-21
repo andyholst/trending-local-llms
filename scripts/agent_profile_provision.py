@@ -11,6 +11,12 @@ all seven `tll-*` homes, `printenv | grep -c NOUS_API_KEY` printed `0`, and `mak
 agent-model-chain-check` enforced "free first, paid last" only inside the repository. "Green in
 the repo, wrong on the machine" is the defect this seam closes.
 
+Issue #1192 widens the seam to the WHOLE host: `--profile <name>` merges the rendered chain into a
+NON-lane profile home (only the `model:`, `model_aliases:` and `fallback_providers:` top-level
+blocks are replaced; every other block is kept byte-for-byte and verified after the write), and
+`--profile default` names the Hermes home's own `config.yaml` beside the profiles root. The chain
+itself gained the credential-less `local_fallback` tier between the free steps and the paid pin.
+
 Three rules shape it (AGENTS.md):
 
 - Rule 3e — a credential is a NAME. The chain names `key_env`; this seam reads only whether the
@@ -18,7 +24,8 @@ Three rules shape it (AGENTS.md):
   REFUSES (exit 2, naming the variable) before it writes anything. A lane configured with a chain
   whose key is absent is a keyless lane that fails inside a model call, which is exactly the
   measured 401/403 story of §3e/§6k — so the gate speaks first. No value is read, printed or
-  measured for length.
+  measured for length. The local tier is credential-less, but the remote steps still demand
+  their key: a local step never makes provisioning keyless.
 - Rule 3b — additive only. A home's existing `config.yaml` is never destroyed: it is copied to
   `config.yaml.bak-<UTC>` and the new file lands beside the backup. Restoring is a human act.
 - Rule 6d — one implementation. Lanes come from `agent_model_chain.fleet_lanes` (the tree, never
@@ -29,13 +36,16 @@ Three rules shape it (AGENTS.md):
 Usage:
     make agent-profile-provision LANE=tll-architect
     make agent-profile-provision ALL=1
+    make agent-profile-provision PROFILE=developer,project-manager,default
     python3 scripts/agent_profile_provision.py --lane tll-architect [--profiles-home DIR]
+    python3 scripts/agent_profile_provision.py --profile developer [--profiles-home DIR]
 """
 from __future__ import annotations
 
 import argparse
 import datetime as dt
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -49,6 +59,10 @@ ROOT = AMC.ROOT
 CONFIG_REL = AMC.CONFIG_REL
 BACKUP_SUFFIX = ".bak-"
 PROFILES_ENV = "HERMES_PROFILES_HOME"
+DEFAULT_PROFILE = "default"
+# The ONLY top-level blocks a non-lane merge replaces (issue #1192); everything else is kept.
+OWNED_BLOCKS = ("model", "model_aliases", "fallback_providers")
+_TOP_BLOCK_RE = re.compile(r"(?m)^([A-Za-z_][A-Za-z0-9_]*):")
 
 EXIT_OK, EXIT_UNDECIDABLE = AMC.EXIT_OK, AMC.EXIT_UNDECIDABLE
 
@@ -77,6 +91,82 @@ def required_key_names(chain: AMC.Chain) -> list[str]:
     if chain.key_env and chain.key_env not in names:
         names.append(chain.key_env)
     return names
+
+
+def _top_blocks(text: str) -> list[tuple[str, str]]:
+    """Split a config into top-level blocks, preserving bytes; leading prose is an unnamed block."""
+    marks = [(m.start(), m.group(1)) for m in _TOP_BLOCK_RE.finditer(text)]
+    if not marks:
+        return [("", text)] if text else []
+    blocks: list[tuple[str, str]] = []
+    if marks[0][0] > 0:
+        blocks.append(("", text[:marks[0][0]]))
+    for i, (pos, name) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        blocks.append((name, text[pos:end]))
+    return blocks
+
+
+def merge_rendered(existing: str, rendered: str) -> tuple[str, list[str]]:
+    """Replace ONLY the owned blocks; every other top-level block stays byte-identical (issue #1192).
+
+    The rendered chain's leading generated-header prose travels with its first owned block, so a
+    merged home carries the same DO-NOT-HAND-EDIT notice a lane copy does. The merge is idempotent
+    and VERIFIES itself: a non-owned block that changed, or an owned block that is not exactly the
+    rendered one, is a problem — never a silent rewrite.
+    """
+    problems: list[str] = []
+    rblocks = _top_blocks(rendered)
+    lead = ""
+    if rblocks and rblocks[0][0] == "":
+        lead, rblocks = rblocks[0][1], rblocks[1:]
+    new_owned: dict[str, str] = {}
+    for name, chunk in rblocks:
+        if name in OWNED_BLOCKS:
+            new_owned[name] = chunk
+    for name in OWNED_BLOCKS:
+        if name not in new_owned:
+            problems.append(f"the rendered chain carries no `{name}:` block to merge")
+
+    existing_blocks = _top_blocks(existing)
+    existing_lead = existing_blocks[0][1] if existing_blocks and existing_blocks[0][0] == "" else ""
+    # The generated header goes to the FILE FRONT (never between blocks: a comment before a key
+    # rides with the PREVIOUS block's bytes, which would change a block the merge does not own).
+    # A second merge must not duplicate it: the merge is idempotent.
+    attach_lead = bool(lead) and lead not in existing_lead
+
+    out: list[str] = [lead] if attach_lead else []
+    seen: set[str] = set()
+    for name, chunk in existing_blocks:
+        if name in OWNED_BLOCKS:
+            if name in seen:
+                continue  # a duplicate owned block collapses into the ONE rendered block
+            if name in new_owned:
+                out.append(new_owned[name])
+                seen.add(name)
+        else:
+            out.append(chunk)
+    for name in OWNED_BLOCKS:
+        if name not in seen and name in new_owned:
+            out.append(new_owned[name])
+            seen.add(name)
+    merged = "".join(out)
+
+    # Verify: every NAMED non-owned block survives byte-for-byte in order, the home's leading
+    # prose stays at the front (after the header, if one was attached), and each owned block IS
+    # the rendered one.
+    before = [(n, c) for n, c in existing_blocks if n and n not in OWNED_BLOCKS]
+    after = [(n, c) for n, c in _top_blocks(merged) if n and n not in OWNED_BLOCKS]
+    if before != after:
+        problems.append("the merge changed a top-level block it does not own — refused")
+    expected_prefix = (lead if attach_lead else "") + existing_lead
+    if expected_prefix and not merged.startswith(expected_prefix):
+        problems.append("the merge dropped the home's leading prose — refused")
+    merged_owned = {n: c for n, c in _top_blocks(merged) if n in OWNED_BLOCKS}
+    for name in OWNED_BLOCKS:
+        if merged_owned.get(name) != new_owned.get(name):
+            problems.append(f"the merged `{name}:` block is not byte-identical to the rendered chain")
+    return merged, problems
 
 
 def provision_one(root: Path, lane: str, home: Path, rendered: str) -> tuple[int, Path | None]:
@@ -115,11 +205,53 @@ def provision_one(root: Path, lane: str, home: Path, rendered: str) -> tuple[int
     return EXIT_OK, backup
 
 
+def provision_profile(name: str, home: Path, rendered: str) -> tuple[int, Path | None]:
+    """Merge the rendered chain into ONE non-lane home (issue #1192); `default` is the Hermes home's own config."""
+    if name == DEFAULT_PROFILE:
+        profile_dir = home.parent
+    else:
+        profile_dir = home / name
+    dest = profile_dir / CONFIG_REL
+    if not profile_dir.is_dir():
+        print(f"[profile-provision] REFUSED: profile home {profile_dir} does not exist — "
+              f"provisioning never creates a profile; name one that is there (or `default`)",
+              file=sys.stderr)
+        return EXIT_UNDECIDABLE, None
+    existing = dest.read_text(encoding="utf-8") if dest.is_file() else ""
+    if existing:
+        merged, problems = merge_rendered(existing, rendered)
+        if problems:
+            for p in problems:
+                print(f"[profile-provision] REFUSED: profile={name}: {p}", file=sys.stderr)
+            return EXIT_UNDECIDABLE, None
+    else:
+        merged = rendered
+    try:
+        backup: Path | None = None
+        if dest.is_file():
+            backup = profile_dir / f"{CONFIG_REL}{BACKUP_SUFFIX}{utc_stamp()}"
+            shutil.copy2(dest, backup)
+        dest.write_text(merged, encoding="utf-8")
+        if dest.read_text(encoding="utf-8") != merged:
+            print(f"[profile-provision] FATAL: {dest} does not read back byte-identical to the merge",
+                  file=sys.stderr)
+            return EXIT_UNDECIDABLE, None
+    except OSError as exc:
+        print(f"[profile-provision] FATAL: cannot write {dest}: {exc}", file=sys.stderr)
+        return EXIT_UNDECIDABLE, None
+    print(f"[profile-provision] profile={name} home={dest} bytes={len(merged)} "
+          f"backup={backup if backup else 'none (no prior config)'}")
+    return EXIT_OK, backup
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Provision a fleet lane's rendered chain config into its Hermes profile home.")
     ap.add_argument("--lane", action="append", default=[],
                     help="a fleet lane to provision (repeatable; e.g. tll-architect)")
     ap.add_argument("--all", action="store_true", help="provision every fleet lane in the tree")
+    ap.add_argument("--profile", action="append", default=[],
+                    help="a NON-lane profile home to merge the chain into (repeatable; `default` "
+                         "names the Hermes home's own config.yaml)")
     ap.add_argument("--profiles-home", default=None,
                     help=f"profile home root (default: ${PROFILES_ENV} or ~/.hermes/profiles)")
     ap.add_argument("--root", default=str(ROOT), help="repository root to read (tests plant a scratch tree)")
@@ -137,10 +269,12 @@ def main(argv: list[str] | None = None) -> int:
     wanted = list(args.lane)
     if args.all:
         wanted = list(lanes)
-    if not wanted:
+    wanted_profiles = list(args.profile)
+    if not wanted and not wanted_profiles:
         print("[profile-provision] REFUSED: name what you are provisioning — "
-              f"`make agent-profile-provision LANE=<lane>` (one of: {', '.join(lanes)}) or "
-              "`ALL=1` (every lane). Writing a live profile home is never a default.",
+              f"`make agent-profile-provision LANE=<lane>` (one of: {', '.join(lanes)}), "
+              "`ALL=1` (every lane), or `PROFILE=<name>[,<name>…]` (a non-lane home, `default` "
+              "for the Hermes home's own config). Writing a live profile home is never a default.",
               file=sys.stderr)
         return EXIT_UNDECIDABLE
 
@@ -148,6 +282,17 @@ def main(argv: list[str] | None = None) -> int:
     if unknown:
         print(f"[profile-provision] REFUSED: unknown lane(s) {', '.join(unknown)}; the fleet is "
               f"{', '.join(lanes)}", file=sys.stderr)
+        return EXIT_UNDECIDABLE
+    lane_as_profile = [p for p in wanted_profiles if p in lanes]
+    if lane_as_profile:
+        print(f"[profile-provision] REFUSED: {', '.join(lane_as_profile)} is a fleet lane — "
+              f"provision it with LANE=<lane> (a whole copy), never PROFILE= (a merge)",
+              file=sys.stderr)
+        return EXIT_UNDECIDABLE
+    bad_profiles = [p for p in wanted_profiles if not p or not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", p)]
+    if bad_profiles:
+        print(f"[profile-provision] REFUSED: not a profile name: {', '.join(repr(p) for p in bad_profiles)}",
+              file=sys.stderr)
         return EXIT_UNDECIDABLE
 
     chain, fatal = AMC.read_chain(root)
@@ -183,7 +328,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print(f"[profile-provision] DRY RUN: chain ok, {', '.join(names)} set (value never read), "
               f"{len(wanted)} lane config(s) match the chain; nothing written "
-              f"(target home would be {home / wanted[0] / CONFIG_REL})")
+              f"(target home would be {home / wanted[0] / CONFIG_REL if wanted else home})"
+              + (f"; profiles to merge: {', '.join(wanted_profiles)}" if wanted_profiles else ""))
         return EXIT_OK
 
     wrote = 0
@@ -195,7 +341,16 @@ def main(argv: list[str] | None = None) -> int:
         wrote += 1
         if backup:
             backups += 1
-    print(f"[profile-provision] OK: provisioned {wrote} lane config(s) into {home} "
+    merged_count = 0
+    for name in wanted_profiles:
+        rc, backup = provision_profile(name, home, rendered)
+        if rc != EXIT_OK:
+            return rc
+        merged_count += 1
+        if backup:
+            backups += 1
+    print(f"[profile-provision] OK: provisioned {wrote} lane config(s) and merged {merged_count} "
+          f"profile home(s) into {home} "
           f"({backups} prior config(s) kept as {CONFIG_REL}{BACKUP_SUFFIX}<UTC> backups, rule 3b); "
           f"credential NAMES required: {', '.join(names)} (values never read or printed)")
     return EXIT_OK

@@ -1480,14 +1480,15 @@ self-archive-guard: ## Fail when a change active at the baseline is gone from th
 
 # ---- fleet model chain: ONE source, rendered lane configs, a gate (issue #1140) --
 # `agents/model_chain.json` is the ONE definition of the model chain every Hermes fleet
-# lane runs on: the free primary FIRST, the free fallbacks in list order, the pinned paid
-# model LAST as the last resort. `agent-profile-model-render` renders each lane's Hermes
+# lane runs on: the free primary FIRST, the free fallbacks in list order, the credential-less
+# local_fallback tier after the free steps (issue #1192), the pinned paid model LAST as the
+# last resort. `agent-profile-model-render` renders each lane's Hermes
 # profile config from it (the author-side mutation target, like `lint-fix`);
 # `agent-model-chain-check` is bundled into `make lint`, so `qa-validate`'s `validate` job
 # and `scripts/fix_loop.sh` both run it: it refuses a lane config that drifted from the
-# chain, a chain that lost its primary/fallback/last-resort shape, a last resort that is
+# chain, a chain that lost its primary/fallback/local/last-resort shape, a last resort that is
 # not the Makefile's $(HERMES_MODEL) under $(HERMES_ALIAS), and any credential VALUE —
-# every entry names `key_env` only (rule 3e).
+# every remote entry names `key_env` only, the local tier names none (rule 3e).
 .PHONY: _agent-profile-model-render agent-profile-model-render
 _agent-profile-model-render:
 	python3 scripts/agent_model_chain.py --write
@@ -1520,10 +1521,15 @@ agent-model-chain-report: ## Print the fleet model chain in the order it is used
 # instead of at a gate (rule 3e). Lanes and bytes come from `agent_model_chain` (rule 6d), never a
 # second renderer or a hand-kept lane list. qa-validate's `live-smoke` job runs it against a runner
 # temp home so the seam is executed by the pipeline, never only by a human (rule 6m).
+# Issue #1192 widens it: PROFILE=<name>[,<name>…] merges the rendered chain into NON-lane homes
+# (only `model:`/`model_aliases:`/`fallback_providers:` replaced, every other block kept
+# byte-for-byte), and `default` names the Hermes home's own config.yaml beside the profiles root.
 LANE ?=
 ALL ?=
+PROFILE ?=
 PROFILES_HOME ?=
-PROVISION_ARGS := $(if $(LANE),--lane $(LANE),)$(if $(ALL), --all,)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)
+comma := ,
+PROVISION_ARGS := $(if $(LANE),--lane $(LANE),)$(if $(ALL), --all,)$(if $(PROFILE), $(foreach p,$(subst $(comma), ,$(PROFILE)),--profile $(p)),)$(if $(PROFILES_HOME), --profiles-home $(PROFILES_HOME),)
 
 .PHONY: _agent-profile-provision agent-profile-provision
 _agent-profile-provision:
