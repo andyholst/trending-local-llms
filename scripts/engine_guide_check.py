@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 GUIDE_HEADING = "## ⚙️ Inference engine / server guide"
 MATRIX_HEADING = "## 🧭 Which inference engine runs what"
+QUICK_RE = re.compile(r"\*\*Quick picks:\*\*\s*(.+)", re.MULTILINE)
 ROW = re.compile(r"^\|\s*\[([^\]]+)\]\(([^)]*)\)\s*\|", re.MULTILINE)
 
 
@@ -55,6 +56,20 @@ def matrix_engines(readme: str) -> list[str]:
     return out
 
 
+def quick_picks(readme: str) -> list[str]:
+    """Engine names in the editorial `Quick picks:` line. A backend variant of a
+    registered engine (e.g. `llama.cpp CPU`) keeps its registry parent's identity."""
+    m = QUICK_RE.search(readme)
+    if not m:
+        return []
+    out = []
+    for part in re.split(r"[·+]", m.group(1)):
+        name = part.split("(", 1)[0].strip().rstrip(".")
+        if name:
+            out.append(name)
+    return out
+
+
 def measured_engines(measurements: dict) -> set[str]:
     """Engines that actually carry a t/s figure: {model_id: [measurement, ...]}."""
     used = set()
@@ -66,7 +81,8 @@ def measured_engines(measurements: dict) -> set[str]:
 
 
 def problems(guide: list[str], registry: dict, measured: set[str],
-             matrix: list[str] | None = None) -> list[str]:
+             matrix: list[str] | None = None,
+             quick: list[str] | None = None) -> list[str]:
     """Named, actionable drift findings. Empty means the guide is current."""
     out = []
     reg = set(registry or {})
@@ -89,6 +105,13 @@ def problems(guide: list[str], registry: dict, measured: set[str],
             out.append(f"engine {name!r} is measured but MISSING from the README engine matrix")
         for name in sorted(cols - measured):
             out.append(f"engine {name!r} is a stale column in the README engine matrix")
+    if quick is not None:
+        if not quick:
+            out.append("the README has no Quick picks line (render it with --render-only)")
+        for name in quick:
+            if not any(name == e or name.startswith(e + " ") or e.startswith(name + " ")
+                       for e in reg):
+                out.append(f"Quick picks names {name!r}, which is not a registered engine")
     return out
 
 
@@ -105,7 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     matrix = matrix_engines(readme_text)
     measurements = json.loads((data / "measurements.json").read_text()) \
         if (data / "measurements.json").exists() else {}
-    found = problems(guide, store.get("engines") or {}, measured_engines(measurements), matrix)
+    quick = quick_picks(readme_text)
+    found = problems(guide, store.get("engines") or {}, measured_engines(measurements), matrix, quick)
     if found:
         print(f"[engine-guide-check] FAIL {len(found)} drift finding(s):")
         for line in found:
