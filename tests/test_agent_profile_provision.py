@@ -49,8 +49,10 @@ from wiring import wired  # noqa: E402  (a test must be discovered by `make test
 SCRIPT = ROOT / "scripts" / "agent_profile_provision.py"
 CHAIN = ROOT / "agents" / "model_chain.json"
 
-# The credential the shipped chain names (agents/model_chain.json: "key_env": "NOUS_API_KEY").
-KEY_NAME = json.loads(CHAIN.read_text(encoding="utf-8"))["key_env"]
+# The credential the chain names, when it names one. Since issue #1203 the shipped chain runs on
+# the `nous` provider (the Portal session) and names NO key_env; `NOUS_API_KEY` stays as the name
+# a scratch chain can declare to prove the refusal path below.
+KEY_NAME = json.loads(CHAIN.read_text(encoding="utf-8")).get("key_env") or "NOUS_API_KEY"
 # A placeholder that is NOT a credential shape: the seam must never print it, and `make secret-scan`
 # must never see it (it lives only in a subprocess environment, never in a tracked file).
 PLACEHOLDER = "present-not-measured"
@@ -130,8 +132,8 @@ def test_a_lane_config_copies_into_the_profile_home_and_the_prior_file_is_kept()
         dest = lane_home / AMC.CONFIG_REL
         check("the profile home's config is BYTE-IDENTICAL to what the chain renders",
               dest.read_text(encoding="utf-8") == lane_config(root, "tll-tester"), "")
-        check("the chain's free-primary config replaced the measured strata-first shape in the live home",
-              "provider: custom" in dest.read_text(encoding="utf-8")
+        check("the chain's `nous` config replaced the measured strata-first shape in the live home",
+              "provider: nous" in dest.read_text(encoding="utf-8")
               and "default: meituan/longcat-2.5:free" in dest.read_text(encoding="utf-8")
               and "qwen3.8-flash-next-q2_0" not in dest.read_text(encoding="utf-8"),
               dest.read_text()[:200])
@@ -153,6 +155,19 @@ def test_a_lane_config_copies_into_the_profile_home_and_the_prior_file_is_kept()
 def test_provisioning_refuses_without_the_credential_the_chain_names_and_writes_nothing():
     with tempfile.TemporaryDirectory() as td:
         root = _scratch(Path(td))
+        # The shipped `nous` chain names NO key_env (the Portal session authenticates it, issue
+        # #1203), so the refusal path is proven on a scratch chain that DOES declare one — the
+        # container legs' `custom` shape.
+        chain_path = root / "agents" / "model_chain.json"
+        data = json.loads(chain_path.read_text(encoding="utf-8"))
+        data["provider"] = "custom"
+        data["base_url"] = "https://inference-api.nousresearch.com/v1"
+        data["key_env"] = KEY_NAME
+        chain_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        render = subprocess.run([sys.executable, str(root / "scripts" / "agent_model_chain.py"),
+                                 "--root", str(root), "--write"], capture_output=True, text=True)
+        assert render.returncode == 0, render.stderr
+
         home = Path(td) / "profiles"
         home.mkdir(parents=True)
 
@@ -167,6 +182,21 @@ def test_provisioning_refuses_without_the_credential_the_chain_names_and_writes_
               list(home.iterdir()) == [], str(list(home.iterdir())))
         check("the placeholder value never reaches stdout or stderr",
               PLACEHOLDER not in out, "")
+
+
+def test_the_nous_chain_provisions_with_no_credential_at_all():
+    """Issue #1203: the shipped chain authenticates through the Nous Portal session and names no
+    `key_env`, so the pre-flight has nothing to check and provisioning is green with no key."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _scratch(Path(td))
+        home = Path(td) / "profiles"
+        proc = run_provision("--all", "--profiles-home", str(home), root=root, key=None)
+        out = proc.stdout + proc.stderr
+        check("a `nous` chain with no key_env provisions green (nothing to pre-flight)",
+              proc.returncode == 0, f"rc={proc.returncode} {out[-300:]}")
+        check("every lane config landed",
+              all((home / lane / AMC.CONFIG_REL).is_file()
+                  for lane in ("tll-tester", "tll-reviewer")), str(list(home.iterdir())))
 
 
 def test_a_lane_config_that_drifted_from_the_chain_is_refused_not_copied():
@@ -199,15 +229,16 @@ def test_the_provisioned_config_carries_key_env_NAMES_and_never_a_credential_val
         check("both lanes provision", proc.returncode == 0, proc.stderr[-200:])
         for lane in ("tll-tester", "tll-reviewer"):
             text = (home / lane / AMC.CONFIG_REL).read_text(encoding="utf-8")
-            check(f"{lane}: the file names the credential by NAME (key_env)",
-                  f"key_env: {KEY_NAME}" in text, text[:200])
             check(f"{lane}: no credential FIELD is assigned anywhere in it (rule 3e)",
                   not CREDENTIAL_FIELD_RE.search(text), text[:200])
+            check(f"{lane}: any key_env it names is an environment NAME, never a value",
+                  all(n == KEY_NAME for n in re.findall(r"key_env:\s*(\S+)", text)), text[:200])
         check("no credential VALUE appears in any written file",
               PLACEHOLDER not in "\n".join(
                   p.read_text(encoding="utf-8") for p in home.rglob("*") if p.is_file()), "")
-        check("the summary prints the credential NAMES it required",
-              f"NAMES required: {KEY_NAME}" in proc.stdout, proc.stdout[-300:])
+        check("the summary reports the credential NAMES it required (none for a `nous` chain)",
+              "credential NAMES required:" in proc.stdout and PLACEHOLDER not in proc.stdout,
+              proc.stdout[-300:])
 
 
 def test_writing_a_profile_home_is_never_the_default_and_an_unknown_lane_is_refused():
@@ -368,6 +399,7 @@ def main() -> int:
     print(f"agent_profile_provision (issue #1142): credential NAME required by the chain: {KEY_NAME}")
     test_a_lane_config_copies_into_the_profile_home_and_the_prior_file_is_kept()
     test_provisioning_refuses_without_the_credential_the_chain_names_and_writes_nothing()
+    test_the_nous_chain_provisions_with_no_credential_at_all()
     test_a_lane_config_that_drifted_from_the_chain_is_refused_not_copied()
     test_the_provisioned_config_carries_key_env_NAMES_and_never_a_credential_value()
     test_writing_a_profile_home_is_never_the_default_and_an_unknown_lane_is_refused()
