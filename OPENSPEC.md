@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **388**
+Active changes: **0** · archived: **391**
 
 ## Active changes
 
@@ -360,6 +360,8 @@ Active changes: **0** · archived: **388**
 | `search-legs-output-scrubbed` | archived | #355 | — | [bot-agent-run-safety](openspec/changes/archive/search-legs-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/search-legs-output-scrubbed/proposal.md) |
 | `search-legs-pointer-prompts` | archived | #638 | — | [agent-leg-skills](openspec/changes/archive/search-legs-pointer-prompts/specs/agent-leg-skills/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/search-legs-pointer-prompts/proposal.md) |
 | `search-skill-names-measurement-alias-key` | archived | #885 | #1103 | [measurement-ingest](openspec/changes/archive/search-skill-names-measurement-alias-key/specs/measurement-ingest/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/search-skill-names-measurement-alias-key/proposal.md) |
+| `search-smoke-realistic-budget` | archived | #1224 | #1225 | [search-smoke](openspec/changes/archive/search-smoke-realistic-budget/specs/search-smoke/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/search-smoke-realistic-budget/proposal.md) |
+| `search-smoke-source-reachability` | archived | #1224 | #1225 | [search-smoke](openspec/changes/archive/search-smoke-source-reachability/specs/search-smoke/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/search-smoke-source-reachability/proposal.md) |
 | `search-tool-pinned` | archived | #362 | — | [bot-agent-run-safety](openspec/changes/archive/search-tool-pinned/specs/bot-agent-run-safety/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/search-tool-pinned/proposal.md) |
 | `secret-guard-derived-names` | archived | #223 — `the no-secret-VALUE guard's key set is a hand-maintained allowlist — a new key added to a workflow is invisible until added to SECRET_VARS` | — | [secret-output-guard](openspec/changes/archive/secret-guard-derived-names/specs/secret-output-guard/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/secret-guard-derived-names/proposal.md) |
 | `secret-guard-file-set` | archived | #224 — `tech-debt: the no-secret-VALUE guard only scans a fixed suffix set` | — | [secret-output-guard](openspec/changes/archive/secret-guard-file-set/specs/secret-output-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/secret-guard-file-set/proposal.md) |

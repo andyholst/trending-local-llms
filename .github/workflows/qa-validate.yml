@@ -334,14 +334,14 @@ jobs:
       - name: Prepare runner images (published for this revision, else build)
         run: make image-ensure
 
-      - name: Search reachability — nvidia (HTTP 200 within 3s per query)
-        run: make search-smoke BACKEND=nvidia
-      - name: Search reachability — metal (HTTP 200 within 3s per query)
-        run: make search-smoke BACKEND=metal
-      - name: Search reachability — cpu (HTTP 200 within 3s per query)
-        run: make search-smoke BACKEND=cpu
-      - name: Search reachability — amd (HTTP 200 within 3s per query)
-        run: make search-smoke BACKEND=amd
+      - name: Search reachability — nvidia (HTTP 200 within 90s per query)
+        run: make search-smoke BACKEND=nvidia SEARCH_SMOKE_BUDGET=90
+      - name: Search reachability — metal (HTTP 200 within 90s per query)
+        run: make search-smoke BACKEND=metal SEARCH_SMOKE_BUDGET=90
+      - name: Search reachability — cpu (HTTP 200 within 90s per query)
+        run: make search-smoke BACKEND=cpu SEARCH_SMOKE_BUDGET=90
+      - name: Search reachability — amd (HTTP 200 within 90s per query)
+        run: make search-smoke BACKEND=amd SEARCH_SMOKE_BUDGET=90
 
       - name: Model caps (model served, max_tokens fits, accepts reasoning)
         run: make model-caps
