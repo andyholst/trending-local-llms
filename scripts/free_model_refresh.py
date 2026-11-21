@@ -208,6 +208,14 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_UNDECIDABLE
     base_url = str(data.get("base_url") or "")
     key_env = str(data.get("key_env") or "")
+    if (not base_url or not key_env) and str(data.get("provider") or "") == "nous":
+        # The built-in `nous` provider carries its own inference endpoint and Portal
+        # session, so a clean chain names neither (issue #1203). The LIVE model
+        # CATALOGUE read still needs an endpoint and a credential NAME: fall back to
+        # Nous's catalogue URL and the registered key NAME. A chain that names both
+        # keeps its own values — nothing is removed or overwritten (rule 3b).
+        base_url = base_url or "https://inference-api.nousresearch.com/v1"
+        key_env = key_env or "NOUS_API_KEY"
     if not base_url or not key_env:
         print(f"[free-refresh] UNDECIDABLE: {CHAIN_REL} names no base_url/key_env to read", file=sys.stderr)
         return EXIT_UNDECIDABLE
