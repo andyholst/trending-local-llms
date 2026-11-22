@@ -5,4 +5,4 @@
 - [x] Add the §8 regression row naming this module
 - [x] Regenerate `OPENSPEC.md` and run `make openspec-check`
 - [x] Run `make lint`, `make architecture-check` and the focused test
-- [ ] Write `findings.md`, re-read the #1258 thread for a newer claim, and open a non-draft PR with exactly one closing keyword bound to #1258; record/archive the change on that branch
+- [x] Write `findings.md`, re-read the #1258 thread for a newer claim, and open a non-draft PR with exactly one closing keyword bound to #1258; record/archive the change on that branch

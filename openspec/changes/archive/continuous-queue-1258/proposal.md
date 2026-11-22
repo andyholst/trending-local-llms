@@ -1,7 +1,7 @@
 # Proposal: continuous-queue-1258
 
 Issue: #1258
-PR: pending
+PR: #1259
 
 ## Why
 
