@@ -1,6 +1,7 @@
 # Proposal: keeper-dedupe-liveness
 
 Issue: #1303
+PR: #1306
 
 ## Why
 

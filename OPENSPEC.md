@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **413**
+Active changes: **1** · archived: **414**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `keeper-dedupe-liveness` | active | #1303 | — | [keepers](openspec/changes/keeper-dedupe-liveness/specs/keepers/spec.md) | 6/6 | [proposal.md](openspec/changes/keeper-dedupe-liveness/proposal.md) |
 
 ## Archived changes
 
@@ -252,6 +251,7 @@ Active changes: **2** · archived: **413**
 | `issue-triage` | archived | #210 | — | [issue-triage](openspec/changes/archive/issue-triage/specs/issue-triage/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/issue-triage/proposal.md) |
 | `keeper-branch-closure-shape` | archived | #872 | #875 | [pr-lifecycle](openspec/changes/archive/keeper-branch-closure-shape/specs/pr-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-branch-closure-shape/proposal.md) |
 | `keeper-dedup-mergeable-960` | archived | #960 — "an unmergeable (DIRTY) keeper PR suppresses the keeper repair it | #961 | [keeper-repair](openspec/changes/archive/keeper-dedup-mergeable-960/specs/keeper-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/keeper-dedup-mergeable-960/proposal.md) |
+| `keeper-dedupe-liveness` | archived | #1303 | #1306 | [keepers](openspec/changes/archive/keeper-dedupe-liveness/specs/keepers/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/keeper-dedupe-liveness/proposal.md) |
 | `keeper-pipeline-ledger-raise-833` | archived | #833 | #1067 | [alarms](openspec/changes/archive/keeper-pipeline-ledger-raise-833/specs/alarms/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/keeper-pipeline-ledger-raise-833/proposal.md) |
 | `keeper-pr-lands-architecture-bot` | archived | #1081 — "architecture-bot's keeper PR step is a fourth spelling of the | #1113 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-lands-architecture-bot/specs/ci-keeper-pr/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/keeper-pr-lands-architecture-bot/proposal.md) |
 | `keeper-pr-one-landing-sequence` | archived | #869 | #1082 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-one-landing-sequence/specs/ci-keeper-pr/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/keeper-pr-one-landing-sequence/proposal.md) |
