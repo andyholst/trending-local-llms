@@ -17,14 +17,14 @@ This suite locks the repair in the ONE rollup seam (`recompute_7d_engagement`):
      render seam's output (the store/render invariant);
   5. an optional counter absent from a row is NOT invented as an empty key — the exact-match
      golden ingest fixtures broke on `reshares: 0` in CI (rule 2, no invented data);
-  6. the guard is RED on the pre-change seam (git show origin/master:...).
+  6. the guard is RED on the pre-change seam, read from a PINNED SHA (never the moving
+     `origin/master` ref — issue #1292).
 
 The guards call the REAL update_trending module; the only external system is the filesystem.
 """
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,7 +34,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 
 import update_trending as UT  # noqa: E402
-from wiring import wired  # noqa: E402
+from wiring import pre_change_blob, wired  # noqa: E402
+
+#: The pre-change blob, pinned by an IMMUTABLE SHA (issue #1292): the parent of the #1182
+#: rollup commit `d4ad144`. Reading it from `origin/master` was both a false red on a full
+#: clone and a vacuous green in a checkout with no `origin/master` ref.
+PRE_CHANGE_SHA = "30c8f5f43500577e2f00af3d749e96b872650cdf"
+PRE_CHANGE_PATH = "scripts/update_trending.py"
 
 _PASS = 0
 _FAIL = 0
@@ -147,13 +153,22 @@ def test_an_absent_optional_counter_is_not_invented():
 
 
 def test_the_guard_is_red_on_the_pre_change_seam():
-    out = subprocess.run("git show origin/master:scripts/update_trending.py",
-                         shell=True, cwd=ROOT, capture_output=True, text=True).stdout
+    # The pre-change blob is pinned by an IMMUTABLE SHA — the parent of the #1182 rollup
+    # commit `d4ad144`. `origin/master` is a moving ref: it now CARRIES the rollup (a false
+    # red on a full clone) and it is ABSENT from a shallow checkout (an empty `git show`, so
+    # the old assertion passed vacuously and locked nothing) — issue #1292.
+    out = pre_change_blob(PRE_CHANGE_SHA, PRE_CHANGE_PATH)
+    check("the pinned pre-change blob resolves (never an empty `git show`)",
+          out is not None, f"git show {PRE_CHANGE_SHA}:{PRE_CHANGE_PATH} failed")
+    if out is None:
+        return
     i = out.find("def recompute_7d_engagement(")
     j = out.find("\ndef ", i + 10)
-    old = out[i:j]
+    old = out[i:j] if i >= 0 and j > i else ""
+    check("the pinned blob carries the probed function (the slice is never empty)",
+          bool(old), f"no recompute_7d_engagement in {PRE_CHANGE_SHA}:{PRE_CHANGE_PATH}")
     check("the pre-change rollup never reads post counters into the aggregates",
-          "for counter in" not in old and "19,516" not in old, old[-200:])
+          bool(old) and "for counter in" not in old and "19,516" not in old, old[-200:])
 
 
 def test_wiring():

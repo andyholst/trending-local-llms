@@ -12,14 +12,14 @@ suite locks the declared `stale_last_seen` acquisition gap:
   3. analyse() adds ONE class signature entry (#472 lesson) and the issue BODY names the
      rows, the lag and the sibling evidence;
   4. the SHIPPED store actually surfaces the seven flash-next rows with the Edge0 sibling;
-  5. the guard is RED on the pre-change analysis (git show origin/master:...).
+  5. the guard is RED on the pre-change analysis, read from a PINNED SHA (never the moving
+     `origin/master` ref — issue #1292).
 
 The guards call the REAL data_gap_analysis module; the only external system is the filesystem.
 """
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -29,7 +29,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 
 import data_gap_analysis as GA  # noqa: E402
-from wiring import wired  # noqa: E402
+from wiring import pre_change_blob, wired  # noqa: E402
+
+#: The pre-change blob, pinned by an IMMUTABLE SHA (issue #1292): the parent of the #1183
+#: `stale_last_seen` commit `6e71b2c`. Reading it from `origin/master` was both a false red
+#: on a full clone and a vacuous green in a checkout with no `origin/master` ref.
+PRE_CHANGE_SHA = "71b158aa0d30d8ec650af6f444fdfa1cbbd0879e"
+PRE_CHANGE_PATH = "scripts/data_gap_analysis.py"
 
 _PASS = 0
 _FAIL = 0
@@ -112,8 +118,17 @@ def test_the_shipped_store_surfaces_the_real_flash_next_gap():
 
 
 def test_the_guard_is_red_on_the_pre_change_analysis():
-    out = subprocess.run("git show origin/master:scripts/data_gap_analysis.py",
-                         shell=True, cwd=ROOT, capture_output=True, text=True).stdout
+    # The pre-change blob is pinned by an IMMUTABLE SHA — the parent of the #1183
+    # `stale_last_seen` commit `6e71b2c`. `origin/master` is a moving ref: it now CARRIES the
+    # signal (a false red on a full clone) and it is ABSENT from a shallow checkout (an empty
+    # `git show`, so the old assertion passed vacuously and locked nothing) — issue #1292.
+    out = pre_change_blob(PRE_CHANGE_SHA, PRE_CHANGE_PATH)
+    check("the pinned pre-change blob resolves (never an empty `git show`)",
+          out is not None, f"git show {PRE_CHANGE_SHA}:{PRE_CHANGE_PATH} failed")
+    if out is None:
+        return
+    check("the pinned pre-change blob is non-empty", bool(out.strip()),
+          f"{PRE_CHANGE_SHA}:{PRE_CHANGE_PATH} answered empty")
     check("the pre-change analysis has no stale_last_seen signal",
           "stale_last_seen" not in out, "the old module already has the guard?")
 
