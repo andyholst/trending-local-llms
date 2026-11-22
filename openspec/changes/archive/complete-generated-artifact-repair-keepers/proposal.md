@@ -21,3 +21,4 @@ Each post-merge repair job now produces a keeper green on BOTH generated gates, 
 - Does not decide which DIRTY open PRs to close — that is an owner ruling.
 
 Issue: #1339
+PR: #1340

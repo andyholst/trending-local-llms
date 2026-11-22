@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **426**
+Active changes: **1** · archived: **427**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `complete-generated-artifact-repair-keepers` | active | #1339 | — | [generated-artifact-repair](openspec/changes/complete-generated-artifact-repair-keepers/specs/generated-artifact-repair/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/complete-generated-artifact-repair-keepers/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -147,6 +146,7 @@ Active changes: **2** · archived: **426**
 | `commit-authorship-guard` | archived | #317 | — | [commit-authorship](openspec/changes/archive/commit-authorship-guard/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/commit-authorship-guard/proposal.md) |
 | `commit-engine-meta-fixture` | archived | #505 | — | [engine-meta-fixture-committed](openspec/changes/archive/commit-engine-meta-fixture/specs/engine-meta-fixture-committed/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-engine-meta-fixture/proposal.md) |
 | `commit-message-check-discriminates-push-archive` | archived | #852 | #853 | [message-pattern-enforcement](openspec/changes/archive/commit-message-check-discriminates-push-archive/specs/message-pattern-enforcement/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-message-check-discriminates-push-archive/proposal.md) |
+| `complete-generated-artifact-repair-keepers` | archived | #1339 | #1340 | [generated-artifact-repair](openspec/changes/archive/complete-generated-artifact-repair-keepers/specs/generated-artifact-repair/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/complete-generated-artifact-repair-keepers/proposal.md) |
 | `conflict-merge-says-why` | archived | #563 | — | [bot-conflict-repair](openspec/changes/archive/conflict-merge-says-why/specs/bot-conflict-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/conflict-merge-says-why/proposal.md) |
 | `container-contracts-cannot-name-gh` | archived | #194 | #799 | [agent-leg-skills](openspec/changes/archive/container-contracts-cannot-name-gh/specs/agent-leg-skills/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/container-contracts-cannot-name-gh/proposal.md) |
 | `context-benchmark-points-not-windows` | archived | #1017 | #1075 | [data-gap-analysis](openspec/changes/archive/context-benchmark-points-not-windows/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/context-benchmark-points-not-windows/proposal.md) |
