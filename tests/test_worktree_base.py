@@ -796,6 +796,51 @@ def test_the_cut_check_agrees_with_the_parser_on_the_real_shapes() -> None:
               f"parser={pr_closure.implemented_issue(branch)} accepted={accepted}")
 
 
+def test_a_rebase_from_another_checkout_is_refused(tmp: Path) -> None:
+    """Issue #1330: `mode_rebase` reads HEAD, so a wrong checkout is a silent no-op.
+
+    Measured on the repo: from the shared clone (HEAD=master) `make base-rebase BRANCH=<b>`
+    answered `behind_base=0` / `rebase=up-to-date` for a branch 29 commits behind. A fleet
+    leg repairing a PR from the clone — the natural place — therefore skipped the rebase and
+    left the PR DIRTY with no checks running.
+    """
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    advance(fx["seed"], "moved\n")
+    run_script("adopt", ci, "--branch", "b1")
+    (ci / "impl.py").write_text("x\n")
+    git(["add", "-A"], ci)
+    git(["commit", "-qm", "impl"], ci)
+    # A SECOND checkout on master — the shape the shared clone is in.
+    other = tmp / "other"
+    git(["clone", "-q", "--single-branch", "--branch", "master",
+         str(fx["remote"]), str(other)], tmp)
+    wrong = run_script("rebase", other, "--branch", "b1")
+    check("rebase: a checkout that is not the branch is REFUSED, never reported up-to-date",
+          wrong.returncode == 1 and "REFUSED" in wrong.stderr
+          and "rebase=up-to-date" not in wrong.stdout,
+          wrong.stdout + wrong.stderr[-300:])
+    check("rebase: the refusal names the branch and the checkout's HEAD",
+          "b1" in wrong.stderr and "master" in wrong.stderr, wrong.stderr[-300:])
+    check("rebase: the wrong checkout's HEAD was not moved",
+          git(["rev-parse", "--abbrev-ref", "HEAD"], other).stdout.strip() == "master", "")
+
+
+def test_a_rebase_from_the_branch_worktree_reports_the_true_behind_base(tmp: Path) -> None:
+    """The same command from the branch's OWN worktree must still tell the truth (#1330)."""
+    fx = fixture(tmp)
+    ci = fx["ci"]
+    advance(fx["seed"], "moved\n")
+    run_script("adopt", ci, "--branch", "b1")
+    (ci / "impl.py").write_text("x\n")
+    git(["add", "-A"], ci)
+    git(["commit", "-qm", "impl"], ci)
+    own = run_script("rebase", ci, "--branch", "b1")
+    check("rebase: from the branch's worktree it reports the true behind_base and rebases",
+          own.returncode == 0 and "behind_base=1" in own.stdout and "rebase=rebased" in own.stdout,
+          own.stdout + own.stderr[-300:])
+
+
 def main() -> int:
     print("where work starts: a worktree off the freshly fetched base (issue #271)")
     tmp = Path(tempfile.mkdtemp(prefix="wt-base-"))
@@ -828,6 +873,8 @@ def main() -> int:
         test_rebase_respects_a_configured_checkout_identity(tmp / "c13b")
         test_rebase_conflict_keeps_every_commit_and_says_exit_3(tmp / "c14")
         test_rebase_refuses_a_tree_with_uncommitted_changes(tmp / "c15")
+        test_a_rebase_from_another_checkout_is_refused(tmp / "c15b")
+        test_a_rebase_from_the_branch_worktree_reports_the_true_behind_base(tmp / "c15c")
         test_new_with_issue_refuses_a_branch_naming_a_different_issue(tmp / "c16")
         test_new_with_issue_refuses_a_name_that_implements_nothing(tmp / "c17")
         test_new_with_issue_accepts_the_name_it_declares(tmp / "c18")
