@@ -197,6 +197,22 @@ def _gh(args: list[str]) -> str:
     return out.stdout
 
 
+#: A `make <target>` at a COMMAND position, terminated by a SHELL operator as well
+#: as the quote/space/EOL the first version admitted (issue #1281): `make X;`,
+#: `make X | …`, `make X && …`, `make X)`, `` `make X` `` and `make X` at EOL are
+#: all gates. The terminator set is what makes a `run: |` continuation written
+#: `make X;` visible instead of silence.
+_MAKE_GATE = re.compile(r"make\s+([a-z0-9_-]+)(?=[\"'`\s;&|)]|$)")
+
+#: A quoted span. A `make <target>` inside one is PROSE — an `echo`/`printf`
+#: argument or a doc string — never a command the job runs (issue #1281).
+_QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
+
+#: A line whose COMMAND WORD only reports text. Such a line runs no gate, so a
+#: `make <target>` on it is prose even when it is not quoted.
+_PROSE_CMD = re.compile(r"^\s*(?:@|-)?\s*(?:echo|printf|say|warn|annotate)\b")
+
+
 def validate_gates_from_trees(wf_text: str) -> list[str]:
     """The `make <target>` gates the given `validate` job runs, in order.
 
@@ -205,8 +221,22 @@ def validate_gates_from_trees(wf_text: str) -> list[str]:
     Both shapes count (issue #527): the inline `run: make X` step AND the bare
     `make X` continuation line of a multi-line `run:` block — the first version matched
     only the continuation lines and read the three gates of ONE block as the whole job.
+
+    Issue #1281: the match is LINE-ORIENTED and reads a SHELL terminator, not only a
+    quote/space. A gate written `make X;` (the normal shell shape, and the shape of a
+    `run: |` continuation) was invisible, so a NEW gate could ship unregistered with
+    this guard green; and a `make X` inside a quoted argument (`echo "Run 'make X'
+    and rebase"`) manufactured a PHANTOM gate that reds the guard on prose. So a
+    comment line, a line whose command word is echo/printf, and quoted spans all
+    contribute nothing.
     """
-    return re.findall(r"make\s+([a-z0-9_-]+)(?=[\"'\s]|$)", wf_text, re.M)
+    gates: list[str] = []
+    for line in wf_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#") or _PROSE_CMD.match(line):
+            continue
+        gates += _MAKE_GATE.findall(_QUOTED.sub(" ", line))
+    return gates
 
 
 def unchecked_gates(wf_text: str) -> list[str]:

@@ -138,6 +138,25 @@ def test_every_validate_gate_is_on_a_list():
     unchecked = a.unchecked_gates(wf_text)
     check("gates: every validate-job `make` gate is on the keeper OR alarm list",
           not unchecked, f"uncovered={unchecked}")
+    # issue #1281 — the extractor reads a SHELL terminator and ignores PROSE. Both
+    # halves were measured on PR #1242's head: the echo literal manufactured a
+    # phantom `openspec-index` while the REAL `make openspec-index-check;` on the
+    # same step was invisible, so a new gate could ship unregistered.
+    planted = wf_text + "\n      - name: planted\n        run: make brand-new-gate;\n"
+    planted_gates = a.validate_gates_from_trees(planted)
+    check("gates: a `make X;` gate is extracted (issue #1281)",
+          "brand-new-gate" in planted_gates, planted_gates)
+    check("gates: a planted `make X;` is uncovered until GATES names it (issue #1281)",
+          "brand-new-gate" in a.unchecked_gates(planted), a.unchecked_gates(planted))
+    prose = ("\n      - name: prose\n        run: |\n"
+             "          echo \"[merge-tree-index] Run 'make openspec-index' and rebase "
+             "on current master.\"\n"
+             "          # `make openspec-check` is named here only in a comment\n")
+    prose_gates = a.validate_gates_from_trees(prose)
+    check("gates: an echo argument manufactures no gate (issue #1281)",
+          "openspec-index" not in prose_gates, prose_gates)
+    check("gates: a comment manufactures no gate (issue #1281)",
+          prose_gates == [], prose_gates)
     # keepers must actually name the bot that repairs the artifact (issue #479/#526),
     # and the mapping is pinned per gate: a NEW keeper gate that names some other
     # pathway reds this suite until the pathway is added deliberately (fail closed).
