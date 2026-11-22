@@ -136,8 +136,13 @@ def test_ci_and_comment_monitor():
           WM.run_states(lambda cmd: json.dumps([
               {"id": 555, "status": "completed", "conclusion": "success"}])) != states)
     rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    check("a master merge changes the monitor hash",
+          WM.master_state(lambda cmd: json.dumps([{"sha": "abc123"}])) ==
+          ["M:abc123"] and
+          WM.master_state(lambda cmd: json.dumps([{"sha": "def456"}])) ==
+          ["M:def456"])
     check("rule 6w binds the CI+comment monitor",
-          "make watch-monitor" in rule and "NEVER-STARTED" in rule and
+          "make watch-monitor" in rule and "NEVER-STARTED" in rule and "M:<master sha>" in rule and
           "asimov@omarchy" in rule)
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("make watch-monitor is bound", "watch-monitor:" in makefile and

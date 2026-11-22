@@ -1247,7 +1247,10 @@ issue that skips a section is refused.
    IDs changes, so every new comment — including one posted by our own agent identity
    as a trigger test — is read and answered. The same job now monitors CI too via
    `make watch-monitor`: stable `R:<run id>:<status>:<conclusion>` keys wake the agent
-   on a pipeline state change as well. Both machines run the comment+CI watcher
+   on a pipeline state change and `M:<master sha>` wakes it when a PR merges to master.
+   On every `M:` change: `git fetch origin master`, rebase your own open PRs, re-run
+   their gates and regenerate `OPENSPEC.md` on each head so the latest AGENTS.md behavior
+   and index count stay in sync. Both machines run the comment+CI+merge watcher
    (asimov@mac and asimov@omarchy); a 0-job `action_required` run is a NEVER-STARTED
    run to report, not a green gate.
 
