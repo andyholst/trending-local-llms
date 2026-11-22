@@ -266,7 +266,10 @@ def collect_targets(home: Path, names: list[str], all_profiles: bool) -> tuple[l
     problems: list[str] = []
     if all_profiles:
         if home.is_dir():
-            wanted += sorted(p.name for p in home.iterdir() if p.is_dir())
+            # A retired profile kept in a dot-directory (e.g. `.deleted/`) is
+            # ARCHIVE, not a live home: enumerating it made every --all-profiles
+            # run refuse with "not a profile name" (issue #1217).
+            wanted += sorted(p.name for p in home.iterdir() if p.is_dir() and not p.name.startswith("."))
         if (home.parent / CONFIG_REL).is_file() and DEFAULT_PROFILE not in wanted:
             wanted.append(DEFAULT_PROFILE)
     bad = [p for p in wanted if not p or not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", p)]
