@@ -13,6 +13,9 @@ plugin would keep reporting its key missing — silently, which is the failure t
 issue exists to prevent.
 
   - test_detector_catches_every_forbidden_shape  the guard is not a no-op
+  - test_marked_test_value_file_is_exempt     the sanctioned marker exempts a file
+  - test_unmarked_test_value_file_is_still_a_finding  the exemption is the marker
+  - test_the_marker_is_imported_not_respelled ONE marker definition (issue #1277)
   - test_pre_change_tree_fails_the_guards        it fails on the OLD files
   - test_real_tree_is_clean                      it passes on the current tree
   - test_credential_name_is_verified             the NAME is measured, not chosen
@@ -35,6 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import nerve_key_check as NK  # noqa: E402
+import check_secret_output as CSO  # noqa: E402
 
 from wiring import wired  # noqa: E402  (issues #176/#192)
 
@@ -179,6 +183,57 @@ def test_scan_walks_the_tree_by_directory():
           not any("captured.json" in h for h in hits), hits)
 
 
+def test_marked_test_value_file_is_exempt():
+    """A file carrying the sanctioned `secret-output: test value` marker is a
+    deliberate test value: the shape scan must skip it, exactly as
+    `check_secret_output` skips that file (issue #1277)."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        (root / "tests").mkdir()
+        (root / "tests" / "marked_test_value.py").write_text(
+            f"# {CSO.TEST_VALUE_MARKER}\nKEY = \"{_FAKE}\"\n")
+        saved, NK.ROOT = NK.ROOT, root
+        try:
+            hits = NK.scan_tree()
+        finally:
+            NK.ROOT = saved
+    check("scan: a marked test-value file is exempt",
+          not any("marked_test_value.py" in h for h in hits), hits)
+
+
+def test_unmarked_test_value_file_is_still_a_finding():
+    """The SAME literal in an UNMARKED file is still a finding — the exemption
+    is the marker, not the shape (a guard that exempts every `sk-` literal
+    locks nothing)."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        (root / "tests").mkdir()
+        (root / "tests" / "unmarked_test_value.py").write_text(f"KEY = \"{_FAKE}\"\n")
+        saved, NK.ROOT = NK.ROOT, root
+        try:
+            hits = NK.scan_tree()
+        finally:
+            NK.ROOT = saved
+    check("scan: the same literal unmarked is a finding",
+          any("unmarked_test_value.py" in h for h in hits), hits)
+
+
+def test_the_marker_is_imported_not_respelled():
+    """ONE definition (rule 6d): the guard imports the marker constant from the
+    module that owns it. A second literal would drift silently — a renamed
+    marker reads as "no marker" and the exemption simply never applies."""
+    src = (ROOT / "scripts" / "nerve_key_check.py").read_text()
+    marker = getattr(NK, "TEST_VALUE_MARKER", None)
+    check("marker: nerve_key_check exposes the imported constant",
+          marker == CSO.TEST_VALUE_MARKER, marker)
+    check("marker: the literal is not re-spelled in nerve_key_check.py",
+          CSO.TEST_VALUE_MARKER not in src)
+    check("marker: the import is from check_secret_output",
+          "from check_secret_output import TEST_VALUE_MARKER" in src)
+
+
 def test_pre_change_tree_fails_the_guards():
     """The guard must FAIL on the files as they were BEFORE issue #120 — a guard
     that only ever passes proves nothing (AGENTS.md rule 6c)."""
@@ -283,6 +338,9 @@ def main() -> int:
     print("nerve-plugin credential wiring (issue #120)")
     test_detector_catches_every_forbidden_shape()
     test_scan_walks_the_tree_by_directory()
+    test_marked_test_value_file_is_exempt()
+    test_unmarked_test_value_file_is_still_a_finding()
+    test_the_marker_is_imported_not_respelled()
     test_pre_change_tree_fails_the_guards()
     test_real_tree_is_clean()
     test_credential_name_is_verified()
