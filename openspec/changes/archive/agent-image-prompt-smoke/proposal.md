@@ -1,6 +1,7 @@
 # Proposal: agent-image-prompt-smoke
 
 Issue: #1214
+PR: #1229
 
 ## Why
 
