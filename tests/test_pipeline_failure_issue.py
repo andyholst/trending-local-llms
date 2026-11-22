@@ -550,6 +550,34 @@ def test_wiring_rulebook_and_registry() -> None:
           "tests/test_pipeline_failure_issue.py" in agents, "")
 
 
+def test_the_module_docstring_names_the_dispatch_only_entry_point() -> None:
+    print("\ndocstring: the filer's entry point is dispatch-only, with no weekly/Wednesday claim")
+    source = FILER.read_text(encoding="utf-8")
+    doc = source.split('"""')[1]
+    check("the module docstring names the filer's entry point",
+          "queued-alarm.yml" in doc, "")
+    check("the module docstring states the entry point is dispatch-only (#1029)",
+          "dispatch-only" in doc.lower(), doc[:200])
+    check("the module docstring makes no weekly cadence claim",
+          "weekly" not in doc.lower(), doc[:200])
+    check("the module docstring names no Wednesday slot",
+          "wednesday" not in doc.lower(), "")
+    # Read the `on:` block structurally: the workflow's own comments legitimately say
+    # "schedule" (they explain why there is none), so a substring scan is wrong.
+    on_lines, inside = [], False
+    for line in QUEUE_WF.read_text(encoding="utf-8").splitlines():
+        if line.startswith("on:"):
+            inside = True
+            continue
+        if inside:
+            if line and not line[0].isspace():
+                break
+            on_lines.append(line)
+    check("the workflow's own `on:` block agrees — no schedule trigger",
+          not any(re.match(r"\s+schedule:\s*$", line) for line in on_lines),
+          "\n".join(on_lines)[:200])
+
+
 def _seed_ledger(tmp: Path, entries: list[dict]) -> Path:
     """Write a pre-existing ledger (a past filed run) so the sweep enters in the re-diagnosis
     state rather than filing."""
@@ -1549,6 +1577,7 @@ def main() -> int:
     test_the_stamp_rides_the_filer_s_ledger_pr_landing_through_the_makefile()
     test_ledger_pr_body_is_generated_and_carries_no_closing_keyword()
     test_wiring_rulebook_and_registry()
+    test_the_module_docstring_names_the_dispatch_only_entry_point()
     test_failure_shape_groups_the_same_defect_and_separates_others()
     test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches()
     test_pr_blockage_pass_records_a_shared_failure_shape_once()
