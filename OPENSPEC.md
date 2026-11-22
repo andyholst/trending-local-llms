@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **406**
+Active changes: **1** · archived: **413**
 
 ## Active changes
 
@@ -179,6 +179,7 @@ Active changes: **1** · archived: **406**
 | `engine-guide-sync` | archived | #1220 | #1222 | [readme-render](openspec/changes/archive/engine-guide-sync/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/engine-guide-sync/proposal.md) |
 | `engine-meta-capture-at-ingest` | archived | #334 | — | [engine-meta-capture](openspec/changes/archive/engine-meta-capture-at-ingest/specs/engine-meta-capture/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/engine-meta-capture-at-ingest/proposal.md) |
 | `engine-meta-guard-agents-row` | archived | #745 | #906 | [rulebook](openspec/changes/archive/engine-meta-guard-agents-row/specs/rulebook/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/engine-meta-guard-agents-row/proposal.md) |
+| `engine-min-est-visibility-1129` | archived | #1129 | #1294 | [engine-build-visibility](openspec/changes/archive/engine-min-est-visibility-1129/specs/engine-build-visibility/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/engine-min-est-visibility-1129/proposal.md) |
 | `engine-min-model-version-not-build` | archived | #1025 | #1037 | [data-gap-analysis](openspec/changes/archive/engine-min-model-version-not-build/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-model-version-not-build/proposal.md) |
 | `engine-min-version-detector-precision` | archived | #1020 | #1127 | [data-gap-analysis](openspec/changes/archive/engine-min-version-detector-precision/specs/data-gap-analysis/spec.md) | 5/6 · 1 blocked | [proposal.md](openspec/changes/archive/engine-min-version-detector-precision/proposal.md) |
 | `engine-min-version-ingest` | archived | #877 | #880 | [measurement-ingest](openspec/changes/archive/engine-min-version-ingest/specs/measurement-ingest/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-min-version-ingest/proposal.md) |
