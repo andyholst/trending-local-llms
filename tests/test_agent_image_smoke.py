@@ -10,6 +10,7 @@ where needed.
 """
 from __future__ import annotations
 
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -42,10 +43,13 @@ def test_profile_prompt_findings():
         check("the repo declares fleet lanes", len(lanes) >= 3, str(lanes))
         for name in lanes:
             lane = home / name
-            (lane / "skills" / name).mkdir(parents=True)
-            (lane / "config.yaml").write_text("model:\n  provider: nous\n")
-            (lane / "SOUL.md").write_text("You are a fleet agent.\n")
-            (lane / "skills" / name / "SKILL.md").write_text(f"# {name}\n")
+            lane.mkdir(parents=True)
+            source = ROOT / "agents" / name
+            # Byte-identical to the repo source: the checker now verifies identity, not just presence.
+            for artefact in ("config.yaml", "SOUL.md"):
+                shutil.copy2(source / artefact, lane / artefact)
+            if (source / "skills").is_dir():
+                shutil.copytree(source / "skills", lane / "skills", dirs_exist_ok=True)
         check("a complete planted profile tree has no findings",
               not AISM.profile_findings(home), str(AISM.profile_findings(home)[:3]))
         lane = home / lanes[0]
@@ -56,6 +60,11 @@ def test_profile_prompt_findings():
         (lane / "skills" / lanes[0] / "SKILL.md").unlink()
         missing = AISM.profile_findings(home)
         check("a missing prompt skill is named", any("SKILL.md" in f for f in missing), str(missing))
+        # A stale-but-present prompt is a real #1190 failure mode: presence alone is not reachability.
+        (lane / "SOUL.md").write_text("STALE PROMPT\n")
+        drifted = AISM.profile_findings(home)
+        check("stale SOUL bytes are named as drift",
+              any("drifted" in f and "SOUL.md" in f for f in drifted), str(drifted[:3]))
     check("a missing profiles home is named",
           any("does not exist" in f for f in AISM.profile_findings(Path("/nonexistent/tll-smoke"))))
 

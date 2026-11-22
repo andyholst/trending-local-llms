@@ -89,15 +89,21 @@ def profile_findings(profiles_home: Path) -> list[str]:
             bad.append(f"profile {lane.name} is absent from {profiles_home}")
             continue
         for required in ("config.yaml", "SOUL.md"):
-            if not (home / required).exists():
+            target, source = home / required, lane / required
+            if not target.exists():
                 bad.append(f"profile {lane.name} is missing {required}")
+            elif source.is_file() and target.read_bytes() != source.read_bytes():
+                bad.append(f"profile {lane.name}'s {required} drifted from agents/{lane.name}/{required}")
         src_skills = {d.name: sorted(f.name for f in (d / "skills").glob("*"))
                       if (d / "skills").is_dir() else []
                       for d in [lane]}
         for skill in src_skills[lane.name]:
             target = home / "skills" / skill
+            source = lane / "skills" / skill / "SKILL.md"
             if not target.is_dir() or not (target / "SKILL.md").exists():
                 bad.append(f"profile {lane.name} is missing prompt skill {skill}/SKILL.md")
+            elif source.is_file() and (target / "SKILL.md").read_bytes() != source.read_bytes():
+                bad.append(f"profile {lane.name}'s skill {skill}/SKILL.md drifted from the agents source")
     return bad
 
 
