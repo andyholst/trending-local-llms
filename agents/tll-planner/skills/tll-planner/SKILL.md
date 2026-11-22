@@ -289,6 +289,7 @@ Every lane hands over on the issue thread, so the board can be followed without 
 ### Read the comments to delegate (owner-mandated, issue #1209)
 
 - **Comment on the issue BEFORE you do the work.** Every lane — including this one — posts its signed comment on the issue thread before opening a branch, starting a review, giving a verdict or rebasing a PR. The planner orchestrates from those comments; there is no gap between lanes.
+- **While a test or CI gate runs, post a status comment on the ISSUE (issue #1232).** Name your machine as `user@hostname` (e.g. `asimov@omarchy`), then say what you are doing, what you are waiting for and which issue/PR you can help with next; repeat on each state change. One comment per state: this does not replace the claim, the PR comment or the `done #<id> · handover <...>` comment, and it never claims an issue another machine owns. The planner reads these notes to delegate; the other host reads them to decide what to take next.
 - **Read before you dispatch.** Before naming a lane, re-read the issue's own comments
   and take the NEWEST signed handover as the state. Dispatch from that comment, not
   from the issue body: `BOT tll-planner · dispatch #<id> · lane <lane> · base <sha> ·
