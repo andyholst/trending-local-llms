@@ -1,6 +1,7 @@
 # Proposal: stale-cadence-docstring-1291
 
 Issue: #1291
+PR: #1304
 
 ## Why
 

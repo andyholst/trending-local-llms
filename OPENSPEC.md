@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **413**
+Active changes: **1** · archived: **414**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `stale-cadence-docstring-1291` | active | #1291 | — | [pipeline-failure-filer](openspec/changes/stale-cadence-docstring-1291/specs/pipeline-failure-filer/spec.md) | 5/5 | [proposal.md](openspec/changes/stale-cadence-docstring-1291/proposal.md) |
 
 ## Archived changes
 
@@ -395,6 +394,7 @@ Active changes: **2** · archived: **413**
 | `source-post-figure-readback` | archived | #531 — "data: nothing re-reads a measurement's source_post, so a stored figure can contradict the post it cites and every gate stays green". | #786 | [validate-source-post-readback](openspec/changes/archive/source-post-figure-readback/specs/validate-source-post-readback/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/source-post-figure-readback/proposal.md) |
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
 | `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
+| `stale-cadence-docstring-1291` | archived | #1291 | #1304 | [pipeline-failure-filer](openspec/changes/archive/stale-cadence-docstring-1291/specs/pipeline-failure-filer/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-cadence-docstring-1291/proposal.md) |
 | `stale-last-seen-gap` | archived | #1183 | #1216 | [data-gap-analysis](openspec/changes/archive/stale-last-seen-gap/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-last-seen-gap/proposal.md) |
 | `stale-smoke-budget-prose` | archived | #1228 | #1230 | [search-contract](openspec/changes/archive/stale-smoke-budget-prose/specs/search-contract/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/stale-smoke-budget-prose/proposal.md) |
 | `stamp-fix-pr-in-ledger` | archived | #1099 | #1130 | [alarms](openspec/changes/archive/stamp-fix-pr-in-ledger/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/stamp-fix-pr-in-ledger/proposal.md) |
