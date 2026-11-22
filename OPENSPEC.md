@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **398**
+Active changes: **1** · archived: **398**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `access-boundary-1238` | active | #1238 (owner directive 2026-11-22) | — | [agent-coordination](openspec/changes/access-boundary-1238/specs/agent-coordination/spec.md) | 5/6 | [proposal.md](openspec/changes/access-boundary-1238/proposal.md) |
 
 ## Archived changes
 
