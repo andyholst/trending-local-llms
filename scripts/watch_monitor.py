@@ -5,7 +5,7 @@ One agent job must not wake every tick just because a clock moved. This script e
 changed markers, with no timestamps and no random ordering:
 
     C:<comment id>                       a new issue/PR comment
-    R:<run id>:<status>:<conclusion>     a CI run changed state
+    R:<run id>:<status>:<conclusion>[:<workflow>]  a CI run changed state
     M:<master sha>                       master moved (a merge or a push)
     H:<bucket>                           opt-in work heartbeat (--heartbeat-seconds N)
 
@@ -44,6 +44,19 @@ def as_list(value: object) -> list[dict]:
     return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
 
+def workflow_token(name: object) -> str:
+    """A workflow name as one colon-free, single-line marker field (issue #1288).
+
+    `actions/runs` rows carry `name`. Adding it lets a fleet reader tell a
+    guard/closure-only `success` from a full `qa-validate` `success` without a
+    second call. Colons and line breaks are dropped so one token is one field and
+    one marker stays one line; a missing/blank name contributes no field at all.
+    """
+    if not isinstance(name, str):
+        return ""
+    return "".join(ch for ch in name if ch.isprintable() and ch not in ":\r\n")
+
+
 def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
                  now: float | None = None) -> tuple[list[str], dict]:
     """Pure diff: return sorted markers and the NEXT state for one snapshot.
@@ -72,6 +85,9 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
         if not isinstance(run_id, int):
             continue
         stamp = f"{run.get('status', '?')}:{run.get('conclusion') or '-'}"
+        token = workflow_token(run.get("name"))
+        if token:
+            stamp += f":{token}"
         state["runs"][str(run_id)] = stamp
         if prev_runs.get(str(run_id)) != stamp:
             lines.append(f"R:{run_id}:{stamp}")
