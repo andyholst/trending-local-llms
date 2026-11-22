@@ -8,9 +8,10 @@ that diagnosis into a tracked issue that says how to reproduce it. Until this ex
 scheduled run (measured: qa-validate run 43106689969, the OpenSpec archive gate) produced an
 email, not an artifact — the diagnosis was re-derived by whoever next opened the run page.
 
-This is the filer half. It runs from `queued-alarm.yml` (weekly, Wednesday, like every other
-scheduled sweep — the weekly-cadence pin) with the DEFAULT `github.token` (rule 6e: the owner PAT
-cannot comment or open issues). For every main-pipeline failure inside the window that is not yet
+This is the filer half. It runs from `queued-alarm.yml`, which is DISPATCH-ONLY since issue #1029
+(no `on.schedule` — the sweep is the owner's dispatch, never a slot GitHub owes), with the
+DEFAULT `github.token` (rule 6e: the owner PAT cannot comment or open issues). For every
+main-pipeline failure inside the window that is not yet
 in the ledger `data/pipeline_failures.json` it:
 
   1. fetches the failed job's log ONCE (one retry), bounded to the tail;
