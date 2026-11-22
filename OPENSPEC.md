@@ -9,11 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-<<<<<<< HEAD
 Active changes: **1** · archived: **405**
-=======
-Active changes: **0** · archived: **396**
->>>>>>> 4a59cbaa (chore(openspec): regenerate the index after archiving at the PR head)
 
 ## Active changes
 
