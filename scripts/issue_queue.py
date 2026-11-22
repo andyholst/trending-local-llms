@@ -241,7 +241,15 @@ def _branches(repo: str) -> set[str]:
 
 
 def _pulls(repo: str) -> list[dict]:
-    out = _gh(["pr", "list", "--repo", repo, "--state", "all", "--limit", "100",
+    """The OPEN pulls, and only those (issue #1324).
+
+    `build` consumes no closed or merged PR — both the branch lookup and the closing-PR
+    lookup require `_is_open`. Asking `--state all --limit 100` let up to 100 more recently
+    updated closed/merged PRs crowd a quiet live closing PR out of the window, so the sweep
+    re-claimed an issue whose fix PR was already open (duplicate worktrees, duplicate PRs).
+    It also transferred up to 100 full bodies the predicate discards (#1316).
+    """
+    out = _gh(["pr", "list", "--repo", repo, "--state", "open", "--limit", "100",
                "--json", "number,headRefName,state,createdAt,updatedAt,body"], check=False)
     try:
         return json.loads(out or "[]")
