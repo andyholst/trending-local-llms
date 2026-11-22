@@ -1538,6 +1538,31 @@ def test_pr_blockage_dry_run_previews_without_writing() -> None:
               [e for e in written if e.get("trigger") == "pull_request"] == [], str(written))
 
 
+def test_pr_blockage_log_read_budget_is_bounded_and_announced() -> None:
+    print("\nPR-blockage (#1174): the sweep has a bounded log-read budget and says what it skipped")
+    src = FILER.read_text(encoding="utf-8")
+    cap = getattr(F, "PR_BLOCK_MAX_LOG_READS", None)
+    check("the cap is a positive integer", isinstance(cap, int) and cap >= 1, str(cap))
+    bound = getattr(F, "bound_pr_block_runs", None)
+    check("the real bound seam exists", callable(bound), str(bound))
+    if callable(bound) and isinstance(cap, int) and cap >= 1:
+        runs = [{"databaseId": n} for n in range(20)]
+        kept, skipped = bound(runs, cap)
+        check("only the capped newest runs are kept",
+              len(kept) == cap and [r["databaseId"] for r in kept] == list(range(cap)),
+              str([r["databaseId"] for r in kept]))
+        check("the skipped count is exact", skipped == 20 - cap, str(skipped))
+        try:
+            bound(runs, 0)
+        except ValueError:
+            check("a zero cap is refused, never a silent whole-read", True, "")
+        else:
+            check("a zero cap is refused, never a silent whole-read", False, "no ValueError")
+    check("the collection pass calls the bound seam", "bound_pr_block_runs(runs)" in src, "")
+    check("the sweep line announces the budget and the skipped count",
+          "log budget" in src and "skipped" in src, "")
+
+
 def main() -> int:
     print("pipeline failure filer: a red main pipeline is diagnosed, not re-derived (issue #802)")
     test_filing_diagnoses_every_failure_with_the_log_error_block()
@@ -1582,6 +1607,7 @@ def main() -> int:
     test_group_pr_blockages_needs_two_open_prs_and_drops_closed_branches()
     test_pr_blockage_pass_records_a_shared_failure_shape_once()
     test_pr_blockage_dry_run_previews_without_writing()
+    test_pr_blockage_log_read_budget_is_bounded_and_announced()
     print(f"\nPASSED {_checks_passed} | FAILED {_checks_failed}")
     return 0 if _checks_failed == 0 else 1
 
