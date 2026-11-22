@@ -1,6 +1,7 @@
 # Proposal: comment-watch-trigger-1243
 
 Issue: #1243 (owner directive 2026-11-22)
+PR: #1244
 
 ## Why
 
