@@ -1,6 +1,7 @@
 # Proposal: planner-reviewer-board-note
 
 Issue: #1261
+PR: #1309
 
 ## Why
 
