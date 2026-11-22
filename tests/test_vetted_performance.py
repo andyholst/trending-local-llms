@@ -66,6 +66,13 @@ def main() -> int:
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
     check("make vetted-performance is bound", "vetted-performance:" in makefile and
           "scripts/vetted_performance.py" in makefile)
+    live = VP.evidence_rows(
+        json.loads((ROOT / "data/models.json").read_text(encoding="utf-8")),
+        json.loads((ROOT / "data/measurements.json").read_text(encoding="utf-8")))
+    check("live view surfaces the Flash-Next 938 t/s peak with its README band",
+          any(r["tps"] >= 900 and "flash-next" in r["model_key"] and r["band_rank"] != 0
+              for r in live), str([(r["tps"], r["model_key"], r["band_rank"])
+                                   for r in live if r["tps"] >= 900][:3]))
     check("this suite is discovered by `make test`", wired(__file__))
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
