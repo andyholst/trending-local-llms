@@ -395,6 +395,8 @@ comment-monitor: ## Emit the sorted IDs of comments newer than the cursor (deter
 
 comment-watch: ## Report new trending-local-llms issue/PR comments via `gh` (issue #1243); --mark-read advances the local cursor after the agent has looked and replied
 	@python3 scripts/comment_watch.py $(ARGS)
+model-type-report: ## Derive a read-only model-type trending rollup from models.json + measurements.json (issue #1246); never edits either store
+	@python3 scripts/model_type_rollup.py
 
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
