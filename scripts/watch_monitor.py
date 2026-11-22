@@ -31,6 +31,15 @@ from pathlib import Path
 DEFAULT_REPO = "andyholst/trending-local-llms"
 MARKER_PREFIXES = ("C:", "R:", "M:", "H:")
 
+# The minimum settle window between a wake-up and a claim, in seconds (issue #1312).
+#
+# The watcher is deliberately timestamp-free, so it cannot filter a marker by age; the
+# window is the floor the WOKEN lane applies before it claims, and this constant is the
+# ONE place the number lives — `AGENTS.md` §7b names it and `make watch-monitor --check`
+# refuses a weaker floor, so neither the rulebook row nor the pin can be dropped silently.
+CLAIM_SETTLE_SECONDS = 180
+CLAIM_SETTLE_FLOOR_SECONDS = 60
+
 
 def heartbeat_marker(interval_seconds: int, now: float | None = None) -> str | None:
     """Deterministic opt-in work heartbeat: one H marker per interval bucket."""
@@ -152,6 +161,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--state", default=os.environ.get("TLL_WATCH_STATE", ""))
     ap.add_argument("--gh", default=None, help="explicit gh path for stripped cron environments")
     ap.add_argument("--check", action="store_true", help="offline contract check; no network, no state write")
+    ap.add_argument("--claim-settle-seconds", type=int, default=CLAIM_SETTLE_SECONDS,
+                    dest="claim_settle_seconds",
+                    help="the settle window a caller applies before claiming "
+                         f"(default {CLAIM_SETTLE_SECONDS}s, floor {CLAIM_SETTLE_FLOOR_SECONDS}s)")
     ap.add_argument("--heartbeat-seconds", type=int, default=0,
                     dest="heartbeat_seconds",
                     help="opt-in deterministic H marker every N seconds (0 disables)")
@@ -161,7 +174,13 @@ def main(argv: list[str] | None = None) -> int:
         if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "M:", "H:")):
             print("CHECK FAILED: marker prefixes changed", file=sys.stderr)
             return 2
-        print("[watch-monitor] OK: C/R/M/H markers, caller-owned state, no timestamps")
+        if args.claim_settle_seconds < CLAIM_SETTLE_FLOOR_SECONDS:
+            print(f"CHECK FAILED: the claim settle window {args.claim_settle_seconds}s is below "
+                  f"the {CLAIM_SETTLE_FLOOR_SECONDS}s floor", file=sys.stderr)
+            return 2
+        print(f"[watch-monitor] OK: C/R/M/H markers, caller-owned state, no timestamps; "
+              f"claim settle window {args.claim_settle_seconds}s "
+              f"(floor {CLAIM_SETTLE_FLOOR_SECONDS}s)")
         return 0
 
     state_path = Path(args.state) if args.state else None

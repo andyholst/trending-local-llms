@@ -151,6 +151,36 @@ def test_offline_check_mode() -> None:
     check("--check passes", W.main(["--check"]) == 0, "")
 
 
+def test_the_rulebook_names_the_claim_settle_window() -> None:
+    """Issue #1312: the wait-and-re-read race guard has a FLOOR, named in §7b and pinned once."""
+    print("\nClaim settle window: the race guard has a floor (#1312)")
+    rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    needle = "a minimum settle window between a wake-up and a claim"
+    check("§7b names the claim settle window", needle in rules, "")
+    check("the rulebook names the ONE seam that carries the number",
+          "CLAIM_SETTLE_SECONDS" in rules, "")
+    check("the rulebook carries the window's value",
+          f"{W.CLAIM_SETTLE_SECONDS} seconds" in rules, "")
+    seam = (ROOT / "scripts" / "watch_monitor.py").read_text(encoding="utf-8")
+    check("the window lives in the monitor seam, not a second copy",
+          "CLAIM_SETTLE_SECONDS = " in seam, "")
+    check("the pinned window is at least the floor",
+          W.CLAIM_SETTLE_SECONDS >= W.CLAIM_SETTLE_FLOOR_SECONDS, "")
+    check("the offline contract reports the pinned window",
+          W.main(["--check"]) == 0, "")
+
+
+def test_the_offline_contract_pins_the_settle_floor() -> None:
+    """The floor is a real contract, driven through the real CLI (no product symbol rebound)."""
+    print("\nOffline contract: a settle window below the floor is refused")
+    check("a caller asking for a 30s window is refused",
+          W.main(["--check", "--claim-settle-seconds", "30"]) != 0, "")
+    check("a caller asking for the floor itself is accepted",
+          W.main(["--check", "--claim-settle-seconds", str(W.CLAIM_SETTLE_FLOOR_SECONDS)]) == 0, "")
+    check("the default is the pinned window",
+          W.main(["--check", "--claim-settle-seconds", str(W.CLAIM_SETTLE_SECONDS)]) == 0, "")
+
+
 def main() -> int:
     test_quiet_tick_emits_nothing()
     test_new_comment_marker()
@@ -161,6 +191,8 @@ def main() -> int:
     test_heartbeat_coexists_with_failure_marker()
     test_r_marker_carries_workflow_name()
     test_offline_check_mode()
+    test_the_rulebook_names_the_claim_settle_window()
+    test_the_offline_contract_pins_the_settle_floor()
     print(f"\nPASSED {_passed} | FAILED {_failed}")
     return 0 if _failed == 0 else 1
 
