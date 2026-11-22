@@ -22,3 +22,9 @@ Evidence:
 - Measured on `master` `3d84c98`: `OPENSPEC.md` says `1 active / 413 archived` and disk holds
   1 + 413 — the count-line drift this issue also named is already repaired, so the code delta
   is the remaining work.
+- CI caught the guard that pins the OLD wording: `tests/test_workflows.py` failed
+  `keeper seam suppresses only beside a MERGEABLE open keeper (#960)` (1213/1) because the
+  seam now says "a live keeper PR". The pin is updated in the SAME change to the new wording
+  (rule 6c), still asserting the intent — a duplicate is suppressed only beside a keeper that
+  can actually land. RED re-proved in the container against `origin/master:scripts/keeper_pr.py`:
+  `PASSED 1213 | FAILED 1`; GREEN after: `PASSED 1214 | FAILED 0`.
