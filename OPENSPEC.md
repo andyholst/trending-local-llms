@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **429**
+Active changes: **1** · archived: **430**
 
 ## Active changes
 
@@ -125,6 +125,7 @@ Active changes: **1** · archived: **429**
 | `bare-param-size-figure-refusal` | archived | #1018 | #1131 | [measurement-attribution](openspec/changes/archive/bare-param-size-figure-refusal/specs/measurement-attribution/spec.md) | 11/12 · 1 blocked | [proposal.md](openspec/changes/archive/bare-param-size-figure-refusal/proposal.md) |
 | `base-rebase-conflict-succeeds` | archived | #586 | — | [worktree-base](openspec/changes/archive/base-rebase-conflict-succeeds/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/base-rebase-conflict-succeeds/proposal.md) |
 | `base-rebase-cwd` | archived | #1330 | #1333 | [worktree-base](openspec/changes/archive/base-rebase-cwd/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/base-rebase-cwd/proposal.md) |
+| `base-rebase-invocation-dir-1335` | archived | #1335 | #1342 | [pr-health-rebase-announcements](openspec/changes/archive/base-rebase-invocation-dir-1335/specs/pr-health-rebase-announcements/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/base-rebase-invocation-dir-1335/proposal.md) |
 | `baseline-age-visible` | archived | #307 — `tech-debt: The gap baseline's age is written but never read, so a stale baseline is invisible until a duplicate issue appears` | — | [data-gap-baseline-age](openspec/changes/archive/baseline-age-visible/specs/data-gap-baseline-age/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/baseline-age-visible/proposal.md) |
 | `blocked-task-is-visible` | archived | #409 | — | [openspec-task-gate](openspec/changes/archive/blocked-task-is-visible/specs/openspec-task-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/blocked-task-is-visible/proposal.md) |
 | `bot-agent-output-scrubbed` | archived | #351 | — | [bot-agent-run-safety](openspec/changes/archive/bot-agent-output-scrubbed/specs/bot-agent-run-safety/spec.md) | 19/19 | [proposal.md](openspec/changes/archive/bot-agent-output-scrubbed/proposal.md) |

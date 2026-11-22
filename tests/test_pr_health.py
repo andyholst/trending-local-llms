@@ -699,6 +699,9 @@ def test_a_failed_rebase_round_announces_on_the_pr_thread_once():
         check("failed rebase: the comment names the failure and the concrete remedy",
               "rebase conflicted" in posted and "make base-rebase BRANCH=ci/clash-11-a" in posted
               and "worktree-resume" in posted, posted[:400])
+        check("failed rebase: the remedy names the branch worktree as the invocation dir (#1335)",
+              "cd <worktree for ci/clash-11-a>" in posted
+              and "not the shared `master` clone" in posted, posted[:500])
         check("failed rebase: a LANDED rebase posts nothing",
               "ci/clean-12-b" not in posted, posted[:400])
         _gitfx(clone, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")

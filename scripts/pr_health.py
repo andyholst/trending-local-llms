@@ -388,7 +388,9 @@ def rebase_already_announced(repo: str, number: int, run_key: str) -> bool:
 def rebase_comment_body(o: dict, run_key: str) -> str:
     """Announce a failed rebaser round on the PR thread (issue #964): what git refused, that
     the branch was left untouched, and the concrete way to land it (rule 6s: conflict
-    resolution belongs to the PR's own fix loop or a human)."""
+    resolution belongs to the PR's own fix loop or a human). The remedy names the branch
+    worktree as the invocation dir (issue #1335): `base-rebase` reads HEAD from the caller's
+    checkout, so a remedy run from the shared `master` clone is a silent no-op."""
     lines = [start_marker("pr-health", dt.datetime.now(dt.timezone.utc), run_key,
                           kind="rebase_failed"),
              "",
@@ -400,8 +402,11 @@ def rebase_comment_body(o: dict, run_key: str) -> str:
              "The branch was left **untouched** — the rebaser never force-pushes a conflicted "
              "result. To land it:",
              "",
-             f"- `make worktree-resume BRANCH={o['head']}`",
-             f"- `make base-rebase BRANCH={o['head']}` onto the fetched tip — a conflict aborts "
+             f"- `make worktree-resume BRANCH={o['head']}`, then `cd <worktree for {o['head']}>` — "
+             "run the next command FROM THE BRANCH WORKTREE, not the shared `master` clone: "
+             "`base-rebase` reads HEAD from its invocation directory, so from the wrong "
+             "checkout it reports `up-to-date` for a behind branch (issue #1330).",
+             f"- From that worktree: `make base-rebase BRANCH={o['head']}` onto the fetched tip — a conflict aborts "
              "the rebase, keeps every commit, and is resolved by this PR's own fix loop "
              "(`scripts/fix_loop.sh`) or a human.",
              "",
