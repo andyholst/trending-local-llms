@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MAKEFILE = ROOT / "Makefile"
 sys.path.insert(0, str(ROOT / "scripts"))
 from update_trending import SEARCH_LEGS  # noqa: E402
+import query_vocab  # noqa: E402
 
 LEGS = tuple(SEARCH_LEGS)  # ('nvidia', 'metal', 'cpu', 'amd')
 SMOKE = ROOT / "scripts" / "smoke_search.py"
@@ -305,6 +306,75 @@ def test_ci_search_smoke_budget_is_realistic():
         assert "SEARCH_SMOKE_BUDGET=90" in wf, f"{name} must pass the budget explicitly"
 
 
+def _live_smoke_timeout_minutes(workflow_text: str) -> int:
+    """The `live-smoke` job's `timeout-minutes`, read from its own job block.
+
+    Jobs sit at two-space indent, their keys at four, so the scan stops at the
+    next job — a `timeout-minutes` belonging to another job is never read.
+    """
+    lines = workflow_text.splitlines()
+    start = None
+    for i, ln in enumerate(lines):
+        if re.match(r"^  live-smoke:\s*$", ln):
+            start = i
+            break
+    assert start is not None, "qa-validate.yml has no `live-smoke:` job"
+    for ln in lines[start + 1:]:
+        if re.match(r"^  \S", ln):  # the next job
+            break
+        m = re.match(r"^    timeout-minutes:\s*(\d+)\s*$", ln)
+        if m:
+            return int(m.group(1))
+    raise AssertionError("the `live-smoke` job carries no `timeout-minutes`")
+
+
+def _worst_case_probe_seconds() -> tuple[int, int, int, int]:
+    """`(queries, budget, attempts, seconds)` for the FULL curated query set.
+
+    Every input is read from the tree, never restated here: the query count from
+    `scripts/query_vocab.py` (the ONE vocabulary, rule 6d), the per-query budget
+    from the Makefile's `SEARCH_SMOKE_BUDGET`, and the attempt count from
+    `smoke_search.py`'s own `--retries` default (the `_search-smoke` recipe does
+    not override it).
+    """
+    text = MAKEFILE.read_text(encoding="utf-8")
+    m = re.search(r"^SEARCH_SMOKE_BUDGET\s*\?=\s*(\d+)\s*$", text, re.M)
+    assert m, "Makefile must own SEARCH_SMOKE_BUDGET"
+    budget = int(m.group(1))
+    r = re.search(r'add_argument\("--retries",\s*type=int,\s*default=(\d+)',
+                  SMOKE.read_text(encoding="utf-8"))
+    assert r, "smoke_search.py must keep a --retries default"
+    attempts = int(r.group(1)) + 1
+    queries = sum(len(query_vocab.curated(b)) for b in LEGS)
+    return queries, budget, attempts, queries * budget * attempts
+
+
+def test_ci_live_smoke_timeout_covers_the_worst_case_query_set():
+    """The `live-smoke` job must outlive its own worst-case probe set (issue #1271).
+
+    Measured 2026-11-22: `timeout-minutes: 25` against 29 curated queries at
+    `SEARCH_SMOKE_BUDGET=90` with one retry — a query can cost 180s and the four
+    sequential legs up to ~87 min, so on a degraded lightbrd mirror the job was
+    killed mid-leg before it could render its #291/#296 outage verdict. A
+    `cancelled` job is not green and `auto-merge` needs `live-smoke` green, so
+    ten qa-validate runs were cancelled ~25 min after creation and EVERY open PR
+    blocked. #1224 raised the per-query budget 3s -> 90s without raising the job
+    timeout — this guard pins the two together.
+    """
+    wf = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text(encoding="utf-8")
+    timeout = _live_smoke_timeout_minutes(wf)
+    queries, budget, attempts, worst = _worst_case_probe_seconds()
+    assert timeout * 60 >= worst, (
+        f"live-smoke timeout-minutes={timeout} covers {timeout * 60}s, but the "
+        f"worst-case probe set is {queries} queries x {budget}s x {attempts} "
+        f"attempts = {worst}s — the job would be killed before its outage "
+        f"verdict (issue #1271). Raise the timeout with the budget.")
+    # The guard must actually refuse the measured value, not merely describe it.
+    assert 25 * 60 < worst, (
+        f"the guard cannot go red on timeout-minutes: 25 — the worst case {worst}s "
+        f"is not above 1500s any more")
+
+
 def test_stale_smoke_budget_prose_is_gone():
     """Issue #1228: the retired 3s cap survived in four prose comments after
     PR #1225 made SEARCH_SMOKE_BUDGET ?= 90 the one value (rule 6d)."""
@@ -428,6 +498,8 @@ def main() -> int:
          test_a_full_outage_still_blocks_every_leg),
         ("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
          test_ci_search_smoke_budget_is_realistic),
+        ("ci: the live-smoke job timeout covers its worst-case query set (#1271)",
+         test_ci_live_smoke_timeout_covers_the_worst_case_query_set),
         ("ci: no stale 3s prose remains after the 90s budget (docs, #1228)",
          test_stale_smoke_budget_prose_is_gone),
     ):

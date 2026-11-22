@@ -336,7 +336,12 @@ jobs:
     needs: guard
     runs-on: ubuntu-latest
     # Same build-from-source path as `validate` when the Dockerfile is fresh.
-    timeout-minutes: 25
+    # Issue #1271: the timeout must cover the WORST-CASE probe set — 29 curated
+    # queries (`scripts/query_vocab.py`) x `SEARCH_SMOKE_BUDGET` (90s) x 2 attempts
+    # (--retries 1) = 5220s, so 25 min was killed mid-leg on a degraded mirror and
+    # every open PR's auto-merge blocked. `tests/test_smoke_search.py` pins this
+    # product; raise the budget and this number together.
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
