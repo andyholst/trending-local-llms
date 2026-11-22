@@ -104,6 +104,9 @@ def test_cron_monitor():
         paged = CW_MON.comment_ids("andyholst/trending-local-llms", "", paged_runner)
         check("a second API page is read", len(pages) == 2, str(len(pages)))
         check("the 101st comment is not lost to a 100-row cap", "999" in paged, str(paged[:3]))
+        again = CW_MON.comment_ids("andyholst/trending-local-llms", "", paged_runner)
+        check("monitor output is byte-identical across ticks (scheduler hash)",
+              paged == again and paged == sorted(paged), str((paged[:3], again[:3])))
     rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     check("rule 6w binds the cron monitor", "make comment-monitor" in rule and
           "including one posted by our own agent identity" in rule)
