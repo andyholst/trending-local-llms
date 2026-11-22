@@ -1,6 +1,7 @@
 # Proposal: issue-queue-open-pr-predicate
 
 Issue: #1310
+PR: #1311
 
 ## Why
 
