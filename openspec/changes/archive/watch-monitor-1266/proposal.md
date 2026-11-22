@@ -1,6 +1,7 @@
 # Proposal: watch-monitor-1266
 
 Issue: #1266
+PR: #1267
 
 ## Why
 
