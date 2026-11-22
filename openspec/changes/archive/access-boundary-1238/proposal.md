@@ -1,6 +1,7 @@
 # Proposal: access-boundary-1238
 
 Issue: #1238 (owner directive 2026-11-22)
+PR: #1241
 
 ## Why
 
