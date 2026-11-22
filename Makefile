@@ -1221,6 +1221,10 @@ render-readme:
 merge-fetch:
 	$(DOCKER_RUN) sh -c "make _merge-fetch"
 
+.PHONY: cron-install-check
+cron-install-check: ## Verify the fleet cron installation has a no-agent watchdog and a monitor-gated agent using the repo-owned C/R/M detector (issue #1270)
+	python3 scripts/cron_install_check.py
+
 .PHONY: validate
 validate:
 	$(TEST_RUN) make _validate
