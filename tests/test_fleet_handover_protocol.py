@@ -108,6 +108,8 @@ def test_rulebook_carries_ghost_guard_row() -> int:
         return 1
     print("ok   AGENTS.md names the ghost-run guard module")
     return 0
+STATUS_RULE = "While a test or CI gate runs, post a status comment on the ISSUE"
+HOST_STAMP = "user@hostname"
 
 
 def main() -> int:
@@ -126,6 +128,8 @@ def main() -> int:
             (MULTI_MACHINE, "the multi-machine shared-board rule"),
             (RACE_GUARD, "the double-claim race guard"),
             (REMIT_RULE, "the remit handover rule"),
+            (STATUS_RULE, "the while-you-wait status-comment rule (issue #1232)"),
+            (HOST_STAMP, "the user@hostname machine stamp (issue #1232)"),
         ):
             if needle not in text:
                 print(f"FAIL {rel} dropped {why}")
@@ -149,6 +153,11 @@ def main() -> int:
             failed += 1
         else:
             print(f"ok   {rel} states the standing board rule (#682 closed)")
+        if STATUS_RULE not in text or HOST_STAMP not in text:
+            print(f"FAIL {rel} dropped the status-comment/host-stamp rule (#1232)")
+            failed += 1
+        else:
+            print(f"ok   {rel} carries the status-comment/host-stamp rule (#1232)")
     if failed:
         print(f"FAIL {failed}")
         return 1
