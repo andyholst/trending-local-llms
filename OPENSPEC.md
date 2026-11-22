@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **397**
+Active changes: **1** · archived: **397**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `ghost-pr-handoff-1251` | active | #1251 | — | [fleet-handover](openspec/changes/ghost-pr-handoff-1251/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/ghost-pr-handoff-1251/proposal.md) |
 
 ## Archived changes
 
