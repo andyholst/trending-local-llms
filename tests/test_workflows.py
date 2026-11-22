@@ -95,8 +95,8 @@ def test_refresh_bot():
     order = [s.get("run", "").strip() for s in steps(search) if s.get("run")]
     def idx(sub):
         return next((i for i, r in enumerate(order) if sub in r), -1)
-    check("refresh: 3s reachability smoke runs before the search",
-          0 <= idx("_search-smoke") < idx("make search-"), order)
+    check("refresh: NO live lightbrd reachability probe (#1278/#1279)",
+          "_search-smoke" not in order and "make search-smoke" not in order, order)
     check("refresh: hermes routing smoke runs before the search",
           0 <= idx("make hermes-smoke") < idx("make search-"), order)
     check("refresh: model-caps check runs before the search",
@@ -251,15 +251,17 @@ def test_qa_validate():
     check("qa: validate job has no network-dependent targets",
           "validate-fetch" not in v and "smoke" not in v, v)
     live = run_text(jobs.get("live-smoke", {}))
-    for b in SEARCH_LEGS:
-        check(f"qa: live search smoke for {b}", f"BACKEND={b}" in live, "")
+    # Owner directive (#1278/#1279): NO lightbrd reachability probe in CI at all —
+    # it timed out and cancelled live-smoke at 25m. The probe survives offline.
+    check("qa: live-smoke has NO search reachability probe (#1278/#1279)",
+          "make search-smoke" not in live and "_search-smoke" not in live, live[-200:])
     # (owner directive 2026-11-15, issue #1029) the main CI pipeline runs TESTS ONLY:
     # `make hermes-smoke` was REMOVED from live-smoke — no real model call gates a merge.
     check("qa: NO hermes-smoke step (no LLM call in main CI, #1029)",
           "hermes-smoke" not in live, live[-160:])
     whole = "\n".join(run_text(j) for j in jobs.values())
-    # `make search-smoke` stays: it is a bounded deterministic FIRECRAWL fetch smoke,
-    # not a model call. The banned tokens are the agent/LLM entry points (rule 6p).
+    # The banned tokens are the agent/LLM entry points (rule 6p). The live
+    # lightbrd reachability probe is also banned from CI (#1278/#1279).
     check("qa: the pipeline calls NO agent/LLM target anywhere",
           not any(t_ in whole for t_ in ("hermes-smoke", "implement-issue", "review-issue",
                                          "fix_loop", "make fix ", "make fix\n",

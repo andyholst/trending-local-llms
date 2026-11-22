@@ -692,7 +692,7 @@ issue that skips a section is refused.
      environment variable (`${FIRECRAWL_API_KEY}`), escaped so it reaches the agent
      as a NAME and can never expand into a value; a public target that runs the agent
      checks the credential it needs BEFORE the agent starts (`_search-preflight` →
-     `scripts/require_env.py`, then the existing `search-smoke`), failing loudly and
+     `scripts/require_env.py`, then the offline probe tests), failing loudly and
      naming the variable rather than running keyless and narrating. An empty value
      counts as missing: that is the shape a missing GitHub secret takes at run time.
    - The runtime story is unchanged and separate: keys reach a process only as
@@ -819,7 +819,7 @@ issue that skips a section is refused.
    gate stayed green, because nothing read the WORDS, only HTTP status. So: the
    leg vocabulary lives ONCE in `scripts/query_vocab.py`; the prompts receive it
    as `$(<BACKEND>_KEYWORDS)`, `smoke_search.py` and the CPU fetch sampling import
-   the same dict, and `make search-smoke` labels every query by what its page
+   the same dict, and `scripts/smoke_search.py` labels every query by what its page
    actually yielded (`yield: N rate-posts, M model-posts`, or SILENT) and FAILS
    when an answered leg yields nothing at all — the mirror being reachable is
    exactly the state that hid the starved CPU vocabulary.
@@ -1201,7 +1201,7 @@ issue that skips a section is refused.
    `issue-bot.yml` carries NO `issues:` trigger either. (b) **The main CI pipeline
    (`qa-validate`, on `pull_request`/`push`) runs TESTS AND VALIDATORS ONLY — no real LLM
    call may gate a merge** (its `make hermes-smoke` step was removed; the deterministic
-   `make search-smoke` fetch smoke stays). (c) **Every real model call executes only
+   the offline search-probe tests stay). (c) **Every real model call executes only
    through the Hermes harness-image containers the Makefile launches** — `make
    implement-issue`, `make review-issue` / `review-issue-window`, the four `search-*` legs,
    `make fix` / `scripts/fix_loop.sh`, `make refresh` — never a raw API call from a script
@@ -1299,12 +1299,11 @@ The README is **generated**, not hand-maintained:
   `make validate-search|validate-mapped|validate-readme` (stages), `make test`
   (unit tests), `make fix` (correct a red CI with Hermes), and `make refresh`
   (the full pipeline = setup + search + merge + validate + test, in one
-  container). Live smoke targets (real network, bounded, skip cleanly without
-  keys): `make search-smoke [BACKEND=nvidia|metal|cpu|amd]` (the exact Firecrawl →
-  lightbrd scrape of every search query, `SEARCH_SMOKE_BUDGET ?= 90` cap per query),
-  `make hermes-smoke` (one real Hermes call through the `nous-deepseek` alias
-  with every key the pipeline passes, incl. `HF_TOKEN`), and
-  `make pipeline-smoke` (both). **A fetch outcome is CLASSIFIED, never collapsed
+  container). `make search-smoke` now runs the OFFLINE probe tests; the live
+  Firecrawl → lightbrd reachability probe is RETIRED from CI (#1278/#1279 — it
+  timed out and cancelled `live-smoke` at 25m). `make hermes-smoke` (one real
+  Hermes call through the `nous-deepseek` alias with every key the pipeline
+  passes, incl. `HF_TOKEN`) and `make pipeline-smoke` (both) remain. **A fetch outcome is CLASSIFIED, never collapsed
   into `0 model hits`:** a Firecrawl REFUSAL (no credits, a bad key, a banned
   target) and a bot wall are OUR failures and keep the check red, a QUIET SEARCH
   on a reachable mirror (0 hits, no upstream error) is red and names the query
@@ -1751,7 +1750,7 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   - `live-smoke` — real network, bounded, **fetch-only: no model or agent call gates a
     merge** (rule 6t, issue #1029 — `make hermes-smoke` was dropped from this job):
     `make search-smoke BACKEND=<b>` for nvidia, metal, cpu, amd
-    (`SEARCH_SMOKE_BUDGET ?= 90` cap per query), and
+    (`SEARCH_SMOKE_BUDGET ?= 20` cap per query), and
     `make validate-fetch` (real search, `--require-hits`). An outage here is
     infra, not data. The job is still NAMED `live-smoke` because branch protection names
     the required context literally (rule 1) — renaming it is an owner repository-settings
@@ -2378,7 +2377,7 @@ actually happened.
 
 | `tests/hermes_home.py` + `tests/test_agent_skills.py` — the temp Hermes home teardown tests (rules 6c/6d/6m, issue #1145) | a suite that goes red on the agent's own bookkeeping: Hermes keeps writing into its home AFTER its CLI exits (measured with the 0.23.2 pin — `cache/uv/**`, `installs/<hash>` and `cache/default-plugins.rerun` → `cache/default-plugins.settled` landed 4 s after `hermes config set` had returned), so `tempfile.TemporaryDirectory`'s single-shot cleanup raced that seeding pass and `make test` died `OSError: [Errno 39] Directory not empty: '<tmp>/hermes/cache'` with every assertion in the module green (qa-validate run 44537216542, module `tests/test_agent_skills.py`). The teardown is ONE seam (`remove_hermes_home` / `temp_hermes_home`) used by every test that points Hermes at a temp home, and the guards prove BOTH halves: a home whose seeder outlives the caller is still removed, and a tree that never becomes removable raises `AssertionError` naming the path instead of returning silently — `ignore_errors=True` is exactly the laundering this row exists to refuse. The loud-failure guard is TWO halves because `TEST_RUN` passes no `--user`, so the test container runs as the image's default user (measured `uid 0`), and Linux `DAC_OVERRIDE` walks straight through a mode-`0o000` plant: the always-checked half stuck-ness no privilege can override (the tree is not there), and the permission half asserts only when the filesystem honours the plant, printing a `SKIP … uid=…` line and a positive removal assertion when it does not (measured in CI: qa-validate run 44551541279 removed the planted tree, then the guard died `FileNotFoundError` on its own `chmod` cleanup — 135 modules green, host green, container red) |
 | `tests/test_ingest_refusal_ledger.py` — the four `#1148` guards + `seen_count` in `scripts/data_gap_analysis.py` (rules 3b/6c/6d/6m, issue #1148) | a refusal ledger that counts VALIDATION RUNS instead of findings: `record_ingest_refusals` appended one record per refusal per pass, so the shipped `data/refusals.json` held 3 distinct `(model, engine, reason)` findings across 92 records (`deepseek-v4-pro` ×4, `kimi-k2.7-code` ×24, `qwen-3.5-122b-a10b` ×64, measured 2026-11-19) — the finding `make data-gaps` exists to surface (#888) was buried under copies of it, and the report's total was a count of runs. The writer now keys a finding on `(stage, model, engine, reason, source_post)`: a new finding appends ONE record with `seen_count: 1`, a repeat raises `seen_count` and stamps `last_seen_utc` on the record already there while its `utc` and finding fields stay byte-identical (rule 3b — a key may only be ADDED, a counter may only GROW, no stored record is removed, which is why the 92 shipped records are NOT collapsed), and the collapse is announced (`[ingest] refusals ledger: … repeat(s) counted …`). The guards run the REAL writer through a REAL ingest round: a repeat appends nothing and reaches `seen_count == 2`; a distinct finding appends exactly one record and its second arrival grows it; a second ingest of the SAME raw round leaves every non-counter field byte-identical (`make validate` twice changes only counters — narrowed by issue #1155: a pass that declares no landing changes NOTHING); and the report's refusal total is the SUM of `seen_count`, so collapsing repeats can never SHRINK a printed total. The four guards are RED on `origin/master`'s `scripts/` (5 FAIL then `KeyError: 'seen_count'`) |
-| `tests/test_smoke_search.py::test_ci_search_smoke_budget_is_realistic` + `make search-smoke` (rules 6c/6d/6m, issue #1224) | a reachability gate that reds EVERY PR because it measures the client alarm instead of the source: `_search-smoke` hardcoded `--budget 3` although `scripts/smoke_search.py`'s own docstring says 1-3s is expected to time out before any 200 (all four cpu probes ended at exactly 3.0s with `http=0` on run `44920165690`, so issue #258's majority rule correctly blocked). The budget is now ONE Makefile pin (`SEARCH_SMOKE_BUDGET ?= 90`), forwarded by the public recipe into the container and passed explicitly by both `qa-validate` and `refresh-bot`; the guard reads the real Makefile and both workflows, refuses a pin below 30s, a probe that ignores it, an unforwarded recipe, a `within 3s` step title or a pipeline that does not pass the budget, and is RED on `origin/master`'s files (`Makefile must own SEARCH_SMOKE_BUDGET`). The #258 majority and #291 outage verdicts are untouched, so a genuinely dead mirror still misses every query at 90s and fails loudly; a leg whose EVERY query misses while another leg (or a canary query from another leg, for a single-backend invocation) proved the mirror reachable in the same run is `QUERY-STARVED` (non-blocking, test red on the old script) — the gate answers "is the source reachable?", not "is every query cached?" |
+| `tests/test_smoke_search.py::test_ci_search_smoke_budget_is_realistic` + `make search-smoke` (rules 6c/6d/6m, issue #1224) | a reachability gate that reds EVERY PR because it measures the client alarm instead of the source: `_search-smoke` hardcoded `--budget 3` although `scripts/smoke_search.py`'s own docstring says 1-3s is expected to time out before any 200 (all four cpu probes ended at exactly 3.0s with `http=0` on run `44920165690`, so issue #258's majority rule correctly blocked). The budget is now ONE Makefile pin (`SEARCH_SMOKE_BUDGET ?= 20`), forwarded by the public recipe into the container and passed explicitly by both `qa-validate` and `refresh-bot`; the guard reads the real Makefile and both workflows, refuses a pin below 30s, a probe that ignores it, an unforwarded recipe, a `within 3s` step title or a pipeline that does not pass the budget, and is RED on `origin/master`'s files (`Makefile must own SEARCH_SMOKE_BUDGET`). The #258 majority and #291 outage verdicts are untouched, so a genuinely dead mirror still misses every query at 90s and fails loudly; a leg whose EVERY query misses while another leg (or a canary query from another leg, for a single-backend invocation) proved the mirror reachable in the same run is `QUERY-STARVED` (non-blocking, test red on the old script) — the gate answers "is the source reachable?", not "is every query cached?" |
 
 | `tests/test_fleet_lifecycle.py` + `make fleet-host-sync-check` (rules 3c/6c/6d/6h/6m, issue #1209, attended rule-3c sign-off: the new §7b section, declared on the issue before implementation) | a fleet that hands work off in chat or on a PR instead of on the ISSUE: the real seam (`scripts/fleet_host_sync_check.py`) compares each host lane's `SOUL.md`, skill and `config.yaml` with `git show <fetched base>:agents/...` (never the working tree) and checks the `AGENTS.md` lifecycle markers, so a host one protocol behind, a missing profile, a dropped rulebook shape or a stale base is refused with the lane and file named — while the CI half drives that SAME seam over a scratch home, green on a synced tree and RED on a planted byte-loss, and proves the planner's "read the comments to delegate" shapes and the PR→reviewer handover survive in all seven SOULs and the planner skill. Wired through `make test`/`make lint` and a workflow call, with `ARCHITECTURE.md` rows in the same change |
 
