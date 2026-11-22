@@ -47,6 +47,9 @@ def main() -> int:
 
         import copy
 
+        # secret-output: test value — the "credential value leak" case below writes a
+        # deliberately key-shaped FAKE string into a throwaway fixture to prove the
+        # checker REFUSES it. It is not a live credential.
         cases = {
             "Dockerfile pin drift": lambda d: (d / "Dockerfile").write_text('ARG HERMES_VERSION="0.23.1"\n'),
             "missing installer": lambda d: (d / "scripts/install_hermes_ci.sh").unlink(),
