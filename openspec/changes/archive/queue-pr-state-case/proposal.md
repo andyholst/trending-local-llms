@@ -1,6 +1,7 @@
 # Proposal: queue-pr-state-case
 
 Issue: #1318
+PR: #1319
 
 ## Why
 
