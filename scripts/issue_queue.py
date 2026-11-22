@@ -261,6 +261,16 @@ def _closes_issue(pull: dict, number: int) -> bool:
                for first, _ in pr_closure.closing_bindings(pr_closure.visible_text(body)))
 
 
+def _is_open(pull: dict | None) -> bool:
+    """Is this PR open? gh answers GitHub's API spelling `OPEN` (issue #1318).
+
+    The old comparison was `pull.get("state") == "open"`, which never matched — so the PR
+    half of `has_implementer` was dead and only the branch prefix ever fired, leaving the
+    #1310 closing-PR fix inert. ONE case-insensitive test, used by both paths (rule 6d).
+    """
+    return bool(pull) and str((pull or {}).get("state") or "").lower() == "open"
+
+
 def _comments(repo: str, number: int) -> list[dict]:
     out = _gh(["api", f"repos/{repo}/issues/{number}/comments?per_page=100",
                "--jq", "[.[] | {createdAt, body}]"], check=False)
@@ -312,8 +322,8 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
                 break
         pull = next((p for p in pulls if p.get("headRefName") == branch), None) if branch else None
         closing_pull = next((p for p in pulls
-                             if p.get("state") == "open" and _closes_issue(p, number)), None)
-        has_implementer = (bool(branch) or bool(pull and pull.get("state") == "open")
+                             if _is_open(p) and _closes_issue(p, number)), None)
+        has_implementer = (bool(branch) or _is_open(pull)
                            or bool(closing_pull))
         if has_implementer:
             continue

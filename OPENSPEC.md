@@ -9,13 +9,14 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **418**
+Active changes: **2** · archived: **420**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
+| `queue-pr-state-case` | active | #1318 | — | [implementer-queue](openspec/changes/queue-pr-state-case/specs/implementer-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/queue-pr-state-case/proposal.md) |
 
 ## Archived changes
 
