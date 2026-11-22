@@ -1,6 +1,7 @@
 # Proposal: pr-health-bot-ownership-1295
 
 Issue: #1295
+PR: #1296
 
 ## Why
 
