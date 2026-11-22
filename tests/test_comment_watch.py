@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 import comment_watch as CW  # noqa: E402
 import comment_monitor as CW_MON  # noqa: E402
+import watch_monitor as WM  # noqa: E402
 from wiring import wired  # noqa: E402
 
 _PASS = 0
@@ -112,6 +113,37 @@ def test_cron_monitor():
           "including one posted by our own agent identity" in rule)
 
 
+def test_ci_and_comment_monitor():
+    calls = []
+
+    def runner(cmd):
+        calls.append(cmd)
+        if "issues/comments" in cmd[2]:
+            return json.dumps([{"id": "77", "created_at": "2026-11-22T04:40:00Z"}])
+        return json.dumps([
+            {"id": 555, "status": "completed", "conclusion": "failure"},
+            {"id": 556, "status": "in_progress", "conclusion": None},
+        ])
+
+    check("the monitor reads comments and CI runs from ONE seam",
+          len(calls) == 0)  # injected runner is exercised below
+    ids = WM.comment_ids(runner, "2026-11-22T00:00:00Z")
+    check("comment wake-up keys carry the C prefix", ids == ["77"], str(ids))
+    states = WM.run_states(runner)
+    check("CI wake-up keys are stable id/status/conclusion",
+          states == ["R:555:completed:failure", "R:556:in_progress:"], str(states))
+    check("a conclusion change changes the cron hash",
+          WM.run_states(lambda cmd: json.dumps([
+              {"id": 555, "status": "completed", "conclusion": "success"}])) != states)
+    rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    check("rule 6w binds the CI+comment monitor",
+          "make watch-monitor" in rule and "NEVER-STARTED" in rule and
+          "asimov@omarchy" in rule)
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    check("make watch-monitor is bound", "watch-monitor:" in makefile and
+          "scripts/watch_monitor.py" in makefile)
+
+
 def test_rulebook():
     text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     a = text.find("6w. Comments are a trigger")
@@ -144,6 +176,7 @@ def main() -> int:
     print("comment-watch trigger (issue #1243):")
     test_watcher()
     test_cron_monitor()
+    test_ci_and_comment_monitor()
     test_rulebook()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

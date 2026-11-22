@@ -1245,7 +1245,11 @@ issue that skips a section is refused.
    comment-watch` binding is dropped. The automatic trigger is a Hermes cron job with
    monitor `make comment-monitor`: it wakes only when the sorted set of new comment
    IDs changes, so every new comment — including one posted by our own agent identity
-   as a trigger test — is read and answered.
+   as a trigger test — is read and answered. The same job now monitors CI too via
+   `make watch-monitor`: stable `R:<run id>:<status>:<conclusion>` keys wake the agent
+   on a pipeline state change as well. Both machines run the comment+CI watcher
+   (asimov@mac and asimov@omarchy); a 0-job `action_required` run is a NEVER-STARTED
+   run to report, not a green gate.
 
 6u. **Cross-machine issue/PR coordination is written, not assumed (MANDATORY,
    issue #1231).** More than one LLM machine works the same repository threads
