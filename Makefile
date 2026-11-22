@@ -275,6 +275,13 @@ agent-image-push-check: ## CI: prove the ambient credential can PUSH the agent i
 publish-agent-image: ## Build + push the agent image when its hash tag is absent (FORCE=1 rebuilds the same inputs)
 	python3 scripts/ensure_image.py publish $(if $(FORCE),--force=$(FORCE),)
 
+.PHONY: agent-image-smoke agent-image-published-check
+agent-image-smoke: ## Prove the agent image is published or built locally AND every provisioned fleet profile has its prompts (issue #1214)
+	python3 scripts/agent_image_smoke.py
+
+agent-image-published-check: ## Strict owner check: the agent image must be PUBLISHED, not merely built (issue #1214)
+	python3 scripts/agent_image_smoke.py --require-published
+
 # ---- the rebuild decision, as data (issue #208) ------------------------------
 # `refresh-bot`'s `build` and `openspec-image` jobs read this instead of computing
 # the rule inline. The day comes from HERE (`date +%u`, one call site in the repo),
