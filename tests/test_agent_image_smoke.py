@@ -116,6 +116,11 @@ def test_local_fallback_image_name():
               AISM.built_locally("ghcr.io/andyholst/trending-local-llms:dockerfile-a106db319f32"))
         check("the local fallback is probed when the hash ref is absent",
               "trending-local-llms:latest" in seen, str(seen))
+        # The stub above must never hide a regression in the production guard:
+        # with docker genuinely absent the probe must refuse cleanly, not raise.
+        AISM.shutil.which = lambda name: None
+        check("an absent docker CLI is reported as not built",
+              AISM.built_locally("ghcr.io/andyholst/trending-local-llms:dockerfile-a106db319f32") is False)
     finally:
         AISM.subprocess.run, AISM.shutil.which = saved
 
