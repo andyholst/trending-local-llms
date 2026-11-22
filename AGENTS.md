@@ -1230,13 +1230,13 @@ issue that skips a section is refused.
    agent rule is dropped or weakened in the rulebook — a pipeline that drifts back to
    scheduled LLM runs, or a model call that slips into the merge gate, turns CI red
    on purpose.
-- **6w. Comments are a trigger (owner directive, 2026-11-22, issue #1243)** — while
+6w. **Comments are a trigger (owner directive, 2026-11-22, issue #1243)** — while
    CI runs or between work items, run `make comment-watch` (the read-only `gh api`
    seam in `scripts/comment_watch.py`) to see comments on any issue/PR newer than the
    local cursor. For EACH new comment: READ the full thread with `gh issue view` /
    `gh pr view` — the watcher's one-line excerpt is a pointer, not the comment —
    LOOK at what was said, post a reply on that thread (identity `agent@host`: the MACHINE
-   ID only — NEVER a full host name, LocalHostName or hardware name, rule 6u), file a new
+   ID only — NEVER a full host name, LocalHostName or hardware name, rule 3f), file a new
    issue for any NEW work it asks for, and implement that work in a
    worktree PR. Only pass `--mark-read` after the thread was actually looked at and
    answered — never acknowledge a comment unseen. The

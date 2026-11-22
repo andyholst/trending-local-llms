@@ -151,7 +151,11 @@ def test_ci_and_comment_monitor():
 
 def test_rulebook():
     text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    a = text.find("6w. Comments are a trigger")
+    # Accept the column-0 hard-rule heading and the old bullet spelling, so the
+    # rule anchor cannot silently miss it (issue #1243).
+    a = text.find("6w. **Comments are a trigger")
+    if a < 0:
+        a = text.find("6w. Comments are a trigger")
     rule = text[a:text.find("## 3. Data source & collection", a)] if a >= 0 else ""
     clauses = {
         "watcher named": "make comment-watch",
