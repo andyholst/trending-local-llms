@@ -42,6 +42,7 @@ from __future__ import annotations
 import ast
 import inspect
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -141,16 +142,38 @@ def changed(repo: Path, path: str = "") -> list[str]:
     return [line for line in out.splitlines() if line.strip()]
 
 
+def _test_env() -> dict:
+    """Pass the CALLER's authenticated env into the scratch subprocess.
+
+    Issue #1177: engine_registry.py's #972 reachability probe falls back to an
+    unauthenticated api.github.com read when GH_TOKEN/GITHUB_TOKEN are absent. On a
+    shared host the 60/hr anonymous quota is spent, so the same tree is red on one
+    run and green on the next. Resolve a token from the already-authenticated `gh`
+    client at RUN time (credential is a NAME only, rule 3e — never stored here).
+    """
+    env = os.environ.copy()
+    if not (env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")):
+        try:
+            probe = subprocess.run(["gh", "auth", "token"], capture_output=True,
+                                   text=True, timeout=30)
+            if probe.returncode == 0 and probe.stdout.strip():
+                env["GH_TOKEN"] = probe.stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return env
+
+
 def run_cli(repo: Path, *args: str) -> subprocess.CompletedProcess:
     """The REAL CLI, cwd = the scratch checkout, host environment (no stubs)."""
     return subprocess.run([sys.executable, "scripts/update_trending.py", *args],
-                          cwd=str(repo), capture_output=True, text=True, timeout=900)
+                          cwd=str(repo), capture_output=True, text=True, timeout=900,
+                          env=_test_env())
 
 
 def run_module(repo: Path, rel: str) -> subprocess.CompletedProcess:
     """The REAL suite module, run the way `make test` runs it, in the scratch checkout."""
     return subprocess.run([sys.executable, rel], cwd=str(repo), capture_output=True,
-                          text=True, timeout=900)
+                          text=True, timeout=900, env=_test_env())
 
 
 def ledger_rows(repo: Path) -> list[dict]:
@@ -394,8 +417,21 @@ def test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in():
           len(data_files) >= 5, f"data files: {len(data_files)}")
 
 
+def test_the_scratch_subprocesses_inherit_authentication():
+    """Issue #1177: an anonymous GitHub probe makes this suite flaky on a shared host."""
+    src = inspect.getsource(_test_env) + inspect.getsource(run_cli) + inspect.getsource(run_module)
+    check("#1177: scratch subprocesses get the resolved env",
+          src.count("env=_test_env()") == 2, "run_cli + run_module")
+    check("#1177: a credential is a NAME only (rule 3e)",
+          '"gh", "auth", "token"' in src and "print(" not in src)
+    env = _test_env()
+    check("#1177: the env contains a token name, never a literal in the tree",
+          "GH_TOKEN" in env or "GITHUB_TOKEN" in env, sorted(k for k in env if "TOKEN" in k))
+
+
 def main() -> int:
     for fn in (
+        test_the_scratch_subprocesses_inherit_authentication,
         test_an_undeclared_full_ingest_lands_no_refusals,
         test_an_undeclared_pass_still_reports_every_refusal,
         test_a_declared_delivery_stage_lands_the_ledger,
