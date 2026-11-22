@@ -9,22 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-<<<<<<< HEAD
-Active changes: **2** · archived: **404**
-=======
-Active changes: **0** · archived: **400**
->>>>>>> 1982316e (chore(openspec): record PR 1254)
+Active changes: **1** · archived: **405**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-<<<<<<< HEAD
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `scratch-auth-flake-1177` | active | #1177 | — | [ci-reliability](openspec/changes/scratch-auth-flake-1177/specs/ci-reliability/spec.md) | 3/4 | [proposal.md](openspec/changes/scratch-auth-flake-1177/proposal.md) |
-=======
-| _(none)_ | — | — | — | — | — | — |
->>>>>>> 1982316e (chore(openspec): record PR 1254)
 
 ## Archived changes
 
