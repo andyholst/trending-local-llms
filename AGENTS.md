@@ -1233,6 +1233,27 @@ issue that skips a section is refused.
    grants, requests on anyone's behalf, or works around the boundary.
    `tests/test_access_boundary.py` fails when this rule is dropped or weakened.
 
+6u. **Cross-machine issue/PR coordination is written, not assumed (MANDATORY,
+   issue #1231).** More than one LLM machine works the same repository threads
+   (measured: `asimov@mac` and `asimov@omarchy` on PRs #1218/#1221/#1222/#1229/#1230). Every
+   machine therefore owes the board six things:
+   (a) **Identity** — every work comment identifies the actor as `agent@host`, using
+   the MACHINE ID only (`asimov@mac`, `asimov@omarchy`); NEVER a full host name,
+   LocalHostName or hardware name, and names the issue/PR it acts on;
+   (b) **Claim before edit** — a CLAIM on the ISSUE thread names the machine id, the exact
+   scope and the base head BEFORE a shared branch is touched;
+   (c) **Failure report before fix** — a red gate is posted first with the failing target,
+   run/job URL, first error line and proposed owner, then fixed;
+   (d) **Signed handover** — a step moves only on `handover <agent@host>` posted on the issue
+   thread; a "watching / handover none" note is NOT a claim and NOT a handover;
+   (e) **The issue thread is the ONE board** — PR comments mirror it, never replace it;
+   (f) **Sync while waiting** — while CI runs, or a local verification is in flight, the
+   machine posts a short STATUS on the thread (head SHA, which gates are pending, and which
+   next issue/PR it is free to take), so the other machine can pick up the next item instead
+   of duplicating work or idling. No machine publishes an image, merges a PR or decides an
+   owner-ruling issue on another's behalf. `tests/test_cross_machine_coordination.py` fails
+   if any of the six obligations is removed from this rule.
+
 6w. **The fleet watcher is a two-job trigger, not a poll habit** (issue #1266): a
    no-LLM monitor job (short interval) runs the repo-owned `make watch-monitor` and emits
    ONLY changed markers — `C:<comment id>`, `R:<run id>:<status>:<conclusion>`,
@@ -2375,6 +2396,8 @@ actually happened.
 | `tests/test_issue_triage.py::test_a_pipeline_failure_close_is_accepted_only_with_a_merged_ledger_row` (rules 6c/6r, issue #993 landed by PR #995; the §8 row it owed is tracked as #998) | a `CLOSED:` verdict laundering a pipeline-failure issue away without ledger proof: the evidence gate (`scripts/issue_verdict.py::_pipeline_failure_ledger_is_checkable`) accepts an `EVIDENCE:` citing `data/pipeline_failures.json run=<id>` ONLY when that run's row names a merged `fix_pr` AND a guard test `make test` collects — an already-fixed failure closes green, while a fix-in-flight, an unknown run, or prose-only claims stay refused; the pin drives the real verdict script against a planted ledger (one merged row, one fix in flight) and asserts both directions |
 | `tests/test_owed_rows.py` — the note/report parity test + `tests/test_issue_triage.py` — the close-path tests (rules 6c/6d/6j, issue #766) | a owed-row issue closed without the ledger ever quoting it (#523's blind spot, measured: the 8/8-closed backlog #212/#314/#322/#324/#369/#380/#385/#405 carries no landed-line proof): a `close` verdict that closes without quoting the row as `LANDED AGENTS.md:<line>` or `OUTSTANDING`; a SECOND landing decision in the close path drifting from the report — the suite compares the close note against the SAME planted thread's `row_states` the report walks and requires the same line; a broken ledger read laundering a close — a malformed marker, a marker naming a deleted section, or an unreadable thread must exit 2 with NOTHING written, never close silently; and a plain close (no owed marker) gaining a vacuous ledger section |
 | `tests/test_file_findings.py` — the owed-row tests + `tests/test_workflows.py` — `test_the_implement_leg_never_leaves_an_owed_rulebook_row_bare` (rules 3c/6g/6j/6d, issue #659) | a headless leg that owes a protected `AGENTS.md` a row leaving a bare `- [ ]` (the measured #654–657 death): `file_findings` accepting an `- **Owed-row:**` field that parses through NO registered owed-row grammar (plain prose, or a marker missing `needle=`) instead of failing `findings-check` loudly; a filed finding whose body lost the marker re-rendered through `bot_markers.owed_row_marker` (a second writer, rule 6j); the `issue-implement` skill missing the blocked-box contract (`- [~] … — blocked: rule 3c human sign-off`) or the ledger routing (`make file-findings` → `make owed-rows-check`); the §6g declaration missing from the rulebook it exists to bind |
+| `tests/test_cross_machine_coordination.py` (rule 6u(a), issue #1231) | a work comment that reveals a full host name, LocalHostName or hardware name instead of the machine id `agent@host`; the guard reads rule 6u and fails when the NEVER-full-host clause is removed |
+| `tests/test_cross_machine_coordination.py` (rule 6u, issue #1231) | two LLM machines racing on the same PRs: identity comments drifting between full and nickname hostnames, a red gate left unreported for 15 minutes until the owner asked, or a machine idling while CI ran instead of taking the next issue. The guard reads the real rule 6u and fails when any of its six obligations — identity, claim before edit, failure report before fix, signed handover, issue-as-board, status while waiting — is removed or weakened |
 | `tests/test_workflows.py` — `test_only_the_refresh_pipeline_carries_a_schedule` (rule 6t, issues #1029; the scheduled half pinned by the `weekly-cadence` issues #670–#677) | the cadence drifting back: ANY pipeline other than `refresh-bot` gaining an `on.schedule` (the owner directive 2026-11-15 left the gatherer as the ONLY cron-scheduled pipeline — architecture-bot, bot-health, code-review-bot, issue-review-bot, pr-health, queued-alarm and issue-bot are dispatch-only), `refresh-bot`'s own slots drifting off Wednesday or losing the same-day backup, `issue-bot` regaining an `issues: [opened]` auto-start, or `qa-validate` (an event pipeline) acquiring a schedule — a scheduled LLM run, or a model call in the merge gate, turning CI red on purpose; the pin also catches the alarm-scrip defaults (sweep/freshness) reverting to sub-week windows while the rules still claim weekly |
 
 | `tests/test_target_matchers_one_view.py` (rules 6c/6d/6h, issue #752) | a second view of "what is a target": a target-line matcher literal (`:(?!=`) anywhere outside `scripts/architecture_bot.py` — measured copies: `architecture_check._ANY_TARGET` (byte-identical, attributed every `validate.py --only` list), `test_architecture_bot._makefile_targets` and `test_workflows._makefile_commands` (looser copies that counted the real Makefile's 145 `.PHONY:` lines as targets the shared scan skips); the guard also pins `architecture_check.stage_lists` to `architecture_bot.target_at_line` (no `_ANY_TARGET` attribute) and the helpers' sets to `make_targets(ROOT)` — the #512 two-parser drift class at line level |
