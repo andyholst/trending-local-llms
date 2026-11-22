@@ -1,7 +1,7 @@
 # Proposal: stale-smoke-budget-prose
 
 Issue: #1228
-PR: (recorded at head)
+PR: #1230
 
 ## Why
 

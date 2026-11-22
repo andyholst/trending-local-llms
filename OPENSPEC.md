@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **393**
+Active changes: **0** · archived: **394**
 
 ## Active changes
 
@@ -378,6 +378,7 @@ Active changes: **0** · archived: **393**
 | `spec-test-lines-verified` | archived | #621 | #810 | [openspec-spec-tests-check](openspec/changes/archive/spec-test-lines-verified/specs/openspec-spec-tests-check/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/spec-test-lines-verified/proposal.md) |
 | `squash-identity-legacy-history` | archived | #835 | #1059 | [commit-authorship](openspec/changes/archive/squash-identity-legacy-history/specs/commit-authorship/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/squash-identity-legacy-history/proposal.md) |
 | `stale-last-seen-gap` | archived | #1183 | #1216 | [data-gap-analysis](openspec/changes/archive/stale-last-seen-gap/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/stale-last-seen-gap/proposal.md) |
+| `stale-smoke-budget-prose` | archived | #1228 | #1230 | [search-contract](openspec/changes/archive/stale-smoke-budget-prose/specs/search-contract/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/stale-smoke-budget-prose/proposal.md) |
 | `stamp-fix-pr-in-ledger` | archived | #1099 | #1130 | [alarms](openspec/changes/archive/stamp-fix-pr-in-ledger/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/stamp-fix-pr-in-ledger/proposal.md) |
 | `stated-untraceable-figures` | archived | #470 | — | [data-gap-analysis](openspec/changes/archive/stated-untraceable-figures/specs/data-gap-analysis/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/stated-untraceable-figures/proposal.md) |
 | `strand-openspec-change-at-merge` | archived | #866 | #894 | [archived-change-lifecycle](openspec/changes/archive/strand-openspec-change-at-merge/specs/archived-change-lifecycle/spec.md) | 8/9 · 1 blocked | [proposal.md](openspec/changes/archive/strand-openspec-change-at-merge/proposal.md) |
