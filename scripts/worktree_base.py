@@ -630,6 +630,19 @@ def mode_rebase(args: argparse.Namespace) -> int:
             f"refusing to rebase {branch or 'a detached HEAD'!r}: check the branch out first "
             f"(the base itself is never rebased by a bot)."
         )
+    # The head this reads is HEAD, not the branch ref (issue #1330). Run from any other
+    # checkout — the shared clone, a second lane's worktree — the report was about the WRONG
+    # branch and answered `rebase=up-to-date` for a branch dozens of commits behind: a silent
+    # skip in a seam whose contract is "never a silent skip".
+    current = git_out(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
+    if current != branch:
+        raise Refused(
+            f"refusing to rebase {branch!r} from a checkout on {current!r}: the head this reads "
+            f"is HEAD, not the branch, so the report would be about the wrong branch and could "
+            f"answer `up-to-date` for a branch far behind.\n"
+            f"  Run it from {branch}'s worktree:\n"
+            f"    cd <worktree for {branch}>  &&  make base-rebase BRANCH={branch}"
+        )
     dirty = git(["status", "--porcelain"], cwd).stdout.strip()
     if dirty:
         raise Refused(
