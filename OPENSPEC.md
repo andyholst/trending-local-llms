@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **403**
+Active changes: **1** · archived: **405**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `r-marker-workflow-1288` | active | #1288 | — | [fleet-watch](openspec/changes/r-marker-workflow-1288/specs/fleet-watch/spec.md) | 7/7 | [proposal.md](openspec/changes/r-marker-workflow-1288/proposal.md) |
 
 ## Archived changes
 
@@ -151,6 +150,7 @@ Active changes: **2** · archived: **403**
 | `coverage-gap-builders-announce` | archived | #1173 | #1187 | [coverage-gap-announce](openspec/changes/archive/coverage-gap-builders-announce/specs/coverage-gap-announce/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/coverage-gap-builders-announce/proposal.md) |
 | `coverage-gap-multi-binary` | archived | #1171 | #1178 | [coverage-gap-multi-binary](openspec/changes/archive/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/coverage-gap-multi-binary/proposal.md) |
 | `coverage-gap-present-broken` | archived | #1172 | #1180 | [coverage-gap-present-broken](openspec/changes/archive/coverage-gap-present-broken/specs/coverage-gap-present-broken/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/coverage-gap-present-broken/proposal.md) |
+| `cron-install-check-1270` | archived | #1270 — "Fleet: Hermes cron watcher installation must be identical on both hosts". | #1272 | [fleet-watchers](openspec/changes/archive/cron-install-check-1270/specs/fleet-watchers/spec.md) | 4/5 | [proposal.md](openspec/changes/archive/cron-install-check-1270/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
 | `cross-model-ingest-date-identity` | archived | #971 — "The ingest-time duplicate refusal still keys on hardware, not date" | #1009 | [cross-model-duplicate-identity](openspec/changes/archive/cross-model-ingest-date-identity/specs/cross-model-duplicate-identity/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-ingest-date-identity/proposal.md) |
 | `cross-model-ingest-refusal` | archived | #702 | — | [cross-model-ingest-refusal](openspec/changes/archive/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/cross-model-ingest-refusal/proposal.md) |
@@ -325,6 +325,7 @@ Active changes: **2** · archived: **403**
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
 | `queued-alarm-diagnosis-half-runs-anyway` | archived | #1024 — "the queued-alarm job skips its diagnosis half when the sweep-alarm step goes red first" | #1026 | [alarms](openspec/changes/archive/queued-alarm-diagnosis-half-runs-anyway/specs/alarms/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/queued-alarm-diagnosis-half-runs-anyway/proposal.md) |
 | `queued-run-alarm` | archived | #252 | — | [queued-run-alarm](openspec/changes/archive/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/queued-run-alarm/proposal.md) |
+| `r-marker-workflow-1288` | archived | #1288 | #1293 | [fleet-watch](openspec/changes/archive/r-marker-workflow-1288/specs/fleet-watch/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/r-marker-workflow-1288/proposal.md) |
 | `raw-quarantine-underivable-models` | archived | #381 | — | [raw-snapshot-quarantine](openspec/changes/archive/raw-quarantine-underivable-models/specs/raw-snapshot-quarantine/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/raw-quarantine-underivable-models/proposal.md) |
 | `readme-bot-cadence-863` | archived | #863 | #930 | [validation](openspec/changes/archive/readme-bot-cadence-863/specs/validation/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/readme-bot-cadence-863/proposal.md) |
 | `real-pick-prints-one-line` | archived | #578 | — | [issue-queue](openspec/changes/archive/real-pick-prints-one-line/specs/issue-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/real-pick-prints-one-line/proposal.md) |
