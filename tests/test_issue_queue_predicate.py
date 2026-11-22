@@ -90,6 +90,18 @@ def test_a_closed_closing_pr_does_not_mark_implementer() -> None:
               any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
 
 
+def test_a_pr_closing_another_issue_does_not_hide_this_one() -> None:
+    # The parser unit test below proves "closes #1175" does not bind #1176; this
+    # proves build() actually USES that binding per issue. A regression to "any
+    # closing keyword marks an implementer" would silently drop #1176 here.
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh(Path(d), "closes #1175")
+        rows = q.build("andyholst/trending-local-llms", "tech-debt", 3,
+                       dt.datetime(2026, 11, 22, 15, 0, tzinfo=dt.timezone.utc))
+        check("a PR closing another issue does not mark this one implemented",
+              any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
+
+
 def test_the_one_closure_parser_is_used_not_a_hand_rolled_regex() -> None:
     check("a closes keyword binds", q._closes_issue({"body": "closes #1176"}, 1176))
     check("Fixes binds too", q._closes_issue({"body": "Fixes #1176"}, 1176))
@@ -103,6 +115,7 @@ def main() -> int:
     test_a_fix_prefixed_closing_pr_is_an_implementer()
     test_a_pr_without_a_closing_binding_stays_in_the_queue()
     test_a_closed_closing_pr_does_not_mark_implementer()
+    test_a_pr_closing_another_issue_does_not_hide_this_one()
     test_the_one_closure_parser_is_used_not_a_hand_rolled_regex()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
