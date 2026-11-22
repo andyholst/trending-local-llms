@@ -67,20 +67,28 @@ APPROVAL_HOLD_REASON = ("pipelines HELD FOR APPROVAL (every run on its head comm
 FIX_HINT = ("merge origin/master into it, then `git push origin HEAD:refs/heads/<PR head>` "
             "— the PR's head branch, never a differently-named local branch")
 
-#: Bot-owned branch shapes (issue #818). Every bot/agent branch is cut through
-#: `make worktree-new` or a keeper job and starts with one of these shapes:
-#: `ci/data-gap-<n>-…`, `ci/keeper-…`, `ci/openspec-index-repair-…`,
-#: `ci/architecture-block-repair-…` (issue-bot.yml + the keeper jobs), and the
-#: agent-session conventions `tech-debt-<slug>-<issue>`, `data-gap-…`,
-#: `issue-<n>-…` (measured on the merged queue: PRs #957/#955/#951/#769).
-#: Any other prefix is a human-owned branch: the rebaser never
-#: rewrites one (the §6r partition: "a bot PR is repaired by the sweep; a human's
-#: branch is only reported").
+#: Bot-owned PRs are decided by the AUTHOR, not by a branch-name convention (issue #1295).
+#: GitHub's `author.is_bot` is authoritative: an agent PR named `fix/…` or `feat/…` is the
+#: sweep's to repair, and a human PR named `ci/…` is report-only. The prefix list is kept ONLY
+#: as a fallback for callers that pass a head without author data (and for the pure tests).
 BOT_PUSH_PREFIXES = ("ci/", "tech-debt-", "data-gap-", "issue-")
 
 
 def is_bot_branch(head: str) -> bool:
     return str(head or "").startswith(BOT_PUSH_PREFIXES)
+
+
+def is_bot_owned(pr: dict) -> bool:
+    """Who owns this PR: its GitHub author when known, the prefix otherwise (#1295).
+
+    A PR object from `gh pr list --json …,author` carries `author.is_bot`; that is the
+    one contract. When the field is absent, fall back to `is_bot_branch` so older
+    callers and fixtures keep their meaning — never infer a human is a bot from a name.
+    """
+    author = pr.get("author") if isinstance(pr, dict) else None
+    if isinstance(author, dict) and isinstance(author.get("is_bot"), bool):
+        return bool(author["is_bot"])
+    return is_bot_branch(str(pr.get("headRefName") or ""))
 
 
 def is_conflicting(pr: dict) -> bool:
@@ -95,14 +103,15 @@ def rebase_plan(prs: list[dict]) -> list[dict]:
 
     A CONFLICTING bot PR is NEVER auto-rebased — resolving a conflict belongs to the PR's
     own fix loop or a human (issue #818 Done-when: "a conflicted one is never rewritten").
-    A non-bot branch is never rewritten either, whatever its state.
+    A PR owned by a human is never rewritten either, whatever its branch is called (#1295);
+    bot ownership comes from `author.is_bot`, with the prefix only a fallback.
     """
     plan = []
     for pr in prs:
         if pr.get("isDraft"):
             continue
         head = str(pr.get("headRefName") or "")
-        if not is_bot_branch(head):
+        if not is_bot_owned(pr):
             plan.append({"number": pr.get("number"), "head": head, "action": "human-branch"})
         elif is_conflicting(pr):
             plan.append({"number": pr.get("number"), "head": head, "action": "conflict"})
@@ -419,7 +428,7 @@ def main() -> int:
     try:
         prs = _gh_json(["pr", "list", "--state", "open", "--limit", "100", *repo_args,
                         "--json", "number,title,headRefName,isDraft,mergeable,mergeStateStatus,"
-                                  "headRefOid"]) or []
+                                  "headRefOid,author"]) or []
         runs_for = {}
         holds_for = {}
         for pr in prs:

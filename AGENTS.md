@@ -1079,7 +1079,11 @@ issue that skips a section is refused.
    - **A bot PR is repaired by the sweep — rebase and push (issue #818); a
      human's branch is only reported** (comment, never pushed to) — the same
      ownership partition `pr_health` has always kept. **The partition is a RULED
-     DECISION, not an accident (issue #1089, ruled 2026-11-20): it STAYS.**
+     DECISION, not an accident (issue #1089, ruled 2026-11-20): it STAYS.** Ownership
+     is decided by the PR's GitHub `author.is_bot`, NOT by a branch-name prefix
+     (issue #1295): an agent PR named `fix/…`, `feat/…` or `rule/…` is the sweep's to
+     repair, and a human PR named `ci/…` or `tech-debt-…` is report-only. The prefix
+     list is a fallback only when the author field is absent.
      `make auto-merge-rebase` therefore keeps returning `human-owned` report-only
      for a behind human branch, the squash carries that branch's cut-time
      `OPENSPEC.md`, and the DECLARED REPAIR for the residual stale index is the
@@ -1093,8 +1097,8 @@ issue that skips a section is refused.
      moment; a PR is only armable while it is green AND mergeable at that moment.
    `make pr-health` is the mechanical half, and since issue #818 it is no longer
    report-only: the dispatched sweep runs `make pr-health REBASE=1`, which REBASES a
-   behind-and-clean bot-owned PR branch (the bot/agent shapes `ci/…`,
-   `tech-debt-…`, `data-gap-…`, `issue-…`) onto the fetched base, **regenerating
+   behind-and-clean PR owned by a bot (`author.is_bot`, issue #1295 — any branch shape,
+   including `fix/…`, `feat/…` and `rule/…`) onto the fetched base, **regenerating
    `OPENSPEC.md` on the rebased tree** (issue #1088 — the merge-time index gate must never see a
    rebased tree with a stale index), and pushes it
    to the PR's own head with `--force-with-lease` pinned to the fetched remote tip

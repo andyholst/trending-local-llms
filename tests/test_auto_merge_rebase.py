@@ -452,10 +452,12 @@ def test_classification_is_pure_and_partitions():
     import auto_merge_rebase as AMR
 
     def cls(*, head="ci/x", state="open", draft=False, mergeable="MERGEABLE",
-            status="BEHIND", behind: bool | None = True):
+            status="BEHIND", behind: bool | None = True, author=None):
         pr = {"repository": {"nameWithOwner": "o/r"}, "number": 1, "state": state,
               "isDraft": draft, "headRefName": head, "headRefOid": "b" * 40,
               "mergeable": mergeable, "mergeStateStatus": status}
+        if author is not None:
+            pr["author"] = author
         return AMR.classify(pr, behind)
 
     check("classify: a closed PR is not-open", cls(state="closed") == "not-open")
@@ -472,6 +474,17 @@ def test_classification_is_pure_and_partitions():
           cls() == "behind-and-clean-bot")
     check("classify: UNKNOWN mergeable still rebases safely (conflict abort keeps it honest)",
           cls(status="UNKNOWN") == "behind-and-clean-bot")
+    bot = {"login": "asimov-agent", "is_bot": True}
+    human = {"login": "andyholst", "is_bot": False}
+    check("classify (#1295): bot-authored fix/feat/rule is behind-and-clean-bot",
+          cls(head="fix/agent", author=bot) == "behind-and-clean-bot"
+          and cls(head="feat/agent", author=bot) == "behind-and-clean-bot"
+          and cls(head="rule/agent", author=bot) == "behind-and-clean-bot")
+    check("classify (#1295): human-authored ci/tech-debt- is report-only",
+          cls(head="ci/human", author=human) == "human-owned"
+          and cls(head="tech-debt-human", author=human) == "human-owned")
+    check("classify (#1295): PR_FIELDS requests author for the live merge gate",
+          "author" in AMR.PR_FIELDS.split(","))
 
 
 #: (issue #1115) a stub `gh` for the ghost-run alarm: `run list` answers from $FAKE_RUNS,
