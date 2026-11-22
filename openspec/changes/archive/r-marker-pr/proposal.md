@@ -1,6 +1,7 @@
 # Proposal: r-marker-pr
 
 Issue: #1284
+PR: #1322
 
 ## Why
 
