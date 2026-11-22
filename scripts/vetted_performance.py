@@ -125,10 +125,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--include-unvetted", action="store_true")
     ap.add_argument("--vram-band", default="",
                     help="only one band, e.g. 16-24GB or 32GB+ (issue #1252)")
+    ap.add_argument("--min-sources", type=int, default=1,
+                    help="minimum independent source posts per measurement row (issue #1252)")
     a = ap.parse_args(argv)
     models = json.loads(a.models.read_text(encoding="utf-8"))
     measurements = json.loads(a.measurements.read_text(encoding="utf-8"))
     rows = evidence_rows(models, measurements)
+    if a.min_sources > 1:
+        rows = [r for r in rows if r["sources"] >= a.min_sources]
     groups = top_by_band(rows, a.top, vetted_only=not a.include_unvetted)
     if a.vram_band:
         wanted = a.vram_band.strip()

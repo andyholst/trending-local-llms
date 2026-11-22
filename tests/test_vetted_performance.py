@@ -86,6 +86,26 @@ def main() -> int:
     check("a single VRAM band can be queried directly",
           "8-16GB" in buf.getvalue() and "24-32GB" not in buf.getvalue(),
           buf.getvalue()[:120])
+    # Owner's threshold can be applied as a query without editing shipped values.
+    with tempfile.TemporaryDirectory() as td:
+        mp = Path(td) / "m.json"
+        xp = Path(td) / "x.json"
+        mp.write_text(json.dumps({"models": [
+            {"id": "twice", "engagement": {"posts_7d": 0}},
+            {"id": "once", "engagement": {"posts_7d": 0}}]}), encoding="utf-8")
+        xp.write_text(json.dumps({
+            "twice": [{"tps": "100", "hardware": "RTX 4090 24GB", "engine": "MLX",
+                       "source_post": "a"},
+                      {"tps": "99", "hardware": "RTX 4090 24GB", "engine": "vLLM",
+                       "source_post": "b"}],
+            "once": [{"tps": "500", "hardware": "RTX 5090 32GB", "engine": "MLX",
+                      "source_post": "c"}]}), encoding="utf-8")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            VP.main(["--models", str(mp), "--measurements", str(xp), "--min-sources", "2"])
+        check("a min-sources threshold filters the view without editing the store",
+              "twice" in buf.getvalue() and "once" not in buf.getvalue(),
+              buf.getvalue()[-200:])
     check("this suite is discovered by `make test`", wired(__file__))
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
