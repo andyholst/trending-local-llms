@@ -378,8 +378,8 @@ def test_keeper_dedup_counts_only_mergeable_keepers():
           and '"DIRTY", "CONFLICTING"' in keeper_src, "")
     check("keeper seam names the UNMERGEABLE keeper it refused to honour (#960)",
           "UNMERGEABLE" in keeper_src, "")
-    check("keeper seam suppresses only beside a MERGEABLE open keeper (#960)",
-          "a mergeable keeper pr" in keeper_src.lower() and "already open" in keeper_src, "")
+    check("keeper seam suppresses only beside a LIVE open keeper (#960, #1303)",
+          "a live keeper pr" in keeper_src.lower() and "already open" in keeper_src, "")
 
 
 def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architecture_gate():
