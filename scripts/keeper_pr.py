@@ -27,9 +27,12 @@ The sequence, in order:
 
   1. none of FILE's files changed (DRIFT=none landed silently) -> exit 0, no PR;
   2. a tracked change falls OUTSIDE FILE                        -> exit 1, refuse;
-  3. with DEDUPE: an OPEN keeper on BRANCH_PREFIX that CAN land suppresses a
-     duplicate; a DIRTY/CONFLICTING keeper is named UNMERGEABLE and a fresh
-     keeper is filed (issue #960: an unmergeable keeper lands nothing);
+  3. with DEDUPE: an OPEN keeper on BRANCH_PREFIX that CAN land AND is really being
+     validated suppresses a duplicate; a DIRTY/CONFLICTING keeper is named UNMERGEABLE
+     and a MERGEABLE keeper whose checks never ran (or concluded red) is named a
+     TOMBSTONE — both land nothing, so a fresh keeper is filed against the current tip
+     (issue #960: an unmergeable keeper lands nothing; issue #1303: a checkless mergeable
+     keeper pinned `master` red behind its own dedup);
   4. branch `<prefix>-<UTC>` from the current tip with the repo agent identity,
      ONE commit touching only FILE, pushed to origin;
   5. the PR body is produced by `make <BODY_TARGET> <BODY_ARGS…>` (the keeper's
@@ -79,24 +82,72 @@ def changed_tracked_files(root: Path) -> list[str]:
     return files
 
 
-def keeper_dedupe(prefix: str, root: Path) -> tuple[int, int]:
-    """(mergeable open keepers, unmergeable open keepers) on this branch prefix (#960)."""
+def keeper_dedupe(prefix: str, root: Path) -> tuple[int, int, int]:
+    """(live, tombstone, unmergeable) open keepers on this branch prefix (#960, #1303).
+
+    `live` suppresses a duplicate. A MERGEABLE keeper whose checks never ran — or concluded
+    red — is a TOMBSTONE: it can never go green, so it must not hold the prefix (issue #1303:
+    the checkless `ci/openspec-index-repair-20261122T041000Z` pinned `master` red behind its
+    own dedup). DIRTY/CONFLICTING stays `unmergeable` (#960).
+    """
     out = _run(
         ["gh", "pr", "list", "--state", "open",
-         "--json", "headRefName,mergeStateStatus",
-         "--jq", f'[.[] | select(.headRefName | startswith("{prefix}")) | .mergeStateStatus]'],
+         "--json", "headRefName,mergeStateStatus,statusCheckRollup",
+         "--jq", f'[.[] | select(.headRefName | startswith("{prefix}"))]'],
         root,
     )
     try:
         # `gh --json` prints a JSON array; parse it here instead of piping to jq so the
         # sequence depends on one external CLI (gh), not two.
         import json
-        states = json.loads(out)
+        rows = json.loads(out)
     except (ValueError, TypeError) as exc:
         raise KeeperUnavailable(f"keeper dedupe read unparseable: {out!r} ({exc})") from exc
-    mergeable = [s for s in states if s not in ("DIRTY", "CONFLICTING")]
-    unmergeable = [s for s in states if s in ("DIRTY", "CONFLICTING")]
-    return len(mergeable), len(unmergeable)
+    live = tombstone = unmergeable = 0
+    for row in rows:
+        state = str(row.get("mergeStateStatus") or "").upper()
+        if state in ("DIRTY", "CONFLICTING"):
+            unmergeable += 1
+        elif keeper_health(row.get("statusCheckRollup") or []) == "live":
+            live += 1
+        else:
+            tombstone += 1
+    return live, tombstone, unmergeable
+
+
+#: The checks a keeper MUST carry green to be a live repairer — the two branch-protection
+#: contexts (rule 1), so a keeper that cannot pass them can never land.
+REQUIRED_CHECKS = ("validate", "live-smoke")
+#: Conclusions that mean the head is RED, not merely unfinished.
+RED_CONCLUSIONS = {"failure", "cancelled", "timed_out", "action_required", "stale",
+                  "startup_failure", "neutral", "skipped"}
+
+
+def keeper_health(rollup: list) -> str:
+    """`'live'` when this head is really being validated; `'tombstone'` when it never was.
+
+    Pure (rule 6d): the dedupe reads it, the tests drive it. A rollup with NO object for a
+    required check is the PR #1248 shape — the run never started, so the keeper is a
+    tombstone no matter what `mergeStateStatus` says. A check still queued/in progress is
+    LIVE: an in-flight repairer must not be duplicated.
+    """
+    checks = [c for c in rollup if (c.get("name") or "") in REQUIRED_CHECKS]
+    if not checks:
+        return "tombstone"
+    for check in checks:
+        conclusion = str(check.get("conclusion") or "").lower()
+        state = str(check.get("state") or "").lower()
+        status = str(check.get("status") or "").lower()
+        if conclusion == "success" or state == "success":
+            continue
+        if conclusion in RED_CONCLUSIONS or state in ("failure", "error"):
+            return "tombstone"
+        if conclusion or state:
+            return "tombstone"
+        if status in ("", "queued", "in_progress", "pending", "expected"):
+            continue
+        return "tombstone"
+    return "live"
 
 
 def land_keeper(
@@ -125,13 +176,20 @@ def land_keeper(
         for f in changed:
             print(f"  changed: {f}")
         return 1
-    # 3. one keeper per drift (#960): only a keeper that CAN land suppresses.
+    # 3. one keeper per drift (#960, #1303): only a keeper that CAN land AND is really
+    #    being validated suppresses. A DIRTY/CONFLICTING keeper is UNMERGEABLE; a MERGEABLE
+    #    keeper whose checks never ran (or concluded red) is a TOMBSTONE — both land nothing,
+    #    so a fresh keeper is filed against the current tip.
     if dedupe:
-        mergeable, unmergeable = keeper_dedupe(branch_prefix, root)
-        if mergeable:
-            print(f"[keeper-pr] a mergeable keeper PR on '{branch_prefix}-…' is already open — "
+        live, tombstone, unmergeable = keeper_dedupe(branch_prefix, root)
+        if live:
+            print(f"[keeper-pr] a live keeper PR on '{branch_prefix}-…' is already open — "
                   "not opening a duplicate (one keeper per drift).")
             return 0
+        if tombstone:
+            print(f"[keeper-pr] keeper-dedup #1303: {tombstone} earlier keeper(s) on "
+                  f"'{branch_prefix}-…' are TOMBSTONEs (mergeable but never validated, or red) — "
+                  "they can never go green; filing a fresh keeper against the current tip.")
         if unmergeable:
             print(f"[keeper-pr] keeper-dedup #960: {unmergeable} earlier keeper(s) on "
                   f"'{branch_prefix}-…' are UNMERGEABLE (DIRTY/CONFLICTING) — they land nothing; "

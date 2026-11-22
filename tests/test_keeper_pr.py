@@ -124,27 +124,88 @@ def test_extra_changes_refuse_exit_1_and_land_nothing() -> None:
         check("refusal opens no PR", not Path(env["KEEPER_GH_LOG"]).exists(), "")
 
 
+def keeper_row(name: str, state: str = "MERGEABLE", checks=()) -> dict:
+    """One `gh pr list` row as the real client answers it (the stub bypasses `--jq`)."""
+    return {"headRefName": name, "mergeStateStatus": state,
+            "statusCheckRollup": [{"name": n, "conclusion": c} for n, c in checks]}
+
+
+GREEN = (("validate", "success"), ("live-smoke", "success"))
+
+
 def test_mergeable_keeper_suppresses_and_dirty_keeper_does_not() -> None:
-    print("\ndedupe #960: a MERGEABLE open keeper suppresses; DIRTY/CONFLICTING keepers do not")
+    print("\ndedupe #960/#1303: a LIVE open keeper suppresses; DIRTY/CONFLICTING keepers do not")
     with tempfile.TemporaryDirectory() as td:
         work, env = make_scene(Path(td))
         (work / "GENERATED.md").write_text("regenerated\n")
-        env["KEEPER_GH_LIST"] = json.dumps(["MERGEABLE"])  # gh --jq projects mergeStateStatus
+        env["KEEPER_GH_LIST"] = json.dumps(
+            [keeper_row("ci/test-keeper-live", checks=GREEN)])
         proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
-        check("a mergeable open keeper suppresses the duplicate", proc.returncode == 0
+        check("a live open keeper suppresses the duplicate", proc.returncode == 0
               and "already open" in proc.stdout, proc.stdout)
         refs = git("ls-remote", "--heads", "origin", cwd=work)
         check("suppression pushes no branch", "test-keeper" not in refs, refs)
     with tempfile.TemporaryDirectory() as td:
         work, env = make_scene(Path(td))
         (work / "GENERATED.md").write_text("regenerated\n")
-        env["KEEPER_GH_LIST"] = json.dumps(["DIRTY", "CONFLICTING"])
+        env["KEEPER_GH_LIST"] = json.dumps(
+            [keeper_row("ci/test-keeper-dirty", state="DIRTY"),
+             keeper_row("ci/test-keeper-conflicting", state="CONFLICTING")])
         proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
         check("unmergeable keepers do NOT suppress (exit 0, fresh keeper lands)",
               proc.returncode == 0 and "UNMERGEABLE" in proc.stdout, proc.stdout)
         refs = git("ls-remote", "--heads", "origin", cwd=work)
         check("a fresh keeper is filed against the current tip",
               "refs/heads/ci/test-keeper-" in refs, refs)
+
+
+def test_a_checkless_mergeable_keeper_does_not_suppress() -> None:
+    print("\n#1303: a MERGEABLE keeper with NO check objects is a TOMBSTONE — a fresh keeper lands")
+    with tempfile.TemporaryDirectory() as td:
+        work, env = make_scene(Path(td))
+        (work / "GENERATED.md").write_text("regenerated\n")
+        env["KEEPER_GH_LIST"] = json.dumps(
+            [keeper_row("ci/openspec-index-repair-20261122T041000Z", checks=())])
+        proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
+        check("a checkless mergeable keeper does NOT suppress", proc.returncode == 0
+              and "TOMBSTONE" in proc.stdout, proc.stdout)
+        check("the tombstone names the keeper shape", "never validated" in proc.stdout,
+              proc.stdout)
+        refs = git("ls-remote", "--heads", "origin", cwd=work)
+        check("a fresh keeper is filed against the current tip",
+              "refs/heads/ci/test-keeper-" in refs, refs)
+
+
+def test_a_red_keeper_does_not_suppress() -> None:
+    print("\n#1303: a keeper whose required check concluded red is a TOMBSTONE")
+    with tempfile.TemporaryDirectory() as td:
+        work, env = make_scene(Path(td))
+        (work / "GENERATED.md").write_text("regenerated\n")
+        env["KEEPER_GH_LIST"] = json.dumps(
+            [keeper_row("ci/test-keeper-red",
+                        checks=(("validate", "failure"), ("live-smoke", "success")))])
+        proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
+        check("a red keeper does NOT suppress", proc.returncode == 0
+              and "TOMBSTONE" in proc.stdout, proc.stdout)
+        refs = git("ls-remote", "--heads", "origin", cwd=work)
+        check("a fresh keeper is filed against the current tip",
+              "refs/heads/ci/test-keeper-" in refs, refs)
+
+
+def test_an_in_flight_keeper_still_suppresses() -> None:
+    print("\n#1303: a keeper whose checks are still running is LIVE — never duplicate it")
+    with tempfile.TemporaryDirectory() as td:
+        work, env = make_scene(Path(td))
+        (work / "GENERATED.md").write_text("regenerated\n")
+        env["KEEPER_GH_LIST"] = json.dumps([keeper_row(
+            "ci/test-keeper-flight",
+            checks=(("validate", None), ("live-smoke", None)))])
+        proc = run_keeper(work, env, *BASE_ARGS, "--dedupe")
+        check("an in-flight keeper suppresses", proc.returncode == 0
+              and "already open" in proc.stdout and "TOMBSTONE" not in proc.stdout,
+              proc.stdout)
+        refs = git("ls-remote", "--heads", "origin", cwd=work)
+        check("no duplicate branch is pushed", "refs/heads/ci/test-keeper-" not in refs, refs)
 
 
 def test_keeper_lands_one_commit_touching_only_its_file() -> None:
@@ -304,6 +365,9 @@ def main() -> int:
     for t in (test_no_change_exits_zero_without_a_branch_or_pr,
               test_extra_changes_refuse_exit_1_and_land_nothing,
               test_mergeable_keeper_suppresses_and_dirty_keeper_does_not,
+              test_a_checkless_mergeable_keeper_does_not_suppress,
+              test_a_red_keeper_does_not_suppress,
+              test_an_in_flight_keeper_still_suppresses,
               test_keeper_lands_one_commit_touching_only_its_file,
               test_multi_file_keeper_lands_one_commit_touching_both_files,
               test_multi_file_keeper_lands_only_the_owned_file_that_changed,
