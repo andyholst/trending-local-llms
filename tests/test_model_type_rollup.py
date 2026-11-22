@@ -78,8 +78,14 @@ def main() -> int:
     gaps = MTR.stale_candidates(models, measurements, 7)
     check("the live store yields named freshness gaps", len(gaps) > 0 and all(g[3] < "2026-11-10" for g in gaps),
           str(gaps[:3]))
-    old_only = {"models": [{"id": "zz-old", "name": "Old Model", "type": "LLM"}]}
-    old_measures = {"zz-old": [{"date": "2026-10-01", "tps": "20", "engine": "mlx-lm"}]}
+    old_only = {"models": [
+        {"id": "zz-old", "name": "Old Model", "type": "LLM"},
+        {"id": "zz-new", "name": "Current Model", "type": "LLM"},
+    ]}
+    old_measures = {
+        "zz-old": [{"date": "2026-10-01", "tps": "20", "engine": "mlx-lm"}],
+        "zz-new": [{"date": "2026-11-17", "tps": "30", "engine": "mlx-lm"}],
+    }
     planted_gaps = MTR.stale_candidates(old_only, old_measures, 7)
     check("a historical-only model is named as a GAP",
           planted_gaps == [("zz-old", "Old Model", 1, "2026-10-01")], str(planted_gaps))
