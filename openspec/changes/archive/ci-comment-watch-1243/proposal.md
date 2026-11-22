@@ -1,6 +1,7 @@
 # Proposal: ci-comment-watch-1243
 
 Issue: #1243
+PR: #1244
 
 ## Why
 
