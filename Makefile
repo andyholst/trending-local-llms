@@ -1225,6 +1225,10 @@ merge-fetch:
 cron-install-check: ## Verify the fleet cron installation has a no-agent watchdog and a monitor-gated agent using the repo-owned C/R/M detector (issue #1270)
 	python3 scripts/cron_install_check.py
 
+.PHONY: vetted-performance
+vetted-performance: ## Read-only top measured t/s per VRAM band with vetted evidence (issue #1252)
+	@python3 scripts/vetted_performance.py $(ARGS)
+
 .PHONY: validate
 validate:
 	$(TEST_RUN) make _validate
