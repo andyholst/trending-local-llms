@@ -7,7 +7,7 @@
 - [x] Change `_pulls` to request only OPEN PRs
 - [x] Run the module GREEN, `make lint`, `make test`
 - [x] Write `findings.md`, regenerate `OPENSPEC.md`, `make openspec-check`
-- [ ] Compose the PR body, pre-check, open the PR, record/archive the change, report the head SHA
+- [x] Compose the PR body, pre-check, open the PR, record/archive the change, report the head SHA
 
 Evidence:
 
