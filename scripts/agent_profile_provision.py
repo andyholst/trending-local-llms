@@ -37,8 +37,15 @@ Usage:
     make agent-profile-provision LANE=tll-architect
     make agent-profile-provision ALL=1
     make agent-profile-provision PROFILE=developer,project-manager,default
+    make agent-profile-provision CHECK=1 ALL=1 PROFILE=developer,default   # drift report, writes nothing
     python3 scripts/agent_profile_provision.py --lane tll-architect [--profiles-home DIR]
     python3 scripts/agent_profile_provision.py --profile developer [--profiles-home DIR]
+    python3 scripts/agent_profile_provision.py --check --all [--profiles-home DIR]
+
+`--check` (issue #1204) is the read-only drift report: it names every home whose owned blocks (a
+merge) or whole config (a lane) differ from the rendered chain, exits 1 on any drift and 0 when
+all match, writes NOTHING and needs NO credential — the weekly free-tier refresh (issue #1195)
+moves the repo's chain, and this is how a stale host is named instead of drifting in silence.
 """
 from __future__ import annotations
 
@@ -64,7 +71,7 @@ DEFAULT_PROFILE = "default"
 OWNED_BLOCKS = ("model", "model_aliases", "fallback_providers")
 _TOP_BLOCK_RE = re.compile(r"(?m)^([A-Za-z_][A-Za-z0-9_]*):")
 
-EXIT_OK, EXIT_UNDECIDABLE = AMC.EXIT_OK, AMC.EXIT_UNDECIDABLE
+EXIT_OK, EXIT_PROBLEM, EXIT_UNDECIDABLE = AMC.EXIT_OK, AMC.EXIT_PROBLEM, AMC.EXIT_UNDECIDABLE
 
 
 def profiles_home(cli_value: str | None) -> Path:
@@ -244,6 +251,30 @@ def provision_profile(name: str, home: Path, rendered: str) -> tuple[int, Path |
     return EXIT_OK, backup
 
 
+def check_one(label: str, dest: Path, rendered: str, whole_copy: bool) -> list[str]:
+    """The drift verdict for ONE home (issue #1204): which bytes differ from the rendered chain.
+
+    A lane is a WHOLE copy, so its entire config must equal the render; a non-lane home is a
+    MERGE, so only the owned blocks are compared — the home's other blocks are its own business.
+    Read-only: nothing is written, no credential is needed (a drift report must work on a host
+    whose key is absent — that is exactly the host that needs the report).
+    """
+    if not dest.is_file():
+        return [f"{label}: {dest} is missing — the home was never provisioned"]
+    try:
+        text = dest.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"{label}: {dest} could not be read: {exc}"]
+    if whole_copy:
+        if text != rendered:
+            return [f"{label}: the lane config drifted from the rendered chain (a lane is a whole copy)"]
+        return []
+    blocks = {n: c for n, c in _top_blocks(text) if n in OWNED_BLOCKS}
+    want = {n: c for n, c in _top_blocks(rendered) if n in OWNED_BLOCKS}
+    return [f"{label}: `{n}:` drifted from the rendered chain"
+            for n in OWNED_BLOCKS if blocks.get(n) != want.get(n)]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Provision a fleet lane's rendered chain config into its Hermes profile home.")
     ap.add_argument("--lane", action="append", default=[],
@@ -257,6 +288,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", default=str(ROOT), help="repository root to read (tests plant a scratch tree)")
     ap.add_argument("--dry-run", action="store_true",
                     help="verify the chain, the credential and every lane config, write nothing")
+    ap.add_argument("--check", action="store_true",
+                    help="REPORT drift between the named homes and the rendered chain (issue #1204): "
+                         "exit 1 naming every stale home/block, exit 0 when all match, writes nothing, "
+                         "needs no credential")
     args = ap.parse_args(argv)
 
     root = Path(args.root)
@@ -307,6 +342,46 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[profile-provision] UNDECIDABLE: {line}", file=sys.stderr)
         return EXIT_UNDECIDABLE
 
+    home = profiles_home(args.profiles_home)
+    rendered = AMC.render_text(chain)
+    drift = AMC.config_problems(root, chain, rendered)
+    if drift:
+        for line in drift:
+            print(f"[profile-provision] REFUSED: {line}", file=sys.stderr)
+        return EXIT_UNDECIDABLE
+
+    if args.check:
+        # Issue #1204: the read-only drift report. A merged weekly refresh (issue #1195) moves
+        # the repo's chain while the host homes keep the old list until someone re-provisions;
+        # this mode NAMES the stale homes loudly instead of letting the drift sit silent.
+        stale: list[str] = []
+        checked = 0
+        for lane in wanted:
+            dest = home / lane / CONFIG_REL
+            if not (home / lane).is_dir():
+                print(f"[profile-drift] UNDECIDABLE: profile home {home / lane} does not exist",
+                      file=sys.stderr)
+                return EXIT_UNDECIDABLE
+            stale += check_one(f"lane={lane}", dest, rendered, whole_copy=True)
+            checked += 1
+        for name in wanted_profiles:
+            profile_dir = home.parent if name == DEFAULT_PROFILE else home / name
+            if not profile_dir.is_dir():
+                print(f"[profile-drift] UNDECIDABLE: profile home {profile_dir} does not exist",
+                      file=sys.stderr)
+                return EXIT_UNDECIDABLE
+            stale += check_one(f"profile={name}", profile_dir / CONFIG_REL, rendered, whole_copy=False)
+            checked += 1
+        for s in stale:
+            print(f"[profile-drift] STALE {s}")
+        if stale:
+            print(f"[profile-drift] {checked} home(s) checked, {len(stale)} drift finding(s) — "
+                  f"re-provision with `make agent-profile-provision` (the same targets, without CHECK=1)")
+            return EXIT_PROBLEM
+        print(f"[profile-drift] CLEAN: {checked} home(s) match the rendered chain byte-for-byte "
+              f"(owned blocks for merges, whole copy for lanes)")
+        return EXIT_OK
+
     # Rule 3e / issue #357: the credential is checked BY NAME before anything is written. A chain
     # on the `nous` provider authenticates through the Portal session and names NO key_env (issue
     # #1203), so there is nothing to pre-flight and the check is skipped; a chain that DOES name a
@@ -320,14 +395,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[profile-provision] REFUSED: nothing was written to {profiles_home(args.profiles_home)} "
                   f"— the chain names {', '.join(names)} and that credential is absent", file=sys.stderr)
             return EXIT_UNDECIDABLE
-
-    home = profiles_home(args.profiles_home)
-    rendered = AMC.render_text(chain)
-    drift = AMC.config_problems(root, chain, rendered)
-    if drift:
-        for line in drift:
-            print(f"[profile-provision] REFUSED: {line}", file=sys.stderr)
-        return EXIT_UNDECIDABLE
 
     if args.dry_run:
         print(f"[profile-provision] DRY RUN: chain ok, {', '.join(names)} set (value never read), "
