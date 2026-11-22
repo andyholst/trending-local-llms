@@ -110,6 +110,41 @@ def test_heartbeat_coexists_with_failure_marker() -> None:
     check("both are sorted and unique", lines == sorted(set(lines)), str(lines))
 
 
+def test_r_marker_carries_workflow_name() -> None:
+    print("\nCI marker names its workflow: guard/closure success != full validation (#1288)")
+    p = {
+        "comments": {"issues": [], "pulls": []},
+        "runs": [
+            {"id": 1, "status": "completed", "conclusion": "success", "name": "pr-closure"},
+            {"id": 2, "status": "completed", "conclusion": "success", "name": "qa-validate"},
+            {"id": 3, "status": "completed", "conclusion": "success", "name": "a:b\nc"},
+        ],
+        "master": {"sha": "aaa"},
+    }
+    lines, _ = W.marker_state({}, p)
+    check("guard/closure success names its workflow",
+          "R:1:completed:success:pr-closure" in lines, str(lines))
+    check("full validation names its workflow",
+          "R:2:completed:success:qa-validate" in lines, str(lines))
+    assert "R:1:completed:success:pr-closure" in lines, str(lines)
+    assert "R:2:completed:success:qa-validate" in lines, str(lines)
+    check("the two bare-success rows are distinguishable from the marker alone",
+          "R:1:completed:success:pr-closure" != "R:2:completed:success:qa-validate"
+          and "R:1:completed:success:pr-closure" in lines
+          and "R:2:completed:success:qa-validate" in lines, str(lines))
+    check("a colon/newline in a name cannot add a marker field",
+          "R:3:completed:success:abc" in lines, str(lines))
+    assert "R:3:completed:success:abc" in lines, str(lines)
+    check("a missing or blank name contributes no field",
+          W.workflow_token(None) == "" and W.workflow_token("") == "", "")
+    assert W.workflow_token(None) == "" and W.workflow_token("") == ""
+    _, state = W.marker_state({}, payload(run_status="in_progress"))
+    nameless, _ = W.marker_state(state, payload(run_status="completed"))
+    check("a nameless run still emits the three-field marker",
+          nameless == ["R:7:completed:success"], str(nameless))
+    assert nameless == ["R:7:completed:success"], str(nameless)
+
+
 def test_offline_check_mode() -> None:
     print("\nOffline check: no network, no state file")
     check("H is a legal marker prefix", "H:" in W.MARKER_PREFIXES, "")
@@ -124,6 +159,7 @@ def main() -> int:
     test_rulebook_carries_two_job_watch_protocol()
     test_heartbeat_marker_is_deterministic()
     test_heartbeat_coexists_with_failure_marker()
+    test_r_marker_carries_workflow_name()
     test_offline_check_mode()
     print(f"\nPASSED {_passed} | FAILED {_failed}")
     return 0 if _failed == 0 else 1
