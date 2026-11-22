@@ -34,10 +34,10 @@ def baseline(tmp: Path) -> tuple[Path, Path, Path]:
     ]
     jf = tmp / "jobs.json"; jf.write_text(json.dumps(jobs))
     wd = tmp / "wrappers"; wd.mkdir()
-    (wd / "watch-job.py").write_text('STATE = "watch-monitor-mac.json"\nrun("watch_monitor.py", --gh)\n')
-    (wd / "agent-monitor.py").write_text('STATE = "agent-mac.json"\nrun("watch_monitor.py", --gh)\n')
+    (wd / "watch-job.py").write_text('STATE = "watch-monitor-mac.json"\nHEARTBEAT_SECONDS = 0\nrun("watch_monitor.py", --gh)\n')
+    (wd / "agent-monitor.py").write_text('STATE = "agent-mac.json"\nHEARTBEAT_SECONDS = 900\nrun("watch_monitor.py", --gh --heartbeat-seconds 900)\n')
     det = tmp / "scripts"; det.mkdir()
-    (det / "watch_monitor.py").write_text("C: R: M:\n")
+    (det / "watch_monitor.py").write_text("C: R: M: H:\n")
     return jf, det / "watch_monitor.py", wd
 
 
@@ -53,6 +53,10 @@ def main() -> int:
             "missing monitor gate": lambda j: j[1].pop("monitor_script"),
             "missing workdir": lambda j: j[0].pop("workdir"),
             "two watchdogs": lambda j: j.append(dict(j[0], id="w2")),
+            "agent wrapper lost heartbeat": lambda j: (wd / "agent-monitor.py").write_text(
+                'STATE = "agent-mac.json"\nrun("watch_monitor.py", --gh)\n'),
+            "watchdog gained heartbeat": lambda j: (wd / "watch-job.py").write_text(
+                'STATE = "watch-monitor-mac.json"\nHEARTBEAT_SECONDS = 900\nrun("watch_monitor.py", --gh)\n'),
         }
         for name, break_it in cases.items():
             j = copy.deepcopy(jobs); break_it(j)

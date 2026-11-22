@@ -16,7 +16,7 @@ import os
 import sys
 from pathlib import Path
 
-MARKERS = ("C:", "R:", "M:")
+MARKERS = ("C:", "R:", "M:", "H:")
 
 
 def load_jobs(path: Path) -> list[dict]:
@@ -52,6 +52,11 @@ def problems(jobs: list[dict], detector: Path, wrappers_dir: Path) -> list[str]:
             out.append(f"{name}: wrapper does not call the repo-owned detector")
         if "--gh" not in text and "gh" not in text:
             out.append(f"{name}: wrapper has no explicit gh path fix")
+        if j.get("monitor_script"):
+            if "--heartbeat-seconds" not in text or "HEARTBEAT_SECONDS = 900" not in text:
+                out.append(f"{name}: agent monitor wrapper must pass --heartbeat-seconds 900 (#1282)")
+        if j.get("no_agent") and "HEARTBEAT_SECONDS = 0" not in text:
+            out.append(f"{name}: no-agent watchdog must stay quiet (HEARTBEAT_SECONDS = 0, #1282)")
         for line in text.splitlines():
             if "STATE" in line and ".json" in line:
                 states.add(line.strip())
