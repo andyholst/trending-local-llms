@@ -1,6 +1,7 @@
 # Proposal: model-type-rollup-1246
 
 Issue: #1246 (companion to the pending owner ruling #1235)
+PR: #1247
 
 ## Why
 
