@@ -2,7 +2,7 @@
 
 Issue: #1176 — "The 24 h grace is a guess, and it is the only thing standing between
 'reported' and 'red'" (tech-debt, surfaced from PR #1170).
-PR: _pending_
+PR: #1289
 
 ## Why
 
