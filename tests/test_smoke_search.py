@@ -233,7 +233,7 @@ def test_one_query_starved_leg_is_not_a_source_outage():
 
     The gate answers "is the mirror reachable?", not "is every query cached?".
     Measured 2026-11-21: nvidia/metal answered in 0.1s while all four cpu queries
-    hung for 90s x2; a full outage still misses EVERY leg and must stay red.
+    hung for 20s x2; a full outage still misses EVERY leg and must stay red.
     """
     smoke = _load_smoke_backends()
     cpu = set(smoke["cpu"])
@@ -279,35 +279,73 @@ def test_a_full_outage_still_blocks_every_leg():
     assert "a MAJORITY of budget-missed queries is a dead or unreachable source" in out, out
 
 
-def test_ci_search_smoke_budget_is_realistic():
-    """The probe budget is Makefile-owned and both pipelines pass it explicitly.
+def test_a_proven_outage_with_timeouts_is_not_blocked():
+    """#1278: 4 OUTAGE + 7 TIMEOUT with OK==0 and FAIL==0 is an excused outage."""
+    def probe_fn(keyword, key, budget, retries=1, retry_wait=2.0):
+        outage = keyword in ("rtx tokens per second llm", "rtx 3090/4090/5090 tokens per second",
+                             "rtx 3060 tokens per second", "rtx 4060 tokens per second")
+        if outage:
+            return {"status": 200, "ok": True, "upstream": 522, "elapsed": 0.1,
+                    "attempts": 1, "rate_hits": 0, "model_hits": 0, "label": "OUTAGE"}
+        return {"status": 0, "ok": None, "upstream": None, "elapsed": 20.0,
+                "attempts": 2, "rate_hits": 0, "model_hits": 0, "label": "TIMEOUT"}
 
-    A 3s budget measured the CLIENT alarm, not the source: smoke_search.py's own
-    docstring says 1-3s is expected to time out before any 200. On qa-validate
-    run 44920165690 all four cpu queries died at exactly 3.0s with http=0 and the
-    majority rule (#258) correctly red the leg — while the source was reachable.
-    At 90s a genuinely dead source still misses EVERY query and fails loudly.
+    rc, out = _run_whole_smoke(probe_fn, backend="nvidia")
+    assert rc == 0, out
+    assert "PROVEN outage" in out, out
+
+
+def test_an_outage_with_a_real_answer_still_reds():
+    """#292 protection: any OK proves the mirror answered, so it is not an outage."""
+    def probe_fn(keyword, key, budget, retries=1, retry_wait=2.0):
+        if keyword == SEARCH_NS["BACKEND_KEYWORDS"]["nvidia"][0]:
+            return {"status": 200, "ok": True, "upstream": 200, "elapsed": 0.2,
+                    "attempts": 1, "rate_hits": 0, "model_hits": 0, "label": "OK"}
+        return {"status": 200, "ok": True, "upstream": 522, "elapsed": 0.1,
+                "attempts": 1, "rate_hits": 0, "model_hits": 0, "label": "OUTAGE"}
+
+    rc, out = _run_whole_smoke(probe_fn, backend="nvidia")
+    assert rc == 2, out
+    assert "HALF-answering" in out, out
+
+
+def test_all_timeouts_without_an_outage_still_red():
+    """#258: an all-TIMEOUT leg with outages == 0 remains red."""
+    def probe_fn(keyword, key, budget, retries=1, retry_wait=2.0):
+        return {"status": 0, "ok": None, "upstream": None, "elapsed": 20.0,
+                "attempts": 2, "rate_hits": 0, "model_hits": 0, "label": "TIMEOUT"}
+
+    rc, out = _run_whole_smoke(probe_fn, backend="nvidia")
+    assert rc == 2, out
+    assert "MAJORITY" in out, out
+
+
+
+def test_ci_has_no_lightbrd_reachability_probe():
+    """Owner directive (#1278/#1279): no pipeline probes the mirror for reachability.
+
+    The live Firecrawl -> lightbrd probe timed out (522/read timeouts) and
+    cancelled `live-smoke` at 25m. `_search-smoke` is now the OFFLINE unit test,
+    and neither qa-validate nor refresh-bot may call the live probe.
     """
     text = MAKEFILE.read_text(encoding="utf-8")
-    m = re.search(r"^SEARCH_SMOKE_BUDGET\s*\?=\s*(\d+)\s*$", text, re.M)
-    assert m, "Makefile must own SEARCH_SMOKE_BUDGET (one value, rule 6d)"
-    budget = int(m.group(1))
-    assert budget >= 30, f"a scrape budget below 30s measures the client alarm, not the source: {budget}"
     assert re.search(
-        r"^_search-smoke:\s*\n\s+python3 scripts/smoke_search\.py --budget "
-        r"\$\(SEARCH_SMOKE_BUDGET\)", text, re.M), "_search-smoke must use the Makefile budget"
-    assert "make _search-smoke SEARCH_SMOKE_BUDGET=$(SEARCH_SMOKE_BUDGET)" in text, (
-        "the public recipe must forward the budget into the container"
+        r"^_search-smoke:\s*\n\s+python3 tests/test_smoke_search\.py", text, re.M
+    ), "_search-smoke must run the offline probe tests"
+    assert "scripts/smoke_search.py" not in text.split("search-smoke:", 1)[1][:200], (
+        "the live probe must not be wired into the search-smoke target"
     )
     for name in ("qa-validate.yml", "refresh-bot.yml"):
         wf = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
-        assert "within 3s" not in wf, f"{name} still advertises the 3s probe"
-        assert "SEARCH_SMOKE_BUDGET=90" in wf, f"{name} must pass the budget explicitly"
+        assert "smoke_search.py" not in wf, f"{name} still calls the live probe"
+        assert "make search-smoke" not in wf and "make _search-smoke" not in wf, (
+            f"{name} still has a live search-reachability step"
+        )
 
 
 def test_stale_smoke_budget_prose_is_gone():
     """Issue #1228: the retired 3s cap survived in four prose comments after
-    PR #1225 made SEARCH_SMOKE_BUDGET ?= 90 the one value (rule 6d)."""
+    SEARCH_SMOKE_BUDGET is the one value (rule 6d)."""
     stale = {
         "AGENTS.md": "3 s cap per query",
         "ARCHITECTURE.md": "3 s cap per query",
@@ -426,9 +464,15 @@ def main() -> int:
          test_a_single_backend_invocation_uses_the_canary),
         ("ci: a full outage still blocks every leg (pytest path)",
          test_a_full_outage_still_blocks_every_leg),
-        ("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
-         test_ci_search_smoke_budget_is_realistic),
-        ("ci: no stale 3s prose remains after the 90s budget (docs, #1228)",
+        ("ci: a proven outage with timeouts is excused (#1278)",
+         test_a_proven_outage_with_timeouts_is_not_blocked),
+        ("ci: an outage with a real answer stays red (#292)",
+         test_an_outage_with_a_real_answer_still_reds),
+        ("ci: all timeouts without an outage stay red (#258)",
+         test_all_timeouts_without_an_outage_still_red),
+        ("ci: no pipeline probes lightbrd for reachability (#1278/#1279)",
+         test_ci_has_no_lightbrd_reachability_probe),
+        ("ci: no pipeline probes lightbrd for reachability (#1278/#1279)",
          test_stale_smoke_budget_prose_is_gone),
     ):
         try:

@@ -438,6 +438,37 @@ def _endpoint_defaults_to_firecrawl_with_empty_env() -> bool:
         os.environ.pop("FIRECRAWL_SCRAPE_URL", None)
 
 
+def test_a_total_transport_timeout_is_a_non_blocking_outage():
+    stats = {"queries": 12, "with_hits": 0, "outage": 0, "refused": 0,
+             "failed": 12, "timeouts": 12, "reasons": ["The read operation timed out"]}
+    kind, code, lines = UT.zero_hit_verdict(stats)
+    check("all queries timing out is an outage", kind == "outage" and code == 0, kind)
+    check("the verdict names the unreachable mirror", any("UNREACHABLE" in line for line in lines), lines[:1])
+
+
+def test_a_partial_timeout_stays_red():
+    stats = {"queries": 12, "with_hits": 0, "outage": 0, "refused": 0,
+             "failed": 1, "timeouts": 1, "reasons": ["The read operation timed out"]}
+    kind, code, lines = UT.zero_hit_verdict(stats)
+    check("a partial timeout is not excused", kind == "quiet" and code == 1, kind)
+
+
+def test_timeout_family_recognises_gateway_and_read_timeouts():
+    check("read timeout recognised", UT.is_upstream_timeout(RuntimeError("The read operation timed out")))
+    check("HTTP 522 recognised", UT.is_upstream_timeout(RuntimeError("target answered HTTP 522")))
+    check("ordinary error is not a timeout", not UT.is_upstream_timeout(RuntimeError("connection refused")))
+
+
+def test_fetch_timeout_seam_is_wired_to_urlopen():
+    import inspect
+    src = inspect.getsource(UT.fetch_lightbrd)
+    check("direct fetch uses the bounded timeout seam", "timeout=FETCH_TIMEOUT" in src)
+    fc_src = inspect.getsource(UT.fetch_via_firecrawl)
+    check("Firecrawl fetch uses the bounded timeout seam", "FETCH_TIMEOUT" in fc_src)
+    check("CLI exposes --fetch-timeout", "--fetch-timeout" in (ROOT / "scripts/update_trending.py").read_text(encoding="utf-8"))
+
+
+
 def main() -> int:
     print("firecrawl fetch client: a refusal is loud, never a quiet search")
     test_a_successful_scrape_returns_the_page_and_builds_the_right_request()
@@ -453,6 +484,10 @@ def main() -> int:
     test_a_transport_failed_query_does_not_unmask_a_proven_outage()
     test_the_live_check_exits_zero_on_an_outage_and_non_zero_otherwise()
     test_the_endpoint_seam_defaults_to_firecrawl()
+    test_a_total_transport_timeout_is_a_non_blocking_outage()
+    test_a_partial_timeout_stays_red()
+    test_timeout_family_recognises_gateway_and_read_timeouts()
+    test_fetch_timeout_seam_is_wired_to_urlopen()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

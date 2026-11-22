@@ -11,14 +11,11 @@ name: qa-validate
 #                   tests (incl. Makefile recipe, workflow wiring and fix-loop
 #                   control-flow tests). A red validate dispatches nothing (issue
 #                   #814): it stays red for the §6r sweep or a human.
-#   live-smoke      REAL network, bounded: the exact Firecrawl->lightbrd scrape
-#                   for every nvidia / metal / cpu / amd search query
-#                   (`SEARCH_SMOKE_BUDGET ?= 90`, one cap per query), and a real
-#                   --require-hits search. No model call gates a merge (rule 6t).
-#                   Catches a dead key, a broken alias, a
-#                   provider mis-route or an unreachable mirror on the PR,
-#                   instead of 20 minutes into the next refresh. An outage here
-#                   is infra, not data.
+#   live-smoke      REAL network, bounded: one real Hermes call through the
+#                   search alias, the model-caps check and a real
+#                   --require-hits search. NO lightbrd reachability probe: it
+#                   timed out (522/read timeouts) and cancelled this job at 25m,
+#                   reddening every PR on a third-party mirror (#1278/#1279).
 #   auto-merge      when `validate` AND `live-smoke` are GREEN on a same-repo,
 #                   non-draft PR: squash-merge exactly the validated head commit
 #                   and delete the feature branch (owner PAT). Red -> stays open.
@@ -343,15 +340,6 @@ jobs:
 
       - name: Prepare runner images (published for this revision, else build)
         run: make image-ensure
-
-      - name: Search reachability — nvidia (HTTP 200 within 90s per query)
-        run: make search-smoke BACKEND=nvidia SEARCH_SMOKE_BUDGET=90
-      - name: Search reachability — metal (HTTP 200 within 90s per query)
-        run: make search-smoke BACKEND=metal SEARCH_SMOKE_BUDGET=90
-      - name: Search reachability — cpu (HTTP 200 within 90s per query)
-        run: make search-smoke BACKEND=cpu SEARCH_SMOKE_BUDGET=90
-      - name: Search reachability — amd (HTTP 200 within 90s per query)
-        run: make search-smoke BACKEND=amd SEARCH_SMOKE_BUDGET=90
 
       - name: Model caps (model served, max_tokens fits, accepts reasoning)
         run: make model-caps

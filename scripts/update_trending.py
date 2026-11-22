@@ -443,6 +443,10 @@ STRICT = os.environ.get("STRICT") == "1"
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
+DEFAULT_FETCH_TIMEOUT = 30.0
+FETCH_TIMEOUT = DEFAULT_FETCH_TIMEOUT
+
+
 def fetch_lightbrd(query: str) -> str:
     """Fetch one lightbrd search page. Raises on failure; caller decides.
 
@@ -454,7 +458,7 @@ def fetch_lightbrd(query: str) -> str:
     if fc_key:
         return fetch_via_firecrawl(url, fc_key)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
         return resp.read().decode("utf-8", "replace")
 
 
@@ -545,7 +549,7 @@ def fetch_via_firecrawl(url: str, api_key: str) -> str:
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
         method="POST",
     )
-    with _ur.urlopen(req, timeout=60) as resp:
+    with _ur.urlopen(req, timeout=max(float(FETCH_TIMEOUT), 5.0)) as resp:
         raw = resp.read().decode("utf-8", "replace")
     try:
         body = json.loads(raw)
@@ -588,7 +592,17 @@ def extract_models_seen(html: str) -> list[str]:
     return [m for m in known if m.strip()]
 
 
-def gather_x(store: dict, stats: dict | None = None) -> dict:
+def is_upstream_timeout(exc: BaseException) -> bool:
+    """True for a transport-level timeout / gateway timeout from the mirror.
+
+    Not an apparently healthy answer and not a credential refusal — the same
+    unreachable-mirror class the outage exception covers (issues #291/#1279).
+    """
+    text = str(exc).lower()
+    return any(token in text for token in ("timed out", "timeout", "522", "504", "gateway timeout"))
+
+
+def gather_x(store: dict, stats: dict | None = None) -> dict[str, list[str]]:
     """Collect engagement signals per backend group from the lightbrd mirror.
     Returns {backend: [model_tokens_seen]}. Fetches are best-effort; a failed
     query is skipped with a warning and never wipes data.
@@ -600,7 +614,7 @@ def gather_x(store: dict, stats: dict | None = None) -> dict:
     only the hit count, an upstream outage, a broken key and a quiet search are
     the same three words, `0 model hits` (issue #293)."""
     counts = {"queries": 0, "with_hits": 0, "outage": 0, "refused": 0, "failed": 0,
-              "outage_status": [], "reasons": []}
+              "outage_status": [], "reasons": [], "timeouts": 0}
     known_names = [m["name"].lower() for m in store["models"]]
     per_backend: dict[str, list[str]] = {}
     for backend, queries in SEARCH_GROUPS.items():
@@ -622,6 +636,8 @@ def gather_x(store: dict, stats: dict | None = None) -> dict:
                 print(f"[warn] {backend} fetch failed for '{q}': {e}")
             except Exception as e:  # noqa: BLE001
                 counts["failed"] += 1
+                if is_upstream_timeout(e):
+                    counts["timeouts"] += 1
                 counts["reasons"].append(str(e))
                 print(f"[warn] {backend} fetch failed for '{q}': {e}")
             else:
@@ -662,6 +678,7 @@ def zero_hit_verdict(stats: dict) -> tuple[str, int, list[str]]:
     outage = int(stats.get("outage") or 0)
     refused = int(stats.get("refused") or 0)
     failed = int(stats.get("failed") or 0)
+    timeouts = int(stats.get("timeouts") or 0)
     with_hits = int(stats.get("with_hits") or 0)
     # Queries that returned a REAL page (neither the target's error page, nor a
     # refusal, nor a transport failure). Any of these means the mirror ANSWERED,
@@ -675,6 +692,20 @@ def zero_hit_verdict(stats: dict) -> tuple[str, int, list[str]]:
         return "refused", 1, [
             f"[error] Firecrawl REFUSED the scrape for {refused}/{queries} querie(s): {first_reason}",
             "[error] the mirror was never reached — fix the credential/quota, not the query set",
+        ]
+    # A TOTAL timeout/522 is the same unreachable mirror as an all-error-page
+    # outage: nothing of ours is wrong, and live-smoke gates auto-merge (#291).
+    # A PARTIAL timeout is NOT excused — answered > 0 keeps the quiet verdict red.
+    if queries and timeouts and not with_hits and not answered and not refused \
+            and (timeouts + outage == queries):
+        return "outage", 0, [
+            f"[outage] the lightbrd mirror is UNREACHABLE: {timeouts}/{queries} queries "
+            f"timed out or returned a gateway timeout ({first_reason})",
+            "[outage] 0 model hits is EXPECTED here — this is a transport outage, not a quiet "
+            "search or a broken key",
+            *([f"[outage] {outage} further querie(s) came back as the target's own error page"] if outage else []),
+            "[outage] NOT blocking: bounded by --fetch-timeout so it cannot cancel live-smoke "
+            "(issues #291, #296, #1279). Re-run when the mirror recovers.",
         ]
     # The outage is excused when the target's own error page is what every query we
     # could CLASSIFY got, nothing was refused, nothing was found, and no query returned
@@ -3918,6 +3949,9 @@ def main() -> int:
                     help="with --fetch, exit non-zero if the search returns 0 model hits — EXCEPT "
                          "when every query came back as the target's own error page (an upstream "
                          "mirror outage, reported loudly and not blocking; issue #291)")
+    ap.add_argument("--fetch-timeout", type=float, default=DEFAULT_FETCH_TIMEOUT, metavar="SECONDS",
+                    help="per-query timeout for --fetch (default 30; live-smoke CI passes a short "
+                         "bound so an unreachable mirror cannot cancel the job, issue #1279)")
     ap.add_argument("--write-raw", metavar="BACKEND",
                     help="write a per-backend raw snapshot to data/raw/<backend>-<UTC>.json "
                          "(payload read from stdin JSON) and exit")
@@ -3929,6 +3963,8 @@ def main() -> int:
                          "data/refusals.json (issue #1155); without it a pass reports refusals "
                          "and leaves the ledger byte-identical. Never combinable with --dry-run")
     args = ap.parse_args()
+    global FETCH_TIMEOUT
+    FETCH_TIMEOUT = args.fetch_timeout if args.fetch_timeout > 0 else DEFAULT_FETCH_TIMEOUT
 
     if args.dry_run and args.land_refusals:
         # A dry-run writes nothing (its own help says so); a landing declaration claims it

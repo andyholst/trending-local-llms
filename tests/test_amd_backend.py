@@ -518,8 +518,8 @@ def test_wiring_parity():
           rj["search"]["strategy"]["matrix"])
     _, qj = load("qa-validate.yml")
     live = "\n".join(s.get("run", "") for s in qj["live-smoke"]["steps"])
-    check("qa-validate: live smoke per leg", sorted(re.findall(r"BACKEND=(\w+)", live)) == sorted(legs),
-          re.findall(r"BACKEND=(\w+)", live))
+    check("qa-validate: NO live lightbrd reachability probe (#1278/#1279)",
+          "make search-smoke" not in live and "_search-smoke" not in live, live[-160:])
 
 
 def test_real_store():

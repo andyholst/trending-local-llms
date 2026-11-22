@@ -16,7 +16,7 @@ The per-backend keyword lists below must stay identical to the Makefile
 (scripts/smoke_search.py) cross-checks them so one side cannot drift.
 
 Usage:
-  python3 scripts/smoke_search.py [--budget 90] [--backend nvidia|metal|cpu|amd] [--url-only]
+  python3 scripts/smoke_search.py [--budget 20] [--backend nvidia|metal|cpu|amd] [--url-only]
 """
 import argparse
 import json
@@ -111,7 +111,7 @@ def scrape(keyword: str, api_key: str, budget: float):
     t0 = time.time()
     _arm_budget(budget)
     try:
-        with urllib.request.urlopen(req, timeout=max(budget, 120)) as resp:
+        with urllib.request.urlopen(req, timeout=max(float(budget) + 10.0, 5.0)) as resp:
             raw = resp.read().decode("utf-8", "replace")
             ok: object = None
             upstream: object = None
@@ -215,8 +215,8 @@ def leg_verdict(total: int, missed: int) -> tuple[bool, str]:
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--budget", type=int, default=90,
-                    help="max seconds per backend query (default 90)")
+    ap.add_argument("--budget", type=int, default=20,
+                    help="max seconds per backend query (default 20; CI forwards SEARCH_SMOKE_BUDGET)")
     ap.add_argument("--backend", choices=list(BACKEND_KEYWORDS), help="test one backend only")
     ap.add_argument("--retries", type=int, default=1,
                     help="extra bounded attempts for a timed-out/429/5xx query (default 1; "
@@ -250,12 +250,14 @@ def main(probe_fn=None) -> int:
     outages = 0
     starved_blocking: list[str] = []
     majority_blocking: list[str] = []
+    mixed_outage_blocking: list[str] = []
     sampled: list[str] = []
     legs: list[dict] = []
     for b in backends:
         total = missed = 0
         answered = silent = 0
         proved = 0
+        leg_outages = leg_ok = leg_fail = 0
         for k in BACKEND_KEYWORDS[b]:
             total += 1
             res = probe_fn(k, args.key, args.budget, args.retries, args.retry_wait)
@@ -265,6 +267,7 @@ def main(probe_fn=None) -> int:
             yield_note = ""
             if res["label"] == "OK":
                 answered += 1
+                leg_ok += 1
                 if res.get("upstream") in (None, 200):
                     proved += 1  # THIS leg proves the mirror answered in this run
                 if rate or model:
@@ -277,8 +280,11 @@ def main(probe_fn=None) -> int:
                   f"{lightbrd_url(k)}")
             if res["label"] == "OUTAGE":
                 outages += 1
+                leg_outages += 1
             elif res["label"] != "OK":
                 missed += 1
+                if res["label"] == "FAIL":
+                    leg_fail += 1
         # The yield gate (issue #858): a leg whose answered pages hold NO
         # candidate at all has a dead VOCABULARY, not a dead mirror — the CPU
         # leg sat starved precisely because every existing check stopped at
@@ -304,7 +310,8 @@ def main(probe_fn=None) -> int:
                 if res["label"] == "OK":
                     proved += 1
         legs.append({"leg": b, "total": total, "missed": missed,
-                     "answered": answered, "silent": silent, "proved": proved})
+                     "answered": answered, "silent": silent, "proved": proved,
+                     "outages": leg_outages, "ok": leg_ok, "fail": leg_fail})
 
     # The verdict is PER LEG (issue #258), but the QUESTION is the SOURCE's
     # reachability. If one leg's every query misses while another leg got a real
@@ -316,6 +323,22 @@ def main(probe_fn=None) -> int:
     mirror_proved = any(x["proved"] for x in legs)
     for x in legs:
         block, note = leg_verdict(x["total"], x["missed"])
+        # A PROVEN outage whose only non-OK outcomes are unclassifiable TIMEOUTs
+        # is the excused-outage shape, not the #258 majority rule: nothing
+        # answered normally, nothing was refused, nothing was found (#1278).
+        # A leg that ALSO got a real answer (or a refusal) is a HALF-answering
+        # mirror and stays red (#292).
+        if x["outages"] and x["ok"]:
+            mixed_outage_blocking.append(
+                f"{x['leg']}: {x['ok']} real answer(s) alongside {x['outages']} target-error "
+                f"page(s) — a HALF-answering mirror, not a proven outage (#292/#1278)")
+            continue
+        if x["outages"] and not x["ok"] and not x["fail"]:
+            sampled.append(
+                f"{x['leg']}: {x['outages']}/{x['total']} queries came back as the TARGET's "
+                f"own error page and {x['missed']} timed out — a PROVEN outage, not a "
+                f"half-answering mirror (issues #291, #296, #1278)")
+            continue
         if block and x["missed"] == x["total"] and mirror_proved:
             sampled.append(
                 f"{x['leg']}: {note} — another leg proved the mirror reachable in this run, "
@@ -324,7 +347,7 @@ def main(probe_fn=None) -> int:
             majority_blocking.append(f"{x['leg']}: {note}")
         elif note:
             sampled.append(f"{x['leg']}: {note}")
-    blocking = starved_blocking + majority_blocking
+    blocking = starved_blocking + majority_blocking + mixed_outage_blocking
     if blocking:
         # Each rule's sentence is printed only for the rule that actually blocked
         # (issue #858): a dead source is a dead source, a silent leg is a dead
@@ -333,6 +356,9 @@ def main(probe_fn=None) -> int:
         if majority_blocking:
             rules.append("a MAJORITY of budget-missed queries is a dead or unreachable "
                          "source, not a flake (issue #258)")
+        if mixed_outage_blocking:
+            rules.append("a leg that mixed a real answer with the target's own error page "
+                         "is a HALF-answering mirror, not a proven outage (#292/#1278)")
         if starved_blocking:
             rules.append("an answered leg whose pages captured NOTHING is a starved "
                          "curated vocabulary, not a flake (issue #858)")
