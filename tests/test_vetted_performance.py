@@ -78,6 +78,14 @@ def main() -> int:
           any(r["tps"] >= 900 and "flash-next" in r["model_key"] and r["band_rank"] != 0
               for r in live), str([(r["tps"], r["model_key"], r["band_rank"])
                                    for r in live if r["tps"] >= 900][:3]))
+    import contextlib
+    import io
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        VP.main(["--vram-band", "8-16GB"])
+    check("a single VRAM band can be queried directly",
+          "8-16GB" in buf.getvalue() and "24-32GB" not in buf.getvalue(),
+          buf.getvalue()[:120])
     check("this suite is discovered by `make test`", wired(__file__))
     print(f"PASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

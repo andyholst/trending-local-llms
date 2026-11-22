@@ -123,11 +123,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--measurements", type=Path, default=ROOT / "data/measurements.json")
     ap.add_argument("--top", type=int, default=5)
     ap.add_argument("--include-unvetted", action="store_true")
+    ap.add_argument("--vram-band", default="",
+                    help="only one band, e.g. 16-24GB or 32GB+ (issue #1252)")
     a = ap.parse_args(argv)
     models = json.loads(a.models.read_text(encoding="utf-8"))
     measurements = json.loads(a.measurements.read_text(encoding="utf-8"))
     rows = evidence_rows(models, measurements)
     groups = top_by_band(rows, a.top, vetted_only=not a.include_unvetted)
+    if a.vram_band:
+        wanted = a.vram_band.strip()
+        known = ", ".join(sorted(groups))
+        groups = {k: v for k, v in groups.items() if k == wanted}
+        if not groups:
+            print(f"no vetted rows for VRAM band {wanted!r}; known bands: {known or 'none'}")
+            return 0
     print(render(groups, sum(1 for r in rows if not r["vetted"])))
     return 0
 
