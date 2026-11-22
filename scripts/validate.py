@@ -2049,6 +2049,27 @@ def model_level_declared_estimates(store: dict) -> int:
     return n
 
 
+def model_level_declared_engine_estimates(store: dict) -> list[tuple[str, str]]:
+    """Model-level `engine_min_version` values carrying the canonical `(est)` marker (rule 2).
+
+    Both the #789 source-post readback and the #934 copy gate SKIP declared estimates as
+    individually attributable, so these values were COUNTED but never NAMED in any report
+    (issue #1129) — including `SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) (est)`,
+    a toolchain compound no detector will re-claim (#1020). A stored value no detector will
+    ever claim is a candidate for a human rule-3b decision, and it must be VISIBLE to be
+    decided. Returns `(model id, stored value)` pairs. Report-only: never a gate failure.
+    """
+    out: list[tuple[str, str]] = []
+    for m in store.get("models", []):
+        v = m.get("engine_min_version")
+        if v in (None, "", [], {}):
+            continue
+        sval = str(v)
+        if _DECLARED_ESTIMATE.search(sval):
+            out.append((str(m.get("id") or "?"), sval))
+    return out
+
+
 def model_level_footprint_flags(store: dict, raw_dir: Path = RAW_DIR):
     """Model-level footprint copies that NO capture of their own model states (issue #934).
 
@@ -2098,6 +2119,15 @@ def check_model_footprint_copy(store: dict) -> None:
     """
     flags, prose_flags = model_level_footprint_flags(store)
     estimates = model_level_declared_estimates(store)
+    # (est) engine builds are counted but never named by either report class (#1129):
+    # surface them by name for the human rule-3b decision, report-only (rule 3b additive).
+    est_engine = model_level_declared_engine_estimates(store)
+    if est_engine:
+        print(f"  report: {len(est_engine)} model-level engine_min_version declared-estimate "
+              f"value(s) are rule-3b human-decision candidates (report-only, #1129):")
+        for mid, v in est_engine:
+            print(f"    - {mid}: engine_min_version={v!r} "
+                  f"— declared estimate no detector will re-claim (issues #1020/#1129)")
     if not flags:
         print(f"  OK: model-level hard footprint copies trace to their model's measurements or "
               f"captures ({estimates} declared estimates; "

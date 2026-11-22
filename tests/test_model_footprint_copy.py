@@ -185,6 +185,28 @@ def test_prose_field_report_only():
     td.cleanup()
 
 
+def test_declared_estimate_engine_build_is_named_in_report():
+    """Scenario (issue #1129): a stored `(est)` engine_min_version toolchain compound is
+    a rule-3b human-decision candidate and MUST be named in the report-only class. Before this
+    change it was counted but invisible in BOTH report classes (2026-11-20 measurement)."""
+    compound = "SonicBoom 0.0.3 (C++/CUDA, MLIR compiler, zero Python) (est)"
+    store = model_store(engine_min_version=compound)
+    store["models"][0]["id"] = "gemma-4-e4b"
+    td, raw = raw_with()
+    hard, prose = flags_of(store, raw)
+    check("a declared-estimate engine build is neither a hard nor a prose drift flag",
+          not hard and not prose, (hard, prose))
+    named = getattr(V, "model_level_declared_engine_estimates", None)
+    check("the report-only class reads the (est) engine build by name",
+          callable(named) and named(store) == [("gemma-4-e4b", compound)],
+          "helper missing" if named is None else named(store))
+    problems, out = gate_failures(store, raw)
+    check("the gate stays green — this reports, it makes no rule-3b decision", not problems, problems)
+    check("the report NAMES the model, the field and its stored (est) value",
+          "gemma-4-e4b" in out and "engine_min_version" in out and "SonicBoom 0.0.3" in out, out)
+    td.cleanup()
+
+
 def test_shipped_store_has_no_untraceable_hard_copy():
     """Issue #934 Done-when: the shipped store's residue is pinned at ZERO — every model-level
     HARD footprint field matches a row/capture or carries (est). This is the gate that blocks
@@ -217,6 +239,7 @@ def main() -> int:
     test_untraceable_copy_fails()
     test_est_marker_passes()
     test_prose_field_report_only()
+    test_declared_estimate_engine_build_is_named_in_report()
     test_shipped_store_has_no_untraceable_hard_copy()
     print(f"== {_PASS} passed, {_FAIL} failed ==")
     return 1 if _FAIL else 0
