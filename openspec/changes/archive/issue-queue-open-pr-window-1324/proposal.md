@@ -1,6 +1,7 @@
 # Proposal: issue-queue-open-pr-window-1324
 
 Issue: #1324
+PR: #1325
 
 ## Why
 
