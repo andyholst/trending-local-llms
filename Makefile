@@ -1191,7 +1191,8 @@ hermes-smoke:
 	$(DOCKER_RUN) sh -c "make _setup 1>&2 && make _hermes-smoke"
 
 # Live pipeline smoke: real Firecrawl->lightbrd scrape for every nvidia/metal/
-# cpu/amd query (3s cap each) + a real Hermes call through the search alias.
+# cpu/amd query (`SEARCH_SMOKE_BUDGET ?= 90` per query) + a real Hermes call through
+# the search alias in the BOT pipelines (never in main CI, rule 6t).
 .PHONY: pipeline-smoke
 pipeline-smoke: search-smoke model-caps hermes-smoke
 

@@ -305,6 +305,20 @@ def test_ci_search_smoke_budget_is_realistic():
         assert "SEARCH_SMOKE_BUDGET=90" in wf, f"{name} must pass the budget explicitly"
 
 
+def test_stale_smoke_budget_prose_is_gone():
+    """Issue #1228: the retired 3s cap survived in four prose comments after
+    PR #1225 made SEARCH_SMOKE_BUDGET ?= 90 the one value (rule 6d)."""
+    stale = {
+        "AGENTS.md": "3 s cap per query",
+        "ARCHITECTURE.md": "3 s cap per query",
+        "Makefile": "(3s cap each)",
+        ".github/workflows/qa-validate.yml": "(3s cap each)",
+    }
+    for rel, phrase in stale.items():
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert phrase not in text, f"{rel} still advertises the retired budget: {phrase}"
+
+
 def main() -> int:
     print("smoke_search: Makefile keywords match the bounded smoke (same params)")
     smoke = _load_smoke_backends()
@@ -414,6 +428,8 @@ def main() -> int:
          test_a_full_outage_still_blocks_every_leg),
         ("ci: the reachability budget is Makefile-owned and realistic (both pipelines)",
          test_ci_search_smoke_budget_is_realistic),
+        ("ci: no stale 3s prose remains after the 90s budget (docs, #1228)",
+         test_stale_smoke_budget_prose_is_gone),
     ):
         try:
             fn()
