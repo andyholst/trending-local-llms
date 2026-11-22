@@ -264,9 +264,9 @@ def _closes_issue(pull: dict, number: int) -> bool:
 def _is_open(pull: dict | None) -> bool:
     """Is this PR open? gh answers GitHub's API spelling `OPEN` (issue #1318).
 
-    The old comparison was `pull.get("state") == "open"`, which never matched — so the PR
-    half of `has_implementer` was dead and only the branch prefix ever fired, leaving the
-    #1310 closing-PR fix inert. ONE case-insensitive test, used by both paths (rule 6d).
+    The old comparison was a case-SENSITIVE state equality, which never matched — so the
+    PR half of `has_implementer` was dead and only the branch prefix ever fired, leaving
+    the #1310 closing-PR fix inert. ONE case-insensitive test, used by both paths (rule 6d).
     """
     return bool(pull) and str((pull or {}).get("state") or "").lower() == "open"
 
