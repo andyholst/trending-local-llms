@@ -51,8 +51,15 @@ def published(ref: str) -> tuple[bool, str]:
 def built_locally(ref: str) -> bool:
     if shutil.which("docker") is None:
         return False
-    return subprocess.run(["docker", "image", "inspect", ref],
-                          capture_output=True, text=True, timeout=120).returncode == 0
+    # image-ensure's designed fallback builds the LOCAL name (`trending-local-llms:latest`)
+    # when the hash tag is not published (measured on PR #1229: CI built that local tag,
+    # then this probe called the image absent because it inspected only the GHCR ref).
+    local = f"{ref.rsplit('/', 1)[-1].split(':', 1)[0]}:latest"
+    for candidate in (ref, local):
+        if subprocess.run(["docker", "image", "inspect", candidate],
+                          capture_output=True, text=True, timeout=120).returncode == 0:
+            return True
+    return False
 
 
 def image_state(ref: str) -> tuple[str, str]:

@@ -81,6 +81,54 @@ def test_image_states_and_refs():
         AISM.published, AISM.built_locally = saved
 
 
+def test_local_fallback_image_name():
+    """PR #1229: image-ensure builds `trending-local-llms:latest` locally when the
+    hash tag is unpublished; the probe must accept that local name too."""
+    saved = AISM.subprocess.run
+    seen = []
+
+    class Result:
+        returncode = 0
+
+    def fake_run(argv, **kwargs):
+        seen.append(argv[-1])
+        return Result()
+
+    try:
+        AISM.subprocess.run = fake_run
+        check("a locally built fallback image is accepted",
+              AISM.built_locally("ghcr.io/andyholst/trending-local-llms:dockerfile-a106db319f32"))
+        check("both the exact ref and the local fallback are probed",
+              "trending-local-llms:latest" in seen and
+              "ghcr.io/andyholst/trending-local-llms:dockerfile-a106db319f32" in seen,
+              str(seen))
+    finally:
+        AISM.subprocess.run = saved
+
+
+def test_provision_copies_prompts():
+    """PR #1229: CI homes provisioned from the chain must carry SOUL + skills, not
+    only config.yaml — otherwise the prompt smoke cannot pass in a fresh runner."""
+    import agent_profile_provision as APP
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        lane_dir = root / "agents" / "tll-probe"
+        (lane_dir / "skills" / "tll-probe").mkdir(parents=True)
+        (lane_dir / "config.yaml").write_text("model:\n  provider: nous\n")
+        (lane_dir / "SOUL.md").write_text("You are a probe.\n")
+        (lane_dir / "skills" / "tll-probe" / "SKILL.md").write_text("# probe\n")
+        home = root / "homes"
+        code, _ = APP.provision_one(root, "tll-probe", home,
+                                    (lane_dir / "config.yaml").read_text())
+        planted = home / "tll-probe"
+        check("provision succeeds on a planted lane", code == 0, str(code))
+        check("the provisioned home gets SOUL.md", (planted / "SOUL.md").is_file())
+        check("the provisioned home gets its skill prompt",
+              (planted / "skills" / "tll-probe" / "SKILL.md").is_file())
+        check("the planted tree now has no prompt findings",
+              not AISM.profile_findings(home), str(AISM.profile_findings(home)[:3]))
+
+
 def test_wiring():
     mk = (ROOT / "Makefile").read_text()
     wf = (ROOT / ".github" / "workflows" / "qa-validate.yml").read_text()
@@ -96,6 +144,8 @@ def main() -> int:
     print("agent image + profile prompt smoke (#1214):")
     test_profile_prompt_findings()
     test_image_states_and_refs()
+    test_local_fallback_image_name()
+    test_provision_copies_prompts()
     test_wiring()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0

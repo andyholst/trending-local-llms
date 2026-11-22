@@ -1002,6 +1002,7 @@ One line each, taken from the script's own docstring.
 - `scripts/action_pin_check.py` — Immutable-SHA pin guard for GitHub Actions workflow refs and tool-image refs.
 - `scripts/agent_aux_local_sync.py` — Sync the chain's local-tier model id into the host's AUXILIARY blocks (issue #1198).
 - `scripts/agent_identity.py` — ONE definition of the repository's agent identity (issue #325).
+- `scripts/agent_image_smoke.py` — Issue #1214: prove the agent image is PUBLISHED and every fleet profile that
 - `scripts/agent_model_chain.py` — The fleet model chain's ONE source, its rendered lane configs, and its gate (issue #1140).
 - `scripts/agent_profile_provision.py` — Provision a fleet lane's RENDERED chain config into the Hermes profile home that runs it.
 - `scripts/agent_shell_keys_check.py` — Prove that every credential a container receives is visible in the AGENT's shell.

@@ -209,6 +209,17 @@ def provision_one(root: Path, lane: str, home: Path, rendered: str) -> tuple[int
 
     print(f"[profile-provision] lane={lane} home={dest} bytes={len(rendered)} "
           f"backup={backup if backup else 'none (no prior config)'}")
+
+    # Issue #1214: a lane whose home has only config.yaml cannot take a turn with its
+    # prompts. Copy SOUL.md + skills/ from the SAME lane source (additive; CHECK mode
+    # never reaches this function), so CI's freshly provisioned homes carry prompts.
+    src_lane = src.parent
+    soul = src_lane / "SOUL.md"
+    if soul.is_file():
+        shutil.copy2(soul, lane_home / "SOUL.md")
+    src_skills = src_lane / "skills"
+    if src_skills.is_dir():
+        shutil.copytree(src_skills, lane_home / "skills", dirs_exist_ok=True)
     return EXIT_OK, backup
 
 
