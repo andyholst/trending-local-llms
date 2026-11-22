@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **434**
+Active changes: **1** · archived: **435**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `pr-health-agent-login-1349` | active | #1349 | — | [rebase-ownership](openspec/changes/pr-health-agent-login-1349/specs/rebase-ownership/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/pr-health-agent-login-1349/proposal.md) |
 
 ## Archived changes
 
@@ -335,6 +334,7 @@ Active changes: **2** · archived: **434**
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |
 | `pr-exercises-every-pipeline` | archived | #231 — `tech-debt: A workflow_dispatch-only pipeline can ship broken` | — | [pipeline-coverage](openspec/changes/archive/pr-exercises-every-pipeline/specs/pipeline-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-exercises-every-pipeline/proposal.md) |
 | `pr-fix-names-the-openspec-gate` | archived | #560 | — | [pr-fix-openspec-gate](openspec/changes/archive/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-fix-names-the-openspec-gate/proposal.md) |
+| `pr-health-agent-login-1349` | archived | #1349 | #1350 | [rebase-ownership](openspec/changes/archive/pr-health-agent-login-1349/specs/rebase-ownership/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/pr-health-agent-login-1349/proposal.md) |
 | `pr-health-bot-ownership-1295` | archived | #1295 | #1296 | [pr-health](openspec/changes/archive/pr-health-bot-ownership-1295/specs/pr-health/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-health-bot-ownership-1295/proposal.md) |
 | `pr-title-from-the-issue` | archived | #541 | — | [pr-body](openspec/changes/archive/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-title-from-the-issue/proposal.md) |
 | `pr-triggered-failure-ledger` | archived | #1164 | #1170 | [pr-triggered-failure-ledger](openspec/changes/archive/pr-triggered-failure-ledger/specs/pr-triggered-failure-ledger/spec.md) | 18/18 | [proposal.md](openspec/changes/archive/pr-triggered-failure-ledger/proposal.md) |
