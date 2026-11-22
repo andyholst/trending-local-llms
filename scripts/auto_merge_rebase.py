@@ -50,7 +50,7 @@ try:  # the ONE ownership/behindness/rebase implementation (scripts/pr_health.py
         _gh_json,
         _git,
         branch_behind,
-        is_bot_branch,
+        is_bot_owned,
         is_conflicting,
         rebase_and_push,
     )
@@ -59,14 +59,14 @@ except ImportError:  # run from the repo root
         _gh_json,
         _git,
         branch_behind,
-        is_bot_branch,
+        is_bot_owned,
         is_conflicting,
         rebase_and_push,
     )
 
 #: The PR fields this seam reads — the same shapes `pr_health.findings`/`rebase_plan` use, so
 #: GitHub's mergeability vocabulary has one meaning in this repo (rule 6d).
-PR_FIELDS = "number,state,isDraft,headRefName,mergeable,mergeStateStatus,headRefOid"
+PR_FIELDS = "number,state,isDraft,headRefName,mergeable,mergeStateStatus,headRefOid,author"
 
 
 def classify(pr: dict, behind: bool | None) -> str:
@@ -84,7 +84,7 @@ def classify(pr: dict, behind: bool | None) -> str:
         return "draft"
     if is_conflicting(pr):
         return "conflicting"
-    if not is_bot_branch(str(pr.get("headRefName") or "")):
+    if not is_bot_owned(pr):
         return "human-owned"
     if behind is None:
         return "refs-unreadable"
@@ -128,7 +128,7 @@ def main() -> int:
 
     behind: bool | None = None
     if (str(pr.get("state") or "").lower() == "open" and not pr.get("isDraft")
-            and not is_conflicting(pr) and is_bot_branch(head)):
+            and not is_conflicting(pr) and is_bot_owned(pr)):
         if fetch_merge_refs(cwd, head):
             behind = branch_behind(cwd, head)
         # a failed fetch leaves behind=None -> refs-unreadable: never guessed (rule 6n)

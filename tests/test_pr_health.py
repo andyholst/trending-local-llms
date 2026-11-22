@@ -86,10 +86,14 @@ def run(prs: list, runs: dict[str, int], comments: str = "", comment: bool = Fal
         return proc, (td / "posted").read_text()
 
 
-def pr(number, head, mergeable="MERGEABLE", state="CLEAN", draft=False, oid=None):
-    return {"number": number, "title": f"PR {number}", "headRefName": head, "isDraft": draft,
-            "mergeable": mergeable, "mergeStateStatus": state,
-            "headRefOid": oid or (f"a{number:06d}" + "0" * 33)}
+def pr(number, head, mergeable="MERGEABLE", state="CLEAN", draft=False, oid=None,
+       author=None):
+    row = {"number": number, "title": f"PR {number}", "headRefName": head, "isDraft": draft,
+           "mergeable": mergeable, "mergeStateStatus": state,
+           "headRefOid": oid or (f"a{number:06d}" + "0" * 33)}
+    if author is not None:
+        row["author"] = author
+    return row
 
 
 def test_a_conflicting_pr_is_silent_and_named():
@@ -375,6 +379,36 @@ def test_rebase_plan_classifies_by_ownership_and_conflict():
     check("plan: a draft is not touched at all", 4 not in by, plan)
     check("plan: the agent-session shapes (tech-debt-/data-gap-/issue-) are the sweep's to rebase",
           by[6] == "rebase-if-behind" and by[7] == "rebase-if-behind" and by[8] == "rebase-if-behind", plan)
+
+
+def test_ownership_is_decided_by_author_not_branch_prefix():
+    """Issue #1295: the §6s sweep missed agent PRs named fix/feat/rule and would rewrite a
+    human PR named ci/. GitHub's `author.is_bot` is the contract; the prefix is only a
+    fallback for callers that did not request author data."""
+    bot = {"login": "asimov-agent", "is_bot": True}
+    human = {"login": "andyholst", "is_bot": False}
+    plan = PH.rebase_plan([
+        pr(1, "fix/agent-owned", author=bot),
+        pr(2, "feat/agent-owned", author=bot),
+        pr(3, "rule/agent-owned", author=bot),
+        pr(4, "ci/human-owned", author=human),
+        pr(5, "tech-debt-human", author=human),
+        pr(6, "fix/agent-conflict", author=bot, mergeable="CONFLICTING", state="DIRTY"),
+        pr(7, "fix/no-author-data"),
+        pr(8, "ci/no-author-data"),
+    ])
+    by = {p["number"]: p["action"] for p in plan}
+    check("bot-authored fix/feat/rule PRs are the sweep's to rebase (#1295)",
+          by[1] == "rebase-if-behind" and by[2] == "rebase-if-behind"
+          and by[3] == "rebase-if-behind", plan)
+    check("human-authored ci/tech-debt- PRs are reported, never rewritten (#1295)",
+          by[4] == "human-branch" and by[5] == "human-branch", plan)
+    check("a conflicting bot PR is still never auto-rebased", by[6] == "conflict", plan)
+    check("no author data falls back to the prefix",
+          by[7] == "human-branch" and by[8] == "rebase-if-behind", plan)
+    src = SCRIPT.read_text(encoding="utf-8")
+    check("the live gh query actually requests the author field",
+          "headRefOid,author" in src, "")
 
 
 def _gitfx(cwd, *args):
