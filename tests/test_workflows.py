@@ -313,8 +313,9 @@ def test_index_repair_job_is_the_event_driven_keeper_for_a_red_master_index_gate
     check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
           "BODY_TARGET=openspec-index-repair-pr-body" in text
           and 'BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"' in text, text[:700])
-    check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869)",
-          "make keeper-pr" in text and "FILE=OPENSPEC.md" in text
+    check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869; "
+          "#1339: both generated files owned so the keeper is green on both gates)",
+          "make keeper-pr" in text and 'FILE="OPENSPEC.md ARCHITECTURE.md"' in text
           and "BRANCH_PREFIX=ci/openspec-index-repair" in text, text[:700])
     check("qa: the branch shape carries no issue number (the #852 discriminator stays inert); "
           "the timestamp is stamped by the seam, not the shell (issue #869)",
@@ -413,8 +414,9 @@ def test_architecture_repair_job_is_the_sibling_keeper_for_a_red_master_architec
     check("qa: the body is composed by the Makefile, not the workflow (rule 6d)",
           "BODY_TARGET=architecture-block-repair-pr-body" in text
           and 'BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"' in text, text[:700])
-    check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869)",
-          "make keeper-pr" in text and "FILE=ARCHITECTURE.md" in text
+    check("qa: the land step goes through the ONE keeper seam (rule 6d, issue #869; "
+          "#1339: both generated files owned so the keeper is green on both gates)",
+          "make keeper-pr" in text and 'FILE="OPENSPEC.md ARCHITECTURE.md"' in text
           and "BRANCH_PREFIX=ci/architecture-block-repair" in text, text[:700])
     check("qa: the branch shape carries no issue number (the #852 discriminator stays inert); "
           "the timestamp is stamped by the seam, not the shell (issue #869)",

@@ -612,7 +612,15 @@ jobs:
             exit 2
           fi
 
-      - name: Land the regenerated index as a keeper PR (owner PAT; records, never closes)
+      - name: Regenerate the sibling inventory block so this keeper is green on both gates
+        run: |
+          set -euo pipefail
+          # Both generated artifacts drift from the same merge (rule 6q). A keeper
+          # carrying only OPENSPEC.md fails the sibling architecture-check gate, so
+          # regenerate the inventory block too and land both files in one keeper.
+          make architecture-refresh
+
+      - name: Land the regenerated artifacts as a keeper PR (owner PAT; records, never closes)
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
@@ -621,12 +629,13 @@ jobs:
         # ONE landing sequence (issue #869): the nothing-to-land case, the extra-changes
         # refusal, the #960 mergeable-only keeper dedupe, the agent-identity commit/push and
         # the body from `make openspec-index-repair-pr-body` all live in scripts/keeper_pr.py;
-        # this job names only THIS keeper's file, prefix, messages and body target.
+        # this job names only THIS keeper's files, prefix, messages and body target.
+        # Both generated files are owned so the keeper passes BOTH generated gates (#1339).
         run: |
           set -euo pipefail
-          make keeper-pr FILE=OPENSPEC.md BRANCH_PREFIX=ci/openspec-index-repair DEDUPE=1 \
-            COMMIT_MESSAGE="chore(openspec): regenerate the generated index after a master merge left it stale (refs #304)" \
-            PR_TITLE="chore(openspec): repair the generated index left stale by a master merge" \
+          make keeper-pr FILE="OPENSPEC.md ARCHITECTURE.md" BRANCH_PREFIX=ci/openspec-index-repair DEDUPE=1 \
+            COMMIT_MESSAGE="chore(keeper): regenerate both generated artifacts after a master merge left them stale (refs #304)" \
+            PR_TITLE="chore(keeper): repair both generated artifacts left stale by a master merge" \
             BODY_TARGET=openspec-index-repair-pr-body \
             BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"
 
@@ -763,7 +772,15 @@ jobs:
             exit 2
           fi
 
-      - name: Land the regenerated block as a keeper PR (owner PAT; records, never closes)
+      - name: Regenerate the sibling index so this keeper is green on both gates
+        run: |
+          set -euo pipefail
+          # Both generated artifacts drift from the same merge (rule 6q). A keeper
+          # carrying only ARCHITECTURE.md fails the sibling openspec-index-check gate,
+          # so regenerate the index too and land both files in one keeper (#1339).
+          make openspec-index
+
+      - name: Land the regenerated artifacts as a keeper PR (owner PAT; records, never closes)
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
@@ -772,10 +789,11 @@ jobs:
         # ONE landing sequence (issue #869): the sibling of index-repair above — the whole
         # guard/dedupe/branch/commit/push/body chain lives in scripts/keeper_pr.py (rule 6d:
         # the #960 mergeable-only discriminator is fixed in ONE place, not re-typed per job).
+        # Both generated files are owned so the keeper passes BOTH generated gates (#1339).
         run: |
           set -euo pipefail
-          make keeper-pr FILE=ARCHITECTURE.md BRANCH_PREFIX=ci/architecture-block-repair DEDUPE=1 \
-            COMMIT_MESSAGE="docs(architecture): regenerate the inventory block after a master merge left it stale (refs #861)" \
-            PR_TITLE="docs(architecture): repair the generated inventory block left stale by a master merge" \
+          make keeper-pr FILE="OPENSPEC.md ARCHITECTURE.md" BRANCH_PREFIX=ci/architecture-block-repair DEDUPE=1 \
+            COMMIT_MESSAGE="docs(keeper): regenerate both generated artifacts after a master merge left them stale (refs #861)" \
+            PR_TITLE="chore(keeper): repair both generated artifacts left stale by a master merge" \
             BODY_TARGET=architecture-block-repair-pr-body \
             BODY_ARGS="MASTER_SHA=$MASTER_SHA RUN_URL=$RUN_URL"
