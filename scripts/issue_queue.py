@@ -78,6 +78,7 @@ BRANCH_PREFIX = "ci/data-gap-"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bot_markers as bm  # noqa: E402
+import pr_closure  # noqa: E402  (the ONE closure parser — rule 6d, issue #1310)
 from env_int import env_int  # noqa: E402  (empty means missing — issue #487)
 
 #: The implementer's OUTCOME comment is still matched by prose (issue #197 flags it). It is pinned
@@ -241,11 +242,28 @@ def _branches(repo: str) -> set[str]:
 
 def _pulls(repo: str) -> list[dict]:
     out = _gh(["pr", "list", "--repo", repo, "--state", "all", "--limit", "100",
-               "--json", "number,headRefName,state,createdAt,updatedAt"], check=False)
+               "--json", "number,headRefName,state,createdAt,updatedAt,body"], check=False)
     try:
         return json.loads(out or "[]")
     except json.JSONDecodeError:
         return []
+
+
+def _closing_pulls(pulls: list[dict]) -> dict[int, dict]:
+    """{issue number: the OPEN PR whose body closes it} — whatever the branch is named.
+
+    Issue #1310: agent PRs are cut as `fix/…`, `feat/…` and `rule/…`, so the old
+    prefix-only predicate (`ci/data-gap-<n>-*`) never saw them and the queue re-offered
+    work that was already in review. The binding is read through `pr_closure`'s ONE
+    parser, never a second copy of the keyword list (rule 6d).
+    """
+    closing: dict[int, dict] = {}
+    for pull in pulls:
+        if pull.get("state") != "open":
+            continue
+        for number, _refs in pr_closure.closing_bindings(pull.get("body") or ""):
+            closing.setdefault(number, pull)
+    return closing
 
 
 def _comments(repo: str, number: int) -> list[dict]:
@@ -286,6 +304,7 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
     """
     refs = _branches(repo)
     pulls = _pulls(repo)
+    closing = _closing_pulls(pulls)
     rows: list[dict] = []
     position = 0
 
@@ -298,6 +317,13 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
                 branch = name
                 break
         pull = next((p for p in pulls if p.get("headRefName") == branch), None) if branch else None
+        # Issue #1310: a `ci/data-gap-` branch is one implementer signal, but an agent PR is
+        # cut as `fix/…`/`feat/…`/`rule/…`, so the closing PR is the other — and the one the
+        # old predicate could not see. An OPEN PR whose body closes THIS issue counts, and it
+        # also supplies the PR activity timestamps below.
+        closer = closing.get(number)
+        if closer is not None and pull is None:
+            pull = closer
         has_implementer = bool(branch) or bool(pull and pull.get("state") == "open")
         if has_implementer:
             continue

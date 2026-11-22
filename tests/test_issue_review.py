@@ -956,6 +956,53 @@ def test_the_queue_reads_both_labels_as_one_oldest_first_list():
           sum("position=0" in r for r in rows) == 1, str(rows))
 
 
+def test_a_closing_pr_marks_its_issue_implemented_whatever_the_branch():
+    """Issue #1310: an agent PR is cut as `fix/…`/`feat/…`/`rule/…`, so a prefix-only
+    implementer predicate is blind to it and the queue re-offers work already in review."""
+
+    # Given  an open `fix/`-prefixed PR that closes #1176, an open PR that closes an issue
+    #         NOT in the queue (#9999), and #1177 with no PR at all
+    with tempfile.TemporaryDirectory() as td:
+        fixture = Path(td)
+        pulls = [
+            {"number": 1289, "headRefName": "fix/pr-block-grace-derived-1176",
+             "state": "open", "createdAt": hours_ago(9.0), "updatedAt": hours_ago(1.0),
+             "body": "Implements #1176.\n\nCloses #1176\n"},
+            {"number": 1290, "headRefName": "feat/unrelated",
+             "state": "open", "createdAt": hours_ago(9.0), "updatedAt": hours_ago(9.0),
+             "body": "Implements #9999.\n\nCloses #9999\n"},
+        ]
+        env = env_for(fixture,
+                      issues=[candidate(1176, labels=["tech-debt"]),
+                              candidate(1177, labels=["tech-debt"])],
+                      pulls=pulls)
+        proc = run(QUEUE, "--repo", "o/r", "--now", NOW, env=env)
+        spec = importlib.util.spec_from_file_location("issue_queue", QUEUE)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+    rows = [line for line in proc.stdout.splitlines() if line.startswith("issue=")]
+    offered = {r.split()[0] for r in rows}
+    # Then  #1176 is NOT offered (its closing PR is an implementer), #1177 is the head…
+    check("queue: a fix/-prefixed closing PR marks its issue implemented",
+          "issue=1176" not in offered, str(rows))
+    check("queue: the issue with no closing PR is still offered, as the head",
+          "issue=1177" in offered
+          and "position=0" in next(r for r in rows if r.startswith("issue=1177")), str(rows))
+    # …the map is built through pr_closure's ONE parser, never a second keyword list…
+    src = QUEUE.read_text(encoding="utf-8")
+    mapper = getattr(mod, "_closing_pulls", None)
+    check("queue: the closing map is built through pr_closure (no second keyword list)",
+          mapper is not None and "pr_closure.closing_bindings" in src, "")
+    if mapper is None:  # the base script: refuse cleanly, never abort the module
+        return
+    mapped = mapper(pulls)
+    # …and a PR closing a DIFFERENT issue marks nothing here
+    check("queue: a PR closing another issue does not mark this one",
+          set(mapped) == {1176, 9999}
+          and mapped[1176]["headRefName"] == "fix/pr-block-grace-derived-1176", str(mapped))
+
+
 def test_skip_note_is_posted_once_per_review_round():
     """`--skip-note` says it ON the issue, once per reviewer timestamp, and edits no label."""
 
@@ -1271,6 +1318,7 @@ def main() -> int:
     test_a_label_without_any_reviewer_marker_never_holds()
     test_a_decided_hold_is_announced_on_the_issue()
     test_the_queue_reads_both_labels_as_one_oldest_first_list()
+    test_a_closing_pr_marks_its_issue_implemented_whatever_the_branch()
     test_skip_note_is_posted_once_per_review_round()
     test_the_skip_note_covers_every_held_issue()
     test_the_implementer_never_edits_a_label_or_a_body_when_it_skips()
