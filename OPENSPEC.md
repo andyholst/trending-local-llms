@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **394**
+Active changes: **0** · archived: **397**
 
 ## Active changes
 
@@ -302,6 +302,7 @@ Active changes: **0** · archived: **394**
 | `pipeline-failure-rediagnose-821` | archived | #821 | #974 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-821/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-821/proposal.md) |
 | `pipeline-failure-rediagnose-822` | archived | #822 | #977 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-822/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-822/proposal.md) |
 | `pipeline-failure-rediagnose-832` | archived | #832 | #1052 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-832/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-832/proposal.md) |
+| `positive-more-count` | archived | #1219 | #1221 | [readme-render](openspec/changes/archive/positive-more-count/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/positive-more-count/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |

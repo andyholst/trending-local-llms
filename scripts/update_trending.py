@@ -1347,6 +1347,25 @@ def tier_rows(models: list[dict], tier: int, registry: dict | None = None) -> li
     return rows
 
 
+def _other_ran_on_count(cands: list, shown: dict, shown_ev: str) -> int:
+    """How many OTHER ran-on measurements sit beside the row being shown (issue #1207
+    review). The old `sum(ran-on) - 1` printed `+-1 more` whenever the displayed row
+    was not itself classified ran-on by the same seam (a 0-count row): a negative
+    "more" count is invented data (rule 2). Key by measurement identity, never object
+    identity — callers build candidate lists fresh — and count ALL ran-on rows when
+    the shown row is not among them."""
+    ran = [e for e, ev in cands if ev == "ran-on"]
+
+    def ident(e: dict) -> tuple:
+        return (str(e.get("engine") or ""), str(e.get("tps") or ""),
+                str(e.get("date") or ""), str(e.get("source_post") or ""))
+
+    shown_ident = ident(shown)
+    if shown_ev == "ran-on":
+        return sum(1 for e in ran if ident(e) != shown_ident)
+    return len(ran)
+
+
 # ---- above 48 GB (issue #572): the memory is unified, multi-GPU or datacenter --
 def total_memory_gb(e: dict) -> float | None:
     """The TOTAL memory the RUN had, from the hardware it names.
@@ -1759,7 +1778,7 @@ def render_readme(store: dict, today: datetime) -> str:
                     w, tag = weights_gb(m, e)
                     ev_txt = (f"weights-only {_fmt_num(w)} GB ({tag}), KV cache unknown"
                               if w is not None else "weights-only")
-                more = sum(1 for _e, _ev in tier_measurements(m, t, registry) if _ev == "ran-on") - 1
+                more = _other_ran_on_count(tier_measurements(m, t, registry), e, ev)
                 if more:
                     ev_txt += f"<br><sub>+{more} more measured at this size</sub>"
                 parts.append(f"| [**{m['name']}**]({hf_url(m)}) | {_fmt_num(tps)} |"
@@ -1799,8 +1818,7 @@ def render_readme(store: dict, today: datetime) -> str:
                     w, tag = weights_gb(m, e)
                     ev_txt = (f"weights-only {_fmt_num(w)} GB ({tag}), KV cache unknown"
                               if w is not None else "weights-only")
-                more = sum(1 for _e, _ev in high_tier_measurements(m, t, registry)
-                           if _ev == "ran-on") - 1
+                more = _other_ran_on_count(high_tier_measurements(m, t, registry), e, ev)
                 if more:
                     ev_txt += f"<br><sub>+{more} more measured at this size</sub>"
                 parts.append(f"| [**{m['name']}**]({hf_url(m)}) | {_fmt_num(tps)} |"
