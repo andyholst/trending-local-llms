@@ -56,9 +56,15 @@ def read_head(repo: str, pr: str, gh=subprocess.run) -> str:
     """Read the PR's CURRENT headRefOid through gh (an external system stand-in
     is permitted for non-e2e tests; rule 6m). Returns '' on any failed read —
     the verdict turns that into `unreadable`, never a green merge."""
-    args = (["gh", "pr", "view", pr, "--repo", repo, "--json", HEAD_FIELD, "--jq", ".headRefOid"]
+    # Ask for the JSON OBJECT and extract the field HERE, in Python. Using
+    # `--jq .headRefOid` makes gh print a BARE string (no quotes); parsing that
+    # with json.loads raises "Extra data: line 1 column 2", which turned a
+    # valid, moved-or-same head into a READ FAILED and blocked the squash.
+    # Requesting the object keeps ONE parse path that a stub can faithfully
+    # reproduce (rule 6m).
+    args = (["gh", "pr", "view", pr, "--repo", repo, "--json", HEAD_FIELD]
             if repo else
-            ["gh", "pr", "view", pr, "--json", HEAD_FIELD, "--jq", ".headRefOid"])
+            ["gh", "pr", "view", pr, "--json", HEAD_FIELD])
     problems = gh_json_fields.check_argv(args)
     if problems:
         raise RuntimeError("gh --json asks for a field gh cannot answer: "
@@ -67,10 +73,12 @@ def read_head(repo: str, pr: str, gh=subprocess.run) -> str:
     if getattr(result, "returncode", 1) != 0:
         raise RuntimeError(f"gh pr view failed: {str(getattr(result, 'stderr', ''))[:200]}")
     try:
-        data = json.loads(getattr(result, "stdout", "") or '""')
+        data = json.loads(getattr(result, "stdout", "") or "")
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"gh pr view answered non-JSON: {exc}") from exc
-    return str(data or "")
+    if not isinstance(data, dict):
+        raise RuntimeError(f"gh pr view answered unexpected shape: {type(data).__name__}")
+    return str(data.get(HEAD_FIELD, "") or "")
 
 
 def main() -> int:

@@ -53,10 +53,12 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 #: A stub `gh` answering `pr view` from $FAKE_HEAD; every argv is recorded in
 #: $GH_LOG so the request construction (field contract included) is asserted.
+#: It emits the JSON OBJECT real `gh pr view --json headRefOid` emits — NOT a
+#: --jq projection — so the seam's parse path is the production one (rule 6m).
 STUB_GH = """#!/bin/sh
 echo "gh $*" >> "$GH_LOG"
 case "$1 $2" in
-  "pr view") printf '"%s"\\n' "$FAKE_HEAD" ;;
+  "pr view") printf '{\"headRefOid\":\"%s\"}\\n' "$FAKE_HEAD" ;;
   *) echo "unexpected gh: $*" >&2; exit 3 ;;
 esac
 """
@@ -157,6 +159,42 @@ def test_a_failed_gh_read_is_exit_2_not_a_silent_clean() -> None:
               r.returncode == 2 and "READ FAILED" in r.stderr, r.stdout + r.stderr)
 
 
+def test_read_head_parses_the_object_gh_really_emits() -> None:
+    """The #1184 guard died in CI because `--jq` prints a BARE string and the
+    seam json.loads'd it. Pin the object shape and the no---jq request."""
+    import auto_merge_head_check as H
+
+    class Obj:
+        returncode = 0
+        stdout = '{"headRefOid": "abc123def"}'
+        stderr = ""
+
+    seen = {}
+
+    def fake(args, **kwargs):
+        seen["args"] = list(args)
+        return Obj()
+
+    got = H.read_head("andyholst/trending-local-llms", "1311", gh=fake)
+    check("a real gh --json object yields the bare SHA", got == "abc123def", got)
+    check("the request asks for --json headRefOid with no --jq projection",
+          "--json" in seen.get("args", []) and "--jq" not in seen.get("args", []),
+          str(seen.get("args")))
+
+    class Bare:
+        returncode = 0
+        stdout = "abc123def"  # what --jq used to print
+        stderr = ""
+
+    try:
+        H.read_head("", "1311", gh=lambda args, **kwargs: Bare())
+        check("a non-JSON (bare) answer is refused, never a green read", False,
+              "no exception raised")
+    except RuntimeError as exc:
+        check("a non-JSON (bare) answer is refused, never a green read",
+              "non-JSON" in str(exc), str(exc))
+
+
 def test_the_workflow_guards_the_squash_on_a_moved_head() -> None:
     text = WORKFLOW.read_text()
     doc = yaml.safe_load(text)
@@ -195,6 +233,7 @@ def main() -> int:
         test_a_moved_head_refuses_with_both_shas_and_skips_the_merge,
         test_an_unreadable_head_refuses_instead_of_a_silent_merge,
         test_a_failed_gh_read_is_exit_2_not_a_silent_clean,
+        test_read_head_parses_the_object_gh_really_emits,
         test_the_workflow_guards_the_squash_on_a_moved_head,
         test_the_target_is_wired_to_the_makefile,
     ]:
