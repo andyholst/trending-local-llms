@@ -1235,8 +1235,9 @@ issue that skips a section is refused.
    seam in `scripts/comment_watch.py`) to see comments on any issue/PR newer than the
    local cursor. For EACH new comment: READ the full thread with `gh issue view` /
    `gh pr view` — the watcher's one-line excerpt is a pointer, not the comment —
-   LOOK at what was said, post a reply on that thread (identity `agent@host`, rule
-   6u), file a new issue for any NEW work it asks for, and implement that work in a
+   LOOK at what was said, post a reply on that thread (identity `agent@host`: the MACHINE
+   ID only — NEVER a full host name, LocalHostName or hardware name, rule 6u), file a new
+   issue for any NEW work it asks for, and implement that work in a
    worktree PR. Only pass `--mark-read` after the thread was actually looked at and
    answered — never acknowledge a comment unseen. The
    watcher never writes to GitHub, dispatches CI, or grants access; those stay

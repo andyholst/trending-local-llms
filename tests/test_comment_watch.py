@@ -125,6 +125,7 @@ def test_rulebook():
         "implement duty": "implement that work in a",
         "mark-read honesty": "never acknowledge a comment unseen",
         "owner-only boundary": "grants access; those stay\n   owner-only",
+        "machine-id-only identity": "the MACHINE\n   ID only",
         "regression test named": "tests/test_comment_watch.py",
     }
     check("AGENTS.md carries rule 6w", bool(rule))
