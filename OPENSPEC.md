@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **393**
+Active changes: **0** · archived: **394**
 
 ## Active changes
 
@@ -308,6 +308,7 @@ Active changes: **0** · archived: **393**
 | `pr-fix-names-the-openspec-gate` | archived | #560 | — | [pr-fix-openspec-gate](openspec/changes/archive/pr-fix-names-the-openspec-gate/specs/pr-fix-openspec-gate/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-fix-names-the-openspec-gate/proposal.md) |
 | `pr-title-from-the-issue` | archived | #541 | — | [pr-body](openspec/changes/archive/pr-title-from-the-issue/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pr-title-from-the-issue/proposal.md) |
 | `pr-triggered-failure-ledger` | archived | #1164 | #1170 | [pr-triggered-failure-ledger](openspec/changes/archive/pr-triggered-failure-ledger/specs/pr-triggered-failure-ledger/spec.md) | 18/18 | [proposal.md](openspec/changes/archive/pr-triggered-failure-ledger/proposal.md) |
+| `profile-drift-check` | archived | #1204 | #1211 | [fleet-model-chain](openspec/changes/archive/profile-drift-check/specs/fleet-model-chain/spec.md) | 9/10 · 1 blocked | [proposal.md](openspec/changes/archive/profile-drift-check/proposal.md) |
 | `provision-fleet-profile-homes` | archived | #1142 — "fleet: no seam provisions a rendered lane config into the Hermes profile home | #1153 | [fleet-profile-provision](openspec/changes/archive/provision-fleet-profile-homes/specs/fleet-profile-provision/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/provision-fleet-profile-homes/proposal.md) |
 | `prs-are-never-drafts` | archived | #276 | — | [pr-lifecycle](openspec/changes/archive/prs-are-never-drafts/specs/pr-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/prs-are-never-drafts/proposal.md) |
 | `publish-is-verified` | archived | #228 — `tech-debt: Nothing verifies what the registry serves after a publish` | — | [agent-image-publish](openspec/changes/archive/publish-is-verified/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/publish-is-verified/proposal.md) |
