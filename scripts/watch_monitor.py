@@ -5,9 +5,13 @@ One agent job must not wake every tick just because a clock moved. This script e
 changed markers, with no timestamps and no random ordering:
 
     C:<comment id>                       a new issue/PR comment
-    R:<run id>:<status>:<conclusion>[:<workflow>]  a CI run changed state
+    R:<run id>:<status>:<conclusion>[:<workflow>][:<pr>]  a CI run changed state
     M:<master sha>                       master moved (a merge or a push)
     H:<bucket>                           opt-in work heartbeat (--heartbeat-seconds N)
+
+An `R:` marker names its PR when the run has one (issue #1284), so a woken lane can read
+that PR's own thread before acting instead of guessing which thread a run id belongs to. A
+push-triggered run carries no `pull_requests` and keeps the shorter shape.
 
 With no heartbeat flag the quiet tick is still silent. The heartbeat is a bucket of
 wall-clock time divided by N, never a timestamp, so identical ticks look identical to
@@ -66,6 +70,20 @@ def workflow_token(name: object) -> str:
     return "".join(ch for ch in name if ch.isprintable() and ch not in ":\r\n")
 
 
+def pull_token(run: dict) -> str:
+    """The pull-request number this run belongs to, as one marker field (issue #1284).
+
+    `actions/runs` rows carry `pull_requests` for a PR-triggered run and an empty list for a
+    push. Returning "" keeps the marker's existing shape for a push, so no recorded marker
+    and no reader changes; a non-int entry contributes nothing rather than a malformed field.
+    """
+    rows = run.get("pull_requests")
+    if not isinstance(rows, list) or not rows:
+        return ""
+    number = rows[0].get("number") if isinstance(rows[0], dict) else None
+    return str(number) if isinstance(number, int) and not isinstance(number, bool) else ""
+
+
 def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
                  now: float | None = None) -> tuple[list[str], dict]:
     """Pure diff: return sorted markers and the NEXT state for one snapshot.
@@ -97,6 +115,9 @@ def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
         token = workflow_token(run.get("name"))
         if token:
             stamp += f":{token}"
+        pr = pull_token(run)
+        if pr:
+            stamp += f":{pr}"
         state["runs"][str(run_id)] = stamp
         if prev_runs.get(str(run_id)) != stamp:
             lines.append(f"R:{run_id}:{stamp}")
