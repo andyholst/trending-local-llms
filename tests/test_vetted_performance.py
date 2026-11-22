@@ -58,6 +58,8 @@ def main() -> int:
     groups = VP.top_by_band(rows)
     rendered = VP.render(groups, sum(1 for r in rows if not r["vetted"]))
     check("top t/s is rendered per VRAM band", "700.0" in rendered and "8-16GB" in rendered)
+    check("the source post is rendered so vetted is auditable",
+          "u/a/1" in rendered and "UNVETTED" not in rendered)
     check("the unvetted 9999 t/s row is NOT in the vetted table", "9999.0" not in rendered)
     check("the view never writes a store", ".write_text(" not in
           (ROOT / "scripts/vetted_performance.py").read_text(encoding="utf-8"))

@@ -97,15 +97,17 @@ def render(groups: dict[str, list[dict]], unvetted: int) -> str:
     lines = [f"# vetted performance view (read-only, issue #1252)",
              f"unvetted rows excluded: {unvetted}",
              "",
-             "| VRAM | t/s | model | engine | quant | measured | posts_7d | README band |",
-             "|---|---:|---|---|---|---|---:|---|"]
+             "| VRAM | t/s | model | engine | quant | measured | posts_7d | sources | README band |",
+             "|---|---:|---|---|---|---|---:|---|---|"]
     for band in sorted(groups, key=lambda b: int(b.split("-")[0].rstrip("GB+"))):
         for row in groups[band]:
             name = str((row["model"] or {}).get("name") or row["model_key"])
+            sources = row["source"].split()[:2]
+            source_cell = ", ".join(sources) if sources else "UNVETTED"
             status = "🔥 eligible" if row["band_rank"] == 0 else f"band {row['band_rank']}"
             lines.append(
                 f"| {band} | {row['tps']:.1f} | {name} | {row['engine']} | {row['quant'] or '—'} | "
-                f"{row['date']} | {row['posts_7d']} | {status} |")
+                f"{row['date']} | {row['posts_7d']} | {source_cell} | {status} |")
     return "\n".join(lines)
 
 
