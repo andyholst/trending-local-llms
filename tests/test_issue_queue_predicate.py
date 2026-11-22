@@ -36,8 +36,13 @@ def check(name: str, ok: bool, detail: str = "") -> None:
         print(f"FAIL: {name} {detail}")
 
 
-def _stub_gh(tmp: Path, body: str, state: str = "open") -> None:
-    """A stub GitHub CLI. Only the external system is faked; the product code runs."""
+def _stub_gh(tmp: Path, body: str, state: str = "OPEN") -> None:
+    """A stub GitHub CLI. Only the external system is faked; the product code runs.
+
+    `state` defaults to gh's REAL spelling `OPEN` (issue #1318): the previous default was
+    lowercase `open`, which is why this suite passed while the shipped predicate — comparing
+    `== "open"` — never matched a real `gh pr list` answer and the #1310 fix was inert.
+    """
     bin_dir = tmp / "bin"
     bin_dir.mkdir()
     script = bin_dir / "gh"
@@ -83,7 +88,7 @@ def test_a_pr_without_a_closing_binding_stays_in_the_queue() -> None:
 
 def test_a_closed_closing_pr_does_not_mark_implementer() -> None:
     with tempfile.TemporaryDirectory() as d:
-        _stub_gh(Path(d), "closes #1176", state="closed")
+        _stub_gh(Path(d), "closes #1176", state="CLOSED")
         rows = q.build("andyholst/trending-local-llms", "tech-debt", 3,
                        dt.datetime(2026, 11, 22, 15, 0, tzinfo=dt.timezone.utc))
         check("a closed PR with a closing keyword is not live implementer",
@@ -111,12 +116,36 @@ def test_the_one_closure_parser_is_used_not_a_hand_rolled_regex() -> None:
     check("an absent body does not bind", not q._closes_issue({}, 1176))
 
 
+def test_the_queue_plants_ghs_real_open_spelling() -> None:
+    """Issue #1318: the fixture carries gh's REAL `OPEN`, and the seam is case-blind.
+
+    The previous fixture defaulted to lowercase `open`, so this suite passed while the
+    shipped `== "open"` comparison never matched a real `gh pr list` answer — the #1310
+    fix was inert in production.
+    """
+    src = Path(__file__).read_text(encoding="utf-8")
+    check("the stub plants gh's real OPEN spelling, not a lowercase-only fixture",
+          'state: str = "OPEN"' in src, "")
+    is_open = getattr(q, "_is_open", None)
+    check("the queue has ONE case-insensitive open-state helper", is_open is not None, "")
+    if is_open is None:  # the base script: refuse cleanly, never abort the module
+        return
+    check("OPEN counts as open", is_open({"state": "OPEN"}))
+    check("a lowercase open counts as open too", is_open({"state": "open"}))
+    check("CLOSED does not count as open", not is_open({"state": "CLOSED"}))
+    check("an absent pull is not open", not is_open(None))
+    seam = (ROOT / "scripts" / "issue_queue.py").read_text(encoding="utf-8")
+    check("the PR-state test is ONE case-insensitive helper, not two comparisons",
+          seam.count('get("state")') == 1 and "def _is_open" in seam, "")
+
+
 def main() -> int:
     test_a_fix_prefixed_closing_pr_is_an_implementer()
     test_a_pr_without_a_closing_binding_stays_in_the_queue()
     test_a_closed_closing_pr_does_not_mark_implementer()
     test_a_pr_closing_another_issue_does_not_hide_this_one()
     test_the_one_closure_parser_is_used_not_a_hand_rolled_regex()
+    test_the_queue_plants_ghs_real_open_spelling()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
