@@ -1226,7 +1226,7 @@ issue that skips a section is refused.
    agent rule is dropped or weakened in the rulebook — a pipeline that drifts back to
    scheduled LLM runs, or a model call that slips into the merge gate, turns CI red
    on purpose.
-- **6v. Collaborator / repository access is human-only** (owner directive, 2026-11-22,
+6v. **Collaborator / repository access is human-only** (owner directive, 2026-11-22,
    issue #1238): an agent NEVER hands out collaborator access, invites, permission
    changes or team membership — the human owner alone does that. A lane that needs
    access posts the need on the shared issue thread and waits for the owner; it never

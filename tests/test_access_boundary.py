@@ -30,7 +30,11 @@ def check(name, cond, detail=""):
 
 
 def rule_slice(text: str) -> str:
-    a = text.find("6v. Collaborator")
+    # The rule is a column-0 hard rule (`6v. **Collaborator ...**`); accept the
+    # unbolded spelling too so the anchor never silently misses the rule.
+    a = text.find("6v. **Collaborator")
+    if a < 0:
+        a = text.find("6v. Collaborator")
     if a < 0:
         return ""
     b = text.find("## 3. Data source & collection", a)
