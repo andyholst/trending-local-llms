@@ -93,7 +93,7 @@ def test_image_states_and_refs():
 def test_local_fallback_image_name():
     """PR #1229: image-ensure builds `trending-local-llms:latest` locally when the
     hash tag is unpublished; the probe must accept that local name too."""
-    saved = AISM.subprocess.run
+    saved = (AISM.subprocess.run, AISM.shutil.which)
     seen = []
 
     class Result:
@@ -106,13 +106,18 @@ def test_local_fallback_image_name():
             "Result", (), {"returncode": 1})()
 
     try:
+        # `docker` is an external system: the CI test container has no docker CLI,
+        # so built_locally()'s shutil.which() guard returns before the probe runs
+        # and the subprocess.run stub below is never reached. Stub BOTH seams
+        # (rule 6m: the stand-in is external only; the real probe logic runs).
+        AISM.shutil.which = lambda name: "/usr/bin/docker" if name == "docker" else None
         AISM.subprocess.run = fake_run
         check("a locally built fallback image is accepted",
               AISM.built_locally("ghcr.io/andyholst/trending-local-llms:dockerfile-a106db319f32"))
         check("the local fallback is probed when the hash ref is absent",
               "trending-local-llms:latest" in seen, str(seen))
     finally:
-        AISM.subprocess.run = saved
+        AISM.subprocess.run, AISM.shutil.which = saved
 
 
 def test_provision_copies_prompts():
