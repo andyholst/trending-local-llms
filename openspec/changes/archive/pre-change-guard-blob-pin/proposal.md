@@ -1,6 +1,7 @@
 # Proposal: pre-change-guard-blob-pin
 
 Issue: #1292
+PR: #1299
 
 ## Why
 
