@@ -1,6 +1,7 @@
 # Proposal: openspec-merge-tree-1239
 
 Issue: #1239 (measured on origin/master `cebd71c7`)
+PR: #1240
 
 ## Why
 
