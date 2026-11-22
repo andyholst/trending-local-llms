@@ -241,7 +241,14 @@ def _branches(repo: str) -> set[str]:
 
 
 def _pulls(repo: str) -> list[dict]:
-    out = _gh(["pr", "list", "--repo", repo, "--state", "all", "--limit", "100",
+    """Open PRs only: `build` counts an implementer only while a PR is open (#1324).
+
+    `--state all` let up to 100 more-recently-updated closed/merged PRs fill the
+    `--limit` window and crowd out a quiet live closing PR, so the sweep re-claimed
+    an issue that already had an implementer. Closed PR bodies are also useless to
+    the closing-binding parser, so this narrows the payload as well.
+    """
+    out = _gh(["pr", "list", "--repo", repo, "--state", "open", "--limit", "100",
                "--json", "number,headRefName,state,createdAt,updatedAt,body"], check=False)
     try:
         return json.loads(out or "[]")
