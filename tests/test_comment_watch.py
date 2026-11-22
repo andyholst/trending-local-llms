@@ -121,7 +121,7 @@ def test_rulebook():
         "full-thread reading": "READ the full thread with `gh issue view`",
         "LOOK duty": "LOOK at what was said",
         "reply duty": "post a reply on that thread",
-        "new issue duty": "file a new issue for any NEW work",
+        "new issue duty": "file a new\n   issue for any NEW work",
         "implement duty": "implement that work in a",
         "mark-read honesty": "never acknowledge a comment unseen",
         "owner-only boundary": "grants access; those stay\n   owner-only",
