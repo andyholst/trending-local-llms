@@ -1235,16 +1235,21 @@ issue that skips a section is refused.
 
 6w. **The fleet watcher is a two-job trigger, not a poll habit** (issue #1266): a
    no-LLM monitor job (short interval) runs the repo-owned `make watch-monitor` and emits
-   ONLY changed markers — `C:<comment id>`, `R:<run id>:<status>:<conclusion>` and
-   `M:<master sha>` — with a caller-owned state file outside the repository; identical
-   ticks emit nothing and skip the agent. A monitor-gated agent job reads that diff and
-   comments FIRST on the relevant issue/PR as `BOT <lane> (host <user@hostname>) · LOOK …`
-   before any work (rules 3f/6j/7b). On `C:` it reads the full thread, replies, files any
-   new work and implements only an issue claimed on its own thread. On `R:` it diagnoses
-   the job and posts the result on the thread. On `M:` it FIRST fetches and pulls master,
-   re-reads AGENTS.md, runs `make fleet-host-sync-check BASE=origin/master`, and brings
-   this host's tll/default Hermes skills and configs up to date (backups, no credentials).
-   The monitor script is part of the implementation, not a host-local habit: both machines
+   ONLY changed markers — `C:<comment id>`, `R:<run id>:<status>:<conclusion>`,
+   `M:<master sha>` and the opt-in `H:<bucket>` work heartbeat — with a caller-owned
+   state file outside the repository; identical ticks emit nothing and skip the agent
+   unless the heartbeat's 15-minute bucket has turned. A monitor-gated agent job reads
+   that diff and comments FIRST on the relevant issue/PR as
+   `BOT <lane> (host <user@hostname>) · LOOK …` before any work (rules 3f/6j/7b). On `C:`
+   it reads the full thread, replies, files any new work and implements only an issue
+   claimed on its own thread. On `R:` it diagnoses the job and posts the result on the
+   thread. On `M:` it FIRST fetches and pulls master, re-reads AGENTS.md, runs
+   `make fleet-host-sync-check BASE=origin/master`, and brings this host's tll/default
+   Hermes skills and configs up to date (backups, no credentials). `H:` is a work
+   heartbeat, not a task: after handling C/R/M the agent must **not stop at diagnosis**
+   — it claims and implements the oldest unclaimed actionable issue on its own thread
+   with a worktree PR and hands it to `tll-reviewer`, so both hosts keep working every
+   5 minutes instead of idling between events. The monitor script is part of the implementation, not a host-local habit: both machines
    install it from master so the marker protocol cannot drift. No CI dispatch, no merges,
    no master pushes and no collaborator grants (rules 6j/6v). `tests/test_watch_monitor.py`
    fails when the protocol or the repo-owned seam is removed (§8).
@@ -2399,7 +2404,7 @@ actually happened.
 
 | `tests/test_fleet_handover_protocol.py` + `make test` (rules 3c/6c/6d, issue #1251, rule-3c review-required: the new §7b bullet and §8 row are declared on the issue) | a CI head that NEVER started being read as a red gate: `auto-merge-rebase` pushed bot-actor heads whose qa-validate run ended `action_required` with ZERO jobs (#1236/#1237/#1188 on 2026-11-22), so a lane either looped on green code or waited forever on an empty rollup. §7b now names the shape, requires an issue-thread FAILURE REPORT before any fix, an owner-identity empty commit on the lane's OWN branch only, and `gh run view <id> --json jobs` proof that jobs exist; this module pins all three needles plus the §8 row and is RED on the base revision (4 FAIL) before the rulebook edit |
 
-| `tests/test_watch_monitor.py` + `make watch-monitor CHECK=1` (rules 3c/6d/6h/6j/6v/6w, issue #1266, rule-3c review-required: the new rule 6w and this §8 row are declared on the issue) | the fleet's comment/CI/merge detector lived only in one host's `~/.hermes/scripts`, so a rebuilt host or the other machine silently drifted and neither knew when a PR merged. The repo-owned seam (`scripts/watch_monitor.py`) emits only changed `C:<comment>`, `R:<run>:<status>:<conclusion>` and `M:<master sha>` markers from a caller-owned state file, never timestamps; the guard drives the REAL pure diff with gh-shaped payloads — a quiet tick emits nothing, a repeat comment/run is silent, and a new master head emits exactly one `M:`. It also pins rule 6w's comment-first, fetch/pull-on-merge and skill-sync duty, the Makefile target, the `qa-validate` offline check and this row. RED on the base tree: `PASSED 15 | FAILED 9` |
+| `tests/test_watch_monitor.py` + `make watch-monitor CHECK=1` (rules 3c/6d/6h/6j/6v/6w, issues #1266/#1282, rule-3c review-required: rule 6w and this §8 row are declared on both issues) | the fleet's comment/CI/merge detector lived only in one host's `~/.hermes/scripts`, so a rebuilt host or the other machine silently drifted and neither knew when a PR merged. The repo-owned seam (`scripts/watch_monitor.py`) emits changed `C:<comment>`, `R:<run>:<status>:<conclusion>`, `M:<master sha>` and the opt-in deterministic `H:<bucket>` markers from a caller-owned state file, never timestamps; the guard drives the REAL pure diff with gh-shaped payloads — a quiet tick emits nothing, a repeat comment/run is silent, a new master head emits exactly one `M:`, and a 15-minute heartbeat is stable inside a bucket and coexists with a `failure` marker. It also pins rule 6w's comment-first, fetch/pull-on-merge, skill-sync and "do not stop at diagnosis — claim the oldest unclaimed actionable issue" duties, the Makefile target, the `qa-validate` offline check and this row. RED on the base tree (issues #1266/#1282): `PASSED 15 | FAILED 9` for the first seam and the heartbeat guards fail on the pre-heartbeat script |
 
 When you add a stage or fix a pipeline bug, add its row here and its test in
 the same change (rule 6c).

@@ -27,10 +27,11 @@ def check(label: str, ok: bool, detail: str = "") -> None:
         print(f"  FAIL {label}" + (f"\n       {detail}" if detail else ""))
 
 
-def payload(comment_id: int = 100, run_status: str = "completed", sha: str = "aaa") -> dict:
+def payload(comment_id: int = 100, run_status: str = "completed", sha: str = "aaa",
+            conclusion: str = "success") -> dict:
     return {
         "comments": {"issues": [{"id": comment_id}], "pulls": []},
-        "runs": [{"id": 7, "status": run_status, "conclusion": "success"}],
+        "runs": [{"id": 7, "status": run_status, "conclusion": conclusion}],
         "master": {"sha": sha},
     }
 
@@ -77,7 +78,8 @@ def test_master_merge_marker_and_rulebook_duty() -> None:
 def test_rulebook_carries_two_job_watch_protocol() -> None:
     print("\nRulebook guard: the two-job watch protocol and its §8 row are pinned")
     rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    for needle in ("6w.", "no-LLM monitor", "monitor-gated", "C:<comment", "R:<run", "M:<master"):
+    for needle in ("6w.", "no-LLM monitor", "monitor-gated", "C:<comment", "R:<run", "M:<master",
+                   "H:<", "oldest unclaimed", "do not stop at diagnosis"):
         check(f"rulebook carries {needle}", needle in rules, "")
     check("§8 guard row names the module",
           "tests/test_watch_monitor.py" in rules, "")
@@ -87,8 +89,30 @@ def test_rulebook_carries_two_job_watch_protocol() -> None:
     check("qa-validate runs the offline check", "make watch-monitor CHECK=1" in workflow, "")
 
 
+def test_heartbeat_marker_is_deterministic() -> None:
+    print("\nHeartbeat: opt-in bucket marker, stable inside a bucket")
+    check("no heartbeat by default", W.heartbeat_marker(0, now=100) is None, "")
+    a = W.heartbeat_marker(900, now=100)
+    b = W.heartbeat_marker(900, now=899)
+    c = W.heartbeat_marker(900, now=900)
+    check("same bucket is identical", a == b == "H:0", f"{a} {b}")
+    check("boundary changes the marker", c == "H:1", str(c))
+    check("no wall-clock timestamp in the marker", a is not None and a[2:].isdigit(), str(a))
+
+
+def test_heartbeat_coexists_with_failure_marker() -> None:
+    print("\nHeartbeat + failure: a red run is never swallowed by the heartbeat")
+    _, state = W.marker_state({}, payload(conclusion="success"))
+    lines, _ = W.marker_state(state, payload(run_status="completed", conclusion="failure"),
+                              heartbeat_seconds=900, now=100)
+    check("failure R marker survives", "R:7:completed:failure" in lines, str(lines))
+    check("H marker is added", "H:0" in lines, str(lines))
+    check("both are sorted and unique", lines == sorted(set(lines)), str(lines))
+
+
 def test_offline_check_mode() -> None:
     print("\nOffline check: no network, no state file")
+    check("H is a legal marker prefix", "H:" in W.MARKER_PREFIXES, "")
     check("--check passes", W.main(["--check"]) == 0, "")
 
 
@@ -98,6 +122,8 @@ def main() -> int:
     test_ci_state_marker()
     test_master_merge_marker_and_rulebook_duty()
     test_rulebook_carries_two_job_watch_protocol()
+    test_heartbeat_marker_is_deterministic()
+    test_heartbeat_coexists_with_failure_marker()
     test_offline_check_mode()
     print(f"\nPASSED {_passed} | FAILED {_failed}")
     return 0 if _failed == 0 else 1

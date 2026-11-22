@@ -7,6 +7,11 @@ changed markers, with no timestamps and no random ordering:
     C:<comment id>                       a new issue/PR comment
     R:<run id>:<status>:<conclusion>     a CI run changed state
     M:<master sha>                       master moved (a merge or a push)
+    H:<bucket>                           opt-in work heartbeat (--heartbeat-seconds N)
+
+With no heartbeat flag the quiet tick is still silent. The heartbeat is a bucket of
+wall-clock time divided by N, never a timestamp, so identical ticks look identical to
+the caller's state file and only the bucket boundary wakes the agent.
 
 The JSON state file belongs to the caller's scratch home, never to the repository. The
 external `gh` CLI is the only stand-in a test needs; the request-building and diffing code
@@ -20,21 +25,32 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 DEFAULT_REPO = "andyholst/trending-local-llms"
-MARKER_PREFIXES = ("C:", "R:", "M:")
+MARKER_PREFIXES = ("C:", "R:", "M:", "H:")
+
+
+def heartbeat_marker(interval_seconds: int, now: float | None = None) -> str | None:
+    """Deterministic opt-in work heartbeat: one H marker per interval bucket."""
+    if interval_seconds <= 0:
+        return None
+    tick = int(time.time() if now is None else now) // interval_seconds
+    return f"H:{tick}"
 
 
 def as_list(value: object) -> list[dict]:
     return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
 
-def marker_state(previous: dict, payload: dict) -> tuple[list[str], dict]:
+def marker_state(previous: dict, payload: dict, heartbeat_seconds: int = 0,
+                 now: float | None = None) -> tuple[list[str], dict]:
     """Pure diff: return sorted markers and the NEXT state for one snapshot.
 
     `payload` is exactly what the gh calls returned: `comments` maps `issues`/`pulls` to
     comment rows, `runs` is a list of workflow-run rows, `master` is a commit object.
+    An opt-in heartbeat adds one deterministic H marker without storing a clock.
     """
     if not isinstance(previous, dict):
         previous = {}
@@ -66,6 +82,10 @@ def marker_state(previous: dict, payload: dict) -> tuple[list[str], dict]:
         state["master"] = master_sha
         if previous.get("master") != master_sha:
             lines.append(f"M:{master_sha[:12]}")
+
+    heartbeat = heartbeat_marker(heartbeat_seconds, now)
+    if heartbeat:
+        lines.append(heartbeat)
 
     if not previous:
         lines.append("BASELINE")
@@ -116,13 +136,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--state", default=os.environ.get("TLL_WATCH_STATE", ""))
     ap.add_argument("--gh", default=None, help="explicit gh path for stripped cron environments")
     ap.add_argument("--check", action="store_true", help="offline contract check; no network, no state write")
+    ap.add_argument("--heartbeat-seconds", type=int, default=0,
+                    dest="heartbeat_seconds",
+                    help="opt-in deterministic H marker every N seconds (0 disables)")
     args = ap.parse_args(argv)
 
     if args.check:
-        if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "M:")):
+        if not all(m in MARKER_PREFIXES for m in ("C:", "R:", "M:", "H:")):
             print("CHECK FAILED: marker prefixes changed", file=sys.stderr)
             return 2
-        print("[watch-monitor] OK: C/R/M markers, caller-owned state, no timestamps")
+        print("[watch-monitor] OK: C/R/M/H markers, caller-owned state, no timestamps")
         return 0
 
     state_path = Path(args.state) if args.state else None
@@ -144,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR:{exc}")
         return 0
 
-    lines, state = marker_state(read_state(state_path), payload)
+    lines, state = marker_state(read_state(state_path), payload, args.heartbeat_seconds)
     write_state(state_path, state)
     for line in lines:
         print(line)
