@@ -1036,6 +1036,7 @@ nerve-check:
 .PHONY: _validate-search
 _validate-search:
 	python3 scripts/validate.py --only search,mapping
+	python3 scripts/engine_guide_check.py
 	python3 scripts/query_coverage.py
 	python3 tests/test_mapping.py && python3 tests/test_validate.py && python3 tests/test_validate_readme.py && python3 tests/test_ingest_render.py && python3 tests/test_aggregate_recovery.py && python3 tests/test_7day_aggregation.py && python3 tests/test_fixture_mapping.py && python3 tests/test_validate_links.py
 	python3 scripts/self_correct_raw.py
@@ -1260,6 +1261,10 @@ validate-search:
 .PHONY: validate-readme
 validate-readme:
 	$(TEST_RUN) make _validate-readme
+
+.PHONY: engine-guide-check
+engine-guide-check: ## The README engine/server guide matches the store registry and measured engines (issue #1220)
+	$(TEST_RUN) python3 scripts/engine_guide_check.py
 
 .PHONY: validate-links
 validate-links:
