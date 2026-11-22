@@ -1,6 +1,7 @@
 # Proposal: scratch-auth-flake-1177
 
 Issue: #1177
+PR: #1254
 
 ## Why
 

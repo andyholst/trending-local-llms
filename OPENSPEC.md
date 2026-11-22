@@ -9,14 +9,22 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
+<<<<<<< HEAD
 Active changes: **2** · archived: **404**
+=======
+Active changes: **0** · archived: **400**
+>>>>>>> 1982316e (chore(openspec): record PR 1254)
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+<<<<<<< HEAD
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 | `scratch-auth-flake-1177` | active | #1177 | — | [ci-reliability](openspec/changes/scratch-auth-flake-1177/specs/ci-reliability/spec.md) | 3/4 | [proposal.md](openspec/changes/scratch-auth-flake-1177/proposal.md) |
+=======
+| _(none)_ | — | — | — | — | — | — |
+>>>>>>> 1982316e (chore(openspec): record PR 1254)
 
 ## Archived changes
 
@@ -362,6 +370,7 @@ Active changes: **2** · archived: **404**
 | `rulebook-names-the-conflict-repair` | archived | #476 (the §6b/§8 wording `repair-a-conflicted-pr` — #475, PR #478 — owed and could not write) | — | [rulebook-conflict-repair](openspec/changes/archive/rulebook-names-the-conflict-repair/specs/rulebook-conflict-repair/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/rulebook-names-the-conflict-repair/proposal.md) |
 | `rulebook-pipelines-read-bullets-only` | archived | #660 | #909 | [rulebook](openspec/changes/archive/rulebook-pipelines-read-bullets-only/specs/rulebook/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/rulebook-pipelines-read-bullets-only/proposal.md) |
 | `scope-gate-total-vram` | archived | #260 — `data: a per-backend 'Most loved' cell can show a measurement the scope gate excludes` | — | [card-scope-gate](openspec/changes/archive/scope-gate-total-vram/specs/card-scope-gate/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/scope-gate-total-vram/proposal.md) |
+| `scratch-auth-flake-1177` | archived | #1177 | #1254 | [ci-reliability](openspec/changes/archive/scratch-auth-flake-1177/specs/ci-reliability/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/scratch-auth-flake-1177/proposal.md) |
 | `scripts-inventory-guarded` | archived | #506 — architecture-check: §6's script inventory is unguarded | — | [architecture-description](openspec/changes/archive/scripts-inventory-guarded/specs/architecture-description/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/scripts-inventory-guarded/proposal.md) |
 | `seam-positional-command` | archived | #632 | #848 | [agent-log-capture](openspec/changes/archive/seam-positional-command/specs/agent-log-capture/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/seam-positional-command/proposal.md) |
 | `search-contract-alias-key` | archived | #884 | #887 | [measurement-ingest](openspec/changes/archive/search-contract-alias-key/specs/measurement-ingest/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/search-contract-alias-key/proposal.md) |
