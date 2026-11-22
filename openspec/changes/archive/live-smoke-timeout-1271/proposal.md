@@ -1,6 +1,7 @@
 # Proposal: live-smoke-timeout-1271
 
 Issue: #1271
+PR: #1275
 
 ## Why
 

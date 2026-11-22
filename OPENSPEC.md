@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **399**
+Active changes: **0** · archived: **400**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `live-smoke-timeout-1271` | active | #1271 | — | [live-smoke-job-budget](openspec/changes/live-smoke-timeout-1271/specs/live-smoke-job-budget/spec.md) | 5/7 · 1 blocked | [proposal.md](openspec/changes/live-smoke-timeout-1271/proposal.md) |
+| _(none)_ | — | — | — | — | — | — |
 
 ## Archived changes
 
@@ -255,6 +255,7 @@ Active changes: **1** · archived: **399**
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
 | `live-smoke-merge-gate-claim` | archived | #1033 | #1135 | [architecture-job-behaviour-claim](openspec/changes/archive/live-smoke-merge-gate-claim/specs/architecture-job-behaviour-claim/spec.md) | 10/11 · 1 blocked | [proposal.md](openspec/changes/archive/live-smoke-merge-gate-claim/proposal.md) |
+| `live-smoke-timeout-1271` | archived | #1271 | #1275 | [live-smoke-job-budget](openspec/changes/archive/live-smoke-timeout-1271/specs/live-smoke-job-budget/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/archive/live-smoke-timeout-1271/proposal.md) |
 | `mark-untraceable-engine-build-prose-unverified` | archived | #883 | #1101 | [data-gap-analysis](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/mark-untraceable-engine-build-prose-unverified/proposal.md) |
 | `marker-written-outside-registry` | archived | #474 | — | [bot-markers](openspec/changes/archive/marker-written-outside-registry/specs/bot-markers/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/marker-written-outside-registry/proposal.md) |
 | `master-push-guard-959` | archived | #959 | #966 | [master-push-guard](openspec/changes/archive/master-push-guard-959/specs/master-push-guard/spec.md) | 6/9 · 3 blocked | [proposal.md](openspec/changes/archive/master-push-guard-959/proposal.md) |

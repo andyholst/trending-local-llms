@@ -6,4 +6,4 @@
 - [x] ARCHITECTURE.md §4 `live-smoke` row names the timeout contract — `make architecture-refresh` + `make architecture-check` green
 - [x] OpenSpec change (proposal, spec, tasks) + index regenerated — `make openspec-index` wrote `1 active, 399 archived`
 - [x] Local gates green: `make lint`, `make architecture-check`, `make findings-check`, `tests/test_smoke_search.py` (75 checks)
-- [ ] PR opened with the five-section body and `closes #1271`
+- [x] PR opened with the five-section body and `closes #1271`
