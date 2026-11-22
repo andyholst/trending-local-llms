@@ -1,7 +1,7 @@
 # Proposal: aux-sync-hidden-dirs
 
 Issue: #1217
-PR: (pending)
+PR: #1236
 
 ## Why
 
