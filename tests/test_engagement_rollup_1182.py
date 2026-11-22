@@ -17,19 +17,46 @@ This suite locks the repair in the ONE rollup seam (`recompute_7d_engagement`):
      render seam's output (the store/render invariant);
   5. an optional counter absent from a row is NOT invented as an empty key — the exact-match
      golden ingest fixtures broke on `reshares: 0` in CI (rule 2, no invented data);
-  6. the guard is RED on the pre-change seam (git show origin/master:...).
+  6. the guard is RED on an authentic pre-change seam blob pinned in this file, never an
+    empty `git show origin/master:…` that passes vacuously in a shallow CI checkout.
 
 The guards call the REAL update_trending module; the only external system is the filesystem.
 """
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# The genuine pre-#1182 rollup body, pinned verbatim from `git show
+# e2bad5f6^:scripts/update_trending.py`. An in-memory fixture (issue #1292)
+# cannot go empty in a shallow CI checkout, so the guard below is RED for the
+# same reason on every clone instead of passing on empty `git show` output.
+PRECHANGE_RECOMPUTE = r'''def recompute_7d_engagement(m: dict, today: datetime) -> None:
+    eng = m.setdefault("engagement", {})
+    stored_real = [p for p in (_as_post(x) for x in eng.get("seen_posts", [])) if _is_post_url(p.get("url", ""))]
+    posts = dedupe_posts(stored_real + _collect_seen_posts(m))
+    posts = prune_posts(posts, today)
+    eng["seen_posts"] = posts
+    cutoff = (today - timedelta(days=TRENDING_WINDOW_DAYS)).strftime("%Y-%m-%d")
+    recent = [p for p in posts if _post_date(p) >= cutoff]
+    buzz = round(sum(post_buzz(p) for p in recent), 1)
+    best = best_in_scope(m) if recent else None
+    speed = speed_bonus(_tps_core(best.get("tps"))) if best else 0.0
+    eng["posts_7d"] = len(recent)
+    eng["buzz_7d"] = buzz
+    eng["score_7d"] = buzz
+    eng["speed_bonus"] = speed
+    eng["trend_score"] = round(buzz + speed, 1)
+    eng["last_7d_likes"] = len(recent)
+    dates = [d for d in [_post_date(p) for p in posts] + [e.get("date", "") for e in m.get("engines", [])]
+             if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d or "")]
+    if dates:
+        m["last_seen"] = max(dates)
+'''
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 
@@ -146,12 +173,20 @@ def test_an_absent_optional_counter_is_not_invented():
           m["engagement"]["likes"] == 197, str(m["engagement"]["likes"]))
 
 
+def test_the_pre_change_fixture_is_authentic():
+    # Loud refusal if the pinned blob is empty/garbled — the failure mode the
+    # old `git show origin/master:` probe hid behind a vacuous pass.
+    check("the pre-change blob is a non-empty rollup body",
+          "def recompute_7d_engagement(" in PRECHANGE_RECOMPUTE
+          and "eng[\"last_7d_likes\"]" in PRECHANGE_RECOMPUTE
+          and len(PRECHANGE_RECOMPUTE) > 200,
+          repr(PRECHANGE_RECOMPUTE[:80]))
+
+
 def test_the_guard_is_red_on_the_pre_change_seam():
-    out = subprocess.run("git show origin/master:scripts/update_trending.py",
-                         shell=True, cwd=ROOT, capture_output=True, text=True).stdout
-    i = out.find("def recompute_7d_engagement(")
-    j = out.find("\ndef ", i + 10)
-    old = out[i:j]
+    old = PRECHANGE_RECOMPUTE
+    check("the fixture resolved to the real pre-change rollup",
+          "def recompute_7d_engagement(" in old, repr(old[:80]))
     check("the pre-change rollup never reads post counters into the aggregates",
           "for counter in" not in old and "19,516" not in old, old[-200:])
 
@@ -168,6 +203,7 @@ def main() -> int:
     test_the_shipped_store_carries_the_repair()
     test_stored_counters_equal_the_rollup_output()
     test_an_absent_optional_counter_is_not_invented()
+    test_the_pre_change_fixture_is_authentic()
     test_the_guard_is_red_on_the_pre_change_seam()
     test_wiring()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")

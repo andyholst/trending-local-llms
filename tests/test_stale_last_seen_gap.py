@@ -12,19 +12,28 @@ suite locks the declared `stale_last_seen` acquisition gap:
   3. analyse() adds ONE class signature entry (#472 lesson) and the issue BODY names the
      rows, the lag and the sibling evidence;
   4. the SHIPPED store actually surfaces the seven flash-next rows with the Edge0 sibling;
-  5. the guard is RED on the pre-change analysis (git show origin/master:...).
+  5. the guard is RED on an authentic pre-change analysis blob pinned in this file, never an
+    empty `git show origin/master:…` that passes vacuously in a shallow CI checkout.
 
 The guards call the REAL data_gap_analysis module; the only external system is the filesystem.
 """
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Authentic pre-#1183 gaps block, pinned verbatim from
+# `git show 1a4c1e4e^:scripts/data_gap_analysis.py`. An in-memory fixture
+# (issue #1292) cannot go empty in shallow CI, so the negative assertion below
+# is RED for the same reason on a full clone and in CI alike.
+PRECHANGE_ANALYSE_EXCERPT = r'''    if stale:
+        gaps.append(f"{len(stale)} model(s) have no measurement in the last {STALE_DAYS} days: "
+                    f"{', '.join(stale[:5])}")
+'''
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 
@@ -111,9 +120,18 @@ def test_the_shipped_store_surfaces_the_real_flash_next_gap():
           any(s.get("sibling") == "edge0-145b" for s in flash), str(flash[:3]))
 
 
+def test_the_pre_change_analysis_fixture_is_authentic():
+    check("the pre-change analysis blob is a non-empty gaps block",
+          "have no measurement in the last" in PRECHANGE_ANALYSE_EXCERPT
+          and "gaps.append(" in PRECHANGE_ANALYSE_EXCERPT
+          and len(PRECHANGE_ANALYSE_EXCERPT) > 40,
+          repr(PRECHANGE_ANALYSE_EXCERPT[:80]))
+
+
 def test_the_guard_is_red_on_the_pre_change_analysis():
-    out = subprocess.run("git show origin/master:scripts/data_gap_analysis.py",
-                         shell=True, cwd=ROOT, capture_output=True, text=True).stdout
+    out = PRECHANGE_ANALYSE_EXCERPT
+    check("the fixture resolved to the real pre-change gaps block",
+          "gaps.append(" in out, repr(out[:80]))
     check("the pre-change analysis has no stale_last_seen signal",
           "stale_last_seen" not in out, "the old module already has the guard?")
 
@@ -128,6 +146,7 @@ def main() -> int:
     test_no_false_positives()
     test_analyse_signature_and_issue_body()
     test_the_shipped_store_surfaces_the_real_flash_next_gap()
+    test_the_pre_change_analysis_fixture_is_authentic()
     test_the_guard_is_red_on_the_pre_change_analysis()
     test_wiring()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
