@@ -1,6 +1,7 @@
 # Proposal: fleet-sync-default-profile
 
 Issue: #1297
+PR: #1305
 
 ## Why
 
