@@ -52,7 +52,7 @@ def run_seam(*argv: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def scratch_home(dest: Path) -> None:
+def scratch_home(dest: Path, repo: Path) -> None:
     for lane in LANES:
         src = ROOT / "agents" / lane
         (dest / lane / "skills" / lane).mkdir(parents=True)
@@ -62,6 +62,14 @@ def scratch_home(dest: Path) -> None:
             src / "skills" / lane / "SKILL.md",
             dest / lane / "skills" / lane / "SKILL.md",
         )
+    # The DEFAULT profile is a MERGE home at the profile home's PARENT (`~/.hermes/config.yaml`).
+    # Plant the chain the BASE renders, so the seam has a synced default to accept.
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import agent_model_chain as AMC
+
+    chain, fatal = AMC.read_chain(repo)
+    assert chain is not None, fatal
+    (dest.parent / "config.yaml").write_text(AMC.render_text(chain), encoding="utf-8")
 
 
 def test_every_lane_carries_the_pr_handover_shapes() -> int:
@@ -123,6 +131,8 @@ def scratch_repo(dest: Path) -> Path:
             repo / "agents" / lane / "skills" / lane / "SKILL.md",
         )
     shutil.copyfile(ROOT / "AGENTS.md", repo / "AGENTS.md")
+    shutil.copyfile(ROOT / "agents" / "model_chain.json", repo / "agents" / "model_chain.json")
+    shutil.copyfile(ROOT / "Makefile", repo / "Makefile")
     for argv in (
         ["git", "init", "-q"],
         ["git", "add", "-A"],
@@ -138,11 +148,54 @@ def test_real_seam_accepts_a_synced_home() -> int:
         root = scratch_repo(Path(tmp))
         home = Path(tmp) / "profiles"
         home.mkdir()
-        scratch_home(home)
+        scratch_home(home, root)
         got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
         ok = check(got.returncode == 0, "real seam accepts a home synced at HEAD")
+        ok += check(
+            "the default profile's owned blocks" in got.stdout,
+            "the acceptance line names the default profile's owned blocks",
+        )
         print("      " + (got.stdout or got.stderr).strip().splitlines()[-1])
         return ok
+
+
+def test_real_seam_refuses_a_diverged_default_profile() -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = scratch_repo(Path(tmp))
+        home = Path(tmp) / "profiles"
+        home.mkdir()
+        scratch_home(home, root)
+        victim = home.parent / "config.yaml"
+        text = victim.read_text(encoding="utf-8")
+        # a retired provider shape: the exact drift issue #1297 measured on the host
+        victim.write_text(
+            text.replace("provider: nous", "provider: custom", 1)
+            + "\nbase_url: http://127.0.0.1:8080/v1\n",
+            encoding="utf-8",
+        )
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+        failed = check(got.returncode == 1, "a drifted default profile is refused")
+        failed += check(
+            "profile=default" in got.stdout and "drifted from the rendered chain" in got.stdout,
+            "the refusal names profile=default and the drifted block",
+        )
+        return failed
+
+
+def test_real_seam_names_an_absent_default_profile() -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = scratch_repo(Path(tmp))
+        home = Path(tmp) / "profiles"
+        home.mkdir()
+        scratch_home(home, root)
+        (home.parent / "config.yaml").unlink()
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+        failed = check(got.returncode == 0, "an absent default profile is not a divergence")
+        failed += check(
+            "SKIP" in got.stdout and "default profile" in got.stdout,
+            "the absent default profile is NAMED, never a silent pass",
+        )
+        return failed
 
 
 def test_real_seam_refuses_a_diverged_soul() -> int:
@@ -150,7 +203,7 @@ def test_real_seam_refuses_a_diverged_soul() -> int:
         root = scratch_repo(Path(tmp))
         home = Path(tmp) / "profiles"
         home.mkdir()
-        scratch_home(home)
+        scratch_home(home, root)
         victim = home / "tll-tester" / "SOUL.md"
         victim.write_bytes(victim.read_bytes()[:-1])  # one byte short
         got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
@@ -207,6 +260,8 @@ def main() -> int:
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
+        test_real_seam_refuses_a_diverged_default_profile,
+        test_real_seam_names_an_absent_default_profile,
         test_real_seam_refuses_a_bad_base,
         test_ci_wires_the_guard_on_pr_and_push,
     ):

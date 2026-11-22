@@ -15,7 +15,15 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+try:  # the ONE chain parser and the ONE drift verdict (rule 6d)
+    from agent_model_chain import read_chain, render_text
+    from agent_profile_provision import check_one as profile_drift
+except ImportError:  # run from the repo root
+    from scripts.agent_model_chain import read_chain, render_text
+    from scripts.agent_profile_provision import check_one as profile_drift
 
 LANES = (
     "tll-planner",
@@ -51,6 +59,35 @@ def _blob(root: Path, base: str, path: str) -> bytes:
     if got.returncode:
         raise ValueError(f"cannot read {base}:{path}")
     return got.stdout
+
+
+def _default_profile_drift(root: Path, base_sha: str, home: Path) -> tuple[list[str], list[str]]:
+    """(failures, skips) for the DEFAULT profile's owned blocks against the BASE chain.
+
+    The default profile is a MERGE home (`~/.hermes/config.yaml`), so only its OWNED
+    blocks are compared — through `agent_profile_provision.check_one`, the ONE drift
+    verdict, never a second copy of the block rule (issue #1297, rule 6d). The chain is
+    rendered from the BASE blobs in a scratch root, so local unmerged work cannot
+    launder a stale host. An absent config is NAMED, never a silent pass; a stale block
+    is a failure.
+    """
+    dest = home.parent / "config.yaml"
+    if not dest.is_file():
+        return [], [f"default profile {dest} is absent — no owned blocks to compare"]
+    with tempfile.TemporaryDirectory() as tmp:
+        scratch = Path(tmp) / "repo"
+        (scratch / "agents").mkdir(parents=True)
+        for rel in ("agents/model_chain.json", "Makefile"):
+            try:
+                blob = _blob(root, base_sha, rel)
+            except ValueError:
+                return [], [f"{base_sha}:{rel} is unreadable at base — the chain cannot be rendered"]
+            (scratch / rel).write_bytes(blob)
+        chain, fatal = read_chain(scratch)
+        if chain is None:
+            return [], [f"the chain at {base_sha[:12]} cannot be read: {fatal}"]
+        rendered = render_text(chain)
+    return profile_drift("profile=default", dest, rendered, whole_copy=False), []
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -113,12 +150,22 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"[fleet-sync] FAIL AGENTS.md@{base_sha} dropped {marker!r}")
                 failed += 1
 
+    # Issue #1297: the DEFAULT profile's owned blocks are part of the same agreement. A host
+    # running a retired provider shape answers HTTP 401 on inference while every lane byte
+    # matches — so the lane loop alone reported OK on a host whose default profile was stale.
+    drift, skips = _default_profile_drift(root, base_sha, home)
+    for line in drift:
+        print(f"[fleet-sync] FAIL {line}")
+        failed += 1
+    for line in skips:
+        print(f"[fleet-sync] SKIP {line}")
+
     if failed:
         print(f"[fleet-sync] FAIL {failed} divergence(s) against {base_sha} ({base_sha[:12]})")
         return 1
     print(
-        f"[fleet-sync] OK: base {base_sha}, {len(LANES)} lane(s) and the AGENTS.md "
-        "lifecycle markers match upstream"
+        f"[fleet-sync] OK: base {base_sha}, {len(LANES)} lane(s), the default profile's "
+        "owned blocks and the AGENTS.md lifecycle markers match upstream"
     )
     return 0
 
