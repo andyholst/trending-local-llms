@@ -1,0 +1,10 @@
+# Tasks
+
+- [x] 1. Claimed #1176 on-thread before editing (`asimov@mac`) and cut this worktree from the fetched `origin/master` (`46e6fa6d`)
+- [x] 2. `scripts/pipeline_failure_issue.py`: derive `PR_BLOCK_GRACE_HOURS` from a named `PR_BLOCK_REPAIR_WINDOW_HOURS` with the measured #1164 basis and the #1029 dispatch-only note; value stays 24 h
+- [x] 3. `tests/test_pipeline_failure_guard.py`: add and register `test_the_pr_block_grace_is_derived_from_its_stated_repair_window`
+- [x] 4. Verified the new test is GREEN on the change and RED on the pre-change file (`git show origin/master:...` in a scratch worktree — three failed checks, non-zero exit)
+- [x] 5. OpenSpec: this change (proposal with `Issue: #1176`, spec with Given/When/Then + real `Test:` anchors, this task ledger) and `OPENSPEC.md` regenerated on the PR head
+- [x] 6. Gates green on the head: targeted module, `make lint`, `make findings-check`, `make architecture-check`, `make openspec-check`, `make secret-scan`, and `make pr-message-check`; full `make test` reaches 147/149 modules green. Its two failures (`test_engagement_rollup_1182.py`, `test_stale_last_seen_gap.py`) reproduce on a CLEAN `origin/master` — their `git show origin/master:…` "pre-change seam" assertions now see the landed features on a full clone — and are recorded in `findings.md` as a separate tech-debt finding, NOT fixed in this change (rule 6g). CI's shallow checkout has no `origin/master` ref, so those guards pass vacuously there; the master push run 45018421255 is green
+- [~] 7. Update the AGENTS.md §8 guard row for `tests/test_pipeline_failure_guard.py` + `make pipeline-failure-guard-check` (issues #802/#1164) to add issue #1176 and the clause "the grace is derived from its stated repair window, never a bare literal" — blocked: rule 3c human sign-off (AGENTS.md protected in a headless leg); the FULL row text is recorded verbatim in `findings.md` as an owed-row finding, and the section/reason are already declared on issue #1176
+- [x] 8. PR opened with the five message sections and ONE `closes #1176`; PR body references this change; handed to `tll-reviewer` on-thread
