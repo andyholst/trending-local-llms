@@ -41,7 +41,10 @@ What it checks (all offline; the live plugin proof runs when the image has it):
 
 Wired: `make nerve-check` (internal `_nerve-check` recipe + docker wrapper), run
 by qa-validate's `validate` job. Guarded by tests/test_nerve_key_wiring.py
-(rule 6d — a check no target runs is a defect). Stdlib only.
+(rule 6d — a check no target runs is a defect). Stdlib only, plus ONE sibling
+import: the test-value marker is `check_secret_output.TEST_VALUE_MARKER`, the
+same constant that guard honours, so the two detectors can never disagree about
+what a deliberate test value is (issue #1277).
 """
 from __future__ import annotations
 
@@ -52,6 +55,8 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+from check_secret_output import TEST_VALUE_MARKER
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -314,7 +319,16 @@ def scan_tree() -> list[str]:
     for rel in targets:
         p = ROOT / rel
         if p.exists() and p.is_file():
-            hits += forbidden_shapes(p.read_text(errors="ignore"), rel)
+            text = p.read_text(errors="ignore")
+            # A file the rulebook marks as carrying a DELIBERATE test value is
+            # exempt from the shape scan, exactly as `check_secret_output`
+            # exempts it (the ONE marker constant, imported above — issue
+            # #1277). Without this the two detectors disagree about the same
+            # file: a test that follows the marker advice reds this guard while
+            # passing the other.
+            if TEST_VALUE_MARKER in text:
+                continue
+            hits += forbidden_shapes(text, rel)
     return hits
 
 
