@@ -9,11 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-<<<<<<< HEAD
-Active changes: **2** · archived: **413**
-=======
-Active changes: **1** · archived: **405**
->>>>>>> 553e7d30 (chore(openspec): record PR #1296 and archive the bot-ownership change (#1295))
+Active changes: **1** · archived: **414**
 
 ## Active changes
 
