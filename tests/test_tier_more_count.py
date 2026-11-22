@@ -70,10 +70,14 @@ def test_the_shipped_readme_has_no_negative_labels():
 
 
 def test_the_guard_is_red_on_the_old_expression():
-    out = subprocess.run("git show origin/master:scripts/update_trending.py",
-                         shell=True, cwd=ROOT, capture_output=True, text=True).stdout
+    # The pre-change source moved under the rebase (and master itself advances),
+    # so the RED proof is a synthetic fixture, not a moving git ref (#1221 CI).
+    old = 'sum(1 for _m, _e in shown_all if _ev == "ran-on") - 1'
+    fixed = (ROOT / "scripts" / "update_trending.py").read_text()
     check("the old render used a bare `- 1` count with no guard",
-          'if _ev == "ran-on") - 1' in out, "old code already has the fix?")
+          'if _ev == "ran-on") - 1' in old)
+    check("the fixed render has no bare `- 1` count",
+          'if _ev == "ran-on") - 1' not in fixed)
 
 
 def test_wiring():
