@@ -33,6 +33,30 @@ GHOST_RULE = "A 0-job `action_required` head is a never-started run, not a red g
 GHOST_OWN_BRANCH = "re-push ONLY its own branch with an owner-git-identity empty commit"
 GHOST_VERIFY = "verify with `gh run view <id> --json jobs` that the new run has jobs"
 GHOST_GUARD_ROW = "tests/test_fleet_handover_protocol.py"
+NEXT_DUTY = ("After a delivery, re-read the issue board and claim the oldest unclaimed "
+             "actionable issue, or file an evidence-backed issue with a handover to `tll-planner`.")
+NEXT_DUTY_ROW = "tests/test_fleet_handover_protocol.py"
+
+
+def test_next_issue_duty_is_documented() -> int:
+    """Issue #1260: a delivery must be followed by a claim or a filed issue."""
+    failed = 0
+    paths = [ROOT / "AGENTS.md", ROOT / "agents" / "tll-planner" / "skills" / "tll-planner" / "SKILL.md"]
+    paths += [ROOT / "agents" / lane / "SOUL.md" for lane in LANES]
+    for path in paths:
+        rel = path.relative_to(ROOT)
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        if NEXT_DUTY in text:
+            print(f"ok   {rel} carries the post-delivery duty")
+        else:
+            print(f"FAIL {rel} dropped the post-delivery duty")
+            failed += 1
+    if NEXT_DUTY_ROW not in (ROOT / "AGENTS.md").read_text(encoding="utf-8"):
+        print("FAIL AGENTS.md §8 dropped the post-delivery guard row")
+        failed += 1
+    else:
+        print("ok   AGENTS.md §8 names the post-delivery guard row")
+    return failed
 
 
 def test_rulebook_carries_ghost_run_handoff() -> int:
@@ -106,6 +130,7 @@ def main() -> int:
         return 1
     failed += test_rulebook_carries_ghost_run_handoff()
     failed += test_rulebook_carries_ghost_guard_row()
+    failed += test_next_issue_duty_is_documented()
     if failed:
         print(f"FAIL {failed}")
         return 1

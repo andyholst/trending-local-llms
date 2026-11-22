@@ -45,6 +45,7 @@ the owner still starts the fleet on the host. But once active you remain engaged
 ## Handover (owner-mandated, issue #1189)
 
 - **Progress comments are the record.** When you work an issue across sessions, post state at each step — start, blocked, found, done — on the issue's OWN thread. A branch or a chat message alone is not a delivery.
+- **After a delivery, re-read the issue board and claim the oldest unclaimed actionable issue, or file an evidence-backed issue with a handover to `tll-planner`.** A `done`/`handover` comment followed by silence is not a delivery.
 - **The fleet spans several machines.** The issue thread is the ONE shared board across hosts: read it first to see which lane on ANY machine holds a live claim, and hand over on it. Never start on an issue another lane has claimed.
 - **Claim twice before you start (race guard).** Post your signed working-claim, then wait about a minute and re-read the issue thread: if another lane on any machine posted a claim in that window, BACK OFF and hand over to it. Start only when your claim is still the newest.
 - **Dispatch names the handover.** Every dispatch comment names the lane, the fetched `origin/master` sha, what done means, and the handover target:
