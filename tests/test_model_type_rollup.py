@@ -67,6 +67,14 @@ def main() -> int:
           pg["unknown"]["measurements"] == 1, str(pg["unknown"]))
     check("a planted unknown label is REPORTED",
           "Brand New Type" in MTR.render(pg), MTR.render(pg))
+    windowed = MTR.rollup(models, measurements, window_days=7)
+    check("a 7-day window drops older measurements",
+          0 < sum(g["measurements"] for g in windowed.values()) <
+          sum(g["measurements"] for g in groups.values()),
+          str((sum(g["measurements"] for g in windowed.values()),
+               sum(g["measurements"] for g in groups.values()))))
+    check("window cutoff is anchored to the newest stored date",
+          MTR.latest_date(measurements) == "2026-11-17", MTR.latest_date(measurements))
     source = (ROOT / "scripts/model_type_rollup.py").read_text(encoding="utf-8")
     check("the rollup never writes a store", ".write_text(" not in source and ".write_bytes(" not in source)
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")

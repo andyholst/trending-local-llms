@@ -58,8 +58,25 @@ def measurement_keys(model: dict) -> set[str]:
     return {k for k in keys if k}
 
 
-def rollup(models: dict, measurements: dict) -> dict[str, dict]:
+def parse_date(value) -> str:
+    """ISO dates are lexical; shipped rows use YYYY-MM-DD."""
+    return str(value or "")[:10]
+
+
+def latest_date(measurements: dict) -> str:
+    dates = [parse_date(r.get("date")) for rows in measurements.values()
+             if isinstance(rows, list) for r in rows if isinstance(r, dict)]
+    return max(dates) if dates else ""
+
+
+def rollup(models: dict, measurements: dict, window_days: int = 0) -> dict[str, dict]:
     by_key: dict[str, list[dict]] = defaultdict(list)
+    cutoff = ""
+    if window_days > 0:
+        newest = latest_date(measurements)
+        if newest:
+            from datetime import date, timedelta
+            cutoff = (date.fromisoformat(newest) - timedelta(days=window_days)).isoformat()
     for key, rows in measurements.items():
         if isinstance(rows, list):
             by_key[str(key)].extend(r for r in rows if isinstance(r, dict))
@@ -75,6 +92,9 @@ def rollup(models: dict, measurements: dict) -> dict[str, dict]:
             bucket["unknown_labels"].add(label)
         for key in measurement_keys(model):
             for row in by_key.get(key, []):
+                row_date = parse_date(row.get("date"))
+                if cutoff and (not row_date or row_date < cutoff):
+                    continue
                 bucket["measurements"] += 1
                 parsed = parse_tps(row.get("tps"))
                 if parsed is not None:
@@ -109,9 +129,18 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--models", type=Path, default=Path("data/models.json"))
     ap.add_argument("--measurements", type=Path, default=Path("data/measurements.json"))
+    ap.add_argument("--window-days", type=int, default=0,
+                    help="only rows at or after (newest stored date - N days); 0 = all history")
     a = ap.parse_args(argv)
     models, measurements = load_stores(a.models, a.measurements)
-    print(render(rollup(models, measurements)))
+    groups = rollup(models, measurements, a.window_days)
+    cutoff = ""
+    if a.window_days > 0 and latest_date(measurements):
+        from datetime import date, timedelta
+        cutoff = (date.fromisoformat(latest_date(measurements)) - timedelta(days=a.window_days)).isoformat()
+    print(f"# model-type trending rollup — window: {a.window_days or 'all'} days "
+          f"(rows >= {cutoff or 'all dates'})")
+    print(render(groups))
     return 0
 
 
