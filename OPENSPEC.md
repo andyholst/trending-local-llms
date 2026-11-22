@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **418**
+Active changes: **1** · archived: **419**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `queue-closing-pr-implementer` | active | #1310 | — | [implementer-queue](openspec/changes/queue-closing-pr-implementer/specs/implementer-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/queue-closing-pr-implementer/proposal.md) |
 
 ## Archived changes
 
@@ -333,6 +332,7 @@ Active changes: **2** · archived: **418**
 | `qa-validate-carries-the-guard` | archived | #279 | — | [qa-validate-carries-the-guard](openspec/changes/archive/qa-validate-carries-the-guard/specs/qa-validate-carries-the-guard/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/qa-validate-carries-the-guard/proposal.md) |
 | `query-coverage-guard` | archived | #264 | — | [query-coverage](openspec/changes/archive/query-coverage-guard/specs/query-coverage/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/query-coverage-guard/proposal.md) |
 | `query-coverage-wiring-derives-live-models` | archived | #1077 | #1078 | [query-coverage-wiring](openspec/changes/archive/query-coverage-wiring-derives-live-models/specs/query-coverage-wiring/spec.md) | 3/3 | [proposal.md](openspec/changes/archive/query-coverage-wiring-derives-live-models/proposal.md) |
+| `queue-closing-pr-implementer` | archived | #1310 | #1313 | [implementer-queue](openspec/changes/archive/queue-closing-pr-implementer/specs/implementer-queue/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/queue-closing-pr-implementer/proposal.md) |
 | `queue-drops-run-backstop` | archived | #193 — `tech-debt: The in-flight backstop in the queue matches a run by its display title` | — | [issue-queue](openspec/changes/archive/queue-drops-run-backstop/specs/issue-queue/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/queue-drops-run-backstop/proposal.md) |
 | `queued-alarm-diagnosis-half-runs-anyway` | archived | #1024 — "the queued-alarm job skips its diagnosis half when the sweep-alarm step goes red first" | #1026 | [alarms](openspec/changes/archive/queued-alarm-diagnosis-half-runs-anyway/specs/alarms/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/queued-alarm-diagnosis-half-runs-anyway/proposal.md) |
 | `queued-run-alarm` | archived | #252 | — | [queued-run-alarm](openspec/changes/archive/queued-run-alarm/specs/queued-run-alarm/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/queued-run-alarm/proposal.md) |

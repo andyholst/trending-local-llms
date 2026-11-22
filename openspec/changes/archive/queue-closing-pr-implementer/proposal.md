@@ -1,6 +1,7 @@
 # Proposal: queue-closing-pr-implementer
 
 Issue: #1310
+PR: #1313
 
 ## Why
 
