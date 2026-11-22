@@ -303,6 +303,15 @@ Every lane hands over on the issue thread, so the board can be followed without 
 - **Always follow up on the issue.** Every fix, verdict, re-dispatch and closure gets a
   comment on the issue's own thread; the bots read and update that thread at each
   handover. The issue stays open as the follow-up until `handover none` is posted.
+- **The board note also names the PRs AWAITING REVIEW, and hands each to `tll-reviewer`
+  by name** (issue #1261). Producer lanes cycle faster than reviewer lanes, so an open-PR
+  backlog grows while every issue already reads "claimed" — measured: 14 PRs open at once
+  with #1241/#1242/#1247/#1248/#1254/#1255/#1257 all waiting for a first-review slot.
+  The note therefore carries, for each open PR with no reviewer handover yet: the PR
+  number, its head sha and base, and `handover tll-reviewer`.
+- **Spend review capacity BEFORE producing new PRs.** An issue with no PR is dispatched to
+  an implementer; an open PR awaiting review is dispatched to `tll-reviewer` FIRST. Adding
+  producers without adding reviewers grows the backlog, not the merge rate.
 
 ## Fleet state (active issues)
 
