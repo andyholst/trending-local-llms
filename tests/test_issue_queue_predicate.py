@@ -102,6 +102,55 @@ def test_a_pr_closing_another_issue_does_not_hide_this_one() -> None:
               any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
 
 
+def _stub_gh_window(tmp: Path) -> None:
+    """A stub `gh` with 100 newer CLOSED PRs + one older OPEN closing PR (#1324).
+
+    Only the external GitHub CLI is faked (rule 6m): the stub honours `--state`
+    and `--limit` and orders newest-first, exactly as `gh pr list` does. `_pulls`
+    must still receive the live OPEN PR; a `--state all --limit 100` caller sees
+    only the 100 closed rows and loses it.
+    """
+    bin_dir = tmp / "bin"
+    bin_dir.mkdir()
+    script = bin_dir / "gh"
+    script.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "a = sys.argv[1:]\n"
+        "closed = [{'number': 1000 + i, 'headRefName': 'fix/closed-%d' % i,\n"
+        "           'state': 'CLOSED', 'createdAt': '2026-11-22T10:00:00Z',\n"
+        "           'updatedAt': '2026-11-22T18:00:00Z', 'body': 'closes #1176'}\n"
+        "          for i in range(100)]\n"
+        "live = {'number': 42, 'headRefName': 'fix/pr-block-grace-derived-1176',\n"
+        "        'state': 'OPEN', 'createdAt': '2026-11-20T11:52:00Z',\n"
+        "        'updatedAt': '2026-11-20T12:13:00Z', 'body': 'closes #1176'}\n"
+        "rows = closed + [live]\n"
+        "state = a[a.index('--state') + 1] if '--state' in a else 'all'\n"
+        "if state != 'all':\n"
+        "    rows = [r for r in rows if r['state'].lower() == state]\n"
+        "rows.sort(key=lambda r: r['updatedAt'], reverse=True)\n"
+        "limit = int(a[a.index('--limit') + 1]) if '--limit' in a else 100\n"
+        "rows = rows[:limit]\n"
+        "if a[:1] == ['pr'] and 'list' in a:\n"
+        "    print(json.dumps(rows))\n"
+        "else:\n"
+        "    print('[]')\n",
+        encoding="utf-8",
+    )
+    script.chmod(script.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    os.environ["PATH"] = f"{bin_dir}:{os.environ['PATH']}"
+
+
+def test_an_open_closing_pr_survives_a_window_of_closed_prs() -> None:
+    """Issue #1324: 100 newer closed PRs must not crowd a live OPEN PR out."""
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh_window(Path(d))
+        pulls = q._pulls("andyholst/trending-local-llms")
+        check("_pulls asks gh only for OPEN PRs",
+              any(p.get("number") == 42 for p in pulls),
+              "the live closing PR was crowded out: " + str([p.get("number") for p in pulls[:3]]))
+
+
 def test_the_one_closure_parser_is_used_not_a_hand_rolled_regex() -> None:
     check("a closes keyword binds", q._closes_issue({"body": "closes #1176"}, 1176))
     check("Fixes binds too", q._closes_issue({"body": "Fixes #1176"}, 1176))
@@ -116,6 +165,7 @@ def main() -> int:
     test_a_pr_without_a_closing_binding_stays_in_the_queue()
     test_a_closed_closing_pr_does_not_mark_implementer()
     test_a_pr_closing_another_issue_does_not_hide_this_one()
+    test_an_open_closing_pr_survives_a_window_of_closed_prs()
     test_the_one_closure_parser_is_used_not_a_hand_rolled_regex()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
