@@ -242,6 +242,22 @@ PR_BLOCK_MIN_PRS = 2
 #: `auto-merge` until it is fixed — a larger outage than one red scheduled sweep.
 PR_BLOCK_GRACE_HOURS = 24
 
+#: A weekly sweep reads at most this many `pull_request` runs' logs. The byte cap on one log
+#: does not bound the NUMBER of reads: 20 open PRs all red at the same step cost 20 fetches on
+#: every sweep, and a filer with no read budget becomes the thing that times out (issue #1174).
+PR_BLOCK_MAX_LOG_READS = 8
+
+
+def bound_pr_block_runs(runs: list[dict], cap: int = PR_BLOCK_MAX_LOG_READS) -> tuple[list[dict], int]:
+    """Keep the newest `cap` runs and return how many were left for a later sweep.
+
+    `gh run list` is newest-first, so the capped set still contains the runs most likely to
+    be blocking an open PR today; skipping older ones cannot lose a NEW blockage.
+    """
+    if cap < 1:
+        raise ValueError("PR_BLOCK_MAX_LOG_READS must be at least 1")
+    return runs[:cap], max(0, len(runs) - cap)
+
 
 def failure_shape(block: list[str], targets: list[str], steps: list[str]) -> str:
     """The normalised signature deciding whether two failed runs are the SAME failure.
@@ -289,15 +305,19 @@ def open_pr_branches(repo: str) -> set:
     return {p.get("headRefName") for p in out if p.get("headRefName")}
 
 
-def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime) -> list[dict]:
+def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime,
+                          stats: dict | None = None) -> list[dict]:
     """Concluded-bad `pull_request` runs of the main pipelines inside the window (issue #1164).
 
     Each item carries its failed job, the scrubbed error block, the `make` targets the log names,
     the failing steps, the log region and the normalised `shape`. A still-running or queued run
-    belongs to the queued alarm, exactly as in `main_pipeline_failures`.
+    belongs to the queued alarm, exactly as in `main_pipeline_failures`. At most
+    `PR_BLOCK_MAX_LOG_READS` runs are read per sweep; the skipped count is written to `stats`
+    so the sweep can announce it (issue #1174).
     """
     cutoff = now - dt.timedelta(hours=window_hours)
     out: list[dict] = []
+    skipped = 0
     for wf in MAIN_PIPELINES:
         runs = _gh_json([
             "run", "list", "--repo", repo, "--workflow", wf, "--event", "pull_request",
@@ -307,6 +327,8 @@ def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime) -> lis
         ])
         if not isinstance(runs, list):
             raise RuntimeError(f"run list for {wf} returned {type(runs).__name__}, not a list")
+        runs, wf_skipped = bound_pr_block_runs(runs)
+        skipped += wf_skipped
         for r in runs:
             if r.get("conclusion") not in BAD_CONCLUSIONS:
                 continue
@@ -324,6 +346,8 @@ def pr_triggered_failures(repo: str, window_hours: int, now: dt.datetime) -> lis
                 out.append({"run": r, "job": job, "block": block, "targets": targets,
                             "steps": steps, "region": region, "log_error": log_error,
                             "shape": failure_shape(block, targets, steps)})
+    if stats is not None:
+        stats["pr_block_runs_skipped"] = skipped
     return out
 
 
@@ -379,11 +403,16 @@ def record_pr_blockages(repo: str, window_hours: int, ledger: dict, ledger_path:
     re-filed every sweep.
     """
     lines: list[str] = []
+    stats: dict = {}
     try:
         open_branches = open_pr_branches(repo)
-        items = pr_triggered_failures(repo, window_hours, now)
+        items = pr_triggered_failures(repo, window_hours, now, stats)
     except RuntimeError as exc:
         return [f"pr-blockage: READ FAILED: {exc}"]
+    skipped = int(stats.get("pr_block_runs_skipped", 0))
+    if skipped:
+        lines.append(f"pr-blockage: log budget {PR_BLOCK_MAX_LOG_READS} run(s); "
+                     f"skipped {skipped} run(s) beyond the cap")
     for group in group_pr_blockages(items, open_branches):
         first = group["members"][0]
         rid = int(first["run"]["databaseId"])
