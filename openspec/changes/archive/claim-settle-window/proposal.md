@@ -1,6 +1,7 @@
 # Proposal: claim-settle-window
 
 Issue: #1312
+PR: #1321
 
 ## Why
 

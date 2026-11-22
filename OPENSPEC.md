@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **420**
+Active changes: **1** · archived: **421**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `claim-settle-window` | active | #1312 | — | [fleet-lifecycle](openspec/changes/claim-settle-window/specs/fleet-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/claim-settle-window/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -135,6 +134,7 @@ Active changes: **2** · archived: **420**
 | `captured-cells-trace-by-measurement-identity` | archived | #411 | #910 | [data-gap-analysis](openspec/changes/archive/captured-cells-trace-by-measurement-identity/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/captured-cells-trace-by-measurement-identity/proposal.md) |
 | `card-gap-report` | archived | #342 — `tech-debt: Only EMPTY tiers are reported as collection gaps — a model with no card evidence at all is silent` | — | [card-fit](openspec/changes/archive/card-gap-report/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/card-gap-report/proposal.md) |
 | `ci-secret-output-guard` | archived | #219 | — | [secret-output-guard](openspec/changes/archive/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/ci-secret-output-guard/proposal.md) |
+| `claim-settle-window` | archived | #1312 | #1321 | [fleet-lifecycle](openspec/changes/archive/claim-settle-window/specs/fleet-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/claim-settle-window/proposal.md) |
 | `classify-nov15-red-ledger-rows` | archived | #1039, #1040, #1041, #1042, #1043 | #1097 | [alarms](openspec/changes/archive/classify-nov15-red-ledger-rows/specs/alarms/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/classify-nov15-red-ledger-rows/proposal.md) |
 | `closing-pr-requires-bounded-openspec-change` | archived | #1109 | #1111 | [change-lifecycle](openspec/changes/archive/closing-pr-requires-bounded-openspec-change/specs/change-lifecycle/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/closing-pr-requires-bounded-openspec-change/proposal.md) |
 | `closure-on-body-edit` | archived | #290 — `tech-debt: A PR body edit never re-runs the closure check` | — | [pr-ci](openspec/changes/archive/closure-on-body-edit/specs/pr-ci/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/closure-on-body-edit/proposal.md) |
