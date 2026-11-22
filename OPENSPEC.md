@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **403**
+Active changes: **1** · archived: **404**
 
 ## Active changes
 
@@ -150,6 +150,7 @@ Active changes: **1** · archived: **403**
 | `coverage-gap-builders-announce` | archived | #1173 | #1187 | [coverage-gap-announce](openspec/changes/archive/coverage-gap-builders-announce/specs/coverage-gap-announce/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/coverage-gap-builders-announce/proposal.md) |
 | `coverage-gap-multi-binary` | archived | #1171 | #1178 | [coverage-gap-multi-binary](openspec/changes/archive/coverage-gap-multi-binary/specs/coverage-gap-multi-binary/spec.md) | 14/14 | [proposal.md](openspec/changes/archive/coverage-gap-multi-binary/proposal.md) |
 | `coverage-gap-present-broken` | archived | #1172 | #1180 | [coverage-gap-present-broken](openspec/changes/archive/coverage-gap-present-broken/specs/coverage-gap-present-broken/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/coverage-gap-present-broken/proposal.md) |
+| `cron-install-check-1270` | archived | #1270 — "Fleet: Hermes cron watcher installation must be identical on both hosts". | #1272 | [fleet-watchers](openspec/changes/archive/cron-install-check-1270/specs/fleet-watchers/spec.md) | 4/5 | [proposal.md](openspec/changes/archive/cron-install-check-1270/proposal.md) |
 | `cross-model-attribution` | archived | #693 — data: cross-model duplicate attributes one source post's t/s to two | — | [cross-model-attribution](openspec/changes/archive/cross-model-attribution/specs/cross-model-attribution/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-attribution/proposal.md) |
 | `cross-model-ingest-date-identity` | archived | #971 — "The ingest-time duplicate refusal still keys on hardware, not date" | #1009 | [cross-model-duplicate-identity](openspec/changes/archive/cross-model-ingest-date-identity/specs/cross-model-duplicate-identity/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/cross-model-ingest-date-identity/proposal.md) |
 | `cross-model-ingest-refusal` | archived | #702 | — | [cross-model-ingest-refusal](openspec/changes/archive/cross-model-ingest-refusal/specs/cross-model-ingest-refusal/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/cross-model-ingest-refusal/proposal.md) |
