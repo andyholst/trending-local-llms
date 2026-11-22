@@ -108,6 +108,31 @@ def rollup(models: dict, measurements: dict, window_days: int = 0) -> dict[str, 
     return dict(groups)
 
 
+def stale_candidates(models: dict, measurements: dict, window_days: int) -> list[tuple[str, str, int, str]]:
+    """Models with real measurements but NONE in the trend window — the #1234 shape."""
+    if window_days <= 0:
+        return []
+    newest = latest_date(measurements)
+    if not newest:
+        return []
+    from datetime import date, timedelta
+    cutoff = (date.fromisoformat(newest) - timedelta(days=window_days)).isoformat()
+    by_key: dict[str, list[dict]] = defaultdict(list)
+    for key, rows in measurements.items():
+        if isinstance(rows, list):
+            by_key[str(key)].extend(r for r in rows if isinstance(r, dict))
+    gaps = []
+    for model in models.get("models", []):
+        rows = [r for key in measurement_keys(model) for r in by_key.get(key, [])]
+        if not rows:
+            continue
+        in_window = [r for r in rows if parse_date(r.get("date")) >= cutoff]
+        if not in_window:
+            gaps.append((str(model.get("id") or "?"), str(model.get("name") or ""),
+                         len(rows), max(parse_date(r.get("date")) for r in rows)))
+    return sorted(gaps, key=lambda g: (-g[2], g[0]))
+
+
 def render(groups: dict[str, dict]) -> str:
     lines = ["| type_group | models | measurements | engines | architectures | newest | median t/s |",
              "|---|---:|---:|---:|---:|---|---:|"]
@@ -131,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--measurements", type=Path, default=Path("data/measurements.json"))
     ap.add_argument("--window-days", type=int, default=0,
                     help="only rows at or after (newest stored date - N days); 0 = all history")
+    ap.add_argument("--gaps", action="store_true",
+                    help="also list models with measurements but none in the window (#1234 shape)")
     a = ap.parse_args(argv)
     models, measurements = load_stores(a.models, a.measurements)
     groups = rollup(models, measurements, a.window_days)
@@ -141,6 +168,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"# model-type trending rollup — window: {a.window_days or 'all'} days "
           f"(rows >= {cutoff or 'all dates'})")
     print(render(groups))
+    if a.gaps:
+        gaps = stale_candidates(models, measurements, a.window_days or 7)
+        print("")
+        print(f"## models with measurements but none in the window ({len(gaps)})")
+        for mid, name, total, newest in gaps[:25]:
+            print(f"GAP id={mid} name={name!r} historical_rows={total} newest={newest}")
     return 0
 
 

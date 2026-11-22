@@ -75,6 +75,14 @@ def main() -> int:
                sum(g["measurements"] for g in groups.values()))))
     check("window cutoff is anchored to the newest stored date",
           MTR.latest_date(measurements) == "2026-11-17", MTR.latest_date(measurements))
+    gaps = MTR.stale_candidates(models, measurements, 7)
+    check("the live store yields named freshness gaps", len(gaps) > 0 and all(g[3] < "2026-11-10" for g in gaps),
+          str(gaps[:3]))
+    old_only = {"models": [{"id": "zz-old", "name": "Old Model", "type": "LLM"}]}
+    old_measures = {"zz-old": [{"date": "2026-10-01", "tps": "20", "engine": "mlx-lm"}]}
+    planted_gaps = MTR.stale_candidates(old_only, old_measures, 7)
+    check("a historical-only model is named as a GAP",
+          planted_gaps == [("zz-old", "Old Model", 1, "2026-10-01")], str(planted_gaps))
     source = (ROOT / "scripts/model_type_rollup.py").read_text(encoding="utf-8")
     check("the rollup never writes a store", ".write_text(" not in source and ".write_bytes(" not in source)
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
