@@ -16,7 +16,7 @@ Active changes: **2** · archived: **403**
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `r-marker-workflow-1288` | active | #1288 | — | [fleet-watch](openspec/changes/r-marker-workflow-1288/specs/fleet-watch/spec.md) | 4/7 | [proposal.md](openspec/changes/r-marker-workflow-1288/proposal.md) |
+| `r-marker-workflow-1288` | active | #1288 | — | [fleet-watch](openspec/changes/r-marker-workflow-1288/specs/fleet-watch/spec.md) | 7/7 | [proposal.md](openspec/changes/r-marker-workflow-1288/proposal.md) |
 
 ## Archived changes
 
