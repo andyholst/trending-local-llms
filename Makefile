@@ -1275,6 +1275,9 @@ cron-install-check: ## Verify the fleet cron installation has a no-agent watchdo
 .PHONY: vetted-performance
 vetted-performance: ## Read-only top measured t/s per VRAM band with vetted evidence (issue #1252)
 	@python3 scripts/vetted_performance.py $(ARGS)
+.PHONY: agent-hermes-smoke
+agent-hermes-smoke: ## Offline smoke of the new agent image Hermes call path: pin, installer, chain request shape (issue #1273)
+	python3 scripts/agent_hermes_smoke.py
 
 .PHONY: validate
 validate:
