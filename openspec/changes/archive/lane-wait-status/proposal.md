@@ -1,7 +1,7 @@
 # Proposal: lane-wait-status
 
 Issue: #1232
-PR: (pending)
+PR: #1237
 
 ## Why
 
