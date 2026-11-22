@@ -1295,7 +1295,7 @@ The README is **generated**, not hand-maintained:
   (the full pipeline = setup + search + merge + validate + test, in one
   container). Live smoke targets (real network, bounded, skip cleanly without
   keys): `make search-smoke [BACKEND=nvidia|metal|cpu|amd]` (the exact Firecrawl →
-  lightbrd scrape of every search query, **3 s cap per query**),
+  lightbrd scrape of every search query, `SEARCH_SMOKE_BUDGET ?= 90` cap per query),
   `make hermes-smoke` (one real Hermes call through the `nous-deepseek` alias
   with every key the pipeline passes, incl. `HF_TOKEN`), and
   `make pipeline-smoke` (both). **A fetch outcome is CLASSIFIED, never collapsed
@@ -1744,7 +1744,8 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
     nothing: the PR stays red for the §6s sweep or a human.
   - `live-smoke` — real network, bounded, **fetch-only: no model or agent call gates a
     merge** (rule 6t, issue #1029 — `make hermes-smoke` was dropped from this job):
-    `make search-smoke BACKEND=<b>` for nvidia, metal, cpu, amd (3 s cap per query), and
+    `make search-smoke BACKEND=<b>` for nvidia, metal, cpu, amd
+    (`SEARCH_SMOKE_BUDGET ?= 90` cap per query), and
     `make validate-fetch` (real search, `--require-hits`). An outage here is
     infra, not data. The job is still NAMED `live-smoke` because branch protection names
     the required context literally (rule 1) — renaming it is an owner repository-settings

@@ -12,9 +12,10 @@ name: qa-validate
 #                   control-flow tests). A red validate dispatches nothing (issue
 #                   #814): it stays red for the §6r sweep or a human.
 #   live-smoke      REAL network, bounded: the exact Firecrawl->lightbrd scrape
-#                   for every nvidia / metal / cpu / amd search query (3s cap each),
-#                   one real Hermes call through the search alias, and a real
-#                   --require-hits search. Catches a dead key, a broken alias, a
+#                   for every nvidia / metal / cpu / amd search query
+#                   (`SEARCH_SMOKE_BUDGET ?= 90`, one cap per query), and a real
+#                   --require-hits search. No model call gates a merge (rule 6t).
+#                   Catches a dead key, a broken alias, a
 #                   provider mis-route or an unreachable mirror on the PR,
 #                   instead of 20 minutes into the next refresh. An outage here
 #                   is infra, not data.
