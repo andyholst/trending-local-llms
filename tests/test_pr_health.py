@@ -738,6 +738,7 @@ def main() -> int:
     test_the_real_target_runs_report_only()
     test_no_script_reads_a_number_straight_from_the_environment()
     test_rebase_plan_classifies_by_ownership_and_conflict()
+    test_ownership_is_decided_by_author_not_branch_prefix()
     test_a_behind_clean_bot_branch_is_rebased_and_pushed_and_a_human_branch_is_never_rewritten()
     test_the_rebaser_regenerates_the_index_on_the_rebased_tree()
     test_a_failed_rebase_round_announces_on_the_pr_thread_once()
