@@ -1,6 +1,7 @@
 # Change: next-issue-duty-1260
 
 Issue: #1260
+PR: #1286
 
 ## Why
 

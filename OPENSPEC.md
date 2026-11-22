@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **404**
+Active changes: **1** · archived: **405**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `next-issue-duty-1260` | active | #1260 | — | [fleet-handover](openspec/changes/next-issue-duty-1260/specs/fleet-handover/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/next-issue-duty-1260/proposal.md) |
 
 ## Archived changes
 
@@ -272,6 +271,7 @@ Active changes: **2** · archived: **404**
 | `model-id-matches-the-contract` | archived | #464 (measured on PR #461) | — | [model-id](openspec/changes/archive/model-id-matches-the-contract/specs/model-id/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/model-id-matches-the-contract/proposal.md) |
 | `models-order-matches-readme` | archived | #708 | — | [models-order-matches-readme](openspec/changes/archive/models-order-matches-readme/specs/models-order-matches-readme/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/models-order-matches-readme/proposal.md) |
 | `multiarch-base-test-image-publishers` | archived | #958 — "The base and test image publishers are still amd64-only" | #1114 | [agent-image-publish](openspec/changes/archive/multiarch-base-test-image-publishers/specs/agent-image-publish/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/multiarch-base-test-image-publishers/proposal.md) |
+| `next-issue-duty-1260` | archived | #1260 | #1286 | [fleet-handover](openspec/changes/archive/next-issue-duty-1260/specs/fleet-handover/spec.md) | 4/5 · 1 blocked | [proposal.md](openspec/changes/archive/next-issue-duty-1260/proposal.md) |
 | `no-clarify-detach` | archived | #679 — the recurring refresh-leg failure (measured on the amd leg, run | — | [unattended-leg](openspec/changes/archive/no-clarify-detach/specs/unattended-leg/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/no-clarify-detach/proposal.md) |
 | `no-dead-step-env` | archived | #489 | — | [bot-alarm-configuration](openspec/changes/archive/no-dead-step-env/specs/bot-alarm-configuration/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/no-dead-step-env/proposal.md) |
 | `no-fabricated-engine-at-ingest` | archived | #458 (filed with the measurement; a comment on it records the decisive evidence) | — | [engine-fabrication](openspec/changes/archive/no-fabricated-engine-at-ingest/specs/engine-fabrication/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/no-fabricated-engine-at-ingest/proposal.md) |
