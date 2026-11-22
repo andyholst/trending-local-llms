@@ -9,11 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-<<<<<<< HEAD
 Active changes: **1** · archived: **405**
-=======
-Active changes: **0** · archived: **400**
->>>>>>> 006fe7ef (chore(openspec): regenerate the index after the base moved)
 
 ## Active changes
 
