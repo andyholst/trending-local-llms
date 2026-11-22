@@ -95,7 +95,7 @@ def test_cron_monitor():
 
         def paged_runner(cmd):
             pages.append(cmd)
-            if "page=1" in cmd[2]:
+            if "page=1&" in cmd[2] or cmd[2].endswith("page=1"):
                 return json.dumps([{"id": str(i), "created_at": "2026-11-22T04:00:00Z",
                                     "user": {"login": "u"}} for i in range(100)])
             return json.dumps([{"id": "999", "created_at": "2026-11-22T03:00:00Z",
