@@ -870,7 +870,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 248 make targets, 97 files in `scripts/`)
+### Bots in the tree (11 pipelines, 249 make targets, 98 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -1089,6 +1089,7 @@ One line each, taken from the script's own docstring.
 - `scripts/update_trending.py` — Update the trending-local-llms data store and regenerate README.md.
 - `scripts/validate.py` — QA validation for the trending-local-llms data store + README.
 - `scripts/verify_closure.py` — Did the issue a merged PR claimed to close ACTUALLY close? (issue #288)
+- `scripts/vetted_performance.py` — scripts/vetted_performance.py -- issue #1252.
 - `scripts/watch_monitor.py` — Deterministic change detector for the tll issue/PR/CI watcher (issue #1266).
 - `scripts/worktree_base.py` — Where does work start? (issue #271, AGENTS.md rule 6n)
 <!-- architecture-bot:end -->
