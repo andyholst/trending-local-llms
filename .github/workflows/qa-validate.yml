@@ -407,6 +407,14 @@ jobs:
           make agent-aux-local-sync PROFILE=aux-smoke PROFILES_HOME="$RUNNER_TEMP/hermes-profiles"
           make agent-aux-local-sync PROFILE=aux-smoke CHECK=1 PROFILES_HOME="$RUNNER_TEMP/hermes-profiles"
 
+      # Issue #1214: the image the bot jobs run in must exist (published, or built
+      # locally by image-ensure's designed fallback) and every provisioned fleet
+      # profile must carry its SOUL/skills prompts. Tests only — no model call.
+      - name: Agent image + fleet profile prompts reachable
+        env:
+          PROFILES_HOME: ${{ runner.temp }}/hermes-profiles
+        run: make agent-image-smoke
+
       - name: Search returns data (real Firecrawl->lightbrd, --require-hits)
         run: make validate-fetch
 
