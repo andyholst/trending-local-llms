@@ -37,24 +37,34 @@ def since(cursor_file: Path) -> str:
     return default
 
 
-def comment_ids(repo: str, cursor: str, runner) -> list[str]:
-    """The ONE read; newest first so the 100-row page cannot miss a fresh comment."""
-    query = urlencode({"per_page": 100, "sort": "created", "direction": "desc"})
-    if cursor:
-        query += "&since=" + cursor
-    raw = runner(["gh", "api", f"repos/{repo}/issues/comments?{query}"])
-    try:
-        comments = json.loads(raw or "[]")
-    except ValueError:
-        comments = []
-    ids = sorted(
-        str(c.get("id"))
-        for c in comments
-        if isinstance(c, dict)
-        and str(c.get("created_at") or "") > cursor
-        and str((c.get("user") or {}).get("login") or "") not in IGNORE
-    )
-    return ids
+def comment_ids(repo: str, cursor: str, runner, page_limit: int = 20) -> list[str]:
+    """The ONE read seam; page until the cursor is reached (newest-first)."""
+    ids: set[str] = set()
+    oldest_seen = ""
+    for page in range(1, page_limit + 1):
+        query = urlencode({"per_page": 100, "sort": "created", "direction": "desc",
+                           "page": page})
+        if cursor:
+            query += "&since=" + cursor
+        raw = runner(["gh", "api", f"repos/{repo}/issues/comments?{query}"])
+        try:
+            batch = json.loads(raw or "[]")
+        except ValueError:
+            batch = []
+        if not isinstance(batch, list) or not batch:
+            break
+        for c in batch:
+            if not isinstance(c, dict):
+                continue
+            created = str(c.get("created_at") or "")
+            if created and (not oldest_seen or created < oldest_seen):
+                oldest_seen = created
+            if (created > cursor and
+                    str((c.get("user") or {}).get("login") or "") not in IGNORE):
+                ids.add(str(c.get("id")))
+        if len(batch) < 100 or (cursor and oldest_seen and oldest_seen <= cursor):
+            break
+    return sorted(ids)
 
 
 def main() -> None:
