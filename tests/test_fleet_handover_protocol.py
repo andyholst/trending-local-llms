@@ -36,6 +36,30 @@ GHOST_GUARD_ROW = "tests/test_fleet_handover_protocol.py"
 NEXT_DUTY = ("After a delivery, re-read the issue board and claim the oldest unclaimed "
              "actionable issue, or file an evidence-backed issue with a handover to `tll-planner`.")
 NEXT_DUTY_ROW = "tests/test_fleet_handover_protocol.py"
+#: Issue #1261 — reviewer capacity is the second bottleneck, so the planner's board note
+#: must name the PRs already awaiting review and hand them to the reviewer by name.
+REVIEWER_BOARD_NOTE = "The board note also names the PRs AWAITING REVIEW"
+REVIEWER_HANDOVER = "handover tll-reviewer"
+REVIEWER_FIRST = "Spend review capacity BEFORE producing new PRs"
+
+
+def test_the_planner_board_note_names_prs_awaiting_review() -> int:
+    """Issue #1261: the board note names PRs awaiting review and hands them to tll-reviewer."""
+    failed = 0
+    skill = ROOT / "agents" / "tll-planner" / "skills" / "tll-planner" / "SKILL.md"
+    rel = skill.relative_to(ROOT)
+    text = skill.read_text(encoding="utf-8") if skill.is_file() else ""
+    for needle, why in (
+        (REVIEWER_BOARD_NOTE, "the reviewer-board duty"),
+        (REVIEWER_HANDOVER, "the explicit handover to tll-reviewer"),
+        (REVIEWER_FIRST, "the spend-review-before-producing order"),
+    ):
+        if needle in text:
+            print(f"ok   {rel} carries {why}")
+        else:
+            print(f"FAIL {rel} dropped {why}")
+            failed += 1
+    return failed
 
 
 def test_next_issue_duty_is_documented() -> int:
@@ -131,6 +155,7 @@ def main() -> int:
     failed += test_rulebook_carries_ghost_run_handoff()
     failed += test_rulebook_carries_ghost_guard_row()
     failed += test_next_issue_duty_is_documented()
+    failed += test_the_planner_board_note_names_prs_awaiting_review()
     if failed:
         print(f"FAIL {failed}")
         return 1
