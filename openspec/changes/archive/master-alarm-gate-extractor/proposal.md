@@ -1,6 +1,7 @@
 # Proposal: master-alarm-gate-extractor
 
 Issue: #1281
+PR: #1285
 
 ## Why
 
