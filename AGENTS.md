@@ -1230,6 +1230,13 @@ issue that skips a section is refused.
    agent rule is dropped or weakened in the rulebook — a pipeline that drifts back to
    scheduled LLM runs, or a model call that slips into the merge gate, turns CI red
    on purpose.
+6v. **Collaborator / repository access is human-only** (owner directive, 2026-11-22,
+   issue #1238): an agent NEVER hands out collaborator access, invites, permission
+   changes or team membership — the human owner alone does that. A lane that needs
+   access posts the need on the shared issue thread and waits for the owner; it never
+   grants, requests on anyone's behalf, or works around the boundary.
+   `tests/test_access_boundary.py` fails when this rule is dropped or weakened.
+
 6w. **Comments are a trigger (owner directive, 2026-11-22, issue #1243)** — while
    CI runs or between work items, run `make comment-watch` (the read-only `gh api`
    seam in `scripts/comment_watch.py`) to see comments on any issue/PR newer than the
