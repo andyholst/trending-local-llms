@@ -1,6 +1,7 @@
 # Proposal: pr-block-log-budget-1174
 
 Issue: #1174
+PR: #1262
 
 ## Why
 
