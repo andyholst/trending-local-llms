@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **394**
+Active changes: **1** · archived: **395**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `openspec-merge-tree-1239` | active | #1239 (measured on origin/master `cebd71c7`) | — | [openspec-index](openspec/changes/openspec-merge-tree-1239/specs/openspec-index/spec.md) | 5/6 | [proposal.md](openspec/changes/openspec-merge-tree-1239/proposal.md) |
 
 ## Archived changes
 
