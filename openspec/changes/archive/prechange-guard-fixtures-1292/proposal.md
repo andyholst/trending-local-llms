@@ -1,6 +1,7 @@
 # Proposal: prechange-guard-fixtures-1292
 
 Issue: #1292
+PR: #1298
 
 ## Why
 
