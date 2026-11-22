@@ -40,6 +40,8 @@ def main() -> int:
             # duplicate source+engine+hardware — must not double-count
             {"tps": "700", "hardware": "RTX 3060 12GB", "engine": "MLX",
              "date": "2026-10-16", "source_post": "u/a/1"},
+            {"tps": "680", "hardware": "RTX 4070 12GB", "engine": "ExLlamaV3",
+             "date": "2026-11-16", "quant": "Q4", "source_post": "u/c/3"},
         ],
         "m-slow": [
             {"tps": "20", "hardware": "RTX 4090 24GB", "engine": "llama.cpp",
@@ -50,9 +52,11 @@ def main() -> int:
         ],
     }
     rows = VP.evidence_rows(models, measures)
-    check("vetted rows are joined with VRAM and parsed t/s", len(rows) == 3 and sum(1 for r in rows if r["vetted"]) == 2, str(rows))
+    check("vetted rows are joined with VRAM and parsed t/s", len(rows) == 4 and sum(1 for r in rows if r["vetted"]) == 3, str(rows))
     check("duplicate source+engine+hardware is dropped",
-          len([r for r in rows if r["model_key"] == "m-fast"]) == 1)
+          len([r for r in rows if r["model_key"] == "m-fast"]) == 2)
+    check("independent source posts are counted for the 'mentioned many times' signal",
+          all(r["sources"] == 2 for r in rows if r["model_key"] == "m-fast"), str([r["sources"] for r in rows]))
     check("a row with no source post is still reported as unvetted",
           any(not r["vetted"] for r in rows))
     groups = VP.top_by_band(rows)
@@ -60,6 +64,7 @@ def main() -> int:
     check("top t/s is rendered per VRAM band", "700.0" in rendered and "8-16GB" in rendered)
     check("the source post is rendered so vetted is auditable",
           "u/a/1" in rendered and "UNVETTED" not in rendered)
+    check("the independent-source count is rendered", "(n=2)" in rendered, rendered[:300])
     check("the unvetted 9999 t/s row is NOT in the vetted table", "9999.0" not in rendered)
     check("the view never writes a store", ".write_text(" not in
           (ROOT / "scripts/vetted_performance.py").read_text(encoding="utf-8"))

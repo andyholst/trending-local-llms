@@ -45,6 +45,7 @@ def band_label(vram: float) -> str:
 def evidence_rows(models: dict, measurements: dict) -> list[dict]:
     by_id = {str(m.get("id") or ""): m for m in models.get("models", [])}
     seen: set[tuple] = set()
+    source_posts: set[tuple[str, str]] = set()
     rows = []
     for key, entries in measurements.items():
         if not isinstance(entries, list):
@@ -58,6 +59,7 @@ def evidence_rows(models: dict, measurements: dict) -> list[dict]:
             engine = str(entry.get("engine") or "").strip()
             hardware = str(entry.get("hardware") or "").strip()
             date = str(entry.get("date") or "")[:10]
+            source_posts.add((str(key), source))
             dedup = (source, engine, hardware, str(key))
             if tps is None or vram is None or dedup in seen:
                 continue
@@ -78,6 +80,9 @@ def evidence_rows(models: dict, measurements: dict) -> list[dict]:
                 "band_rank": U.model_band(model, U.now_utc()) if model else None,
                 "posts_7d": ((model or {}).get("engagement") or {}).get("posts_7d", 0),
             })
+    for row in rows:
+        row["sources"] = sum(1 for key, src in source_posts
+                             if key == row["model_key"] and src)
     return rows
 
 
@@ -103,7 +108,8 @@ def render(groups: dict[str, list[dict]], unvetted: int) -> str:
         for row in groups[band]:
             name = str((row["model"] or {}).get("name") or row["model_key"])
             sources = row["source"].split()[:2]
-            source_cell = ", ".join(sources) if sources else "UNVETTED"
+            source_cell = (f"{', '.join(sources)} (n={row.get('sources', 0)})"
+                           if sources else "UNVETTED")
             status = "🔥 eligible" if row["band_rank"] == 0 else f"band {row['band_rank']}"
             lines.append(
                 f"| {band} | {row['tps']:.1f} | {name} | {row['engine']} | {row['quant'] or '—'} | "
