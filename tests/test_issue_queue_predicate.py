@@ -36,7 +36,7 @@ def check(name: str, ok: bool, detail: str = "") -> None:
         print(f"FAIL: {name} {detail}")
 
 
-def _stub_gh(tmp: Path, body: str) -> None:
+def _stub_gh(tmp: Path, body: str, state: str = "open") -> None:
     """A stub GitHub CLI. Only the external system is faked; the product code runs."""
     bin_dir = tmp / "bin"
     bin_dir.mkdir()
@@ -49,7 +49,8 @@ def _stub_gh(tmp: Path, body: str) -> None:
         f"PR_BODY = {json.dumps(body)}\n"
         "if a[:1] == ['pr'] and 'list' in a:\n"
         "    print(json.dumps([{'number': 42, 'headRefName': 'fix/pr-block-grace-derived-1176',\n"
-        "                       'state': 'open', 'createdAt': '2026-11-22T11:52:00Z',\n"
+        "                       'state': " + repr(state) + ",\n"
+        "                       'createdAt': '2026-11-22T11:52:00Z',\n"
         "                       'updatedAt': '2026-11-22T12:13:00Z', 'body': PR_BODY}]))\n"
         "elif a[:1] == ['issue'] and 'list' in a:\n"
         "    print(json.dumps([{'number': 1176, 'createdAt': '2026-11-20T13:50:49Z',\n"
@@ -80,6 +81,15 @@ def test_a_pr_without_a_closing_binding_stays_in_the_queue() -> None:
               any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
 
 
+def test_a_closed_closing_pr_does_not_mark_implementer() -> None:
+    with tempfile.TemporaryDirectory() as d:
+        _stub_gh(Path(d), "closes #1176", state="closed")
+        rows = q.build("andyholst/trending-local-llms", "tech-debt", 3,
+                       dt.datetime(2026, 11, 22, 15, 0, tzinfo=dt.timezone.utc))
+        check("a closed PR with a closing keyword is not live implementer",
+              any(r["issue"] == 1176 and r["has_implementer"] == 0 for r in rows), str(rows))
+
+
 def test_the_one_closure_parser_is_used_not_a_hand_rolled_regex() -> None:
     check("a closes keyword binds", q._closes_issue({"body": "closes #1176"}, 1176))
     check("Fixes binds too", q._closes_issue({"body": "Fixes #1176"}, 1176))
@@ -92,6 +102,7 @@ def test_the_one_closure_parser_is_used_not_a_hand_rolled_regex() -> None:
 def main() -> int:
     test_a_fix_prefixed_closing_pr_is_an_implementer()
     test_a_pr_without_a_closing_binding_stays_in_the_queue()
+    test_a_closed_closing_pr_does_not_mark_implementer()
     test_the_one_closure_parser_is_used_not_a_hand_rolled_regex()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
