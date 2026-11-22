@@ -1,6 +1,7 @@
 # Proposal: ghost-pr-handoff-1251
 
 Issue: #1251
+PR: #1253
 
 ## Why
 

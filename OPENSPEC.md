@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **397**
+Active changes: **0** · archived: **398**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `ghost-pr-handoff-1251` | active | #1251 | — | [fleet-handover](openspec/changes/ghost-pr-handoff-1251/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/ghost-pr-handoff-1251/proposal.md) |
+| _(none)_ | — | — | — | — | — | — |
 
 ## Archived changes
 
@@ -217,6 +217,7 @@ Active changes: **1** · archived: **397**
 | `gap-reader-drops-refused-misattribution` | archived | #1007 | #1117 | [data-gap-analysis](openspec/changes/archive/gap-reader-drops-refused-misattribution/specs/data-gap-analysis/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/gap-reader-drops-refused-misattribution/proposal.md) |
 | `gh-json-field-surface` | archived | #1160 | #1167 | [gh-json-field-surface](openspec/changes/archive/gh-json-field-surface/specs/gh-json-field-surface/spec.md) | 15/15 | [proposal.md](openspec/changes/archive/gh-json-field-surface/proposal.md) |
 | `ghost-alarm-gh-field-contract` | archived | #1158 | #1159 | [gh-json-field-contract](openspec/changes/archive/ghost-alarm-gh-field-contract/specs/gh-json-field-contract/spec.md) | 12/12 | [proposal.md](openspec/changes/archive/ghost-alarm-gh-field-contract/proposal.md) |
+| `ghost-pr-handoff-1251` | archived | #1251 | #1253 | [fleet-handover](openspec/changes/archive/ghost-pr-handoff-1251/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/ghost-pr-handoff-1251/proposal.md) |
 | `git-out-vs-git-raw` | archived | #504 | — | [worktree-base](openspec/changes/archive/git-out-vs-git-raw/specs/worktree-base/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/git-out-vs-git-raw/proposal.md) |
 | `green-when-the-issue-closed-while-in-flight` | archived | #520 (measured: run 39612330011 went RED over work PR #517 had already landed) | — | [bot-coordination](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/specs/bot-coordination/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/green-when-the-issue-closed-while-in-flight/proposal.md) |
 | `group-ingest-refusals-per-post` | archived | #882 — "Re-captured posts repeat refusal noise across search legs; group the | #1102 | [measurement-ingest](openspec/changes/archive/group-ingest-refusals-per-post/specs/measurement-ingest/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/group-ingest-refusals-per-post/proposal.md) |
