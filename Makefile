@@ -564,6 +564,12 @@ _auto-merge-rebase:
 auto-merge-rebase: ## Auto-merge pre-squash gate (issue #1049): classify the PR against the fetched master; rebase a behind-and-clean bot branch onto it, regenerate OPENSPEC.md on the rebased tree, push --force-with-lease; prints `verdict=` and `rebased=true|false` (PR=<n>, REPO=<owner/name>)
 	@$(MAKE) _auto-merge-rebase PR="$(PR)" REPO="$(REPO)"
 
+_auto-merge-head-check:
+	python3 scripts/auto_merge_head_check.py --pr "$(PR)" $(if $(REPO),--repo "$(REPO)",) --event-head "$(EVENT_HEAD)"
+
+auto-merge-head-check: ## Refuse an auto-merge squash whose PR head moved after validation (issue #1184); prints `head_moved=true|false` naming both SHAs (PR=<n>, REPO=<owner/name>, EVENT_HEAD=<validated sha>)
+	@$(MAKE) _auto-merge-head-check PR="$(PR)" REPO="$(REPO)" EVENT_HEAD="$(EVENT_HEAD)"
+
 pr-closure: ## Fail when this PR does not close the issue its branch implements (rule 6e)
 	@test -n "$(PR_EVENT)" -o -n "$(BRANCH)" || { echo "Usage: make pr-closure [PR_EVENT=<event json>] | [BRANCH=<head ref> BODY_FILE=<pr body>]"; exit 1; }
 	python3 scripts/pr_closure.py $(if $(PR_EVENT),--event "$(PR_EVENT)",--branch "$(BRANCH)" $(if $(BODY_FILE),--body-file "$(BODY_FILE)",))
