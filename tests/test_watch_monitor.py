@@ -179,6 +179,28 @@ def test_the_offline_contract_pins_the_settle_floor() -> None:
           W.main(["--check", "--claim-settle-seconds", str(W.CLAIM_SETTLE_FLOOR_SECONDS)]) == 0, "")
     check("the default is the pinned window",
           W.main(["--check", "--claim-settle-seconds", str(W.CLAIM_SETTLE_SECONDS)]) == 0, "")
+def test_r_marker_carries_its_pull_request() -> None:
+    """Issue #1284: an R marker names its PR, so a woken lane reads the right thread."""
+    print("\nCI marker names its PR: the run's own pull_requests is carried (#1284)")
+    p = {
+        "comments": {"issues": [], "pulls": []},
+        "runs": [{"id": 11, "status": "completed", "conclusion": "failure",
+                  "name": "qa-validate", "pull_requests": [{"number": 1289}]}],
+        "master": {"sha": "aaa"},
+    }
+    lines, _ = W.marker_state({}, p)
+    check("a PR run's marker carries its PR number",
+          "R:11:completed:failure:qa-validate:1289" in lines, str(lines))
+    assert "R:11:completed:failure:qa-validate:1289" in lines, str(lines)
+    check("the PR field is the LAST field, after the workflow token",
+          "R:11:completed:failure:qa-validate:1289".split(":")[-1] == "1289", str(lines))
+    check("a run with no pull_requests keeps the run-only shape",
+          W.pull_token({"pull_requests": []}) == "" and W.pull_token({}) == "", "")
+    check("a non-int PR entry contributes no field",
+          W.pull_token({"pull_requests": [{"number": "1289"}]}) == ""
+          and W.pull_token({"pull_requests": [None]}) == "", "")
+    check("the PR field is a second state, so a new PR re-emits",
+          W.pull_token({"pull_requests": [{"number": 1}]}) == "1", "")
 
 
 def main() -> int:
@@ -190,6 +212,7 @@ def main() -> int:
     test_heartbeat_marker_is_deterministic()
     test_heartbeat_coexists_with_failure_marker()
     test_r_marker_carries_workflow_name()
+    test_r_marker_carries_its_pull_request()
     test_offline_check_mode()
     test_the_rulebook_names_the_claim_settle_window()
     test_the_offline_contract_pins_the_settle_floor()
