@@ -660,6 +660,20 @@ _check-pytest-imports:
 check-pytest-imports: ## Fail when a test module imports or calls pytest — the TEST image has none (issue #768)
 	@$(MAKE) --no-print-directory _check-pytest-imports
 
+# Plain `pytest` collects the `test_*` functions and never calls `main()`, so a module whose
+# own `check()` counter is non-zero still reports `N passed` (issue #1301: the seam said
+# `FAILED 19 | FAILED 2` while pytest said `5 passed`, run 45029201948). `tests/conftest.py`
+# loads `scripts/check_counter_parity.py`, which reads each module's counter after its tests
+# and fails the session. This target is the tree-wide drift check: a check()-module with no
+# readable counter is exactly the shape whose two verdicts can disagree.
+.PHONY: _check-counter-parity
+_check-counter-parity:
+	python3 scripts/check_counter_parity.py --root .
+
+.PHONY: check-counter-parity
+check-counter-parity: ## Fail when a check()-counter test module cannot be observed by plain pytest (#1301)
+	@$(MAKE) --no-print-directory _check-counter-parity
+
 # A `NAME ?=` knob is what an operator sets. When nothing in the runner's tree reads it, the
 # operator's act changes nothing silently — measured with HERMES_LOG_TAIL, dead ever since the
 # seam went live (--stream, issue #591) yet still declared (issue #630). The guard names the
@@ -730,6 +744,7 @@ lint: ## Fail when a tracked text file does not end with a newline, a tracked Py
 	$(MAKE) --no-print-directory check-working-files
 	$(MAKE) --no-print-directory check-conflict-markers
 	$(MAKE) --no-print-directory check-pytest-imports
+	$(MAKE) --no-print-directory check-counter-parity
 	$(MAKE) --no-print-directory check-makefile-knobs
 	$(MAKE) --no-print-directory check-workflow-guards
 	$(MAKE) --no-print-directory check-gh-json-fields
