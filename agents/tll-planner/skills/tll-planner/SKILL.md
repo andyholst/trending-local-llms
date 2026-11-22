@@ -280,6 +280,7 @@ Every lane hands over on the issue thread, so the board can be followed without 
   `BOT <lane> · done #<id> · handover <next-lane|owner|none> · <the one next action>`.
   `handover` names the ONE lane that owns the next step (`tll-planner` re-triage, `tll-implementer` write, `tll-tester` verdict, `owner` a human decision); `none` only when the issue is fully done.
 - **Progress comments are the record.** A lane working across sessions posts state at each step, not only the opening claim.
+- **After a delivery, re-read the issue board and claim the oldest unclaimed actionable issue, or file an evidence-backed issue with a handover to `tll-planner`.** A `done`/`handover` comment followed by silence is not a delivery.
 - **The fleet spans several machines.** The issue thread is the ONE shared board across hosts: a lane reads it first to see which lane on ANY machine holds a live claim, and hands over on it. Never two lanes on one issue.
 - **Claim twice before starting (race guard).** A lane posts its signed working-claim, waits about a minute, re-reads the thread, and starts only if its claim is still the newest; a newer claim by another lane on any machine wins and the first lane backs off.
 - **A lane never works outside its remit** — it files or comments and hands over.
