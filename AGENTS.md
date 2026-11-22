@@ -1241,7 +1241,10 @@ issue that skips a section is refused.
    answered — never acknowledge a comment unseen. The
    watcher never writes to GitHub, dispatches CI, or grants access; those stay
    owner-only. `tests/test_comment_watch.py` fails if this rule or the `make
-   comment-watch` binding is dropped.
+   comment-watch` binding is dropped. The automatic trigger is a Hermes cron job with
+   monitor `make comment-monitor`: it wakes only when the sorted set of new comment
+   IDs changes, so every new comment — including one posted by our own agent identity
+   as a trigger test — is read and answered.
 
 6u. **Cross-machine issue/PR coordination is written, not assumed (MANDATORY,
    issue #1231).** More than one LLM machine works the same repository threads

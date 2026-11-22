@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 import comment_watch as CW  # noqa: E402
+import comment_monitor as CW_MON  # noqa: E402
 from wiring import wired  # noqa: E402
 
 _PASS = 0
@@ -36,12 +37,12 @@ def check(name, cond, detail=""):
 
 NOW = datetime(2026, 11, 22, 3, 0, 0, tzinfo=timezone.utc)
 COMMENTS = [
-    {"created_at": "2026-11-22T02:30:00Z", "user": {"login": "other-machine"},
+    {"id": "1", "created_at": "2026-11-22T02:30:00Z", "user": {"login": "other-machine"},
      "body": "please look at the index drift", "issue_url": "https://api.github.com/repos/x/issues/999",
      "html_url": "https://github.com/x/issues/999"},
-    {"created_at": "2026-11-20T01:00:00Z", "user": {"login": "other-machine"},
+    {"id": "2", "created_at": "2026-11-20T01:00:00Z", "user": {"login": "other-machine"},
      "body": "too old", "issue_url": "https://api.github.com/repos/x/issues/998", "html_url": ""},
-    {"created_at": "2026-11-22T02:45:00Z", "user": {"login": "asimov"},
+    {"id": "3", "created_at": "2026-11-22T02:45:00Z", "user": {"login": "asimov"},
      "body": "my own note", "issue_url": "https://api.github.com/repos/x/issues/997", "html_url": ""},
 ]
 
@@ -67,6 +68,32 @@ def test_watcher():
         CW.save_cursor(state, "2026-11-22T02:30:00Z")
         CW.save_cursor(state, "2026-11-22T01:00:00Z")  # late page must not rewind
         check("the cursor never moves backwards", CW.load_cursor(state, NOW) == "2026-11-22T02:30:00Z")
+
+
+def test_cron_monitor():
+    import tempfile
+    calls = []
+
+    def fake_runner(cmd):
+        calls.append(cmd)
+        return json.dumps(COMMENTS)
+
+    with tempfile.TemporaryDirectory() as td:
+        cursor = Path(td) / "cursor.json"
+        baseline = CW_MON.since(cursor)
+        check("monitor baselines the cursor once", cursor.exists() and baseline.startswith("2026-11-"))
+        ids = CW_MON.comment_ids("andyholst/trending-local-llms", "2026-11-21T03:00:00Z", fake_runner)
+        check("monitor emits sorted IDs only", ids == ["1", "3"], str(ids))
+        check("monitor queries newest-first (no oldest-100 trap)",
+              "direction=desc" in calls[0][2] and "per_page=100" in calls[0][2], str(calls[0]))
+        # A planted comment from our OWN agent identity must still wake the cron.
+        own = [{"id": "7073970816", "created_at": "2026-11-22T04:05:30Z",
+                "user": {"login": "asimov-agent"}, "body": "Testing pr comment trigger for the watcher"}]
+        got = CW_MON.comment_ids("andyholst/trending-local-llms", "", lambda cmd: json.dumps(own))
+        check("an asimov-agent trigger comment is NOT ignored", got == ["7073970816"], str(got))
+    rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    check("rule 6w binds the cron monitor", "make comment-monitor" in rule and
+          "including one posted by our own agent identity" in rule)
 
 
 def test_rulebook():
@@ -99,6 +126,7 @@ def test_rulebook():
 def main() -> int:
     print("comment-watch trigger (issue #1243):")
     test_watcher()
+    test_cron_monitor()
     test_rulebook()
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
