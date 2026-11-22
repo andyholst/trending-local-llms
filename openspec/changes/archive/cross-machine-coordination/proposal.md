@@ -1,6 +1,7 @@
 # Proposal: cross-machine-coordination
 
 Issue: #1231
+PR: #1233
 
 ## Why
 
