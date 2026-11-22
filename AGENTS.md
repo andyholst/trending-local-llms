@@ -1237,9 +1237,10 @@ issue that skips a section is refused.
    issue #1231).** More than one LLM machine works the same repository threads
    (measured: `asimov@mac` and `asimov@omarchy` on PRs #1218/#1221/#1222/#1229/#1230). Every
    machine therefore owes the board six things:
-   (a) **Identity** — every work comment identifies the actor as `agent@host`
-   (host masked when needed) and names the issue/PR it acts on;
-   (b) **Claim before edit** — a CLAIM on the ISSUE thread names the hostname, the exact
+   (a) **Identity** — every work comment identifies the actor as `agent@host`, using
+   the MACHINE ID only (`asimov@mac`, `asimov@omarchy`); NEVER a full host name,
+   LocalHostName or hardware name, and names the issue/PR it acts on;
+   (b) **Claim before edit** — a CLAIM on the ISSUE thread names the machine id, the exact
    scope and the base head BEFORE a shared branch is touched;
    (c) **Failure report before fix** — a red gate is posted first with the failing target,
    run/job URL, first error line and proposed owner, then fixed;

@@ -58,6 +58,8 @@ def main() -> int:
           "Signed handover" not in rule.replace("**Signed handover**", "**Dropped**"))
     check("the rule names its own regression test",
           "tests/test_cross_machine_coordination.py" in rule)
+    check("identity forbids any full host name",
+          "NEVER a full host name" in rule and "LocalHostName" in rule)
     check("this suite is discovered by `make test`", wired(__file__))
     print(f"{'FAILED' if _FAIL else 'PASSED'} {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
