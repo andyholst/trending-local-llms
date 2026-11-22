@@ -78,6 +78,7 @@ BRANCH_PREFIX = "ci/data-gap-"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bot_markers as bm  # noqa: E402
+import pr_closure  # noqa: E402  (the ONE closing-keyword parser, rule 6d)
 from env_int import env_int  # noqa: E402  (empty means missing — issue #487)
 
 #: The implementer's OUTCOME comment is still matched by prose (issue #197 flags it). It is pinned
@@ -241,11 +242,23 @@ def _branches(repo: str) -> set[str]:
 
 def _pulls(repo: str) -> list[dict]:
     out = _gh(["pr", "list", "--repo", repo, "--state", "all", "--limit", "100",
-               "--json", "number,headRefName,state,createdAt,updatedAt"], check=False)
+               "--json", "number,headRefName,state,createdAt,updatedAt,body"], check=False)
     try:
         return json.loads(out or "[]")
     except json.JSONDecodeError:
         return []
+
+
+def _closes_issue(pull: dict, number: int) -> bool:
+    """True when this PR's body binds a closing keyword to issue `number`.
+
+    The ONE parser is `pr_closure.closing_bindings` (rule 6d): a PR on a `fix/`,
+    `feat/` or `rule/` branch is still its issue's implementer when it closes it.
+    A keyword inside a code quote is prose, so `visible_text` runs first.
+    """
+    body = pull.get("body") or ""
+    return any(first == number
+               for first, _ in pr_closure.closing_bindings(pr_closure.visible_text(body)))
 
 
 def _comments(repo: str, number: int) -> list[dict]:
@@ -298,7 +311,10 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
                 branch = name
                 break
         pull = next((p for p in pulls if p.get("headRefName") == branch), None) if branch else None
-        has_implementer = bool(branch) or bool(pull and pull.get("state") == "open")
+        closing_pull = next((p for p in pulls
+                             if p.get("state") == "open" and _closes_issue(p, number)), None)
+        has_implementer = (bool(branch) or bool(pull and pull.get("state") == "open")
+                           or bool(closing_pull))
         if has_implementer:
             continue
 
@@ -325,7 +341,10 @@ def build(repo: str, label: str | list[str] | tuple[str, ...], gap_hours: int, n
                            and marker_run_id(c.get("body") or "") != run])
         reviewer_label = REVIEW_LABEL in labels  # advisory; reported, never a hold
         branch_ts = _branch_commit_ts(repo, branch) if branch else None
-        pull_ts = newest([parse_ts((pull or {}).get("createdAt")), parse_ts((pull or {}).get("updatedAt"))])
+        pull_ts = newest([parse_ts((pull or {}).get("createdAt")),
+                          parse_ts((pull or {}).get("updatedAt")),
+                          parse_ts((closing_pull or {}).get("createdAt")),
+                          parse_ts((closing_pull or {}).get("updatedAt"))])
         activity = newest([start_ts, start_marker_ts, outcome_ts, branch_ts, pull_ts])
 
         def fresh(ts: dt.datetime | None) -> bool:
