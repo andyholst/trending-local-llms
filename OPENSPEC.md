@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **393**
+Active changes: **0** · archived: **394**
 
 ## Active changes
 
@@ -167,6 +167,7 @@ Active changes: **0** · archived: **393**
 | `disable-fix-bot-pipeline` | archived | #814 | #815 | [pipeline-repair](openspec/changes/archive/disable-fix-bot-pipeline/specs/pipeline-repair/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/disable-fix-bot-pipeline/proposal.md) |
 | `duplicate-change-for-one-edit` | archived | #622 | #819 | [openspec-duplication](openspec/changes/archive/duplicate-change-for-one-edit/specs/openspec-duplication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/duplicate-change-for-one-edit/proposal.md) |
 | `engagement-counter-mapping` | archived | #873 | #879 | [post-signal](openspec/changes/archive/engagement-counter-mapping/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-mapping/proposal.md) |
+| `engagement-counter-rollup` | archived | #1182 | #1218 | [post-signal](openspec/changes/archive/engagement-counter-rollup/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-rollup/proposal.md) |
 | `engagement-tasks-claim` | archived | #699 (follow-up) — correct the residual false "typed README byte-identical" claim in the | — | [engagement-tasks-claim](openspec/changes/archive/engagement-tasks-claim/specs/engagement-tasks-claim/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engagement-tasks-claim/proposal.md) |
 | `engagement-value-fidelity` | archived | #699 — `ENH: #698 reader switch silently re-resolves engagement` | — | [engagement-value-fidelity](openspec/changes/archive/engagement-value-fidelity/specs/engagement-value-fidelity/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/engagement-value-fidelity/proposal.md) |
 | `engine-build-refuses-throughput` | archived | #1006 — "The gap reader over-matches throughput as `engine_min_version`" | #1010 | [engine-min-version-detection](openspec/changes/archive/engine-build-refuses-throughput/specs/engine-min-version-detection/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/engine-build-refuses-throughput/proposal.md) |

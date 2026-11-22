@@ -90,12 +90,37 @@ def run_ingest(store: dict) -> dict:
     return store
 
 
+def _first_differences(a, b, path="", limit=20):
+    """Short, stable path/value diff so a failed exact-match shows WHY (rule 6m:
+    a red gate must name the field, not just 'store != expected')."""
+    out = []
+
+    def walk(x, y, p):
+        if len(out) >= limit:
+            return
+        if isinstance(x, dict) and isinstance(y, dict):
+            for k in sorted(set(x) | set(y)):
+                walk(x.get(k, "<missing>"), y.get(k, "<missing>"), f"{p}/{k}")
+        elif isinstance(x, list) and isinstance(y, list):
+            if len(x) != len(y):
+                out.append(f"{p}/len: expected {len(x)} got {len(y)}")
+            for i, (u, v) in enumerate(zip(x, y)):
+                walk(u, v, f"{p}/{i}")
+        elif x != y:
+            out.append(f"{p}: expected {x!r} got {y!r}")
+    walk(a, b, path)
+    return out
+
+
 def test_output_matches_expected_fixture():
     """The real ingest must produce EXACTLY the golden expected_models.json."""
     store = run_ingest(base_store())
     expected = json.loads(EXPECTED_FIXTURE.read_text())
     check("ingest output matches expected_models.json fixture", store == expected,
           "store != expected (see diff below)")
+    if store != expected:
+        for line in _first_differences(expected, store):
+            print(f"    diff {line}")
 
 
 def test_mandatory_fields_present():
@@ -219,6 +244,9 @@ def test_no_duplicate_engine_rows_from_duplicate_posts():
     expected = json.loads(EXPECTED_DUP_FIXTURE.read_text())
     check("no-dup: ingest output matches expected_duplicates.json", store == expected,
           "store != expected (duplicates not collapsed)")
+    if store != expected:
+        for line in _first_differences(expected, store):
+            print(f"    diff {line}")
     for m in store["models"]:
         check(f"no-dup: {m['id']} has exactly 1 engine row (no duplicate)",
               len(m["engines"]) == 1, f"got {len(m['engines'])} rows")
