@@ -49,7 +49,9 @@ def main() -> int:
 
         # secret-output: test value — the "credential value leak" case below writes a
         # deliberately key-shaped FAKE string into a throwaway fixture to prove the
-        # checker REFUSES it. It is not a live credential.
+        # checker REFUSES it. It is not a live credential. The key is assembled at
+        # runtime so the contiguous credential shape never appears in tracked source
+        # (nerve_key_check.scan_tree walks tests/ for exactly that shape).
         cases = {
             "Dockerfile pin drift": lambda d: (d / "Dockerfile").write_text('ARG HERMES_VERSION="0.23.1"\n'),
             "missing installer": lambda d: (d / "scripts/install_hermes_ci.sh").unlink(),
@@ -67,7 +69,7 @@ def main() -> int:
                             "measured": {"endpoint": "http://127.0.0.1:1/v1"},
                             "chain": [{"model": "m/x:free", "role": "primary"}]})),
             "credential value leak": lambda d: (d / "scripts/install_hermes_ci.sh").write_text(
-                "sk-abcdefghijklmnopqrstuvwxyz012345\n"),
+                "sk-" + "abcdefghijklmnopqrstuvwxyz012345" + "\n"),
         }
         for name, break_it in cases.items():
             bad_root = Path(tempfile.mkdtemp(dir=td))
