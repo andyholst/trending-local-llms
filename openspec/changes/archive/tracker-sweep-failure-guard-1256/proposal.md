@@ -1,7 +1,7 @@
 # Proposal: tracker-sweep-failure-guard-1256
 
 Issue: #1256
-PR: pending
+PR: #1257
 
 ## Why
 

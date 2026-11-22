@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **493**
+Active changes: **1** · archived: **494**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `tracker-sweep-failure-guard-1256` | active | #1256 | pending | [tracker-sweep](openspec/changes/tracker-sweep-failure-guard-1256/specs/tracker-sweep/spec.md) | 5/6 | [proposal.md](openspec/changes/tracker-sweep-failure-guard-1256/proposal.md) |
 
 ## Archived changes
 
@@ -489,6 +488,7 @@ Active changes: **2** · archived: **493**
 | `the-index-keeper-regenerates-both` | archived | #526 (measured: master red at run 39625708799 — `OPENSPEC.md` said 111 active, the disk held 112) | — | [generated-docs](openspec/changes/archive/the-index-keeper-regenerates-both/specs/generated-docs/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/the-index-keeper-regenerates-both/proposal.md) |
 | `the-other-two-pr-bodies` | archived | #542 | — | [pr-body](openspec/changes/archive/the-other-two-pr-bodies/specs/pr-body/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/the-other-two-pr-bodies/proposal.md) |
 | `tll-docs-lane` | archived | #1396 | #1420 | [fleet-docs](openspec/changes/archive/tll-docs-lane/specs/fleet-docs/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/tll-docs-lane/proposal.md) |
+| `tracker-sweep-failure-guard-1256` | archived | #1256 | #1257 | [tracker-sweep](openspec/changes/archive/tracker-sweep-failure-guard-1256/specs/tracker-sweep/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/tracker-sweep-failure-guard-1256/proposal.md) |
 | `trending-for-your-card` | archived | #349 — `feat(readme): the trending list for YOUR card — VRAM-tiered trending tables, low end (8–24 GB) first` | — | [readme-trending](openspec/changes/archive/trending-for-your-card/specs/readme-trending/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/trending-for-your-card/proposal.md) |
 | `unique-rule-numbers` | archived | #270 | — | [rulebook-integrity](openspec/changes/archive/unique-rule-numbers/specs/rulebook-integrity/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/unique-rule-numbers/proposal.md) |
 | `unstructured-is-not-a-capacity` | archived | #213 (the finding, measured while attempting its backfill) | — | [data-gap-analysis](openspec/changes/archive/unstructured-is-not-a-capacity/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/unstructured-is-not-a-capacity/proposal.md) |
