@@ -504,6 +504,29 @@ jobs:
           rebased=$(printf '%s\n' "$OUT" | sed -n 's/^rebased=//p' | tail -1)
           printf 'rebased=%s\n' "${rebased:-false}" >> "$GITHUB_OUTPUT"
 
+      # #1184: re-read the PR head IMMEDIATELY before the squash. The event SHA
+      # was read when this run started; a host push since then would make
+      # `--match-head-commit` refuse with "Head branch was modified" and leave
+      # the PR BLOCKED with green checks from a head never validated. The seam
+      # (scripts/auto_merge_head_check.py, rule 6d) names both SHAs and reports
+      # head_moved=true; this run then SKIPS the squash (green, honest) and the
+      # fresh pull_request run the push fired re-validates and merges the new head.
+      - name: Refuse a squash whose PR head moved after validation (#1184)
+        id: head-check
+        if: steps.dnm-check.outputs.hold != 'true' && steps.auto-merge-rebase.outputs.rebased != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          OUT=$(make auto-merge-head-check PR="$PR_NUM" REPO="$REPO" EVENT_HEAD="$EVENT_HEAD")
+          printf '%s\n' "$OUT"
+          # rule 3d: parse an allowlist of keys, never the whole stdout
+          moved=$(printf '%s\n' "$OUT" | sed -n 's/^head_moved=//p' | tail -1)
+          printf 'moved=%s\n' "${moved:-true}" >> "$GITHUB_OUTPUT"
+
       # Squash-merge ONLY the exact commit that was validated (--match-head-commit):
       # a push after this run started leaves the PR open for the newer run.
       # Owner PAT, not GITHUB_TOKEN: a merge made with GITHUB_TOKEN starts no
@@ -511,8 +534,9 @@ jobs:
       # #1049: `rebased=true` means this run's event head was just rewritten by the step
       # above — merging it here would squash the STALE head, so the squash is skipped and
       # CI on the new head lands the merge.
+      # #1184: `moved=true` means the head moved since validation — skip too (above).
       - name: Squash-merge the green PR + delete its branch (owner PAT)
-        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true'
+        if: steps.auto-merge-rebase.outputs.rebased != 'true' && steps.dnm-check.outputs.hold != 'true' && steps.head-check.outputs.moved != 'true'
         env:
           GH_TOKEN: ${{ secrets.FIXBOT_DISPATCH_TOKEN }}
           REPO: ${{ github.repository }}
