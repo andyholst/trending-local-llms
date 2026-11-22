@@ -150,6 +150,12 @@ jobs:
       - name: Fleet lane behaviour matches the checked-out base (issue #1209)
         run: make fleet-host-sync-check BASE=HEAD PROFILES_HOME=agents
 
+      # (issue #1266) The watcher's change detector is repo-owned: every host installs the
+      # same markers. This is the offline half — no network, no credentials — so a PR
+      # cannot remove the C/R/M contract or the check mode silently.
+      - name: Watch monitor contract (issue #1266)
+        run: make watch-monitor CHECK=1
+
       # The only identities on this repo are Andy Holst and Asimov Agent. Nothing
       # read a commit's MESSAGE or a commit's IDENTITY, so a
       # `Co-authored-by: Hermes Agent <hermes@nousresearch.com>` trailer landed on

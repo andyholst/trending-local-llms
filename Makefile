@@ -1593,6 +1593,16 @@ _fleet-host-sync-check:
 fleet-host-sync-check: ## Refuse a host fleet whose lane bytes / AGENTS.md lifecycle rules drift from the fetched base (BASE=origin/master, PROFILES_HOME=..., issue #1209)
 	@$(MAKE) --no-print-directory _fleet-host-sync-check
 
+.PHONY: _watch-monitor watch-monitor
+WATCH_MONITOR_ARGS := $(if $(REPO),--repo $(REPO),)$(if $(STATE),--state $(STATE),)$(if $(GH),--gh $(GH),)$(if $(CHECK),--check,)
+WATCH_HEARTBEAT_SECONDS ?= 0
+
+_watch-monitor:
+	python3 scripts/watch_monitor.py --heartbeat-seconds $(WATCH_HEARTBEAT_SECONDS)$(if $(WATCH_MONITOR_ARGS), $(WATCH_MONITOR_ARGS),)
+
+watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`CHECK=1` for the offline CI contract, issues #1266/#1282)
+	@$(MAKE) --no-print-directory _watch-monitor
+
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
 # `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements

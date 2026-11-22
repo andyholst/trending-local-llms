@@ -9,13 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **0** · archived: **402**
+Active changes: **1** · archived: **403**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| _(none)_ | — | — | — | — | — | — |
+| `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
 
@@ -417,6 +417,7 @@ Active changes: **0** · archived: **402**
 | `vram-min-prose` | archived | #431 — `tech-debt: a prose vram_min is published as its first number (32GB GPU + system RAM -> 32GB)` | — | [card-fit](openspec/changes/archive/vram-min-prose/specs/card-fit/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/vram-min-prose/proposal.md) |
 | `vram-need-cpu-marker` | archived | #343 — `tech-debt: \`vram_min\` carries \`"CPU"\` as a marker, and \`vram_need()\` reads it as "not stated"` | — | [card-fit](openspec/changes/archive/vram-need-cpu-marker/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/vram-need-cpu-marker/proposal.md) |
 | `vram-tier-vocabulary` | archived | #341 — `tech-debt: \`vram_tier\` holds values the contract does not describe, and nothing notices` | — | [vram-tier](openspec/changes/archive/vram-tier-vocabulary/specs/vram-tier/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/vram-tier-vocabulary/proposal.md) |
+| `watch-monitor-1266` | archived | #1266 | #1267 | [fleet-watch](openspec/changes/archive/watch-monitor-1266/specs/fleet-watch/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/watch-monitor-1266/proposal.md) |
 | `weekly-free-model-refresh` | archived | #1195 | #1205 | [fleet-model-chain](openspec/changes/archive/weekly-free-model-refresh/specs/fleet-model-chain/spec.md) | 13/14 · 1 blocked | [proposal.md](openspec/changes/archive/weekly-free-model-refresh/proposal.md) |
 | `weight-gb-cannot-belong` | archived | #615 — tech-debt "A measurement's weight_gb can belong to another model (Bonsai 2 9B | #809 | [weight-gb-refusal](openspec/changes/archive/weight-gb-cannot-belong/specs/weight-gb-refusal/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/weight-gb-cannot-belong/proposal.md) |
 | `workflow-guard-scan-all` | archived | #816 | #817 | [agents-guard-registry](openspec/changes/archive/workflow-guard-scan-all/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/workflow-guard-scan-all/proposal.md) |

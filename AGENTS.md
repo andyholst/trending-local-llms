@@ -1233,6 +1233,27 @@ issue that skips a section is refused.
    grants, requests on anyone's behalf, or works around the boundary.
    `tests/test_access_boundary.py` fails when this rule is dropped or weakened.
 
+6w. **The fleet watcher is a two-job trigger, not a poll habit** (issue #1266): a
+   no-LLM monitor job (short interval) runs the repo-owned `make watch-monitor` and emits
+   ONLY changed markers — `C:<comment id>`, `R:<run id>:<status>:<conclusion>`,
+   `M:<master sha>` and the opt-in `H:<bucket>` work heartbeat — with a caller-owned
+   state file outside the repository; identical ticks emit nothing and skip the agent
+   unless the heartbeat's 15-minute bucket has turned. A monitor-gated agent job reads
+   that diff and comments FIRST on the relevant issue/PR as
+   `BOT <lane> (host <user@hostname>) · LOOK …` before any work (rules 3f/6j/7b). On `C:`
+   it reads the full thread, replies, files any new work and implements only an issue
+   claimed on its own thread. On `R:` it diagnoses the job and posts the result on the
+   thread. On `M:` it FIRST fetches and pulls master, re-reads AGENTS.md, runs
+   `make fleet-host-sync-check BASE=origin/master`, and brings this host's tll/default
+   Hermes skills and configs up to date (backups, no credentials). `H:` is a work
+   heartbeat, not a task: after handling C/R/M the agent must **not stop at diagnosis**
+   — it claims and implements the oldest unclaimed actionable issue on its own thread
+   with a worktree PR and hands it to `tll-reviewer`, so both hosts keep working every
+   5 minutes instead of idling between events. The monitor script is part of the implementation, not a host-local habit: both machines
+   install it from master so the marker protocol cannot drift. No CI dispatch, no merges,
+   no master pushes and no collaborator grants (rules 6j/6v). `tests/test_watch_monitor.py`
+   fails when the protocol or the repo-owned seam is removed (§8).
+
 ## 3. Data source & collection
 
 - X content comes from the **lightbrd.com mirror** (`lightbrd.com/search?f=tweets&q=...`),
@@ -2382,6 +2403,8 @@ actually happened.
 | `tests/test_fleet_lifecycle.py` + `make fleet-host-sync-check` (rules 3c/6c/6d/6h/6m, issue #1209, attended rule-3c sign-off: the new §7b section, declared on the issue before implementation) | a fleet that hands work off in chat or on a PR instead of on the ISSUE: the real seam (`scripts/fleet_host_sync_check.py`) compares each host lane's `SOUL.md`, skill and `config.yaml` with `git show <fetched base>:agents/...` (never the working tree) and checks the `AGENTS.md` lifecycle markers, so a host one protocol behind, a missing profile, a dropped rulebook shape or a stale base is refused with the lane and file named — while the CI half drives that SAME seam over a scratch home, green on a synced tree and RED on a planted byte-loss, and proves the planner's "read the comments to delegate" shapes and the PR→reviewer handover survive in all seven SOULs and the planner skill. Wired through `make test`/`make lint` and a workflow call, with `ARCHITECTURE.md` rows in the same change |
 
 | `tests/test_fleet_handover_protocol.py` + `make test` (rules 3c/6c/6d, issue #1251, rule-3c review-required: the new §7b bullet and §8 row are declared on the issue) | a CI head that NEVER started being read as a red gate: `auto-merge-rebase` pushed bot-actor heads whose qa-validate run ended `action_required` with ZERO jobs (#1236/#1237/#1188 on 2026-11-22), so a lane either looped on green code or waited forever on an empty rollup. §7b now names the shape, requires an issue-thread FAILURE REPORT before any fix, an owner-identity empty commit on the lane's OWN branch only, and `gh run view <id> --json jobs` proof that jobs exist; this module pins all three needles plus the §8 row and is RED on the base revision (4 FAIL) before the rulebook edit |
+
+| `tests/test_watch_monitor.py` + `make watch-monitor CHECK=1` (rules 3c/6d/6h/6j/6v/6w, issues #1266/#1282, rule-3c review-required: rule 6w and this §8 row are declared on both issues) | the fleet's comment/CI/merge detector lived only in one host's `~/.hermes/scripts`, so a rebuilt host or the other machine silently drifted and neither knew when a PR merged. The repo-owned seam (`scripts/watch_monitor.py`) emits changed `C:<comment>`, `R:<run>:<status>:<conclusion>`, `M:<master sha>` and the opt-in deterministic `H:<bucket>` markers from a caller-owned state file, never timestamps; the guard drives the REAL pure diff with gh-shaped payloads — a quiet tick emits nothing, a repeat comment/run is silent, a new master head emits exactly one `M:`, and a 15-minute heartbeat is stable inside a bucket and coexists with a `failure` marker. It also pins rule 6w's comment-first, fetch/pull-on-merge, skill-sync and "do not stop at diagnosis — claim the oldest unclaimed actionable issue" duties, the Makefile target, the `qa-validate` offline check and this row. RED on the base tree (issues #1266/#1282): `PASSED 15 | FAILED 9` for the first seam and the heartbeat guards fail on the pre-heartbeat script |
 
 When you add a stage or fix a pipeline bug, add its row here and its test in
 the same change (rule 6c).

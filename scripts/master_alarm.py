@@ -76,6 +76,9 @@ GATES: dict[str, tuple[str, str]] = {
     "openspec-check": ("keeper", "qa-validate index-repair + architecture-bot"),
     # -- ALARM — the master-alarm makes a red push-to-master run visible.
     "fleet-host-sync-check": ("alarm", "master-alarm"),
+    # The comment/CI/merge monitor is deterministic repo-owned code (issue #1266).
+    # No keeper regenerates its protocol, so a red master goes to the alarm.
+    "watch-monitor": ("alarm", "master-alarm"),
     "lint": ("alarm", "master-alarm"),
     "check-commit-authorship": ("alarm", "master-alarm"),
     "pr-closure": ("alarm", "master-alarm"),
