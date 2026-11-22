@@ -29,6 +29,37 @@ REMIT_RULE = "Never work outside your remit"
 MULTI_MACHINE = "The fleet spans several machines."
 RACE_GUARD = "Claim twice before you start (race guard)."
 PLANNER_DISPATCH = "· dispatch #<id> · lane <lane> · base <sha>"
+GHOST_RULE = "A 0-job `action_required` head is a never-started run, not a red gate"
+GHOST_OWN_BRANCH = "re-push ONLY its own branch with an owner-git-identity empty commit"
+GHOST_VERIFY = "verify with `gh run view <id> --json jobs` that the new run has jobs"
+GHOST_GUARD_ROW = "tests/test_fleet_handover_protocol.py"
+
+
+def test_rulebook_carries_ghost_run_handoff() -> int:
+    """The #1251 rulebook bullet survives: recognise, report, own-branch, verify."""
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    failed = 0
+    for needle, why in (
+        (GHOST_RULE, "the never-started-run rule"),
+        (GHOST_OWN_BRANCH, "the own-branch-only recovery"),
+        (GHOST_VERIFY, "the jobs-exist verification"),
+    ):
+        if needle in text:
+            print(f"ok   AGENTS.md carries {why}")
+        else:
+            print(f"FAIL AGENTS.md dropped {why}")
+            failed += 1
+    return failed
+
+
+def test_rulebook_carries_ghost_guard_row() -> int:
+    """§8 names the module that locks the ghost-run behavior."""
+    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    if GHOST_GUARD_ROW + "`" not in text and GHOST_GUARD_ROW not in text:
+        print(f"FAIL AGENTS.md §8 dropped the {GHOST_GUARD_ROW} guard row")
+        return 1
+    print("ok   AGENTS.md names the ghost-run guard module")
+    return 0
 
 
 def main() -> int:
@@ -70,6 +101,11 @@ def main() -> int:
             failed += 1
         else:
             print(f"ok   {rel} states the standing board rule (#682 closed)")
+    if failed:
+        print(f"FAIL {failed}")
+        return 1
+    failed += test_rulebook_carries_ghost_run_handoff()
+    failed += test_rulebook_carries_ghost_guard_row()
     if failed:
         print(f"FAIL {failed}")
         return 1
