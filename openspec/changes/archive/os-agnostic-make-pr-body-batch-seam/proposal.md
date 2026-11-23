@@ -1,6 +1,7 @@
 # OS-agnostic make — the keeper PR-body batch behind the PYTHON_RUN seam (Slice 3)
 
 **Issue:** [#1399](https://github.com/andyholst/trending-local-llms/issues/1399)
+PR: #1417
 **Capability:** `os-agnostic-make-pr-body-batch-seam`
 
 ## Why
