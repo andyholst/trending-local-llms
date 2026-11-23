@@ -8,6 +8,7 @@ on PATH standing in for the network — rule 6m).
 """
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -421,8 +422,69 @@ def test_branch_resolution_is_capped_and_never_guesses() -> None:
           count == W.PR_RESOLVE_MAX, f"calls={count} cap={W.PR_RESOLVE_MAX}")
 
 
+def test_fetch_payload_keeps_the_explicit_gh_client() -> None:
+    """The --gh path pinned by a cron wrapper must serve EVERY detector leg, not just api."""
+    print("\nExplicit gh client: resolution never swaps in a second gh")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        log = tmp / "clients.log"
+        source = '''#!/usr/bin/env python3
+import json, sys
+args = sys.argv[1:]
+with open(__LOG__, "a", encoding="utf-8") as fh:
+    fh.write(__NAME__ + " | " + " ".join(args[:2]) + "\\n")
+if "pr" in args[:2] and "list" in args:
+    print(json.dumps([{"number": 1362}]))
+elif "api" in args[:2]:
+    path = args[args.index("api") + 1]
+    if "actions/runs" in path:
+        print(json.dumps({"workflow_runs": [{
+            "id": 45116060775, "name": "qa-validate", "event": "pull_request",
+            "status": "completed", "conclusion": "failure",
+            "head_branch": "ci/tech-debt-pr-rebase-soul-1361", "head_sha": "abc",
+            "pull_requests": []
+        }]}))
+    elif path.startswith("commits/"):
+        print(json.dumps({"sha": "aaa"}))
+    else:
+        print(json.dumps([]))
+else:
+    print(json.dumps([]))
+'''
+        primary = tmp / "primary-gh"
+        primary.write_text(source.replace("__LOG__", repr(str(log))).replace("__NAME__", repr("primary")),
+                           encoding="utf-8")
+        primary.chmod(0o755)
+        sentinel = tmp / "sentinel-gh"
+        sentinel.write_text(source.replace("__LOG__", repr(str(log))).replace("__NAME__", repr("sentinel")),
+                            encoding="utf-8")
+        sentinel.chmod(0o755)
+        saved_path, saved_tll = os.environ.get("PATH", ""), os.environ.get("TLL_GH")
+        bin_dir = tmp / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "python3").symlink_to(sys.executable)
+        try:
+            os.environ["PATH"] = str(bin_dir)      # python3 only, no gh on PATH
+            os.environ["TLL_GH"] = str(sentinel)   # a second gh the buggy code would pick up
+            payload = W.fetch_payload("o/r", str(primary))
+        finally:
+            os.environ["PATH"] = saved_path
+            if saved_tll is None:
+                os.environ.pop("TLL_GH", None)
+            else:
+                os.environ["TLL_GH"] = saved_tll
+        calls = log.read_text(encoding="utf-8")
+        check("resolution never swaps in a second gh", "sentinel" not in calls, calls)
+        check("the resolution leg ran on the explicit client",
+              any(line.startswith("primary | pr list") for line in calls.splitlines()), calls)
+        check("the PR was injected back into the run",
+              any(r.get("pull_requests") for r in payload["runs"]), str(payload["runs"]))
+        assert "sentinel" not in calls, calls
+
+
 def main() -> int:
     test_quiet_tick_emits_nothing()
+    test_fetch_payload_keeps_the_explicit_gh_client()
     test_new_comment_marker()
     test_ci_state_marker()
     test_master_merge_marker_and_rulebook_duty()
