@@ -525,12 +525,51 @@ def test_reviewer_skill_carries_landed_host_ahead_notes() -> int:
     return failed
 
 
+def test_second_batch_host_ahead_notes_are_landed() -> int:
+    """The 2026-11-23 M: wake landed four lanes' forward notes without dropping master rules."""
+    failed = 0
+    cases = {
+        "tll-planner": (
+            "Serialise SHARED FILES",
+            "another status report on the same wait",
+            "A dispatch's `done` is push-and-verify",
+            "Verify a landed change against `origin/master`",
+        ),
+        "tll-implementer": (
+            "STRIPS every line starting with `#`",
+            "RE-READ the issue thread IMMEDIATELY",
+            "Delivery procedure — push, then CI verifies",
+            "OpenSpec LIFECYCLE gate",
+        ),
+        "tll-reviewer": ("A prerequisite that PRINTS poisons",),
+        "tll-pr-rebase": (
+            "A 0-job `completed/action_required` run whose actor is",
+            "Measure for an owner PAT",
+            "§3 conflict as a union of ROWS",
+        ),
+    }
+    for lane, needles in cases.items():
+        path = ROOT / "agents" / lane / "skills" / lane / "SKILL.md"
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        for needle in needles:
+            failed += check(needle in text, f"{lane} mirror carries {needle!r}")
+    impl = (ROOT / "agents" / "tll-implementer" / "skills" / "tll-implementer" / "SKILL.md")
+    if impl.exists():
+        body = impl.read_text(encoding="utf-8")
+        failed += check(
+            body.count("**The `validate` job also runs the OpenSpec LIFECYCLE gate") == 1,
+            "the OpenSpec LIFECYCLE bullet is not duplicated by the union",
+        )
+    return failed
+
+
 def main() -> int:
     failed = 0
     for fn in (
         test_every_lane_carries_the_pr_handover_shapes,
         test_planner_skill_reads_the_comments,
         test_lane_skill_mirrors_carry_landed_host_ahead_notes,
+        test_second_batch_host_ahead_notes_are_landed,
         test_pr_rebase_skill_is_push_and_verify,
         test_reviewer_skill_carries_landed_host_ahead_notes,
         test_lane_skills_carry_the_push_and_verify_rule,

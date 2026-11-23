@@ -91,6 +91,7 @@ sits at ~0% CPU in `sleep` polls.
 4. CLAIM before starting: post `BOT tll-implementer · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>` on the issue's OWN thread.
 5. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale.
 6. Make the change in the worktree, run ONLY the fast offline checks (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module), PUSH, and confirm CI registered on the new SHA (`gh pr checks <n>`, `gh run view <id> --json jobs`). Full `make validate`, the whole `make test` and `make live-smoke` are CI-ONLY — never pre-run them locally. See `## Delivery procedure`.
+6. Do the lane work in `SOUL.md` and stop. Coordination lanes file or comment. Only `tll-implementer` writes the tree, and only after the planner names the issue.
 7. Post the result on the issue. The comment is the record.
 
 ## This lane
@@ -167,6 +168,17 @@ sits at ~0% CPU in `sleep` polls.
   `--amend` again if the count is short. Related: a rebase that touches `OPENSPEC.md` can also leave
   the count line one row behind master's own archive — regenerate (`scripts/openspec_index.py
   --write`) rather than hand-editing the collision.
+- **`git commit -F <file>` STRIPS every line starting with `#` (default cleanup treats `#` as a comment
+  char), so a five-section message silently ships with NO `## ` headers.** Measured on #1445: the body
+  file was correct but `git log -1 --format=%B | grep -c '^## '` returned 0 and `--check-commit-file`
+  refused after the commit. Use `--cleanup=verbatim` on both the commit and any `--amend --no-edit`, then
+  re-grep `^## ` = 5 BEFORE pushing; a rebase `--continue` can also drop them, so re-check after it too.
+- **RE-READ the issue thread IMMEDIATELY before you push or open the PR — the race-guard re-read at claim
+  time does not cover the whole work window.** Measured on #1445: `tll-planner` posted a SEQUENCING
+  ruling at 17:51:27Z ("wait for PR #1448 to merge; land ONLY the residual delta") 17 seconds before my
+  PR comment; I opened PR #1449 anyway, it merged first, duplicated #1448's notes and left #1448
+  CONFLICTING. If a ruling lands mid-work, stop and obey it — a competing PR that jumps the queue costs
+  the planner a reconciliation and the board a conflicting PR.
 - **`validate` runs an OpenSpec index check on the MERGE TREE (`git merge --no-commit --no-ff origin/master`
   + `make openspec-index-check`, issue #1239), so a green index on YOUR head is not enough.** Any PR that
   adds/archives an OpenSpec change races master's own index edits and reds with
@@ -211,6 +223,7 @@ sits at ~0% CPU in `sleep` polls.
   forwards `GH_TOKEN` and master's own runs are green, so this is a local-environment artifact, not a
   regression — prove it by running the module against pristine `origin/master` in the same image before
   chasing it (#972).
+  chasing it.
 - **A lane can force-push YOUR branch between your push and the merge; re-read the head before
   reporting a verdict.** Measured on #1398/PR #1406: another lane rebased my head to a new sha, and the
   new head's qa-validate ended `action_required` with ZERO jobs (the #1115 never-started shape), so the
