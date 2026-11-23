@@ -1,6 +1,7 @@
 # Proposal: contract-prose-sync
 
 Issue: #1394
+PR: #1410
 
 ## Why
 
