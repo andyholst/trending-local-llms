@@ -203,6 +203,49 @@ def test_r_marker_carries_its_pull_request() -> None:
           W.pull_token({"pull_requests": [{"number": 1}]}) == "1", "")
 
 
+def test_r_marker_keeps_its_pr_after_the_merge_clears_the_association() -> None:
+    """Issue #1355: GitHub clears `pull_requests` once the PR merges; the marker keeps the PR.
+
+    Measured 2026-11-23 on run `45085274450` (merged PR #1350's old head): the run's
+    `pull_requests` answered `[]` after the merge, so a marker emitted then lost the field
+    the lane needs to find the thread. The caller-owned `run_prs` map records the PR while
+    the association is live and reuses it afterwards.
+    """
+    print("\nCI marker after a merge: the recorded run->PR map survives (#1355)")
+    open_run = {
+        "comments": {"issues": [], "pulls": []},
+        "runs": [{"id": 45085274450, "status": "in_progress", "conclusion": None,
+                  "name": "qa-validate", "pull_requests": [{"number": 1350}]}],
+        "master": {"sha": "aaa"},
+    }
+    _, state = W.marker_state({}, open_run)
+    check("the PR is recorded while the run is seen with its association live",
+          state.get("run_prs", {}).get("45085274450") == "1350", str(state.get("run_prs")))
+    merged_run = {
+        "comments": {"issues": [], "pulls": []},
+        "runs": [{"id": 45085274450, "status": "completed", "conclusion": "failure",
+                  "name": "qa-validate", "pull_requests": []}],
+        "master": {"sha": "aaa"},
+    }
+    lines, state2 = W.marker_state(state, merged_run)
+    check("a post-merge tick still emits the PR field",
+          "R:45085274450:completed:failure:qa-validate:1350" in lines, str(lines))
+    assert "R:45085274450:completed:failure:qa-validate:1350" in lines, str(lines)
+    check("the run->PR map is carried forward unchanged",
+          state2["run_prs"]["45085274450"] == "1350", str(state2["run_prs"]))
+    push = {
+        "comments": {"issues": [], "pulls": []},
+        "runs": [{"id": 99, "status": "completed", "conclusion": "success",
+                  "name": "qa-validate", "pull_requests": []}],
+        "master": {"sha": "aaa"},
+    }
+    lines2, state3 = W.marker_state(state2, push)
+    check("a push run with no recorded PR keeps the shorter shape",
+          "R:99:completed:success:qa-validate" in lines2, str(lines2))
+    check("a push run is not written into the run->PR map",
+          "99" not in state3["run_prs"], str(state3["run_prs"]))
+
+
 def main() -> int:
     test_quiet_tick_emits_nothing()
     test_new_comment_marker()
@@ -213,6 +256,7 @@ def main() -> int:
     test_heartbeat_coexists_with_failure_marker()
     test_r_marker_carries_workflow_name()
     test_r_marker_carries_its_pull_request()
+    test_r_marker_keeps_its_pr_after_the_merge_clears_the_association()
     test_offline_check_mode()
     test_the_rulebook_names_the_claim_settle_window()
     test_the_offline_contract_pins_the_settle_floor()
