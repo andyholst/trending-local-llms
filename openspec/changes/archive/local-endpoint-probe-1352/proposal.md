@@ -1,6 +1,7 @@
 # Proposal: local-endpoint-probe-1352
 
 Issue: #1352
+PR: #1353
 
 ## Why
 
