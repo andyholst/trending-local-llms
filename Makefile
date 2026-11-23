@@ -1726,6 +1726,11 @@ watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`
 # CEILING=<n>     the ONE concurrency ceiling (default 3 = ACTIVE_LANE_CEILING)
 # REPO=<o/n>      owner/name read live through gh (default andyholst/trending-local-llms)
 # FROM_FILE=<p>   a recorded issue/PR payload instead of gh (offline; tests use it)
+# CLAIMS="<p1> <p2>"  repo-relative paths this dispatch will touch (space-separated);
+#                 refuses when an ACTIVE registry lane already claims an overlapping path
+#                 (issue #1458). The script's own flag is repeatable `--claim <path>`;
+#                 GNU make rejects a literal `--claim` after the target, so make callers
+#                 pass CLAIMS=. No CLAIMS = the pre-#1458 check only.
 # JSON=1           print the verdict as JSON
 #
 # Exit 0 = allow · 1 = refuse (closed issue / merged bound PR / over the ceiling) ·
@@ -1737,11 +1742,12 @@ watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`
 # Exit 2 = the guard could not decide at all (no registry, an unreadable one, an
 # unreadable GitHub state): that is a defect in the invocation, not a verdict, and it
 # stays distinct from a refusal so a planner never reads "undecidable" as "refused".
-dispatch-check: ## Refuse a dispatch onto a CLOSED issue or one whose bound PR is MERGED, and above the active-lane ceiling — exit non-zero with the reason (ISSUE=, REGISTRY=, CEILING=3, REPO=, FROM_FILE=, JSON=1; issue #1416)
-	@test -n "$(ISSUE)" || { echo "Usage: make dispatch-check ISSUE=<n> [REGISTRY=<path>] [CEILING=<n>] [REPO=<owner/name>] [FROM_FILE=<recorded.json>] [JSON=1]"; exit 2; }
+dispatch-check: ## Refuse a dispatch onto a CLOSED issue or one whose bound PR is MERGED, above the active-lane ceiling, or onto a path an ACTIVE lane already claims — exit non-zero with the reason (ISSUE=, REGISTRY=, CEILING=3, REPO=, FROM_FILE=, CLAIMS="p1 p2", JSON=1; issues #1416/#1458)
+	@test -n "$(ISSUE)" || { echo "Usage: make dispatch-check ISSUE=<n> [REGISTRY=<path>] [CEILING=<n>] [REPO=<owner/name>] [FROM_FILE=<recorded.json>] [CLAIMS=\"p1 p2\"] [JSON=1]"; exit 2; }
 	@out=$$(python3 scripts/dispatch_guard.py --issue "$(ISSUE)" \
 		--registry "$(if $(REGISTRY),$(REGISTRY),$(or $(TLL_ACTIVE_LANES),$(HOME)/.hermes/active-lanes.json))" \
 		--ceiling "$(if $(CEILING),$(CEILING),3)" \
+		$(foreach c,$(CLAIMS),--claim "$(c)" ) \
 		$(if $(REPO),--repo "$(REPO)",) \
 		$(if $(FROM_FILE),--from-file "$(FROM_FILE)",) \
 		$(if $(JSON),--json,) 2>&1); rc=$$?; printf '%s\n' "$$out"; \

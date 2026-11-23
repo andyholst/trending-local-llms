@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **472**
+Active changes: **1** · archived: **473**
 
 ## Active changes
 
@@ -185,6 +185,7 @@ Active changes: **1** · archived: **472**
 | `dimension-applicability` | archived | #469 | — | [data-gap-analysis](openspec/changes/archive/dimension-applicability/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/dimension-applicability/proposal.md) |
 | `disable-fix-bot-pipeline` | archived | #814 | #815 | [pipeline-repair](openspec/changes/archive/disable-fix-bot-pipeline/specs/pipeline-repair/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/disable-fix-bot-pipeline/proposal.md) |
 | `dispatch-guard-1416` | archived | #1416 | #1428 | [dispatch-guard](openspec/changes/archive/dispatch-guard-1416/specs/dispatch-guard/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/dispatch-guard-1416/proposal.md) |
+| `dispatch-guard-claims-1458` | archived | #1458 | #1460 | [dispatch-guard](openspec/changes/archive/dispatch-guard-claims-1458/specs/dispatch-guard/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/dispatch-guard-claims-1458/proposal.md) |
 | `duplicate-change-for-one-edit` | archived | #622 | #819 | [openspec-duplication](openspec/changes/archive/duplicate-change-for-one-edit/specs/openspec-duplication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/duplicate-change-for-one-edit/proposal.md) |
 | `engagement-counter-mapping` | archived | #873 | #879 | [post-signal](openspec/changes/archive/engagement-counter-mapping/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-mapping/proposal.md) |
 | `engagement-counter-rollup` | archived | #1182 | #1218 | [post-signal](openspec/changes/archive/engagement-counter-rollup/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-rollup/proposal.md) |
