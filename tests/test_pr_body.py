@@ -321,6 +321,27 @@ def test_an_unrecognised_kind_falls_back_instead_of_refusing():
           proc.stderr[-200:])
 
 
+def test_the_forced_in_container_branch_runs_the_real_recipe() -> None:
+    """Issue #1411: the seam forks inside a container, and the routed target still
+    runs the REAL recipe against the container's own interpreter — the escape's
+    end-to-end proof, not a stand-in."""
+    env = dict(os.environ, MAKEFLAGS="--no-print-directory", IN_CONTAINER="1")
+    body = subprocess.run(["make", "pr-body", "ISSUE=287", f"BRANCH={BRANCH}"],
+                          cwd=ROOT, capture_output=True, text=True, env=env)
+    want_body = pr_body.render(287, BRANCH)
+    check("pr-body: the forced in-container branch exits 0", body.returncode == 0,
+          body.stderr[-400:])
+    check("pr-body: the forced branch's stdout is byte-equal to the composer",
+          body.stdout == want_body, f"{len(body.stdout)} vs {len(want_body)} bytes")
+
+    title = subprocess.run(["make", "pr-title", "ISSUE=287", "KIND=data-gap"],
+                           cwd=ROOT, capture_output=True, text=True, env=env)
+    check("pr-title: the forced in-container branch exits 0", title.returncode == 0,
+          title.stderr[-400:])
+    check("pr-title: the forced branch's stdout is byte-equal to the composer",
+          title.stdout == pr_body.title(287, "data-gap") + "\n", title.stdout[:160])
+
+
 def main() -> int:
     print("pr-body composer (issue #287)")
     test_the_composed_body_closes_exactly_the_issue_it_implements()
@@ -332,6 +353,7 @@ def main() -> int:
     test_the_pr_title_is_composed_from_the_issue_kind()
     test_the_shipped_step_hands_a_closure_correct_body_to_gh()
     test_an_unrecognised_kind_falls_back_instead_of_refusing()
+    test_the_forced_in_container_branch_runs_the_real_recipe()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 
