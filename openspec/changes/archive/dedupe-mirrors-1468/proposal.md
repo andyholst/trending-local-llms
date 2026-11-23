@@ -1,6 +1,7 @@
 # Proposal: dedupe-mirrors-1468
 
 Issue: #1468
+PR: #1472
 
 ## Why
 
