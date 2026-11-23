@@ -129,6 +129,49 @@ Work in **worktrees** branched from the **latest fetched `origin/master`**. Neve
 - **A test module that prints `N passed, 0 failed` locally can still be RED on CI `validate`: the repo's `test_workflows.py` hygiene rule fails any `test_*` DEFINED in a module but never CALLED from its `main()`.** A dead test never runs, so its green is invisible and its assertions do not execute — especially on a ported or freshly-created test file. Before trusting a local module run, confirm wiring: `python3 tests/test_workflows.py 2>&1 | grep 'every test_* in <module>.py is called from main'` must read `ok`, or grep the function names against the `main()` call list. Wiring the one missing call can jump the pass count sharply (previously-invisible assertions now run) — re-run the module after wiring to see the true count, then amend the single commit and re-push. This is exactly the CI red a local green masks; it is why "validate passed on my machine" is not a defense against the gate.
 - **Never write scratch/PR-body/record draft files into the worktree tree — a `.prN.md` / `.recN.md` / any dotfile-at-root gets swept into the commit by `git add -A` and ships as dead, unreferenced code that the reviewer flags under the #690 clean-code lens.** Author the PR-body and issue-comment text in the profile scratch dir (`$TMPDIR`) and `--body-file` that path, never a file inside the branch worktree. If one does leak in, strip it via `--amend` (deletion must be STAGED, not just `rm`'d) and prove the tree is clean BEFORE re-pushing: `git rm --cached <f>; git rm <f>` then `git status --short` must show `D ` in the INDEX column (leading `D`), and `git ls-tree -r --name-only HEAD | grep -E '\.(pr|rec)[0-9]'` must print nothing. **A bare `git add <deleted-file>` after `rm` does NOT stage the removal (`git status` shows ` D` = unstaged) and `commit --amend --no-edit` then re-commits the tree WITH the file still in it — the amend silently 'succeeds' and the file survives to the pushed head.** Verify the PUSHED head's tree (`git ls-tree -r --name-only <head> | grep <f>`), not just the worktree, then re-push with `git push --force-with-lease origin HEAD:<branch>`.
 - **After a force-push, `gh pr view <n> --json headRefOid` can briefly return the OLD head while the new check-runs have already launched (GitHub lag).** Do not report or act on the first post-push view. Confirm the head landed by re-reading the PR once the checks show fresh run IDs (new job IDs / a new run id in `gh pr checks`), and trust that re-read over the first view. Reporting a stale head sha to the planner restarts a verify cycle against a sha that never existed on the remote.
+- **A PR body missing `## Technical Solution` is a fast red in the `closure` job, not a warning.**
+  `scripts/pr_body.py` requires all five sections (`Why`, `What`, `How`, `Benefits`,
+  `Technical Solution`) and `make pr-message-check` refuses the PR in seconds. Author the body with
+  ALL five from the start; `make pr-closure` does NOT check this (it reads the closing bindings only),
+  so a `pr_closure.py` OK is not a green closure job. Run
+  `python3 scripts/pr_body.py --check-body-file <f> --branch <b>` before opening the PR.
+- **`validate` runs an OpenSpec index check on the MERGE TREE (`git merge --no-commit --no-ff origin/master`
+  + `make openspec-index-check`, issue #1239), so a green index on YOUR head is not enough.** Any PR that
+  adds/archives an OpenSpec change races master's own index edits and reds with
+  `[merge-tree-index] MERGE CONFLICT` or `FAIL: the index is stale on master + this PR` after ~13 min.
+  Remedy: rebase onto the freshly fetched `origin/master`, resolve the `OPENSPEC.md` conflicts (the
+  `Active changes: **N** · archived: **M**` count line is the usual collision), run
+  `make openspec-index`, commit, re-push. Prove it locally first with the same merge + index check.
+- **A lane can force-push YOUR branch between your push and the merge; re-read the head before
+  reporting a verdict.** Measured on #1398/PR #1406: another lane rebased my head to a new sha, and the
+  new head's qa-validate ended `action_required` with ZERO jobs (the #1115 never-started shape), so the
+  old head's green no longer described the PR. Check `gh pr view <n> --json headRefOid` against the sha
+  you measured, and treat a 0-job `action_required` as a head to RECOVER on your own branch (owner-identity
+  empty commit + `--force-with-lease`, then `gh run view <id> --json jobs` shows the new run has jobs),
+  never as a red gate to re-fix.
+- **A lane's `--yolo --accept-hooks` protects it from shell/hook prompts, NOT from
+  `approvals.single_query_mode: deny` on a privileged git write — pass both flags when a dispatch tells
+  you to start another lane.** Also: a lane's shell cwd is not automatically its worktree, so check the
+  owner's checkout with `git status` after a lane run; a lane runs 30–70 min, so monitor it with
+  `process_manage` rather than assuming it finished.
+- **The master-alarm routing sees only a BARE `make <target>` LINE** — `scripts/master_alarm.py::job_gate_map`
+  uses `make\s+([a-z0-9_-]+)(?=["'\s]|$)`, so `make -C <dir> X`, `if ! make X; then` and
+  `$(PYTHON_RUN) make X` are all INVISIBLE to "which gates does this job run", while
+  `validate_gates_from_trees` (the whole-file read that catches an unregistered gate) DOES see them. A
+  gate written inside an `if ! make X;` therefore reds `tests/test_master_alarm.py` (`uncovered=['X']`)
+  even though the step plainly runs it. Write CI gate calls as a bare `make <target>` line and read `$?`
+  for a named failure branch — and register every real make target a job runs (`make python-env-image`
+  is a REAL target, not a no-op, so it needs a `GATES` row too). Note the two readers differ:
+  `_wf_text()` slices the `validate:` job, `unchecked_gates()` reads the whole file.
+- **Before writing any code on a dispatch, re-read the PR's live state — it may already be MERGED and the
+  issue CLOSED by another lane while you worked.** `gh pr view <n> --json state,mergedAt,mergeCommit` +
+  `gh issue view <id> --json state,closedAt` is cheap and settles it; a planner dispatch naming an old
+  base sha does not mean the work is still open. When the PR already merged as master `<sha>` and the
+  issue is CLOSED, do NOT open a second competing PR for the same issue (one issue, one branch, one PR)
+  and do NOT force-push a dead branch — verify the SHIPPED artifact on `origin/master` against every
+  acceptance item (`git show origin/master:<path>`, run the real step shell on a fixture), then post the
+  signed record with that evidence and hand over. A redundant variant is churn the reviewer has to
+  untangle.
 
 ## Additive-slice pitfalls (owner working default #690)
 

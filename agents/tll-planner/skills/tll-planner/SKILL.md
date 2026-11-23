@@ -189,6 +189,33 @@ needed to move the board.
   and `test_worktree_base` ("bot identity") fail on both a fresh worktree and the untouched base checkout;
   they are pre-existing host-environment gaps, NOT the PR's fault. The Docker CI image (gh + git identity
   present) should pass them. Do not block a PR on these two; do block on any other red job.
+- **Bound lane concurrency — at most 3 `tll-implementer` lanes at once, and never dispatch to a closed
+  issue or an already-merged PR.** Measured 2026-11-23: 7 concurrent lanes drove load average 7.08,
+  `Virtualization.framework` to 348% CPU, runtimes 66–128 min, including a 95-min lane (#1239) working
+  an issue that was already CLOSED. Every head must pass the containerised `make validate` (#712,
+  ~15–25 min), so N lanes do not finish N times faster — they contend for ONE container VM. Dispatch the
+  next lane only when one reports `done`, and queue the rest. Before spawning, measure the target's
+  state (`gh issue view <n> --json state` and the bound PR's `state`): a CLOSED issue or a MERGED PR is
+  duplicate work, not a task. Repo guard: issue #1416.
+- **A PR with "no checks reported" is NEVER green — it is a never-started head.** The seam: `gh pr
+  checks <n>` answers `no checks reported on the '<branch>' branch` AND `gh run list --commit <headSha>`
+  returns ZERO workflow runs. A `completed/action_required` run with 0 jobs whose actor is
+  `github-actions[bot]` is the same shape (a push through the job token schedules no jobs). Post ONE
+  failure report naming the run url, the head and the evidence, then hand the recovery to the branch's
+  OWNER lane: re-push ONLY that branch with an owner-git-identity empty commit through the owner-PAT
+  remote and prove `gh run view <id> --json jobs` shows jobs. Never report such a head as green, and
+  never start a second session on a branch another lane already holds (#1115).
+- **Do NOT "sync" a host by wiping Hermes runtime stamps or unlanded skill notes.**
+  `make fleet-host-sync-check BASE=origin/master` reds on runtime stamps in a lane `config.yaml`
+  (Hermes state the gate itself must tolerate — #1401) and on host `SKILL.md` pitfall notes that are
+  legitimately AHEAD of master. Deleting the stamp locally only masks the gate bug. Take timestamped
+  backups (`*.bak-<UTC>`), leave the files, and route the two halves through the normal paths: the gate
+  fix via its own PR, the note-landing via a reviewed change.
+- **Master's own push run can go green and SUPERSEDE a filed `validate`/`openspec-index` failure.**
+  Before dispatching a fix for a filed pipeline-failure issue (#1412/#1413 class), re-measure the newest
+  push-to-master `qa-validate` run at the CURRENT tip: `validate` success with `index-repair` skipped
+  (`DRIFT=none`) means the defect is already remedied and the issue needs a verify-and-close, not a new
+  fix.
 
 ## Worktree default (fleet-wide, owner-mandated)
 
