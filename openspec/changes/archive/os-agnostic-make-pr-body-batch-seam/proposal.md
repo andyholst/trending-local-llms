@@ -52,7 +52,8 @@ proving test) that are deliberately NOT routed:**
 - `pr-title` / `pr-body` / `architecture-pr-body` — pure and container-clean on a
   Docker host, but `make test` runs the suite INSIDE the docker-less test image,
   so a docker-routed recipe cannot be driven from it (21 in-container reds,
-  measured). Deferred to **#1411**.
+  measured). Held out of this PR and landed separately as #1411; this PR adds
+  the three keeper PR-body composers on top of that seam.
 
 ## One hygiene change (flagged on #1399)
 
