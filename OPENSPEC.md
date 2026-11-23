@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **445**
+Active changes: **1** · archived: **449**
 
 ## Active changes
 
@@ -138,6 +138,7 @@ Active changes: **1** · archived: **445**
 | `branch-name-cut-check-807` | archived | #807 | #951 | [bot-coordination](openspec/changes/archive/branch-name-cut-check-807/specs/bot-coordination/spec.md)<br>[worktree-base](openspec/changes/archive/branch-name-cut-check-807/specs/worktree-base/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/branch-name-cut-check-807/proposal.md) |
 | `captured-cells-trace-by-measurement-identity` | archived | #411 | #910 | [data-gap-analysis](openspec/changes/archive/captured-cells-trace-by-measurement-identity/specs/data-gap-analysis/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/captured-cells-trace-by-measurement-identity/proposal.md) |
 | `card-gap-report` | archived | #342 — `tech-debt: Only EMPTY tiers are reported as collection gaps — a model with no card evidence at all is silent` | — | [card-fit](openspec/changes/archive/card-gap-report/specs/card-fit/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/card-gap-report/proposal.md) |
+| `ci-comment-watch-1243` | archived | #1243 | #1244 | [agent-coordination](openspec/changes/archive/ci-comment-watch-1243/specs/agent-coordination/spec.md) | 3/4 | [proposal.md](openspec/changes/archive/ci-comment-watch-1243/proposal.md) |
 | `ci-secret-output-guard` | archived | #219 | — | [secret-output-guard](openspec/changes/archive/ci-secret-output-guard/specs/secret-output-guard/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/ci-secret-output-guard/proposal.md) |
 | `claim-settle-window` | archived | #1312 | #1321 | [fleet-lifecycle](openspec/changes/archive/claim-settle-window/specs/fleet-lifecycle/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/claim-settle-window/proposal.md) |
 | `classify-nov15-red-ledger-rows` | archived | #1039, #1040, #1041, #1042, #1043 | #1097 | [alarms](openspec/changes/archive/classify-nov15-red-ledger-rows/specs/alarms/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/classify-nov15-red-ledger-rows/proposal.md) |
@@ -146,6 +147,8 @@ Active changes: **1** · archived: **445**
 | `code-review-bot` | archived | #253 | — | [code-review](openspec/changes/archive/code-review-bot/specs/code-review/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/code-review-bot/proposal.md) |
 | `code-review-refusal-names-its-cost` | archived | #278 | — | [code-review-scan](openspec/changes/archive/code-review-refusal-names-its-cost/specs/code-review-scan/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/code-review-refusal-names-its-cost/proposal.md) |
 | `code-review-secrets-contract` | archived | #278 | — | [code-review-scan](openspec/changes/archive/code-review-secrets-contract/specs/code-review-scan/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/code-review-secrets-contract/proposal.md) |
+| `comment-monitor-cron-1243` | archived | #1243 | #1244 | [agent-coordination](openspec/changes/archive/comment-monitor-cron-1243/specs/agent-coordination/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/comment-monitor-cron-1243/proposal.md) |
+| `comment-watch-trigger-1243` | archived | #1243 (owner directive 2026-11-22) | #1244 | [agent-coordination](openspec/changes/archive/comment-watch-trigger-1243/specs/agent-coordination/spec.md) | 6/7 | [proposal.md](openspec/changes/archive/comment-watch-trigger-1243/proposal.md) |
 | `commit-authorship-guard` | archived | #317 | — | [commit-authorship](openspec/changes/archive/commit-authorship-guard/specs/commit-authorship/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/commit-authorship-guard/proposal.md) |
 | `commit-engine-meta-fixture` | archived | #505 | — | [engine-meta-fixture-committed](openspec/changes/archive/commit-engine-meta-fixture/specs/engine-meta-fixture-committed/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-engine-meta-fixture/proposal.md) |
 | `commit-message-check-discriminates-push-archive` | archived | #852 | #853 | [message-pattern-enforcement](openspec/changes/archive/commit-message-check-discriminates-push-archive/specs/message-pattern-enforcement/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/commit-message-check-discriminates-push-archive/proposal.md) |

@@ -388,6 +388,14 @@ test-image-smoke: ## Run the published test image under linux/arm64 QEMU and pro
 openspec-binding-check: python-env-image ## Fail when an ACTIVE change binds no Issue and declares no keeper exemption — caught before the PR, not at the record step (issue #952)
 	$(PYTHON_RUN) python3 scripts/openspec_binding_check.py
 
+# watch-monitor is owned by the canonical target below (issue #1266/#1282, #1360):
+# PR #1243's early duplicate was dropped in the rebase onto that target.
+comment-monitor: ## Emit the sorted IDs of comments newer than the cursor (deterministic cron change-detector, issue #1243)
+	@python3 scripts/comment_monitor.py $(ARGS)
+
+comment-watch: ## Report new trending-local-llms issue/PR comments via `gh` (issue #1243); --mark-read advances the local cursor after the agent has looked and replied
+	@python3 scripts/comment_watch.py $(ARGS)
+
 openspec-index: python-env-image ## Regenerate the root OPENSPEC.md index from openspec/changes/**
 	$(PYTHON_RUN) python3 scripts/openspec_index.py --write
 
