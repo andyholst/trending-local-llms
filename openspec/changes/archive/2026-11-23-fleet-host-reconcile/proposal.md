@@ -1,6 +1,7 @@
 # Proposal: fleet-host-reconcile
 
 Issue: #1464
+PR: #1481
 
 ## Why
 
