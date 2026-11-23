@@ -1,6 +1,7 @@
 # Proposal: pr-rebase-soul-generated-artifacts
 
 Issue: #1361
+PR: #1362
 
 ## Why
 
