@@ -27,7 +27,10 @@ def test_store_measurement_rows_live_in_seen_posts_not_engines_array() -> None:
     assert isinstance(engagement, dict)
     posts = engagement["seen_posts"]
     assert isinstance(posts, list) and posts
-    assert {"url", "date", "engine", "tps", "hardware", "quant"} <= set(posts[0])
+    assert {
+        "url", "date", "engine", "tps", "hardware", "quant",
+        "likes", "comments", "reshares", "views",
+    } <= set(posts[0])
 
 
 def test_planner_skill_describes_the_real_store_shape() -> None:
