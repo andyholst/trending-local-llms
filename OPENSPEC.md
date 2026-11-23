@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **466**
+Active changes: **1** · archived: **468**
 
 ## Active changes
 
@@ -277,6 +277,7 @@ Active changes: **1** · archived: **466**
 | `keeper-pr-lands-architecture-bot` | archived | #1081 — "architecture-bot's keeper PR step is a fourth spelling of the | #1113 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-lands-architecture-bot/specs/ci-keeper-pr/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/keeper-pr-lands-architecture-bot/proposal.md) |
 | `keeper-pr-one-landing-sequence` | archived | #869 | #1082 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-one-landing-sequence/specs/ci-keeper-pr/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/keeper-pr-one-landing-sequence/proposal.md) |
 | `land-auto-merge-rebase-rule-row` | archived | #1088 (the §2/§8 rows #1049 owed and could not write) | #1107 | [rulebook-auto-merge-rebase](openspec/changes/archive/land-auto-merge-rebase-rule-row/specs/rulebook-auto-merge-rebase/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-auto-merge-rebase-rule-row/proposal.md) |
+| `land-host-ahead-planner-implementer-notes-1445` | archived | #1445 | #1449 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/proposal.md) |
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
 | `land-invalid-change-repair-owed-rows` | archived | #1087 (the §6q keeper-registry text and the §8 guard row #962 owed and could not write) | #1106 | [rulebook-invalid-change-repair](openspec/changes/archive/land-invalid-change-repair-owed-rows/specs/rulebook-invalid-change-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-invalid-change-repair-owed-rows/proposal.md) |
 | `land-planner-implementer-skill-notes-1440` | archived | #1440 | #1441 | [fleet-host-sync-check](openspec/changes/archive/land-planner-implementer-skill-notes-1440/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-planner-implementer-skill-notes-1440/proposal.md) |
@@ -351,6 +352,7 @@ Active changes: **1** · archived: **466**
 | `positive-more-count` | archived | #1219 | #1221 | [readme-render](openspec/changes/archive/positive-more-count/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/positive-more-count/proposal.md) |
 | `pr-block-grace-derived-1176` | archived | #1176 — "The 24 h grace is a guess, and it is the only thing standing between | #1289 | [pipeline-failure-ledger](openspec/changes/archive/pr-block-grace-derived-1176/specs/pipeline-failure-ledger/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/pr-block-grace-derived-1176/proposal.md) |
 | `pr-block-log-budget-1174` | archived | #1174 | #1262 | [pipeline-failure](openspec/changes/archive/pr-block-log-budget-1174/specs/pipeline-failure/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-block-log-budget-1174/proposal.md) |
+| `pr-blockage-read-cap-after-filters` | archived | #1405 | #1443 | [pr-blockage-selection](openspec/changes/archive/pr-blockage-read-cap-after-filters/specs/pr-blockage-selection/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/pr-blockage-read-cap-after-filters/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
 | `pr-closure-guard` | archived | #284 | — | [pr-lifecycle](openspec/changes/archive/pr-closure-guard/specs/pr-lifecycle/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/pr-closure-guard/proposal.md) |

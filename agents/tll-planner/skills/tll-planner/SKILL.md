@@ -117,6 +117,12 @@ needed to move the board.
 - A Hermes cron or a new GitHub Actions `schedule:` is the wrong tool. The owner asks on the host. The data sync is the existing weekly refresh, not a new timer.
 - `tech-debt` and `data-gap-analysis` hand the issue to the Actions implementer. This fleet uses `enhancement`.
 - The checkout at `/home/asimov/repository/git/trending-local-llms` is the owner's. Do not edit it.
+- **Verify a landed change against `origin/master`, never the owner's checkout.** The owner's checkout can
+  sit several commits behind with uncommitted edits, so a probe run there silently tests STALE code — a fix
+  that already merged can look absent and you will file a false gap. Probe in a throwaway detached worktree at
+  the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
+  `git worktree remove --force <path>`), and always name the sha you measured. Compare
+  `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
 - Do not print values from a profile `.env`.
 - **A lane's DM queue lags and replays stale messages — it will re-ask questions you already answered
   several turns ago.** Do not re-DM the same answer more than once; instead make the answer durable
@@ -197,24 +203,31 @@ needed to move the board.
   they are pre-existing host-environment gaps, NOT the PR's fault. The Docker CI image (gh + git identity
   present) should pass them. Do not block a PR on these two; do block on any other red job.
 - **Bound lane concurrency — at most 3 `tll-implementer` lanes at once, and never dispatch to a closed
-  issue or an already-merged PR.** Measured 2026-11-23: 7 concurrent lanes drove load average 7.08,
-  `Virtualization.framework` to 348% CPU, runtimes 66–128 min, including a 95-min lane (#1239) working
-  an issue that was already CLOSED. Every head must pass the containerised `make validate` (#712,
-  ~15–25 min), so N lanes do not finish N times faster — they contend for ONE container VM. Dispatch the
-  next lane only when one reports `done`, and queue the rest. Before spawning, measure the target's
-  state (`gh issue view <n> --json state` and the bound PR's `state`): a CLOSED issue or a MERGED PR is
-  duplicate work, not a task. Repo guard: issue #1416.
-- **Verify a landed change against `origin/master`, never the owner's checkout.** The owner's checkout can
-  sit several commits behind with uncommitted edits, so a probe run there silently tests STALE code — a fix
-  that already merged can look absent and you will file a false gap. Probe in a throwaway detached worktree at
-  the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
-  `git worktree remove --force <path>`), and always name the sha you measured. Compare
-  `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
+  issue or an already-merged PR.** Measured with 7 concurrent lanes: load average 7.08, the host VM at 348%
+  CPU, runtimes of 66–128 min, including a 95-min lane (#1239) working an issue that was already CLOSED.
+  Every head passes the containerised `make validate` in CI (#712), so N lanes do not finish N times
+  faster — they contend for ONE container VM. Dispatch the next lane only when one reports `done`, and
+  queue the rest. Enforce BOTH halves mechanically BEFORE
+  spawning: `make dispatch-check ISSUE=<n>` refuses a CLOSED issue or a bound PR that is already MERGED,
+  prints `active_lanes=<n>/<ceiling>`, and refuses above it. Do not rely on your own recollection of the
+  board — a state or sha from chat is stale, and the guard reads live GitHub state (repo guard: issue
+  #1416).
+- **Protected instruction files cannot be written by a headless lane — declare them owed to the owner and
+  do not route around it.** `agents/*/SOUL.md` and `AGENTS.md` §7b/§8 are rule-3c protected: the write is
+  refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
+  a dispatch needs such an edit, split the deliverable: implement the writable half, and post an explicit
+  owed-to-owner marker naming the exact file:line and the required wording. Never silently drop the half,
+  and never weaken a gate just to avoid needing the edit.
+- **An auto-close can hide an undone half — verify the merged PR's DIFF, not its `Closes #` line.** GitHub
+  closes an issue from any PR whose title/body carries the keyword, including a PR that implements only PART
+  of the issue's scope. After a merge run `gh pr diff <n> --name-only` and confirm every file the issue named
+  actually changed; a missing file means the issue was closed with work outstanding. Re-file that half as its
+  own small issue with a handover instead of letting the close stand.
 - **Lanes change locally and PUSH; CI verifies. Never have a lane pre-run the full containerised suite.**
-  Owner directive #1423: a head's local `make validate` + whole `make test` costs 15–30 min inside the
-  per-purpose Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while
-  each lane PROCESS idles at ~0% CPU in `sleep` polls. The same gates already run in GitHub Actions on
-  `qa-validate`, which costs the host nothing. Dispatch a lane to run ONLY the fast offline checks
+  Owner directive #1423: A head's local `make validate` + whole `make test` costs 15–30 min inside the per-purpose
+  Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while each lane
+  PROCESS idles at ~0% CPU in `sleep` polls. The same gates already run in GitHub Actions on `qa-validate`,
+  which costs the host nothing. Dispatch a lane to run ONLY the fast offline checks
   (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module),
   push, confirm CI registered on the new head (`gh pr checks <n>`, `gh run view <id> --json jobs`), and
   report. Measured effect: the same class of delivery dropped from ~3h to ~23 min. Never write "gate green
@@ -233,6 +246,12 @@ needed to move the board.
   OWNER lane: re-push ONLY that branch with an owner-git-identity empty commit through the owner-PAT
   remote and prove `gh run view <id> --json jobs` shows jobs. Never report such a head as green, and
   never start a second session on a branch another lane already holds (#1115).
+- **Cron fires run WITHOUT approval and block arbitrary code: `execute_code` is refused, and so are
+  shell heredocs and inline interpreters (`python3 -c "…"`, `<<EOF`).** Write probe scripts to the
+  profile scratch (`~/.hermes/profiles/tll-planner/cache/scratch/<name>.py`) with `write_file`, then run
+  `python3 <path>`; use `gh api … --jq` for one-off reads. Never pipe a `make`/probe through a
+  truncating filter and trust its exit status — the pipeline returns the LAST command's status, so re-run
+  without the pipe when a verdict matters.
 - **Do NOT "sync" a host by wiping Hermes runtime stamps or unlanded skill notes.**
   `make fleet-host-sync-check BASE=origin/master` reds on runtime stamps in a lane `config.yaml`
   (Hermes state the gate itself must tolerate — #1401) and on host `SKILL.md` pitfall notes that are
