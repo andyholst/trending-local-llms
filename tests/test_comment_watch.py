@@ -114,33 +114,28 @@ def test_cron_monitor():
 
 
 def test_ci_and_comment_monitor():
-    calls = []
-
-    def runner(cmd):
-        calls.append(cmd)
-        if "issues/comments" in cmd[2]:
-            return json.dumps([{"id": "77", "created_at": "2026-11-22T04:40:00Z"}])
-        return json.dumps([
-            {"id": 555, "status": "completed", "conclusion": "failure"},
-            {"id": 556, "status": "in_progress", "conclusion": None},
-        ])
+    def snapshot(comment_id, conclusion, sha):
+        return {
+            "comments": {"issues": [{"id": comment_id}], "pulls": []},
+            "runs": [
+                {"id": 555, "status": "completed", "conclusion": conclusion},
+                {"id": 556, "status": "in_progress", "conclusion": None},
+            ],
+            "master": {"sha": sha},
+        }
 
     check("the monitor reads comments and CI runs from ONE seam",
-          len(calls) == 0)  # injected runner is exercised below
-    ids = WM.comment_ids(runner, "2026-11-22T00:00:00Z")
-    check("comment wake-up keys carry the C prefix", ids == ["77"], str(ids))
-    states = WM.run_states(runner)
+          hasattr(WM, "marker_state"))
+    first, state = WM.marker_state({}, snapshot(77, "failure", "abc123"))
+    check("a first tick establishes a baseline", "BASELINE" in first, str(first))
+    lines, state2 = WM.marker_state(state, snapshot(78, "success", "def456"))
+    check("comment wake-up keys carry the C prefix", "C:78" in lines, str(lines))
     check("CI wake-up keys are stable id/status/conclusion",
-          states == ["R:555:completed:failure", "R:556:in_progress:"], str(states))
+          "R:555:completed:success" in lines, str(lines))
     check("a conclusion change changes the cron hash",
-          WM.run_states(lambda cmd: json.dumps([
-              {"id": 555, "status": "completed", "conclusion": "success"}])) != states)
+          "R:555:completed:failure" not in lines, str(lines))
     rule = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    check("a master merge changes the monitor hash",
-          WM.master_state(lambda cmd: json.dumps([{"sha": "abc123"}])) ==
-          ["M:abc123"] and
-          WM.master_state(lambda cmd: json.dumps([{"sha": "def456"}])) ==
-          ["M:def456"])
+    check("a master merge changes the monitor hash", "M:def456" in lines, str(lines))
     check("rule 6w binds the CI+comment monitor",
           "make watch-monitor" in rule and "NEVER-STARTED" in rule and "M:<master sha>" in rule and
           "asimov@omarchy" in rule)

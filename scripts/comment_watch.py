@@ -6,6 +6,9 @@ trending-local-llms issue or PR is an event: the agent must LOOK at the thread, 
 on it, file an issue for new work, and implement it. This tool only REPORTS unseen
 comments and advances a LOCAL cursor when --mark-read is given; it never writes to
 GitHub, dispatches CI, or changes permissions (owner directive 2026-11-15, rule 6v).
+
+Wake-up markers (C:/R:/M:/H:) are emitted by the ONE canonical detector in
+scripts/watch_monitor.py; this module owns only the comment cursor/report half.
 """
 from __future__ import annotations
 
