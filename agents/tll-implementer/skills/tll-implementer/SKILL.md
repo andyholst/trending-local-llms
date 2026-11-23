@@ -194,6 +194,18 @@ sits at ~0% CPU in `sleep` polls.
   `commit --amend --no-edit` and `push --force-with-lease`. Verify with
   `python3 scripts/openspec_archive_check.py --pr <pr>` (prints `no active change left unarchived`)
   BEFORE waiting on CI; doing this only after seeing the red costs a full validate cycle (#866, #1434).
+- **Never run `git reset --hard` (or `git checkout -- <file>`) AFTER regenerating a generated artifact
+  and BEFORE staging it — the cleanup silently reverts the regeneration, and the amend/push then ships
+  the STALE file behind a green local check.** Measured on #1423/PR #1424: regenerated `OPENSPEC.md`
+  (`1 active, 461 archived`), proved `scripts/openspec_index.py --check` OK, then ran a local merge-tree
+  simulation whose cleanup ended with `git reset --hard HEAD`; the next `git add OPENSPEC.md` staged
+  nothing, `--amend --no-edit` kept the stale `459` count line, and CI red'd
+  `[openspec-index] FAIL ... the count line says 'archived: **459**', disk needs '**461**'` — a full
+  ~13 min validate cycle wasted on a file I had already fixed. Order the steps: destructive cleanup
+  FIRST (`git merge --abort` alone is enough for a trial merge), THEN regenerate, THEN stage; and
+  before reporting, confirm the PUSHED tree, not the worktree —
+  `git show origin/<branch>:OPENSPEC.md | grep 'Active changes:'` must equal
+  `ls openspec/changes/archive | wc -l`.
 - **`test_engine_registry.py` is RED in a local test-image run WITHOUT `GH_TOKEN`** (the metadata probe
   leaves a date-driven repeat WARN like `StairCut` unresolved, so `engine-check exits 0` fails). CI
   forwards `GH_TOKEN` and master's own runs are green, so this is a local-environment artifact, not a
