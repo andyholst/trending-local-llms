@@ -482,6 +482,25 @@ else:
         assert "sentinel" not in calls, calls
 
 
+def test_the_rulebook_requires_filing_a_red_pipeline() -> None:
+    """Issue #1376: a concluded-bad run is FILED, not only diagnosed.
+
+    Measured: the #1371 flake reddened `validate` on every open PR and no issue was filed —
+    the filer's only caller is the owner-dispatched `queued-alarm` sweep and rule 6t forbids a
+    cron, so the duty belongs to the lane the `R:` marker wakes.
+    """
+    print("\nRulebook guard: the R: duty files a red main/PR pipeline (#1376)")
+    rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    for needle in ("make pipeline-failure-issue", "tll-implementer",
+                   "a concluded-bad run is FILED", "on a PR pipeline is filed"):
+        check(f"§6w names {needle!r}", needle in rules, "")
+    for pipeline in ("qa-validate", "refresh-bot", "issue-bot", "issue-review-bot",
+                     "architecture-bot", "queued-alarm"):
+        check(f"§6w names the main pipeline {pipeline}", pipeline in rules, "")
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    check("the filer seam is a make target", "pipeline-failure-issue:" in makefile, "")
+
+
 def main() -> int:
     test_quiet_tick_emits_nothing()
     test_fetch_payload_keeps_the_explicit_gh_client()
@@ -489,6 +508,7 @@ def main() -> int:
     test_ci_state_marker()
     test_master_merge_marker_and_rulebook_duty()
     test_rulebook_carries_two_job_watch_protocol()
+    test_the_rulebook_requires_filing_a_red_pipeline()
     test_heartbeat_marker_is_deterministic()
     test_heartbeat_coexists_with_failure_marker()
     test_r_marker_carries_workflow_name()
