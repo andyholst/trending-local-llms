@@ -150,6 +150,37 @@ def test_the_derivation_states_only_what_the_text_names():
                          _AGENTS_FIXTURE) == []
 
 
+def test_a_derived_needle_already_in_the_section_is_refused():
+    """Issue #1367: a DERIVED needle the declared section ALREADY carries is a false green.
+
+    Measured on #1357: `derive_rows` picked `tests/test_watch_monitor.py` out of the Done-when,
+    that module was already named in §8, and `make owed-rows-check` answered
+    `LANDED AGENTS.md:2439` while the `run_prs` map the Done-when required was nowhere in the
+    rulebook. The derivation now REFUSES such a needle, so an EXTENSION row must be stated
+    explicitly with the new symbol (the `- **Owed-row:**` field), never invented here.
+    """
+    d = _load("owed_row_derive")
+    sentence = ("extend the AGENTS.md §8 row for tests/test_watch_monitor.py "
+                "to name run_prs")
+
+    # The measured shape: §8 already names the module, the new symbol is nowhere.
+    stale = _AGENTS_FIXTURE.replace(
+        "| tests/test_refresh_base.py | the refresh base assertion |",
+        "| tests/test_watch_monitor.py | the watch-monitor protocol |",
+    )
+    assert "tests/test_watch_monitor.py" in stale
+    assert d.derive_rows(sentence, stale) == []
+
+    # The REAL rulebook answers the same for #1357's own shape (module in §8, `run_prs` nowhere).
+    real = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert d.derive_rows(sentence, real) == []
+
+    # Not vacuous: the SAME sentence against a section that does NOT already name the module
+    # still derives, so the refusal is about the already-present needle and nothing else.
+    assert d.derive_rows(sentence, _AGENTS_FIXTURE) == [
+        {"section": "8", "needle": "tests/test_watch_monitor.py", "derived": True}]
+
+
 def test_file_findings_stamps_a_derived_row_on_the_filed_issue():
     """A finding with NO explicit Owed-row field but a Done-when that names the
     owed row files an issue carrying the registered marker (gh stubbed; the real
@@ -190,7 +221,8 @@ def test_file_findings_stamps_nothing_when_the_done_when_names_nothing():
 def test_the_data_gap_filer_stamps_its_own_body():
     """`issue_body()` derives from the body it composes: a contract-gap sentence
     naming a real section and a make target lands a parseable marker, and an
-    ordinary body lands none."""
+    ordinary body lands none. Issue #1367: a target the section ALREADY names is
+    refused, so an EXTENSION sentence must name the new symbol."""
     g = _load("data_gap_analysis")
     report = {
         "as_of": "2026-11-14T00:00:00Z",
@@ -209,15 +241,23 @@ def test_the_data_gap_filer_stamps_its_own_body():
         "informational": [],
         "contract_gaps": {
             "model": "the contract prunes context_tokens; the fix owes the "
-                     "AGENTS.md §8 guard row beside make owed-rows-check",
+                     "AGENTS.md §8 guard row beside make owed-rows-check-probe-1367",
         },
         "signature": ["probe-sig"],
     }
     body, _title = g.issue_body(report, None)
     parsed = bot_markers.parse_owed_rows(body)
-    assert parsed["rows"] == [{"section": "8", "needle": "owed-rows-check"}], parsed
+    assert parsed["rows"] == [{"section": "8", "needle": "owed-rows-check-probe-1367"}], parsed
     assert not parsed["malformed"], parsed
     assert "## Owed rulebook rows" in body, body[:600]
+
+    # Issue #1367: the SAME sentence naming a target §8 ALREADY carries lands NOTHING — the
+    # derivation cannot prove the row was extended, which is the #1357 false-`LANDED` shape.
+    stale = dict(report, contract_gaps={
+        "model": "the contract prunes context_tokens; the fix owes the "
+                 "AGENTS.md §8 guard row beside make owed-rows-check"})
+    body3, _ = g.issue_body(stale, None)
+    assert "owed-row:" not in body3, body3[:600]
 
     plain = dict(report, contract_gaps={})
     body2, _ = g.issue_body(plain, None)
@@ -283,6 +323,7 @@ def test_wired_into_make_test():
 def main() -> int:
     tests = [
         test_the_derivation_states_only_what_the_text_names,
+        test_a_derived_needle_already_in_the_section_is_refused,
         test_file_findings_stamps_a_derived_row_on_the_filed_issue,
         test_file_findings_stamps_nothing_when_the_done_when_names_nothing,
         test_the_data_gap_filer_stamps_its_own_body,
