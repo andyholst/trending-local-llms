@@ -350,6 +350,10 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #  - pipeline-failure-ledger-pr-body: its RUN_URL is read from the ENV
 #    (`os.environ.get("RUN_URL")`), which `PYTHON_RUN` does not forward into the
 #    container, and its LEDGER is a host path. Kept host-side (#1399).
+#  - findings-check-for-pr (issue #1454): it reads the webhook payload at
+#    `$GITHUB_EVENT_PATH`, a RUNNER path the python-env container does not mount —
+#    measured on PR #1480 run 45288434759 (`FileNotFoundError: …/event.json`).
+#    Kept host-side, exactly like `make pr-closure`.
 #  - pr-title / pr-body / architecture-pr-body: pure stdlib and container-clean
 #    on a Docker host, but the in-container suite cannot exercise a docker-routed
 #    recipe (no `docker` in the test image) — deferred to #1411, not routed here.
@@ -488,13 +492,15 @@ findings-check: python-env-image ## Fail when findings.md is missing or a findin
 # while rule 6g's mandatory analysis is absent — without reddening every keeper, refresh,
 # docs or architecture PR that carries no `findings.md` (the §6q repo-wide-red hazard).
 # The predicate is `scripts/pr_closure.implementation_shaped`, the ONE parser (rule 6d):
-# only a branch/body that CLAIMS an implementation owes the file. Reads the webhook
-# payload by PATH, never interpolated into the recipe (rule 3f/#351). `FINDINGS_BRANCH`
-# defaults to the checkout's own branch for the fix loop, which has no PR yet; a push or
-# dispatch event carries no `pull_request` and is a green no-op.
+# only a branch/body that CLAIMS an implementation owes the file. HOST-SIDE, like
+# `make pr-closure`: it reads the webhook payload by PATH (`--event "$GITHUB_EVENT_PATH"`),
+# a RUNNER path the python-env container does not mount — measured on PR #1480 run
+# 45288434759 (`FileNotFoundError: …/event.json`). Nothing is interpolated into the recipe
+# (rule 3f/#351). `FINDINGS_BRANCH` defaults to the checkout's own branch for the fix loop,
+# which has no PR yet; a push or dispatch event carries no `pull_request` and is a green no-op.
 FINDINGS_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
-findings-check-for-pr: python-env-image ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings.md; keepers/refreshes/docs are exempt (issue #1454)
-	$(PYTHON_RUN) python3 scripts/file_findings.py --check $(if $(PR_EVENT),--event "$(PR_EVENT)",) $(if $(FINDINGS_BRANCH),--branch "$(FINDINGS_BRANCH)",) $(if $(BODY_FILE),--body-file "$(BODY_FILE)",)
+findings-check-for-pr: ## Shape-aware analysis gate: fail when an implementation-shaped PR has no findings.md; keepers/refreshes/docs are exempt (issue #1454)
+	python3 scripts/file_findings.py --check $(if $(PR_EVENT),--event "$(PR_EVENT)",) $(if $(FINDINGS_BRANCH),--branch "$(FINDINGS_BRANCH)",) $(if $(BODY_FILE),--body-file "$(BODY_FILE)",)
 
 # Immutable-SHA pin guard (issue #735, #714 Slice 1, folding #717): every
 # third-party workflow `uses:` ref must be a 40-hex SHA or on the allow-ref list,

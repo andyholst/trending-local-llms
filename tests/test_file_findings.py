@@ -18,6 +18,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -608,6 +609,10 @@ def test_the_shape_gate_is_wired_to_ci_and_the_fix_loop():
 
     check("wiring: the Makefile defines findings-check-for-pr",
           "\nfindings-check-for-pr:" in mk, "")
+    block = re.search(r"^findings-check-for-pr:.*\n(?:\t.*\n)+", mk, re.M)
+    check("wiring: the target is HOST-SIDE (it reads the runner's $GITHUB_EVENT_PATH)",
+          block is not None and "$(PYTHON_RUN)" not in block.group(0),
+          "the container does not mount the event payload (measured: PR #1480 run 45288434759)")
     check("wiring: qa-validate's validate job calls it", "make findings-check-for-pr" in qa, "")
     check("wiring: the fix loop carries it", "findings-check-for-pr" in loop, "")
     check("wiring: ARCHITECTURE.md documents the target", "findings-check-for-pr" in arch, "")
