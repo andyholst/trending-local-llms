@@ -34,7 +34,7 @@ REVIEW_SHAPE = "· reviewing #<id> · PR #<n>"
 PLANNER_READS = "The planner reads the issue comments to delegate accordingly."
 AGENTS_SECTION = "TLL fleet — lifecycle, delegation and divergence gate"
 FOLLOW_UP = "Always follow up on the issue"
-#: Issue #1418: the host-ahead pitfall notes are LANDED, reconciled, in both mirrors.
+#: Issues #1418/#1445: the host-ahead pitfall notes are LANDED, reconciled, in both mirrors.
 HOST_AHEAD_HEADER = "## Host notes ahead of master"
 HOST_TIMESTAMP = "20261123T140611Z"
 HOST_NAME = "asimov@mac"
@@ -49,6 +49,11 @@ LANDED_HOST_AHEAD_NOTES = {
             ("Verify a landed change against `origin/master`", "git rev-parse HEAD"),
             ("Lanes change locally and PUSH", "#1423"),
             ("separate WALL-CLOCK from CPU and count the containers", "docker ps"),
+            # #1445: the concurrency rule grew the mechanical `make dispatch-check` guard (#1416),
+            # plus the protected-instruction-file and auto-close hidden-half rules.
+            ("Enforce BOTH halves mechanically BEFORE", "#1416"),
+            ("Protected instruction files cannot be written by a headless lane", "rule-3c"),
+            ("An auto-close can hide an undone half", "gh pr diff"),
         ),
     ),
     "tll-implementer": (
@@ -61,6 +66,11 @@ LANDED_HOST_AHEAD_NOTES = {
             ("re-read the PR's live state", "state,mergedAt,mergeCommit"),
             ("OpenSpec LIFECYCLE gate", "#1434"),
             ("is RED in a local test-image run WITHOUT `GH_TOKEN`", "#972"),
+            # #1445: a rebase can silently drop an amend's message sections (#1427) and the
+            # per-master-move merge-tree index race (#1432); the lifecycle remedy keeps #866.
+            ("A `git rebase --continue` can ship a commit whose MESSAGE lost your `--amend` edits", "#1427"),
+            ("The merge-tree index race is PER-MASTER-MOVE", "#1432"),
+            ("regenerates `OPENSPEC.md` (e.g. `1 active, 456 archived`)", "#866"),
         ),
     ),
 }
@@ -466,7 +476,7 @@ def test_ci_wires_the_guard_on_pr_and_push() -> int:
 
 
 def test_lane_skill_mirrors_carry_landed_host_ahead_notes() -> int:
-    """Issue #1418: both lane mirrors carry the reconciled host-ahead pitfall notes.
+    """Issues #1418/#1445: both lane mirrors carry the reconciled host-ahead pitfall notes.
 
     The host copies ran ahead of master with a `## Host notes ahead of master` section.
     They are landed here MERGED into each skill's own Pitfalls list — no timestamp
