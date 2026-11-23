@@ -203,6 +203,17 @@ needed to move the board.
   the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
   `git worktree remove --force <path>`), and always name the sha you measured. Compare
   `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
+- **Protected instruction files cannot be written by a headless lane — declare them owed to the owner and
+  do not route around it.** `agents/*/SOUL.md` and `AGENTS.md` §7b/§8 are rule-3c protected: the write is
+  refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
+  a dispatch needs such an edit, split the deliverable: implement the writable half, and post an explicit
+  owed-to-owner marker naming the exact file:line and the required wording. Never silently drop the half,
+  and never weaken a gate just to avoid needing the edit.
+- **An auto-close can hide an undone half — verify the merged PR's DIFF, not its `Closes #` line.** GitHub
+  closes an issue from any PR whose title/body carries the keyword, including a PR that implements only PART
+  of the issue's scope. After a merge run `gh pr diff <n> --name-only` and confirm every file the issue named
+  actually changed; a missing file means the issue was closed with work outstanding. Re-file that half as its
+  own small issue with a handover instead of letting the close stand.
 - **Lanes change locally and PUSH; CI verifies. Never have a lane pre-run the full containerised suite.**
   Owner directive #1423: a head's local `make validate` + whole `make test` costs 15–30 min inside the
   per-purpose Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while

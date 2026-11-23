@@ -49,6 +49,8 @@ LANDED_HOST_AHEAD_NOTES = {
             ("Verify a landed change against `origin/master`", "git rev-parse HEAD"),
             ("Lanes change locally and PUSH", "#1423"),
             ("separate WALL-CLOCK from CPU and count the containers", "docker ps"),
+            ("Protected instruction files cannot be written by a headless lane", "security.protected_instruction_files"),
+            ("An auto-close can hide an undone half", "gh pr diff <n> --name-only"),
         ),
     ),
     "tll-implementer": (
@@ -61,6 +63,8 @@ LANDED_HOST_AHEAD_NOTES = {
             ("re-read the PR's live state", "state,mergedAt,mergeCommit"),
             ("OpenSpec LIFECYCLE gate", "#1434"),
             ("is RED in a local test-image run WITHOUT `GH_TOKEN`", "#972"),
+            ("A `git rebase --continue` can ship a commit whose MESSAGE lost your `--amend` edits", "GIT_EDITOR=true git rebase --continue"),
+            ("merge-tree index race is PER-MASTER-MOVE", "not mergeable"),
         ),
     ),
 }

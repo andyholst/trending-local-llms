@@ -135,6 +135,17 @@ Work in **worktrees** branched from the **latest fetched `origin/master`**. Neve
   ALL five from the start; `make pr-closure` does NOT check this (it reads the closing bindings only),
   so a `pr_closure.py` OK is not a green closure job. Run
   `python3 scripts/pr_body.py --check-body-file <f> --branch <b>` before opening the PR.
+- **A `git rebase --continue` can ship a commit whose MESSAGE lost your `--amend` edits — re-read and
+  re-check the message on the rebased head before every push.** Measured on #1427/PR #1429: the
+  branch commit carried all five `##` sections (`pr_body.py --check-commit-file` OK), the rebase onto
+  an advanced master conflicted, and after resolving + `GIT_EDITOR=true git rebase --continue` the
+  resulting commit had NO `## ` sections — so `--check-commit-file` REFUSED again and the `closure`
+  job would have reddened on a head I had already pushed. Do not trust that an amend survived a
+  rebase: run `git log -1 --format=%B | grep -c '^## '` and `python3 scripts/pr_body.py
+  --check-commit-file <(git log -1 --format=%B) --branch <b> --issue <id>` on the NEW head, and
+  `--amend` again if the count is short. Related: a rebase that touches `OPENSPEC.md` can also leave
+  the count line one row behind master's own archive — regenerate (`scripts/openspec_index.py
+  --write`) rather than hand-editing the collision.
 - **`validate` runs an OpenSpec index check on the MERGE TREE (`git merge --no-commit --no-ff origin/master`
   + `make openspec-index-check`, issue #1239), so a green index on YOUR head is not enough.** Any PR that
   adds/archives an OpenSpec change races master's own index edits and reds with
@@ -142,6 +153,17 @@ Work in **worktrees** branched from the **latest fetched `origin/master`**. Neve
   Remedy: rebase onto the freshly fetched `origin/master`, resolve the `OPENSPEC.md` conflicts (the
   `Active changes: **N** · archived: **M**` count line is the usual collision), run
   `make openspec-index`, commit, re-push. Prove it locally first with the same merge + index check.
+- **The merge-tree index race is PER-MASTER-MOVE, so expect several rebase cycles, and `auto-merge`
+  can fail with `not mergeable` even after `validate` + `live-smoke` are green.** Measured on #1432/PR
+  #1434: master advanced four times inside one PR's lifetime (`0c8d3f6c -> d792d29f -> 93b67ca5 ->
+  213df431 -> 07bcb204`), each landing `OPENSPEC.md`; `validate` went green on the rebased head every
+  time, but the squash step then found the merge commit uncleanable because master had moved again
+  between the validate run and the merge. Each cycle: fetch, rebase onto the new `origin/master`,
+  resolve EVERY conflict — not just `OPENSPEC.md` (a concurrently-landed `tests/test_fleet_lifecycle.py`
+  edit conflicts inside the `main()` call list; keep BOTH sides' entries, do not take one side whole),
+  regenerate the index, re-run the merge-tree simulation, force-push. Tell a master-move race from a
+  real red by reading the failing step:
+  `gh run view <id> --log-failed | grep -iE 'not mergeable|master ->|MERGE CONFLICT'`.
 - **The `validate` job also runs the OpenSpec LIFECYCLE gate (`make openspec-archive-check PR=<n>`): a PR
   whose branch closes issue N may not leave N's OpenSpec change ACTIVE, or validate reds AFTER a green
   lint/openspec/index/merge-tree run (~12 min in) with `THIS PR #<n> closes issue #N while the change is
