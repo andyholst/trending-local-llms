@@ -424,7 +424,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 <!-- arch:pipelines -->
 ## 4. The pipelines
 
-Eleven workflows in `.github/workflows/`. **ONE carries a cron**: `refresh-bot.yml`
+Eleven workflows in `.github/workflows/` plus the dispatch-only `security-scan.yml` (issue #1185). **ONE carries a cron**: `refresh-bot.yml`
 (Wednesday `0 6 * * 3` + same-day backup `43 17 * * 3`) — the data gatherer is the only
 pipeline the owner left scheduled (owner cadence directive 2026-11-15, rule 6t, issue
 #1029; the `weekly-cadence` slots #670–#677 it replaced are gone). Every other sweep in
@@ -623,6 +623,21 @@ branch or merges, and never holds the owner PAT (it comments with
 `REVIEW_GAP_HOURS := 3` in the Makefile: one constant for both bots — a run in
 flight, implementer activity younger than the gap, or the issue within the
 implementer's next 3 sweeps all keep the body off-limits.
+
+### `.github/workflows/security-scan.yml` — the five-scanner sweep (owner dispatch)
+
+Issue #1185 made the shipped scanners reachable by an owner alone: no cron, no
+repository event, no automatic trigger — the guard runs first, then `scan` runs
+each scanner through its Makefile target so the CLI a human runs is the command
+CI runs (rule 6m).
+
+| Job | Does |
+|---|---|
+| `guard` | The owner/collaborator guard as the FIRST job, before any secret reaches the run |
+| `scan` | `make containerfile-scan`, `make trivy-scan`, `make grype-scan`, `make syft-sbom OUT=…` (SBOM uploaded as an artifact), then `make security-scan-self-test` — the planted CVE proves the scanners really flag a known vulnerability instead of silently passing |
+
+It never opens a PR and never writes to `master`; a finding is filed through the
+same `tech-debt` chain as every other analysis (rule 6g).
 
 ---
 
@@ -887,7 +902,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (11 pipelines, 262 make targets, 105 files in `scripts/`)
+### Bots in the tree (12 pipelines, 262 make targets, 105 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -965,6 +980,12 @@ Every pipeline, what starts it, the jobs it runs and the `make` targets those jo
 - **calls:** `make hermes-pin-freshness` — Compare the pinned Hermes agent version against the upstream release channel (REPO=<owner/name> or FROM_FILE=<recorded.json>, DRY=1 previews; issue #1091); `make base-check` — Fail unless this checkout IS the freshly fetched <BASE> (CI runs it before it cuts a branch); `make free-model-refresh` — Refresh the chain's free tier from the live Nous catalogue; a no-op when unchanged (issue #1195); `make agent-profile-model-render` — Render every fleet lane's Hermes profile config from agents/model_chain.json (issue #1140); `make keeper-pr`; `make rebuild-decision` — Print built/test_built/publish_openspec + tags + reasons (FORCE=<bool>, DOW=<1-7>); `make image-manifest-check` — Refuse a published base/test image tag unless its manifest answers linux/arm64 AND linux/amd64 (issue #958) — the same both-paths gate as openspec-manifest-check, over the ONE verdict in sc…; `make test-image-smoke` — Run the published test image under linux/arm64 QEMU and prove its test-layer libraries import (issue #958) — the run-proof half of the publish gate; pass TAG=<exact published tag>; `make openspec-manifest-check` — Refuse a published OpenSpec image tag unless its manifest answers linux/arm64 AND linux/amd64 (issue #919) — host docker, like rebuild-decision; pass TAG=<exact published tag>; `make image-ensure-base`; `make model-caps`; `make hermes-smoke`; `make search-*`; `make engine-check`; `make base-advance` — Fetch <BASE> and fast-forward this clean checkout onto it (a job that has written nothing yet); `make image-ensure`; `make merge-fetch`; `make test`; `make engine-meta-capture` — Capture GitHub metadata for registry engines the offline test fixture lacks; `make hermes-pin-channel-record` — Write the recorded Hermes release-channel payload through the ONE seam (TO=<path>, default tests/fixtures/hermes_releases_latest.json; FROM_FILE=<recorded.json> for offline; issue #1163); `make correct-raw`; `make qa-report`; `make data-gaps`; `make data-gap-issue`; `make validate`; `make git-identity`; `make merge`; `make refresh-sync` — Move a refresh's generated tree onto the fetched <BASE>, keeping its raw snapshots (issue #177); `make refresh-require-tip` — Fail unless the refresh branch contains the freshly fetched <BASE> (issue #177); `make refresh-run-block`; `make refresh-pr-body` — Print the REFRESH PR body: the run's window block + the contract (issue #542)
 - **agent lanes:** `make search-amd` preloads `data-search`, `bot-unattended`; `make search-cpu` preloads `data-search`, `bot-unattended`; `make search-metal` preloads `data-search`, `bot-unattended`; `make search-nvidia` preloads `data-search`, `bot-unattended`
 - **announces (marker verbs):** `refresh-bot-run`
+
+#### `.github/workflows/security-scan.yml` — security-scan
+
+- **when:** `workflow_dispatch`
+- **jobs:** `guard`, `scan` (needs `guard`)
+- **calls:** `make containerfile-scan` — Containerfile/Dockerfile linter (hadolint) over the repo's Dockerfiles (exit 1 on a violation; run by security-scan.yml, issue #1185); `make trivy-scan` — Trivy container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding; run by security-scan.yml, issue #1185); `make grype-scan` — Grype container/dependency vulnerability scan of the working tree (DIR=<scan dir>; exit 1 on a finding; run by security-scan.yml, issue #1185); `make syft-sbom` — Syft software-bill-of-materials of the working tree (DIR=<scan dir>; writes the SBOM to stdout; run by security-scan.yml, issue #1185); `make security-scan-self-test` — Prove the scanners are not a false green: a planted known-CVE fixture MUST fail trivy+grype, a clean one pass (issue #715; run by security-scan.yml, issue #1185)
 
 ### Agent skill contracts (`agents/skills/`)
 

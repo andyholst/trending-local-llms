@@ -92,6 +92,8 @@ LABEL = "tech-debt"
 
 #: The MAIN pipelines (the ones AGENTS.md §6b names and the §8 guard table describes). A failure
 #: in one of these after a merge to master or on its schedule is the state this tracks.
+#: `security-scan.yml` (issue #1185) joins the list as a DISPATCH-ONLY pipeline: it has no push
+#: and no schedule, so its dispatched runs are its ONLY mode of delivery — see DISPATCH_ONLY_PIPELINES.
 MAIN_PIPELINES = (
     "qa-validate.yml",
     "refresh-bot.yml",
@@ -99,7 +101,15 @@ MAIN_PIPELINES = (
     "issue-review-bot.yml",
     "architecture-bot.yml",
     "queued-alarm.yml",
+    "security-scan.yml",
 )
+
+#: The pipelines whose only trigger is `workflow_dispatch` (issue #1185). For a cron/push pipeline
+#: a collaborator's manual dispatch is that person's own act and is not tracked (the #1029
+#: partition). A dispatch-ONLY pipeline has no other delivery, so a concluded-bad dispatched run
+#: is an accident — it must reach the ledger and become an issue, or rule 6m's scan coverage would
+#: silently expire. Dedup stays run-id keyed, so a failing pipeline cannot spam the queue.
+DISPATCH_ONLY_PIPELINES = ("security-scan.yml",)
 
 #: A failure counts when it is CONCLUDED bad (a still-running or queued run belongs to
 #: queued-alarm's own alarm, not to this filer).
@@ -208,6 +218,9 @@ def main_pipeline_failures(repo: str, window_hours: int, now: dt.datetime) -> li
             tracked = (
                 (r.get("event") == "push" and r.get("headBranch") == "master")
                 or r.get("event") == "schedule"
+                # A dispatch-ONLY pipeline (issue #1185): its dispatched runs are its only
+                # delivery, so a concluded-bad one is an accident to file, not an act to skip.
+                or (r.get("event") == "workflow_dispatch" and wf in DISPATCH_ONLY_PIPELINES)
             )
             if tracked:
                 found.append(r)

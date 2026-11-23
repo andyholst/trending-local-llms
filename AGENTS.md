@@ -2041,6 +2041,24 @@ workflow), so the list cannot drift back into the hand-maintained half it used t
   (marker dedup, capped per run). **No model anywhere**, so a scan is free and
   cannot invent a finding; it never edits code, opens a PR or comments on one.
 
+- **`security-scan.yml`** — the **supply-chain scan sweep** (issue #1185, enforcing the
+  §3d secret-scan family for the toolchain itself): owner dispatch only, no `pull_request`
+  and no `schedule` (rule 6t). `guard` runs FIRST (rule 6j, registered in
+  `BOT_GUARDS`), then `needs: guard` the `scan` job — under `permissions: contents: read`
+  with NO secret — calls exactly the five Makefile targets `containerfile-scan`,
+  `trivy-scan`, `grype-scan`, `syft-sbom` and `security-scan-self-test` (issue #1175;
+  rule 6m), each step `if: ${{ !cancelled() }}` so a round reports EVERY scanner's
+  finding instead of hiding the rest behind the first red, publishes the syft CycloneDX
+  SBOM as a build artifact, and the self-test step requires trivy and grype to flag the
+  planted vulnerable fixture — a scanner that silently does nothing reds the run.
+  `docker.json` findings red the run (`--exit-code 1`), but only in this scan pipeline:
+  the scan is deliberately NOT a gate of `qa-validate`'s merge job, so a third-party CVE
+  advisory cannot silently freeze every merge; a red run is filed by `make
+  pipeline-failure-issue` as one `tech-debt` issue — `security-scan.yml` joins
+  `MAIN_PIPELINES`, and because it has no push and no cron, its DISPATCHED runs are
+  tracked as its only delivery (the #1029 partition keeps a manual dispatch of a
+  cron/push pipeline untracked).
+
 **Who can run what** (owner + collaborators only):
 - **Workflows.** `workflow_dispatch` / re-run already require write access;
   the workflows enforce it themselves too, so it never depends on a setting:
