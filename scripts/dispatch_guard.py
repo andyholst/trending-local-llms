@@ -9,17 +9,21 @@ and #1250 was stacked on #1246/#1247 and became add/add conflicts when #1247 mer
 causes: nothing refused a dispatch whose target was already closed or already merged, and
 nothing bounded how many lanes run at once.
 
-This is the ONE implementation of both rules (rule 6d). It decides, it never spawns a lane:
+This is the ONE implementation of the dispatch rules (rule 6d). It decides, it never spawns a lane:
 
   stale target  — REFUSE when the issue is CLOSED, or when the PR bound to that issue
                   (`closingIssuesReferences`) is already MERGED;
   concurrency   — REFUSE above ONE ceiling constant (`ACTIVE_LANE_CEILING`, default 3) on
-                  the active-lane count read from a CALLER-OWNED registry file.
+                  the active-lane count read from a CALLER-OWNED registry file;
+  shared files  — REFUSE when a `--claim <repo-relative path>` overlaps a path another
+                  ACTIVE lane already claims in that same registry (issue #1458), naming
+                  the holding lane.
 
-Exit codes: 0 = dispatch allowed; 1 = refused for a STALE TARGET (closed issue / merged PR)
-or for being OVER the ceiling; 2 = the guard could not decide — no registry, an unreadable
-registry, an unreadable GitHub state — never a silent clean. A caller that wants a verdict
-without acting takes `--json`.
+Exit codes: 0 = dispatch allowed; 1 = refused for a STALE TARGET (closed issue / merged PR),
+for being OVER the ceiling, or for a shared-file CLAIM overlapping an ACTIVE lane;
+2 = the guard could not decide — no registry, an unreadable registry, an unreadable
+GitHub state — never a silent clean. A caller that wants a verdict without acting takes
+`--json`.
 
 Deterministic and offline-testable (owner directive): the issue/PR state arrives through a
 single seam (`issue_state(repo, issue)`), which reads live through `gh` when given a repo
@@ -36,15 +40,22 @@ that exists but cannot be parsed is a loud exit 2, never a silent clean.
 
 Usage:
     make dispatch-check ISSUE=1416            # the ONE way a caller consults it
+    make dispatch-check ISSUE=1458 CLAIMS="agents/tll-planner/skills/tll-planner/SKILL.md"
     python3 scripts/dispatch_guard.py --issue 1416 --repo andyholst/trending-local-llms
     python3 scripts/dispatch_guard.py --issue 1239 --from-file recorded.json
+    python3 scripts/dispatch_guard.py --issue 1458 --claim agents/x --claim docs/y --from-file f.json
     python3 scripts/dispatch_guard.py --help
+
+The registry's per-lane rows (`lanes`, issue #1458) carry the shared files each lane will
+touch; the overlap check reads them ONLY when at least one `--claim` (or `CLAIMS=`) is
+given, so a claim-free invocation behaves exactly as it did before the check existed.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -60,6 +71,13 @@ ACTIVE_LANE_CEILING = 3
 #: The name of the single integer key in the caller-owned registry. One definition, read
 #: here and nowhere else; the writer side is the caller's, this is the ONLY reader.
 REGISTRY_COUNT_KEY = "active_lanes"
+
+#: The registry's per-lane rows: `lanes` is a list (or a lane-keyed object) of
+#: `{lane|name|id|profile, state|status, claims: [<repo-relative path>, …]}` entries. A row
+#: whose state is `active` HOLDS its claims against another dispatch; any other state
+#: (`finished`, …) does not. Absent or empty means no lane has declared claims yet, which
+#: is the backward-compatible shape every pre-#1458 registry already has.
+REGISTRY_LANES_KEY = "lanes"
 
 #: How many recently-updated PRs the bound-PR scan reads. A merged PR that closed the
 #: issue ages out of the list, so the window is bounded (never unbounded) and the branch-name
@@ -94,23 +112,36 @@ def resolve_registry(path: str | None) -> tuple[Path | None, str]:
     return None, f"--registry {path!r} resolves inside the repository ({resolved})"
 
 
-def active_lane_count(registry: Path | None) -> int:
-    """The active-lane count the CALLER's registry holds (0 when it does not exist yet).
+def _read_registry(registry: Path | None) -> dict:
+    """The caller's registry payload; `{}` when the file does not exist yet.
 
     An absent file is the healthy empty registry, not an error. A file that exists but is
-    missing the count key, carries a non-integer, or is negative is a LOUD exit 2: the
-    guard's whole purpose is that a count nobody can trust must not decide a dispatch.
+    unreadable or not a JSON object is a LOUD exit 2: the guard's whole purpose is that a
+    state nobody can trust must not decide a dispatch.
     """
     if registry is None:
         raise Unreadable("no --registry was given — the guard cannot count active lanes")
     if not registry.is_file():
-        return 0
+        return {}
     try:
         payload = json.loads(registry.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise Unreadable(f"registry {registry} could not be read: {exc}") from exc
     if not isinstance(payload, dict):
         raise Unreadable(f"registry {registry} is not a JSON object")
+    return payload
+
+
+def active_lane_count(registry: Path | None) -> int:
+    """The active-lane count the CALLER's registry holds (0 when it does not exist yet).
+
+    The count must be a whole number >= 0; anything else is a LOUD exit 2.
+    """
+    if registry is None:
+        raise Unreadable("no --registry was given — the guard cannot count active lanes")
+    if not registry.is_file():
+        return 0
+    payload = _read_registry(registry)
     raw = payload.get(REGISTRY_COUNT_KEY)
     if isinstance(raw, bool) or not isinstance(raw, int):
         raise Unreadable(
@@ -120,6 +151,51 @@ def active_lane_count(registry: Path | None) -> int:
     if raw < 0:
         raise Unreadable(f"registry {registry} counts {raw} active lanes — negative is not a count")
     return raw
+
+
+def lane_entries(registry: Path | None) -> list[dict]:
+    """The registry's per-lane rows, normalized to `{lane, state, claims}` (issue #1458).
+
+    `lanes` may be a list of row objects or an object keyed by lane name; each row carries
+    its display name (`lane`/`name`/`id`/`profile`), its `state`/`status`, and its
+    repo-relative `claims`. An ABSENT key is the pre-#1458 shape and yields no rows, so a
+    claim-free invocation never consults it. A present-but-malformed `lanes`/`claims` value
+    is a loud exit 2, never a silent clean: a collision the guard cannot see is the defect
+    this check exists to prevent.
+    """
+    raw = _read_registry(registry).get(REGISTRY_LANES_KEY)
+    if raw is None:
+        return []
+    if isinstance(raw, dict):
+        items = [{"lane": str(key), **value} for key, value in raw.items() if isinstance(value, dict)]
+    elif isinstance(raw, list):
+        items = [row for row in raw if isinstance(row, dict)]
+    else:
+        raise Unreadable(
+            f"registry {registry} has a `{REGISTRY_LANES_KEY}` that is neither a list nor "
+            f"an object (found: {type(raw).__name__})"
+        )
+    rows: list[dict] = []
+    for item in items:
+        name = next((str(item[key]) for key in ("lane", "name", "id", "profile") if item.get(key)), "")
+        state = str(item.get("state", item.get("status", ""))).strip().lower()
+        claims = item.get("claims")
+        if claims is None:
+            paths: tuple[str, ...] = ()
+        elif isinstance(claims, (list, tuple)):
+            if any(not isinstance(path, str) for path in claims):
+                raise Unreadable(
+                    f"registry {registry} lane {name or '<unnamed>'!r} has a `claims` entry "
+                    f"that is not a path string"
+                )
+            paths = tuple(claims)
+        else:
+            raise Unreadable(
+                f"registry {registry} lane {name or '<unnamed>'!r} has a `claims` that is "
+                f"not a list (found: {type(claims).__name__})"
+            )
+        rows.append({"lane": name or "<unnamed>", "state": state, "claims": paths})
+    return rows
 
 
 # --------------------------------------------------------------------------- GitHub seam
@@ -210,6 +286,74 @@ def fetch_state(repo: str | None, issue: str, from_file: str | None) -> dict:
     return recorded_state(from_file) if from_file else issue_state(repo or DEFAULT_REPO, issue)
 
 
+# --------------------------------------------------------------------------- shared files
+
+def normalize_repo_path(raw: str) -> tuple[str, str]:
+    """(normalized repo-relative path, refusal reason); a non-empty reason means unusable.
+
+    A claim is REPO-RELATIVE by contract, so an absolute path (including one that points
+    inside this checkout) and any path that climbs out with `..` are refused: the guard
+    compares claims against other lanes' claims as repository paths, and a path in any
+    other form cannot be compared honestly.
+    """
+    text = str(raw).strip()
+    if not text:
+        return "", "--claim needs a repo-relative path, not an empty value"
+    if os.path.isabs(text) or text.startswith("~"):
+        return "", (f"--claim {raw!r} must be a REPO-RELATIVE path, not an absolute "
+                    f"(in-repo) path")
+    parts = [part for part in text.split("/") if part not in ("", ".")]
+    if any(part == ".." for part in parts):
+        return "", f"--claim {raw!r} escapes the repository (`..` is not a repo-relative path)"
+    if not parts:
+        return "", f"--claim {raw!r} is not a repo-relative path"
+    return "/".join(parts), ""
+
+
+def paths_overlap(a: str, b: str) -> bool:
+    """True when two normalized paths name the same file or one contains the other.
+
+    Segment-boundary containment (not a raw string prefix): claiming a directory covers
+    every file under it, so a lane holding `agents/x` blocks a dispatch onto
+    `agents/x/SKILL.md`, and equality covers the exact-mirror race #1458 measured.
+    """
+    return a == b or a.startswith(b + "/") or b.startswith(a + "/")
+
+
+def normalized_claims(claims: list[str]) -> tuple[list[str], list[str]]:
+    """(usable normalized claims, refusal reasons for the unusable ones)."""
+    usable: list[str] = []
+    refusals: list[str] = []
+    for raw in claims:
+        path, refusal = normalize_repo_path(raw)
+        if refusal:
+            refusals.append(refusal)
+        else:
+            usable.append(path)
+    return usable, refusals
+
+
+def overlap_reasons(claims: list[str], lanes: list[dict]) -> list[str]:
+    """One reason per ACTIVE-lane collision, naming the HOLDING lane (issue #1458).
+
+    A FINISHED lane's claims do not block: its work landed or stopped, so the path is free.
+    """
+    reasons: list[str] = []
+    for claim in claims:
+        for lane in lanes:
+            if lane.get("state") != "active":
+                continue
+            for held in lane.get("claims") or ():
+                held_norm, _ = normalize_repo_path(held)
+                if held_norm and paths_overlap(claim, held_norm):
+                    reasons.append(
+                        f"--claim {claim!r} overlaps {held_norm!r}, already claimed by ACTIVE "
+                        f"lane {lane.get('lane')!r} — one lane per target path"
+                    )
+                    break
+    return reasons
+
+
 # --------------------------------------------------------------------------- decisions
 
 def stale_target_reasons(state: dict) -> list[str]:
@@ -236,24 +380,35 @@ def stale_target_reasons(state: dict) -> list[str]:
 
 
 def evaluate(state: dict, count: int | None, ceiling: int,
-             reasons: list[str] | None = None) -> dict:
+             reasons: list[str] | None = None,
+             claims: list[str] | None = None,
+             lanes: list[dict] | None = None) -> dict:
     """The whole verdict as data (rule 6d): one dict, every reader a projection of it.
 
     `verdict` is `allow` or `refuse`; `reasons` is the ordered list a caller prints. The
     count is carried whenever the caller supplied one, so a refusal can still report how
     full the fleet was; `count=None` means "not consulted" (the stale target was refused
     first, and a registry nobody could read must not mask the target's own reason).
+
+    `claims`/`lanes` are the shared-file check (#1458) and are consulted ONLY when at least
+    one claim is given: with no claims this function returns exactly the pre-#1458 verdict.
     """
     if reasons is None:
         reasons = stale_target_reasons(state)
         if count is not None:
             reasons += over_ceiling_reasons(count, ceiling)
+        if claims:
+            usable, unusable = normalized_claims(claims)
+            reasons += unusable
+            if lanes is not None:
+                reasons += overlap_reasons(usable, lanes)
     return {
         "issue": state.get("issue"),
         "state": state.get("state"),
         "bound_prs": state.get("bound_prs") or [],
         "active_lanes": count,
         "ceiling": ceiling,
+        "claims": list(claims or []),
         "verdict": "refuse" if reasons else "allow",
         "reasons": reasons,
     }
@@ -273,6 +428,8 @@ def render(verdict: dict) -> str:
         f"bound_prs={[p.get('number') for p in verdict['bound_prs']]} "
         f"active_lanes={verdict['active_lanes']}/{verdict['ceiling']}"
     ]
+    if verdict.get("claims"):
+        lines.append(f"[dispatch-guard]   claims={verdict['claims']}")
     lines.append(f"[dispatch-guard] {verdict['verdict'].upper()}")
     for reason in verdict["reasons"]:
         lines.append(f"[dispatch-guard]   - {reason}")
@@ -287,7 +444,9 @@ def main(argv=None) -> int:
             f"registry: a CALLER-OWNED JSON file OUTSIDE the repository "
             f"(e.g. ~/.hermes/active-lanes.json) holding {{\"{REGISTRY_COUNT_KEY}\": <int>}}; "
             f"an absent file means 0. ceiling: ACTIVE_LANE_CEILING = {ACTIVE_LANE_CEILING}. "
-            f"exit 0 allow · 1 refuse · 2 undecidable."
+            f"claims: repeat --claim <repo-relative path> (or CLAIMS=\"p1 p2\") to refuse an "
+            f"overlap with a path an ACTIVE registry lane already claims; no --claim = the "
+            f"pre-#1458 check only. exit 0 allow · 1 refuse · 2 undecidable."
         ),
     )
     ap.add_argument("--issue", required=True, help="the issue number a lane is about to start")
@@ -297,6 +456,10 @@ def main(argv=None) -> int:
     ap.add_argument("--ceiling", type=int, default=ACTIVE_LANE_CEILING,
                     help=f"the ONE concurrency ceiling (default {ACTIVE_LANE_CEILING})")
     ap.add_argument("--from-file", default="", help="a recorded issue/PR payload instead of gh")
+    ap.add_argument("--claim", action="append", default=[], metavar="PATH",
+                    help="a REPO-RELATIVE path this dispatch will touch; repeatable "
+                         "(or CLAIMS=\"p1 p2\") — refuses when an ACTIVE registry lane "
+                         "already claims an overlapping path")
     ap.add_argument("--json", action="store_true", dest="as_json",
                     help="print the verdict as JSON (for a caller that parses it)")
     args = ap.parse_args(argv)
@@ -306,10 +469,14 @@ def main(argv=None) -> int:
         print(f"REFUSED: {refusal} — the registry must be outside the repository", file=sys.stderr)
         return 2
 
+    claims = list(args.claim) + shlex.split(os.environ.get("CLAIMS", ""))
+
     try:
         state = fetch_state(args.repo or None, args.issue, args.from_file or None)
         state["issue"] = args.issue
-        verdict = evaluate(state, active_lane_count(registry), args.ceiling)
+        count = active_lane_count(registry)
+        lanes = lane_entries(registry) if claims else []
+        verdict = evaluate(state, count, args.ceiling, claims=claims, lanes=lanes)
     except Unreadable as exc:
         print(f"UNDECIDABLE: {exc}", file=sys.stderr)
         return 2

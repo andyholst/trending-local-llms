@@ -13,6 +13,11 @@ number/state, and a caller-owned active-lane count). No business logic is mocked
 only stand-in is the EXTERNAL `gh` call, replaced by a recorded payload through the
 guard's own documented `--from-file` seam (rule 6m).
 
+The dispatch guard also serialises SHARED FILES (issue #1458): `--claim <repo-relative
+path>` (repeatable, or `CLAIMS=`) refuses when another ACTIVE registry lane already claims
+an overlapping path, naming the holder, while a FINISHED lane does not block and a claim-free
+invocation behaves exactly as it did before.
+
 Run:  python3 tests/test_dispatch_guard.py   or   make test
 """
 from __future__ import annotations
@@ -52,6 +57,16 @@ def registry(tmp: Path, name: str, count: int) -> Path:
     """A CALLER-OWNED registry outside the repository (tempdir sibling, never in-tree)."""
     path = tmp / name
     path.write_text(json.dumps({D.REGISTRY_COUNT_KEY: count}), encoding="utf-8")
+    return path
+
+
+def registry_with_lanes(tmp: Path, name: str, count: int, lanes) -> Path:
+    """The #1458 registry shape: the count plus each lane's ACTIVE/FINISHED claims."""
+    path = tmp / name
+    payload = {D.REGISTRY_COUNT_KEY: count}
+    if lanes is not None:
+        payload[D.REGISTRY_LANES_KEY] = lanes
+    path.write_text(json.dumps(payload), encoding="utf-8")
     return path
 
 
@@ -197,13 +212,162 @@ def test_make_dispatch_check_is_the_callers_single_seam() -> None:
               proc.returncode == 0, proc.stdout + proc.stderr)
 
 
+# ---------------------------------------------------------------------------- claims (#1458)
+def test_claim_paths_and_registry_rows_are_normalized() -> None:
+    print("\nClaims: repo-relative paths and registry rows normalize")
+    check("a plain path is unchanged", D.normalize_repo_path("agents/x/SKILL.md") == ("agents/x/SKILL.md", ""))
+    check("leading ./ and empty segments collapse",
+          D.normalize_repo_path("./agents//x/./SKILL.md") == ("agents/x/SKILL.md", ""), "")
+    for bad, why in [
+        ("/Users/andy/repository/git/trending-local-llms/agents/x", "REPO-RELATIVE"),
+        ("~/agents/x", "REPO-RELATIVE"),
+        ("../outside", "escapes the repository"),
+        ("", "empty"),
+    ]:
+        norm, refusal = D.normalize_repo_path(bad)
+        check(f"an unusable claim ({bad!r}) is refused with a reason",
+              norm == "" and why in refusal, str((norm, refusal)))
+    check("exact paths overlap", D.paths_overlap("agents/x/SKILL.md", "agents/x/SKILL.md"))
+    check("a directory overlaps the file under it",
+          D.paths_overlap("agents/x", "agents/x/SKILL.md"))
+    check("a sibling with a shared prefix does NOT overlap",
+          not D.paths_overlap("agents/x", "agents/x2"), "")
+
+    with tempfile.TemporaryDirectory(prefix="dispatch-lanes-") as td:
+        root = Path(td)
+        rows = registry_with_lanes(root, "lanes.json", 2, [
+            {"lane": "tll-planner", "state": "active",
+             "claims": ["agents/tll-planner/skills/tll-planner/SKILL.md"]},
+            {"name": "tll-docs", "status": "finished", "claims": ["docs/README.md"]},
+        ])
+        entries = D.lane_entries(rows)
+        check("the list shape normalizes lane/state/claims",
+              entries == [
+                  {"lane": "tll-planner", "state": "active",
+                   "claims": ("agents/tll-planner/skills/tll-planner/SKILL.md",)},
+                  {"lane": "tll-docs", "state": "finished", "claims": ("docs/README.md",)},
+              ], str(entries))
+        keyed = registry_with_lanes(root, "keyed.json", 1,
+                                    {"tll-planner": {"claims": ["agents/tll-planner"]}})
+        check("the lane-keyed object shape is accepted",
+              D.lane_entries(keyed) == [{"lane": "tll-planner", "state": "",
+                                         "claims": ("agents/tll-planner",)}], str(D.lane_entries(keyed)))
+        legacy = registry(root, "legacy.json", 1)
+        check("a pre-#1458 registry has no lane rows", D.lane_entries(legacy) == [])
+        malformed = registry_with_lanes(root, "bad.json", 1,
+                                        [{"lane": "x", "state": "active", "claims": "agents/x"}])
+        try:
+            D.lane_entries(malformed)
+            check("a non-list `claims` is a loud exit 2", False, "no Unreadable raised")
+        except D.Unreadable as exc:
+            check("a non-list `claims` is a loud exit 2", "not a list" in str(exc), str(exc))
+
+
+def test_claims_overlap_refuses_active_and_allows_finished() -> None:
+    print("\nClaims: overlap with an ACTIVE lane refuses naming it; FINISHED allows")
+    with tempfile.TemporaryDirectory(prefix="dispatch-overlap-") as td:
+        tmp = Path(td)
+        reg = registry_with_lanes(tmp, "lanes.json", 1, [
+            {"lane": "tll-planner", "state": "active",
+             "claims": ["agents/tll-planner/skills/tll-planner/SKILL.md"]},
+            {"lane": "tll-docs", "state": "finished", "claims": ["docs/README.md"]},
+        ])
+        lanes = D.lane_entries(reg)
+
+        allowed = D.evaluate({"issue": "1458", "state": "OPEN", "bound_prs": []}, 1, 3,
+                             claims=["scripts/dispatch_guard.py"], lanes=lanes)
+        check("no overlap -> ALLOW", allowed["verdict"] == "allow", str(allowed))
+
+        refused = D.evaluate({"issue": "1458", "state": "OPEN", "bound_prs": []}, 1, 3,
+                             claims=["agents/tll-planner/skills/tll-planner/SKILL.md"], lanes=lanes)
+        check("overlap with an ACTIVE lane -> REFUSE", refused["verdict"] == "refuse", str(refused))
+        check("the refusal names the HOLDING lane and the path",
+              any("tll-planner" in r and "SKILL.md" in r for r in refused["reasons"]),
+              str(refused["reasons"]))
+
+        under_dir = D.evaluate({"issue": "1458", "state": "OPEN", "bound_prs": []}, 1, 3,
+                               claims=["agents/tll-planner"], lanes=lanes)
+        check("a held FILE also blocks a dispatch claiming its DIRECTORY",
+              under_dir["verdict"] == "refuse", str(under_dir))
+
+        finished = D.evaluate({"issue": "1458", "state": "OPEN", "bound_prs": []}, 1, 3,
+                              claims=["docs/README.md"], lanes=lanes)
+        check("overlap with a FINISHED lane -> ALLOW", finished["verdict"] == "allow", str(finished))
+
+        no_claim = D.evaluate({"issue": "1458", "state": "OPEN", "bound_prs": []}, 1, 3, lanes=lanes)
+        check("NO --claim behaves exactly as today (overlap ignored)",
+              no_claim["verdict"] == "allow" and no_claim["claims"] == [], str(no_claim))
+
+
+def test_cli_and_make_forward_claims_and_keep_existing_refusals() -> None:
+    print("\nClaims: the real CLI/make seam, refusals intact, offline")
+    with tempfile.TemporaryDirectory(prefix="dispatch-claims-cli-") as td:
+        tmp = Path(td)
+        fixture = state_file(tmp, "open.json", "OPEN", [])
+        reg = registry_with_lanes(tmp, "lanes.json", 1, [
+            {"lane": "tll-planner", "state": "active",
+             "claims": ["agents/tll-planner/skills/tll-planner/SKILL.md"]},
+        ])
+
+        def run(*args: str) -> tuple[int, str]:
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "dispatch_guard.py"),
+                 "--issue", "1458", "--registry", str(reg), "--from-file", str(fixture), *args],
+                capture_output=True, text=True, cwd=ROOT,
+            )
+            return proc.returncode, proc.stdout + proc.stderr
+
+        rc, out = run("--claim", "scripts/dispatch_guard.py")
+        check("CLI: no overlap exits 0", rc == 0, out)
+        check("CLI: the verdict carries the claims", "scripts/dispatch_guard.py" in out, out)
+        rc, out = run("--claim", "agents/tll-planner/skills/tll-planner/SKILL.md")
+        check("CLI: overlap exits NON-ZERO", rc != 0, out)
+        check("CLI: the reason names the holding lane", "tll-planner" in out and "REFUSE" in out, out)
+        rc, out = run("--claim", str(ROOT / "agents" / "tll-planner" / "skills" / "tll-planner" / "SKILL.md"))
+        check("CLI: an in-repo (absolute) claim is refused", rc != 0 and "REPO-RELATIVE" in out, out)
+        rc, out = run()
+        check("CLI: no --claim exits 0 exactly as today", rc == 0 and "claims=" not in out, out)
+
+        # The existing refusals still fire alongside the claims check.
+        closed = state_file(tmp, "closed.json", "CLOSED", [])
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "dispatch_guard.py"), "--issue", "1239",
+             "--registry", str(reg), "--from-file", str(closed),
+             "--claim", "agents/tll-planner/skills/tll-planner/SKILL.md"],
+            capture_output=True, text=True, cwd=ROOT,
+        )
+        out = proc.stdout + proc.stderr
+        check("closed issue still refuses with its own reason",
+              proc.returncode != 0 and "CLOSED" in out and "tll-planner" in out, out)
+
+        # make: CLAIMS= is the make-side spelling of repeatable --claim.
+        proc = subprocess.run(
+            ["make", "dispatch-check", "ISSUE=1458", f"REGISTRY={reg}",
+             f"FROM_FILE={fixture}", 'CLAIMS=agents/tll-planner/skills/tll-planner/SKILL.md'],
+            capture_output=True, text=True, cwd=ROOT,
+        )
+        out = proc.stdout + proc.stderr
+        check("make CLAIMS=: overlap exits NON-ZERO", proc.returncode != 0, out)
+        check("make CLAIMS=: the refusal names the holding lane", "tll-planner" in out, out)
+        proc = subprocess.run(
+            ["make", "dispatch-check", "ISSUE=1458", f"REGISTRY={reg}", f"FROM_FILE={fixture}",
+             'CLAIMS=scripts/dispatch_guard.py docs/README.md'],
+            capture_output=True, text=True, cwd=ROOT,
+        )
+        check("make CLAIMS=: space-separated multiple claims allow on no overlap",
+              proc.returncode == 0, proc.stdout + proc.stderr)
+
+
 def main() -> int:
     test_open_issue_is_allowed()
     test_closed_issue_is_refused()
     test_merged_bound_pr_is_refused()
     test_concurrency_bound_is_one_constant()
     test_registry_is_caller_owned_and_lives_outside_the_repo()
+    test_claim_paths_and_registry_rows_are_normalized()
+    test_claims_overlap_refuses_active_and_allows_finished()
     test_cli_exit_codes_over_recorded_fixtures()
+    test_cli_and_make_forward_claims_and_keep_existing_refusals()
     test_help_documents_the_registry_and_the_ceiling()
     test_make_dispatch_check_is_the_callers_single_seam()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
