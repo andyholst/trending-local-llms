@@ -7,6 +7,7 @@ assert the exact markers. The external CLI itself is never replaced.
 from __future__ import annotations
 
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -246,6 +247,99 @@ def test_r_marker_keeps_its_pr_after_the_merge_clears_the_association() -> None:
           "99" not in state3["run_prs"], str(state3["run_prs"]))
 
 
+def _stub_gh(tmp: Path) -> Path:
+    """A stub `gh` CLI — the only permitted stand-in (the external system), not a product symbol.
+
+    It answers the two comment query shapes the way GitHub really does: an unqualified
+    `per_page=100` returns the 100 OLDEST comments (the bug #1360 measured), while an
+    explicit `sort=created&direction=desc` returns the NEWEST 100, including a comment
+    far newer than the old frozen cursor. Every request path is recorded for assertion.
+    """
+    log = tmp / "requests.log"
+    source = '''#!/usr/bin/env python3
+import json, sys
+args = sys.argv[1:]
+path = args[args.index("api") + 1] if "api" in args else ""
+with open(__LOG__, "a", encoding="utf-8") as fh:
+    fh.write(path + "\\n")
+if "/comments?" in path:
+    if "sort=created" in path and "direction=desc" in path:
+        rows = [{"id": 7090680909}, {"id": 7090000000}] + [
+            {"id": i} for i in range(6242933574, 6242933674)]
+    else:
+        rows = [{"id": i} for i in range(5942946574, 5942946674)]
+    print(json.dumps(rows))
+elif path.startswith("actions/runs"):
+    print(json.dumps({"workflow_runs": []}))
+elif path.startswith("commits/"):
+    print(json.dumps({"sha": "aaa"}))
+else:
+    print(json.dumps([]))
+'''.replace("__LOG__", repr(str(log)))
+    stub = tmp / "gh-stub"
+    stub.write_text(source, encoding="utf-8")
+    stub.chmod(0o755)
+    return stub
+
+
+def test_comment_fetch_requests_newest_first() -> None:
+    """Issue #1360: the real fetch must ask GitHub for newest-first comments."""
+    print("\nComment fetch: the detector asks GitHub for newest-first comments (#1360)")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        payload = W.fetch_payload("o/r", str(_stub_gh(tmp)))
+        requests = (tmp / "requests.log").read_text(encoding="utf-8")
+        check("the issue comment request pins descending order",
+              "issues/comments?per_page=100&sort=created&direction=desc" in requests, requests)
+        check("the PR comment request pins descending order",
+              "pulls/comments?per_page=100&sort=created&direction=desc" in requests, requests)
+        check("the newest comment is actually in the response",
+              any(r.get("id") == 7090680909 for r in payload["comments"]["issues"]),
+              str(payload["comments"]["issues"][:3]))
+        assert "sort=created" in requests, requests
+        assert "direction=desc" in requests, requests
+
+
+def test_comment_fetch_sees_a_new_comment_outside_the_oldest_100() -> None:
+    """Issue #1360: a comment newer than the 100th-oldest produces a real C marker."""
+    print("\nComment trigger: a comment newer than the 100th-oldest wakes the lane (#1360)")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        payload = W.fetch_payload("o/r", str(_stub_gh(tmp)))
+        previous = {"comments": {"issues": 6242933673, "pulls": 6242933673},
+                    "comments_v2": True}
+        lines, state = W.marker_state(previous, payload)
+        check("the new comment wakes the lane", "C:7090680909" in lines, str(lines))
+        check("the stale oldest-100 backlog is not re-emitted",
+              not any(i.startswith("C:59429") for i in lines), str(lines[:5]))
+        check("cursor advances to the newest comment",
+              state["comments"]["issues"] == 7090680909, str(state["comments"]))
+        assert "C:7090680909" in lines, str(lines)
+
+
+def test_comment_cursor_migration_baselines_without_flood() -> None:
+    """Issue #1360: the first repaired tick seeds the cursor, it does not flood C markers."""
+    print("\nCursor migration: the repair baselines instead of flooding stale markers (#1360)")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        payload = W.fetch_payload("o/r", str(_stub_gh(tmp)))
+        previous = {"comments": {"issues": 6242933673, "pulls": 0}}
+        lines, state = W.marker_state(previous, payload)
+        check("no stale backlog flood on the first repaired tick",
+              not any(i.startswith("C:") for i in lines), str(lines[:8]))
+        check("cursor is seeded to the newest comment",
+              state["comments"]["issues"] == 7090680909, str(state["comments"]))
+        check("the v2 cursor marker is recorded",
+              state.get("comments_v2") is True, str(state))
+        newer = dict(payload)
+        newer["comments"] = dict(payload["comments"])
+        newer["comments"]["issues"] = payload["comments"]["issues"] + [{"id": 7090680910}]
+        lines2, _ = W.marker_state(state, newer)
+        check("the next genuinely-new comment wakes the lane",
+              lines2 == ["C:7090680910"], str(lines2))
+        assert lines2 == ["C:7090680910"], str(lines2)
+
+
 def main() -> int:
     test_quiet_tick_emits_nothing()
     test_new_comment_marker()
@@ -257,6 +351,9 @@ def main() -> int:
     test_r_marker_carries_workflow_name()
     test_r_marker_carries_its_pull_request()
     test_r_marker_keeps_its_pr_after_the_merge_clears_the_association()
+    test_comment_fetch_requests_newest_first()
+    test_comment_fetch_sees_a_new_comment_outside_the_oldest_100()
+    test_comment_cursor_migration_baselines_without_flood()
     test_offline_check_mode()
     test_the_rulebook_names_the_claim_settle_window()
     test_the_offline_contract_pins_the_settle_floor()
