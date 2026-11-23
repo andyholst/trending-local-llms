@@ -212,6 +212,12 @@ needed to move the board.
   prints `active_lanes=<n>/<ceiling>`, and refuses above it. Do not rely on your own recollection of the
   board — a state or sha from chat is stale, and the guard reads live GitHub state (repo guard: issue
   #1416).
+- **Verify a landed change against `origin/master`, never the owner's checkout.** The owner's checkout can
+  sit several commits behind with uncommitted edits, so a probe run there silently tests STALE code — a fix
+  that already merged can look absent and you will file a false gap. Probe in a throwaway detached worktree at
+  the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
+  `git worktree remove --force <path>`), and always name the sha you measured. Compare
+  `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
 - **Protected instruction files cannot be written by a headless lane — declare them owed to the owner and
   do not route around it.** `agents/*/SOUL.md` and `AGENTS.md` §7b/§8 are rule-3c protected: the write is
   refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
