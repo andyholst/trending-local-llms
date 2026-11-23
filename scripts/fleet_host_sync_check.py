@@ -13,6 +13,7 @@ Exit: 0 clean, 1 divergence found, 2 undecidable (bad base, missing tree/home).
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 import tempfile
@@ -46,6 +47,20 @@ RULEBOOK_MARKERS = (
     "fleet-host-sync-check",
     "tests/test_fleet_lifecycle.py",
 )
+
+# Hermes stamps its own runtime metadata into every lane `config.yaml` on launch
+# (`hermes_cli.config` writes `_config_version: <n>`). That key is HOST RUNTIME STATE,
+# not fleet drift, and it lands on exactly the hosts that RUN their lanes -- so a plain
+# byte compare reds a healthy host on every lane after one turn (issue #1389). Only
+# this one own scalar is tolerated, and only on `config.yaml`: a stale
+# `model:` / `model_aliases:` / `fallback_providers:` byte still reds, and `SOUL.md`
+# and the skill stay byte-exact.
+CONFIG_VERSION_LINE = re.compile(rb"(?m)^_config_version:[ \t]*\S+[ \t]*\r?\n?")
+
+
+def _host_config_bytes(raw: bytes) -> bytes:
+    """Drop Hermes's own `_config_version:` scalar from a lane `config.yaml`."""
+    return CONFIG_VERSION_LINE.sub(b"", raw)
 
 
 def _git(root: Path, *argv: str) -> subprocess.CompletedProcess[bytes]:
@@ -135,7 +150,11 @@ def main(argv: list[str] | None = None) -> int:
             if not actual.is_file():
                 print(f"[fleet-sync] FAIL {lane}/{rel} missing in {home}")
                 failed += 1
-            elif actual.read_bytes() != expected:
+                continue
+            raw = actual.read_bytes()
+            if rel == "config.yaml":
+                raw = _host_config_bytes(raw)
+            if raw != expected:
                 print(f"[fleet-sync] FAIL {lane}/{rel} diverges from {base_sha}")
                 failed += 1
 

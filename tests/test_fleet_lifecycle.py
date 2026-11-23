@@ -215,6 +215,37 @@ def test_real_seam_refuses_a_diverged_soul() -> int:
         return failed
 
 
+def test_real_seam_tolerates_hermes_config_version() -> int:
+    """Issue #1389: `_config_version` is Hermes runtime metadata, not fleet drift."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = scratch_repo(Path(tmp))
+        home = Path(tmp) / "profiles"
+        home.mkdir()
+        scratch_home(home, root)
+        victim = home / "tll-implementer" / "config.yaml"
+        base = victim.read_bytes()
+        victim.write_bytes(base + b"_config_version: 54\n")
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+        failed = check(got.returncode == 0, "a planted _config_version scalar is tolerated")
+        print("      " + (got.stdout or got.stderr).strip().splitlines()[-1])
+
+        # the tolerance is ONE key on config.yaml: a stale model: byte still reds
+        victim.write_bytes(base.replace(b"\nmodel:\n", b"\nmodel: stale\n", 1))
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+        failed += check(got.returncode == 1, "a stale model: byte still reds")
+        failed += check(
+            "tll-implementer/config.yaml" in got.stdout and "diverges from" in got.stdout,
+            "the refusal names the lane's config.yaml",
+        )
+
+        # and SOUL.md is NOT covered by the tolerance
+        soul = home / "tll-implementer" / "SOUL.md"
+        soul.write_bytes(soul.read_bytes() + b"\n_config_version: 54\n")
+        got = run_seam("--base", "HEAD", "--root", str(root), "--profiles-home", str(home))
+        failed += check(got.returncode == 1, "a _config_version planted in SOUL.md is still refused")
+        return failed
+
+
 def test_real_seam_refuses_a_bad_base() -> int:
     got = run_seam("--base", "no-such-ref-1209", "--root", str(ROOT))
     failed = check(got.returncode == 2, "an unresolvable base exits 2 (undecidable)")
@@ -260,6 +291,7 @@ def main() -> int:
         test_reviewer_shapes_are_in_the_rulebook,
         test_real_seam_accepts_a_synced_home,
         test_real_seam_refuses_a_diverged_soul,
+        test_real_seam_tolerates_hermes_config_version,
         test_real_seam_refuses_a_diverged_default_profile,
         test_real_seam_names_an_absent_default_profile,
         test_real_seam_refuses_a_bad_base,
