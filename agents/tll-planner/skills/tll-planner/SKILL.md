@@ -63,6 +63,13 @@ needed to move the board.
   `origin/master` sha, what done means, and the handover target.
 - Delegation is still by a signed dispatch COMMENT on the issue thread — post the dispatch comment first,
   then start the lane against that issue.
+- **A dispatch's `done` is push-and-verify, never a local gate.** The query file tells the lane: make the
+  change in its worktree, run only the fast offline checks (`python3 scripts/pr_body.py --check-body-file
+  <f> --branch <b>`, `make lint`, the targeted unit module), PUSH, then confirm CI registered on the new
+  SHA (`gh pr checks <n>`, `gh run view <id> --json jobs`) before reporting. Do NOT ask a lane to prove
+  the whole containerised suite green on the host before it pushes — full `make validate`, the whole
+  `make test` and `make live-smoke` are CI-ONLY (they run on `qa-validate`; locally 15–30 min each, and N
+  lanes running them at once contend for one container VM). Owner directive 2026-11-23, tracked on #1423.
 - The planner still NEVER writes the tree and NEVER merges. Starting a lane is dispatch, not
   implementation; only `tll-implementer` writes, and `qa-validate` merges green.
 - No cron and no Actions schedule: the directive changes who starts the lanes, not the cadence.
@@ -346,6 +353,7 @@ Every lane hands over on the issue thread, so the board can be followed without 
 
 - **Dispatch names the handover.** A dispatch comment carries the lane, the fetched `origin/master` sha, what done means, and the handover target:
   `BOT tll-planner · dispatch #<id> · lane <lane> · base <sha> · done <criteria> · handover <next-lane|owner>`.
+  `done <criteria>` is the push-and-verify sequence — the fast offline checks, the push, and CI registered on the new SHA — never a pre-push full local gate (owner directive 2026-11-23, issue #1423).
 - **A lane finishes with a signed handover comment** on the issue's OWN thread:
   `BOT <lane> · done #<id> · handover <next-lane|owner|none> · <the one next action>`.
   `handover` names the ONE lane that owns the next step (`tll-planner` re-triage, `tll-implementer` write, `tll-tester` verdict, `owner` a human decision); `none` only when the issue is fully done.

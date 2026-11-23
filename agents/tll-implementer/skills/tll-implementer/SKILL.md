@@ -56,6 +56,27 @@ Use this when the owner, or a comment from `tll-planner`, asks this profile to w
 
 Work in **worktrees** branched from the **latest fetched `origin/master`**. Never edit the owner's checkout at `/home/asimov/repository/git/trending-local-llms`. Branch only in your worktree, never push to `master`; `qa-validate` merges. No Hermes cron and no new GitHub Actions schedule. This convention is captured in issue #690 and overrides any older procedure text below.
 
+## Delivery procedure — push, then CI verifies (owner directive 2026-11-23, issue #1423)
+
+Make the change in the worktree, run ONLY the fast offline checks, **PUSH**, then confirm CI registered on
+the new SHA and report. Never pre-run the full containerised suite on the host.
+
+Fast offline checks — seconds each, no network:
+
+- `python3 scripts/pr_body.py --check-body-file <f> --branch <b>` — the body's five sections and its closure binding.
+- `make lint` — trailing newline on every tracked text file, no `SyntaxWarning`, bot skill + model chain present.
+- the targeted unit module for the change (`python3 tests/test_<module>.py`), never the whole suite.
+
+Then PUSH, and confirm CI registered on the new SHA:
+
+- `gh pr checks <n>` and `gh run view <id> --json jobs`. A head with NO jobs is a never-started run, not a green one.
+
+**CI-ONLY — do NOT run these locally:** the full `make validate`, the whole `make test`, and
+`make live-smoke`. They run in GitHub Actions on `qa-validate` and cost this host nothing. Measured
+locally they take 15–30 min each inside the per-purpose Linux container, and N lanes running them at
+once contend for ONE VM (load 5.80, `Virtualization.framework` at 207% CPU) while each lane process
+sits at ~0% CPU in `sleep` polls.
+
 ## Standing rules (owner-mandated, issue #703) — bind every task
 
 1. **Fetch latest first.** Before ANY measure, claim, or branch cut run `git fetch origin master` and base work on the `origin/master` sha fetched in that moment — never a sha quoted in chat (stale). Record the sha you measured.
@@ -69,7 +90,7 @@ Work in **worktrees** branched from the **latest fetched `origin/master`**. Neve
 3. READ the issue thread FIRST: confirm no other lane holds a live working-claim on the same issue. On a collision, do NOT start — report to `tll-planner` on that thread and await re-dispatch.
 4. CLAIM before starting: post `BOT tll-implementer · working on #<id> · branch <ref|none> · blocked on <x|none> · next <y>` on the issue's OWN thread.
 5. Fetch before you measure: `git fetch origin master` in a worktree that is not `/home/asimov/repository/git/trending-local-llms`. Record the sha. A sha from chat is stale.
-6. Do the lane work in `SOUL.md` and stop. Coordination lanes file or comment. Only `tll-implementer` writes the tree, and only after the planner names the issue.
+6. Make the change in the worktree, run ONLY the fast offline checks (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module), PUSH, and confirm CI registered on the new SHA (`gh pr checks <n>`, `gh run view <id> --json jobs`). Full `make validate`, the whole `make test` and `make live-smoke` are CI-ONLY — never pre-run them locally. See `## Delivery procedure`.
 7. Post the result on the issue. The comment is the record.
 
 ## This lane
