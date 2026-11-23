@@ -454,7 +454,10 @@
         "Verify the base manifest answers both architectures (make image-manifest-check)"
       ],
       "error_region": "Run make image-manifest-check TAG=\"ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c\" LABEL=base",
-      "error_excerpt": "2026-11-18T15:07:06.0960756Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T15:07:06.1029032Z make: *** [Makefile:369: image-manifest-check] Error 1\n2026-11-18T15:07:06.1044150Z ##[error]Process completed with exit code 2."
+      "error_excerpt": "2026-11-18T15:07:06.0960756Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T15:07:06.1029032Z make: *** [Makefile:369: image-manifest-check] Error 1\n2026-11-18T15:07:06.1044150Z ##[error]Process completed with exit code 2.",
+      "note": "filed before the ledger existed (marker-matched)",
+      "rediagnosed_utc": "2026-11-23T15:48:14.922725+00:00",
+      "rediagnosis_note": "re-read on this sweep from job 134894794536 (build) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
     },
     {
       "run_id": 44422028712,
@@ -476,7 +479,10 @@
         "Verify the base manifest answers both architectures (make image-manifest-check)"
       ],
       "error_region": "Run make image-manifest-check TAG=\"ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c\" LABEL=base",
-      "error_excerpt": "2026-11-18T23:37:54.6074720Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T23:37:54.6144550Z make: *** [Makefile:377: image-manifest-check] Error 1\n2026-11-18T23:37:54.6157443Z ##[error]Process completed with exit code 2."
+      "error_excerpt": "2026-11-18T23:37:54.6074720Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T23:37:54.6144550Z make: *** [Makefile:377: image-manifest-check] Error 1\n2026-11-18T23:37:54.6157443Z ##[error]Process completed with exit code 2.",
+      "note": "filed before the ledger existed (marker-matched)",
+      "rediagnosed_utc": "2026-11-23T15:48:14.922725+00:00",
+      "rediagnosis_note": "re-read on this sweep from job 135217203192 (build) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT"
     },
     {
       "run_id": 45141972094,
@@ -564,6 +570,89 @@
       ],
       "error_region": "Run set -euo pipefail",
       "error_excerpt": "2026-11-23T20:38:59.6518785Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T20:38:59.6521248Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T20:38:59.6525533Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T20:38:59.6542098Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T20:38:59.6679131Z   FAIL: missing trailing newline: test.txt\n2026-11-23T20:38:59.6791352Z PASSED 202 | FAILED 0\n2026-11-23T20:38:59.9020406Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T20:38:59.9027098Z PASSED 14 | FAILED 0\n2026-11-23T20:39:00.1079311Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T20:39:00.1205852Z PASSED 114 | FAILED 0\n2026-11-23T20:39:00.3317143Z PASSED 87 | FAILED 0\n2026-11-23T20:39:28.7806429Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T20:39:28.7814923Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T20:39:28.7816053Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T20:39:28.7834752Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T20:39:28.7845163Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-23T20:39:28.7846592Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T20:39:28.7855955Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-23T20:39:28.7871664Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-23T20:39:28.7877378Z   FAIL: link-present: model 'qwen3-14b' engine 'llama.cpp' missing source_post link\n2026-11-23T20:39:28.7883686Z   FAIL: link-present: nvidia-1.json/m1 missing HF link (hf)\n2026-11-23T20:39:28.7891192Z   FAIL: link-present: nvidia-1.json/m1 engine 'llama.cpp' missing source_post link\n2026-11-23T20:39:28.7908018Z PASSED 57 | FAILED 0\n2026-11-23T20:39:29.5843545Z PASSED 22 | FAILED 0\n2026-11-23T20:39:51.7655044Z PASSED 124 | FAILED 0\n2026-11-23T20:40:00.9875347Z   echo \"[merge-tree-index] FAIL: the index is stale on master + this PR.\"\n2026-11-23T20:40:01.5094529Z ##[error]Process completed with exit code 1."
+    },
+    {
+      "run_id": 45196288089,
+      "workflow": "qa-validate",
+      "job": "validate",
+      "head_sha": "7627a71f7915087fdeba2e634876fee990c48550",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45196288089",
+      "created_utc": "2026-11-23T14:37:58Z",
+      "filed_utc": "2026-11-23T15:26:12.080801+00:00",
+      "targets": [],
+      "issue_number": "1430",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1430",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "OpenSpec index on the merge tree (issue"
+      ],
+      "error_region": "Run set -euo pipefail",
+      "error_excerpt": "2026-11-23T14:48:14.3330936Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T14:48:14.3332673Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T14:48:14.3336411Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T14:48:14.3348707Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T14:48:14.3461570Z   FAIL: missing trailing newline: test.txt\n2026-11-23T14:48:14.3553732Z PASSED 202 | FAILED 0\n2026-11-23T14:48:14.5135105Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T14:48:14.5137474Z PASSED 14 | FAILED 0\n2026-11-23T14:48:14.6654995Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T14:48:14.6741989Z PASSED 114 | FAILED 0\n2026-11-23T14:48:14.8257525Z PASSED 87 | FAILED 0\n2026-11-23T14:48:43.2897894Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T14:48:43.2913632Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T14:48:43.2914613Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T14:48:43.2928812Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T14:48:43.2937002Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-23T14:48:43.2937953Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T14:48:43.2944715Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-23T14:48:43.2955055Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-23T14:48:43.2958435Z   FAIL: link-present: model 'qwen3-14b' engine 'llama.cpp' missing source_post link\n2026-11-23T14:48:43.2963832Z   FAIL: link-present: nvidia-1.json/m1 missing HF link (hf)\n2026-11-23T14:48:43.2968598Z   FAIL: link-present: nvidia-1.json/m1 engine 'llama.cpp' missing source_post link\n2026-11-23T14:48:43.2981229Z PASSED 57 | FAILED 0\n2026-11-23T14:48:43.8468873Z PASSED 22 | FAILED 0\n2026-11-23T14:48:57.1222810Z PASSED 124 | FAILED 0\n2026-11-23T14:49:06.5566110Z   echo \"[merge-tree-index] FAIL: the index is stale on master + this PR.\"\n2026-11-23T14:49:06.8215468Z ##[error]Process completed with exit code 1."
+    },
+    {
+      "run_id": 45196631651,
+      "workflow": "qa-validate",
+      "job": "validate",
+      "head_sha": "17c38896f5cec811e0fb8f6bb68e9817bc7f3740",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45196631651",
+      "created_utc": "2026-11-23T14:39:56Z",
+      "filed_utc": "2026-11-23T15:26:12.080801+00:00",
+      "targets": [
+        "openspec-index",
+        "openspec-index-check"
+      ],
+      "issue_number": "1431",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1431",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check",
+      "error_excerpt": "2026-11-23T14:54:13.8558463Z   FAIL: m1: missing 'supported_engines' list\n2026-11-23T14:54:13.8559953Z   FAIL: m1: missing field 'vram_min'\n2026-11-23T14:54:13.8560607Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-23T14:54:13.8561436Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-23T14:54:13.9088964Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-23T14:54:13.9146094Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-23T14:54:13.9391774Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-23T14:54:13.9466893Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-23T14:54:13.9474319Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-23T14:54:13.9481853Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-23T14:54:13.9482408Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-23T14:54:13.9482883Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-23T14:54:13.9483356Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-23T14:54:13.9489661Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-23T14:54:13.9496232Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-23T14:54:13.9503693Z   FAIL: m1: backends lost ['Metal']\n2026-11-23T14:54:14.2172149Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T14:54:14.2174308Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T14:54:14.2178275Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T14:54:14.2196445Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T14:54:14.2329625Z   FAIL: missing trailing newline: test.txt\n2026-11-23T14:54:14.2438096Z PASSED 202 | FAILED 0\n2026-11-23T14:54:14.4623556Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T14:54:14.4626955Z PASSED 14 | FAILED 0\n2026-11-23T14:54:14.6658538Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T14:54:14.6788717Z PASSED 114 | FAILED 0\n2026-11-23T14:54:14.8812768Z PASSED 87 | FAILED 0\n2026-11-23T14:54:43.3101627Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T14:54:43.3122083Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T14:54:43.3123782Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T14:54:43.3143179Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T14:54:43.3153727Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-23T14:54:43.3155050Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T14:54:43.3164794Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-23T14:54:43.3179551Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-23T14:54:43.3184101Z   FAIL: link-present: model 'qwen3-14b' engine 'llama.cpp' missing source_post link\n2026-11-23T14:55:14.6957907Z [openspec-index] FAIL OPENSPEC.md is stale or missing (1 active, 457 archived on disk) \u2014 run `make openspec-index`\n2026-11-23T14:55:14.7808605Z make: *** [Makefile:405: openspec-index-check] Error 1\n2026-11-23T14:55:14.7826863Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 5 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098)."
+    },
+    {
+      "run_id": 45205612178,
+      "workflow": "qa-validate",
+      "job": "validate",
+      "head_sha": "07795991aeedb5d73ba11da93f394da2bf8ea807",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45205612178",
+      "created_utc": "2026-11-23T15:28:24Z",
+      "filed_utc": "2026-11-23T15:48:14.922725+00:00",
+      "targets": [],
+      "issue_number": "1437",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1437",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "OpenSpec index on the merge tree (issue"
+      ],
+      "error_region": "Run set -euo pipefail",
+      "error_excerpt": "2026-11-23T15:36:47.7810429Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T15:36:47.7811623Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T15:36:47.7814919Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T15:36:47.7823459Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T15:36:47.7896407Z   FAIL: missing trailing newline: test.txt\n2026-11-23T15:36:47.7950642Z PASSED 202 | FAILED 0\n2026-11-23T15:36:47.9410300Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T15:36:47.9413477Z PASSED 14 | FAILED 0\n2026-11-23T15:36:48.0767349Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T15:36:48.0834183Z PASSED 114 | FAILED 0\n2026-11-23T15:36:48.2203842Z PASSED 87 | FAILED 0\n2026-11-23T15:37:16.4546043Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T15:37:16.4556429Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T15:37:16.4557075Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T15:37:16.4567177Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T15:37:16.4573175Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-23T15:37:16.4573997Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T15:37:16.4579354Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-23T15:37:16.4585907Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-23T15:37:16.4587625Z   FAIL: link-present: model 'qwen3-14b' engine 'llama.cpp' missing source_post link\n2026-11-23T15:37:16.4590551Z   FAIL: link-present: nvidia-1.json/m1 missing HF link (hf)\n2026-11-23T15:37:16.4594044Z   FAIL: link-present: nvidia-1.json/m1 engine 'llama.cpp' missing source_post link\n2026-11-23T15:37:16.4602551Z PASSED 57 | FAILED 0\n2026-11-23T15:37:16.9516995Z PASSED 22 | FAILED 0\n2026-11-23T15:37:29.5684155Z PASSED 124 | FAILED 0\n2026-11-23T15:37:34.2911359Z   echo \"[merge-tree-index] FAIL: the index is stale on master + this PR.\"\n2026-11-23T15:37:34.5340897Z ##[error]Process completed with exit code 1."
+    },
+    {
+      "run_id": 45231126714,
+      "workflow": "qa-validate",
+      "job": "validate",
+      "head_sha": "cc56d45333790713bb0a8cabc09c933bc077ac06",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45231126714",
+      "created_utc": "2026-11-23T17:45:46Z",
+      "filed_utc": "2026-11-23T18:09:05.487772+00:00",
+      "targets": [],
+      "issue_number": "1450",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1450",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "OpenSpec index on the merge tree (issue"
+      ],
+      "error_region": "Run set -euo pipefail",
+      "error_excerpt": "2026-11-23T17:55:45.1273254Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T17:55:45.1275608Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T17:55:45.1279240Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T17:55:45.1290892Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T17:55:45.1394818Z   FAIL: missing trailing newline: test.txt\n2026-11-23T17:55:45.1481498Z PASSED 202 | FAILED 0\n2026-11-23T17:55:45.2738691Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T17:55:45.2740670Z PASSED 14 | FAILED 0\n2026-11-23T17:55:45.3928571Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T17:55:45.3996836Z PASSED 114 | FAILED 0\n2026-11-23T17:55:45.5213393Z PASSED 87 | FAILED 0\n2026-11-23T17:56:14.3395989Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T17:56:14.3409021Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T17:56:14.3409901Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T17:56:14.3421576Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T17:56:14.3428093Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-23T17:56:14.3428717Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T17:56:14.3434442Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-23T17:56:14.3443892Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-23T17:56:14.3447328Z   FAIL: link-present: model 'qwen3-14b' engine 'llama.cpp' missing source_post link\n2026-11-23T17:56:14.3451769Z   FAIL: link-present: nvidia-1.json/m1 missing HF link (hf)\n2026-11-23T17:56:14.3455888Z   FAIL: link-present: nvidia-1.json/m1 engine 'llama.cpp' missing source_post link\n2026-11-23T17:56:14.3465973Z PASSED 57 | FAILED 0\n2026-11-23T17:56:14.7467526Z PASSED 22 | FAILED 0\n2026-11-23T17:56:24.9582227Z PASSED 124 | FAILED 0\n2026-11-23T17:56:32.9757601Z   echo \"[merge-tree-index] FAIL: the index is stale on master + this PR.\"\n2026-11-23T17:56:33.3236046Z ##[error]Process completed with exit code 1."
     }
   ]
 }
