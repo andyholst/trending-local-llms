@@ -114,6 +114,10 @@ needed to move the board.
   (`gh issue list --state open` + `gh pr list --state open`) and dispatch/verify the next. If every lane is
   busy or blocked, keep the fleet issue current and say so — but never declare "nothing to do" while an
   issue is open or a PR is unverified by the reviewer/test lanes.
+  issue is open or a PR is unverified by the reviewer/test lanes. **When every lane is CI-bound, do NOT post
+  another status report on the same wait — that is idling in prose.** Pick the next movable thing (a stale or
+  conflicting PR, a filed gap, an unclaimed issue, a host-gate divergence) and move it; repeat the wait only
+  when the state actually changed.
 - A Hermes cron or a new GitHub Actions `schedule:` is the wrong tool. The owner asks on the host. The data sync is the existing weekly refresh, not a new timer.
 - `tech-debt` and `data-gap-analysis` hand the issue to the Actions implementer. This fleet uses `enhancement`.
 - The checkout at `/home/asimov/repository/git/trending-local-llms` is the owner's. Do not edit it.
@@ -208,6 +212,10 @@ needed to move the board.
   Every head passes the containerised `make validate` in CI (#712), so N lanes do not finish N times
   faster — they contend for ONE container VM. Dispatch the next lane only when one reports `done`, and
   queue the rest. Enforce BOTH halves mechanically BEFORE
+  issue or an already-merged PR.** Unbounded lanes do not finish faster: every head must pass the
+  containerised gate, so N lanes contend for ONE host VM while each lane process idles at ~0% CPU in `sleep`
+  polls — and a lane can burn an hour on an issue that is already CLOSED. Dispatch the next lane only when
+  one reports `done`, and queue the rest. Enforce BOTH halves mechanically BEFORE
   spawning: `make dispatch-check ISSUE=<n>` refuses a CLOSED issue or a bound PR that is already MERGED,
   prints `active_lanes=<n>/<ceiling>`, and refuses above it. Do not rely on your own recollection of the
   board — a state or sha from chat is stale, and the guard reads live GitHub state (repo guard: issue
@@ -218,6 +226,7 @@ needed to move the board.
   the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
   `git worktree remove --force <path>`), and always name the sha you measured. Compare
   `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
+  board — a state or sha from chat is stale, and the guard reads live GitHub state.
 - **Protected instruction files cannot be written by a headless lane — declare them owed to the owner and
   do not route around it.** `agents/*/SOUL.md` and `AGENTS.md` §7b/§8 are rule-3c protected: the write is
   refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
@@ -234,10 +243,24 @@ needed to move the board.
   Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while each lane
   PROCESS idles at ~0% CPU in `sleep` polls. The same gates already run in GitHub Actions on `qa-validate`,
   which costs the host nothing. Dispatch a lane to run ONLY the fast offline checks
+  Owner directive. A head's local `make validate` + whole `make test` costs 15–30 min inside the per-purpose
+  Linux container; several lanes at once contend for ONE VM while each lane PROCESS idles at ~0% CPU in
+  `sleep` polls. The same gates already run in GitHub Actions on `qa-validate`, which costs the host nothing.
+  Dispatch a lane to run ONLY the fast offline checks
   (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module),
   push, confirm CI registered on the new head (`gh pr checks <n>`, `gh run view <id> --json jobs`), and
   report. Measured effect: the same class of delivery dropped from ~3h to ~23 min. Never write "gate green
   on the exact head before push" into a dispatch — that phrasing reproduces the waste.
+  report. The same class of delivery drops from hours to tens of minutes. Never write "gate green on the
+  exact head before push" into a dispatch — that phrasing reproduces the waste.
+- **Serialise SHARED FILES — one lane per target file at a time.** The dispatch guard (#1416) bounds lane COUNT,
+  not file collisions, and the recent run proves the difference: #1418, #1432, #1445/#1449 and #1448 all edited
+  the SAME two `agents/<lane>/skills/<lane>/SKILL.md` mirrors, so they raced — duplicated bullets reached master
+  (#1448 merged duplicates as `0df63311`; three planner bullets measured x2), PRs went CONFLICTING, and
+  auto-merge failed repeatedly. BEFORE spawning a lane, list the LIVE lanes and their target files; if any
+  overlap, QUEUE this dispatch until that lane reports `done`. Never start a second session on a branch another
+  lane holds, and never let two live dispatches name the same mirror or generated file. If a collision still
+  lands, measure the duplication on master and file a dedupe PR — do NOT force a third overlapping push.
 - **Before calling a lane slow, separate WALL-CLOCK from CPU and count the containers.** A lane can sit for
   hours at ~0% CPU in `sleep` polls while its real work runs in `docker run` containers on the shared VM.
   `ps -Ao pid,pcpu,time,etime,command` shows seconds of CPU across a 2h runtime; `docker ps` shows the actual
@@ -264,6 +287,15 @@ needed to move the board.
   OWNER lane: re-push ONLY that branch with an owner-git-identity empty commit through the owner-PAT
   remote and prove `gh run view <id> --json jobs` shows jobs. Never report such a head as green, and
   never start a second session on a branch another lane already holds (#1115).
+- **A green `validate` proves nothing when `master` moved during the run — the merge-tree OpenSpec check
+  races EVERY open PR.** `qa-validate` merges the PR with `origin/master` and runs `make
+  openspec-index-check` on the RESULT, so any master advance between a PR's cut and its run conflicts on
+  the generated `OPENSPEC.md` (`[merge-tree-index] MERGE CONFLICT`). The diagnostic seam: a `validate` that
+  PASSED had NO `master -> origin/master` update during the run; every failure at that step HAD one, and the
+  3-way blob merge is clean locally. Treat it as a RACE, not a code defect — rebase onto the fetched tip,
+  regenerate the index (`python3 scripts/openspec_index.py --write`), re-push. Do not "fix" the branch's own
+  logic, and do not rebase repeatedly while master keeps moving under the run: say so and let the gate land
+  on a stationary tip. Expect several rebases per PR while the board is busy.
 - **Cron fires run WITHOUT approval and block arbitrary code: `execute_code` is refused, and so are
   shell heredocs and inline interpreters (`python3 -c "…"`, `<<EOF`).** Write probe scripts to the
   profile scratch (`~/.hermes/profiles/tll-planner/cache/scratch/<name>.py`) with `write_file`, then run
@@ -281,6 +313,33 @@ needed to move the board.
   push-to-master `qa-validate` run at the CURRENT tip: `validate` success with `index-repair` skipped
   (`DRIFT=none`) means the defect is already remedied and the issue needs a verify-and-close, not a new
   fix.
+- **The failure filer can quote expected negative-test chatter as the error block — read the job's
+  `##[error]` line before trusting a filed body.** `make pipeline-failure-issue` extracts from a log region
+  and can pick up `FAIL:` lines that are the EXPECTED output of a guard test's planted fixture inside a
+  module that then reports `PASSED n | FAILED 0`. Measured on run `45231126714` (filed #1450): the body
+  quoted `FAIL: m1: measurement_model_aliases is not a list`, while the job's ONLY `##[error]` was the
+  final `OpenSpec index on the merge tree` step (`[merge-tree-index] MERGE CONFLICT`). Grep the job log for
+  `##[error]` and the step `##[group]` headers to name the REAL failing step, and post a correction comment
+  on the filed issue when its quoted block misleads.
+- **Host↔master `SKILL.md` divergence is TWO-DIRECTIONAL — never byte-copy host files into master.**
+  Measured on #1446/#1455 at `0df63311`: host-only bullets are genuinely new, but the host also LACKS
+  newer master sections (the `## Delivery procedure` block), and copying host bytes verbatim DELETES lines
+  `tests/test_fleet_lifecycle.py` pins (`test_lane_skills_carry_the_push_and_verify_rule`) → measured
+  `FAIL 14`. Land only the additive host-only notes, de-duplicate what earlier PRs already carried, then
+  refresh the hosts FROM master once nothing host-unique remains.
+- **`gh issue close --reason duplicate --duplicate-of <n>`** — the literal reason is `duplicate`
+  (`not_planned` is INVALID and errors). Three filings of one step defect in one evening
+  (#1439/#1452/#1453) consolidate into ONE dispatch on the instance issue, mirroring each filing's
+  distinct Done-when onto it; do not leave parallel trackers for the same red.
+- **Overlapping watcher ticks can run TWO planner sessions at once — re-scan before filing/dispatching.**
+  Measured 2026-11-23: two ticks filed the SAME change as #1455 and #1456 five seconds apart and each
+  started an implementer on the same mirrors. Before filing or dispatching, search the newest issues for a
+  sibling filed minutes earlier; consolidate (close the duplicate, withdraw your own lane BEFORE it pushes)
+  rather than letting two PRs race on one file pair.
+- **Master can move several times inside one cycle — re-measure before every ruling.** A dispatch's
+  premise can be void by the time the lane reads it (#1448 merged while its implementer was still awaiting
+  a ruling). Re-check `gh pr view <n> --json state,headRefOid` and `make dispatch-check ISSUE=<n>` before
+  answering a lane's question, and bind every verdict to the sha actually reviewed.
 
 ## Worktree default (fleet-wide, owner-mandated)
 
