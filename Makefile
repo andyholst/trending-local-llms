@@ -1685,6 +1685,41 @@ _watch-monitor:
 watch-monitor: ## Deterministic C/R/M/H change detector for the fleet watcher (`CHECK=1` for the offline CI contract, issues #1266/#1282)
 	@$(MAKE) --no-print-directory _watch-monitor
 
+# ---- the dispatch guard: refuse a stale target, bound lane concurrency (#1416) --
+# The owner directive (measured on asimov@mac 2026-11-23: 7 concurrent tll-implementer
+# lanes, load 7.08, one 95-min lane on an issue that was already CLOSED): nothing
+# refused a dispatch whose target was already closed/merged and nothing bounded how
+# many lanes run. `scripts/dispatch_guard.py` is the ONE implementation of both rules;
+# this target is how a planner or watcher consults it BEFORE spawning a lane.
+#
+# ISSUE=<n>       the issue a lane is about to start (required)
+# REGISTRY=<path> the caller-owned active-lane registry, OUTSIDE the repository
+#                 (default ~/.hermes/active-lanes.json; the guard refuses a path that
+#                 resolves inside the repo). An absent file counts 0.
+# CEILING=<n>     the ONE concurrency ceiling (default 3 = ACTIVE_LANE_CEILING)
+# REPO=<o/n>      owner/name read live through gh (default andyholst/trending-local-llms)
+# FROM_FILE=<p>   a recorded issue/PR payload instead of gh (offline; tests use it)
+# JSON=1           print the verdict as JSON
+#
+# Exit 0 = allow · 1 = refuse (closed issue / merged bound PR / over the ceiling) ·
+# 2 = undecidable (no registry, unreadable registry, unreadable GitHub state).
+.PHONY: dispatch-check
+# A VERDICT the caller ACTS on: `make dispatch-check` exits NON-ZERO when the guard
+# refuses — a closed issue, a merged bound PR, or an active-lane count above the ceiling —
+# and prints WHY (`REFUSE` + each reason, plus `active_lanes=N/ceiling`). Exit 0 = allowed.
+# Exit 2 = the guard could not decide at all (no registry, an unreadable one, an
+# unreadable GitHub state): that is a defect in the invocation, not a verdict, and it
+# stays distinct from a refusal so a planner never reads "undecidable" as "refused".
+dispatch-check: ## Refuse a dispatch onto a CLOSED issue or one whose bound PR is MERGED, and above the active-lane ceiling — exit non-zero with the reason (ISSUE=, REGISTRY=, CEILING=3, REPO=, FROM_FILE=, JSON=1; issue #1416)
+	@test -n "$(ISSUE)" || { echo "Usage: make dispatch-check ISSUE=<n> [REGISTRY=<path>] [CEILING=<n>] [REPO=<owner/name>] [FROM_FILE=<recorded.json>] [JSON=1]"; exit 2; }
+	@out=$$(python3 scripts/dispatch_guard.py --issue "$(ISSUE)" \
+		--registry "$(if $(REGISTRY),$(REGISTRY),$(or $(TLL_ACTIVE_LANES),$(HOME)/.hermes/active-lanes.json))" \
+		--ceiling "$(if $(CEILING),$(CEILING),3)" \
+		$(if $(REPO),--repo "$(REPO)",) \
+		$(if $(FROM_FILE),--from-file "$(FROM_FILE)",) \
+		$(if $(JSON),--json,) 2>&1); rc=$$?; printf '%s\n' "$$out"; \
+	case $$rc in 0) exit 0;; 1) exit 1;; *) echo "[dispatch-check] rc=$$rc (undecidable — no registry, an unreadable one, or an unreadable GitHub state)" >&2; exit $$rc;; esac
+
 # ---- issue-bot: implement ONE filed data-gap issue (issue #113) --------------
 # The issue's title + body are written to issue.md at the repo root by
 # `.github/workflows/issue-bot.yml`; the agent reads it FIRST and implements

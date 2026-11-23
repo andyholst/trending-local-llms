@@ -422,6 +422,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 | Target | What it does |
 |---|---|
 | `implement-issue` | The implementer prompt: `_setup` + `_implement-issue` in ONE container. Requires the OpenSpec change (created first, indexed, gate green), the `findings.md` analysis, and the `ARCHITECTURE.md` update |
+| `dispatch-check` (`ISSUE=` `REGISTRY=` `CEILING=3` `REPO=` `FROM_FILE=` `JSON=1`) | The planner's/watcher's ONE pre-dispatch seam (issue #1416): `scripts/dispatch_guard.py` refuses a CLOSED issue or one whose bound PR is already MERGED, reads the caller-owned active-lane registry OUTSIDE the repo and refuses above ONE ceiling constant (default 3), printing the count on every verdict. Exit 0 allowed, 1 refused with the reason on stdout, 2 undecidable. Host-side; no network under `FROM_FILE=` |
 | `fix` | Repair a red CI: `_setup`, `correct-raw`, the Hermes fix prompt (reads `qa-report.txt`), `_merge` — through the `scrubbed_run` seam, so a caller (the fix loop, a human) sees only a bounded, REDACTED tail of the agent's conversation (issue #355) |
 | `test` | The whole unit suite in the test image (`_test` → `scripts/run_tests.sh`). The client is `scripts/docker_test_run.sh`, which removes that container when the client dies (issue #720) |
 | `refresh` | The full pipeline in one container: setup, search, merge, validate, test |
@@ -803,6 +804,7 @@ for a reviewer to hold true.
 | `scripts/refresh_base.py` | Publishes a refresh on the base as it is NOW (issue #177, extended by #500/#501): a refresh PR is entirely generated files that every other merge rewrites, so `sync` fetches the base and resets/rebases the clean checkout onto it, while `require-tip` refuses to publish when the checkout is not the fetched tip. Adopts the bot's own branch rather than cutting a new one, so a moved `master` cannot discard the run's work |
 | `scripts/verify_closure.py` | After a MERGE, proves the issue the PR body claimed to close actually closed (issue #288): reads the merged PR's own `closingIssuesReferences` (fetching an issue's state when the reference omits it), retries briefly because GitHub's close trails the merge call, and is LOUD when `gh` itself fails. `pr-closure` PREDICTS the closure, this proves it; a PR that closes nothing is not a failure. Read-only, last step of `auto-merge` |
 | `scripts/install_hermes_ci.sh` | The ONE way the Hermes CLI enters this repo's image (issue #207): already installed → `HERMES_INSTALL_URL` → `uv tool install`, else **FAIL the build** — an agent image without an agent must not be produced. The Dockerfile build and `make _setup` run the same seam (a second curl-pipe-bash installer is a defect), and no credential is ever baked: the pin lives in `ARG HERMES_INSTALL_URL` / `ARG HERMES_PACKAGE` and the key arrives at run time (rule 3e) |
+| `scripts/dispatch_guard.py` | The fleet dispatch guard (issue #1416, `make dispatch-check`): refuses a stale target (issue CLOSED, or a PR bound to it through `closingIssuesReferences` or the `-<issue>` branch convention already MERGED) and bounds concurrency over a CALLER-OWNED registry OUTSIDE the repo, with ONE ceiling constant (`ACTIVE_LANE_CEILING`, default 3); it prints the count on every verdict and refuses an in-repo registry path. Live reads go through the documented `gh` seams; `--from-file` carries a recorded state shape so the real decisions run offline. Exit 0 allow / 1 refuse / 2 undecidable; it spawns no lane, changes no state and reads no credential value |
 
 ---
 
@@ -918,7 +920,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 263 make targets, 107 files in `scripts/`)
+### Bots in the tree (12 pipelines, 264 make targets, 108 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -1082,6 +1084,7 @@ One line each, taken from the script's own docstring.
 - `scripts/cron_install_check.py` — Verify the fleet cron installation shape on an Hermes host (issue #1270).
 - `scripts/data_gap_analysis.py` — Post-refresh data-gap analysis (issue #115).
 - `scripts/declared_estimate.py` — The ONE declared-estimate detector and footprint-field set (rule 6d, issue #936).
+- `scripts/dispatch_guard.py` — The fleet's dispatch guard (issue #1416): refuse a stale target and bound lane concurrency.
 - `scripts/docker_test_run.sh` — docker_test_run.sh — remove the test container when the client dies.
 - `scripts/engine_guide_check.py` — Check that the README's inference engine / server guide stays in step with the
 - `scripts/engine_registry.py` — Engine registry: classify + auto-register new inference engines at ingest.
