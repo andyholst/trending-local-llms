@@ -2861,6 +2861,78 @@ def _makefile_commands() -> dict[str, list[str]]:
     return commands
 
 
+def _makefile_prerequisites() -> dict[str, list[str]]:
+    """{target: its DIRECT prerequisite names} from the Makefile's `target: prereq…` lines.
+
+    The description comment after the prerequisites is stripped and variable tokens are
+    not prerequisites. Target detection is the ONE scan (`arch_bot.target_at_line`),
+    never a second matcher (issue #752).
+    """
+    prereqs: dict[str, list[str]] = {}
+    for line in (ROOT / "Makefile").read_text().splitlines():
+        target = arch_bot.target_at_line(line)
+        if target is None:
+            continue
+        rest = line.split(":", 1)[1].split("##", 1)[0]
+        prereqs[target] = [tok for tok in rest.split() if "$" not in tok and "=" not in tok]
+    return prereqs
+
+
+def _recipe_block_commands() -> dict[str, list[str]]:
+    """{target: its recipe COMMAND lines}, the CONDITIONAL branches INCLUDED.
+
+    `_makefile_commands` drops its owner on `ifeq`/`else`/`endif` because
+    `target_at_line` deliberately returns None for those directives, so a recipe inside a
+    conditional looked like it belonged to NO target — the redirect guard could not see
+    the `python-env-image` host branch (issue #1457). This view keeps the last target
+    across conditional directives so a prerequisite's whole recipe block is inspectable.
+    """
+    recipes: dict[str, list[str]] = {}
+    target = None
+    for line in (ROOT / "Makefile").read_text().splitlines():
+        if line.startswith("\t"):
+            body = line.strip()
+            if target and body and not body.startswith("#"):
+                recipes.setdefault(target, []).append(body)
+            continue
+        found = arch_bot.target_at_line(line)
+        if found:
+            target = found
+    return recipes
+
+
+#: A shell redirection that moves STDOUT off fd 1 (the file another step reads).
+_STDOUT_OFF_FD1 = re.compile(r">\s*/dev/null|>&2|>&-|&>\s*/dev/null")
+#: Recipes that cannot write anything at all — the seam's documented escapes.
+_SILENT_NOOPS = ("@:", "@true", "@exit 0")
+
+
+def _silent_recipe(cmd: str) -> bool:
+    """A recipe that cannot reach fd 1: `@`-prefixed AND its stdout moved off it.
+
+    `@` alone is NOT silence: a prefixed recipe still lets the command's OWN stdout
+    through (measured, issue #1457 — `ensure_image.py` prints its verdict), which is why
+    the guard requires the redirection too.
+    """
+    if not cmd.startswith("@"):
+        return False
+    if _STDOUT_OFF_FD1.search(cmd):
+        return True
+    return cmd.strip() in _SILENT_NOOPS
+
+
+def _prerequisite_closure(target: str, prereqs: dict[str, list[str]]) -> set[str]:
+    """Every prerequisite of `target`, transitively (a prerequisite may pull another)."""
+    seen: set[str] = set()
+    stack = [target]
+    while stack:
+        for pre in prereqs.get(stack.pop(), []):
+            if pre not in seen:
+                seen.add(pre)
+                stack.append(pre)
+    return seen
+
+
 def test_a_recipe_redirected_into_a_file_never_echoes_its_own_command():
     """Issue #539: `make` echoes each recipe line, and one workflow redirects a target
     straight into a file another step READS as content.
@@ -2897,6 +2969,23 @@ def test_a_recipe_redirected_into_a_file_never_echoes_its_own_command():
     noisy = {t: cmds for t, cmds in noisy.items() if cmds}
     check("make echo: every redirected recipe is silenced (@), so no echoed command lands in the file",
           not noisy, noisy)
+
+    # And  a PREREQUISITE of a redirected target reaches the SAME stdout, so its recipe
+    #      must be silent too (issue #1457: `pr-body` -> `python-env-image`, whose host
+    #      ensure line sat inside an `ifeq` and was invisible to the own-recipe view).
+    prereqs = _makefile_prerequisites()
+    recipes = _recipe_block_commands()
+    noisy_pre: dict[str, list[str]] = {}
+    for t, _where in redirected.items():
+        for pre in _prerequisite_closure(t, prereqs):
+            bad = [c for c in recipes.get(pre, []) if not _silent_recipe(c)]
+            if bad:
+                noisy_pre[pre] = bad
+    check("make echo: every PREREQUISITE recipe of a redirected target is silent (@ + stdout off fd 1)",
+          not noisy_pre, noisy_pre)
+    check("make echo: `make pr-body > pr-body.md` reaches its python-env-image prerequisite",
+          "python-env-image" in _prerequisite_closure("pr-body", prereqs),
+          sorted(_prerequisite_closure("pr-body", prereqs)))
 
     # And   the file the implementer reads is one of them (the measured case, issue #539)
     check("make echo: `make issue-thread > issue.md` is covered by the guard",

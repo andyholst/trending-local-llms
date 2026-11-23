@@ -342,6 +342,57 @@ def test_the_forced_in_container_branch_runs_the_real_recipe() -> None:
           title.stdout == pr_body.title(287, "data-gap") + "\n", title.stdout[:160])
 
 
+def _write_docker_stub(bin_: Path) -> None:
+    """Plant a stub `docker` (an external system, rule 6m): `image inspect` answers
+    "present"; `run … python3 <args>` execs the command locally, so the REAL host recipes
+    run their REAL composer with no container involved."""
+    docker = bin_ / "docker"
+    docker.write_text(
+        "#!/bin/sh\n"
+        "cmd=\"$1\"; shift\n"
+        "case \"$cmd\" in\n"
+        "  image) exit 0 ;;\n"
+        "  run)\n"
+        "    while [ $# -gt 0 ]; do\n"
+        "      case \"$1\" in python3|python) break ;; *) shift ;; esac\n"
+        "    done\n"
+        "    exec \"$@\"\n"
+        "    ;;\n"
+        "esac\n"
+        "exit 0\n", encoding="utf-8")
+    docker.chmod(0o755)
+
+
+def test_the_forced_host_branch_stdout_is_byte_pure() -> None:
+    """Issue #1457: on a HOST runner the ensure prerequisite leaked onto fd 1.
+
+    All three composers are consumed by exact-stdout capture (`TITLE=$(make pr-title …)`,
+    `make pr-body … > pr-body.md`, the keeper body), so the echoed ensure line and
+    `ensure_image.py`'s own verdict became the first lines of the artifacts. Drive the
+    REAL recipes with `IN_CONTAINER=` empty and only `docker` stubbed.
+    """
+    with tempfile.TemporaryDirectory() as d:
+        bin_ = Path(d) / "bin"
+        bin_.mkdir()
+        _write_docker_stub(bin_)
+        env = dict(os.environ, PATH=f"{bin_}{os.pathsep}{os.environ['PATH']}",
+                   MAKEFLAGS="--no-print-directory", IN_CONTAINER="")
+
+        body = subprocess.run(["make", "pr-body", "ISSUE=287", f"BRANCH={BRANCH}"],
+                              cwd=ROOT, capture_output=True, text=True, env=env)
+        check("host: make pr-body exits 0", body.returncode == 0, body.stderr[-400:])
+        check("host: make pr-body's stdout is byte-equal to the composer",
+              body.stdout == pr_body.render(287, BRANCH), repr(body.stdout[:200]))
+        check("host: no ensure line reaches pr-body.md",
+              "ensure_image.py" not in body.stdout, repr(body.stdout[:200]))
+
+        title = subprocess.run(["make", "pr-title", "ISSUE=287", "KIND=data-gap"],
+                               cwd=ROOT, capture_output=True, text=True, env=env)
+        check("host: make pr-title exits 0", title.returncode == 0, title.stderr[-400:])
+        check("host: make pr-title's stdout is byte-equal to the composer",
+              title.stdout == pr_body.title(287, "data-gap") + "\n", repr(title.stdout[:200]))
+
+
 def main() -> int:
     print("pr-body composer (issue #287)")
     test_the_composed_body_closes_exactly_the_issue_it_implements()
@@ -354,6 +405,7 @@ def main() -> int:
     test_the_shipped_step_hands_a_closure_correct_body_to_gh()
     test_an_unrecognised_kind_falls_back_instead_of_refusing()
     test_the_forced_in_container_branch_runs_the_real_recipe()
+    test_the_forced_host_branch_stdout_is_byte_pure()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
 

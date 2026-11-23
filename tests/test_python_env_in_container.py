@@ -15,6 +15,7 @@ Run:  python3 tests/test_python_env_in_container.py   or   make test
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -84,6 +85,29 @@ def test_the_escape_branch_is_silent() -> None:
           p.stdout == "", repr(p.stdout))
 
 
+def test_the_host_ensure_recipe_is_silent() -> None:
+    """Issue #1457: on the HOST branch the ensure prerequisite must not reach fd 1.
+
+    `make -n` prints the command text (it ignores `@`), so the dry-run proves the stdout
+    REDIRECTION; the Makefile source proves the `@`. Both are required: `@` alone still
+    lets `ensure_image.py`'s own print through to a redirected artifact.
+    """
+    issue = "287"
+    host = _make("-n", "pr-body", f"ISSUE={issue}", in_container=False)
+    lines = [l for l in host.stdout.splitlines() if "ensure_image.py ensure-python" in l]
+    check("seam: the host dry-run keeps exactly one ensure step", len(lines) == 1,
+          host.stdout[:400])
+    check("seam: the host ensure step moves its stdout off fd 1",
+          bool(lines) and re.search(r">&2|>/dev/null", lines[0]) is not None, lines)
+
+    src = (ROOT / "Makefile").read_text(encoding="utf-8")
+    block = src.split("python-env-image:", 1)[1].split("\nelse", 1)[0]
+    recipe = next((l.strip() for l in block.splitlines()
+                   if "ensure_image.py ensure-python" in l), "")
+    check("seam: the host ensure recipe is @-prefixed (no make echo)",
+          recipe.startswith("@"), recipe)
+
+
 def test_the_description_no_longer_calls_the_composers_host_targets() -> None:
     doc = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
     check("description: no row says pr-body runs on the runner's own python3",
@@ -99,6 +123,7 @@ def main() -> int:
     print("python-env seam in-container fork (issue #1411)")
     test_the_seam_expands_differently_inside_a_container()
     test_the_escape_branch_is_silent()
+    test_the_host_ensure_recipe_is_silent()
     test_the_description_no_longer_calls_the_composers_host_targets()
     print(f"\nPASSED {_PASS} | FAILED {_FAIL}")
     return 1 if _FAIL else 0
