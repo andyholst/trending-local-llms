@@ -48,7 +48,14 @@ def test_planner_skill_describes_the_real_store_shape() -> None:
 
 
 def main() -> int:
-    """Hand-rolled runner for `make test`; the asserts above still fail under pytest."""
+    """Hand-rolled runner for `make test`.
+
+    Keep the `assert`s in the `test_*` functions REAL. The CI wiring guard in
+    `tests/test_workflows.py` only checks that a main() exists, calls every
+    test_* and ends in `raise SystemExit(main())` — it cannot tell a raising
+    assert from a non-raising counter helper, which would be green in CI while
+    asserting nothing (recorded as a finding in findings.md).
+    """
     passed = 0
     failed = 0
     for test in (
