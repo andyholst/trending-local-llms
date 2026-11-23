@@ -1,6 +1,7 @@
 # Proposal: planner-skill-store-shape
 
 Issue: #1390
+PR: #1393
 
 ## Why
 
