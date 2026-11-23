@@ -13,6 +13,7 @@ PROFILES = (
     "tll-security",
     "tll-reviewer",
     "tll-implementer",
+    "tll-docs",
 )
 CRON = re.compile(r"(?m)^\s*-\s*cron:\s*|\b\d+\s+\d+\s+\*\s+\*\s+\S+")
 LEAVE = "Existing GitHub Actions schedules stay as they are."
