@@ -223,7 +223,6 @@ sits at ~0% CPU in `sleep` polls.
   forwards `GH_TOKEN` and master's own runs are green, so this is a local-environment artifact, not a
   regression — prove it by running the module against pristine `origin/master` in the same image before
   chasing it (#972).
-  chasing it.
 - **A lane can force-push YOUR branch between your push and the merge; re-read the head before
   reporting a verdict.** Measured on #1398/PR #1406: another lane rebased my head to a new sha, and the
   new head's qa-validate ended `action_required` with ZERO jobs (the #1115 never-started shape), so the

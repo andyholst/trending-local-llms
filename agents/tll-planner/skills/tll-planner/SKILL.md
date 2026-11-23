@@ -113,7 +113,6 @@ needed to move the board.
   open PRs, not just the last closed one. After closing one issue, immediately re-scan the board
   (`gh issue list --state open` + `gh pr list --state open`) and dispatch/verify the next. If every lane is
   busy or blocked, keep the fleet issue current and say so — but never declare "nothing to do" while an
-  issue is open or a PR is unverified by the reviewer/test lanes.
   issue is open or a PR is unverified by the reviewer/test lanes. **When every lane is CI-bound, do NOT post
   another status report on the same wait — that is idling in prose.** Pick the next movable thing (a stale or
   conflicting PR, a filed gap, an unclaimed issue, a host-gate divergence) and move it; repeat the wait only
@@ -210,23 +209,14 @@ needed to move the board.
   issue or an already-merged PR.** Measured with 7 concurrent lanes: load average 7.08, the host VM at 348%
   CPU, runtimes of 66–128 min, including a 95-min lane (#1239) working an issue that was already CLOSED.
   Every head passes the containerised `make validate` in CI (#712), so N lanes do not finish N times
-  faster — they contend for ONE container VM. Dispatch the next lane only when one reports `done`, and
-  queue the rest. Enforce BOTH halves mechanically BEFORE
-  issue or an already-merged PR.** Unbounded lanes do not finish faster: every head must pass the
-  containerised gate, so N lanes contend for ONE host VM while each lane process idles at ~0% CPU in `sleep`
-  polls — and a lane can burn an hour on an issue that is already CLOSED. Dispatch the next lane only when
+  faster — they contend for ONE container VM. Unbounded lanes do not finish faster: every head must pass
+  the containerised gate, so N lanes contend for ONE host VM while each lane process idles at ~0% CPU in
+  `sleep` polls — and a lane can burn an hour on an issue that is already CLOSED. Dispatch the next lane only when
   one reports `done`, and queue the rest. Enforce BOTH halves mechanically BEFORE
   spawning: `make dispatch-check ISSUE=<n>` refuses a CLOSED issue or a bound PR that is already MERGED,
   prints `active_lanes=<n>/<ceiling>`, and refuses above it. Do not rely on your own recollection of the
   board — a state or sha from chat is stale, and the guard reads live GitHub state (repo guard: issue
   #1416).
-- **Verify a landed change against `origin/master`, never the owner's checkout.** The owner's checkout can
-  sit several commits behind with uncommitted edits, so a probe run there silently tests STALE code — a fix
-  that already merged can look absent and you will file a false gap. Probe in a throwaway detached worktree at
-  the fetched sha (`git worktree add --detach <scratch>/verify <sha>` → run the check / the module's tests →
-  `git worktree remove --force <path>`), and always name the sha you measured. Compare
-  `git rev-parse HEAD` against `origin/master` before trusting any local reproduction.
-  board — a state or sha from chat is stale, and the guard reads live GitHub state.
 - **Protected instruction files cannot be written by a headless lane — declare them owed to the owner and
   do not route around it.** `agents/*/SOUL.md` and `AGENTS.md` §7b/§8 are rule-3c protected: the write is
   refused (`security.protected_instruction_files=true`) and a TIMED-OUT approval prompt is NOT consent. When
@@ -243,16 +233,10 @@ needed to move the board.
   Linux container; several lanes at once contend for ONE VM (load 5.8, the VM at 207% CPU) while each lane
   PROCESS idles at ~0% CPU in `sleep` polls. The same gates already run in GitHub Actions on `qa-validate`,
   which costs the host nothing. Dispatch a lane to run ONLY the fast offline checks
-  Owner directive. A head's local `make validate` + whole `make test` costs 15–30 min inside the per-purpose
-  Linux container; several lanes at once contend for ONE VM while each lane PROCESS idles at ~0% CPU in
-  `sleep` polls. The same gates already run in GitHub Actions on `qa-validate`, which costs the host nothing.
-  Dispatch a lane to run ONLY the fast offline checks
   (`python3 scripts/pr_body.py --check-body-file <f> --branch <b>`, `make lint`, the targeted unit module),
   push, confirm CI registered on the new head (`gh pr checks <n>`, `gh run view <id> --json jobs`), and
   report. Measured effect: the same class of delivery dropped from ~3h to ~23 min. Never write "gate green
   on the exact head before push" into a dispatch — that phrasing reproduces the waste.
-  report. The same class of delivery drops from hours to tens of minutes. Never write "gate green on the
-  exact head before push" into a dispatch — that phrasing reproduces the waste.
 - **Serialise SHARED FILES — one lane per target file at a time.** The dispatch guard (#1416) bounds lane COUNT,
   not file collisions, and the recent run proves the difference: #1418, #1432, #1445/#1449 and #1448 all edited
   the SAME two `agents/<lane>/skills/<lane>/SKILL.md` mirrors, so they raced — duplicated bullets reached master
@@ -296,18 +280,6 @@ needed to move the board.
   regenerate the index (`python3 scripts/openspec_index.py --write`), re-push. Do not "fix" the branch's own
   logic, and do not rebase repeatedly while master keeps moving under the run: say so and let the gate land
   on a stationary tip. Expect several rebases per PR while the board is busy.
-- **Cron fires run WITHOUT approval and block arbitrary code: `execute_code` is refused, and so are
-  shell heredocs and inline interpreters (`python3 -c "…"`, `<<EOF`).** Write probe scripts to the
-  profile scratch (`~/.hermes/profiles/tll-planner/cache/scratch/<name>.py`) with `write_file`, then run
-  `python3 <path>`; use `gh api … --jq` for one-off reads. Never pipe a `make`/probe through a
-  truncating filter and trust its exit status — the pipeline returns the LAST command's status, so re-run
-  without the pipe when a verdict matters.
-- **Do NOT "sync" a host by wiping Hermes runtime stamps or unlanded skill notes.**
-  `make fleet-host-sync-check BASE=origin/master` reds on runtime stamps in a lane `config.yaml`
-  (Hermes state the gate itself must tolerate — #1401) and on host `SKILL.md` pitfall notes that are
-  legitimately AHEAD of master. Deleting the stamp locally only masks the gate bug. Take timestamped
-  backups (`*.bak-<UTC>`), leave the files, and route the two halves through the normal paths: the gate
-  fix via its own PR, the note-landing via a reviewed change.
 - **Master's own push run can go green and SUPERSEDE a filed `validate`/`openspec-index` failure.**
   Before dispatching a fix for a filed pipeline-failure issue (#1412/#1413 class), re-measure the newest
   push-to-master `qa-validate` run at the CURRENT tip: `validate` success with `index-repair` skipped
