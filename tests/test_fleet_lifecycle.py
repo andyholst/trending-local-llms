@@ -9,6 +9,7 @@ system under test -- the guard itself is executed.
 """
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,7 @@ LANES = (
     "tll-implementer",
     "tll-tester",
     "tll-pr-rebase",
+    "tll-docs",
 )
 BEFORE = "Comment on the issue BEFORE you do the work."
 PR_SHAPE = "· pr #<id> · PR #<n> · base <sha> · handover tll-reviewer"
@@ -99,6 +101,45 @@ def test_planner_skill_reads_the_comments() -> int:
         ("Always follow up on the issue.", "follow-up rule"),
     ):
         failed += check(needle in text, f"planner skill carries {why}")
+    return failed
+
+
+def test_the_lane_set_is_derived_and_the_new_lane_is_wired() -> int:
+    """Issue #1396: a lane is DERIVED from `agents/tll-*/SOUL.md`, never a hand-kept list.
+
+    The seam's `LANES`, the three guard lists and the fleet description must all carry the
+    same set the tree derives — a lane added to the tree but missing from any of them is a
+    lane the host-sync gate never compares, so its bytes can drift silently.
+    """
+    import sys as _sys
+
+    _sys.path.insert(0, str(ROOT / "scripts"))
+    import agent_model_chain as AMC
+
+    failed = 0
+    derived = set(AMC.fleet_lanes(ROOT))
+    failed += check("tll-docs" in derived, "the tree derives the eighth lane `tll-docs`")
+    failed += check(set(LANES) == derived, f"the guard's LANES equals the derived set ({sorted(derived)})")
+    seam = (ROOT / "scripts" / "fleet_host_sync_check.py").read_text(encoding="utf-8")
+    block = seam.split("LANES = (", 1)[1].split(")", 1)[0]
+    failed += check(
+        set(re.findall(r'"(tll-[a-z-]+)"', block)) == derived,
+        "the seam's LANES tuple equals the derived set",
+    )
+    for rel in ("tests/test_fleet_handover_protocol.py", "tests/test_host_fleet_souls.py"):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        # A lane name also appears in prose (`handover tll-reviewer`), so read the
+        # quoted spellings only: every derived lane must be a quoted list member.
+        listed = set(re.findall(r'"(tll-[a-z-]+)"', text))
+        # `tests/test_host_fleet_souls.py` asserts the forbidden-schedule shape on the
+        # profiles it names; the lanes it must share with the other two lists are the
+        # planner/architect/security/reviewer/implementer set, not the whole derived set.
+        required = set(LANES) - {"tll-pr-rebase", "tll-tester"}
+        missing = required - listed
+        failed += check(
+            not missing,
+            f"{rel} lists every derived lane (missing {sorted(missing)})",
+        )
     return failed
 
 
@@ -337,6 +378,7 @@ def main() -> int:
         test_real_seam_names_an_absent_default_profile,
         test_real_seam_refuses_a_bad_base,
         test_ci_wires_the_guard_on_pr_and_push,
+        test_the_lane_set_is_derived_and_the_new_lane_is_wired,
     ):
         failed += fn()
     if failed:

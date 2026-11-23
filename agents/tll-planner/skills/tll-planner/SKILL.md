@@ -344,7 +344,7 @@ Every lane hands over on the issue thread, so the board can be followed without 
   view (equal t/s rows per model) via `--render-only` byte-diff (guards #463/#525).
 - **#690** worktree-default fleet convention.
 - **#691** propose a `tll-docs` lane (schema⇄contract sync + architecture/how-it-works doc).
-- Successors of this distribution: `tll-architect`, `tll-implementer`, `tll-reviewer`, `tll-security`, `tll-docs`(proposed).
+- Successors of this distribution: `tll-architect`, `tll-implementer`, `tll-reviewer`, `tll-security`, `tll-docs` (lane stood up by issue #1396; profile provisioning is an owner act).
 
 ## Measurement store (post-#689 split — landed)
 

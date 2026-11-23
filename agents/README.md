@@ -13,5 +13,6 @@ There is no `trending-local-llm-issue-implementer` profile. Do not recreate it.
 | `tll-tester` | Tests each pull request against the issue acceptance criteria. Reports the evidence. |
 | `tll-pr-rebase` | Rebases a conflicting pull request onto master. Does not merge. |
 | `tll-implementer` | Lands one dispatched issue, including a red pull request the planner names. |
+| `tll-docs` | Keeps the repo's prose in step with its code: contract docs, the store architecture page, doc gaps left by delivered PRs. |
 
 No profile in this fleet has a Hermes cron. Existing GitHub Actions schedules stay as they are. Each lane's `SOUL.md` and `skills/<profile>/SKILL.md` in this tree are the copy of the host profile.

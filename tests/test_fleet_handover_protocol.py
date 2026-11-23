@@ -22,6 +22,7 @@ LANES = (
     "tll-implementer",
     "tll-tester",
     "tll-pr-rebase",
+    "tll-docs",
 )
 HANDOVER_SHAPE = "· done #<id> · handover <next-lane|owner|none>"
 PROGRESS_RULE = "Progress comments are the record"

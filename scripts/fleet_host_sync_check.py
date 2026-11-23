@@ -36,6 +36,7 @@ LANES = (
     "tll-implementer",
     "tll-tester",
     "tll-pr-rebase",
+    "tll-docs",
 )
 
 # The rulebook markers the fleet's behaviour hangs on. Every one must be present in
