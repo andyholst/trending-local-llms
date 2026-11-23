@@ -1,6 +1,7 @@
 # Proposal: dispatch-guard-1416
 
 Issue: #1416
+PR: #1428
 
 ## Why
 

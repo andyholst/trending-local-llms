@@ -9,13 +9,12 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **461**
+Active changes: **1** · archived: **462**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
-| `dispatch-guard-1416` | active | #1416 | — | [dispatch-guard](openspec/changes/dispatch-guard-1416/specs/dispatch-guard/spec.md) | 6/6 | [proposal.md](openspec/changes/dispatch-guard-1416/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
@@ -184,6 +183,7 @@ Active changes: **2** · archived: **461**
 | `detect-approval-hold-in-pr-health` | archived | #1123 (filed with a live measurement) | #1124 | [pr-health](openspec/changes/archive/detect-approval-hold-in-pr-health/specs/pr-health/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/detect-approval-hold-in-pr-health/proposal.md) |
 | `dimension-applicability` | archived | #469 | — | [data-gap-analysis](openspec/changes/archive/dimension-applicability/specs/data-gap-analysis/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/dimension-applicability/proposal.md) |
 | `disable-fix-bot-pipeline` | archived | #814 | #815 | [pipeline-repair](openspec/changes/archive/disable-fix-bot-pipeline/specs/pipeline-repair/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/disable-fix-bot-pipeline/proposal.md) |
+| `dispatch-guard-1416` | archived | #1416 | #1428 | [dispatch-guard](openspec/changes/archive/dispatch-guard-1416/specs/dispatch-guard/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/dispatch-guard-1416/proposal.md) |
 | `duplicate-change-for-one-edit` | archived | #622 | #819 | [openspec-duplication](openspec/changes/archive/duplicate-change-for-one-edit/specs/openspec-duplication/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/duplicate-change-for-one-edit/proposal.md) |
 | `engagement-counter-mapping` | archived | #873 | #879 | [post-signal](openspec/changes/archive/engagement-counter-mapping/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-mapping/proposal.md) |
 | `engagement-counter-rollup` | archived | #1182 | #1218 | [post-signal](openspec/changes/archive/engagement-counter-rollup/specs/post-signal/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/engagement-counter-rollup/proposal.md) |
