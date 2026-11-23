@@ -339,6 +339,20 @@ PYTHON_RUN := $(if $(IN_CONTAINER),,docker run --rm --user $$(id -u):$$(id -g) -
 #    in qa-validate by design ("cheapest gate first, needs no image"; the latter
 #    is Git-only) — routing them through the container would force a python-env
 #    build at the top of the guard job on every fresh runner. Kept host-side.
+#  - pr-closure.yml's message gates (pr-message-check, issue-message-check,
+#    commit-message-check): that workflow runs them on a webhook BEFORE any
+#    image-ensure, so routing them would force a python-env build at the top of
+#    the closure gate on every event. Kept host-side (issue #712 Slice 3, #1399).
+#  - refresh-pr-body: its default path composes the refresh WINDOW through
+#    `gh api` (refresh_run_block.py — no gh in the image, and PYTHON_RUN forwards
+#    no run env), and its WINDOW_FILE is a host path the container cannot see.
+#    Kept host-side (issue #712 Slice 3, #1399).
+#  - pipeline-failure-ledger-pr-body: its RUN_URL is read from the ENV
+#    (`os.environ.get("RUN_URL")`), which `PYTHON_RUN` does not forward into the
+#    container, and its LEDGER is a host path. Kept host-side (#1399).
+#  - pr-title / pr-body / architecture-pr-body: pure stdlib and container-clean
+#    on a Docker host, but the in-container suite cannot exercise a docker-routed
+#    recipe (no `docker` in the test image) — deferred to #1411, not routed here.
 #  - already-$(TEST_RUN)/$(DOCKER_RUN)-wrapped seams (validate, update_trending,
 #    data-gaps report) must NOT be rewrapped (no docker-in-docker).
 
@@ -348,7 +362,7 @@ openspec-image: ## Ensure the OpenSpec CLI image (pull the published hash tag, e
 
 python-env-image: ## Ensure the python-env image for the PYTHON_RUN seam (build from Dockerfile.python-env when absent; no registry probe; SKIPPED in-container — no docker to build/pull with)
 ifeq ($(IN_CONTAINER),)
-	python3 scripts/ensure_image.py ensure-python
+	@python3 scripts/ensure_image.py ensure-python >&2
 else
 	@:
 endif
@@ -420,8 +434,8 @@ openspec-index-check: python-env-image ## Fail when OPENSPEC.md is stale, or a c
 openspec-index-repair: python-env-image ## Classify a stale OPENSPEC.md against THIS tree and regenerate it when the drift is index-only (DRIFT=none|index-only; issue #304)
 	$(PYTHON_RUN) python3 scripts/openspec_index_repair.py --classify-and-write
 
-openspec-index-repair-pr-body: ## Print the index-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #304)
-	@python3 scripts/openspec_index_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
+openspec-index-repair-pr-body: python-env-image ## Print the index-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #304)
+	@$(PYTHON_RUN) python3 scripts/openspec_index_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
 
 # The sibling keeper for the OTHER way the OpenSpec gate goes red (issue #962,
 # measured on run 43610043055): an ACTIVE change that reached `master` as a bare
@@ -439,8 +453,8 @@ openspec-invalid-change-check: python-env-image ## Fail when an ACTIVE change is
 openspec-invalid-change-repair: python-env-image ## Archive every structurally incomplete ACTIVE change (keeper exemption stamped on its proposal, index regenerated; nothing is invented) (REPAIR=none|archived; issue #962)
 	$(PYTHON_RUN) python3 scripts/openspec_invalid_change_repair.py --classify-and-archive $(if $(RUN_ID),--run-id "$(RUN_ID)",)
 
-openspec-invalid-change-repair-pr-body: ## Print the invalid-change keeper PR body — no closing keyword, it records the archive (MASTER_SHA=… RUN_URL=… required; issue #962)
-	@python3 scripts/openspec_invalid_change_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)" $(if $(RUN_ID),--run-id "$(RUN_ID)",)
+openspec-invalid-change-repair-pr-body: python-env-image ## Print the invalid-change keeper PR body — no closing keyword, it records the archive (MASTER_SHA=… RUN_URL=… required; issue #962)
+	@$(PYTHON_RUN) python3 scripts/openspec_invalid_change_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)" $(if $(RUN_ID),--run-id "$(RUN_ID)",)
 
 # The lifecycle's END (rule 6f, issue #183): a change whose PR merged must be
 # archived in that PR, so an ACTIVE change naming a merged PR is a defect. Needs
@@ -507,8 +521,8 @@ architecture-refresh: ## Regenerate ARCHITECTURE.md's inventory block from the t
 architecture-block-repair: python-env-image ## Classify a stale ARCHITECTURE.md inventory block against THIS tree and regenerate it when the drift is block-only (DRIFT=none|block-only; issue #861)
 	$(PYTHON_RUN) python3 scripts/architecture_block_repair.py --classify-and-write
 
-architecture-block-repair-pr-body: ## Print the architecture-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #861)
-	@python3 scripts/architecture_block_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
+architecture-block-repair-pr-body: python-env-image ## Print the architecture-repair keeper PR body — no closing keyword, it records drift (MASTER_SHA=… RUN_URL=… required; issue #861)
+	@$(PYTHON_RUN) python3 scripts/architecture_block_repair.py --print-pr-body --master-sha "$(MASTER_SHA)" --run-url "$(RUN_URL)"
 
 # ---- the PR closes the issue it implements (rule 6e, issue #284) -------------
 # The PR body is the only artifact in the pipeline whose whole purpose is "this merge
@@ -1375,8 +1389,11 @@ refresh-run-block:
 # text belongs to a target that a test can run and that `make pr-closure` can read —
 # not to a YAML block only a substring assertion could see. Both recipe lines are
 # `@`-silenced: the workflow redirects this target's stdout into `pr-body.md`, so an
-# echoed command line must never reach the body. Host-run, like `refresh-run-block`:
-# the repo and `python3` live on the runner, not in the image.
+# echoed command line must never reach the body. Slice 3 of #712 (#1399) routed
+# the keeper `*-pr-body` composers through `$(PYTHON_RUN)`; the three
+# implementation/architecture composers (`pr-title`, `pr-body`,
+# `architecture-pr-body`) and `refresh-pr-body` stay host-side — see the seam
+# exception block above and #1411.
 .PHONY: refresh-pr-body
 refresh-pr-body: ## Print the REFRESH PR body: the run's window block + the contract (issue #542)
 	@python3 scripts/pr_body.py --for refresh $(if $(WINDOW_FILE),--window-file "$(WINDOW_FILE)",)
