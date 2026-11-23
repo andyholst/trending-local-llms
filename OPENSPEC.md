@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **444**
+Active changes: **1** · archived: **445**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `ledger-errorless-tests-data-driven` | active | #1386 | — | [pipeline-failure-ledger-tests](openspec/changes/ledger-errorless-tests-data-driven/specs/pipeline-failure-ledger-tests/spec.md) | 7/7 | [proposal.md](openspec/changes/ledger-errorless-tests-data-driven/proposal.md) |
 
 ## Archived changes
 
@@ -271,6 +270,7 @@ Active changes: **2** · archived: **444**
 | `land-auto-merge-rebase-rule-row` | archived | #1088 (the §2/§8 rows #1049 owed and could not write) | #1107 | [rulebook-auto-merge-rebase](openspec/changes/archive/land-auto-merge-rebase-rule-row/specs/rulebook-auto-merge-rebase/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-auto-merge-rebase-rule-row/proposal.md) |
 | `land-invalid-change-repair-owed-rows` | archived | #1087 (the §6q keeper-registry text and the §8 guard row #962 owed and could not write) | #1106 | [rulebook-invalid-change-repair](openspec/changes/archive/land-invalid-change-repair-owed-rows/specs/rulebook-invalid-change-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-invalid-change-repair-owed-rows/proposal.md) |
 | `lane-wait-status` | archived | #1232 | #1237 | [fleet-handover](openspec/changes/archive/lane-wait-status/specs/fleet-handover/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/lane-wait-status/proposal.md) |
+| `ledger-errorless-tests-data-driven` | archived | #1386 | #1387 | [pipeline-failure-ledger-tests](openspec/changes/archive/ledger-errorless-tests-data-driven/specs/pipeline-failure-ledger-tests/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/ledger-errorless-tests-data-driven/proposal.md) |
 | `ledger-fix-pr-stamp` | archived | #1068 | #1069 | [openspec-lifecycle](openspec/changes/archive/ledger-fix-pr-stamp/specs/openspec-lifecycle/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/ledger-fix-pr-stamp/proposal.md) |
 | `lint-trailing-newlines` | archived | #186 | #189 | [lint-linefeeds](openspec/changes/archive/lint-trailing-newlines/specs/lint-linefeeds/spec.md) | 10/10 | [proposal.md](openspec/changes/archive/lint-trailing-newlines/proposal.md) |
 | `live-checks-fail-loud` | archived | #209 | — | [live-checks](openspec/changes/archive/live-checks-fail-loud/specs/live-checks/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/live-checks-fail-loud/proposal.md) |
