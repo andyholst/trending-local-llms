@@ -151,7 +151,7 @@
       "created_utc": "2026-11-11T06:59:07Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:1359: sweep-alarm"
+        "sweep-alarm"
       ],
       "issue_number": "826",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/826",
@@ -171,9 +171,9 @@
       "created_utc": "2026-11-11T07:11:43Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:1231: _implement-issue",
-        "Makefile:1243: implement-issue",
-        "Makefile:1290: issue-verdict"
+        "_implement-issue",
+        "implement-issue",
+        "issue-verdict"
       ],
       "issue_number": "827",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/827",
@@ -193,9 +193,9 @@
       "created_utc": "2026-11-11T15:19:00Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:1256: _implement-issue",
-        "Makefile:1268: implement-issue",
-        "Makefile:1315: issue-verdict"
+        "_implement-issue",
+        "implement-issue",
+        "issue-verdict"
       ],
       "issue_number": "828",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/828",
@@ -244,7 +244,7 @@
       "undiagnosed": "log fetch for job 130626253107 failed twice: the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway",
       "rediagnosed_utc": "2026-11-15T14:55:56.846228+00:00",
       "error_excerpt": "2026-11-11T16:05:52.8390094Z [agent] - `tests/test_source_post_readback.py` \u2192 `PASSED 8 | FAILED 0`.\n2026-11-11T16:28:25.3308870Z   FAIL real: Qwen3.8-27B's speed bonus is not the 28,340 t/s datacenter aggregate  [{'likes': 4120, 'comments': 890, 'views': 384000, 'last_7d_likes': 0, 'seen_posts': [{'url': 'https://lightbrd.com/WescheNex1q/status/2105743490864869554', 'date': '2026-10-24', 'engine': 'oMLX', 'tps': '147', 'hardware': 'M4 Max', 'quant': '4-bit + DFlash drafter, spec decode (numbers workload), oMLX 0.7.0', 'likes': 0, 'comments': 0, 'reshares': 0, 'views': 0}, {'url': 'https://ligh\n2026-11-11T16:28:25.3410557Z PASSED 44 | FAILED 1\n2026-11-11T16:28:25.3411007Z === make test: FAILED ===\n2026-11-11T16:31:40.7239079Z [agent] - `python3 tests/test_trending_for_your_card.py` \u2192 PASSED 45 | FAILED 0 (exit 0). The `FAIL:` lines during fixture-mutation cases are the validator's expected output against intentionally-falsified fixtures.\n2026-11-11T16:31:40.7243425Z [agent] - `python3 tests/test_validate_readme.py` \u2192 PASSED 25 | FAILED 0 \u2014 including the AST clock-independence guard that scans every test file (my change adds no clock or `render_readme` call).\n2026-11-11T16:54:15.4210280Z ##[error]Process completed with exit code 1.",
-      "rediagnosis_note": "re-read on this sweep from job 130626253107 (implement) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT. Attributed to the landed datacenter-aggregate guard (issue #349, PR #571, `tests/test_trending_for_your_card.py`): the run's `make test` reded that real-store assertion (Qwen3.8-27B's speed bonus must not be the 28,340 t/s datacenter aggregate), and the guard runs PASSED 45 | FAILED 0 on the fetched base at both the run's own base commit d3d411632 and HEAD — so the row names fix_pr 571 + guard for a guarded close (rule 6r)."
+      "rediagnosis_note": "re-read on this sweep from job 130626253107 (implement) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT. Attributed to the landed datacenter-aggregate guard (issue #349, PR #571, `tests/test_trending_for_your_card.py`): the run's `make test` reded that real-store assertion (Qwen3.8-27B's speed bonus must not be the 28,340 t/s datacenter aggregate), and the guard runs PASSED 45 | FAILED 0 on the fetched base at both the run's own base commit d3d411632 and HEAD \u2014 so the row names fix_pr 571 + guard for a guarded close (rule 6r)."
     },
     {
       "run_id": 43108536309,
@@ -255,7 +255,7 @@
       "created_utc": "2026-11-11T22:03:58Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:347: openspec-record-pr"
+        "openspec-record-pr"
       ],
       "issue_number": "831",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/831",
@@ -275,7 +275,6 @@
       "created_utc": "2026-11-11T22:12:44Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:1384: sweep-alarm",
         "sweep-alarm"
       ],
       "issue_number": "832",
@@ -296,12 +295,10 @@
       "created_utc": "2026-11-11T22:17:11Z",
       "filed_utc": "2026-11-12T03:18:05.780357+00:00",
       "targets": [
-        "Makefile:1256: _implement-issue",
-        "Makefile:1268: implement-issue",
-        "Makefile:548: lint",
+        "_implement-issue",
+        "implement-issue",
         "lint",
-        "Makefile:1003: fix",
-        "Makefile:360: findings-check",
+        "fix",
         "findings-check"
       ],
       "issue_number": "833",
@@ -322,13 +319,20 @@
       "created_utc": "2026-11-12T03:17:49Z",
       "filed_utc": "2026-11-15T14:55:56.846228+00:00",
       "targets": [
-        "Makefile:1379: owed-rows-check"
+        "owed-rows-check"
       ],
       "issue_number": "1039",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1039",
       "fix_pr": 922,
       "guard": "tests/test_owed_rows.py",
-      "undiagnosed": null
+      "undiagnosed": null,
+      "rediagnosed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "error_excerpt": "2026-11-12T03:19:38.4714632Z [owed-rows] FAILED: 2 unreadable/malformed item(s) \u2014 the ledger is not trustworthy until they are fixed\n2026-11-12T03:19:38.4783814Z make: *** [Makefile:1379: owed-rows-check] Error 2\n2026-11-12T03:19:38.4803773Z ##[error]Process completed with exit code 2.",
+      "rediagnosis_note": "re-read on this sweep from job 130947835920 (alarm) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "failing_steps": [
+        "Report the owed-row ledger against AGENTS.md"
+      ],
+      "error_region": "Run make owed-rows-check REPO=\"andyholst/trending-local-llms\""
     },
     {
       "run_id": 43716345030,
@@ -338,12 +342,22 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/43716345030",
       "created_utc": "2026-11-15T12:56:00Z",
       "filed_utc": "2026-11-15T14:55:56.846228+00:00",
-      "targets": [],
+      "targets": [
+        "openspec-index",
+        "openspec-index-check"
+      ],
       "issue_number": "1040",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1040",
       "fix_pr": 1082,
       "guard": "tests/test_openspec_index_repair.py",
-      "undiagnosed": null
+      "undiagnosed": null,
+      "rediagnosed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "error_excerpt": "2026-11-15T13:07:13.6208786Z   FAIL: m1: engines not ordered newest-date-first: ['2026-09-20', '2026-09-27']\n2026-11-15T13:07:13.6210281Z   FAIL: m1: supported_engine 'vLLM' has no measurement in engines\n2026-11-15T13:07:13.6211660Z   FAIL: m1: missing 'supported_engines' list\n2026-11-15T13:07:13.6212992Z   FAIL: m1: missing field 'vram_min'\n2026-11-15T13:07:13.6213685Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-15T13:07:13.6214586Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-15T13:07:13.6594041Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-15T13:07:13.6623727Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-15T13:07:13.6761454Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-15T13:07:13.6807186Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-15T13:07:13.6810516Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-15T13:07:13.6814172Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-15T13:07:13.6815114Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-15T13:07:13.6815690Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-15T13:07:13.6816212Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-15T13:07:13.6817962Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-15T13:07:13.6822124Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-15T13:07:13.6826137Z   FAIL: m1: backends lost ['Metal']\n2026-11-15T13:07:13.8649670Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-15T13:07:13.8651882Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-15T13:07:13.8654613Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-15T13:07:13.8665255Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-15T13:07:13.8744239Z   FAIL: missing trailing newline: test.txt\n2026-11-15T13:07:13.8798974Z PASSED 199 | FAILED 0\n2026-11-15T13:07:14.0269112Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-15T13:07:14.0271029Z PASSED 14 | FAILED 0\n2026-11-15T13:07:14.1644270Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-15T13:07:14.1710462Z PASSED 114 | FAILED 0\n2026-11-15T13:07:14.3095939Z PASSED 87 | FAILED 0\n2026-11-15T13:07:42.6158309Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-15T13:07:42.6168830Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-15T13:07:42.6169695Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-15T13:07:42.6188277Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T13:07:42.6193703Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-15T13:07:42.6194328Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T13:07:42.6198768Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-15T13:08:00.7216498Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active, 302 archived on disk) \u2014 run `make openspec-index`\n2026-11-15T13:08:00.7895760Z make: *** [Makefile:367: openspec-index-check] Error 1\n2026-11-15T13:08:00.7909401Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 7 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098).",
+      "rediagnosis_note": "re-read on this sweep from job 132818631438 (validate) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check"
     },
     {
       "run_id": 43716362366,
@@ -353,12 +367,22 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/43716362366",
       "created_utc": "2026-11-15T12:56:12Z",
       "filed_utc": "2026-11-15T14:55:56.846228+00:00",
-      "targets": [],
+      "targets": [
+        "openspec-index",
+        "openspec-index-check"
+      ],
       "issue_number": "1041",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1041",
       "fix_pr": 1082,
       "guard": "tests/test_openspec_index_repair.py",
-      "undiagnosed": null
+      "undiagnosed": null,
+      "rediagnosed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "error_excerpt": "2026-11-15T13:09:41.6444482Z   FAIL: m1: engines not ordered newest-date-first: ['2026-09-20', '2026-09-27']\n2026-11-15T13:09:41.6445124Z   FAIL: m1: supported_engine 'vLLM' has no measurement in engines\n2026-11-15T13:09:41.6445594Z   FAIL: m1: missing 'supported_engines' list\n2026-11-15T13:09:41.6446109Z   FAIL: m1: missing field 'vram_min'\n2026-11-15T13:09:41.6446500Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-15T13:09:41.6446879Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-15T13:09:41.6851350Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-15T13:09:41.6888333Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-15T13:09:41.7033820Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-15T13:09:41.7086291Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-15T13:09:41.7091307Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-15T13:09:41.7096591Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-15T13:09:41.7097393Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-15T13:09:41.7098208Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-15T13:09:41.7099022Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-15T13:09:41.7102236Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-15T13:09:41.7107745Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-15T13:09:41.7112967Z   FAIL: m1: backends lost ['Metal']\n2026-11-15T13:09:41.9030594Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-15T13:09:41.9032256Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-15T13:09:41.9035597Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-15T13:09:41.9048628Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-15T13:09:41.9159995Z   FAIL: missing trailing newline: test.txt\n2026-11-15T13:09:41.9253584Z PASSED 199 | FAILED 0\n2026-11-15T13:09:42.0801612Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-15T13:09:42.0804216Z PASSED 14 | FAILED 0\n2026-11-15T13:09:42.2244703Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-15T13:09:42.2329091Z PASSED 114 | FAILED 0\n2026-11-15T13:09:42.3778333Z PASSED 87 | FAILED 0\n2026-11-15T13:10:11.2136232Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-15T13:10:11.2150624Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-15T13:10:11.2151429Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-15T13:10:11.2172966Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T13:10:11.2180614Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-15T13:10:11.2181444Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T13:10:11.2188714Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-15T13:10:33.3098653Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active, 303 archived on disk) \u2014 run `make openspec-index`\n2026-11-15T13:10:33.3802840Z make: *** [Makefile:367: openspec-index-check] Error 1\n2026-11-15T13:10:33.3817628Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 7 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098).",
+      "rediagnosis_note": "re-read on this sweep from job 132818685004 (validate) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check"
     },
     {
       "run_id": 43718826142,
@@ -368,12 +392,22 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/43718826142",
       "created_utc": "2026-11-15T13:24:18Z",
       "filed_utc": "2026-11-15T14:55:56.846228+00:00",
-      "targets": [],
+      "targets": [
+        "openspec-index",
+        "openspec-index-check"
+      ],
       "issue_number": "1042",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1042",
       "fix_pr": 1082,
       "guard": "tests/test_openspec_index_repair.py",
-      "undiagnosed": null
+      "undiagnosed": null,
+      "rediagnosed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "error_excerpt": "2026-11-15T13:36:45.0145085Z   FAIL: m1: engines not ordered newest-date-first: ['2026-09-20', '2026-09-27']\n2026-11-15T13:36:45.0147320Z   FAIL: m1: supported_engine 'vLLM' has no measurement in engines\n2026-11-15T13:36:45.0149027Z   FAIL: m1: missing 'supported_engines' list\n2026-11-15T13:36:45.0150917Z   FAIL: m1: missing field 'vram_min'\n2026-11-15T13:36:45.0151970Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-15T13:36:45.0153210Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-15T13:36:45.0610953Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-15T13:36:45.0650913Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-15T13:36:45.0831630Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-15T13:36:45.0891042Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-15T13:36:45.0896297Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-15T13:36:45.0902522Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-15T13:36:45.0903549Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-15T13:36:45.0904235Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-15T13:36:45.0904971Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-15T13:36:45.0908484Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-15T13:36:45.0914172Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-15T13:36:45.0919836Z   FAIL: m1: backends lost ['Metal']\n2026-11-15T13:36:45.3115087Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-15T13:36:45.3117984Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-15T13:36:45.3120408Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-15T13:36:45.3134813Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-15T13:36:45.3240274Z   FAIL: missing trailing newline: test.txt\n2026-11-15T13:36:45.3330228Z PASSED 199 | FAILED 0\n2026-11-15T13:36:45.5154037Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-15T13:36:45.5912078Z PASSED 14 | FAILED 0\n2026-11-15T13:36:45.6842214Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-15T13:36:45.6944536Z PASSED 114 | FAILED 0\n2026-11-15T13:36:45.8638105Z PASSED 87 | FAILED 0\n2026-11-15T13:37:14.8133023Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-15T13:37:14.8139286Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-15T13:37:14.8140533Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-15T13:37:14.8143261Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T13:37:14.8144631Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-15T13:37:14.8145687Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T13:37:14.8147493Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-15T13:37:39.0284950Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active, 303 archived on disk) \u2014 run `make openspec-index`\n2026-11-15T13:37:39.1172434Z make: *** [Makefile:367: openspec-index-check] Error 1\n2026-11-15T13:37:39.1190883Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 7 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098).",
+      "rediagnosis_note": "re-read on this sweep from job 132826155735 (validate) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check"
     },
     {
       "run_id": 43725338063,
@@ -383,12 +417,111 @@
       "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/43725338063",
       "created_utc": "2026-11-15T14:37:07Z",
       "filed_utc": "2026-11-15T14:55:56.846228+00:00",
-      "targets": [],
+      "targets": [
+        "openspec-index",
+        "openspec-index-check"
+      ],
       "issue_number": "1043",
       "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1043",
       "fix_pr": 1082,
       "guard": "tests/test_openspec_index_repair.py",
-      "undiagnosed": null
+      "undiagnosed": null,
+      "rediagnosed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "error_excerpt": "2026-11-15T14:51:13.6970273Z   FAIL: m1: engines not ordered newest-date-first: ['2026-09-20', '2026-09-27']\n2026-11-15T14:51:13.6971676Z   FAIL: m1: supported_engine 'vLLM' has no measurement in engines\n2026-11-15T14:51:13.6972703Z   FAIL: m1: missing 'supported_engines' list\n2026-11-15T14:51:13.6973854Z   FAIL: m1: missing field 'vram_min'\n2026-11-15T14:51:13.6974524Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-15T14:51:13.6975357Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-15T14:51:13.7524708Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-15T14:51:13.7581092Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-15T14:51:13.7824534Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-15T14:51:13.7898183Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-15T14:51:13.7905061Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-15T14:51:13.7912826Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-15T14:51:13.7913736Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-15T14:51:13.7914555Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-15T14:51:13.7915413Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-15T14:51:13.7921131Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-15T14:51:13.7928621Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-15T14:51:13.7935763Z   FAIL: m1: backends lost ['Metal']\n2026-11-15T14:51:14.0395656Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-15T14:51:14.0399533Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-15T14:51:14.0402774Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-15T14:51:14.0421124Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-15T14:51:14.0552955Z   FAIL: missing trailing newline: test.txt\n2026-11-15T14:51:14.0660523Z PASSED 199 | FAILED 0\n2026-11-15T14:51:14.2781246Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-15T14:51:14.2783966Z PASSED 14 | FAILED 0\n2026-11-15T14:51:14.4720083Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-15T14:51:14.4846517Z PASSED 114 | FAILED 0\n2026-11-15T14:51:14.6794579Z PASSED 87 | FAILED 0\n2026-11-15T14:51:43.4018194Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-15T14:51:43.4038151Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-15T14:51:43.4039278Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-15T14:51:43.4066225Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T14:51:43.4076544Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-15T14:51:43.4077679Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-15T14:51:43.4088032Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-15T14:52:13.6102658Z [openspec-index] FAIL OPENSPEC.md is stale or missing (2 active, 305 archived on disk) \u2014 run `make openspec-index`\n2026-11-15T14:52:13.7039268Z make: *** [Makefile:367: openspec-index-check] Error 1\n2026-11-15T14:52:13.7058066Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 7 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098).",
+      "rediagnosis_note": "re-read on this sweep from job 132845951479 (validate) by make pipeline-failure-issue (issue #969); the original undiagnosed field is KEPT",
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check"
+    },
+    {
+      "run_id": 44330910573,
+      "workflow": "refresh-bot",
+      "job": "build",
+      "head_sha": "f3f6aab2428259209c1ea4b8553aa065bd3683cf",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/44330910573",
+      "created_utc": "2026-11-18T15:02:05Z",
+      "filed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "targets": [
+        "image-manifest-check"
+      ],
+      "issue_number": "1380",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1380",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "Verify the base manifest answers both architectures (make image-manifest-check)"
+      ],
+      "error_region": "Run make image-manifest-check TAG=\"ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c\" LABEL=base",
+      "error_excerpt": "2026-11-18T15:07:06.0960756Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T15:07:06.1029032Z make: *** [Makefile:369: image-manifest-check] Error 1\n2026-11-18T15:07:06.1044150Z ##[error]Process completed with exit code 2."
+    },
+    {
+      "run_id": 44422028712,
+      "workflow": "refresh-bot",
+      "job": "build",
+      "head_sha": "4f42f79e3008f3aaa8015b09bb55d444809c56bf",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/44422028712",
+      "created_utc": "2026-11-18T23:35:20Z",
+      "filed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "targets": [
+        "image-manifest-check"
+      ],
+      "issue_number": "1381",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1381",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "Verify the base manifest answers both architectures (make image-manifest-check)"
+      ],
+      "error_region": "Run make image-manifest-check TAG=\"ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c\" LABEL=base",
+      "error_excerpt": "2026-11-18T23:37:54.6074720Z [base] REFUSED: ghcr.io/andyholst/trending-local-llms:dockerfile-5b44520adc6c lacks linux/arm64 \u2014 the publisher must declare platforms linux/amd64, linux/arm64 (issue #919); a host of the missing architecture would die at `docker pull` with 'no matching manifest'\n2026-11-18T23:37:54.6144550Z make: *** [Makefile:377: image-manifest-check] Error 1\n2026-11-18T23:37:54.6157443Z ##[error]Process completed with exit code 2."
+    },
+    {
+      "run_id": 45141972094,
+      "workflow": "qa-validate",
+      "job": "validate",
+      "head_sha": "34bf4f408e53678511af204a16274a03a79bf00e",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45141972094",
+      "created_utc": "2026-11-23T08:51:20Z",
+      "filed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "targets": [
+        "openspec-image"
+      ],
+      "issue_number": "1382",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1382",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check",
+      "error_excerpt": "2026-11-23T09:01:06.4149921Z   FAIL: m1: engine 'llama.cpp' tps is not a clean number: '44 (spec-decode 3.6x; 12 stock)'\n2026-11-23T09:01:06.4150401Z   FAIL: m1: engine 'llama.cpp' tps is not a clean number: '52-60 output / 1250 prompt'\n2026-11-23T09:01:06.4150842Z   FAIL: m1: engine 'llama.cpp' tps is not a clean number: '~237 decode'\n2026-11-23T09:01:06.4151242Z   FAIL: m1: engine 'llama.cpp' tps is not a clean number: '50 tokens per second (est)'\n2026-11-23T09:01:06.4156260Z   FAIL: m1: engines not ordered newest-date-first: ['2026-09-20', '2026-09-27']\n2026-11-23T09:01:06.4157007Z   FAIL: m1: supported_engine 'vLLM' has no measurement in engines\n2026-11-23T09:01:06.4157651Z   FAIL: m1: missing 'supported_engines' list\n2026-11-23T09:01:06.4158282Z   FAIL: m1: missing field 'vram_min'\n2026-11-23T09:01:06.4158643Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-23T09:01:06.4159086Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-23T09:01:06.4476770Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-23T09:01:06.4504781Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-23T09:01:06.4615298Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-23T09:01:06.4658304Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-23T09:01:06.4662978Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-23T09:01:06.4667537Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-23T09:01:06.4668010Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-23T09:01:06.4668178Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-23T09:01:06.4668361Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-23T09:01:06.4672598Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-23T09:01:06.4676882Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-23T09:01:06.4680909Z   FAIL: m1: backends lost ['Metal']\n2026-11-23T09:01:06.6204069Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T09:01:06.6205013Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T09:01:06.6208819Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T09:01:06.6230542Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T09:01:06.6320067Z   FAIL: missing trailing newline: test.txt\n2026-11-23T09:01:06.6409744Z PASSED 200 | FAILED 0\n2026-11-23T09:01:06.7596493Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T09:01:06.7598040Z PASSED 14 | FAILED 0\n2026-11-23T09:01:06.8714337Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T09:01:06.8786025Z PASSED 114 | FAILED 0\n2026-11-23T09:01:06.9923365Z PASSED 87 | FAILED 0\n2026-11-23T09:01:37.7527872Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T09:01:37.7539448Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T09:01:37.7539859Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T09:02:10.1598942Z [ensure] FAIL: cannot tell whether ghcr.io/andyholst/trending-local-llms-openspec:openspec-322b2b9f240c is published \u2014 docker said: Get \"https://ghcr.io/v2/andyholst/trending-local-llms-openspec/manifests/openspec-322b2b9f240c\": Get \"https://ghcr.io/token?scope=repository%3Aandyholst%2Ftrending-local-llms-openspec%3Apull&service=g\n2026-11-23T09:02:10.1672185Z make: *** [Makefile:344: openspec-image] Error 1\n2026-11-23T09:02:10.1687307Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 11 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098)."
+    },
+    {
+      "run_id": 45143717875,
+      "workflow": "qa-validate",
+      "job": "validate",
+      "head_sha": "138ce9ca3ebe02b636709d8eb22465a9e91387d7",
+      "run_url": "https://github.com/andyholst/trending-local-llms/actions/runs/45143717875",
+      "created_utc": "2026-11-23T09:04:01Z",
+      "filed_utc": "2026-11-23T09:46:08.976738+00:00",
+      "targets": [
+        "openspec-index",
+        "openspec-index-check"
+      ],
+      "issue_number": "1383",
+      "issue_url": "https://github.com/andyholst/trending-local-llms/issues/1383",
+      "fix_pr": null,
+      "guard": null,
+      "undiagnosed": null,
+      "failing_steps": [
+        "OpenSpec gate (changes validate, tasks ticked, index current)"
+      ],
+      "error_region": "Run make openspec-check",
+      "error_excerpt": "2026-11-23T09:14:56.7107617Z   FAIL: m1: supported_engine 'vLLM' has no measurement in engines\n2026-11-23T09:14:56.7108650Z   FAIL: m1: missing 'supported_engines' list\n2026-11-23T09:14:56.7109951Z   FAIL: m1: missing field 'vram_min'\n2026-11-23T09:14:56.7110620Z   FAIL: m1: formats must be '{name, hf}' objects (per-format HF link), got strings\n2026-11-23T09:14:56.7111449Z   FAIL: m1: engine 'llama.cpp' has no repo url in engines registry\n2026-11-23T09:14:56.7683840Z   FAIL: schema: 'name' is a required property (at ['models', 0])\n2026-11-23T09:14:56.7740673Z   FAIL: search bad.json: 'vram_min' is a required property (at ['models', 0])\n2026-11-23T09:14:56.7991424Z   FAIL: models removed from previous snapshot trending-001.json: ['m1']\n2026-11-23T09:14:56.8070887Z   FAIL: m1: key 'engagement.seen_posts' present in trending-001.json is gone\n2026-11-23T09:14:56.8078280Z   FAIL: m1: key 'engagement.views' present in trending-001.json is gone\n2026-11-23T09:14:56.8086226Z   FAIL: m1: key 'engines.comments' present in trending-001.json is gone\n2026-11-23T09:14:56.8087132Z   FAIL: m1: key 'engines.likes' present in trending-001.json is gone\n2026-11-23T09:14:56.8087951Z   FAIL: m1: key 'engines.views' present in trending-001.json is gone\n2026-11-23T09:14:56.8088855Z   FAIL: m1: measurement llama.cpp on rtx4070 (1 in trending-001.json) is gone\n2026-11-23T09:14:56.8095401Z   FAIL: m1: llama.cpp on rtx4070 t/s lowered 80.0 -> 20.0\n2026-11-23T09:14:56.8102080Z   FAIL: m1: llama.cpp on rtx4070 likes lowered 10 -> 1\n2026-11-23T09:14:56.8109619Z   FAIL: m1: backends lost ['Metal']\n2026-11-23T09:14:57.0916770Z   FAIL: m1: measurement_model_aliases is not a list\n2026-11-23T09:14:57.0918936Z   FAIL: m1: measurement_model_aliases counterpart 'm1-variant' is not a model id in the store (dangling exception)\n2026-11-23T09:14:57.0924219Z   FAIL: nvidia-20261113T000000Z.json: model 'm1': measurement_model_aliases counterpart 'ghost-model' is not a model id in data/models.json \u2014 a captured exception must name a stored model on BOTH sides (issue #884)\n2026-11-23T09:14:57.0945154Z   FAIL: models.json order != README 'Most loved' order at 2 position(s): [0]A0 Alpha != B1 Beta, [1]B1 Beta != A0 Alpha\n2026-11-23T09:14:57.1085865Z   FAIL: missing trailing newline: test.txt\n2026-11-23T09:14:57.1206602Z PASSED 200 | FAILED 0\n2026-11-23T09:14:57.3468734Z   FAIL: CUDA README table not sorted by t/s descending: [100.0, 233.0]\n2026-11-23T09:14:57.3472438Z PASSED 14 | FAILED 0\n2026-11-23T09:14:57.5485021Z   FAIL: m1: duplicate engine row (llama.cpp, 2026-09-28, RTX 4090, 50)\n2026-11-23T09:14:57.5619314Z PASSED 114 | FAILED 0\n2026-11-23T09:14:57.7758595Z PASSED 87 | FAILED 0\n2026-11-23T09:15:26.2246944Z   FAIL: link: [model-hf] gone: https://huggingface.co/org/gone does not resolve\n2026-11-23T09:15:26.2267938Z   FAIL: link: [model-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-8B does not match known-good https://huggingface.co/Qwen/Qwen3-14B\n2026-11-23T09:15:26.2268767Z   FAIL: link: [format-hf] qwen3-14b: https://huggingface.co/Qwen/Qwen3-14B does not resolve\n2026-11-23T09:15:26.2288099Z   FAIL: link: [source_post] qwen3-14b: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T09:15:26.2300724Z   FAIL: link: [raw-hf] nvidia-1.json/m1: https://huggingface.co/org/m1 does not resolve\n2026-11-23T09:15:26.2302200Z   FAIL: link: [raw-source_post] nvidia-1.json/m1: https://github.com/this-repo-does-not-exist-xyz123/nope does not resolve\n2026-11-23T09:15:26.2312705Z   FAIL: link: [raw-hf] nvidia-1.json/m2: https://huggingface.co/zzz-non-existent-org/nope-model does not resolve\n2026-11-23T09:15:26.2328115Z   FAIL: link-present: model 'qwen3-14b' missing HF link (hf)\n2026-11-23T09:15:54.3477084Z [openspec-index] FAIL OPENSPEC.md is stale or missing (1 active, 444 archived on disk) \u2014 run `make openspec-index`\n2026-11-23T09:15:54.4378138Z make: *** [Makefile:395: openspec-index-check] Error 1\n2026-11-23T09:15:54.4394430Z ##[error]Process completed with exit code 2.\n[filer] 3/3 error-shaped line(s) of the failing step region `Run make openspec-check` are quoted; 6 further error-shaped line(s) printed by OTHER step regions were not quoted to stay within MAX_ERROR_LINES=40 (issue #1098)."
     }
   ]
 }
