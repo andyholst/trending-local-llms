@@ -1,6 +1,7 @@
 # Proposal: watch-marker-pr-first-seen
 
 Issue: #1364
+PR: #1366
 
 ## Why
 
