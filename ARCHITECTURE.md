@@ -424,7 +424,7 @@ breaks any of it, and its `PROMPT_BUDGET` is 900 characters so the rulebook cann
 <!-- arch:pipelines -->
 ## 4. The pipelines
 
-Eleven workflows in `.github/workflows/`. **ONE carries a cron**: `refresh-bot.yml`
+Eleven workflows in `.github/workflows/` plus the dispatch-only `security-scan.yml` (issue #1185). **ONE carries a cron**: `refresh-bot.yml`
 (Wednesday `0 6 * * 3` + same-day backup `43 17 * * 3`) — the data gatherer is the only
 pipeline the owner left scheduled (owner cadence directive 2026-11-15, rule 6t, issue
 #1029; the `weekly-cadence` slots #670–#677 it replaced are gone). Every other sweep in
@@ -623,6 +623,21 @@ branch or merges, and never holds the owner PAT (it comments with
 `REVIEW_GAP_HOURS := 3` in the Makefile: one constant for both bots — a run in
 flight, implementer activity younger than the gap, or the issue within the
 implementer's next 3 sweeps all keep the body off-limits.
+
+### `.github/workflows/security-scan.yml` — the five-scanner sweep (owner dispatch)
+
+Issue #1185 made the shipped scanners reachable by an owner alone: no cron, no
+repository event, no automatic trigger — the guard runs first, then `scan` runs
+each scanner through its Makefile target so the CLI a human runs is the command
+CI runs (rule 6m).
+
+| Job | Does |
+|---|---|
+| `guard` | The owner/collaborator guard as the FIRST job, before any secret reaches the run |
+| `scan` | `make containerfile-scan`, `make trivy-scan`, `make grype-scan`, `make syft-sbom OUT=…` (SBOM uploaded as an artifact), then `make security-scan-self-test` — the planted CVE proves the scanners really flag a known vulnerability instead of silently passing |
+
+It never opens a PR and never writes to `master`; a finding is filed through the
+same `tech-debt` chain as every other analysis (rule 6g).
 
 ---
 
