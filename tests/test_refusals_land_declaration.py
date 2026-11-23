@@ -31,7 +31,10 @@ refusal that made this a rule).
   - test_a_declared_delivery_stage_lands_the_ledger       --land-refusals appends/grows
   - test_a_dry_run_writes_nothing_at_all                  the `make validate` analogue
   - test_a_dry_run_cannot_declare_a_landing               exit 2, tree untouched
-  - test_the_measured_suite_modules_leave_the_tree_clean  #1148's three dirty modules
+  - test_the_scratch_subprocesses_inherit_authentication  #1177's wiring, and the credential half is a DECLARED GAP when no token resolves (#1371)
+  - test_the_credential_gap_is_declared_only_without_a_token  an identity without a token declares, never fails (#1371)
+  - test_the_sibling_gap_is_declared_only_without_a_token  the siblings' pass/fail half is a declared gap, never this module's red (#1372)
+  - test_the_measured_suite_modules_leave_the_tree_clean  #1148's three dirty modules; the tree-clean half is hard, the sibling half is conditional (#1372)
   - test_the_makefile_delivery_recipes_declare_the_landing  wired, and no validator does
   - test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in  container-safe tree
 
@@ -50,6 +53,9 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+import coverage_gap  # noqa: E402  (the ONE declared-gap seam, issues #1147/#1173)
+
 UPDATE = ROOT / "scripts" / "update_trending.py"
 MAKEFILE = ROOT / "Makefile"
 
@@ -302,11 +308,52 @@ def test_a_dry_run_cannot_declare_a_landing():
         shutil.rmtree(repo, ignore_errors=True)
 
 
+def _sibling_gap(env: dict) -> str:
+    """The declared gap for the siblings' pass/fail half (issues #1177/#1371/#1372).
+
+    The three siblings carry the #972 shipped engine-check alarm, whose GitHub reachability
+    probe is UNAUTHENTICATED when no token resolves. A spent 60/hr anonymous quota therefore
+    reddens them on a shared host while CI (authenticated, other IP) stays green — and this
+    module used to report that environmental red as ITS OWN failure. Built and returned, never
+    printed here (issue #1173).
+    """
+    if _has_token(env):
+        return ""
+    listed = ", ".join(f"`{m}`" for m in MEASURED_MODULES)
+    return coverage_gap.declare_gap(
+        "test_the_measured_suite_modules_leave_the_tree_clean",
+        f"no GH_TOKEN/GITHUB_TOKEN resolvable in this identity, so {listed} run with an "
+        f"unauthenticated #972 GitHub probe (60/hr anonymous quota) and their pass/fail half "
+        f"is not meaningful here; the tree-clean half below still locks #1155 and each "
+        f"sibling's own module locks its own contract",
+    )
+
+
+def test_the_sibling_gap_is_declared_only_without_a_token():
+    """Issue #1372: a sibling's pass/fail half is a declared gap, never this module's red."""
+    check("#1372: an identity with a token declares nothing",
+          _sibling_gap({"GH_TOKEN": "x"}) == "", "")
+    line = _sibling_gap({})
+    check("#1372: an identity with no token declares the gap",
+          line.startswith(coverage_gap.GAP_PREFIX), line)
+    check("#1372: the declared line names the guard and every sibling",
+          "test_the_measured_suite_modules_leave_the_tree_clean" in line
+          and all(m in line for m in MEASURED_MODULES), line)
+
+
 def test_the_measured_suite_modules_leave_the_tree_clean():
     repo = scratch_repo()
     try:
+        gap = _sibling_gap(_test_env())
+        if gap:
+            coverage_gap.announce(gap)
         for rel in MEASURED_MODULES:
             proc = run_module(repo, rel)
+            if gap:
+                # The environmental precondition is absent: report the exit, assert nothing.
+                print(f"  gap  {rel} exit {proc.returncode} not asserted here "
+                      f"(unauthenticated #972 probe)")
+                continue
             check(f"{rel} still passes on the declared-landing rule",
                   proc.returncode == 0,
                   f"rc={proc.returncode} tail={proc.stdout[-300:]}{proc.stderr[-200:]}")
@@ -417,21 +464,67 @@ def test_the_scratch_builder_never_aims_git_at_the_checkout_it_runs_in():
           len(data_files) >= 5, f"data files: {len(data_files)}")
 
 
+def _has_token(env: dict) -> bool:
+    """Can this identity authenticate the GitHub probe? (issue #1371)
+
+    `_test_env` resolves a token from the already-authenticated `gh` client at run time and
+    falls back to nothing. Whether one resolves is a property of the IDENTITY, not of the
+    tree, so a check that requires it makes the whole suite red on any host or container
+    where `gh auth token` is absent or fails — measured as the recurring
+    `1 FAILED: test_refusals_land_declaration.py` on branches that touch nothing near it.
+    """
+    return bool(env.get("GH_TOKEN") or env.get("GITHUB_TOKEN"))
+
+
+def _credential_gap(env: dict) -> str:
+    """The declared gap for an identity that cannot resolve a token (issue #1371).
+
+    Returns "" when the identity CAN authenticate, so the caller asserts the real half; the
+    returned line is BUILT and returned, never printed here (issue #1173 — the caller decides
+    whether the gap is real and announces it).
+    """
+    if _has_token(env):
+        return ""
+    return coverage_gap.declare_gap(
+        "test_the_scratch_subprocesses_inherit_authentication",
+        "no GH_TOKEN/GITHUB_TOKEN resolvable in this identity (`gh auth token` absent or "
+        "failed), so the by-name inheritance half did not run here; the wiring checks above "
+        "still lock it and CI — which forwards the name — runs the real half",
+    )
+
+
+def test_the_credential_gap_is_declared_only_without_a_token():
+    """Issue #1371: the credential half is a declared gap, never a red assertion."""
+    check("#1371: an identity with a token declares nothing",
+          _credential_gap({"GH_TOKEN": "x"}) == "" and _credential_gap({"GITHUB_TOKEN": "y"}) == "", "")
+    line = _credential_gap({})
+    check("#1371: an identity with no token declares the gap",
+          line.startswith(coverage_gap.GAP_PREFIX), line)
+    check("#1371: the declared line names the guard it belongs to",
+          "test_the_scratch_subprocesses_inherit_authentication" in line, line)
+
+
 def test_the_scratch_subprocesses_inherit_authentication():
-    """Issue #1177: an anonymous GitHub probe makes this suite flaky on a shared host."""
+    """Issue #1177/#1371: the credential half is a declared gap, never an assertion."""
     src = inspect.getsource(_test_env) + inspect.getsource(run_cli) + inspect.getsource(run_module)
     check("#1177: scratch subprocesses get the resolved env",
           src.count("env=_test_env()") == 2, "run_cli + run_module")
     check("#1177: a credential is a NAME only (rule 3e)",
           '"gh", "auth", "token"' in src and "print(" not in src)
     env = _test_env()
-    check("#1177: the env contains a token name, never a literal in the tree",
+    gap = _credential_gap(env)
+    if gap:
+        coverage_gap.announce(gap)
+        return
+    check("#1177: the env carries a token NAME, never a literal in the tree",
           "GH_TOKEN" in env or "GITHUB_TOKEN" in env, sorted(k for k in env if "TOKEN" in k))
 
 
 def main() -> int:
     for fn in (
         test_the_scratch_subprocesses_inherit_authentication,
+        test_the_credential_gap_is_declared_only_without_a_token,
+        test_the_sibling_gap_is_declared_only_without_a_token,
         test_an_undeclared_full_ingest_lands_no_refusals,
         test_an_undeclared_pass_still_reports_every_refusal,
         test_a_declared_delivery_stage_lands_the_ledger,
