@@ -299,6 +299,10 @@ needed to move the board.
   `tests/test_fleet_lifecycle.py` pins (`test_lane_skills_carry_the_push_and_verify_rule`) → measured
   `FAIL 14`. Land only the additive host-only notes, de-duplicate what earlier PRs already carried, then
   refresh the hosts FROM master once nothing host-unique remains.
+  - **Measure a host-sync divergence against the RIGHT repo path — `agents/<lane>/skills/<lane>/SKILL.md`.**
+    `git show origin/master:tll-<lane>/skills/...` silently answers EMPTY (the profiles live under `agents/`), so the
+    diff counts every host line as a divergence (measured 2026-11-23: bogus 471-line "delta" vs a real 99). Read the
+    correct blob, or the sync verdict is noise.
 - **`gh issue close --reason duplicate --duplicate-of <n>`** — the literal reason is `duplicate`
   (`not_planned` is INVALID and errors). Three filings of one step defect in one evening
   (#1439/#1452/#1453) consolidate into ONE dispatch on the instance issue, mirroring each filing's
