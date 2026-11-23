@@ -9,14 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **2** · archived: **468**
+Active changes: **1** · archived: **469**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `land-forward-notes-1446` | active | #1446 | #1447 | [fleet-host-sync-check](openspec/changes/land-forward-notes-1446/specs/fleet-host-sync-check/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/land-forward-notes-1446/proposal.md) |
 
 ## Archived changes
 
@@ -278,6 +277,7 @@ Active changes: **2** · archived: **468**
 | `keeper-pr-lands-architecture-bot` | archived | #1081 — "architecture-bot's keeper PR step is a fourth spelling of the | #1113 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-lands-architecture-bot/specs/ci-keeper-pr/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/keeper-pr-lands-architecture-bot/proposal.md) |
 | `keeper-pr-one-landing-sequence` | archived | #869 | #1082 | [ci-keeper-pr](openspec/changes/archive/keeper-pr-one-landing-sequence/specs/ci-keeper-pr/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/keeper-pr-one-landing-sequence/proposal.md) |
 | `land-auto-merge-rebase-rule-row` | archived | #1088 (the §2/§8 rows #1049 owed and could not write) | #1107 | [rulebook-auto-merge-rebase](openspec/changes/archive/land-auto-merge-rebase-rule-row/specs/rulebook-auto-merge-rebase/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-auto-merge-rebase-rule-row/proposal.md) |
+| `land-forward-notes-1446` | archived | #1446 | #1448 | [fleet-host-sync-check](openspec/changes/archive/land-forward-notes-1446/specs/fleet-host-sync-check/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/land-forward-notes-1446/proposal.md) |
 | `land-host-ahead-planner-implementer-notes-1445` | archived | #1445 | #1449 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/specs/fleet-host-sync-check/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-host-ahead-planner-implementer-notes-1445/proposal.md) |
 | `land-host-ahead-skill-notes-1418` | archived | #1418 | #1422 | [fleet-host-sync-check](openspec/changes/archive/land-host-ahead-skill-notes-1418/specs/fleet-host-sync-check/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/land-host-ahead-skill-notes-1418/proposal.md) |
 | `land-invalid-change-repair-owed-rows` | archived | #1087 (the §6q keeper-registry text and the §8 guard row #962 owed and could not write) | #1106 | [rulebook-invalid-change-repair](openspec/changes/archive/land-invalid-change-repair-owed-rows/specs/rulebook-invalid-change-repair/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/land-invalid-change-repair-owed-rows/proposal.md) |
