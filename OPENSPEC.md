@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **440**
+Active changes: **1** · archived: **441**
 
 ## Active changes
 
@@ -329,6 +329,7 @@ Active changes: **1** · archived: **440**
 | `pipeline-failure-rediagnose-832` | archived | #832 | #1052 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-832/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-832/proposal.md) |
 | `planner-reviewer-board-note` | archived | #1261 | #1309 | [fleet-planner](openspec/changes/archive/planner-reviewer-board-note/specs/fleet-planner/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/planner-reviewer-board-note/proposal.md) |
 | `positive-more-count` | archived | #1219 | #1221 | [readme-render](openspec/changes/archive/positive-more-count/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/positive-more-count/proposal.md) |
+| `pr-block-grace-derived-1176` | archived | #1176 — "The 24 h grace is a guess, and it is the only thing standing between | #1289 | [pipeline-failure-ledger](openspec/changes/archive/pr-block-grace-derived-1176/specs/pipeline-failure-ledger/spec.md) | 7/8 · 1 blocked | [proposal.md](openspec/changes/archive/pr-block-grace-derived-1176/proposal.md) |
 | `pr-block-log-budget-1174` | archived | #1174 | #1262 | [pipeline-failure](openspec/changes/archive/pr-block-log-budget-1174/specs/pipeline-failure/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/pr-block-log-budget-1174/proposal.md) |
 | `pr-body-closure-guard` | archived | #289 — `tech-debt: The weak marker-word assertion that hid the bug is still there` | — | [pr-closure-guard](openspec/changes/archive/pr-body-closure-guard/specs/pr-closure-guard/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pr-body-closure-guard/proposal.md) |
 | `pr-body-composer` | archived | #287 — `tech-debt: The PR body is assembled by inline workflow shell, so its text is not covered by any target` | — | [pr-body-composition](openspec/changes/archive/pr-body-composer/specs/pr-body-composition/spec.md) | 11/11 | [proposal.md](openspec/changes/archive/pr-body-composer/proposal.md) |
