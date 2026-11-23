@@ -9,12 +9,13 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **456**
+Active changes: **2** · archived: **457**
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `cron-install-check-profile-homes-1409` | active | #1409 | — | [fleet-watchers](openspec/changes/cron-install-check-profile-homes-1409/specs/fleet-watchers/spec.md) | 6/6 | [proposal.md](openspec/changes/cron-install-check-profile-homes-1409/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes
