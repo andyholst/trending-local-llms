@@ -2,7 +2,9 @@
 """Guard the repo-owned watch monitor (issue #1266).
 
 The diffing code is the real product: tests feed it the same JSON shapes `gh` returns and
-assert the exact markers. The external CLI itself is never replaced.
+assert the exact markers. The external CLI is replaced only where a test must prove the
+request-building itself (`test_branch_resolution_is_capped_and_never_guesses`, a stub `gh`
+on PATH standing in for the network — rule 6m).
 """
 from __future__ import annotations
 
@@ -338,6 +340,85 @@ def test_comment_cursor_migration_baselines_without_flood() -> None:
         check("the next genuinely-new comment wakes the lane",
               lines2 == ["C:7090680910"], str(lines2))
         assert lines2 == ["C:7090680910"], str(lines2)
+def test_r_marker_resolves_a_pr_first_seen_after_the_merge() -> None:
+    """Issue #1364: a PR run whose FIRST sight is post-merge still names its PR.
+
+    Measured 2026-11-23: `R:45116060775:completed:failure:qa-validate` carried no PR field for
+    PR #1362's old head, because #1355's `run_prs` memo only records a run SEEN while its PR was
+    open and this run's first sight was after the merge. `inject_run_prs` is the pure half that
+    puts the merge-surviving resolution back into the row before the diff.
+    """
+    print("\nCI marker first seen after the merge: the branch resolves its PR (#1364)")
+    first_sight = {
+        "id": 45116060775, "status": "completed", "conclusion": "failure",
+        "name": "qa-validate", "event": "pull_request",
+        "head_branch": "ci/tech-debt-pr-rebase-soul-1361", "pull_requests": [],
+    }
+    enriched = W.inject_run_prs([first_sight], {"ci/tech-debt-pr-rebase-soul-1361": 1362})
+    check("the resolved PR re-enters the run row as a one-element pull_requests",
+          enriched[0]["pull_requests"] == [{"number": 1362}], str(enriched[0]))
+    payload = {"comments": {"issues": [], "pulls": []}, "runs": enriched,
+               "master": {"sha": "aaa"}}
+    lines, state = W.marker_state({}, payload)
+    check("the marker names the PR on its first sight",
+          "R:45116060775:completed:failure:qa-validate:1362" in lines, str(lines))
+    check("the resolution is recorded in the run->PR map",
+          state.get("run_prs", {}).get("45116060775") == "1362", str(state.get("run_prs")))
+
+    push_run = {"id": 7, "status": "completed", "conclusion": "success", "name": "qa-validate",
+                "event": "push", "head_branch": "master", "pull_requests": []}
+    untouched = W.inject_run_prs([push_run], {"master": 1})
+    check("a push run is never given a PR", untouched[0]["pull_requests"] == [], str(untouched[0]))
+    unknown = {"id": 8, "status": "completed", "conclusion": "success", "name": "qa-validate",
+               "event": "pull_request", "head_branch": "nobody/resolved-this", "pull_requests": []}
+    guessed = W.inject_run_prs([unknown], {})
+    check("an unresolved branch is left alone, never guessed",
+          guessed[0]["pull_requests"] == [], str(guessed[0]))
+    live = {"id": 9, "status": "completed", "conclusion": "success", "name": "qa-validate",
+            "event": "pull_request", "head_branch": "b", "pull_requests": [{"number": 5}]}
+    kept = W.inject_run_prs([live], {"b": 6})
+    check("a live association is not overwritten", kept[0]["pull_requests"] == [{"number": 5}],
+          str(kept[0]))
+
+
+def test_branch_resolution_is_capped_and_never_guesses() -> None:
+    """The network half: one `gh pr list --head` per branch, capped, unique-only.
+
+    The stub `gh` on PATH is the only stand-in (the external CLI, rule 6m); the request this
+    seam builds and the JSON it accepts are the real product.
+    """
+    print("\nBranch->PR resolution: capped, unique, no guess on a failed read (#1364)")
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        calls = tmp_path / "calls"
+        stub = tmp_path / "gh"
+        stub.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, sys\n"
+            f"open({str(calls)!r}, 'a').write('x')\n"
+            "args = sys.argv[1:]\n"
+            "branch = args[args.index('--head') + 1] if '--head' in args else ''\n"
+            "if branch == 'ambiguous':\n"
+            "    print(json.dumps([{'number': 1}, {'number': 2}]))\n"
+            "elif branch == 'empty':\n"
+            "    print(json.dumps([]))\n"
+            "elif branch == 'broken':\n"
+            "    sys.exit(1)\n"
+            "else:\n"
+            "    print(json.dumps([{'number': 1362}]))\n", encoding="utf-8")
+        stub.chmod(0o755)
+        resolved = W.resolve_branch_prs("andyholst/trending-local-llms", str(stub),
+                                        ["ambiguous", "empty", "broken", "good"])
+        check("an ambiguous branch resolves to nothing", "ambiguous" not in resolved, str(resolved))
+        check("an empty branch list resolves to nothing", "empty" not in resolved, str(resolved))
+        check("a failed read resolves to nothing", "broken" not in resolved, str(resolved))
+        check("a unique merged PR resolves", resolved.get("good") == 1362, str(resolved))
+        many = [f"branch-{i}" for i in range(W.PR_RESOLVE_MAX + 15)]
+        calls.write_text("", encoding="utf-8")
+        W.resolve_branch_prs("andyholst/trending-local-llms", str(stub), many)
+        count = calls.read_text(encoding="utf-8").count("x")
+    check("the per-tick resolution budget is honoured",
+          count == W.PR_RESOLVE_MAX, f"calls={count} cap={W.PR_RESOLVE_MAX}")
 
 
 def main() -> int:
@@ -354,6 +435,8 @@ def main() -> int:
     test_comment_fetch_requests_newest_first()
     test_comment_fetch_sees_a_new_comment_outside_the_oldest_100()
     test_comment_cursor_migration_baselines_without_flood()
+    test_r_marker_resolves_a_pr_first_seen_after_the_merge()
+    test_branch_resolution_is_capped_and_never_guesses()
     test_offline_check_mode()
     test_the_rulebook_names_the_claim_settle_window()
     test_the_offline_contract_pins_the_settle_floor()
