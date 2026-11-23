@@ -16,7 +16,6 @@ Active changes: **2** · archived: **454**
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
-| `planner-orchestration-authority` | active | #1398 | — | [fleet-planner](openspec/changes/planner-orchestration-authority/specs/fleet-planner/spec.md) | 7/7 | [proposal.md](openspec/changes/planner-orchestration-authority/proposal.md) |
 
 ## Archived changes
 
@@ -337,6 +336,7 @@ Active changes: **2** · archived: **454**
 | `pipeline-failure-rediagnose-821` | archived | #821 | #974 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-821/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-821/proposal.md) |
 | `pipeline-failure-rediagnose-822` | archived | #822 | #977 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-822/specs/alarms/spec.md) | 8/8 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-822/proposal.md) |
 | `pipeline-failure-rediagnose-832` | archived | #832 | #1052 | [alarms](openspec/changes/archive/pipeline-failure-rediagnose-832/specs/alarms/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/pipeline-failure-rediagnose-832/proposal.md) |
+| `planner-orchestration-authority` | archived | #1398 | #1406 | [fleet-planner](openspec/changes/archive/planner-orchestration-authority/specs/fleet-planner/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/planner-orchestration-authority/proposal.md) |
 | `planner-reviewer-board-note` | archived | #1261 | #1309 | [fleet-planner](openspec/changes/archive/planner-reviewer-board-note/specs/fleet-planner/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/planner-reviewer-board-note/proposal.md) |
 | `planner-skill-store-shape` | archived | #1390 | #1393 | [planner-store-shape-doc](openspec/changes/archive/planner-skill-store-shape/specs/planner-store-shape-doc/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/planner-skill-store-shape/proposal.md) |
 | `positive-more-count` | archived | #1219 | #1221 | [readme-render](openspec/changes/archive/positive-more-count/specs/readme-render/spec.md) | 4/4 | [proposal.md](openspec/changes/archive/positive-more-count/proposal.md) |

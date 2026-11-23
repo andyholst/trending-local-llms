@@ -1,6 +1,7 @@
 # Proposal: planner-orchestration-authority
 
 Issue: #1398
+PR: #1406
 
 ## Why
 
