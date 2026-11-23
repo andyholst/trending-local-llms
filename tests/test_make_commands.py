@@ -70,6 +70,7 @@ def build_fixture(tmp: Path) -> dict:
 
     # copy the real contracts so schema checks pass
     shutil.copy(ROOT / "data" / "model_contract.json", data / "model_contract.json")
+    shutil.copy(ROOT / "data" / "MODEL_CONTRACT.md", data / "MODEL_CONTRACT.md")
     shutil.copy(ROOT / "data" / "search_contract.json", data / "search_contract.json")
     shutil.copy(ROOT / "data" / "measurements_contract.json", data / "measurements_contract.json")
     shutil.copy(ROOT / "data" / "posts_contract.json", data / "posts_contract.json")

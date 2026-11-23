@@ -9,12 +9,17 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
+<<<<<<< HEAD
 Active changes: **1** · archived: **455**
+=======
+Active changes: **2** · archived: **454**
+>>>>>>> f2e42e20 (feat(docs): contract<->prose sync — every model_contract.json property has a MODEL_CONTRACT.md row (#1394))
 
 ## Active changes
 
 | Change | State | Issue | PR | Capability specs | Tasks | Proposal |
 |---|---|---|---|---|---|---|
+| `contract-prose-sync` | active | #1394 | — | [docs-contracts](openspec/changes/contract-prose-sync/specs/docs-contracts/spec.md) | 7/7 | [proposal.md](openspec/changes/contract-prose-sync/proposal.md) |
 | `heartbeat-1282` | active | — | — | [fleet-watch](openspec/changes/heartbeat-1282/specs/fleet-watch/spec.md) | 6/7 · 1 blocked | [proposal.md](openspec/changes/heartbeat-1282/proposal.md) |
 
 ## Archived changes

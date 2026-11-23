@@ -904,7 +904,7 @@ Do not edit between the markers by hand: change the code it describes, then run 
 <!-- architecture-bot:begin -->
 _Generated from the tree itself by `scripts/architecture_bot.py` (`make architecture-refresh`); `.github/workflows/architecture-bot.yml` regenerates it on owner dispatch and opens a PR only when it changed. Do not edit this block by hand — change the code it describes and run the target._
 
-### Bots in the tree (12 pipelines, 263 make targets, 106 files in `scripts/`)
+### Bots in the tree (12 pipelines, 263 make targets, 107 files in `scripts/`)
 
 Every pipeline, what starts it, the jobs it runs and the `make` targets those jobs call (with the Makefile's own description of each target).
 
@@ -1053,6 +1053,7 @@ One line each, taken from the script's own docstring.
 - `scripts/check_branch_protection.py` — Rule 1's mechanical guard (issue #959): the base branch must carry protection.
 - `scripts/check_commit_authorship.py` — commit-authorship guard — `make check-commit-authorship` (issue #317).
 - `scripts/check_conflict_markers.py` — Fail when a tracked file carries a merge-conflict block (issue #588).
+- `scripts/check_contract_prose.py` — (no docstring)
 - `scripts/check_counter_parity.py` — ONE pytest plugin so plain `pytest` agrees with `make test` (issue #1301).
 - `scripts/check_makefile_knobs.py` — Fail when a Makefile knob (`NAME ?= …`) is declared and read by nothing (issue #630).
 - `scripts/check_openspec_tasks.py` — Ensure active OpenSpec changes have ALL task checkboxes completed.
