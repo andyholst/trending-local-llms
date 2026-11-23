@@ -19,6 +19,11 @@ one:
   * a needle is only derived from an identifier the text itself names — a
     `make <target>`, a `tests/test_*.py`, a `scripts/*.py`, or a `check_*`
     name — because a landed guard row names exactly those things;
+  * a DERIVED needle that ALREADY appears inside the declared section is REFUSED
+    (issue #1367): a module name the section already carries cannot tell an
+    EXTENSION from the pre-change row, so the ledger would answer LANDED for a row
+    nobody extended (measured on #1357, whose derived `tests/test_watch_monitor.py`
+    was already in §8 while the `run_prs` map its Done-when required was nowhere);
   * if either half is not stated, the answer is `[]`: the filed issue then shows
     as `NO MARKER` in the ledger, which is honest, never a fabricated claim.
 
@@ -84,8 +89,30 @@ def derive_rows(text: str, agents_text: str) -> list[dict]:
     if not needle:
         return []
     known = sections(agents_text or "")
-    return [{"section": sid, "needle": needle, "derived": True}
-            for sid in ids if sid in known]
+    lines = (agents_text or "").splitlines()
+    rows: list[dict] = []
+    for sid in ids:
+        if sid not in known:
+            continue
+        # Issue #1367: a DERIVED needle that ALREADY appears inside the declared section
+        # cannot distinguish "the row was extended to name the new symbol" from "the row still
+        # describes the old behaviour", so the ledger answers LANDED for a row nobody extended.
+        # Measured on #1357: the derived needle `tests/test_watch_monitor.py` was already in §8
+        # while the `run_prs` map its own Done-when required was nowhere, and
+        # `make owed-rows-check` reported `LANDED AGENTS.md:2439` over a rulebook that still
+        # described the pre-#1355 behaviour. Refuse the derivation: an EXTENSION row must be
+        # stated EXPLICITLY with the new symbol — exactly what the filer's `- **Owed-row:**`
+        # field is for, and never invented here.
+        if _needle_in_span(needle, lines, known[sid]):
+            continue
+        rows.append({"section": sid, "needle": needle, "derived": True})
+    return rows
+
+
+def _needle_in_span(needle: str, lines: list[str], span: tuple[int, int]) -> bool:
+    """Does `needle` already appear inside a section's 1-indexed INCLUSIVE line span?"""
+    start, end = span
+    return needle in "\n".join(lines[start - 1:end])
 
 
 if __name__ == "__main__":  # a tiny manual probe: derive from a sentence
