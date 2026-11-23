@@ -60,6 +60,14 @@ def main() -> int:
     check("validate carries the merge-tree step", bool(step))
     for name in CLAUSES:
         check(f"step keeps {name}", name not in missing(step), name)
+    # The no-shallow-fetch fix below only holds while the validate checkout keeps
+    # full history: a later flip to fetch-depth: 1 would silently reintroduce the
+    # authorship failure. Lock that precondition in the same module.
+    step_at = text.find("- name: OpenSpec index on the merge tree (issue #1239)")
+    checkout_at = text.rfind("- name: Checkout", 0, step_at)
+    checkout = text[checkout_at:step_at] if checkout_at >= 0 else ""
+    check("validate checkout keeps full history (fetch-depth: 0)",
+          "fetch-depth: 0" in checkout, checkout[:120])
     # The validate checkout is fetch-depth: 0 so the authorship test can read real
     # history. A shallow fetch in this step silently truncates it and reddens
     # tests/test_commit_authorship.py later in the same job.
