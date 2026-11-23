@@ -3107,14 +3107,20 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
               target_line in make
               and f"$(PYTHON_RUN) {cmd}" in make,
               f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
-
-    # Slice 3 of #712 (issue #1411): the three composer targets route through the
-    # SAME seam, each still a pure `python3 scripts/…` command; `refresh-pr-body`
-    # is deliberately NOT in this list (it stays host-only).
+    # Slice 3 of #712: the composer batch (#1411) and the keeper PR-body batch
+    # (#1399) route through the SAME seam, each still a pure `python3 scripts/…`
+    # command. `refresh-pr-body` and `pipeline-failure-ledger-pr-body` are
+    # deliberately NOT in this set (they stay host-only — see below).
     slice3 = {
         "pr-title: python-env-image": "python3 scripts/pr_body.py --issue \"$(ISSUE)\" --title --kind \"$(if $(KIND),$(KIND),data-gap)\"",
         "pr-body: python-env-image": "python3 scripts/pr_body.py --issue \"$(ISSUE)\" $(if $(BRANCH),--branch \"$(BRANCH)\",)",
         "architecture-pr-body: python-env-image": "python3 scripts/pr_body.py --for architecture --run-url \"$(RUN_URL)\"",
+        "openspec-index-repair-pr-body: python-env-image":
+            "python3 scripts/openspec_index_repair.py --print-pr-body --master-sha \"$(MASTER_SHA)\" --run-url \"$(RUN_URL)\"",
+        "openspec-invalid-change-repair-pr-body: python-env-image":
+            "python3 scripts/openspec_invalid_change_repair.py --print-pr-body --master-sha \"$(MASTER_SHA)\" --run-url \"$(RUN_URL)\" $(if $(RUN_ID),--run-id \"$(RUN_ID)\",)",
+        "architecture-block-repair-pr-body: python-env-image":
+            "python3 scripts/architecture_block_repair.py --print-pr-body --master-sha \"$(MASTER_SHA)\" --run-url \"$(RUN_URL)\"",
     }
     for target_line, cmd in slice3.items():
         check(f"seam (Slice 3): {target_line.split(':')[0]} routes through $(PYTHON_RUN)",
@@ -3122,12 +3128,20 @@ def test_python_env_seam_routes_migrated_recipes_through_the_container():
               and f"$(PYTHON_RUN) {cmd}" in make,
               f"{target_line.split(':')[0]}: want prefix + pure command but got neither/partial")
     # The gh-bound and pre-image-ensure targets stay HOST-side (documented
-    # exceptions) — they must NOT gain a PYTHON_RUN prefix in this slice.
+    # exceptions) — they must NOT gain a PYTHON_RUN prefix in this slice. The
+    # pr-closure.yml message gates join them in Slice 3: that workflow runs them
+    # before any image-ensure, so routing them would force a python-env build at
+    # the top of a webhook gate. `refresh-pr-body` (its window comes from `gh api`
+    # and a host WINDOW_FILE) and `pipeline-failure-ledger-pr-body` (its RUN_URL is
+    # read from the env PYTHON_RUN does not forward, and LEDGER is a host path)
+    # join them too.
     for host_only in ("openspec-archive-check", "check-commit-authorship",
-                      "file-findings", "verify-closure", "refresh-pr-body"):
+                      "file-findings", "verify-closure",
+                      "pr-message-check", "issue-message-check", "commit-message-check",
+                      "refresh-pr-body", "pipeline-failure-ledger-pr-body"):
         block = make[make.index(host_only + ":"):]
         block = block[: block.index("\n\n")] if "\n\n" in block else block
-        check(f"seam (Slice 2): {host_only} stays host-only (no PYTHON_RUN)",
+        check(f"seam (Slice 3): {host_only} stays host-only (no PYTHON_RUN)",
               "$(PYTHON_RUN)" not in block,
               f"{host_only} was routed into the container when it must stay host-side")
 

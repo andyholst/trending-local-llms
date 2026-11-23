@@ -9,7 +9,7 @@ missing from it. Work starts by creating a change (`make openspec-new NAME=<name
 and ends with every box in its `tasks.md` ticked (or explicitly marked
 `- [~] … — blocked: <who/why>` and reported as review-required).
 
-Active changes: **1** · archived: **471**
+Active changes: **1** · archived: **472**
 
 ## Active changes
 
@@ -337,6 +337,7 @@ Active changes: **1** · archived: **471**
 | `openspec-merge-tree-1239` | archived | #1239 (measured on origin/master `cebd71c7`) | #1240 | [openspec-index](openspec/changes/archive/openspec-merge-tree-1239/specs/openspec-index/spec.md) | 5/6 | [proposal.md](openspec/changes/archive/openspec-merge-tree-1239/proposal.md) |
 | `order-guard-exact-heading` | archived | #718 | — | [order-guard-exact-heading](openspec/changes/archive/order-guard-exact-heading/specs/order-guard-exact-heading/spec.md) | 6/6 | [proposal.md](openspec/changes/archive/order-guard-exact-heading/proposal.md) |
 | `order-guard-fixture-tolerant` | archived | #711 | — | [order-guard-fixture-tolerant](openspec/changes/archive/order-guard-fixture-tolerant/specs/order-guard-fixture-tolerant/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/order-guard-fixture-tolerant/proposal.md) |
+| `os-agnostic-make-pr-body-batch-seam` | archived | #1399 | #1417 | [os-agnostic-make-pr-body-batch-seam](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/specs/os-agnostic-make-pr-body-batch-seam/spec.md) | 7/7 | [proposal.md](openspec/changes/archive/os-agnostic-make-pr-body-batch-seam/proposal.md) |
 | `owed-row-close-quote` | archived | #766 | #922 | [agents-guard-registry](openspec/changes/archive/owed-row-close-quote/specs/agents-guard-registry/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-row-close-quote/proposal.md) |
 | `owed-rows-landed-ledger` | archived | #523 | — | [owed-row-ledger](openspec/changes/archive/owed-rows-landed-ledger/specs/owed-row-ledger/spec.md) | 9/9 | [proposal.md](openspec/changes/archive/owed-rows-landed-ledger/proposal.md) |
 | `owed-rules-blocked-box` | archived | #659 | #903 | [owed-rulebook-rows](openspec/changes/archive/owed-rules-blocked-box/specs/owed-rulebook-rows/spec.md) | 5/5 | [proposal.md](openspec/changes/archive/owed-rules-blocked-box/proposal.md) |
